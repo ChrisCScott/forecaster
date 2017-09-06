@@ -1,48 +1,70 @@
-''' Defines basic recordkeeping classes, such as `Money`, `Person`, and `Account` '''
+""" Defines basic recordkeeping classes, such as `Money`, `Person`, and `Account` """
 
 from datetime import datetime
 from numbers import Number
 from money import Money
 
-class Person:
-    ''' Represents a person's basic information: age and retirement age '''
+
+class Person(object):
+    """ Represents a person's basic information: age and retirement age.
+
+    Attributes:
+        name: A string corresponding to the person's name.
+        birth_date: A datetime corresponding to the person's date of birth.
+        retirement_date: An optional datetime corresponding to the person's retirement date.
+    """
+
     # TODO: Add life expectancy?
     def __init__(self, name, birth_date, retirement_date=None):
-        ''' Constructor for `Person`. Must provide `name` (a string) and `birthdate`
-        (a `datetime` object). May optionally provide `retirement_date`, which may be
-        expressed as a year (in numeric form) or as a `datetime` object. Non-datetime
-        inputs are convered to `datetime` internally. '''
-        assert isinstance(name, str)
+        """ Constructor for `Person`.
+
+        Args:
+            name (string): The person's name.
+            birth_date (datetime): The person's date of birth.
+            retirement_date (datetime): The person's retirement date. Optional.
+                May be passed as a non-datetime numeric value indicating the retirement year.
+        """
+        if not isinstance(name, str):
+            raise TypeError("Person: name must be a string")
         self.name = name
 
-        assert isinstance(birth_date, datetime)
+        if not isinstance(birth_date, datetime):
+            raise TypeError("Person: birth_date must be a datetime")
         self.birth_date = birth_date
 
         if retirement_date is None:
             self.retirement_date = None
         elif isinstance(retirement_date, Number):
-            self.retirement_date = datetime(birth_date.year+retirement_date,
+            self.retirement_date = datetime(birth_date.year + int(retirement_date),
                                             birth_date.month,
                                             birth_date.day)
         else:
-            assert isinstance(retirement_date, datetime)
+            if not isinstance(retirement_date, datetime):
+                raise TypeError("Person: retirement_date must be a datetime")
             self.retirement_date = retirement_date
 
     def age(self, date):
-        ''' Returns the age of the `Person` as of `date`, which may be a `datetime` object
-        or a numeric value indicating a year (e.g. 2001). In the latter case, the age at the
-        *end* of `year` is provided. '''
+        """ Returns the age of the `Person` as of `date`.
+
+        `date` may be a `datetime` object or a numeric value indicating a year (e.g. 2001).
+        In the latter case, the age at the *end* of `year` is returned.
+
+        Args:
+            date (datetime):
+        """
         if isinstance(date, Number):
             age_ = date - self.birth_date.year
-            assert age_ > 0
-            return age_
         else:
-            assert isinstance(date, datetime)
+            if not isinstance(date, datetime):
+                raise TypeError("Person: date must be a datetime")
             age_ = date.year - self.birth_date.year
-            return age_
+
+        if age_ < 0:
+            raise ValueError("Person: date must be no earlier than birth_date")
+        return age_
 
     def retirement_age(self):
-        ''' If `retirement_date` is known, return the age of the `Person` at retirement '''
+        """ If `retirement_date` is known, return the age of the `Person` at retirement """
         if self.retirement_date is None:
             return None
         else:
@@ -50,6 +72,7 @@ class Person:
             if self.birth_date.replace(self.retirement_date.year) < self.retirement_date:
                 age += 1
             return age
+
 
 class Account:
     ''' An account having a balance, an interest rate, and contributions and/or withdrawals.
@@ -148,7 +171,7 @@ class Account:
         applied to the balance. Only `inclusion_rate`% of `contribution` are affected by `rate`.
         The returned object has only its balance set. '''
 
-        balance = self._balance.nominal_value*(1+self._rate)
+        balance = self._balance.nominal_value * (1 + self._rate)
 
         if not self._inflow is None:
             balance += self._inflow.nominal_value
@@ -161,6 +184,7 @@ class Account:
                 balance -= self._outflow.nominal_value() * self._rate * self._outflow_inclusion
 
         return type(self)(balance)
+
 
 class SavingsAccount(Account):
     ''' A savings account. Supports contributions and withdrawals. Provides a `taxable_income()`
@@ -182,23 +206,28 @@ class SavingsAccount(Account):
         ''' Sets the withdrawal. `withdrawal` must be of type `Money`. This is an alias of `Account.inflow()` '''
         self.set_outflow(withdrawal)
 
-    # TODO: add more alias methods (i.e. `*_inclusion`-related methods) and `taxable_income` method
+        # TODO: add more alias methods (i.e. `*_inclusion`-related methods) and `taxable_income` method
+
 
 class RRSP(SavingsAccount):
     # TODO: implement class
     pass
 
+
 class TFSA(SavingsAccount):
     # TODO: implement class
     pass
+
 
 class TaxableAccount(SavingsAccount):
     # TODO: implement class
     pass
 
+
 class Debt(Account):
     # TODO: implement class
     pass
+
 
 class OtherProperty(Account):
     # TODO: implement class
