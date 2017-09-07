@@ -1,4 +1,4 @@
-""" Defines basic recordkeeping classes, such as `Money`, `Person`, and `Account` """
+""" Defines basic recordkeeping classes, like `Person` and `Account`. """
 
 from datetime import datetime
 from numbers import Number
@@ -10,8 +10,9 @@ class Person(object):
 
     Attributes:
         name: A string corresponding to the person's name.
-        birth_date: A datetime corresponding to the person's date of birth.
-        retirement_date: An optional datetime corresponding to the person's retirement date.
+        birth_date: A datetime corresponding to the person's birth date.
+        retirement_date: An optional datetime corresponding to the 
+            person's retirement date.
     """
 
     # TODO: Add life expectancy?
@@ -21,8 +22,9 @@ class Person(object):
         Args:
             name (string): The person's name.
             birth_date (datetime): The person's date of birth.
-            retirement_date (datetime): The person's retirement date. Optional.
-                May be passed as a non-datetime numeric value indicating the retirement year.
+            retirement_date (datetime): The person's retirement date.
+                Optional. May be passed as a non-datetime numeric value
+                indicating the retirement year.
         """
         if not isinstance(name, str):
             raise TypeError("Person: name must be a string")
@@ -35,7 +37,8 @@ class Person(object):
         if retirement_date is None:
             self.retirement_date = None
         elif isinstance(retirement_date, Number):
-            self.retirement_date = datetime(birth_date.year + int(retirement_date),
+            self.retirement_date = datetime(birth_date.year +
+                                            int(retirement_date),
                                             birth_date.month,
                                             birth_date.day)
         else:
@@ -43,14 +46,16 @@ class Person(object):
                 raise TypeError("Person: retirement_date must be a datetime")
             self.retirement_date = retirement_date
 
-    def age(self, date):
+    def age(self, date) -> int:
         """ Returns the age of the `Person` as of `date`.
 
-        `date` may be a `datetime` object or a numeric value indicating a year (e.g. 2001).
-        In the latter case, the age at the *end* of `year` is returned.
+        `date` may be a `datetime` object or a numeric value indicating
+        a year (e.g. 2001). In the latter case, the age at the *end* of
+        `year` is returned.
 
         Args:
-            date (datetime):
+            date (datetime): The date at which the person's age is to
+                be determined.
         """
         if isinstance(date, Number):
             age_ = date - self.birth_date.year
@@ -63,32 +68,44 @@ class Person(object):
             raise ValueError("Person: date must be no earlier than birth_date")
         return age_
 
-    def retirement_age(self):
-        """ If `retirement_date` is known, return the age of the `Person` at retirement """
+    def retirement_age(self) -> datetime:
+        """ Returns the age at which the `Person` will retire.
+
+        Returns None if the person's age is unknown. """
         if self.retirement_date is None:
             return None
         else:
             age = self.retirement_date.year - self.birth_date.year
-            if self.birth_date.replace(self.retirement_date.year) < self.retirement_date:
+            if self.birth_date.replace(self.retirement_date.year) < \
+               self.retirement_date:
                 age += 1
             return age
 
 
-class Account:
-    ''' An account having a balance, an interest rate, and contributions and/or withdrawals.
-    Call `next_year()` to generate a new `Account` object with an updated balance.
-    All `Money` elements of the new object will have their `year` incremented. '''
+class Account(object):
+    ''' An account storing a `Money` balance.
+
+    In addition to the balance, `Account` objects have a rate of return
+    (`rate`) as well as `inflow` and `outflow` attributes. These
+    attributes do not modify the `balance` directly; rather, once the
+    attributes have been set, `next_year()` may be called to generate
+    a new `Account` object with an updated balance.
+    '''
 
     def __init__(self, balance, rate=None, inflow=None, outflow=None,
                  inflow_inclusion=None, outflow_inclusion=None):
-        ''' Constructor for `Account`. Receives `balance` and stores it as type `Money`.
-        Optionally receives a `rate` of return/loss/interest/etc. (of a numeric type).
+        ''' Constructor for `Account`.
+
+        Receives `balance` and stores it as type `Money`. Optionally
+        receives a `rate` of return/loss/interest/etc (of numeric type).
         For example, a 5% interest rate could be passed as `rate=0.05`.
 
-        Inflows and outflows to the account may be modelled independently. They may optionally
-        be included in the returns/losses (arising from `rate`) based on corresponding
-        `*_inclusion` arguments. This allows the `Account` object to model different timing
-        strategies for inflows and outflows. '''
+        Inflows and outflows to the account may be modelled
+        independently. They may optionally be included in any returns or
+        losses (arising from `rate`) based on corresponding
+        `*_inclusion` arguments. This allows the `Account` object to
+        model different timing strategies for inflows and outflows.
+        '''
         self._balance = balance
         self._rate = rate
         self._inflow = inflow
@@ -97,54 +114,54 @@ class Account:
         self._outflow_inclusion = outflow_inclusion
 
     @property
-    def balance(self):
+    def balance(self) -> Money:
         ''' The balance of the `Account` object '''
         return self._balance
 
     @balance.setter
-    def set_balance(self, balance):
+    def set_balance(self, balance) -> None:
         ''' Sets the current balance, which must be convertible to type `Money` '''
         self._balance = Money(balance)
 
     @property
-    def rate(self):
+    def rate(self) -> Decimal:
         ''' The rate (interest rate, rate of return, etc.) of the `Account` object '''
         return self._rate
 
     @rate.setter
-    def set_rate(self, rate):
+    def set_rate(self, rate) -> None:
         ''' Sets the rate, which must be numeric '''
         if not isinstance(rate, Number):
             raise TypeError("Money: rate must be numeric")
         self._rate = rate
 
     @property
-    def inflow(self):
+    def inflow(self) -> Money:
         ''' The inflow to the `Account` object '''
         return self._inflow
 
     @inflow.setter
-    def set_inflow(self, inflow):
+    def set_inflow(self, inflow) -> None:
         ''' Sets the inflow, which must be convertible to type `Money` '''
         self._inflow = Money(inflow)
 
     @property
-    def outflow(self):
+    def outflow(self) -> Money:
         ''' The outflow to the `Account` object '''
         return self._outflow
 
     @outflow.setter
-    def set_outflow(self, outflow):
+    def set_outflow(self, outflow) -> None:
         ''' Sets the outflow, which must be convertible to type `Money` '''
         self._outflow = Money(outflow)
 
     @property
-    def inflow_inclusion(self):
+    def inflow_inclusion(self) -> Decimal:
         ''' The inclusion rate for inflow amounts when applying the rate '''
         return self._inflow_inclusion
 
     @inflow_inclusion.setter
-    def set_inflow_inclusion(self, inflow_inclusion):
+    def set_inflow_inclusion(self, inflow_inclusion) -> None:
         ''' Sets the inclusion rate for inflows, which must be numeric and in [0,1] '''
         if not isinstance(inflow_inclusion, Number) and not inflow_inclusion is None:
             raise TypeError("Money: inflow_inclusion must be numeric")
@@ -153,60 +170,62 @@ class Account:
         self._inflow_inclusion = inflow_inclusion
 
     @property
-    def outflow_inclusion(self):
+    def outflow_inclusion(self) -> Decimal:
         ''' The inclusion rate for outflow amounts '''
         return self._outflow_inclusion
 
     @outflow_inclusion.setter
-    def set_outflow_inclusion(self, outflow_inclusion):
+    def set_outflow_inclusion(self, outflow_inclusion) -> None:
         ''' Sets the inclusion rate for outflows, which must be numeric and in [0,1] '''
-        if not isinstance(outflow_inclusion, Number) and not outflow_inclusion is None:
+        if not isinstance(outflow_inclusion, Number) and \
+           outflow_inclusion is not None:
             raise TypeError("Money: outflow_inclusion must be numeric")
         if not (outflow_inclusion >= 0 and outflow_inclusion <= 1):
             raise ValueError("Money: outflow_inclusion must be in [0,1]")
         self._outflow_inclusion = outflow_inclusion
 
-    def next_year(self):
-        ''' Returns an `Account` object where any contribution, withdrawal, and rate have been
-        applied to the balance. Only `inclusion_rate`% of `contribution` are affected by `rate`.
+    def next_year(self) -> Account:
+        ''' Returns an `Account` object where any contribution,
+        withdrawal, and rate have been applied to the balance. Only
+        `inclusion_rate`% of `contribution` are affected by `rate`.
         The returned object has only its balance set. '''
 
         balance = self._balance.nominal_value * (1 + self._rate)
 
-        if not self._inflow is None:
+        if self._inflow is not None:
             balance += self._inflow.nominal_value
-            if not self._inflow_inclusion is None:
+            if self._inflow_inclusion is not None:
                 balance += self._inflow.nominal_value() * self._rate * self._inflow_inclusion
 
-        if not self._outflow is None:
+        if self._outflow is not None:
             balance -= self._outflow.nominal_value
-            if not self._outflow_inclusion is None:
+            if self._outflow_inclusion is not None:
                 balance -= self._outflow.nominal_value() * self._rate * self._outflow_inclusion
 
         return type(self)(balance)
 
 
 class SavingsAccount(Account):
-    ''' A savings account. Supports contributions and withdrawals. Provides a `taxable_income()`
-    method; subclasses override this to model specific tax treatment for different account types '''
+    ''' A savings account. Supports contributions and withdrawals.
+    
+    Provides a `taxable_income` method '''
 
-    def contribution(self):
-        ''' Returns the contribution to the savings account. This is an alias of `Account.inflow()` '''
-        return self.inflow()
+    # Define aliases for `Savings Account` methods.
+    contribution = property(Account.inflow, Account.set_inflow, None,
+                            "A contribution to the `Account` object.")
 
-    def set_contribution(self, contribution):
-        ''' Sets the contribution. `contribution` must be of type `Money`. This is an alias of `Account.inflow()` '''
-        self.set_inflow(contribution)
+    withdrawal = property(Account.outflow, Account.set_outflow, None,
+                          "A withdrawal from the `Account` object.")
+    
+    contribution_inclusion = property(Account.inflow_inclusion,
+                                      Account.set_inflow_inclusion,
+                                      None,
+                                      "Sets inclusion rate for contributions.")
+    
+    withdrawal_inclusion = property(Account.outflow_inclusion, Account.set_outflow_inclusion, None,
+        "Sets the inclusion rate for withdrawals, which must be numeric and in [0,1].")
 
-    def withdrawal(self):
-        ''' Returns the withdrawal from the savings account. This is an alias of `Account.inflow()` '''
-        return self.outflow()
-
-    def set_withdrawal(self, withdrawal):
-        ''' Sets the withdrawal. `withdrawal` must be of type `Money`. This is an alias of `Account.inflow()` '''
-        self.set_outflow(withdrawal)
-
-        # TODO: add more alias methods (i.e. `*_inclusion`-related methods) and `taxable_income` method
+    # TODO: add a `taxable_income` method
 
 
 class RRSP(SavingsAccount):
