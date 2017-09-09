@@ -4,8 +4,6 @@ classes. They provide default values for aspects of the application. """
 import datetime
 from moneyed import Currency
 
-locale.setlocale(locale.LC_ALL, '')  # Set the locale to the system default
-
 
 class Settings:
     """ Container for variables used to control application settings """
