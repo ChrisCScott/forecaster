@@ -3,6 +3,7 @@ It provides the `Settings` class, which contains various `*Defaults`
 classes. They provide default values for aspects of the application. """
 import datetime
 from moneyed import Currency
+import moneyed
 
 
 class Settings:
@@ -11,7 +12,15 @@ class Settings:
     display_year = initial_year  # Base year for displaying real-valued amounts
     num_years = 100  # Model this number of years from the initial_year
     num_children = 3  # How many children may be represented
-    currency = Currency("CAD")
+
+    @staticmethod
+    def set_default_currency(currency):
+        moneyed.DEFAULT_CURRENCY = currency
+        moneyed.DEFAULT_CURRENCY_CODE = currency.code
+
+    @staticmethod
+    def default_currency():
+        return moneyed.DEFAULT_CURRENCY
 
     # TODO: Replace these with an instance of `Scenario`, etc.?
     class ScenarioDefaults:
@@ -36,3 +45,6 @@ class Settings:
         # TODO: update to match an actual withdrawal strategy
         withdrawal_strategy = 2
         withdrawal_rate = 100000
+
+# Det default currency to CAD
+Settings.set_default_currency(moneyed.CAD)

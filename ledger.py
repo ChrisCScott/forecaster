@@ -3,8 +3,10 @@
 from datetime import datetime
 from dateutil.parser import parse
 from numbers import Number
+import decimal
 from decimal import Decimal
 from moneyed import Money
+from settings import Settings
 # swapping custom Money class for py-moneyed's Money class
 # from money import Money
 
@@ -42,6 +44,7 @@ class Person(object):
         Raises:
             ValueError: birth_date or retirement_date are not parseable
                 as dates.
+            ValueError: retirement_date precedes birth_date
             OverflowError: birth_date or retirement_date are too large
         """
         if not isinstance(name, str):
@@ -50,22 +53,34 @@ class Person(object):
 
         # If `birth_date` is not a `datetime`, attempt to parse
         if not isinstance(birth_date, datetime):
-            birth_date = parse(str(birth_date))
+            # If the birth date omits a year, use this year. If it omits
+            # a month or day, use January and the 1st, respectively
+            default_date = datetime(datetime.today().year, 1, 1)
+            birth_date = parse(str(birth_date), default=default_date)
+
         self.birth_date = birth_date
 
-        # If `retirement_date` is not a `datetime`, attempt to parse.
-        # If month/day aren't given, use the corresponding values of
-        # birth_date
-        if not isinstance(retirement_date, datetime):
-            retirement_date = parse(str(retirement_date), self.birth_date)
+        if retirement_date is not None:
+            if not isinstance(retirement_date, datetime):
+                # If `retirement_date` is not a `datetime`, attempt to parse.
+                # If month/day aren't given, use the corresponding values of
+                # birth_date
+                default_date = self.birth_date
+                retirement_date = parse(str(retirement_date),
+                                        default=default_date)
+
+            # `retirement_date` must follow `birth_date`
+            if retirement_date < birth_date:
+                raise ValueError("Person: retirement_date precedes birth_date")
+
         self.retirement_date = retirement_date
 
     def age(self, date) -> int:
         """ The age of the `Person` as of `date`.
 
         `date` may be a `datetime` object or a numeric value indicating
-        a year (e.g. 2001). In the latter case, the age at the *end* of
-        `year` is returned.
+        a year (e.g. 2001). In the latter case, the age on the person's
+        birthday (in that year) is returned.
 
         Args:
             date: The date at which to determine the person's age.
@@ -84,10 +99,12 @@ class Person(object):
 
         # If `date` is not `datetime`, attempt to parse
         if not isinstance(date, datetime):
-            date = parse(str(date),
-                         datetime(self.birth_date.year()-1, 12, 12))
+            date = parse(str(date), default=self.birth_date)
 
-        age_ = date.year() - self.birth_date.year
+        # Remember to check whether the month/day are earlier in `date`
+        age_ = date.year - self.birth_date.year
+        if date.replace(self.birth_date.year) < self.birth_date:
+            age_ -= 1
 
         # `age` cannot be negative
         # NOTE: Should we return None instead of raising an error?
@@ -95,6 +112,12 @@ class Person(object):
             raise ValueError("Person: date must be no earlier than birth_date")
         return age_
 
+    # TODO: Reimplement this as a property tied to retirement_date.
+    # (Use relativedate to do the calculation - it's slower, but more
+    # accurate. Caching the result as a variable will avoid significant
+    # slowdown anyways.
+    # Consider adding a setter that also updates retirement_date
+    # it would take an int - use birth_date for month and day?])
     def retirement_age(self) -> datetime:
         """ The age at which the `Person` will retire.
 
@@ -104,11 +127,18 @@ class Person(object):
         if self.retirement_date is None:
             return None
         else:
+            # If retiring before your birthday, deduct 1 from age.
             age = self.retirement_date.year - self.birth_date.year
-            if self.birth_date.replace(self.retirement_date.year) < \
+            if self.birth_date.replace(year=self.retirement_date.year) > \
                self.retirement_date:
-                age += 1
+                age -= 1
             return age
+
+# NOTE: BasicContext is useful for debugging, as most errors are treated
+# as exceptions (instead of returning "NaN"). It is lower-precision than
+# ExtendedContext, which is the default; consider commenting this out
+# in a production environment
+decimal.setcontext(decimal.BasicContext)
 
 
 class Account(object):
@@ -148,12 +178,12 @@ class Account(object):
         `*_inclusion` arguments. This allows the `Account` object to
         model different timing strategies for inflows and outflows.
         """
-        self._balance = balance
-        self._rate = rate
-        self._inflow = inflow
-        self._outflow = outflow
-        self._inflow_inclusion = inflow_inclusion
-        self._outflow_inclusion = outflow_inclusion
+        self.balance = balance
+        self.rate = rate
+        self.inflow = inflow
+        self.outflow = outflow
+        self.inflow_inclusion = inflow_inclusion
+        self.outflow_inclusion = outflow_inclusion
 
     @property
     def balance(self) -> Money:
@@ -161,9 +191,12 @@ class Account(object):
         return self._balance
 
     @balance.setter
-    def set_balance(self, balance) -> None:
+    def balance(self, balance) -> None:
         """ Sets the current balance """
-        self._balance = Money(balance)
+        if isinstance(balance, Money) or balance is None:
+            self._balance = balance
+        else:
+            self._balance = Money(balance)
 
     @property
     def rate(self) -> Decimal:
@@ -173,13 +206,14 @@ class Account(object):
         return self._rate
 
     @rate.setter
-    def set_rate(self, rate) -> None:
+    def rate(self, rate) -> None:
         """ Sets the rate.
 
-        The rate must be numeric (e.g. Decimal, float, int) """
-        if not isinstance(rate, Number):
-            raise TypeError("Money: rate must be numeric")
-        self._rate = rate
+        The rate must be convertible to Decimal """
+        if isinstance(rate, Decimal) or rate is None:
+            self._rate = rate
+        else:
+            self._rate = Decimal(rate)
 
     @property
     def inflow(self) -> Money:
@@ -187,11 +221,14 @@ class Account(object):
         return self._inflow
 
     @inflow.setter
-    def set_inflow(self, inflow) -> None:
+    def inflow(self, inflow) -> None:
         """ Sets the inflow.
 
         Inflows must be convertible to type `Money`. """
-        self._inflow = Money(inflow)
+        if isinstance(inflow, Money) or inflow is None:
+            self._inflow = inflow
+        else:
+            self._inflow = Money(inflow)
 
     @property
     def outflow(self) -> Money:
@@ -199,11 +236,14 @@ class Account(object):
         return self._outflow
 
     @outflow.setter
-    def set_outflow(self, outflow) -> None:
+    def outflow(self, outflow) -> None:
         """ Sets the outflow.
 
         Outflows must be convertible to type `Money`. """
-        self._outflow = Money(outflow)
+        if isinstance(outflow, Money) or outflow is None:
+            self._outflow = outflow
+        else:
+            self._outflow = Money(outflow)
 
     @property
     def inflow_inclusion(self) -> Decimal:
@@ -211,13 +251,18 @@ class Account(object):
         return self._inflow_inclusion
 
     @inflow_inclusion.setter
-    def set_inflow_inclusion(self, inflow_inclusion) -> None:
+    def inflow_inclusion(self, inflow_inclusion) -> None:
         """ Sets the inclusion rate for inflows.
 
         Inflows must be numeric and in [0,1] """
-        if not isinstance(inflow_inclusion, Number) and \
-           inflow_inclusion is not None:
-            raise TypeError("Money: inflow_inclusion must be numeric")
+        # Don't test values for None
+        if inflow_inclusion is None:
+            self._inflow_inclusion = None
+            return
+        # Cast to Decimal if necessary
+        if not isinstance(inflow_inclusion, Decimal):
+            inflow_inclusion = Decimal(inflow_inclusion)
+        # Ensure the new value is in the range [0,1]
         if not (inflow_inclusion >= 0 and inflow_inclusion <= 1):
             raise ValueError("Money: inflow_inclusion must be in [0,1]")
         self._inflow_inclusion = inflow_inclusion
@@ -228,13 +273,18 @@ class Account(object):
         return self._outflow_inclusion
 
     @outflow_inclusion.setter
-    def set_outflow_inclusion(self, outflow_inclusion) -> None:
+    def outflow_inclusion(self, outflow_inclusion) -> None:
         """ Sets the inclusion rate for outflows.
 
-        Outflows must be numeric and in [0,1]. """
-        if not isinstance(outflow_inclusion, Number) and \
-           outflow_inclusion is not None:
-            raise TypeError("Money: outflow_inclusion must be numeric")
+        Outflows must be convertible to Decimal and in [0,1]. """
+        # Don't test values for None
+        if outflow_inclusion is None:
+            self._outflow_inclusion = None
+            return
+        # Cast to Decimal if necessary
+        if not isinstance(outflow_inclusion, Decimal):
+            outflow_inclusion = Decimal(outflow_inclusion)
+        # Ensure the new value is in the range [0,1]
         if not (outflow_inclusion >= 0 and outflow_inclusion <= 1):
             raise ValueError("Money: outflow_inclusion must be in [0,1]")
         self._outflow_inclusion = outflow_inclusion
@@ -302,21 +352,38 @@ class SavingsAccount(Account):
     # type of asset, e.g. stocks/bonds?) which tracks acb independently.
     # Perhaps support rebalancing as well?
 
-    # Define aliases for `SavingsAccount` methods.
-    contribution = property(Account.inflow, Account.set_inflow, None,
-                            "A contribution to the `Account` object.")
+    # Define aliases for `SavingsAccount` properties.
+    @property
+    def contribution(self):
+        return self.inflow
 
-    withdrawal = property(Account.outflow, Account.set_outflow, None,
-                          "A withdrawal from the `Account` object.")
+    @contribution.setter
+    def contribution(self, val):
+        self.inflow = val
 
-    contribution_inclusion = property(Account.inflow_inclusion,
-                                      Account.set_inflow_inclusion,
-                                      None,
-                                      "Sets inclusion rate for contributions.")
+    @property
+    def withdrawal(self):
+        return self.outflow
 
-    withdrawal_inclusion = property(Account.outflow_inclusion,
-                                    Account.set_outflow_inclusion, None,
-                                    "Sets the inclusion rate for withdrawals.")
+    @withdrawal.setter
+    def withdrawal(self, val):
+        self.outflow = val
+
+    @property
+    def contribution_inclusion(self):
+        return self.inflow_inclusion
+
+    @contribution_inclusion.setter
+    def contribution_inclusion(self, val):
+        self.inflow_inclusion = val
+
+    @property
+    def withdrawal_inclusion(self):
+        return self.outflow_inclusion
+
+    @withdrawal_inclusion.setter
+    def withdrawal_inclusion(self, val):
+        self.outflow_inclusion = val
 
     # Define new methods
     def taxable_income(self, stock_allocation=None) -> Money:
@@ -370,9 +437,9 @@ class TaxableAccount(SavingsAccount):
             acb: Adjusted cost base of the taxable account. Used to
                 determine realized capital gains.
             (See Account for other args) """
-        super.__init__(self, balance, rate, inflow, outflow, inflow_inclusion,
-                       outflow_inclusion)
-        self.acb = acb if adb is not None else self.balance
+        super().__init__(balance, rate, inflow, outflow, inflow_inclusion,
+                         outflow_inclusion)
+        self.acb = acb if acb is not None else self.balance
 
     def taxable_income(self) -> Money:
         """ The total tax owing based on activity in the account.
@@ -401,21 +468,38 @@ class TaxableAccount(SavingsAccount):
 class Debt(Account):
     """ A debt with a balance and an interest rate. """
 
-    # Define aliases for `Debt` methods.
-    withdrawal = property(Account.inflow, Account.set_inflow, None,
-                          "A withdrawal from the `Debt` object.")
+    # Define aliases for `Account` properties.
+    @property
+    def withdrawal(self):
+        return self.inflow
 
-    payment = property(Account.outflow, Account.set_outflow, None,
-                       "A payment to the `Debt` object.")
+    @withdrawal.setter
+    def withdrawal(self, val):
+        self.inflow = val
 
-    withdrawal_inclusion = property(Account.inflow_inclusion,
-                                    Account.set_inflow_inclusion,
-                                    None,
-                                    "Sets inclusion rate for contributions.")
+    @property
+    def payment(self):
+        return self.outflow
 
-    payment_inclusion = property(Account.outflow_inclusion,
-                                 Account.set_outflow_inclusion, None,
-                                 "Sets the inclusion rate for withdrawals.")
+    @payment.setter
+    def payment(self, val):
+        self.outflow = val
+
+    @property
+    def withdrawal_inclusion(self):
+        return self.inflow_inclusion
+
+    @withdrawal_inclusion.setter
+    def withdrawal_inclusion(self, val):
+        self.inflow_inclusion = val
+
+    @property
+    def payment_inclusion(self):
+        return self.outflow_inclusion
+
+    @payment_inclusion.setter
+    def payment_inclusion(self, val):
+        self.outflow_inclusion = val
 
 
 class OtherProperty(Account):
