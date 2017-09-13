@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from dateutil.parser import parse
+from dateutil.relativedelta import relativedelta
 from numbers import Number
 import decimal
 from decimal import Decimal
@@ -75,6 +76,51 @@ class Person(object):
 
         self.retirement_date = retirement_date
 
+    @property
+    def retirement_date(self) -> datetime:
+        """ The retirement date of the Person. """
+        return self._retirement_date
+
+    @retirement_date.setter
+    def retirement_date(self, val) -> None:
+        """ Sets both retirement_date and retirement_age. """
+        if val is None:
+            self._retirement_date = None
+            self._retirement_age = None
+            return
+
+        # If input is not a `datetime`, attempt to parse. If some values
+        # (e.g. month/day) aren't given, use values from birth_date
+        if not isinstance(val, datetime):
+            default_date = self.birth_date
+            val = parse(str(val), default=default_date)
+
+        # `retirement_date` must follow `birth_date`
+        if val < birth_date:
+            raise ValueError("Person: retirement_date precedes birth_date")
+
+        self._retirement_date = val
+        self._retirement_age = self.age(val)
+
+    @property
+    def retirement_age(self) -> int:
+        """ The age of the Person at retirement """
+        return self._retirement_age
+
+    @retirement_age.setter
+    def retirement_age(self, val) -> None:
+        """ Sets retirement_age. """
+        # This method only sets values via the retirement_age property.
+        # That property's methods set both _retirement_age and
+        # _retirement_date, and performs associated checks.
+        if val is None:
+            self.retirement_date = None
+        else:
+            # Set retirement_date.
+            # Note that relativedelta will scold you if the input is not
+            # losslessly convertible to an int
+            self.retirement_date = self.birth_date + relativedelta(years=val)
+
     def age(self, date) -> int:
         """ The age of the `Person` as of `date`.
 
@@ -106,39 +152,10 @@ class Person(object):
         if date.replace(self.birth_date.year) < self.birth_date:
             age_ -= 1
 
-        # `age` cannot be negative
-        # NOTE: Should we return None instead of raising an error?
-        if age_ < 0:
-            raise ValueError("Person: date must be no earlier than birth_date")
+        # We allow age to be negative, if that's what the caller wants.
+        # if age_ < 0:
+        #    raise ValueError("Person: date must be after birth_date")
         return age_
-
-    # TODO: Reimplement this as a property tied to retirement_date.
-    # (Use relativedate to do the calculation - it's slower, but more
-    # accurate. Caching the result as a variable will avoid significant
-    # slowdown anyways.
-    # Consider adding a setter that also updates retirement_date
-    # it would take an int - use birth_date for month and day?])
-    def retirement_age(self) -> datetime:
-        """ The age at which the `Person` will retire.
-
-        Returns:
-            The age at which the `Person` will retire as a `datetime`.
-            `None` if the person's retirement date is unknown. """
-        if self.retirement_date is None:
-            return None
-        else:
-            # If retiring before your birthday, deduct 1 from age.
-            age = self.retirement_date.year - self.birth_date.year
-            if self.birth_date.replace(year=self.retirement_date.year) > \
-               self.retirement_date:
-                age -= 1
-            return age
-
-# NOTE: BasicContext is useful for debugging, as most errors are treated
-# as exceptions (instead of returning "NaN"). It is lower-precision than
-# ExtendedContext, which is the default; consider commenting this out
-# in a production environment
-decimal.setcontext(decimal.BasicContext)
 
 
 class Account(object):
@@ -164,8 +181,13 @@ class Account(object):
             included in gains/losses calculation.
     """
 
-    def __init__(self, balance, rate=None, inflow=None, outflow=None,
-                 inflow_inclusion=None, outflow_inclusion=None):
+    # NOTE: This originally used None as a default value, but we seemed
+    # to be interpreting None as 0 a lot in methods of this class and
+    # subclasses, and we weren't using None to convey meaningful
+    # information (other than that the value hasn't been set, but
+    # that doesn't appear to be important for this class).
+    def __init__(self, balance, rate=0, inflow=0, outflow=0,
+                 inflow_inclusion=0, outflow_inclusion=0):
         """ Constructor for `Account`.
 
         Receives `balance` and stores it as type `Money`. Optionally
@@ -193,7 +215,7 @@ class Account(object):
     @balance.setter
     def balance(self, balance) -> None:
         """ Sets the current balance """
-        if isinstance(balance, Money) or balance is None:
+        if isinstance(balance, Money):
             self._balance = balance
         else:
             self._balance = Money(balance)
@@ -210,7 +232,7 @@ class Account(object):
         """ Sets the rate.
 
         The rate must be convertible to Decimal """
-        if isinstance(rate, Decimal) or rate is None:
+        if isinstance(rate, Decimal):
             self._rate = rate
         else:
             self._rate = Decimal(rate)
@@ -225,7 +247,7 @@ class Account(object):
         """ Sets the inflow.
 
         Inflows must be convertible to type `Money`. """
-        if isinstance(inflow, Money) or inflow is None:
+        if isinstance(inflow, Money):
             self._inflow = inflow
         else:
             self._inflow = Money(inflow)
@@ -240,7 +262,7 @@ class Account(object):
         """ Sets the outflow.
 
         Outflows must be convertible to type `Money`. """
-        if isinstance(outflow, Money) or outflow is None:
+        if isinstance(outflow, Money):
             self._outflow = outflow
         else:
             self._outflow = Money(outflow)
@@ -255,10 +277,6 @@ class Account(object):
         """ Sets the inclusion rate for inflows.
 
         Inflows must be numeric and in [0,1] """
-        # Don't test values for None
-        if inflow_inclusion is None:
-            self._inflow_inclusion = None
-            return
         # Cast to Decimal if necessary
         if not isinstance(inflow_inclusion, Decimal):
             inflow_inclusion = Decimal(inflow_inclusion)
@@ -277,10 +295,6 @@ class Account(object):
         """ Sets the inclusion rate for outflows.
 
         Outflows must be convertible to Decimal and in [0,1]. """
-        # Don't test values for None
-        if outflow_inclusion is None:
-            self._outflow_inclusion = None
-            return
         # Cast to Decimal if necessary
         if not isinstance(outflow_inclusion, Decimal):
             outflow_inclusion = Decimal(outflow_inclusion)
@@ -289,7 +303,7 @@ class Account(object):
             raise ValueError("Money: outflow_inclusion must be in [0,1]")
         self._outflow_inclusion = outflow_inclusion
 
-    def change_in_balance(self) -> Money:
+    def next_balance(self) -> Money:
         """ The balance after applying inflows/outflows/rate.
 
         Inflows and outflows are included in the gains/losses
@@ -299,19 +313,9 @@ class Account(object):
         Returns:
             The new balance as a `Money` object.
         """
-        balance = self._balance * (1 + self._rate)
-
-        if self._inflow is not None:
-            balance += self._inflow
-            if self._inflow_inclusion is not None:
-                balance += self._inflow * self._rate * self._inflow_inclusion
-
-        if self._outflow is not None:
-            balance -= self._outflow.nominal_value
-            if self._outflow_inclusion is not None:
-                balance -= self._outflow * self._rate * self._outflow_inclusion
-
-        return balance
+        return self._balance * (1 + rate) + \
+            inflow * (rate * inflow_inclusion + 1) - \
+            outflow * (rate * outflow_inclusion + 1)
 
     def next_year(self):
         """ Applies inflows/outflows/rate/etc. to the balance.
@@ -323,7 +327,38 @@ class Account(object):
             method is called by an instance of a subclass, the method
             returns an instance of that subclass.)
         """
-        return type(self)(self.change_in_balance())
+        return type(self)(self.next_balance())
+
+    def max_outflow(self) -> Money:
+        """ The maximum outflow for the given year.
+
+        This is based on the balance/inflows/inclusions. Thus, if there
+        are inflows and they are partially included in the rate (and/or
+        if withdrawals are included in rate) then the total amount that
+        can be withdrawn is affected.
+        """
+        # This is the same equation as is used in change_in_value, but
+        # solved for result = 0.
+        return (self._balance * (1 + rate) +
+                inflow * (rate * inflow_inclusion + 1)) / \
+            (rate * outflow_inclusion + 1)
+
+    def balance_at_time(self, time) -> Money:
+        """ The balance at time `time`, accounting for flows/growth.
+
+        Args:
+            time (float, Decimal): a value in [0,1], where 1 is the
+                end of the year and 0 is the start.
+        Returns:
+            The balance as of the input time, as a Money object.
+        """
+        # TODO: Consider whether we even need this. It's only used in
+        # TaxableAccount, and it seems like a lot of code duplication
+        # would be necessary. It also implements some (likely
+        # inaccurate) assumptions.
+        # TODO: Consider defining an iterator over contributions and
+        # withdrawals and simply represent the assumptions there?
+        balance = self.balance
 
 
 class SavingsAccount(Account):
@@ -386,7 +421,7 @@ class SavingsAccount(Account):
         self.outflow_inclusion = val
 
     # Define new methods
-    def taxable_income(self, stock_allocation=None) -> Money:
+    def taxable_income(self, asset_allocation=None) -> Money:
         """ The total taxable income arising from growth of the account.
 
         Args:
@@ -398,13 +433,15 @@ class SavingsAccount(Account):
             The taxable income arising from growth of the account as a
                 `Money` object.
         """
-        return self.change_in_balance()
+        # Assume all growth is immediately taxable (e.g. as in a
+        # conventional savings account earning interest)
+        return self.next_balance()
 
 
 class RRSP(SavingsAccount):
     """ A Registered Retirement Savings Plan (Canada) """
 
-    def taxable_income(self, sources=None) -> Money:
+    def taxable_income(self, asset_allocation=None) -> Money:
         """ The total tax owing on withdrawals from the account.
 
         Args:
@@ -419,7 +456,7 @@ class RRSP(SavingsAccount):
 
 class TFSA(SavingsAccount):
     """ A Tax-Free Savings Account (Canada) """
-    def taxable_income(self, sources=None) -> Money:
+    def taxable_income(self, asset_allocation=None) -> Money:
         """ Returns $0 (TFSAs are not taxable.) """
         return Money(0)
 
@@ -429,8 +466,8 @@ class TaxableAccount(SavingsAccount):
 
     This account uses Canadian rules for determining taxable income. """
 
-    def __init__(self, balance, rate=None, inflow=None, outflow=None,
-                 inflow_inclusion=None, outflow_inclusion=None, acb=None):
+    def __init__(self, balance, rate=0, inflow=0, outflow=0,
+                 inflow_inclusion=0, outflow_inclusion=0, acb=0):
         """ Constructor for `TaxableAccount`
 
         Args:
@@ -441,7 +478,83 @@ class TaxableAccount(SavingsAccount):
                          outflow_inclusion)
         self.acb = acb if acb is not None else self.balance
 
-    def taxable_income(self) -> Money:
+    @property
+    def acb(self) -> Money:
+        """ Adjusted cost base. """
+        return self._acb
+
+    @acb.setter
+    def acb(self, val) -> None:
+        """ Sets acb. """
+        if isinstance(val, Money):
+            self._acb = val
+        else:
+            self._acb = Money(val)
+
+    def next_acb(self) -> Money:
+        """ Determines acb after contributions/withdrawals.
+
+        Since we don't receive a time series of in/outflow data, this
+        method depends on some important assumptions.
+
+        The key assumption is that all inflows and outflows are made as
+        lump sums at time (1-i), where `i` is the inclusion rate.
+
+        If the inclusion rates are the same, it is assumed that both
+        inflows and outflows occur simultaneously, in cash (i.e. before
+        contributions are invested or withdrawals are realized),
+        so that only the net in/outflow affects acb.
+
+        Otherwise, it is assumed that the full amount of the inflows is
+        invested immediately and the full amount of outflows are
+        realized immediately. It is up to calling code to avoid
+        scenarios where offsetting contributions/withdrawals are made in
+        cash at different inclusion rates.
+
+        Returns:
+            The acb after all contributions and withdrawals are made,
+                as a Money object.
+        """
+        # See the following link for information on calculating ACB:
+        # https://www.adjustedcostbase.ca/blog/how-to-calculate-adjusted-cost-base-acb-and-capital-gains/
+
+        # Deal with simultaneous contributions/withdrawals
+        if self._inflow_inclusion == self.outflow_inclusion:
+            net_flows = self.inflow - self.outflow
+            if net_flows >= 0:
+                return self.acb + net_flows
+            else:
+                # Figure out how much the balance grew from the start of
+                # the year up until the time of withdrawal.
+                balance = self.balance * \
+                    (1 + rate * (1 - self.outflow_inclusion))
+                # Calculate ACB according to statutory formula
+                return self.acb * (balance - self.withdrawal) / \
+                    balance
+        else:  # Deal with independent contributions/withdrawals
+            # First case: Contributions happen first
+            if self.inflow_inclusion > self.outflow_inclusion:
+                acb = self.acb + self.inflow
+                # Determine growth of initial balance, as above.
+                balance = self.balance * \
+                    (1 + rate * (1 - self.outflow_inclusion))
+                # Then add the growth of the contributions between the
+                # time of contribution and time of withdrawal
+                balance += self.inflow * \
+                    (1 + rate * (self.inflow_inclusion -
+                                 self.outflow_inclusion))
+                return acb * (balance - self.withdrawal) / balance
+            # Second case: Withdrawals happen first
+            else:
+                # Determine growth of initial balance, as above.
+                balance = self.balance * \
+                    (1 + rate * (1 - self.outflow_inclusion))
+                # Determine new acb post-withdrawal
+                acb = acb * (balance - self.withdrawal) / balance
+                # Add inflows to acb (no need to determine new balance)
+                return acb + self.inflow
+
+    def taxable_income(self, asset_allocation) -> Money:
         """ The total tax owing based on activity in the account.
 
         Tax can arise from realizing capital gains, receiving dividends
@@ -454,15 +567,8 @@ class TaxableAccount(SavingsAccount):
             Taxable income for the year from this account as a `Money`
                 object.
         """
-        net_flows = self.contribution - self.withdrawal
-        # Add net flows and their growth to balance
-        balance = self.balance + net_flows + \
-            (self.contribution * self.contribution_inclusion) - \
-            (self.withdrawal * self.withdrawal_inclusion)
-        # Add net flows (but not their growth) to ACB
-        acb = self.acb + net_flows
-        # Any withdrawals will realize capital gains
-        return self.withdrawal * (acb / balance)
+        # TODO: Implement this method
+        pass
 
 
 class Debt(Account):

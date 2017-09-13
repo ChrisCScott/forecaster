@@ -92,7 +92,7 @@ class TestPersonMethods(unittest.TestCase):
         self.assertEqual(person.birth_date, birth_date)
         self.assertEqual(person.retirement_date.year, retirement_date.year)
         self.assertEqual(person.birth_date.month, birth_date.month)
-        self.assertEqual(person.retirement_date.month, 
+        self.assertEqual(person.retirement_date.month,
                          retirement_date.month)
         self.assertEqual(person.birth_date.day, birth_date.day)
         self.assertEqual(person.retirement_date.day, retirement_date.day)
@@ -322,4 +322,9 @@ class TestAccountMethods(unittest.TestCase):
             self.test_init(SubType)
 
 if __name__ == '__main__':
+    
+    # NOTE: BasicContext is useful for debugging, as most errors are treated
+    # as exceptions (instead of returning "NaN"). It is lower-precision than
+    # ExtendedContext, which is the default.
+    decimal.setcontext(decimal.BasicContext)
     unittest.main()
