@@ -6,6 +6,8 @@ from dateutil.relativedelta import relativedelta
 from numbers import Number
 import decimal
 from decimal import Decimal
+from collections import namedtuple
+from more-itertools import peekable
 from moneyed import Money
 from settings import Settings
 # swapping custom Money class for py-moneyed's Money class
@@ -158,6 +160,17 @@ class Person(object):
         return age_
 
 
+Transaction = namedtuple("Transaction", "value time")
+""" Define a container for transactions.
+
+    Args:
+        value (Money): The value of the transaction. Positive values
+            are inflows and negative values are outflows.
+        time (float, Decimal): The point in the period at which the
+            transaction occurred, in the range [0,1].
+"""
+
+
 class Account(object):
     """ An account storing a `Money` balance.
 
@@ -303,6 +316,46 @@ class Account(object):
             raise ValueError("Money: outflow_inclusion must be in [0,1]")
         self._outflow_inclusion = outflow_inclusion
 
+    @staticmethod
+    def rate_for_period(start, end):
+        """ Returns the rate of return for the given period.
+
+        This corresponds to performance of the underlying assets and
+        excludes any transaction activity.
+        """
+        # TODO: Replace this calculation of the return for an
+        # arbitrary period with something correct. (This equation
+        # simply applies the APR, prorated to the length of the
+        # period. Due to compounding, this will inflate the return.)
+        # The corrected version will presumably involve an exponential
+        # function modelling a continuously-compounded rate of return.
+        return self.rate * (end - start)
+
+    def transactions(self):
+        """ Iterates over transactions to the account in order.
+
+        Since this class currently doesnt receive a time series of
+        in/outflow data, this method implements on some important
+        assumptions.
+
+        The key assumption is that all inflows and outflows are made as
+        lump sums at time (1-i), where `i` is the inclusion rate. Thus,
+        an inclusion rate of `1` means that the flow occurs immediately,
+        and an inclusion rate of `0` means that the flow occurs at the
+        end of the period.
+
+        Yields:
+            An ordered series of Transaction objects.
+        """
+        # TODO: Redesign the underlying data model to provide more
+        # robust transaction data.
+        if self.inflow_inclusion >= self.outflow_inclusion:
+            yield Transaction(self.inflow, 1 - self.inflow_inclusion)
+            yield Transaction(self.outflow, 1 - self.outflow_inclusion)
+        else:
+            yield Transaction(self.outflow, 1 - self.outflow_inclusion)
+            yield Transaction(self.inflow, 1 - self.inflow_inclusion)
+
     def next_balance(self) -> Money:
         """ The balance after applying inflows/outflows/rate.
 
@@ -348,7 +401,7 @@ class Account(object):
 
         Args:
             time (float, Decimal): a value in [0,1], where 1 is the
-                end of the year and 0 is the start.
+                end of the period and 0 is the start.
         Returns:
             The balance as of the input time, as a Money object.
         """
@@ -356,9 +409,18 @@ class Account(object):
         # TaxableAccount, and it seems like a lot of code duplication
         # would be necessary. It also implements some (likely
         # inaccurate) assumptions.
-        # TODO: Consider defining an iterator over contributions and
-        # withdrawals and simply represent the assumptions there?
         balance = self.balance
+        period_start = 0
+
+        # Apply each transaction to the balance in sequence.
+        for transaction in transactions:
+            balance *= 1 + self.rate_for_period(period_start, transaction.time)
+            balance += transaction.value
+
+        # Apply the rate of return for the last portion of the period.
+        # (Note that, if the last transaction is at the end of the
+        # period, this will have no effect on the balance.)
+        balance *= 1 + self.rate_for_period(period_start, 1)
 
 
 class SavingsAccount(Account):
@@ -494,23 +556,6 @@ class TaxableAccount(SavingsAccount):
     def next_acb(self) -> Money:
         """ Determines acb after contributions/withdrawals.
 
-        Since we don't receive a time series of in/outflow data, this
-        method depends on some important assumptions.
-
-        The key assumption is that all inflows and outflows are made as
-        lump sums at time (1-i), where `i` is the inclusion rate.
-
-        If the inclusion rates are the same, it is assumed that both
-        inflows and outflows occur simultaneously, in cash (i.e. before
-        contributions are invested or withdrawals are realized),
-        so that only the net in/outflow affects acb.
-
-        Otherwise, it is assumed that the full amount of the inflows is
-        invested immediately and the full amount of outflows are
-        realized immediately. It is up to calling code to avoid
-        scenarios where offsetting contributions/withdrawals are made in
-        cash at different inclusion rates.
-
         Returns:
             The acb after all contributions and withdrawals are made,
                 as a Money object.
@@ -518,43 +563,59 @@ class TaxableAccount(SavingsAccount):
         # See the following link for information on calculating ACB:
         # https://www.adjustedcostbase.ca/blog/how-to-calculate-adjusted-cost-base-acb-and-capital-gains/
 
-        # Deal with simultaneous contributions/withdrawals
-        if self._inflow_inclusion == self.outflow_inclusion:
-            net_flows = self.inflow - self.outflow
-            if net_flows >= 0:
-                return self.acb + net_flows
-            else:
-                # Figure out how much the balance grew from the start of
-                # the year up until the time of withdrawal.
-                balance = self.balance * \
-                    (1 + rate * (1 - self.outflow_inclusion))
-                # Calculate ACB according to statutory formula
-                return self.acb * (balance - self.withdrawal) / \
-                    balance
-        else:  # Deal with independent contributions/withdrawals
-            # First case: Contributions happen first
-            if self.inflow_inclusion > self.outflow_inclusion:
-                acb = self.acb + self.inflow
-                # Determine growth of initial balance, as above.
-                balance = self.balance * \
-                    (1 + rate * (1 - self.outflow_inclusion))
-                # Then add the growth of the contributions between the
-                # time of contribution and time of withdrawal
-                balance += self.inflow * \
-                    (1 + rate * (self.inflow_inclusion -
-                                 self.outflow_inclusion))
-                return acb * (balance - self.withdrawal) / balance
-            # Second case: Withdrawals happen first
-            else:
-                # Determine growth of initial balance, as above.
-                balance = self.balance * \
-                    (1 + rate * (1 - self.outflow_inclusion))
-                # Determine new acb post-withdrawal
-                acb = acb * (balance - self.withdrawal) / balance
-                # Add inflows to acb (no need to determine new balance)
-                return acb + self.inflow
+        # Set up initial conditions
+        balance = self.balance
+        period_start = 0
+        acb = self._acb
 
-    def taxable_income(self, asset_allocation) -> Money:
+        # Iterate over transactions in order of occurrence
+        for transaction in self.transactions():
+            # There are different acb formulae for inflows and outflows
+            if transaction.value >= 0:  # inflow
+                acb += transaction.value
+            else:  # outflow
+                acb *= (balance + transaction.value) / balance
+
+            # Reflect any growth in the balance since the previous
+            # transaction (plus the current transaction, of course)
+            balance += transaction.value + balance * \
+                self.rate_for_period(period_start, transaction.time)
+            period_start = transaction.time
+
+        # No need to incorporate growth following the last transaction
+        return acb
+
+    def capital_gains(self) -> Money:
+        """ The total capital gain for the period. """
+        # NOTE: See next_acb() for a very similarly-defined method.
+        # Any changes there should be reflected here, and (mostly) vice-
+        # versa.
+
+        # Set up initial conditions
+        balance = self.balance
+        period_start = 0
+        acb = self._acb
+        capital_gains = 0
+
+        # Iterate over transactions in order of occurrence
+        for transaction in self.transactions():
+            # There are different acb formulae for inflows and outflows
+            if transaction.value >= 0:  # inflow
+                acb += transaction.value
+            else:  # outflow
+                capital_gains += transaction.value * (1 - (acb / balance))
+                acb *= (balance + transaction.value) / balance
+
+            # Reflect any growth in the balance since the previous
+            # transaction (plus the current transaction, of course)
+            balance += transaction.value + balance * \
+                self.rate_for_period(period_start, transaction.time)
+            period_start = transaction.time
+
+        # No need to incorporate growth following the last transaction
+        return capital_gains
+
+    def taxable_income(self, asset_allocation=None) -> Money:
         """ The total tax owing based on activity in the account.
 
         Tax can arise from realizing capital gains, receiving dividends
@@ -563,12 +624,22 @@ class TaxableAccount(SavingsAccount):
         sources of income. See the following link for more information:
         http://www.moneysense.ca/invest/asset-ocation-everything-in-its-place/
 
+        Args:
+            asset_allocation: # TODO: Define this arg
+
         Returns:
             Taxable income for the year from this account as a `Money`
                 object.
         """
-        # TODO: Implement this method
-        pass
+        # If no asset allocation is provided, assume 100% of the return
+        # is capital gains.
+        if asset_allocation is None:
+            return self.capital_gains()
+
+        # TODO: Handle asset allocation in such a way that growth in the
+        # account can be apportioned between capital gains, dividends,
+        # etc.
+        return self.capital_gains()
 
 
 class Debt(Account):
