@@ -37,6 +37,7 @@ class Settings:
         # TODO: update to match an actual contribution strategy
         contribution_rate_strategy = 1
         contribution_rate = 0.5
+        contribution_timing = 'end'
         # TODO: update to match an actual allocation strategy
         allocation_model = 1
         adjust_allocation_for_early_retirement = True
@@ -45,6 +46,7 @@ class Settings:
         # TODO: update to match an actual withdrawal strategy
         withdrawal_strategy = 2
         withdrawal_rate = 100000
+        withdrawal_timing = 'end'
 
 # Det default currency to CAD
 Settings.set_default_currency(moneyed.CAD)

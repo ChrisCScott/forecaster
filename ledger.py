@@ -8,10 +8,10 @@ import math
 import decimal
 from decimal import Decimal
 from collections import namedtuple
+from collections import Sequence
+import moneyed
 from moneyed import Money
 from settings import Settings
-# swapping custom Money class for py-moneyed's Money class
-# from money import Money
 
 
 class Person(object):
@@ -172,94 +172,142 @@ Transaction = namedtuple("Transaction", "value time")
 """
 
 
-class Asset(object):
+class Asset(Money):
     """ An asset having a value and an adjusted cost base.
 
     Attributes:
-        value (Money): The nominal value of the asset.
         acb (Money): The adjusted cost base of the asset.
     """
 
-    def __init__(self, value, acb=None):
+    def __init__(self, amount=Decimal('0.0'),
+                 currency=moneyed.DEFAULT_CURRENCY_CODE,
+                 acb=None):
         """ Constructor for `Asset` """
-        self.value = value
+        # Let the Money class do its work:
+        super().__init__(amount, currency)
+
         if acb is None:
-            self.acb = value
+            self.acb = self.amount
         else:
             self.acb = acb
 
-    def buy(self, value, transaction_cost=0):
+    def buy(self, amount, transaction_cost=0):
         """ Increase the asset value and update its acb.
 
         Args:
-            value (Money): The amount of this asset class to purchase.
+            amount (Money): The amount of this asset class to purchase.
             transaction_cost (Money): The cost of the buy operation.
                 This amount is added to the acb. Optional.
         """
-        self.value += value
-        self.acb += value + transaction_cost
+        self.amount += amount
+        self.acb += amount + transaction_cost
 
-    def sell(self, value, transaction_cost=0):
+    def sell(self, amount, transaction_cost=0):
         """ Decrease the asset value and update its acb.
 
         Args:
-            value (Money): The amount of the asset class to sell.
+            amount (Money): The amount of the asset class to sell.
             transaction_cost (Money): The cost of the sell operation.
                 This amount is subtracted from the acb. Optional.
         """
-        self.acb -= self.acb * value / self.value
-        self.value -= value
+        self.acb -= self.acb * amount / self.amount
+        self.amount -= amount
 
 
 class Account(object):
     """ An account storing a `Money` balance.
 
-    Has a `balance` and, optionally, a rate of growth `rate` expressed
-    as an apr (annual percentage rate). For example, a 5% apr could be
-    passed as `rate=0.05`.
+    Has a `balance` indicating the balance of the account at the start
+    of the period (generally a year). Optionally, a rate of growth,
+    `rate`, expressed as an apr (annual percentage rate) can be given.
+    For example, a 5% apr could be passed as `rate=0.05`.
 
-    May optionally also recieve one or more transactions
-    In addition to the balance, `Account` objects have a rate of return
-    (`rate`) as well as `inflow` and `outflow` attributes. These
-    attributes do not modify the `balance` directly; rather, once the
-    attributes have been set, `next_year()` may be called to generate
-    a new `Account` object with an updated balance.
+    May optionally also recieve one or more transactions defining a time
+    series of inflows and outflows from the account. These transactions
+    do not modify the `balance` directly; rather, they are applied
+    to the balance, with any growth, when `next_year()` is called.
+    A new `Account` object with an updated balance is generated; the
+    calling object's balance does not change.
+
+    Examples:
+        `account1 = Account(100, 0.05)`
+        `account2 = account1.next_year()`
+        `account1.balance == 100` evaluates to True
+        `account2.balance == 105` evaluates to True
 
     Attributes:
         balance (Money): The account balance at a point in time
-        rate (Decimal): The rate of gains/losses, as a percentage of
-            the balance, over the following year.
-        inflow (Money): The amount of money added to the account
-            over the following year.
-        outflow (Money): The amount of money removed from the account
-            over the following year.
-        inflow_inclusion (Decimal): The percentage of the inflow to be
-            included in gains/losses calculation.
-        outflow_inclusion (Decimal): The percentage of the outflow to be
-            included in gains/losses calculation.
+        apr (float, Decimal): The annual percentage rate, i.e. the rate
+            of return after compounding. Optional.
+        transactions (Money, list, dict): One or more transactions.
+            May be given as a Money object or a list of Money objects.
+            In that case, each transaction is modelled as a lump sum
+            according to the timing given by `*_timing_default`.
+            May be given as (and will be converted to) a dict of
+            `{when:value}` pairs, where:
+                `when` (float, Decimal, str): Describes the timing of
+                    the transaction.
+                    Must be in the range [0,1] or in ('start', 'end').
+                    The definition of this range is counterintuitive:
+                    0 corresponds to 'end' and 1 corresponds to 'start'.
+                    (This is how `numpy` defines its `when` argument
+                    for financial methods.)
+                `value` (Money): The inflows and outflows at time `when`.
+                    Positive for inflows and negative for outflows.
+                    Each element must be a Money object (or convertible
+                    to one).
+        nper (int, str): The compounding frequency. May be given as
+            a number of periods (an int) or via a code (a str). Codes
+            include:
+                C: Continuous (default)
+                D: Daily
+                W: Weekly
+                BW: Biweekly (every two weeks)
+                SM: Semi-monthly (twice a month)
+                M: Monthly
+                BM: Bimonthly (every two months)
+                Q: Quarterly (every 3 months)
+                SA: Semi-annually (twice a year)
+                A: Annually
+        settings (Settings): Defines default values (initial year,
+            inflow/outflow transaction timing, etc.). Optional; uses
+            global Settings class attributes if None given.
     """
 
-    # NOTE: This originally used None as a default value, but we seemed
-    # to be interpreting None as 0 a lot in methods of this class and
-    # subclasses, and we weren't using None to convey meaningful
-    # information (other than that the value hasn't been set, but
-    # that doesn't appear to be important for this class).
-    def __init__(self, balance, rate=0, inflow=0, outflow=0,
-                 inflow_inclusion=0, outflow_inclusion=0):
-        """ Constructor for `Account`.
+    def __init__(self, balance, apr=0, transactions={}, nper='C',
+                 settings=None):
+        """ Constructor for `Account`. """
+        # This class provides some secondary attributes that are
+        # evaluated lazily and cached until a primary attribute is
+        # changed, at which time the cache is invalidated and we
+        # force recalculation when that value is next called.
+        # Cached attributes are those not provided directly to __init__:
+        #   returns
+        #   max_outflow
+        #   next_balance
+        #   acb
+        #   taxable_income
+        self._cache = {}
 
-        Inflows and outflows to the account may be modelled
-        independently. They may optionally be included in any returns or
-        losses (arising from `rate`) based on corresponding
-        `*_inclusion` arguments. This allows the `Account` object to
-        model different timing strategies for inflows and outflows.
-        """
+        # Now set the primary (non-lazy) attributes:
         self.balance = balance
-        self.rate = rate
-        self.inflow = inflow
-        self.outflow = outflow
-        self.inflow_inclusion = inflow_inclusion
-        self.outflow_inclusion = outflow_inclusion
+        self.apr = apr
+        self.nper = self._conv_nper(compounding)
+        self.settings = settings if settings is not None else Settings
+        self.transactions = transactions
+
+    def cached_property(property):
+        """ A decorator for cached properties. """
+        def wrapper(self, *args):
+            # If the property is not in the cache, call it and add it.
+            if property.__name__ not in self._cache:
+                self._cache[property.__name__] = property(self, *args)
+            return self._cache[property.__name__]
+        return wrapper
+
+    def invalidate_cache(self):
+        """ Invalidates the cache for all cached attributes. """
+        self._cache = {}
 
     @property
     def balance(self) -> Money:
@@ -274,113 +322,261 @@ class Account(object):
         else:
             self._balance = Money(balance)
 
+        # This is a primary attribute, so invalidate the cache.
+        self._invalidate_cache()
+
     @property
-    def rate(self) -> Decimal:
-        """ The rate (interest rate, rate of return, etc.).
+    def apr(self) -> Decimal:
+        """ The rate (interest rate, rate of return, etc.) as an apr.
 
         This determines the growth/losses in the account balance. """
+        return self._apr
+
+    @rate.setter
+    def apr(self, apr) -> None:
+        """ Sets the apr.
+
+        The apr must be convertible to Decimal """
+        self._apr = Decimal(apr)
+        # Also update rate
+        self._rate = self.apr_to_rate(self._apr, self._nper)
+
+        # This is a primary attribute, so invalidate the cache.
+        self._invalidate_cache()
+
+    @property
+    def rate(self) -> Decimal:
+        """ The pre-compounding annual rate """
         return self._rate
 
     @rate.setter
     def rate(self, rate) -> None:
-        """ Sets the rate.
+        """ Sets the rate. """
+        self._rate = Decimal(rate)
+        # Also update apr. This also invalidates the cache.
+        self._apr = self.rate_to_apr(self._rate, self._nper)
 
-        The rate must be convertible to Decimal """
-        if isinstance(rate, Decimal):
-            self._rate = rate
-        else:
-            self._rate = Decimal(rate)
+    @staticmethod
+    def apr_to_rate(apr, nper=None) -> Decimal:
+        """ The annual rate of return pre-compounding.
 
-    @property
-    def inflow(self) -> Money:
-        """ The inflow to the `Account` object """
-        return self._inflow
-
-    @inflow.setter
-    def inflow(self, inflow) -> None:
-        """ Sets the inflow.
-
-        Inflows must be convertible to type `Money`. """
-        if isinstance(inflow, Money):
-            self._inflow = inflow
-        else:
-            self._inflow = Money(inflow)
-
-    @property
-    def outflow(self) -> Money:
-        """ The outflow from the `Account` object """
-        return self._outflow
-
-    @outflow.setter
-    def outflow(self, outflow) -> None:
-        """ Sets the outflow.
-
-        Outflows must be convertible to type `Money`. """
-        if isinstance(outflow, Money):
-            self._outflow = outflow
-        else:
-            self._outflow = Money(outflow)
-
-    @property
-    def inflow_inclusion(self) -> Decimal:
-        """ The inclusion rate for inflows when applying the rate """
-        return self._inflow_inclusion
-
-    @inflow_inclusion.setter
-    def inflow_inclusion(self, inflow_inclusion) -> None:
-        """ Sets the inclusion rate for inflows.
-
-        Inflows must be numeric and in [0,1] """
-        # Cast to Decimal if necessary
-        if not isinstance(inflow_inclusion, Decimal):
-            inflow_inclusion = Decimal(inflow_inclusion)
-        # Ensure the new value is in the range [0,1]
-        if not (inflow_inclusion >= 0 and inflow_inclusion <= 1):
-            raise ValueError("Money: inflow_inclusion must be in [0,1]")
-        self._inflow_inclusion = inflow_inclusion
-
-    @property
-    def outflow_inclusion(self) -> Decimal:
-        """ The inclusion rate for outflow amounts """
-        return self._outflow_inclusion
-
-    @outflow_inclusion.setter
-    def outflow_inclusion(self, outflow_inclusion) -> None:
-        """ Sets the inclusion rate for outflows.
-
-        Outflows must be convertible to Decimal and in [0,1]. """
-        # Cast to Decimal if necessary
-        if not isinstance(outflow_inclusion, Decimal):
-            outflow_inclusion = Decimal(outflow_inclusion)
-        # Ensure the new value is in the range [0,1]
-        if not (outflow_inclusion >= 0 and outflow_inclusion <= 1):
-            raise ValueError("Money: outflow_inclusion must be in [0,1]")
-        self._outflow_inclusion = outflow_inclusion
-
-    def transactions(self):
-        """ Iterates over transactions to the account in order.
-
-        Since this class currently doesnt receive a time series of
-        in/outflow data, this method implements on some important
-        assumptions.
-
-        The key assumption is that all inflows and outflows are made as
-        lump sums at time (1-i), where `i` is the inclusion rate. Thus,
-        an inclusion rate of `1` means that the flow occurs immediately,
-        and an inclusion rate of `0` means that the flow occurs at the
-        end of the period.
-
-        Yields:
-            An ordered series of Transaction objects.
+        Args:
+            apr (Decimal): Annual percentage rate (i.e. a measure of the
+                rate post-compounding).
+            nper (int): The number of compounding periods. Optional.
+                If not given, compounding is continuous.
         """
-        # TODO: Redesign the underlying data model to provide more
-        # robust transaction data.
-        if self.inflow_inclusion >= self.outflow_inclusion:
-            yield Transaction(self.inflow, 1 - self.inflow_inclusion)
-            yield Transaction(self.outflow, 1 - self.outflow_inclusion)
+        nper = self._conv_nper(nper)
+        if nper is None:  # Continuous
+            # Solve P(1+apr)=Pe^rt for r, given t=1:
+            # r = log(1+apr)/t = log(1+apr)
+            return math.log(1+apr)
+        else:  # Periodic
+            # Solve P(1+apr)=P(1+r/n)^nt for r, given t=1
+            # r = n [(1 + apr)^-nt - 1] = n [(1 + apr)^-n - 1]
+            return nper * (math.pow(1+apr, -nper)-1)
+
+    @staticmethod
+    def rate_to_apr(rate, nper=None) -> Decimal:
+        """ The post-compounding annual percentage rate of return.
+
+        Args:
+            rate (Decimal): Rate of return (pre-compounding).
+            nper (int): The nuber of compounding periods. Optional.
+                If not given, compounding is continuous.
+        """
+        nper = self._conv_nper(nper)
+        if nper is None:  # Continuous
+            # Solve P(1+apr)=Pe^rt for apr, given t=1:
+            # apr = e^rt - 1 = e^r - 1
+            return math.exp(rate) - 1
+        else:  # Periodic
+            # Solve P(1+apr)=P(1+r/n)^nt for apr, given t=1
+            # apr = (1 + r / n)^nt - 1 = (1 + r / n)^n - 1
+            return math.pow(1 + rate/nper, nper) - 1
+
+    @property
+    def nper(self) -> int:
+        """ Number of compounding periods.
+
+        Returns:
+            An int if there is a discrete number of compounding periods,
+                or None if compounding is continuous.
+        """
+        return self._nper
+
+    @nper.setter
+    def nper(self, nper) -> None:
+        """ Sets nper. """
+        self._nper = self._conv_nper(nper)
+
+        # This is a primary attribute, so invalidate the cache.
+        self._invalidate_cache()
+
+    @staticmethod
+    def _conv_nper(nper) -> int:
+        """ Number of periods in a year given a compounding frequency.
+
+        Args:
+            nper (str, int): A code (str) indicating a compounding
+                frequency (e.g. 'W', 'M'), an int, or None
+
+        Returns:
+            An int indicating the number of compounding periods in a
+                year or None if compounding is continuous.
+        """
+        # nper can be None, so return gracefully.
+        if nper is None:
+            return None
+
+        # Try to parse a string based on known compounding frequencies
+        if isinstance(nper, str):
+            return {  # Fancy python-style switch statement
+                'C': None,
+                'D': 365,
+                'W': 52,
+                'BW': 26,
+                'SM': 24,
+                'M': 12,
+                'BM': 6,
+                'Q': 4,
+                'SA': 2,
+                'A': 1}[nper]
+        else:  # Attempt to cast to int
+            return int(freq)
+
+    @property
+    def transactions(self) -> None:
+        """ A dict of {when:value} pairs. """
+        return self._transactions
+
+    @transactions.setter
+    def transactions(self, transactions) -> dict:
+        """ Sets transactions and does associated type-checking. """
+        # These are long, nested calls, so let's shorten them
+        in_t = self.settings.StrategyDefaults.contribution_timing
+        out_t = self.settings.StrategyDefaults.withdrawal_timing
+
+        # We have some typechecking to do, so we'll start with an
+        # empty dict and add the elements one at a time.
+        self._transactions = {}
+
+        # Simplest case: It's already a dict!
+        # Add elements one-at-a-time so that we can do conversions.
+        if isinstance(transactions, dict):
+            for when, value in transactions:
+                self._add_transaction(value, when)
+
+        # If it's a list, fill in the key values based on defaults
+        elif isinstance(transactions, Sequence):
+            # Add each transaction to the dict
+            for value in transactions:
+                if value >= 0:  # Positive transactions are inflows
+                    self._add_transaction(value, in_t)
+                else:  # Negative transactions are outflows
+                    self._add_transaction(value, out_t)
+
+        # If it's not a list or dict, interpret as a single transaction.
         else:
-            yield Transaction(self.outflow, 1 - self.outflow_inclusion)
-            yield Transaction(self.inflow, 1 - self.inflow_inclusion)
+            if value >= 0:
+                self._add_transaction(value, in_t)
+            else:
+                self._add_transaction(value, out_t)
+
+        # This is a primary attribute, so invalidate the cache.
+        self._invalidate_cache()
+
+    def _add_transaction(self, value, when) -> None:
+        """ Adds a transaction to the time series of transactions.
+
+        This is a helper function. It doesn't clear the cache or do
+        anything else to clean up the object - that's up to the caller.
+        If you're calling this, you probably need to call the
+        `_invalidate_cache()` method on this object before calling
+        any other secondary/cached properties.
+
+        Args:
+            value (Money): The value of the transaction.
+            when (float, str): The timing of the transaction. (See
+                class definition for more on this parameter.)
+
+        Raises:
+            decimal.InvalidOperation: Transactions must be convertible
+                to type Money and `when` must be convertible to type
+                Decimal
+            ValueError: `when` must be in [0,1]
+        """
+        # Convert `when` to a Decimal value.
+        # Even if already a Decimal, this checks `when` for value/type
+        when = self._when_conv(when)
+
+        # Try to cast non-Money objects to type Money
+        if not isinstance(value, Money):
+            value = Money(value)
+
+        # If there's already a transaction at this time, then add them
+        # together; simultaneous transactions are modelled as one sum.
+        # NOTE: An earlier implementation allowed for separately
+        # representing simultaneous transactions by making each value
+        # in the dict a list of Money objects. This added some
+        # complexity and overhead without any clear benefit, but the
+        # original implementation is commented out below just in case.
+        if when in self._transactions:  # Add to existing value
+            self._transactions[when] += value
+            # self._transactions[when].append(value)
+        else:  # Create new when/value pair.
+            self._transactions[when] = value
+            # self._transactions[when] = list(value)
+
+    @staticmethod
+    def _when_conv(when) -> Decimal:
+        """ Converts various types of `when` inputs to Decimal.
+
+        Args:
+            `when` (float, Decimal, str): Describes the timing of
+                the transaction.
+                Must be in the range [0,1] or in ('start', 'end').
+                The definition of this range is counterintuitive:
+                0 corresponds to 'end' and 1 corresponds to 'start'.
+                (This is how `numpy` defines its `when` argument
+                for financial methods.)
+
+        Raises:
+            decimal.InvalidOperation: `when` must be convertible to
+                type Decimal
+            ValueError: `when` must be in [0,1]
+        """
+        # Attempt to convert a string input first
+        if isinstance(when, str):
+            # Throws a KeyError if the str isn't 'end' or 'start'
+            return {'end': 0, 'start': 1}[when]
+
+        # Otherwise, convert to Decimal (this works with Decimal input)
+        when = Decimal(when)
+        # Ensure the new value is in the range [0,1]
+        if when > 1 or when < 0:
+            raise ValueError("Money: 'when' must be in [0,1]")
+        return when
+
+    def __iter__(self):
+        """ Iterates over {when:value} transaction pairs. """
+        return self._transactions.items()
+
+    @staticmethod
+    def growth(val, rate, start, end, nper) -> Money:
+        """ Growth of `val` over period `[start,end]` given `rate`. """
+        # TODO: Complete docstring
+        # TODO: Implement compounding-aware growth function
+
+        pass
+
+    @cached_property
+    def returns(self) -> Money:
+        """ Total growth/losses in the account, after transactions. """
+        balance = self.balance
+        growth = 0
+        for when, value in self:
+            growth = balance
 
     def next_balance(self) -> Money:
         """ The balance after applying inflows/outflows/rate.
@@ -392,9 +588,15 @@ class Account(object):
         Returns:
             The new balance as a `Money` object.
         """
-        return self._balance * (1 + rate) + \
-            inflow * (rate * inflow_inclusion + 1) - \
-            outflow * (rate * outflow_inclusion + 1)
+        # Cache the result for future calls.
+        # TODO: Update the below calculation to use the new transactions
+        # dict with `when` timings.
+        if 'next_balance' in self._cache and self._cache['next_balance']:
+            self._next_balance = self._balance * (1 + rate) + \
+                inflow * (rate * inflow_inclusion + 1) - \
+                outflow * (rate * outflow_inclusion + 1)
+            self._cache['next_balance'] = True
+        return self._next_balance
 
     def next_year(self):
         """ Applies inflows/outflows/rate/etc. to the balance.
@@ -447,6 +649,11 @@ class Account(object):
         # (Note that, if the last transaction is at the end of the
         # period, this will have no effect on the balance.)
         balance *= 1 + self.rate_for_period(period_start, 1)
+
+    def _invalidate_cache(self):
+        """ Invalidates the cache for all cached attributes. """
+        for key in self._cache:
+            self._cache[key] = False
 
 
 class SavingsAccount(Account):
