@@ -41,6 +41,13 @@ class Scenario(collections.Sequence):
             TypeError: Non-list or non-int provided as input.
             ValueError: Input lists not of matching lengths.
         '''
+        # TODO: Allow for scalar, list, or dict inputs.
+        # Implement via defaultdict class.
+        # Allow caller to pass a Settings object and use that for
+        # default values. If None, use the class values for Settings
+        # This should allow for deleting the ConstantScenario and
+        # DefaultScenario classes entirely, since defaultdict is
+        # lightweight and efficient.
         if not (isinstance(inflation, collections.Sequence) and
                 isinstance(stock_return, collections.Sequence) and
                 isinstance(bond_return, collections.Sequence)):

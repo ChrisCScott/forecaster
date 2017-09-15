@@ -113,10 +113,20 @@ class TestPersonMethods(unittest.TestCase):
         date = date + relativedelta(days=2)
         self.assertEqual(self.person.age(date), 20)
 
+        # NOTE: The following tests for negative ages, and should
+        # probably be left undefined (i.e. implementation-specific)
+
         # Test output for day before person's birth
         date = self.birth_date - relativedelta(days=1)
-        with self.assertRaises(ValueError):
-            self.person.age(date)
+        self.assertEqual(self.person.age(date), -1)
+
+        # Test output for one year before person's birth
+        date = self.birth_date - relativedelta(years=1)
+        self.assertEqual(self.person.age(date), -1)
+
+        # Test output for one year and a day before person's birth
+        date = self.birth_date - relativedelta(years=1, days=1)
+        self.assertEqual(self.person.age(date), -2)
 
         # Repeat the above, but with strings
         date = str(self.birth_date + relativedelta(years=20))
@@ -130,44 +140,14 @@ class TestPersonMethods(unittest.TestCase):
         self.assertEqual(self.person.age(date), 20)
 
         date = str(self.birth_date - relativedelta(days=1))
-        with self.assertRaises(ValueError):
-            self.person.age(date)
+        self.assertEqual(self.person.age(date), -1)
 
         # Finally, test ints as input
         date = self.birth_date.year + 20
         self.assertEqual(self.person.age(date), 20)
 
         date = self.birth_date.year - 1
-        with self.assertRaises(ValueError):
-            self.person.age(date)
-
-    @staticmethod
-    def num_years(date1, date2):
-        """ Returns the number of full years between date1 and date2.
-
-        Helper method for test_retirement_age.
-
-        Example:
-            num_years(datetime(2000,1,1), datetime(2001,1,1)) = 1
-            num_years(datetime(2000,1,2), datetime(2001,1,1)) = 0
-
-        Returns:
-            An int. The number of full years between date1 and date2.
-                Hours/seconds/etc. are ignored.
-        """
-        # Return the difference in years, unless date2's date is earlier
-        # in the calendar than date1's date (disregarding the year)
-        year_diff = date2.year - date1.year
-        month_diff = date2.month - date1.month
-        day_diff = date2.day - date1.day
-
-        if month_diff == 0:   # Same month in date2...
-            if day_diff < 0:  # ... but an earlier day
-                year_diff -= 1
-        elif month_diff < 0:  # Earlier month in date2
-            year_diff -= 1
-
-        return year_diff
+        self.assertEqual(self.person.age(date), -1)
 
     def test_retirement_age(self):
         """ Tests person.retirement_age """
@@ -175,28 +155,28 @@ class TestPersonMethods(unittest.TestCase):
         # Test that the retirement age for stock person is accurate
         delta = relativedelta(self.person.retirement_date,
                               self.person.birth_date)
-        self.assertEqual(self.person.retirement_age(), delta.years)
-        self.assertIsInstance(self.person.retirement_age(), int)
+        self.assertEqual(self.person.retirement_age, delta.years)
+        self.assertIsInstance(self.person.retirement_age, int)
 
         # Test retiring on 65th birthday
         retirement_date = self.birth_date + relativedelta(years=65)
         person = Person(self.name, self.birth_date, retirement_date)
-        self.assertEqual(self.person.retirement_age(), 65)
+        self.assertEqual(person.retirement_age, 65)
 
         # Test retiring on day after 65th birthday
         retirement_date = self.birth_date + relativedelta(years=65, day=1)
         person = Person(self.name, self.birth_date, retirement_date)
-        self.assertEqual(self.person.retirement_age(), 65)
+        self.assertEqual(person.retirement_age, 65)
 
         # Test retiring on day before 65th birthday
         retirement_date = self.birth_date + relativedelta(years=65) - \
             relativedelta(days=1)
         person = Person(self.name, self.birth_date, retirement_date)
-        self.assertEqual(self.person.retirement_age(), 64)
+        self.assertEqual(person.retirement_age, 64)
 
         # Test person with no known retirement date
-        self.person = Person(self.name, self.birth_date)
-        self.assertIsNone(self.person.retirement_age())
+        person = Person(self.name, self.birth_date)
+        self.assertIsNone(person.retirement_age)
 
 
 class TestAccountMethods(unittest.TestCase):
@@ -230,11 +210,11 @@ class TestAccountMethods(unittest.TestCase):
         # Basic test: Only balance provided.
         account = AccountType(balance)
         self.assertEqual(account.balance, balance)
-        self.assertIsNone(account.rate)
-        self.assertIsNone(account.inflow)
-        self.assertIsNone(account.outflow)
-        self.assertIsNone(account.inflow_inclusion)
-        self.assertIsNone(account.outflow_inclusion)
+        self.assertEqual(account.rate, 0)
+        self.assertEqual(account.inflow, Money(0))
+        self.assertEqual(account.outflow, Money(0))
+        self.assertEqual(account.inflow_inclusion, 0)
+        self.assertEqual(account.outflow_inclusion, 0)
 
         # Test with (Decimal-convertible) strings as input
         balance = "0"
@@ -322,7 +302,6 @@ class TestAccountMethods(unittest.TestCase):
             self.test_init(SubType)
 
 if __name__ == '__main__':
-    
     # NOTE: BasicContext is useful for debugging, as most errors are treated
     # as exceptions (instead of returning "NaN"). It is lower-precision than
     # ExtendedContext, which is the default.

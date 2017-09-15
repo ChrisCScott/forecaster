@@ -4,10 +4,10 @@ from datetime import datetime
 from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
 from numbers import Number
+import math
 import decimal
 from decimal import Decimal
 from collections import namedtuple
-from more-itertools import peekable
 from moneyed import Money
 from settings import Settings
 # swapping custom Money class for py-moneyed's Money class
@@ -98,7 +98,7 @@ class Person(object):
             val = parse(str(val), default=default_date)
 
         # `retirement_date` must follow `birth_date`
-        if val < birth_date:
+        if val < self.birth_date:
             raise ValueError("Person: retirement_date precedes birth_date")
 
         self._retirement_date = val
@@ -156,7 +156,8 @@ class Person(object):
 
         # We allow age to be negative, if that's what the caller wants.
         # if age_ < 0:
-        #    raise ValueError("Person: date must be after birth_date")
+            # raise ValueError("Person: date must be after birth_date")
+
         return age_
 
 
@@ -171,9 +172,53 @@ Transaction = namedtuple("Transaction", "value time")
 """
 
 
+class Asset(object):
+    """ An asset having a value and an adjusted cost base.
+
+    Attributes:
+        value (Money): The nominal value of the asset.
+        acb (Money): The adjusted cost base of the asset.
+    """
+
+    def __init__(self, value, acb=None):
+        """ Constructor for `Asset` """
+        self.value = value
+        if acb is None:
+            self.acb = value
+        else:
+            self.acb = acb
+
+    def buy(self, value, transaction_cost=0):
+        """ Increase the asset value and update its acb.
+
+        Args:
+            value (Money): The amount of this asset class to purchase.
+            transaction_cost (Money): The cost of the buy operation.
+                This amount is added to the acb. Optional.
+        """
+        self.value += value
+        self.acb += value + transaction_cost
+
+    def sell(self, value, transaction_cost=0):
+        """ Decrease the asset value and update its acb.
+
+        Args:
+            value (Money): The amount of the asset class to sell.
+            transaction_cost (Money): The cost of the sell operation.
+                This amount is subtracted from the acb. Optional.
+        """
+        self.acb -= self.acb * value / self.value
+        self.value -= value
+
+
 class Account(object):
     """ An account storing a `Money` balance.
 
+    Has a `balance` and, optionally, a rate of growth `rate` expressed
+    as an apr (annual percentage rate). For example, a 5% apr could be
+    passed as `rate=0.05`.
+
+    May optionally also recieve one or more transactions
     In addition to the balance, `Account` objects have a rate of return
     (`rate`) as well as `inflow` and `outflow` attributes. These
     attributes do not modify the `balance` directly; rather, once the
@@ -202,10 +247,6 @@ class Account(object):
     def __init__(self, balance, rate=0, inflow=0, outflow=0,
                  inflow_inclusion=0, outflow_inclusion=0):
         """ Constructor for `Account`.
-
-        Receives `balance` and stores it as type `Money`. Optionally
-        receives a `rate` of return/loss/interest/etc (of numeric type).
-        For example, a 5% interest rate could be passed as `rate=0.05`.
 
         Inflows and outflows to the account may be modelled
         independently. They may optionally be included in any returns or
@@ -315,21 +356,6 @@ class Account(object):
         if not (outflow_inclusion >= 0 and outflow_inclusion <= 1):
             raise ValueError("Money: outflow_inclusion must be in [0,1]")
         self._outflow_inclusion = outflow_inclusion
-
-    @staticmethod
-    def rate_for_period(start, end):
-        """ Returns the rate of return for the given period.
-
-        This corresponds to performance of the underlying assets and
-        excludes any transaction activity.
-        """
-        # TODO: Replace this calculation of the return for an
-        # arbitrary period with something correct. (This equation
-        # simply applies the APR, prorated to the length of the
-        # period. Due to compounding, this will inflate the return.)
-        # The corrected version will presumably involve an exponential
-        # function modelling a continuously-compounded rate of return.
-        return self.rate * (end - start)
 
     def transactions(self):
         """ Iterates over transactions to the account in order.
@@ -443,11 +469,14 @@ class SavingsAccount(Account):
             to be included in gains/losses calculation.
     """
 
-    # TODO: Expand SavingsAccount to handle multiple asset classes with
-    # different types of gains/distributions (e.g. interest, dividends),
-    # perhaps by implementing an Asset class (with subclasses for each
-    # type of asset, e.g. stocks/bonds?) which tracks acb independently.
-    # Perhaps support rebalancing as well?
+    # TODO: Expand SavingsAccount to handle:
+    # 1) Time series transaction data (with conversions where scalar
+    # data is provided by the caller).
+    # 2) multiple asset classes with different types of income (e.g.
+    # interest, dividends, capital gains, or combinations thereof).
+    # Perhaps implement an Asset class (with subclasses for each
+    # type of asset, e.g. stocks/bonds?) and track acb independently?
+    # 3) rebalancing of asset classes
 
     # Define aliases for `SavingsAccount` properties.
     @property
@@ -560,6 +589,9 @@ class TaxableAccount(SavingsAccount):
             The acb after all contributions and withdrawals are made,
                 as a Money object.
         """
+        # NOTE: See capital_gains() for a similarly-defined method.
+        # Any changes here should probably happen there too.
+
         # See the following link for information on calculating ACB:
         # https://www.adjustedcostbase.ca/blog/how-to-calculate-adjusted-cost-base-acb-and-capital-gains/
 
@@ -590,6 +622,9 @@ class TaxableAccount(SavingsAccount):
         # NOTE: See next_acb() for a very similarly-defined method.
         # Any changes there should be reflected here, and (mostly) vice-
         # versa.
+
+        # TODO: Cache the result of this calculation (and cause related
+        # property setter methods to set a flag requiring recalculation)
 
         # Set up initial conditions
         balance = self.balance
@@ -631,19 +666,34 @@ class TaxableAccount(SavingsAccount):
             Taxable income for the year from this account as a `Money`
                 object.
         """
+
+        # TODO: Cache the result of this calculation (and cause related
+        # property setter methods to set a flag requiring recalculation)
+
         # If no asset allocation is provided, assume 100% of the return
-        # is capital gains.
+        # is capital gains. This is taxed at a 50% rate.
         if asset_allocation is None:
-            return self.capital_gains()
+            return self.capital_gains() / 2
 
         # TODO: Handle asset allocation in such a way that growth in the
         # account can be apportioned between capital gains, dividends,
         # etc.
-        return self.capital_gains()
+        return self.capital_gains() / 2
 
 
 class Debt(Account):
-    """ A debt with a balance and an interest rate. """
+    """ A debt with a balance and an interest rate.
+
+    Attributes:
+        balance (Money): The balance of the debt. If there is an
+            outstanding balance, this value will be *positive*, not
+            negative.
+        withdrawal (Money): The amount withdrawn. This increases the
+            balance.
+        payment (Money): The amount paid. This decreases the balance.
+        withdrawal_inclusion (float): The *_inclusion for withdrawals.
+        payment_inclusion (float): The *_inclusion for payments.
+    """
 
     # Define aliases for `Account` properties.
     @property
@@ -680,5 +730,25 @@ class Debt(Account):
 
 
 class OtherProperty(Account):
-    """ An asset other than a bank account or similar financial vehicle."""
-    pass
+    """ An asset other than a bank account or similar financial vehicle.
+
+    Unlike other SavingsAccount classes, the user can select whether or
+    not growth in the account is taxable. This allows for tax-preferred
+    assets like mortgages to be conveniently represented.
+
+    Attributes:
+        taxable (bool): Whether or not growth of the account is taxable.
+    """
+    def __init__(self, balance, rate=0, inflow=0, outflow=0,
+                 inflow_inclusion=0, outflow_inclusion=0, taxable=False):
+        """ Constructor for OtherProperty. """
+        super().__init__(balance, rate, inflow, outflow, inflow_inclusion,
+                         outflow_inclusion)
+        self.taxable = taxable
+
+    def taxable_income(self) -> Money:
+        """ The taxable income generated by the account for the year. """
+        if self.taxable:
+            return super().taxable_income()
+        else:
+            return 0
