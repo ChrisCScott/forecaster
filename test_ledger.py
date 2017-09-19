@@ -4,10 +4,12 @@ import unittest
 from datetime import datetime
 from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
+import warnings
+import math
 import decimal
 from decimal import Decimal
-from moneyed import Money
 from settings import Settings
+from ledger import Money
 from ledger import Person
 from ledger import Account
 
@@ -187,80 +189,63 @@ class TestAccountMethods(unittest.TestCase):
 
         # Basic test: All correct values, check for equality and type
         balance = Money(0)
-        rate = 1.0
-        inflow = Money(3.0)
-        outflow = Money(2.0)
-        inflow_inclusion = 0.75
-        outflow_inclusion = 0.25
-        account = AccountType(balance, rate, inflow, outflow,
-                              inflow_inclusion, outflow_inclusion)
+        apr = 1.0
+        transactions = {1: Money(1), 0: Money(-1)}
+        nper = 1  # This is the easiest case, since apr==rate.
+        settings = Settings()
+        account = AccountType(balance, apr, transactions, nper, settings)
+        # Test primary attributes
         self.assertEqual(account.balance, balance)
-        self.assertEqual(account.rate, rate)
-        self.assertEqual(account.inflow, inflow)
-        self.assertEqual(account.outflow, outflow)
-        self.assertEqual(account.inflow_inclusion, inflow_inclusion)
-        self.assertEqual(account.outflow_inclusion, outflow_inclusion)
+        self.assertEqual(account.apr, apr)
+        self.assertEqual(account.transactions, transactions)
+        self.assertEqual(account.nper, 1)
+        self.assertEqual(account.settings, settings)
         self.assertIsInstance(account.balance, Money)
-        self.assertIsInstance(account.rate, Decimal)
-        self.assertIsInstance(account.inflow, Money)
-        self.assertIsInstance(account.outflow, Money)
-        self.assertIsInstance(account.inflow_inclusion, Decimal)
-        self.assertIsInstance(account.outflow_inclusion, Decimal)
+        self.assertIsInstance(account.apr, Decimal)
+        self.assertIsInstance(account.transactions, dict)
+        self.assertIsInstance(account.nper, int)
+        self.assertIsInstance(account.settings, Settings)
 
         # Basic test: Only balance provided.
         account = AccountType(balance)
         self.assertEqual(account.balance, balance)
-        self.assertEqual(account.rate, 0)
-        self.assertEqual(account.inflow, Money(0))
-        self.assertEqual(account.outflow, Money(0))
-        self.assertEqual(account.inflow_inclusion, 0)
-        self.assertEqual(account.outflow_inclusion, 0)
+        self.assertEqual(account.apr, 0)
+        self.assertEqual(account.transactions, {})
+        self.assertEqual(account.nper, 1)
+        self.assertEqual(account.settings, Settings)
 
         # Test with (Decimal-convertible) strings as input
         balance = "0"
-        rate = "1"
-        inflow = "3"
-        outflow = "2"
-        inflow_inclusion = "0.75"
-        outflow_inclusion = "0.25"
-        account = AccountType(balance, rate, inflow, outflow,
-                              inflow_inclusion, outflow_inclusion)
+        apr = "1.0"
+        transactions = {'start': "1", 'end': "-1"}
+        nper = 'A'
+        account = AccountType(balance, apr, transactions, nper)
+        # Test primary attributes
         self.assertEqual(account.balance, Money(0))
-        self.assertEqual(account.rate, Decimal(1))
-        self.assertEqual(account.inflow, Money(3))
-        self.assertEqual(account.outflow, Money(2))
-        self.assertEqual(account.inflow_inclusion, Decimal(0.75))
-        self.assertEqual(account.outflow_inclusion, Decimal(0.25))
+        self.assertEqual(account.apr, 1)
+        self.assertEqual(account.transactions, {1: Money(1), 0: Money(-1)})
+        self.assertEqual(account.nper, 1)
         self.assertIsInstance(account.balance, Money)
-        self.assertIsInstance(account.rate, Decimal)
-        self.assertIsInstance(account.inflow, Money)
-        self.assertIsInstance(account.outflow, Money)
-        self.assertIsInstance(account.inflow_inclusion, Decimal)
-        self.assertIsInstance(account.outflow_inclusion, Decimal)
+        self.assertIsInstance(account.apr, Decimal)
+        self.assertIsInstance(account.transactions, dict)
+        for key, value in account.transactions.items():
+            self.assertIsInstance(key, (float, int, Decimal))
+            self.assertIsInstance(value, Money)
+        self.assertIsInstance(account.nper, int)
 
-        # Test *_inclusion inside and outside of the range [0,1]
-        account = AccountType(balance, inflow_inclusion=0)
-        self.assertEqual(account.inflow_inclusion, Decimal(0))
-        account = AccountType(balance, inflow_inclusion=0.5)
-        self.assertEqual(account.inflow_inclusion, Decimal(0.5))
-        account = AccountType(balance, inflow_inclusion=1)
-        self.assertEqual(account.inflow_inclusion, Decimal(1))
+        # Test 'when' values inside and outside of the range [0,1]
+        account = AccountType(balance, transactions={0: 1})
+        self.assertEqual(account.transactions[Decimal(0)], Money(1))
+        account = AccountType(balance, transactions={0.5: 1})
+        self.assertEqual(account.transactions[Decimal(0.5)], Money(1))
+        account = AccountType(balance, transactions={1: 1})
+        self.assertEqual(account.transactions[Decimal(1)], Money(1))
         with self.assertRaises(ValueError):
-            account = AccountType(balance, inflow_inclusion=-1)
+            account = AccountType(balance, transactions={-1: 1})
         with self.assertRaises(ValueError):
-            account = AccountType(balance, inflow_inclusion=2)
+            account = AccountType(balance, transactions={2: 1})
 
-        account = AccountType(balance, outflow_inclusion=0)
-        self.assertEqual(account.outflow_inclusion, Decimal(0))
-        account = AccountType(balance, outflow_inclusion=0.5)
-        self.assertEqual(account.outflow_inclusion, Decimal(0.5))
-        account = AccountType(balance, outflow_inclusion=1)
-        self.assertEqual(account.outflow_inclusion, Decimal(1))
-        with self.assertRaises(ValueError):
-            account = AccountType(balance, outflow_inclusion=-1)
-        with self.assertRaises(ValueError):
-            account = AccountType(balance, outflow_inclusion=2)
-
+        # Let's test invalid Decimal conversions next.
         # BasicContext causes most errors to raise exceptions
         # In particular, invalid input will raise InvalidOperation
         decimal.setcontext(decimal.BasicContext)
@@ -268,42 +253,211 @@ class TestAccountMethods(unittest.TestCase):
         # Test with values not convertible to Decimal
         with self.assertRaises(decimal.InvalidOperation):
             account = AccountType(balance="invalid input")
+            # In some contexts, Decimal returns NaN instead of raising an error
             if account.balance == Money("NaN"):
                 raise decimal.InvalidOperation()
 
         with self.assertRaises(decimal.InvalidOperation):
-            account = AccountType(balance, rate="invalid input")
+            account = AccountType(balance, apr="invalid input")
             if account.rate == Decimal("NaN"):
                 raise decimal.InvalidOperation()
 
-        with self.assertRaises(decimal.InvalidOperation):
-            account = AccountType(balance, inflow="invalid input")
-            if account.inflow == Money("NaN"):
+        with self.assertRaises((decimal.InvalidOperation, KeyError)):
+            account = AccountType(balance, transactions={"invalid input": 1})
+            if Decimal('NaN') in account.transactions.keys():
                 raise decimal.InvalidOperation()
 
-        with self.assertRaises(decimal.InvalidOperation):
-            account = AccountType(balance, outflow="invalid input")
-            if account.outflow == Money("NaN"):
-                raise decimal.InvalidOperation()
+        # Test valid nper values:
+        account = AccountType(balance, nper='C')  # continuous
+        self.assertEqual(account.nper, None)
+        self.assertIsInstance(account.nper, (type(None), str))
 
-        with self.assertRaises(decimal.InvalidOperation):
-            account = AccountType(balance, inflow_inclusion="invalid input")
-            if account.inflow_inclusion == Decimal("NaN"):
-                raise decimal.InvalidOperation()
+        account = AccountType(balance, nper='D')  # daily
+        self.assertEqual(account.nper, 365)
+        self.assertIsInstance(account.nper, int)
 
-        with self.assertRaises(decimal.InvalidOperation):
-            account = AccountType(balance, outflow_inclusion="invalid input")
-            if account.outflow_inclusion == Decimal("NaN"):
-                raise decimal.InvalidOperation()
+        account = AccountType(balance, nper='W')  # weekly
+        self.assertEqual(account.nper, 52)
+
+        account = AccountType(balance, nper='BW')  # biweekly
+        self.assertEqual(account.nper, 26)
+
+        account = AccountType(balance, nper='SM')  # semi-monthly
+        self.assertEqual(account.nper, 24)
+
+        account = AccountType(balance, nper='M')  # monthly
+        self.assertEqual(account.nper, 12)
+
+        account = AccountType(balance, nper='BM')  # bimonthly
+        self.assertEqual(account.nper, 6)
+
+        account = AccountType(balance, nper='Q')  # quarterly
+        self.assertEqual(account.nper, 4)
+
+        account = AccountType(balance, nper='SA')  # semiannually
+        self.assertEqual(account.nper, 2)
+
+        account = AccountType(balance, nper='A')  # annually
+        self.assertEqual(account.nper, 1)
+
+        # Test invalid nper values:
+        with self.assertRaises(ValueError):
+            account = AccountType(balance, nper=0)
+
+        with self.assertRaises(ValueError):
+            account = AccountType(balance, nper=-1)
+
+        with self.assertRaises(TypeError):
+            account = AccountType(balance, nper=0.5)
+
+        with self.assertRaises(TypeError):
+            account = AccountType(balance, nper=1.5)
+
+        with self.assertRaises(ValueError):
+            account = AccountType(balance, nper="invalid input")
 
         # Recurse onto all subclasses of AccountType
         # (Recall that, at first iteration, AccountType=Account)
         for SubType in AccountType.__subclasses__():
             self.test_init(SubType)
 
+    def test_rate(self, AccountType=Account):
+        """ Tests rate and nper """
+        # Simple account: Start with $1, apply 100% growth once per
+        # year, no transactions. Should yield a next_balance of $2.
+        account = Account(1, Decimal(1.0), {}, 1)
+        self.assertEqual(account.rate, Decimal(1))
+
+        # Update rate via apr.setter.
+        account.apr = Decimal(2.0)
+        self.assertEqual(account.rate, Decimal(2))
+
+        # Update rate via rate.setter.
+        account.rate = Decimal(3.0)
+        self.assertEqual(account.rate, Decimal(3))
+        self.assertEqual(account.apr, Decimal(3))
+
+        # Now let's update nper based on a str
+        account.nper = 'C'  # continuous growth
+        self.assertEqual(account.apr, Decimal(3))  # apr unchanged
+        # Derive r [rate] from P = P_0 * e^rt
+        self.assertEqual(account.rate, math.log(Decimal(3) + 1))
+        self.assertEqual(account.nper, None)
+
+        # Let's use a discrete compounding method (other than 'A'/1)
+        account.nper = 'M'  # monthly compounding
+        nper = account.nper
+        self.assertEqual(account.apr, Decimal(3))  # apr unchanged
+        # Derive r [rate] from P = P_0 * (1 + r/n)^nt
+        # This works out to r = n * [(1 + apr)^(1 / n) - 1]
+        self.assertAlmostEqual(account.rate,
+                               Decimal(nper * (((1 + 3) ** (nper ** -1)) - 1)),
+                               3)
+        self.assertEqual(account.nper, 12)  # Just to be safe, check nper
+
+    def test_next(self, AccountType=Account):
+        """ Tests next_balance and next_year. """
+        # Simple account: Start with $1, apply 100% growth once per
+        # year, no transactions. Should yield a next_balance of $2.
+        account = Account(1, 1.0, {}, 1)
+        self.assertEqual(account.next_balance, Money(2))
+        self.assertEqual(account.next_year().balance, Money(2))
+
+        # No growth: Start with $1 and apply 0% growth.
+        account = Account(1, 0)
+        self.assertEqual(account.next_balance, Money(1))
+        self.assertEqual(account.next_year().balance, Money(1))
+
+        # Try with continuous growth
+        account = Account(1, 1, {}, 'C')
+        self.assertAlmostEqual(account.next_balance, Money(2), 3)
+        self.assertAlmostEqual(account.next_year().balance, Money(2), 3)
+
+        # Try with discrete growth
+        account = Account(1, 1, {}, 'M')  # monthly
+        self.assertAlmostEqual(account.next_balance, Money(2), 3)
+        self.assertAlmostEqual(account.next_year().balance, Money(2), 3)
+
+        # Repeat above with a $2 contribution halfway through the year
+
+        # Start with $1 (which grows to $2) and contribute $2 (which
+        # doesn't grow, as it's contributed mid-period). Total: $4
+        # NOTE: If partial growth is enabled (no interface for this
+        # currently), the $2 contribution would grow to $3.
+        account = Account(1, 1.0, {0.5: Money(2)}, 1)
+        self.assertEqual(account.next_balance, Money(4))
+        self.assertEqual(account.next_year().balance, Money(4))
+
+        # No growth: Start with $1, add $2, and apply 0% growth.
+        account = Account(1, 0, {0.5: Money(2)}, 1)
+        self.assertEqual(account.next_balance, Money(1))
+        self.assertEqual(account.next_year().balance, Money(1))
+
+        # Try with continuous growth
+        # Initial $1 will grow to $2 (because apr = 100%)
+        # $2 added at mid-point will grow by a factor of e ^ rt
+        # (which works out to 2 * e ^ 0.5)
+        account = Account(1, 1, {0.5: Money(2)}, 'C')
+        self.assertAlmostEqual(account.next_balance,
+                               Money(2) * math.exp(0.5),
+                               3)
+        self.assertAlmostEqual(account.next_year().balance,
+                               Money(2) * math.exp(0.5),
+                               3)
+
+        # Try with discrete growth
+        # Initial $1 will grow to $2, and the $2 transaction will grow
+        # by a factor of (1 + r/n)^nt = (1 + 1 / 6)^(6 * 0.5)
+        account = Account(1, 1, {0.5: Money(2)}, 'M')  # monthly
+        self.assertAlmostEqual(account.next_balance,
+                               Money(2) * ((1 + (1 / 6)) ** (6 * 0.5)),
+                               3)
+        self.assertAlmostEqual(account.next_year().balance,
+                               Money(2) * ((1 + (1 / 6)) ** (6 * 0.5)),
+                               3)
+
+    # TODO: When cached properties are implemented, provide a test.
+    #    def test_cached_properties(self):
+        """ Tests cached properties for various account types.
+
+        Account: next_balance
+        SavingsAccount: contributions, withdrawals, taxable_income,
+            tax_withheld, tax_credit
+        RRSP: taxable_income, tax_withheld
+        TFSA: taxable_income
+        TaxableAccount: _acb_and_capital_gain, next_acb, capital_gain,
+            taxable_income
+        Debt: payments, withdrawals
+        OtherProperty: taxable_income
+        """
+    ''' Commented out:
+        # Simple test: apr = rate, next_balance = 2
+        account = Account(1, 1.0, {}, 1)
+        next_account = Account(2)
+        self.assertEqual(account.next_balance, Money(2))
+        # Bypass setter methods (so cache is not invalidated).
+        # If next_balance is cached, it will still return 2 (not 0)
+        account._balance = 0
+        self.assertEqual(account.next_balance, Money(2))
+        # Now update balance through the setter
+        account.balance = 0
+        next_account = Account(0)
+        self.assertEqual(account.next_balance, Money(0))
+    '''
+
+    def test_add_transaction(self):
+        """ Tests add_transaction and related methods.
+
+        Account: add_transaction
+        SavingsAccount: contribute, withdraw
+        Debt: pay, withdraw
+        """
+        pass
+
 if __name__ == '__main__':
     # NOTE: BasicContext is useful for debugging, as most errors are treated
     # as exceptions (instead of returning "NaN"). It is lower-precision than
     # ExtendedContext, which is the default.
     decimal.setcontext(decimal.BasicContext)
+    warnings.simplefilter('error')
     unittest.main()

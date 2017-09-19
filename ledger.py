@@ -10,7 +10,9 @@ from decimal import Decimal
 from collections import namedtuple
 from collections import Sequence
 import moneyed
-from moneyed import Money
+# TODO: implement cached properties
+# from cached_property import cached_property
+from moneyed import Money as PyMoney
 from settings import Settings
 
 
@@ -161,17 +163,27 @@ class Person(object):
         return age_
 
 
-Transaction = namedtuple("Transaction", "value time")
-""" Define a container for transactions.
+class Money(PyMoney):
+    """ Extends py-moneyed to support __round__ """
+    def __round__(self, ndigits=None):
+        """ Rounds to ndigits """
+        return Money(round(self.amount, ndigits), self.currency)
 
-    Args:
-        value (Money): The value of the transaction. Positive values
-            are inflows and negative values are outflows.
-        time (float, Decimal): The point in the period at which the
-            transaction occurred, in the range [0,1].
-"""
+    def __eq__(self, other):
+        """ Extends == to use Decimal's ==.
+
+        This allows for comparison to 0 (or other Decimal-convertible
+        values).
+        """
+        # NOTE: If the other object is also a Money object, this
+        # won't fall back to Decimal, because Decimal doesn't know how
+        # to compare itself to Money. This is good, because otherwise
+        # we'd be comparing face values of different currencies,
+        # yielding incorrect behaviour like JPY1 == USD1.
+        return super().__eq__(other) or self.amount == other
 
 
+# TODO: Either use this class or delete it.
 class Asset(Money):
     """ An asset having a value and an adjusted cost base.
 
@@ -232,8 +244,8 @@ class Account(object):
     Examples:
         `account1 = Account(100, 0.05)`
         `account2 = account1.next_year()`
-        `account1.balance == 100` evaluates to True
-        `account2.balance == 105` evaluates to True
+        `account1.balance == 100  # True`
+        `account2.balance == 105  # True`
 
     Attributes:
         balance (Money): The account balance at a point in time
@@ -274,40 +286,33 @@ class Account(object):
             global Settings class attributes if None given.
     """
 
-    def __init__(self, balance, apr=0, transactions={}, nper='C',
+    def __init__(self, balance, apr=0, transactions={}, nper=1,
                  settings=None):
         """ Constructor for `Account`. """
         # This class provides some secondary attributes that are
-        # evaluated lazily and cached until a primary attribute is
-        # changed, at which time the cache is invalidated and we
-        # force recalculation when that value is next called.
-        # Cached attributes are those not provided directly to __init__:
-        #   returns
-        #   max_outflow
-        #   next_balance
-        #   acb
-        #   taxable_income
-        self._cache = {}
+        # evaluated lazily (e.g. rate). These are not set in __init__
+        # and are not provided by the user.
+        # TODO: Implement a cached_property decorator and cache these
+        # secondary attributes until a primary attribute (i.e. one of
+        # the ones received by __init__) is changed. Ensure that the
+        # cache is invalidated when a primary attribute is invalidated.
 
-        # Now set the primary (non-lazy) attributes:
+        # Set the primary (non-lazy) attributes:
         self.balance = balance
+        # Set nper before apr (because we need nper to convert apr to rate)
+        self.nper = self._conv_nper(nper)
         self.apr = apr
-        self.nper = self._conv_nper(compounding)
         self.settings = settings if settings is not None else Settings
         self.transactions = transactions
 
-    def cached_property(property):
-        """ A decorator for cached properties. """
-        def wrapper(self, *args):
-            # If the property is not in the cache, call it and add it.
-            if property.__name__ not in self._cache:
-                self._cache[property.__name__] = property(self, *args)
-            return self._cache[property.__name__]
-        return wrapper
-
-    def invalidate_cache(self):
-        """ Invalidates the cache for all cached attributes. """
-        self._cache = {}
+# TODO: When caching is implemented, provide a method to invalidate the
+# cache for *all* secondary attributes.
+#    def _invalidate_cache(self):
+#        """ Invalidates the cache for all cached attributes. """
+#        for attribute in dir(self):
+#            if attribute in self.__dict__ and \
+#               isinstance(self.__dict__[attribute], cached_property):
+#                del self.__dict__[attribute]
 
     @property
     def balance(self) -> Money:
@@ -323,7 +328,7 @@ class Account(object):
             self._balance = Money(balance)
 
         # This is a primary attribute, so invalidate the cache.
-        self._invalidate_cache()
+        # self._invalidate_cache()
 
     @property
     def apr(self) -> Decimal:
@@ -332,17 +337,17 @@ class Account(object):
         This determines the growth/losses in the account balance. """
         return self._apr
 
-    @rate.setter
+    @apr.setter
     def apr(self, apr) -> None:
         """ Sets the apr.
 
         The apr must be convertible to Decimal """
         self._apr = Decimal(apr)
         # Also update rate
-        self._rate = self.apr_to_rate(self._apr, self._nper)
+        self._rate = Decimal(self.apr_to_rate(self._apr, self._nper))
 
         # This is a primary attribute, so invalidate the cache.
-        self._invalidate_cache()
+        # self._invalidate_cache()
 
     @property
     def rate(self) -> Decimal:
@@ -356,8 +361,8 @@ class Account(object):
         # Also update apr. This also invalidates the cache.
         self._apr = self.rate_to_apr(self._rate, self._nper)
 
-    @staticmethod
-    def apr_to_rate(apr, nper=None) -> Decimal:
+    @classmethod
+    def apr_to_rate(cls, apr, nper=None) -> Decimal:
         """ The annual rate of return pre-compounding.
 
         Args:
@@ -366,7 +371,7 @@ class Account(object):
             nper (int): The number of compounding periods. Optional.
                 If not given, compounding is continuous.
         """
-        nper = self._conv_nper(nper)
+        nper = cls._conv_nper(nper)
         if nper is None:  # Continuous
             # Solve P(1+apr)=Pe^rt for r, given t=1:
             # r = log(1+apr)/t = log(1+apr)
@@ -374,10 +379,10 @@ class Account(object):
         else:  # Periodic
             # Solve P(1+apr)=P(1+r/n)^nt for r, given t=1
             # r = n [(1 + apr)^-nt - 1] = n [(1 + apr)^-n - 1]
-            return nper * (math.pow(1+apr, -nper)-1)
+            return nper * (math.pow(1+apr, nper ** -1) - 1)
 
-    @staticmethod
-    def rate_to_apr(rate, nper=None) -> Decimal:
+    @classmethod
+    def rate_to_apr(cls, rate, nper=None) -> Decimal:
         """ The post-compounding annual percentage rate of return.
 
         Args:
@@ -385,7 +390,7 @@ class Account(object):
             nper (int): The nuber of compounding periods. Optional.
                 If not given, compounding is continuous.
         """
-        nper = self._conv_nper(nper)
+        nper = cls._conv_nper(nper)
         if nper is None:  # Continuous
             # Solve P(1+apr)=Pe^rt for apr, given t=1:
             # apr = e^rt - 1 = e^r - 1
@@ -411,7 +416,12 @@ class Account(object):
         self._nper = self._conv_nper(nper)
 
         # This is a primary attribute, so invalidate the cache.
-        self._invalidate_cache()
+        # self._invalidate_cache()
+        # NOTE: _rate is a bit different from other properties, because
+        # even though it's not cached we store it internally without
+        # forcing recalculation. So force recalculation here.
+        if '_apr' in self.__dict__:
+            self._rate = self.apr_to_rate(self._apr, self._nper)
 
     @staticmethod
     def _conv_nper(nper) -> int:
@@ -431,7 +441,7 @@ class Account(object):
 
         # Try to parse a string based on known compounding frequencies
         if isinstance(nper, str):
-            return {  # Fancy python-style switch statement
+            mapping = {  # Fancy python-style switch statement
                 'C': None,
                 'D': 365,
                 'W': 52,
@@ -441,9 +451,17 @@ class Account(object):
                 'BM': 6,
                 'Q': 4,
                 'SA': 2,
-                'A': 1}[nper]
+                'A': 1}
+            if nper not in mapping.keys():
+                raise ValueError('Account: str nper must have a known value')
+            return mapping[nper]
         else:  # Attempt to cast to int
-            return int(freq)
+            if not nper == int(nper):
+                raise TypeError(
+                    'Account: nper is not losslessly convertible to int')
+            if nper <= 0:
+                raise ValueError('Account: nper must be greater than 0')
+            return int(nper)
 
     @property
     def transactions(self) -> None:
@@ -464,7 +482,7 @@ class Account(object):
         # Simplest case: It's already a dict!
         # Add elements one-at-a-time so that we can do conversions.
         if isinstance(transactions, dict):
-            for when, value in transactions:
+            for when, value in transactions.items():
                 self._add_transaction(value, when)
 
         # If it's a list, fill in the key values based on defaults
@@ -484,7 +502,7 @@ class Account(object):
                 self._add_transaction(value, out_t)
 
         # This is a primary attribute, so invalidate the cache.
-        self._invalidate_cache()
+        # self._invalidate_cache()
 
     def _add_transaction(self, value, when) -> None:
         """ Adds a transaction to the time series of transactions.
@@ -494,6 +512,11 @@ class Account(object):
         If you're calling this, you probably need to call the
         `_invalidate_cache()` method on this object before calling
         any other secondary/cached properties.
+
+        In general, if you're calling from external code, you should be
+        calling `add_transaction` (notice the lack of preceding
+        underscore), which has some nice defaults and does some cleanup
+        for you.
 
         Args:
             value (Money): The value of the transaction.
@@ -528,18 +551,44 @@ class Account(object):
             self._transactions[when] = value
             # self._transactions[when] = list(value)
 
+    def add_transaction(self, value, when='end') -> None:
+        """ Adds a transaction to the account.
+
+        This is a public-facing method that does some input processing
+        and clean-up. Client code should generally call this method
+        instead of `_add_transaction` (note the underscore!)
+
+        Args:
+            value (Money): The value of the transaction. Positive values
+                are inflows and negative values are outflows.
+            when (float, Decimal, str): The timing of the transaction.
+                Must be in the range [0,1] or in {'start', 'end'}.
+                0 corresponds to 'end' and 1 corresponds to 'start'.
+                (It's a bit counterintuitive, but this is how `numpy`
+                defines its `when` argument for financial methods.)
+                Defaults to 'end'.
+        """
+        # No need to call _when_conv; _add_transaction does that.
+
+        self._add_transaction(value, when)
+        # _add_transaction relies on client code for invalidating the
+        # cache, so do that here.
+        # self._invalidate_cache()
+
     @staticmethod
     def _when_conv(when) -> Decimal:
         """ Converts various types of `when` inputs to Decimal.
 
         Args:
-            `when` (float, Decimal, str): Describes the timing of
-                the transaction.
+            `when` (float, Decimal, str): The timing of the transaction.
                 Must be in the range [0,1] or in ('start', 'end').
                 The definition of this range is counterintuitive:
                 0 corresponds to 'end' and 1 corresponds to 'start'.
                 (This is how `numpy` defines its `when` argument
                 for financial methods.)
+
+        Returns:
+            A Decimal value in [0,1].
 
         Raises:
             decimal.InvalidOperation: `when` must be convertible to
@@ -562,22 +611,134 @@ class Account(object):
         """ Iterates over {when:value} transaction pairs. """
         return self._transactions.items()
 
-    @staticmethod
-    def growth(val, rate, start, end, nper) -> Money:
-        """ Growth of `val` over period `[start,end]` given `rate`. """
-        # TODO: Complete docstring
-        # TODO: Implement compounding-aware growth function
+    def accumulation_function(self, t, partial_credit=False) -> Decimal:
+        """ The accumulation function, A(t), from interest theory.
 
-        pass
+        `t` is conventionally defined in such a way that 0 is the start
+        of the compounding sequence. This method works just fine that
+        way: accumulation_function(t) returns the same result as the
+        conventionally-defined A(t) in finance theory.
 
-    @cached_property
-    def returns(self) -> Money:
-        """ Total growth/losses in the account, after transactions. """
-        balance = self.balance
-        growth = 0
-        for when, value in self:
-            growth = balance
+        It's worth noting that this method _also_ works to determine the
+        accumulation from the time an inflow or outflow occurs until
+        the end of the period (i.e. the end of the year).
+        This is because the time period [0,1] is symmetric; the
+        accumulation from [0,t] is the same as the accumulation from
+        [1-t, 1]. Thus, for a transaction which occurs at time `when`,
+        `accumulation_function(when)` will yield the growth multiplier
+        for the transaction.
 
+        Example:
+            For an account with 5% apr and a transaction that occurs
+            at time `when = 1` (i.e. the start of the period):
+                `account.accumulation_function(when)`
+            returns `1.05`.
+
+        Args:
+            t (float, Decimal): Defines the period [0,t] over which the
+                accumulation will be calculated.
+            partial_credit (Boolean): If True, any partial compounding
+                periods in [0,t] will be included in the accumulation
+                on a pro-rated basis.
+                This isn't a feature of interest theory formulae, but
+                it is something that some banks offer. Use with caution.
+
+        Returns:
+            The accumulation A(t), as a Decimal.
+        """
+        acc = 1
+
+        # Convert t to Decimal
+        t = Decimal(t)
+
+        # Use the exponential formula for continuous compounding: e^rt
+        if self.nper is None:
+            acc = math.exp(self.rate * t)
+        # Otherwise use the discrete formula: (1+r/n)^nt
+        else:
+            acc = (1 + self.rate / self.nper) ** (self.nper * t)
+
+        # Optionally add in growth for any partial compounding periods.
+        # The percentage of the partial period that was completed is the
+        # decimal portion of `t * nper` (equivalently `t % freq`, where
+        # `freq = 1 / nper`).
+        # Multiply that by the per-period rate (rate / nper) to obtain
+        # the pro-rated growth during the partial period.
+        if partial_credit:
+            acc *= 1 + (self.rate / self.nper) * ((t * self.nper) % 1)
+
+        return acc
+
+    def future_value(self, value, when, partial_value=False) -> Money:
+        """ The nominal value of a transaction at the end of the year.
+
+        Takes into account the compounding frequency and also the effect
+        of mid-period transactions.
+
+        Args:
+            value (Money): The value of the transaction.
+            when (float, Decimal): The timing of the transaction, which
+                is a value in [0,1]. See `_when_conv` for more on this
+                convention.
+            partial_credit (Boolean): If True, any partial compounding
+                periods in [0,t] will be included in the accumulation
+                on a pro-rated basis.
+                This isn't a feature of interest theory formulae, but
+                it is something that some banks offer. Use with caution.
+
+        Returns:
+            A value of a transaction, including any gains (or losses)
+            earned (for inflows) or avoided (for outflows) from the time
+            a transaction was entered until the end of the accounting
+            period (i.e. until the end of the year).
+            Includes the value of the transaction itself.
+        """
+        # Future value (fv) is `fv = pv*A(t)`, where `pv` is the present
+        # value and `A(t)` is the accumulation function at time t.
+        # We're playing a bit of a trick here, since we don't want the
+        # accumulation over the period [0,t] (which is what A(t) is
+        # defined over), we want the accumulation over the period
+        # [1-t, 1] (at least, based on how `A(t)` is usually defined).
+        # However, `when` is defined in a backwards sort of way where 0
+        # is the end and 1 is the start, so `when` effectively gives you
+        # `1-t`. Since the interest rate in [0,1] is constant and the
+        # compounding periods in [0,1] are symmetric, using `when` gives
+        # us exactly what we want!
+        return value * self.accumulation_function(when, partial_value)
+
+    def present_value(self, value, when, partial_value=False) -> Money:
+        """ Initial value required to achieve a given end-of-year value.
+
+        Takes into account the compounding frequency and also the effect
+        of mid-period transactions.
+
+        Args:
+            value (Money): The present value of the transaction,
+                measured at t='end' (i.e. at the end of the year)
+            when (float, Decimal): The timing of the transaction, which
+                is a value in [0,1]. See `_when_conv` for more on this
+                convention.
+            partial_credit (Boolean): If True, any partial compounding
+                periods in [0,t] will be included in the accumulation
+                on a pro-rated basis.
+                This isn't a feature of interest theory formulae, but
+                it is something that some banks offer. Use with caution.
+
+        Returns:
+            The sum of initial capital required at time t to achieve a
+            future (nominal) balance of `value`, including any gains (or
+            losses) earned (for inflows) or avoided (for outflows) from
+            time `t` until the end of the accounting period (i.e. until
+            end of the year).
+        """
+        # Present value (pv) is `pv = fv/A(t)`, where `fv` is the future
+        # value and `A(t)` is the accumulation function at time t.
+        # See `future_value` for comments on some tricks being played
+        # with `accumulation_function` and `when` here.
+        return value / self.accumulation_function(when, partial_value)
+
+#    @cached_property
+    @property
     def next_balance(self) -> Money:
         """ The balance after applying inflows/outflows/rate.
 
@@ -588,15 +749,49 @@ class Account(object):
         Returns:
             The new balance as a `Money` object.
         """
-        # Cache the result for future calls.
-        # TODO: Update the below calculation to use the new transactions
-        # dict with `when` timings.
-        if 'next_balance' in self._cache and self._cache['next_balance']:
-            self._next_balance = self._balance * (1 + rate) + \
-                inflow * (rate * inflow_inclusion + 1) - \
-                outflow * (rate * outflow_inclusion + 1)
-            self._cache['next_balance'] = True
-        return self._next_balance
+        # First, find the future value of the initial balance assuming
+        # there are no transactions.
+        balance = self.future_value(self.balance, 1)
+
+        # Then, add in the future value of each transaction. Note that
+        # this accounts for both inflows and outflows; the future value
+        # of an outflow will negate the future value of any inflows that
+        # are removed. Order doesn't matter.
+        for when, value in self.transactions.items():
+            balance += self.future_value(value, when)
+
+        return balance
+
+    def balance_at_time(self, time):
+        """ Returns the balance at a point in time.
+
+        Args:
+            time (float, Decimal, str): The timing of the transaction,
+                which is a value in [0,1]. See `_when_conv` for more on
+                this convention.
+        """
+        # Parse the time input
+        time = when_conv(time)
+
+        # Find the future value of the initial balance assuming there
+        # are no transactions.
+        balance = self.future_value(self.balance, 1 - time)
+
+        # Add in the future value of each transaction up to and
+        # including `time`.
+        for when in [w for w in self.transactions.keys() if w >= time]:
+            # HACK: This is working around the fact that `present_value`
+            # and `future_value` each only take one time value, rather
+            # than a start time and an end time. Consider reimplementing
+            # `future_value` to take two time values.
+
+            # Determine the value at the end of the year
+            end_value = self.future_value(self.transactions[value], when)
+            # Figure out the balance at time `time` attributable to that
+            # final balance.
+            balance += self.present_value(self.transactions[value], time)
+
+        return balance
 
     def next_year(self):
         """ Applies inflows/outflows/rate/etc. to the balance.
@@ -608,52 +803,32 @@ class Account(object):
             method is called by an instance of a subclass, the method
             returns an instance of that subclass.)
         """
-        return type(self)(self.next_balance())
+        return type(self)(self.next_balance)
 
-    def max_outflow(self) -> Money:
-        """ The maximum outflow for the given year.
+    def max_outflow(self, when) -> Money:
+        """ An outflow which would reduce the end-of-year balance to 0.
 
-        This is based on the balance/inflows/inclusions. Thus, if there
-        are inflows and they are partially included in the rate (and/or
-        if withdrawals are included in rate) then the total amount that
-        can be withdrawn is affected.
-        """
-        # This is the same equation as is used in change_in_value, but
-        # solved for result = 0.
-        return (self._balance * (1 + rate) +
-                inflow * (rate * inflow_inclusion + 1)) / \
-            (rate * outflow_inclusion + 1)
+        Returns a value which, if withdrawn at time `when`, would result
+        in the account balance being 0 at the end of the year, after all
+        other transactions are accounted for.
 
-    def balance_at_time(self, time) -> Money:
-        """ The balance at time `time`, accounting for flows/growth.
+        NOTE: This does not guarantee that the account balance will not
+        be negative at a time between `when` and `'end'`.
+
+        Equivalently, this is the future value of the account, net of
+        all existing transactions, at present time `when`.
 
         Args:
-            time (float, Decimal): a value in [0,1], where 1 is the
-                end of the period and 0 is the start.
-        Returns:
-            The balance as of the input time, as a Money object.
+            when (float, Decimal, str): The timing of the transaction,
+                which is a value in [0,1]. See `_when_conv` for more on
+                this convention.
         """
-        # TODO: Consider whether we even need this. It's only used in
-        # TaxableAccount, and it seems like a lot of code duplication
-        # would be necessary. It also implements some (likely
-        # inaccurate) assumptions.
-        balance = self.balance
-        period_start = 0
+        # Parse `when`
+        when = self._when_conv(when)
 
-        # Apply each transaction to the balance in sequence.
-        for transaction in transactions:
-            balance *= 1 + self.rate_for_period(period_start, transaction.time)
-            balance += transaction.value
-
-        # Apply the rate of return for the last portion of the period.
-        # (Note that, if the last transaction is at the end of the
-        # period, this will have no effect on the balance.)
-        balance *= 1 + self.rate_for_period(period_start, 1)
-
-    def _invalidate_cache(self):
-        """ Invalidates the cache for all cached attributes. """
-        for key in self._cache:
-            self._cache[key] = False
+        # We want the future balance, reduced by the growth.
+        # And, since this is an outflow, the result should be negative.
+        return -self.next_balance / self.accumulation_function(when)
 
 
 class SavingsAccount(Account):
@@ -663,117 +838,178 @@ class SavingsAccount(Account):
     complex non-registered (i.e. taxable) investment accounts.
 
     Attributes:
-        balance (Money): The account balance at a point in time
-        rate (Decimal): The rate of gains/losses, as a percentage of
-            the balance, over the following year.
-        contribution (Money): The amount of money contributed to the
-            account over the following year.
-        withdrawal (Money): The amount of money withdrawn from the
-            account over the following year.
-        contribution_inclusion (Decimal): The percentage of the
-            contribution to be included in gains/losses calculation.
-        withdrawal_inclusion (Decimal): The percentage of the withdrawal
-            to be included in gains/losses calculation.
+        contributions (Money): The sum of all contributions to the
+            account.
+        withdrawals (Money): The sum of all withdrawals from the
+            account.
+        taxable_income (Money): The taxable income for the year arising
+            from activity in the account.
     """
 
     # TODO: Expand SavingsAccount to handle:
-    # 1) Time series transaction data (with conversions where scalar
-    # data is provided by the caller).
-    # 2) multiple asset classes with different types of income (e.g.
+    # 1) multiple asset classes with different types of income (e.g.
     # interest, dividends, capital gains, or combinations thereof).
     # Perhaps implement an Asset class (with subclasses for each
     # type of asset, e.g. stocks/bonds?) and track acb independently?
-    # 3) rebalancing of asset classes
+    # 2) rebalancing of asset classes
 
     # Define aliases for `SavingsAccount` properties.
+    def contribute(self, value, when=None) -> None:
+        """ Adds a contribution transaction to the account.
+
+        This is a convenience method that wraps Account.add_transaction.
+        If `when` is not provided, the application-level default timing
+        for contributions is used.
+        """
+        if value < 0:
+            raise ValueError('SavingsAccount: Contributions must be positive.')
+
+        # Use an application-level default for `when` if none provided.
+        if when is None:
+            when = Settings.StrategyDefaults.contribution_timing
+
+        self.add_transaction(value, when)
+
+#    @cached_property
     @property
-    def contribution(self):
-        return self.inflow
+    def contributions(self) -> Money:
+        """ Returns the sum of all contributions to the account. """
+        return sum([val for val in self.transactions.values() if val > 0])
 
-    @contribution.setter
-    def contribution(self, val):
-        self.inflow = val
+    def withdraw(self, value, when=None) -> None:
+        """ Adds a withdrawal transaction to the account.
 
+        This is a convenience method that wraps Account.add_transaction.
+        If `when` is not provided, the application-level default timing
+        for withdrawals is used.
+        """
+        if value < 0:
+            raise ValueError('SavingsAccount: Withdrawals must be positive.')
+
+        # Use an application-level default for `when` if none provided.
+        if when is None:
+            when = Settings.StrategyDefaults.withdrawal_timing
+
+        self.add_transaction(value, when)
+
+#    @cached_property
     @property
-    def withdrawal(self):
-        return self.outflow
-
-    @withdrawal.setter
-    def withdrawal(self, val):
-        self.outflow = val
-
-    @property
-    def contribution_inclusion(self):
-        return self.inflow_inclusion
-
-    @contribution_inclusion.setter
-    def contribution_inclusion(self, val):
-        self.inflow_inclusion = val
-
-    @property
-    def withdrawal_inclusion(self):
-        return self.outflow_inclusion
-
-    @withdrawal_inclusion.setter
-    def withdrawal_inclusion(self, val):
-        self.outflow_inclusion = val
+    def withdrawals(self) -> Money:
+        """ Returns the sum of all withdrawals from the account. """
+        return sum([val for val in self.transactions.values() if val < 0])
 
     # Define new methods
-    def taxable_income(self, asset_allocation=None) -> Money:
+#    @cached_property
+    @property
+    def taxable_income(self) -> Money:
         """ The total taxable income arising from growth of the account.
-
-        Args:
-            allocation: An optional parameter that defines the
-                relative allocations of different asset classes.
-                No effect in `SavingsAccount`, but used by subclasses.
 
         Returns:
             The taxable income arising from growth of the account as a
                 `Money` object.
         """
+        # TODO: Define an asset_allocation property and determine the
+        # taxable income based on that allocation. Be sure to define
+        # a setter on that allocation parameter which invalidates the
+        # cache!
+
         # Assume all growth is immediately taxable (e.g. as in a
         # conventional savings account earning interest)
-        return self.next_balance()
+        return self.next_balance - self.balance
+
+#    @cached_property
+    @property
+    def tax_withheld(self) -> Money:
+        """ The total sum of witholding taxes incurred in the year.
+
+        Returns:
+            The tax withheld on account activity (e.g. on withdrawals,
+            certain forms of income, etc.)
+        """
+        # Standard savings account doesn't have any witholding taxes.
+        return 0
+
+#    @cached_property
+    @property
+    def tax_credit(self) -> Money:
+        """ The total sum of tax credits available for the year.
+
+        Returns:
+            The tax credits arising from account activity (e.g. for
+            certain witholding taxes and forms of income)
+        """
+        # Standard savings account doesn't have any tax credits.
+        return 0
 
 
 class RRSP(SavingsAccount):
     """ A Registered Retirement Savings Plan (Canada) """
 
-    def taxable_income(self, asset_allocation=None) -> Money:
+#    @cached_property
+    @property
+    def taxable_income(self) -> Money:
         """ The total tax owing on withdrawals from the account.
-
-        Args:
-            sources: An optional parameter. Has no effect for RRSPs.
 
         Returns:
             The taxable income owing on withdrawals the account as a
                 `Money` object.
         """
-        return self.withdrawal
+        # Return the sum of all withdrawals from the account.
+        return self.withdrawals
+
+#    @cached_property
+    @property
+    def tax_withheld(self) -> Money:
+        """ The total tax withheld from the account for the year.
+
+        For RRSPs, this is calculated according to a CRA formula.
+        """
+        # TODO: Figure out where tax methods should live. (e.g.
+        # tax_withheld will vary by year as the rate schedule changes;
+        # should this logic live in the Tax class entirely? Should this
+        # method receive a `rate` dict of {amount, rate} pairs?
+        # HACK: The usual rate (for withdrawals over $5000) is 30%, but
+        # lower rates apply to smaller, one-off withdrawals.
+        return self.taxable_income * Decimal(0.3)
+
+    # TODO: Determine whether there are any RRSP tax credits to
+    # implement in an overloaded tax_credit method.
 
 
 class TFSA(SavingsAccount):
     """ A Tax-Free Savings Account (Canada) """
-    def taxable_income(self, asset_allocation=None) -> Money:
+
+#    @cached_property
+    @property
+    def taxable_income(self) -> Money:
         """ Returns $0 (TFSAs are not taxable.) """
-        return Money(0)
+        return 0
 
 
 class TaxableAccount(SavingsAccount):
     """ A taxable account, non-registered account.
 
-    This account uses Canadian rules for determining taxable income. """
+    This account uses Canadian rules for determining taxable income from
+    capital assets. That involves tracking the adjusted cost base (acb)
+    of the assets.
 
-    def __init__(self, balance, rate=0, inflow=0, outflow=0,
-                 inflow_inclusion=0, outflow_inclusion=0, acb=0):
-        """ Constructor for `TaxableAccount`
+    Attributes:
+        acb (Money): The adjusted cost base of the assets in the account
+            at the start of the year.
+        capital_gain
+        See Account for other attributes.
+    """
+    # TODO: Reimplement TaxableAccount based on Asset objects
+    # (subclassed from Money), which independently track acb and possess
+    # an asset class (or perhaps `distribution` dict defining the
+    # relative proportions of sources of taxable income?)
+    # Perhaps also implement a tax_credit and/or tax_deduction method
+    # (e.g. to account for Canadian dividends)
 
-        Args:
-            acb: Adjusted cost base of the taxable account. Used to
-                determine realized capital gains.
-            (See Account for other args) """
-        super().__init__(balance, rate, inflow, outflow, inflow_inclusion,
-                         outflow_inclusion)
+    def __init__(self, balance, apr=0, transactions={}, nper=1,
+                 settings=None, acb=0):
+        """ Constructor for `TaxableAccount`. """
+        super().__init__(balance, apr, transactions, nper, settings)
         self.acb = acb if acb is not None else self.balance
 
     @property
@@ -788,7 +1024,47 @@ class TaxableAccount(SavingsAccount):
             self._acb = val
         else:
             self._acb = Money(val)
+        # If acb is changed, we'll need to recalculate taxable_income,
+        # which is cached. Thus, invalidate the cache when acb is set.
+        # self._invalidate_cache()
 
+#    @cached_property
+    @property
+    def _acb_and_capital_gain(self) -> (Money, Money):
+        """ Determines both acb and capital gains. For internal use.
+
+        These can be implemented as separate functions. However, they
+        use the same underlying logic, but their results can't be
+        inferred from each other. (i.e. you can't determine capital
+        gains just from the acb at the start and end of the year).
+
+        Returns:
+            A (acb, capital_gains) tuple.
+        """
+        # See this link for information on calculating ACB/cap. gains:
+        # https://www.adjustedcostbase.ca/blog/how-to-calculate-adjusted-cost-base-acb-and-capital-gains/
+
+        # Set up initial conditions
+        acb = self._acb
+        capital_gain = 0
+
+        # Iterate over transactions in order of occurrence
+        for when in sorted(self.transactions.keys()):
+            value = self.transactions[when]
+            # There are different acb formulae for inflows and outflows
+            if value >= 0:  # inflow
+                acb += value
+            else:  # outflow
+                # Capital gains are calculated based on the acb and
+                # balance before the transaction occurred.
+                balance = self.balance_at_time(when) - value
+                capital_gain += -value * (1 - (acb / balance))
+                acb *= 1 - (-value / balance)
+
+        return (acb, capital_gain)
+
+#    @cached_property
+    @property
     def next_acb(self) -> Money:
         """ Determines acb after contributions/withdrawals.
 
@@ -796,68 +1072,22 @@ class TaxableAccount(SavingsAccount):
             The acb after all contributions and withdrawals are made,
                 as a Money object.
         """
-        # NOTE: See capital_gains() for a similarly-defined method.
-        # Any changes here should probably happen there too.
+        return self._acb_and_capital_gain()[0]
 
-        # See the following link for information on calculating ACB:
-        # https://www.adjustedcostbase.ca/blog/how-to-calculate-adjusted-cost-base-acb-and-capital-gains/
+#    @cached_property
+    @property
+    def capital_gain(self) -> Money:
+        """ The total capital gain for the period.
 
-        # Set up initial conditions
-        balance = self.balance
-        period_start = 0
-        acb = self._acb
+        Returns:
+            The capital gains from all withdrawals made during the year,
+                as a Money object.
+        """
+        return self._acb_and_capital_gain()[1]
 
-        # Iterate over transactions in order of occurrence
-        for transaction in self.transactions():
-            # There are different acb formulae for inflows and outflows
-            if transaction.value >= 0:  # inflow
-                acb += transaction.value
-            else:  # outflow
-                acb *= (balance + transaction.value) / balance
-
-            # Reflect any growth in the balance since the previous
-            # transaction (plus the current transaction, of course)
-            balance += transaction.value + balance * \
-                self.rate_for_period(period_start, transaction.time)
-            period_start = transaction.time
-
-        # No need to incorporate growth following the last transaction
-        return acb
-
-    def capital_gains(self) -> Money:
-        """ The total capital gain for the period. """
-        # NOTE: See next_acb() for a very similarly-defined method.
-        # Any changes there should be reflected here, and (mostly) vice-
-        # versa.
-
-        # TODO: Cache the result of this calculation (and cause related
-        # property setter methods to set a flag requiring recalculation)
-
-        # Set up initial conditions
-        balance = self.balance
-        period_start = 0
-        acb = self._acb
-        capital_gains = 0
-
-        # Iterate over transactions in order of occurrence
-        for transaction in self.transactions():
-            # There are different acb formulae for inflows and outflows
-            if transaction.value >= 0:  # inflow
-                acb += transaction.value
-            else:  # outflow
-                capital_gains += transaction.value * (1 - (acb / balance))
-                acb *= (balance + transaction.value) / balance
-
-            # Reflect any growth in the balance since the previous
-            # transaction (plus the current transaction, of course)
-            balance += transaction.value + balance * \
-                self.rate_for_period(period_start, transaction.time)
-            period_start = transaction.time
-
-        # No need to incorporate growth following the last transaction
-        return capital_gains
-
-    def taxable_income(self, asset_allocation=None) -> Money:
+#    @cached_property
+    @property
+    def taxable_income(self) -> Money:
         """ The total tax owing based on activity in the account.
 
         Tax can arise from realizing capital gains, receiving dividends
@@ -866,76 +1096,91 @@ class TaxableAccount(SavingsAccount):
         sources of income. See the following link for more information:
         http://www.moneysense.ca/invest/asset-ocation-everything-in-its-place/
 
-        Args:
-            asset_allocation: # TODO: Define this arg
-
         Returns:
             Taxable income for the year from this account as a `Money`
                 object.
         """
 
-        # TODO: Cache the result of this calculation (and cause related
-        # property setter methods to set a flag requiring recalculation)
-
         # If no asset allocation is provided, assume 100% of the return
         # is capital gains. This is taxed at a 50% rate.
         if asset_allocation is None:
-            return self.capital_gains() / 2
+            return self.capital_gain / 2
 
         # TODO: Handle asset allocation in such a way that growth in the
         # account can be apportioned between capital gains, dividends,
         # etc.
-        return self.capital_gains() / 2
+        return self.capital_gains / 2
+
+    # TODO: Implement tax_withheld and tax_credit.
+    # tax_withheld: foreign withholding taxes.
+    # tax_credit: Canadian dividend credit
 
 
 class Debt(Account):
     """ A debt with a balance and an interest rate.
 
+    If there is an outstanding balance, the balance value will be a
+    *negative* value, in line with typical accounting principles.
+
     Attributes:
-        balance (Money): The balance of the debt. If there is an
-            outstanding balance, this value will be *positive*, not
-            negative.
-        withdrawal (Money): The amount withdrawn. This increases the
-            balance.
-        payment (Money): The amount paid. This decreases the balance.
-        withdrawal_inclusion (float): The *_inclusion for withdrawals.
-        payment_inclusion (float): The *_inclusion for payments.
+        balance (Money): The balance of the debt.
+        withdrawals (Money): The amount withdrawn. This increases the
+            (negative-valued) balance.
+        payments (Money): The amount paid. This decreases the
+            (negative-valued) balance.
     """
 
-    # Define aliases for `Account` properties.
+    def pay(self, value, when=0.5) -> None:
+        """ Adds a payment transaction to the account.
+
+        This is a convenience method that wraps Account.add_transaction.
+        If `when` is not provided, the transactions are made in the
+        middle of the year (which should yield roughly the same results
+        as monthly, mid-month payments).
+
+        For convenience, the sign of `value` is ignored. This will
+        result in a positive-valued inflow to the account.
+
+        Args:
+            value (Money): A positive value for the payment transaction.
+            when (float, Decimal, str): The timing of the payment.
+                See _when_conv for conventions on this argument.
+        """
+        self.add_transaction(abs(value), when)
+
+#    @cached_property
     @property
-    def withdrawal(self):
-        return self.inflow
+    def payments(self) -> Money:
+        """ Returns the sum of all payments to the account. """
+        return sum([val for val in self.transactions.values() if val > 0])
 
-    @withdrawal.setter
-    def withdrawal(self, val):
-        self.inflow = val
+    def withdraw(self, value, when=None) -> None:
+        """ Adds a withdrawal transaction to the account.
 
+        This is a convenience method that wraps Account.add_transaction.
+        If `when` is not provided, the transactions are made in the
+        middle of the year (which should yield roughly the same results
+        as monthly, mid-month payments).
+
+        For convenience, the sign of `value` is ignored. This will
+        result in a negative-valued outflow from the account.
+
+        Args:
+            value (Money): A positive value for the withdrawal
+                transaction.
+            when (float, Decimal, str): The timing of the payment.
+                See _when_conv for conventions on this argument.
+        """
+        self.add_transaction(-abs(value), when)
+
+#    @cached_property
     @property
-    def payment(self):
-        return self.outflow
-
-    @payment.setter
-    def payment(self, val):
-        self.outflow = val
-
-    @property
-    def withdrawal_inclusion(self):
-        return self.inflow_inclusion
-
-    @withdrawal_inclusion.setter
-    def withdrawal_inclusion(self, val):
-        self.inflow_inclusion = val
-
-    @property
-    def payment_inclusion(self):
-        return self.outflow_inclusion
-
-    @payment_inclusion.setter
-    def payment_inclusion(self, val):
-        self.outflow_inclusion = val
+    def withdrawals(self) -> Money:
+        """ Returns the sum of all withdrawals from the account. """
+        return abs(sum([val for val in self.transactions.values() if val < 0]))
 
 
+# TODO: Should this be subclassed from SavingsAccount?
 class OtherProperty(Account):
     """ An asset other than a bank account or similar financial vehicle.
 
@@ -946,16 +1191,31 @@ class OtherProperty(Account):
     Attributes:
         taxable (bool): Whether or not growth of the account is taxable.
     """
-    def __init__(self, balance, rate=0, inflow=0, outflow=0,
-                 inflow_inclusion=0, outflow_inclusion=0, taxable=False):
+    def __init__(self, balance, apr=0, transactions={}, nper=1,
+                 settings=None, taxable=False):
         """ Constructor for OtherProperty. """
-        super().__init__(balance, rate, inflow, outflow, inflow_inclusion,
-                         outflow_inclusion)
+        super().__init__(balance, apr, transactions, nper, settings)
         self.taxable = taxable
 
+    @property
+    def taxable(self) -> bool:
+        """ Whether or not the growth of the account is taxable. """
+        return self._taxable
+
+    @taxable.setter
+    def taxable(self, val) -> None:
+        """ Sets taxable property """
+        if not isinstance(val, bool):
+            raise TypeError('OtherAccount: taxable must be of type bool')
+
+        self._taxable = val
+        # self._invalidate_cache()
+
+#    @cached_property
+    @property
     def taxable_income(self) -> Money:
         """ The taxable income generated by the account for the year. """
         if self.taxable:
-            return super().taxable_income()
+            return super().taxable_income
         else:
             return 0
