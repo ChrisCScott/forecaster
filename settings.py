@@ -48,5 +48,5 @@ class Settings:
         withdrawal_rate = 100000
         withdrawal_timing = 'end'
 
-# Det default currency to CAD
+# Set default currency to CAD
 Settings.set_default_currency(moneyed.CAD)

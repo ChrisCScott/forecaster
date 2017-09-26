@@ -575,6 +575,20 @@ class Account(object):
         # cache, so do that here.
         # self._invalidate_cache()
 
+#   @cached_property
+    @property
+    def inflows(self) -> Money:
+        """ The sum of all inflows to the account. """
+        return sum([val for val in self.transactions.values()
+                   if val.amount > 0])
+
+#   @cached_property
+    @property
+    def outflows(self) -> Money:
+        """ The sum of all outflows from the account. """
+        return sum([val for val in self.transactions.values()
+                   if val.amount < 0])
+
     @staticmethod
     def _when_conv(when) -> Decimal:
         """ Converts various types of `when` inputs to Decimal.
@@ -611,7 +625,7 @@ class Account(object):
         """ Iterates over {when:value} transaction pairs. """
         return self._transactions.items()
 
-    def accumulation_function(self, t, partial_credit=False) -> Decimal:
+    def accumulation_function(self, t) -> Decimal:
         """ The accumulation function, A(t), from interest theory.
 
         `t` is conventionally defined in such a way that 0 is the start
@@ -628,6 +642,11 @@ class Account(object):
         `accumulation_function(when)` will yield the growth multiplier
         for the transaction.
 
+        This method's output is not well-defined where t does not align
+        with the start/end of a compounding period. (It will produce
+        sensible output, but it might not correspond to how your bank
+        calculates interest)
+
         Example:
             For an account with 5% apr and a transaction that occurs
             at time `when = 1` (i.e. the start of the period):
@@ -637,11 +656,6 @@ class Account(object):
         Args:
             t (float, Decimal): Defines the period [0,t] over which the
                 accumulation will be calculated.
-            partial_credit (Boolean): If True, any partial compounding
-                periods in [0,t] will be included in the accumulation
-                on a pro-rated basis.
-                This isn't a feature of interest theory formulae, but
-                it is something that some banks offer. Use with caution.
 
         Returns:
             The accumulation A(t), as a Decimal.
@@ -658,18 +672,9 @@ class Account(object):
         else:
             acc = (1 + self.rate / self.nper) ** (self.nper * t)
 
-        # Optionally add in growth for any partial compounding periods.
-        # The percentage of the partial period that was completed is the
-        # decimal portion of `t * nper` (equivalently `t % freq`, where
-        # `freq = 1 / nper`).
-        # Multiply that by the per-period rate (rate / nper) to obtain
-        # the pro-rated growth during the partial period.
-        if partial_credit:
-            acc *= 1 + (self.rate / self.nper) * ((t * self.nper) % 1)
-
         return acc
 
-    def future_value(self, value, when, partial_value=False) -> Money:
+    def future_value(self, value, when) -> Money:
         """ The nominal value of a transaction at the end of the year.
 
         Takes into account the compounding frequency and also the effect
@@ -680,11 +685,6 @@ class Account(object):
             when (float, Decimal): The timing of the transaction, which
                 is a value in [0,1]. See `_when_conv` for more on this
                 convention.
-            partial_credit (Boolean): If True, any partial compounding
-                periods in [0,t] will be included in the accumulation
-                on a pro-rated basis.
-                This isn't a feature of interest theory formulae, but
-                it is something that some banks offer. Use with caution.
 
         Returns:
             A value of a transaction, including any gains (or losses)
@@ -704,9 +704,9 @@ class Account(object):
         # `1-t`. Since the interest rate in [0,1] is constant and the
         # compounding periods in [0,1] are symmetric, using `when` gives
         # us exactly what we want!
-        return value * self.accumulation_function(when, partial_value)
+        return value * Decimal(self.accumulation_function(when))
 
-    def present_value(self, value, when, partial_value=False) -> Money:
+    def present_value(self, value, when) -> Money:
         """ Initial value required to achieve a given end-of-year value.
 
         Takes into account the compounding frequency and also the effect
@@ -718,11 +718,6 @@ class Account(object):
             when (float, Decimal): The timing of the transaction, which
                 is a value in [0,1]. See `_when_conv` for more on this
                 convention.
-            partial_credit (Boolean): If True, any partial compounding
-                periods in [0,t] will be included in the accumulation
-                on a pro-rated basis.
-                This isn't a feature of interest theory formulae, but
-                it is something that some banks offer. Use with caution.
 
         Returns:
             The sum of initial capital required at time t to achieve a
@@ -735,7 +730,7 @@ class Account(object):
         # value and `A(t)` is the accumulation function at time t.
         # See `future_value` for comments on some tricks being played
         # with `accumulation_function` and `when` here.
-        return value / self.accumulation_function(when, partial_value)
+        return value / Decimal(self.accumulation_function(when))
 
 #    @cached_property
     @property
@@ -873,8 +868,8 @@ class SavingsAccount(Account):
 #    @cached_property
     @property
     def contributions(self) -> Money:
-        """ Returns the sum of all contributions to the account. """
-        return sum([val for val in self.transactions.values() if val > 0])
+        """ The sum of all contributions to the account. """
+        return self.inflows
 
     def withdraw(self, value, when=None) -> None:
         """ Adds a withdrawal transaction to the account.
@@ -895,8 +890,8 @@ class SavingsAccount(Account):
 #    @cached_property
     @property
     def withdrawals(self) -> Money:
-        """ Returns the sum of all withdrawals from the account. """
-        return sum([val for val in self.transactions.values() if val < 0])
+        """ The sum of all withdrawals from the account. """
+        return self.outflows
 
     # Define new methods
 #    @cached_property
@@ -1151,8 +1146,8 @@ class Debt(Account):
 #    @cached_property
     @property
     def payments(self) -> Money:
-        """ Returns the sum of all payments to the account. """
-        return sum([val for val in self.transactions.values() if val > 0])
+        """ The sum of all payments to the account. """
+        return self.inflows
 
     def withdraw(self, value, when=None) -> None:
         """ Adds a withdrawal transaction to the account.
@@ -1176,8 +1171,8 @@ class Debt(Account):
 #    @cached_property
     @property
     def withdrawals(self) -> Money:
-        """ Returns the sum of all withdrawals from the account. """
-        return abs(sum([val for val in self.transactions.values() if val < 0]))
+        """ The sum of all withdrawals from the account. """
+        return self.outflows
 
 
 # TODO: Should this be subclassed from SavingsAccount?

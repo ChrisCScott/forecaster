@@ -9,9 +9,11 @@ import math
 import decimal
 from decimal import Decimal
 from settings import Settings
+import ledger
 from ledger import Money
 from ledger import Person
 from ledger import Account
+from test_helper import *
 
 
 class TestPersonMethods(unittest.TestCase):
@@ -322,10 +324,12 @@ class TestAccountMethods(unittest.TestCase):
             self.test_init(SubType)
 
     def test_rate(self, AccountType=Account):
-        """ Tests rate and nper """
+        """ Tests rate and nper.
+
+        This also indirectly tests apr_to_rate and rate_to_apr """
         # Simple account: Start with $1, apply 100% growth once per
         # year, no transactions. Should yield a next_balance of $2.
-        account = Account(1, Decimal(1.0), {}, 1)
+        account = AccountType(1, Decimal(1.0), {}, 1)
         self.assertEqual(account.rate, Decimal(1))
 
         # Update rate via apr.setter.
@@ -355,66 +359,88 @@ class TestAccountMethods(unittest.TestCase):
                                3)
         self.assertEqual(account.nper, 12)  # Just to be safe, check nper
 
+        # Recurse onto all subclasses of AccountType
+        # (Recall that, at first iteration, AccountType=Account)
+        for SubType in AccountType.__subclasses__():
+            self.test_init(SubType)
+
     def test_next(self, AccountType=Account):
-        """ Tests next_balance and next_year. """
+        """ Tests next_balance and next_year.
+
+        This also indirectly tests present_value and future_value.
+        """
         # Simple account: Start with $1, apply 100% growth once per
         # year, no transactions. Should yield a next_balance of $2.
-        account = Account(1, 1.0, {}, 1)
+        account = AccountType(1, 1.0, {}, 1)
         self.assertEqual(account.next_balance, Money(2))
         self.assertEqual(account.next_year().balance, Money(2))
 
         # No growth: Start with $1 and apply 0% growth.
-        account = Account(1, 0)
+        account = AccountType(1, 0)
         self.assertEqual(account.next_balance, Money(1))
         self.assertEqual(account.next_year().balance, Money(1))
 
         # Try with continuous growth
-        account = Account(1, 1, {}, 'C')
+        account = AccountType(1, 1, {}, 'C')
         self.assertAlmostEqual(account.next_balance, Money(2), 3)
         self.assertAlmostEqual(account.next_year().balance, Money(2), 3)
 
         # Try with discrete growth
-        account = Account(1, 1, {}, 'M')  # monthly
+        account = AccountType(1, 1, {}, 'M')  # monthly
         self.assertAlmostEqual(account.next_balance, Money(2), 3)
         self.assertAlmostEqual(account.next_year().balance, Money(2), 3)
 
         # Repeat above with a $2 contribution halfway through the year
 
-        # Start with $1 (which grows to $2) and contribute $2 (which
-        # doesn't grow, as it's contributed mid-period). Total: $4
-        # NOTE: If partial growth is enabled (no interface for this
-        # currently), the $2 contribution would grow to $3.
-        account = Account(1, 1.0, {0.5: Money(2)}, 1)
-        self.assertEqual(account.next_balance, Money(4))
-        self.assertEqual(account.next_year().balance, Money(4))
+        # Start with $1 (which grows to $2) and contribute $2.
+        # NOTE: The growth of the $2 transaction is not well-defined,
+        # since it occurs mid-compounding-period. However, the output
+        # should be sensible. In  particular, it should grow by $0-$1.
+        # So check to confirm that the result is in the range [$4, $5]
+        account = AccountType(1, 1.0, {0.5: Money(2)}, 1)
+        self.assertGreaterEqual(account.next_balance, Money(4))
+        self.assertLessEqual(account.next_balance, Money(5))
+        self.assertGreaterEqual(account.next_year().balance, Money(4))
+        self.assertLessEqual(account.next_year().balance, Money(5))
 
         # No growth: Start with $1, add $2, and apply 0% growth.
-        account = Account(1, 0, {0.5: Money(2)}, 1)
-        self.assertEqual(account.next_balance, Money(1))
-        self.assertEqual(account.next_year().balance, Money(1))
+        account = AccountType(1, 0, {0.5: Money(2)}, 1)
+        self.assertEqual(account.next_balance, Money(3))
+        self.assertEqual(account.next_year().balance, Money(3))
 
         # Try with continuous growth
         # Initial $1 will grow to $2 (because apr = 100%)
         # $2 added at mid-point will grow by a factor of e ^ rt
-        # (which works out to 2 * e ^ 0.5)
-        account = Account(1, 1, {0.5: Money(2)}, 'C')
-        self.assertAlmostEqual(account.next_balance,
-                               Money(2) * math.exp(0.5),
-                               3)
-        self.assertAlmostEqual(account.next_year().balance,
-                               Money(2) * math.exp(0.5),
-                               3)
+        # r is the instantantaneous rate of growth, not the apr.
+        # This can be calculated via Account.apr_to_rate, or by deriving
+        # from P = P_0 * e^rt -> 1 + apr = e^rt where t=1
+        # so r = log(1 + apr) and $2 will grow to:
+        # 2 * e ^ (log(1 + apr)t)) = 2 * (1 + apr)^t
+        account = AccountType(1, 1, {0.5: Money(2)}, 'C')
+        next_val = 2 * Money(1) + Money(2) * (1 + 1) ** Decimal(0.5)
+        self.assertAlmostEqual(account.next_balance, next_val, 5)
+        self.assertAlmostEqual(account.next_year().balance, next_val, 5)
 
         # Try with discrete growth
-        # Initial $1 will grow to $2, and the $2 transaction will grow
-        # by a factor of (1 + r/n)^nt = (1 + 1 / 6)^(6 * 0.5)
-        account = Account(1, 1, {0.5: Money(2)}, 'M')  # monthly
-        self.assertAlmostEqual(account.next_balance,
-                               Money(2) * ((1 + (1 / 6)) ** (6 * 0.5)),
-                               3)
-        self.assertAlmostEqual(account.next_year().balance,
-                               Money(2) * ((1 + (1 / 6)) ** (6 * 0.5)),
-                               3)
+        # Initial $1 will grow to $2.
+        # The $2 transaction happens at the start of a compounding
+        # period, so behaviour is well-defined. It should grow by a
+        # factor of (1 + r/n)^nt, for n = 12, t = 0.5
+        # where r is derived from:
+        # P = P_0 * (1 + r/n) ^ nt for P = P_0 * (1 + apr), apr = 1
+        # This reduces to r = n * [(1 + apr)^(1/n) - 1]
+        account = AccountType(1, 1, {0.5: Money(2)}, 'M')  # monthly
+        r = Decimal(12 * ((1 + 1) ** (1/12) - 1))
+        next_val = 2 * Money(1) + \
+            Money(2) * (1 + r / 12) ** (12 * Decimal(0.5))
+        self.assertEqual(account.rate, r)  # just to be safe
+        self.assertAlmostEqual(account.next_balance, next_val, 5)
+        self.assertAlmostEqual(account.next_year().balance, next_val, 5)
+
+        # Recurse onto all subclasses of AccountType
+        # (Recall that, at first iteration, AccountType=Account)
+        for SubType in AccountType.__subclasses__():
+            self.test_init(SubType)
 
     # TODO: When cached properties are implemented, provide a test.
     #    def test_cached_properties(self):
@@ -432,8 +458,8 @@ class TestAccountMethods(unittest.TestCase):
         """
     ''' Commented out:
         # Simple test: apr = rate, next_balance = 2
-        account = Account(1, 1.0, {}, 1)
-        next_account = Account(2)
+        account = AccountType(1, 1.0, {}, 1)
+        next_account = AccountType(2)
         self.assertEqual(account.next_balance, Money(2))
         # Bypass setter methods (so cache is not invalidated).
         # If next_balance is cached, it will still return 2 (not 0)
@@ -441,23 +467,84 @@ class TestAccountMethods(unittest.TestCase):
         self.assertEqual(account.next_balance, Money(2))
         # Now update balance through the setter
         account.balance = 0
-        next_account = Account(0)
+        next_account = AccountType(0)
         self.assertEqual(account.next_balance, Money(0))
     '''
 
-    def test_add_transaction(self):
+    def test_add_transaction(self, AccountType=Account):
         """ Tests add_transaction and related methods.
 
         Account: add_transaction
         SavingsAccount: contribute, withdraw
         Debt: pay, withdraw
         """
-        pass
+        # Start with an empty account and add a transaction.
+        account = AccountType(balance=0, apr=0, transactions={})
+        self.assertEqual(account.transactions, {})
+        account.add_transaction(Money(1), 'end')
+        self.assertEqual(account.transactions, {0: Money(1)})
+        self.assertEqual(account.inflows, Money(1))
+        # Just to be safe, confirm that new transactions are being seen
+        # by next_balance
+        self.assertEqual(account.next_balance, Money(1))
+
+        # Try adding multiple transactions at different times.
+        account = AccountType(balance=0, apr=0, transactions={})
+        account.add_transaction(Money(1), 0)
+        account.add_transaction(Money(2), 'start')
+        self.assertEqual(account.transactions, {0: Money(1), 1: Money(2)})
+        self.assertEqual(account.outflows, 0)
+
+        # Try adding multiple transactions at the same time.
+        account = AccountType(balance=0, apr=0, transactions={})
+        account.add_transaction(Money(1), 'start')
+        account.add_transaction(Money(1), 1)
+        self.assertEqual(account.transactions, {1: Money(2)})
+        self.assertEqual(account.inflows, Money(2))
+        self.assertEqual(account.outflows, 0)
+
+        # Try adding both inflows and outflows at different times.
+        account = AccountType(balance=0, apr=0, transactions={})
+        account.add_transaction(Money(1), 'start')
+        account.add_transaction(Money(-2), 'end')
+        self.assertEqual(account.transactions, {1: Money(1), 0: Money(-2)})
+        self.assertEqual(account.inflows, Money(1))
+        self.assertEqual(account.outflows, Money(-2))
+
+        # Try adding simultaneous inflows and outflows
+        # TODO: Consider whether this behaviour should be revised.
+        account = AccountType(balance=0, apr=0, transactions={})
+        account.add_transaction(Money(1), 'start')
+        account.add_transaction(Money(-2), 'start')
+        self.assertEqual(account.transactions, {1: Money(-1)})
+        self.assertEqual(account.inflows, 0)
+        self.assertEqual(account.outflows, Money(-1))
+
+        # Basic sanity tests for subclasses' aliases contribute/withdraw
+        if issubclass(AccountType, ledger.SavingsAccount):
+            account = AccountType(balance=0, apr=0, transactions={})
+            account.contribute(Money(1), 'start')
+            account.withdraw(Money(-2), 'end')
+            self.assertEqual(account.transactions, {1: Money(1), 0: Money(-2)})
+            self.assertEqual(account.contributions, Money(1))
+            self.assertEqual(account.withdrawals, Money(-2))
+
+        # Basic sanity tests for subclasses' aliases pay/withdraw
+        if issubclass(AccountType, ledger.Debt):
+            account = AccountType(balance=0, apr=0, transactions={})
+            account.pay(Money(1), 'start')
+            account.withdraw(Money(-2), 'end')
+            self.assertEqual(account.transactions, {1: Money(1), 0: Money(-2)})
+            self.assertEqual(account.payments, Money(1))
+            self.assertEqual(account.withdrawals, Money(-2))
+
+    # TODO: Test tax-related functionality (once we know where we want
+    # it to live!)
+    # TODO: Test OtherProperty (once we've settled on its functionality)
 
 if __name__ == '__main__':
     # NOTE: BasicContext is useful for debugging, as most errors are treated
     # as exceptions (instead of returning "NaN"). It is lower-precision than
     # ExtendedContext, which is the default.
     decimal.setcontext(decimal.BasicContext)
-    warnings.simplefilter('error')
     unittest.main()
