@@ -16,28 +16,43 @@ class Year(object):
     to and outflows from (or between) accounts based on Strategy and
     Scenario information.
 
+    The Year object is built around either a single person or a family.
+    The reason for this is that married people have specific tax
+    treatment.
+
     Attributes:
-        people (list): The people for whom the financial forecast is
-            being generated. May be either 1 or 2 married people.
-            The purpose of the two-person constraint is to allow for
-            the modelling of certain spousal tax credits and account
-            options. If you want to model unmarried people or more than
-            2 people, build multiple Year objects.
-        gross_income (Money): 
-        net_income (Money): 
-        gross_contribution (Money): 
-        contribution_reduction (Money): 
-        net_contribution (Money):
-        contributions (dict): 
-        withdrawals_total (Money): 
-        withdrawals (dict): 
-        benefits_total (Money): 
-        benefits (dict): 
-        tax_owed (Money): 
-        tax_carryforward (Money): 
-        tax_paid (Money): 
-        savings_accounts (list): 
-        debts (list): 
+        person1 (Person): A person for whom the financial forecast is
+            being generated.
+        person2 (Person): The spouse of person1. Optional.
+        person1_gross_income (Money): The gross income of person1.
+        person2_gross_income (Money): The gross income of person2.
+            Optional.
+        gross_income (Money): The gross income for the family.
+        net_income (Money): The net income for the family.
+        gross_contribution (Money): The amount available to contribute
+            to savings, before any reductions. This is drawn from
+            net income and inter-year rollovers.
+        contribution_reduction (Money): Amounts diverted from savings,
+            such as certain debt repayments or childcare.
+        contributions_total (Money): The total amount contributed to
+            savings.
+        contributions (dict): The contributions to each account, stored
+            as {Account: Money} pairs.
+        withdrawals_total (Money): The total amount withdrawn from
+            savings.
+        withdrawals (dict): The withdrawals from each account, stored
+            as {Account: Money} pairs.
+        benefits_total (Money): The total amount of benefits recieved.
+        benefits (dict): The benefits received from each source, stored
+            as {Benefit: Money} pairs.
+        tax_owed (Money): The amount of tax owed on income for this year
+        tax_paid (Money): The amount of tax paid this year. This
+            includes withholding taxes and payments of the previous
+            year's carryforward.
+        tax_carryforward (Money): The amount of tax remaining unpaid
+            from this year (to be paid next year).
+        savings_accounts (list): All savings accounts.
+        debts (list): All debts.
     '''
 
     def __init__(self, last_year=None, scenario=None, strategy=None,
