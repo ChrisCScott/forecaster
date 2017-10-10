@@ -163,10 +163,23 @@ class Strategy:
 
     Relevant financial information includes: The age, planned retirement
     age, and life expectancy of the people; the rate at which the people
-    save (which may be based on a rate of income and/or income growth),
-    the rate at which the people intend to draw from their savings in
-    retirement, and the way that the people manage their savings over
-    their lifetimes.
+    save (which may be based on income and/or spending rates, the rate
+    at which the people intend to draw from their savings in retirement,
+    and the way that the people manage their savings over their lives.
+
+    Attributes:
+        person1 (Person): A person being described by the Strategy
+            object.
+        person2 (Person): The spouse of person1. Optional.
+        contribution_strategy (TODO):
+        contribution_rate (Decimal): TODO
+        contribution_timing (Decimal, str): TODO
+        allocation_model (TODO)
+        adjust_allocation_for_early_retirement (bool): TODO
+        refund_reinvestment_rate (Decimal): TODO
+        withdrawal_strategy (TODO)
+        withdrawal_rate (Decimal, Money): TODO
+        withdrawal_timing (Decimal, str): TODO
     """
 
     # TODO: Make this class hierarchy flat (as is the Python way)
@@ -174,6 +187,13 @@ class Strategy:
     # `Strategy(settings=settings)` (see e.g. Scenario).
     # TODO: Represent person1 and person2 as attributes of this class.
     # Consider whether to move the Person class from ledger.py to here
+    # TODO: For *_strategy and *_model attributes, consider defining a
+    # dict of {str, function} pairs internal to the class. The user can
+    # provide a string and the object is initialized to point to the
+    # associated function. (TODO: Define a common function signature.)
+    # TODO: Reduce contribution attributes to a single contribution
+    # strategy object which contains the contribution rate and timing.
+    # Do the same for investment strategy and withdrawal strategy.
 
     class ContributionStrategy:
         """ Defines a contribution strategy.
