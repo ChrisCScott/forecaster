@@ -5,9 +5,8 @@ from decimal import Decimal
 from random import Random
 from settings import Settings
 from scenario import Scenario
-from scenario import ConstantScenario
-from scenario import DefaultScenario
-from scenario import ScenarioYear
+
+# TODO: Revise unit tests to correspond to new data model
 
 
 class TestScenarioMethods(unittest.TestCase):
