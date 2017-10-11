@@ -4,6 +4,7 @@ define contribution and withdrawal strategies and associated flags. """
 from datetime import datetime
 from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
+from ledger import Money
 
 
 class Person(object):
@@ -153,7 +154,98 @@ class Person(object):
         return age_
 
 
-class Strategy:
+class ContributionStrategy(object):
+    """ A callable class that determines an annual contribution.
+
+    Attributes:
+        strategy (str): A string corresponding to a particular
+            contribution strategy. See `strategies` for acceptable keys.
+        strategies (dict): {str, func} pairs where each key identifies
+            a strategy (in human-readable text) and each value is a
+            function of the form:
+                func(TODO) -> Money
+            Acceptable keys include: TODO
+        rate (Decimal): A user-supplied contribution rate. Has different
+            meanings for different strategies; may be a percentage (e.g.
+            Decimal('0.03') means 3%) or a currency value (e.g. 3000 for
+            a $3000 contribution).
+        timing (Decimal, str): The contribution is modelled as a lump
+            sum which takes place at this time. Expressed according to
+            the `when` convention described in `ledger.Account`.
+        inflation_adjusted (bool): If True, `rate` is interpreted as a
+            real (i.e. inflation-adjusted) currency value, unless the
+            current strategy interprets it as a percentage.
+            Optional. Defaults to True.
+
+    Args:
+        TODO (same args are `strategies` funcs above)
+
+    Returns:
+        A Money object corresponding to the gross contribution amount
+        for the family for the year.
+    """
+
+    def _strategy_constant(self):
+        """ Contribute a constant amount (in real terms) each year. """
+        # TODO: Inflation-adjust the return value. This will require
+        # receiving an arg that defines an inflation adjustment factor
+        # (e.g. a scenario object with a real_value method and a year
+        # object with an (int) year attribute)
+        return Money(self.rate)
+
+    strategies = {
+        "Constant contribution": _strategy_constant
+    }
+
+    def __init__(self):  # TODO
+        pass
+
+    def gross_contribution(self, *args, **kwargs):
+        """ The total amount contributed this year, before reductions.
+
+        This method takes the same arguments as the `strategies`
+        functions. See documentation for class ContributionStrategy.
+
+        Returns:
+            A Money object corresponding to the gross contribution
+            amount for the family for the year.
+        """
+        # TODO: Explicitly define positional arguments
+        return self.strategies[self.strategy](*args, **kwargs)
+
+    def contribution_by_account(self, contribution, accounts):  # TODO
+        """ Determines how much to contribute to each account.
+
+         Contributions are determined based on the types of accounts.
+         If two objects share a type (e.g. if there are two RRSP
+         objects) then the total contribution to that type of account
+         is split evenly between them.
+
+        Args:
+            contribution (Money): The total amount to be contributed
+                (net of any reductions) to the various Account objects
+                in `accounts`.
+            accounts (list): A list of objects of type Account or its
+                subclasses.
+
+        Returns:
+            A dict of {Account, Money} pairs, where each account in
+            `accounts` is a key and the corresponding Money value is
+            the amount of the contribution to that account.
+        """
+        # TODO: Consider building a list of classes in `accounts` (with
+        # unique elements, so if there are two RRSPs `RRSP` appears just
+        # once) and sorting based on priority. Check to see if there are
+        # more accounts than classes; if so, then divvy up contributions
+        # between accounts of the same type.
+        pass
+
+    def __call__(self, *args, **kwargs):
+        """ Returns the gross contribution for the year. """
+        return self.gross_contribution(*args, **kwargs)
+
+
+class Strategy(object):
     """ Describes a person's (or family's) financial behaviour.
 
     A strategy describes one or two people. If two people are given,

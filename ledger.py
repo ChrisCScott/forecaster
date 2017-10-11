@@ -20,10 +20,11 @@ class Money(PyMoney):
         return Money(round(self.amount, ndigits), self.currency)
 
     def __eq__(self, other):
-        """ Extends == to use Decimal's ==.
+        """ Extends == operator to allow comparison with Decimal.
 
         This allows for comparison to 0 (or other Decimal-convertible
-        values).
+        values), but not with other Money objects in different
+        currencies.
         """
         # NOTE: If the other object is also a Money object, this
         # won't fall back to Decimal, because Decimal doesn't know how
