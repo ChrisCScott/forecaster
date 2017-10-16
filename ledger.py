@@ -14,7 +14,19 @@ from settings import Settings
 
 
 class Money(PyMoney):
-    """ Extends py-moneyed to support __round__ """
+    """ Extends py-moneyed to support Decimal-like functions. """
+    def __init__(self, amount=Decimal('0.0'), currency=None):
+        """ Initializes with application-level default currency.
+
+        Also allows for initializing from another Money object.
+        """
+        if isinstance(amount, Money):
+            super().__init__(amount.amount, amount.currency)
+        elif currency is None:
+            super().__init__(amount, Settings.currency)
+        else:
+            super().__init__(amount, currency)
+
     def __round__(self, ndigits=None):
         """ Rounds to ndigits """
         return Money(round(self.amount, ndigits), self.currency)
@@ -323,8 +335,8 @@ class Account(object):
     def transactions(self, transactions) -> dict:
         """ Sets transactions and does associated type-checking. """
         # These are long, nested calls, so let's shorten them
-        in_t = self.settings.StrategyDefaults.contribution_timing
-        out_t = self.settings.StrategyDefaults.withdrawal_timing
+        in_t = self.settings.contribution_timing
+        out_t = self.settings.withdrawal_timing
 
         # We have some typechecking to do, so we'll start with an
         # empty dict and add the elements one at a time.
@@ -651,7 +663,7 @@ class Account(object):
         """
         return type(self)(self.next_balance)
 
-    def max_outflow(self, when) -> Money:
+    def max_outflow(self, when='end') -> Money:
         """ An outflow which would reduce the end-of-year balance to 0.
 
         Returns a value which, if withdrawn at time `when`, would result
@@ -659,7 +671,7 @@ class Account(object):
         other transactions are accounted for.
 
         NOTE: This does not guarantee that the account balance will not
-        be negative at a time between `when` and `'end'`.
+        be negative at a time between `when` and `end`.
 
         Equivalently, this is the future value of the account, net of
         all existing transactions, at present time `when`.
@@ -675,6 +687,14 @@ class Account(object):
         # We want the future balance, reduced by the growth.
         # And, since this is an outflow, the result should be negative.
         return -self.next_balance / self.accumulation_function(when)
+
+    def max_inflow(self, when='end'):
+        """ The maximum amount that can be contributed to the account.
+
+        For non-registered accounts, there is no maximum, so this method
+        returns Decimal('Infinity')
+        """
+        return Decimal('Infinity')
 
 
 class SavingsAccount(Account):
@@ -712,7 +732,7 @@ class SavingsAccount(Account):
 
         # Use an application-level default for `when` if none provided.
         if when is None:
-            when = Settings.StrategyDefaults.contribution_timing
+            when = Settings.contribution_timing
 
         self.add_transaction(value, when)
 
@@ -734,7 +754,7 @@ class SavingsAccount(Account):
 
         # Use an application-level default for `when` if none provided.
         if when is None:
-            when = Settings.StrategyDefaults.withdrawal_timing
+            when = Settings.withdrawal_timing
 
         self.add_transaction(value, when)
 

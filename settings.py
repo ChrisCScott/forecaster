@@ -2,8 +2,7 @@
 It provides the `Settings` class, which contains various `*Defaults`
 classes. They provide default values for aspects of the application. """
 import datetime
-from moneyed import Currency
-import moneyed
+from decimal import Decimal
 
 
 class Settings:
@@ -22,7 +21,7 @@ class Settings:
     display_year = initial_year  # Base year for displaying real-valued amounts
     num_years = 100  # Model this number of years from the initial_year
     num_children = 3  # How many children may be represented
-    currency = moneyed.CAD  # Use Canadian dollars as the default currency
+    currency = 'CAD'  # Use Canadian dollars as the default currency
 
     """ Defaults for `Scenario`  """
     inflation = 0.02
@@ -44,16 +43,39 @@ class Settings:
         year=datetime.datetime.now().year-30)
     person2_retirement_date = 65
 
-    # TODO: update to match an actual contribution strategy
-    contribution_rate_strategy = 1
-    contribution_rate = 0.5
-    contribution_timing = 'end'
-    # TODO: update to match an actual allocation strategy
-    allocation_model = 1
-    adjust_allocation_for_early_retirement = True
-    refund_reinvestment_rate = 1
+    ''' ContributionStrategy defaults '''
+    contribution_strategy = 'Percentage of net income'
+    contribution_rate = Decimal('0.2')
+    contribution_refund_reinvestment_rate = 1
+    contribution_inflation_adjusted = True
 
-    # TODO: update to match an actual withdrawal strategy
-    withdrawal_strategy = 2
-    withdrawal_rate = 100000
-    withdrawal_timing = 'end'
+    ''' TransactionStrategy defaults for inflows/contributions '''
+    transaction_in_strategy = 'Ordered'
+    transaction_in_weights = {
+        'RRSP': 1, 'TFSA': 2, 'SavingsAccount': 3
+        }
+    transaction_in_timing = 'end'
+
+    ''' WithdrawalStrategy defaults '''
+    # TODO: Update to correspond to WithdrawalStrategy implementation
+    withdrawal_strategy = 'Constant withdrawal'
+    withdrawal_rate = Money('100000')
+    withdrawal_min_living_standard = Money('50000')
+    withdrawal_inflation_adjusted = True
+
+    ''' TransactionStrategy defaults for outflows/withdrawals '''
+    transaction_out_strategy = 'Ordered'
+    transaction_out_weights = {
+        'RRSP': 1, 'TFSA': 2, 'SavingsAccount': 3
+        }
+    transaction_out_timing = 'end'
+
+    ''' AllocationStrategy defaults '''
+    allocation_strategy = 'n-age'
+    allocation_min_equity = Decimal('0.3')
+    allocation_max_equity = Decimal('0.3')
+    allocation_standard_retirement_age = 65
+    allocation_constant_strategy_target = 65
+    allocation_transition_strategy_target = Decimal('0.5')
+    allocation_risk_transition_period = 20
+    allocation_adjust_for_early_retirement = True
