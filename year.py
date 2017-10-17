@@ -24,10 +24,15 @@ class Year(object):
     Attributes:
         person1 (Person): A person for whom the financial forecast is
             being generated.
+        person2 (Person): The spouse of person1. Optional.
+        contribution_strategy (ContributionStrategy): TODO
+        withdrawal_strategy (WithdrawalStrategy): TODO
+        contribution_transaction_strategy (TransactionStrategy): TODO
+        withdrawal_transaction_strategy (WithdrawalTransactionStrategy): TODO
+        allocation_strategy (AllocationStrategy): TODO
         person1_gross_income (Money): The gross income of person1.
         person1_tax_payable (Money): The taxes payable on the income of
             person1.
-        person2 (Person): The spouse of person1. Optional.
         person2_gross_income (Money): The gross income of person2.
             Optional.
         person2_tax_payable (Money): The taxes payable on the income of
@@ -59,6 +64,9 @@ class Year(object):
         savings_accounts (list): All savings accounts.
         debts (list): All debts.
     '''
+    # TODO: Redesign this class to be "Forecast", turn all Money-class
+    # objects into dicts. Otherwise the overall logic is basically the
+    # same. (Note that Account objects are getting a similar overhaul)
 
     def __init__(self, last_year=None, scenario=None, strategy=None,
                  inputs=None, settings=Settings):

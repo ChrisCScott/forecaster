@@ -148,6 +148,23 @@ class Account(object):
             inflow/outflow transaction timing, etc.). Optional; uses
             global Settings class attributes if None given.
     """
+    # TODO: Convert all attributes into dicts (essentially, turn
+    # `Account` into a dict of `Account`). The same core logic will
+    # apply to most methods, although indexing will be required.
+
+    # TODO: Modify next_year to add to the dicts. (add a _this_year
+    # attribute to make accessing the last elements convenient).
+
+    # TODO: Consider removing most properties and replacing them with
+    # methods. (Most setters are just there for type-checking anyways).
+    # The methods can operate on the values of the current year, and
+    # previous years' values can be treated as immutable.
+
+    # NOTE: Consider using lists instead - this would be more efficient
+    # and might map better to the logic of this method (which doesn't
+    # care about indexing but does want to maintain an ordered list that
+    # we append to), but it may be less convenient for client code that
+    # generally prefers to access attributes via a `year` key.
 
     def __init__(self, balance, apr=0, transactions={}, nper=1,
                  settings=None):
@@ -486,6 +503,8 @@ class Account(object):
 
     def __iter__(self):
         """ Iterates over {when:value} transaction pairs. """
+        # TODO: Iterate over range(initial_year, this_year)?
+        # Return a namedtuple?
         return self._transactions.items()
 
     def accumulation_function(self, t) -> Decimal:

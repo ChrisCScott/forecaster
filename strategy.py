@@ -158,7 +158,7 @@ class Person(object):
 
 
 def strategy(key):
-    """ A decorator for strategy methods, used by StrategyABC subclasses
+    """ A decorator for strategy methods, used by Strategy subclasses
 
     Methods decorated with this decorator will be automatically added
     to the dict `strategies`, which is an attribute of the subclass.
@@ -166,7 +166,7 @@ def strategy(key):
     strategy methods that are added dynamically.
 
     Example:
-        class ExampleStrategy(StrategyABC):
+        class ExampleStrategy(Strategy):
             @strategy('method key')
             def _strategy_method(self):
                 return
@@ -191,7 +191,7 @@ class StrategyType(type):
     collected only once, at definition time. If you want to add a
     strategy to a class later, you'll need to manually add it to the
     subclass's `strategies` dict.
-    TODO: Add static class methods to StrategyABC to register/unregister
+    TODO: Add static class methods to Strategy to register/unregister
     strategy methods? (consider using signature `(func [, key])`)
     """
     def __init__(cls, *args, **kwargs):
@@ -207,7 +207,7 @@ class StrategyType(type):
         }
 
 
-class StrategyABC(object, metaclass=StrategyType):
+class Strategy(object, metaclass=StrategyType):
     """ An abstract callable class for determining a strategy.
 
     Attributes:
@@ -235,12 +235,12 @@ class StrategyABC(object, metaclass=StrategyType):
 
         # Check types and values:
         if not isinstance(self.strategy, str):
-            raise TypeError('StrategyABC: strategy must be a str')
+            raise TypeError('Strategy: strategy must be a str')
         if self.strategy not in self.strategies:
-            raise ValueError('StrategyABC: Unsupported strategy ' +
+            raise ValueError('Strategy: Unsupported strategy ' +
                              'value: ' + self.strategy)
         if not (settings == Settings or isinstance(settings, Settings)):
-            raise TypeError('StrategyABC: settings must be Settings object.')
+            raise TypeError('Strategy: settings must be Settings object.')
 
     def __call__(self, *args, **kwargs):
         """ Makes the Strategy object callable. """
@@ -260,7 +260,7 @@ class StrategyABC(object, metaclass=StrategyType):
                                 'type(s) ' + str(var_type))
 
 
-class ContributionStrategy(StrategyABC):
+class ContributionStrategy(Strategy):
     """ Determines an annual gross contribution, before reductions.
 
     This class is callable. Its call signature has this form:
@@ -380,7 +380,7 @@ class ContributionStrategy(StrategyABC):
         self._param_check(gross_income, 'gross income')
         return self.rate * gross_income
 
-    def __call__(self, net_income=None, gross_income=None, 
+    def __call__(self, net_income=None, gross_income=None,
                  inflation_adjustment=None, refund=0, other_contribution=0,
                  *args, **kwargs):
         """ Returns the gross contribution for the year. """
@@ -394,7 +394,7 @@ class ContributionStrategy(StrategyABC):
                              *args, **kwargs)
 
 
-class WithdrawalStrategy(StrategyABC):
+class WithdrawalStrategy(Strategy):
     """ Determines an annual gross withdrawal.
 
     This class is callable. Its call signature has this form:
@@ -561,14 +561,19 @@ class WithdrawalStrategy(StrategyABC):
                                     inflation_adjustment[retirement_year])
         return self.rate * gross_income[retirement_year] * inflation_adjustment
 
+    # TODO: Add another strategy that tweaks the withdrawal rate
+    # periodically (e.g. every 10 years) based on actual portfolio
+    # performance? (This sort of thing is why this class was redesigned
+    # to take dicts as inputs instead of a handful of scalar values.)
+
     def min_withdrawal(self, inflation_adjustment, this_year):
         """ The minimum withdrawal required to meet min_living_standard. """
+        # TODO: Make this more sophisticated (e.g. account for taxes so
+        # that the min. withdrawal yieds a post-tax amount of
+        # self.min_living_standard)
         self._param_check(inflation_adjustment, 'inflation adjustment')
         self._param_check(this_year, 'this year')
         return self.min_living_standard * inflation_adjustment[this_year]
-        # TODO: Determine the args necessary for this and add them to
-        # __call__ as well.
-        pass
 
     def __call__(self, net_income=None, gross_income=None, principal=None,
                  inflation_adjustment=None, retirement_year=None,
@@ -581,7 +586,7 @@ class WithdrawalStrategy(StrategyABC):
             *args, **kwargs)) - benefits
 
 
-class TransactionStrategy(StrategyABC):
+class TransactionStrategy(Strategy):
     """ Determines account-specific transactions.
 
     If there are multiple accounts of the same type, the behaviour
@@ -640,11 +645,8 @@ class TransactionStrategy(StrategyABC):
             else settings.transaction_in_timing
 
         # TODO: check that weights keys/values are of type str/Decimal?
-        if not isinstance(self.weights, dict):
-            raise TypeError('TransactionStrategy: weights must be a dict.')
-        if not isinstance(self.timing, (Decimal, str)):
-            raise TypeError('TransactionStrategy: timing must be Decimal ' +
-                            'or str type.')
+        self._param_check(self.weights, 'weights', dict)
+        self._param_check(self.timing, 'timing', (Decimal, str))
 
     @strategy('Ordered')
     def _strategy_ordered(self, total, accounts, *args, **kwargs):
@@ -746,10 +748,24 @@ class TransactionStrategy(StrategyABC):
         return super().__call__(total=total, total=accounts, *args, **kwargs)
 
 
+class WithdrawalTransactionStrategy(TransactionStrategy):
+    ''' A TransactionStrategy that uses withdrawal defaults. '''
+    def __init__(self, strategy=None, weights=None, timing=None,
+                 settings=Settings):
+        """ Constructor for TransactionStrategy. """
+        if strategy is None:
+            strategy = settings.transaction_out_strategy
+        if weights is None:
+            weights = settings.transaction_out_weights
+        if timing is None:
+            timing = settings.transaction_out_timing
+        super().__init__(strategy, weights, timing, settings)
+
+
 AssetAllocation = namedtuple('AssetAllocation', 'equity fixed_income')
 
 
-class AllocationStrategy(StrategyABC):
+class AllocationStrategy(Strategy):
     """ Generates an asset allocation for a point in time. Callable.
 
     Attributes:
@@ -770,7 +786,7 @@ class AllocationStrategy(StrategyABC):
             may be invested in equities.
         standard_retirement_age (int): The typical retirement age used
             in retirement planning. This is used if
-            adjust_for_early_retirement is False, otherwise the actual
+            adjust_for_retirement_plan is False, otherwise the actual
             (estimated) retirement age for the person is used.
         constant_strategy_target (int): The value `n` used by the
             `n-age` strategy. (e.g. for `100-age`, this would be `100`.)
@@ -782,11 +798,15 @@ class AllocationStrategy(StrategyABC):
             if set to 20, the strategy will transition from max_equity
             to transition_strategy_target over 20 years, ending on the
             retirement date.
-        adjust_for_early_retirement (bool): TODO
+        adjust_for_retirement_plan (bool): If True, the allocation will
+            be adjusted to increase risk for later retirement or
+            decrease risk for later retirement. If False, the standard
+            retirement age will be used.
 
     Args:
-        age (int): TODO
-        retirement_age (int): TODO
+        age (int): The current age of the plannee.
+        retirement_age (int): The (estimated) retirement age of the
+            plannee.
 
     Returns:
         An Allocation object describing the asset allocation. Each
@@ -796,7 +816,7 @@ class AllocationStrategy(StrategyABC):
     def __init__(self, strategy=None, min_equity=None, max_equity=None,
                  standard_retirement_age=None, constant_strategy_target=None,
                  transition_strategy_target=None, risk_transition_period=None,
-                 adjust_for_early_retirement=True, settings=Settings):
+                 adjust_for_retirement_plan=None, settings=Settings):
         """ Constructor for AllocationStrategy. """
         # Use the subclass-specific default strategy if none provided
         if strategy is None:
@@ -820,9 +840,9 @@ class AllocationStrategy(StrategyABC):
         self.risk_transition_period = Decimal(risk_transition_period) \
             if risk_transition_period is not None \
             else settings.allocation_risk_transition_period
-        self.adjust_for_early_retirement = bool(adjust_for_early_retirement) \
-            if adjust_for_early_retirement is not None \
-            else settings.allocation_adjust_for_early_retirement
+        self.adjust_for_retirement_plan = bool(adjust_for_retirement_plan) \
+            if adjust_for_retirement_plan is not None \
+            else settings.allocation_adjust_for_retirement_plan
 
         # All of the above are type-converted; no need to check types!
 
@@ -832,9 +852,11 @@ class AllocationStrategy(StrategyABC):
         """ Used for 100-age, 110-age, 125-age, etc. strategies. """
         # If we're adjusting for early retirement, determine an
         # adjustment factor
-        if not self.adjust_for_early_retirement:
+        self._param_check(age, 'age')
+        if not self.adjust_for_retirement_plan:
             adj = 0
         else:
+            self._param_check(retirement_age, 'retirement age')
             adj = retirement_age - self.standard_retirement_age
         # The formula for `n-age` is just that (recall that
         # n=constant_strategy_target). Insert the adjustment factor too.
@@ -848,7 +870,9 @@ class AllocationStrategy(StrategyABC):
     def _strategy_transition_to_constant(self, age, retirement_age=None,
                                          *args, **kwargs):
         """ Used for `Transition to 50-50`, `Transition to 70-30`, etc. """
-        if not self.adjust_for_early_retirement:
+        self._param_check(age, 'age')
+        if not self.adjust_for_retirement_plan:
+            self._param_check(retirement_age, 'retirement age')
             retirement_age = self.standard_retirement_age
         # NOTE: None of the below refers to min_equity; if target_equity
         # is lower than min_equity, equity allocation will drop below
@@ -887,46 +911,3 @@ class AllocationStrategy(StrategyABC):
         # withdrawals and principal) to allow for behaviour-aware
         # rebalancing.
         return super().__call__(age, retirement_age, *args, **kwargs)
-
-
-class Strategy(object):
-    """ Describes a person's (or family's) financial behaviour.
-
-    A strategy describes one or two people. If two people are given,
-    they are assumed to be spouses; if you don't want this treatment
-    (which is entirely driven by tax planning considerations), build
-    separate projections for the two.
-
-    Relevant financial information includes: The age, planned retirement
-    age, and life expectancy of the people; the rate at which the people
-    save (which may be based on income and/or spending rates, the rate
-    at which the people intend to draw from their savings in retirement,
-    and the way that the people manage their savings over their lives.
-
-    Attributes:
-        person1 (Person): A person being described by the Strategy
-            object.
-        person2 (Person): The spouse of person1. Optional.
-        contribution_strategy (TODO):
-        withdrawal_strategy (TODO): 
-        transaction_strategy (TODO):
-        allocation_strategy (TODO):
-    """
-
-    # TODO: Make this class hierarchy flat (as is the Python way)
-    # TODO: Implement __init__ function that allows for the form
-    # `Strategy(settings=settings)` (see e.g. Scenario).
-    # TODO: Represent person1 and person2 as attributes of this class.
-    # Consider whether to move the Person class from ledger.py to here
-    # TODO: For *_strategy and *_model attributes, consider defining a
-    # dict of {str, function} pairs internal to the class. The user can
-    # provide a string and the object is initialized to point to the
-    # associated function. (TODO: Define a common function signature.)
-    # TODO: Reduce contribution attributes to a single contribution
-    # strategy object which contains the contribution rate and timing.
-    # Do the same for investment strategy and withdrawal strategy.
-
-    def __init__(self):
-        """ Constructor for `Strategy`. """
-        # TODO: Implement this method
-        pass
