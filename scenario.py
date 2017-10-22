@@ -72,7 +72,7 @@ class Scenario(object):
             if default is None:
                 raise ValueError(
                     'Scenario: input and default cannot both be None.')
-            return _build_dict(default, initial_year)
+            return Scenario._build_dict(default, initial_year)
 
         # If input is already a default dict, update its default factory
         # (if a default was provided) and return it without wrapping.
@@ -107,13 +107,8 @@ class Scenario(object):
                             input))
 
         # Otherwise, turn a scalar value into a defaultdict:
-        # First, confirm that there's no default:
-        if default is not None:
-            raise ValueError(
-                'Scenario: default cannot be set for scalar input.')
-        # Then, simply construct the defaultdict using the scalar input
-        # as the default factory.
-        return collections.defaultdict(lambda: default)
+        # NOTE: default is ignored in this case
+        return collections.defaultdict(lambda: input)
 
     def __init__(self, inflation=None, stock_return=None, bond_return=None,
                  other_return=None, management_fees=None,
@@ -153,6 +148,35 @@ class Scenario(object):
             TypeError: Input with unexpected type.
             ValueError: Input lists not of matching lengths.
         """
+        # First, take an inventory of the inputs that can be scalars,
+        # lists, or dicts:
+        inputs = [inflation, stock_return, bond_return, other_return,
+                  management_fees, person1_raise_rate, person2_raise_rate]
+        # Then store the non-empty list and dict inputs for future use:
+        list_inputs = [input for input in inputs if isinstance(input, list) and
+                       input != []]
+        dict_inputs = [input for input in inputs if isinstance(input, dict) and
+                       input != {}]
+
+        # List args are interpreted based on initial_year, so if
+        # initial_year either use the initial year from settings or
+        # use the earlier year represented in any dict inputs.
+        if initial_year is None:
+            if dict_inputs != []:
+                dict_initial_years = [min(input.keys())
+                                      for input in dict_inputs]
+                initial_year = min(dict_initial_years)
+                initial_year = min(initial_year, settings.initial_year)
+            else:
+                initial_year = settings.initial_year
+        # If initial_year was provided, do a type-check/conversion:
+        elif initial_year != int(initial_year):
+            raise ValueError(
+                'Scenario: initial_year must be convertible to int.')
+        else:
+            initial_year = int(initial_year)
+
+        # Now build dicts from the inputs
         self.inflation = self._build_dict(
             inflation, initial_year, settings.inflation)
         self.stock_return = self._build_dict(
@@ -168,35 +192,32 @@ class Scenario(object):
             person1_raise_rate, initial_year, settings.person1_raise_rate)
         self.person2_raise_rate = self._build_dict(
             person2_raise_rate, initial_year, settings.person2_raise_rate)
-
-        # initial_year isn't converted to a dict, but we do need to
-        # type-check (or use default values, as necessary):
-        if initial_year is None:
-            self.initial_year = settings.initial_year
-        elif initial_year != int(initial_year):
-            raise ValueError(
-                'Scenario: initial_year must be convertible to int.')
-        else:
-            self.initial_year = int(initial_year)
+        self.initial_year = initial_year
 
         # If any inputs were lists, confirm they're all the same length:
-        inputs = {inflation, stock_return, bond_return, other_return,
-                  management_fees, raise_rate}
-        # Get just the lengths of the lists
-        lengths = {len(x) for x in inputs if isinstance(x, list)}
+        # First, get lists of the list/dict input lengths.
+        # (NOTE: For dicts, use their span, not the __len__ measure of
+        # length, which is just the number of keys. The span is the
+        # number of years covered by the dict)
+        list_lengths = [len(x) for x in list_inputs]
+        dict_lengths = [max(x.keys()) - self.initial_year for x in dict_inputs]
         # Ensure they're all the same length:
-        test_len = next(iter(lengths))  # pick an arbitrary length
-        if not all(test_len == length for length in lengths):
-            raise ValueError('Scenario: Input lists must be matching lengths.')
-        # Also ensure that the list inputs are at least as long as the
-        # longest-spanning dict (where 'span' means the number of years
-        # it covers, not necessarily the number of keys!)
-        span = max(max(x.keys()) - min(x.keys()) for x in inputs
-                   if isinstance(x, dict))
-        if test_len < span:
-            raise ValueError('Scenario: Input lists must cover at least the ' +
-                             'same dates as dict inputs.')
-        self.__len = max(span, test_len)
+        if list_lengths != []:
+            if not all(list_lengths[0] == length for length in list_lengths):
+                raise ValueError(
+                    'Scenario: Input lists must be matching lengths.')
+            # Ensure list inputs are at least as long as the longest dict
+            if dict_lengths != []:
+                if list_lengths[0] < max(dict_lengths):
+                    raise ValueError('Scenario: Input lists must cover at ' +
+                                     'least the same dates as dict inputs.')
+
+        # While we're at it, let's set __len using *_lengths
+        self.__len = 1  # We have at least one year entry
+        if list_lengths != []:
+            self.__len = max(list_lengths)
+        if dict_lengths != []:
+            self.__len = max(self.__len, max(dict_lengths))
 
     # TODO: Update data model based on the new __init__
 

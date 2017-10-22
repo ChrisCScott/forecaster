@@ -380,8 +380,8 @@ class ContributionStrategy(Strategy):
         self._param_check(gross_income, 'gross income')
         return self.rate * gross_income
 
-    def __call__(self, net_income=None, gross_income=None,
-                 inflation_adjustment=None, refund=0, other_contribution=0,
+    def __call__(self, refund=0, other_contribution=0, net_income=None,
+                 gross_income=None, inflation_adjustment=None,
                  *args, **kwargs):
         """ Returns the gross contribution for the year. """
         # NOTE: We layer on refund and other_contribution amounts on top
@@ -465,7 +465,7 @@ class WithdrawalStrategy(Strategy):
 
     def __init__(self, strategy=None, rate=None, min_living_standard=None,
                  timing=None, benefit_adjusted=None, inflation_adjusted=None,
-                 settings=Settings):  # TODO: Complete call signature
+                 settings=Settings):
         """ Constructor for ContributionStrategy. """
         # Use the subclass-specific default strategy if none provided
         if strategy is None:
@@ -482,8 +482,10 @@ class WithdrawalStrategy(Strategy):
             if min_living_standard is not None \
             else settings.withdrawal_min_living_standard
         self.timing = timing if timing is not None \
-            else settings.transaction_out_strategy
-        self.benefit_adjusted = bool(benefit_adjusted)
+            else settings.transaction_out_timing
+        self.benefit_adjusted = bool(benefit_adjusted) \
+            if benefit_adjusted is not None \
+            else settings.withdrawal_benefit_adjusted
         self.inflation_adjusted = bool(inflation_adjusted) \
             if inflation_adjusted is not None \
             else settings.withdrawal_inflation_adjusted
@@ -491,6 +493,10 @@ class WithdrawalStrategy(Strategy):
         if not isinstance(self.timing, (Decimal, str)):
             raise TypeError('WithdrawalStrategy: timing must be Decimal ' +
                             'or str type.')
+        elif isinstance(self.timing, str) and not (self.timing == 'start' or
+                                                   self.timing == 'end'):
+            raise ValueError('WithdrawalStrategy: timing must be \'start\' ' +
+                             'or \'end\' if of type str')
 
     # TODO: Reimplement call signatures in the same fashion as
     # ContributionStrategy
@@ -505,8 +511,9 @@ class WithdrawalStrategy(Strategy):
             inflation_adjustment = 1
         # If inflation-adjusted, confirm that inflation_adjustment was provided
         else:
-            self._param_check(inflation_adjustment, 'inflation adjustment')
-            self._param_check(this_year, 'this year')
+            self._param_check(this_year, 'this year', int)
+            self._param_check(inflation_adjustment, 'inflation adjustment',
+                              dict)
             inflation_adjustment = inflation_adjustment[this_year]
         return Money(self.rate * inflation_adjustment)
 
@@ -516,11 +523,12 @@ class WithdrawalStrategy(Strategy):
                                     *args, **kwargs):
         """ Withdraw a percentage of principal (as of retirement). """
         # Check mandatory params
-        self._param_check(principal, 'principal')
-        self._param_check(retirement_year, 'retirement year')
+        self._param_check(principal, 'principal', dict)
+        self._param_check(retirement_year, 'retirement year', int)
         if self.inflation_adjusted:
-            self._param_check(this_year, 'this year')
-            self._param_check(inflation_adjustment, 'inflation adjustment')
+            self._param_check(this_year, 'this year', int)
+            self._param_check(inflation_adjustment, 'inflation adjustment',
+                              dict)
             inflation_adjustment = (inflation_adjustment[this_year] /
                                     inflation_adjustment[retirement_year])
         else:
@@ -531,15 +539,16 @@ class WithdrawalStrategy(Strategy):
     def _strategy_net_percent(self, net_income, inflation_adjustment,
                               retirement_year, this_year, *args, **kwargs):
         """ Withdraw a percentage of max. net income (as of retirement). """
-        self._param_check(net_income, 'net income')
-        self._param_check(retirement_year, 'retirement year')
+        self._param_check(net_income, 'net income', dict)
+        self._param_check(retirement_year, 'retirement year', int)
         # If not inflation-adjusted, ignore the discount rate
         if not self.inflation_adjusted:
             inflation_adjustment = 1
         # If inflation-adjusted, confirm that inflation_adjustment was provided
         else:
-            self._param_check(this_year, 'this year')
-            self._param_check(inflation_adjustment, 'inflation adjustment')
+            self._param_check(this_year, 'this year', int)
+            self._param_check(inflation_adjustment, 'inflation adjustment',
+                              dict)
             inflation_adjustment = (inflation_adjustment[this_year] /
                                     inflation_adjustment[retirement_year])
         return self.rate * net_income[retirement_year] * inflation_adjustment
@@ -548,15 +557,16 @@ class WithdrawalStrategy(Strategy):
     def _strategy_gross_percent(self, gross_income, inflation_adjustment,
                                 *args, **kwargs):
         """ Contribute a percentage of gross income. """
-        self._param_check(gross_income, 'gross income')
-        self._param_check(retirement_year, 'retirement year')
+        self._param_check(gross_income, 'gross income', dict)
+        self._param_check(retirement_year, 'retirement year', int)
         # If not inflation-adjusted, ignore the discount rate
         if not self.inflation_adjusted:
             inflation_adjustment = 1
         # If inflation-adjusted, confirm that inflation_adjustment was provided
         else:
-            self._param_check(inflation_adjustment, 'inflation adjustment')
-            self._param_check(this_year, 'this year')
+            self._param_check(this_year, 'this year', int)
+            self._param_check(inflation_adjustment, 'inflation adjustment',
+                              dict)
             inflation_adjustment = (inflation_adjustment[this_year] /
                                     inflation_adjustment[retirement_year])
         return self.rate * gross_income[retirement_year] * inflation_adjustment
@@ -571,13 +581,13 @@ class WithdrawalStrategy(Strategy):
         # TODO: Make this more sophisticated (e.g. account for taxes so
         # that the min. withdrawal yieds a post-tax amount of
         # self.min_living_standard)
-        self._param_check(inflation_adjustment, 'inflation adjustment')
-        self._param_check(this_year, 'this year')
+        self._param_check(this_year, 'this year', int)
+        self._param_check(inflation_adjustment, 'inflation adjustment', dict)
         return self.min_living_standard * inflation_adjustment[this_year]
 
-    def __call__(self, net_income=None, gross_income=None, principal=None,
-                 inflation_adjustment=None, retirement_year=None,
-                 this_year=None, benefits=Money(0), *args, **kwargs):
+    def __call__(self, benefits=Money(0), net_income=None, gross_income=None,
+                 principal=None, inflation_adjustment=None,
+                 retirement_year=None, this_year=None, *args, **kwargs):
         """ Returns the gross withdrawal for the year. """
         return max(self.min_withdrawal(), super().__call__(
             net_income=net_income, gross_income=gross_income,
@@ -745,7 +755,8 @@ class TransactionStrategy(Strategy):
 
     def __call__(self, total, accounts, *args, **kwargs):
         """ Returns a dict of accounts mapped to transactions. """
-        return super().__call__(total=total, total=accounts, *args, **kwargs)
+        return super().__call__(total=total, accounts=accounts,
+                                *args, **kwargs)
 
 
 class WithdrawalTransactionStrategy(TransactionStrategy):

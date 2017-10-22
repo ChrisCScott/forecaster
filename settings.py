@@ -59,8 +59,9 @@ class Settings:
     ''' WithdrawalStrategy defaults '''
     # TODO: Update to correspond to WithdrawalStrategy implementation
     withdrawal_strategy = 'Constant withdrawal'
-    withdrawal_rate = Money('100000')
-    withdrawal_min_living_standard = Money('50000')
+    withdrawal_rate = Decimal('100000')
+    withdrawal_min_living_standard = Decimal('50000')
+    withdrawal_benefit_adjusted = True
     withdrawal_inflation_adjusted = True
 
     ''' TransactionStrategy defaults for outflows/withdrawals '''
