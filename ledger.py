@@ -87,6 +87,45 @@ class Asset(Money):
         self.amount -= amount
 
 
+class When(Decimal):
+    """ Describes a point in time as a Decimal or str. """
+
+    # Decimal is immutable, so we need to override __new__, not __init__
+    def __new__(cls, value='0', *args, **kwargs):
+        """ Converts various types of `when` inputs to Decimal.
+
+        The Decimal value is in [0,1], where 0 is the end of the period
+        and 1 is the start. (This is how `numpy` defines its `when`
+        argument for financial methods.)
+
+        Args:
+            `when` (float, Decimal, str): The timing of the transaction.
+                Must be in the range [0,1] or in ('start', 'end').
+
+        Raises:
+            decimal.InvalidOperation: `when` must be convertible to
+                type Decimal
+            ValueError: `when` must be in [0,1]
+
+        Returns:
+            A Decimal in [0,1]
+        """
+        # Attempt to convert strings 'start' and 'end' first
+        if isinstance(value, str):
+            if value == 'end':
+                value = 0
+            elif value == 'start':
+                value = 1
+
+        # Decimal is an old-style class, so use old-style super
+        obj = super().__new__(cls, value, *args, **kwargs)
+        # Ensure the new value is in the range [0,1]
+        if obj > 1 or obj < 0:
+            raise ValueError("When: 'when' must be in [0,1]")
+
+        return obj
+
+
 class Account(object):
     """ An account storing a `Money` balance.
 
@@ -179,9 +218,10 @@ class Account(object):
             balance (Money): The balance for the first year
             rate (float, Decimal): The rate for the first year.
             transactions (dict): The transactions for the first year,
-                as {timing: amount} pairs, where `timing` is defined
-                according to the `when` convention described in the
-                description of the Account class.
+                as {Decimal: Money} pairs, where Decimal denotes timing
+                of the transaction and is in [0,1] as described in the
+                `When` class and Money denotes the values of the
+                transaction (positive to inflow, negative for outflow).
             nper (int): The number of compounding periods per year.
             apr (bool): If True, rate is interpreted as an annual
                 percentage rate and will be converted to a
@@ -194,19 +234,19 @@ class Account(object):
         # cache is invalidated when a primary attribute is invalidated.
 
         # TODO: Type-check inputs.
-        self.initial_year = initial_year if initial_year is not None \
-            else settings.initial_year
+        self.initial_year = int(initial_year if initial_year is not None
+                                else settings.initial_year)
         self.last_year = self.initial_year
-        self.balance = {self.initial_year: balance}
+        self.balance = {self.initial_year: Money(balance)}
         self.nper = self._conv_nper(nper)
         if apr:
-            rate = self.apr_to_rate(rate, self.nper)
+            rate = Decimal(self.apr_to_rate(rate, self.nper))
         self.rate = {self.initial_year: rate}
         self.transactions = {self.initial_year: transactions}
 
         # Copy relevant values from the settings object
-        self._inflow_timing = self._when_conv(settings.transaction_in_timing)
-        self._outflow_timing = self._when_conv(settings.transaction_out_timing)
+        self._inflow_timing = When(settings.transaction_in_timing)
+        self._outflow_timing = When(settings.transaction_out_timing)
 
     @staticmethod
     def apr_to_rate(apr, nper=None):
@@ -321,7 +361,7 @@ class Account(object):
         if when is None:
             when = self._inflow_timing if value >= 0 else self._outflow_timing
         else:
-            when = self._when_conv(when)
+            when = When(when)
 
         # Try to cast non-Money objects to type Money
         if not isinstance(value, Money):
@@ -351,38 +391,6 @@ class Account(object):
 
         return sum([val for val in self.transactions[year].values()
                    if val.amount < 0])
-
-    @staticmethod
-    def _when_conv(when):
-        """ Converts various types of `when` inputs to Decimal.
-
-        Args:
-            `when` (float, Decimal, str): The timing of the transaction.
-                Must be in the range [0,1] or in ('start', 'end').
-                The definition of this range is counterintuitive:
-                0 corresponds to 'end' and 1 corresponds to 'start'.
-                (This is how `numpy` defines its `when` argument
-                for financial methods.)
-
-        Returns:
-            A Decimal value in [0,1].
-
-        Raises:
-            decimal.InvalidOperation: `when` must be convertible to
-                type Decimal
-            ValueError: `when` must be in [0,1]
-        """
-        # Attempt to convert a string input first
-        if isinstance(when, str):
-            # Throws a KeyError if the str isn't 'end' or 'start'
-            return {'end': 0, 'start': 1}[when]
-
-        # Otherwise, convert to Decimal (this works with Decimal input)
-        when = Decimal(when)
-        # Ensure the new value is in the range [0,1]
-        if when > 1 or when < 0:
-            raise ValueError("Money: 'when' must be in [0,1]")
-        return when
 
     def __iter__(self):
         """ Iterates over balance entries """
@@ -433,8 +441,9 @@ class Account(object):
         """
         acc = 1
 
-        # Convert t to Decimal
+        # Convert t and rate to Decimal
         t = Decimal(t)
+        rate = Decimal(rate)
 
         # Use the exponential formula for continuous compounding: e^rt
         if nper is None:
@@ -453,9 +462,7 @@ class Account(object):
 
         Args:
             value (Money): The value of the transaction.
-            when (float, Decimal): The timing of the transaction, which
-                is a value in [0,1]. See `_when_conv` for more on this
-                convention.
+            when (When): The timing of the transaction.
             year (int): The year in which to determine the future value.
 
         Returns:
@@ -493,9 +500,7 @@ class Account(object):
         Args:
             value (Money): The present value of the transaction,
                 measured at t='end' (i.e. at the end of the year)
-            when (float, Decimal): The timing of the transaction, which
-                is a value in [0,1]. See `_when_conv` for more on this
-                convention.
+            when (When): The timing of the transaction.
             year (int): The year in which to determine the present value
 
         Returns:
@@ -547,9 +552,7 @@ class Account(object):
         """ Returns the balance at a point in time.
 
         Args:
-            time (float, Decimal, str): The timing of the transaction,
-                which is a value in [0,1]. See `_when_conv` for more on
-                this convention.
+            time (When): The timing of the transaction.
         """
         if year is None:
             year = self.last_year
@@ -602,16 +605,14 @@ class Account(object):
         all existing transactions, at present time `when`.
 
         Args:
-            when (float, Decimal, str): The timing of the transaction,
-                which is a value in [0,1]. See `_when_conv` for more on
-                this convention.
+            when (When): The timing of the transaction.
         """
         # Return most recent year by default
         if year is None:
             year = self.last_year
 
         # Parse `when`
-        when = self._when_conv(when)
+        when = When(when)
 
         # We want the future balance, reduced by the growth.
         # And, since this is an outflow, the result should be negative.
@@ -933,8 +934,7 @@ class Debt(Account):
 
         Args:
             value (Money): A positive value for the payment transaction.
-            when (float, Decimal, str): The timing of the payment.
-                See _when_conv for conventions on this argument.
+            when (When): The timing of the payment.
         """
         # TODO: Remove `year` attribute, so that only last year is
         # treated as mutable?
@@ -959,8 +959,7 @@ class Debt(Account):
         Args:
             value (Money): A positive value for the withdrawal
                 transaction.
-            when (float, Decimal, str): The timing of the payment.
-                See _when_conv for conventions on this argument.
+            when (When): The timing of the payment.
         """
         # TODO: Remove `year` attribute, so that only last year is
         # treated as mutable?

@@ -12,7 +12,34 @@ from settings import Settings
 import ledger
 from ledger import Money
 from ledger import Account
+from ledger import When
 from test_helper import *
+
+
+class TestWhen(unittest.TestCase):
+    """ A test case for the `When` class. """
+
+    def test_new(self):
+        """ Tests `When.__new__` """
+
+        # Test a simple, single-valued input
+        w = When(1)
+        self.assertEqual(w, Decimal(1))
+
+        # Test a magic input
+        w = When('start')
+        self.assertEqual(w, Decimal(1))
+
+        # Test default initialization
+        w = When()
+        self.assertEqual(w, Decimal())
+
+        # Test non-magic str input
+        w = When('1')
+        self.assertEqual(w, Decimal(1))
+
+        with self.assertRaises(decimal.InvalidOperation):
+            w = When('invalid input')
 
 
 # TODO: Update Account tests to use new multi-year data model
@@ -315,67 +342,76 @@ class TestAccountMethods(unittest.TestCase):
         """
         # Start with an empty account and add a transaction.
         account = AccountType(balance=0, apr=0, transactions={})
-        self.assertEqual(account.transactions, {})
+        initial_year = account.initial_year
+        self.assertEqual(account.transactions, {initial_year: {}})
         account.add_transaction(Money(1), 'end')
-        self.assertEqual(account.transactions, {0: Money(1)})
-        self.assertEqual(account.inflows, Money(1))
+        self.assertEqual(account.transactions, {initial_year: {0: Money(1)}})
+        self.assertEqual(account.inflows(initial_year), Money(1))
         # Just to be safe, confirm that new transactions are being seen
         # by next_balance
-        self.assertEqual(account.next_balance, Money(1))
+        self.assertEqual(account.next_balance(), Money(1))
 
         # Try adding multiple transactions at different times.
         account = AccountType(balance=0, apr=0, transactions={})
         account.add_transaction(Money(1), 0)
         account.add_transaction(Money(2), 'start')
-        self.assertEqual(account.transactions, {0: Money(1), 1: Money(2)})
-        self.assertEqual(account.outflows, 0)
+        self.assertEqual(account.transactions, {initial_year:
+                                                {0: Money(1), 1: Money(2)}})
+        self.assertEqual(account.outflows(), 0)
 
         # Try adding multiple transactions at the same time.
         account = AccountType(balance=0, apr=0, transactions={})
         account.add_transaction(Money(1), 'start')
         account.add_transaction(Money(1), 1)
-        self.assertEqual(account.transactions, {1: Money(2)})
-        self.assertEqual(account.inflows, Money(2))
-        self.assertEqual(account.outflows, 0)
+        self.assertEqual(account.transactions, {initial_year: {1: Money(2)}})
+        self.assertEqual(account.inflows(), Money(2))
+        self.assertEqual(account.outflows(), 0)
 
         # Try adding both inflows and outflows at different times.
         account = AccountType(balance=0, apr=0, transactions={})
         account.add_transaction(Money(1), 'start')
         account.add_transaction(Money(-2), 'end')
-        self.assertEqual(account.transactions, {1: Money(1), 0: Money(-2)})
-        self.assertEqual(account.inflows, Money(1))
-        self.assertEqual(account.outflows, Money(-2))
+        self.assertEqual(account.transactions, {initial_year:
+                                                {1: Money(1), 0: Money(-2)}})
+        self.assertEqual(account.inflows(), Money(1))
+        self.assertEqual(account.outflows(), Money(-2))
 
         # Try adding simultaneous inflows and outflows
         # TODO: Consider whether this behaviour should be revised.
         account = AccountType(balance=0, apr=0, transactions={})
         account.add_transaction(Money(1), 'start')
         account.add_transaction(Money(-2), 'start')
-        self.assertEqual(account.transactions, {1: Money(-1)})
-        self.assertEqual(account.inflows, 0)
-        self.assertEqual(account.outflows, Money(-1))
+        self.assertEqual(account.transactions, {initial_year: {1: Money(-1)}})
+        self.assertEqual(account.inflows(), 0)
+        self.assertEqual(account.outflows(), Money(-1))
 
         # Basic sanity tests for subclasses' aliases contribute/withdraw
         if issubclass(AccountType, ledger.SavingsAccount):
             account = AccountType(balance=0, apr=0, transactions={})
             account.contribute(Money(1), 'start')
             account.withdraw(Money(-2), 'end')
-            self.assertEqual(account.transactions, {1: Money(1), 0: Money(-2)})
-            self.assertEqual(account.contributions, Money(1))
-            self.assertEqual(account.withdrawals, Money(-2))
+            self.assertEqual(account.transactions, {initial_year:
+                                                    {1: Money(1),
+                                                     0: Money(-2)}})
+            self.assertEqual(account.contributions(), Money(1))
+            self.assertEqual(account.withdrawals(), Money(-2))
 
         # Basic sanity tests for subclasses' aliases pay/withdraw
         if issubclass(AccountType, ledger.Debt):
             account = AccountType(balance=0, apr=0, transactions={})
             account.pay(Money(1), 'start')
             account.withdraw(Money(-2), 'end')
-            self.assertEqual(account.transactions, {1: Money(1), 0: Money(-2)})
-            self.assertEqual(account.payments, Money(1))
-            self.assertEqual(account.withdrawals, Money(-2))
+            self.assertEqual(account.transactions, {initial_year:
+                                                    {1: Money(1),
+                                                     0: Money(-2)}})
+            self.assertEqual(account.payments(), Money(1))
+            self.assertEqual(account.withdrawals(), Money(-2))
 
     # TODO: Test tax-related functionality (once we know where we want
     # it to live!)
     # TODO: Test OtherProperty (once we've settled on its functionality)
+    # TODO: Test add_transactions again after performing next_year
+    # (do this recursively?)
 
 if __name__ == '__main__':
     # NOTE: BasicContext is useful for debugging, as most errors are treated
