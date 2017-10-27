@@ -52,7 +52,7 @@ class Settings:
     ''' TransactionStrategy defaults for inflows/contributions '''
     transaction_in_strategy = 'Ordered'
     transaction_in_weights = {
-        'RRSP': 1, 'TFSA': 2, 'SavingsAccount': 3
+        'RRSP': 1, 'TFSA': 2, 'TaxableAccount': 3
         }
     transaction_in_timing = 'end'
 
@@ -80,3 +80,16 @@ class Settings:
     allocation_transition_strategy_target = Decimal('0.5')
     allocation_risk_transition_period = 20
     allocation_adjust_for_early_retirement = True
+
+    ''' RESP defaults '''
+    RESPChildOtherIncome = 0
+    RESPStartAge = 18
+    RESPYearsInSchool = 4
+
+    ''' CPP defaults '''
+    CPPPerson1InitialYearTAPE = 0
+    CPPPerson1InitialYearDroppablePeriods = 0
+    CPPPerson1InitialYearDroppableTAPE = 0
+    CPPPerson2InitialYearTAPE = 0
+    CPPPerson2InitialYearDroppablePeriods = 0
+    CPPPerson2InitialYearDroppableTAPE = 0

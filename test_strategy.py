@@ -8,173 +8,6 @@ from settings import Settings
 from strategy import *
 
 
-class TestPersonMethods(unittest.TestCase):
-    """ A test suite for the `Person` class. """
-
-    def setUp(self):
-        """ Sets up default vaules for testing """
-        self.name = "Testy McTesterson"
-        self.birth_date = datetime(2000, 2, 1)  # 1 February 2000
-        self.retirement_date = datetime(2065, 6, 26)  # 26 June 2065
-        self.person = Person(self.name, self.birth_date, self.retirement_date)
-
-    def test_init(self):
-        """ Tests Person.__init__ """
-
-        # Should work when all arguments are passed correctly
-        person = Person(self.name, self.birth_date, self.retirement_date)
-        self.assertEqual(person.name, self.name)
-        self.assertEqual(person.birth_date, self.birth_date)
-        self.assertEqual(person.retirement_date, self.retirement_date)
-        self.assertIsInstance(person.name, str)
-        self.assertIsInstance(person.birth_date, datetime)
-        self.assertIsInstance(person.retirement_date, datetime)
-
-        # Should work with optional arguments omitted
-        person = Person(self.name, self.birth_date)
-        self.assertEqual(person.name, self.name)
-        self.assertEqual(person.birth_date, self.birth_date)
-        self.assertIsNone(person.retirement_date)
-
-        # Should work with strings instead of dates
-        birth_date_str = "1 January 2000"
-        birth_date = datetime(2000, 1, 1)
-        person = Person(self.name, birth_date_str)
-        self.assertEqual(person.birth_date, birth_date)
-        self.assertIsInstance(person.birth_date, datetime)
-
-        # Should fail if retirement_date precedes birth_date
-        with self.assertRaises(ValueError):
-            person = Person(self.name, self.birth_date,
-                            self.birth_date - relativedelta(days=1))
-
-        # Should fail if a string is not parseable to a date
-        birth_date = "not a date"
-        with self.assertRaises(ValueError):
-            person = Person(self.name, birth_date)
-        with self.assertRaises(ValueError):
-            person = Person(self.name, self.birth_date, birth_date)
-
-        # Should work with non-str/non-datetime values as well
-        birth_date = 2000
-        retirement_date = birth_date + 65
-        person = Person(self.name, birth_date, retirement_date)
-        self.assertEqual(person.birth_date.year,
-                         datetime(2000, 1, 1).year)
-        self.assertEqual(person.birth_date.year + 65,
-                         person.retirement_date.year)
-        self.assertEqual(person.birth_date.month,
-                         person.retirement_date.month)
-        self.assertEqual(person.birth_date.day,
-                         person.retirement_date.day)
-
-        # Let's mix different types of non-datetime inputs. Should work.
-        birth_date = "3 February 2001"
-        retirement_date = 2002
-        person = Person(self.name, birth_date, retirement_date)
-        birth_date = datetime(2001, 2, 3)
-        self.assertEqual(person.birth_date, birth_date)
-        self.assertEqual(person.retirement_date.year, retirement_date)
-        self.assertEqual(person.birth_date.month,
-                         person.retirement_date.month)
-        self.assertEqual(person.birth_date.day,
-                         person.retirement_date.day)
-
-        # Let's mix datetime and non-datetime inputs. Should work.
-        birth_date = "3 February 2001"
-        retirement_date = datetime(2002, 1, 1)
-        person = Person(self.name, birth_date, retirement_date)
-        birth_date = datetime(2001, 2, 3)
-        self.assertEqual(person.birth_date, birth_date)
-        self.assertEqual(person.retirement_date.year, retirement_date.year)
-        self.assertEqual(person.birth_date.month, birth_date.month)
-        self.assertEqual(person.retirement_date.month,
-                         retirement_date.month)
-        self.assertEqual(person.birth_date.day, birth_date.day)
-        self.assertEqual(person.retirement_date.day, retirement_date.day)
-
-    def test_age(self):
-        """ Tests person.age """
-
-        # Test output for person's 20th birthday:
-        date = self.birth_date + relativedelta(years=20)
-        self.assertEqual(self.person.age(date), 20)
-        self.assertIsInstance(self.person.age(date), int)
-
-        # Test output for day before person's 20th birthday:
-        date = self.birth_date + relativedelta(years=20, days=-1)
-        self.assertEqual(self.person.age(date), 19)
-
-        # Test output for day after person's 20th birthday:
-        date = date + relativedelta(days=2)
-        self.assertEqual(self.person.age(date), 20)
-
-        # NOTE: The following tests for negative ages, and should
-        # probably be left undefined (i.e. implementation-specific)
-
-        # Test output for day before person's birth
-        date = self.birth_date - relativedelta(days=1)
-        self.assertEqual(self.person.age(date), -1)
-
-        # Test output for one year before person's birth
-        date = self.birth_date - relativedelta(years=1)
-        self.assertEqual(self.person.age(date), -1)
-
-        # Test output for one year and a day before person's birth
-        date = self.birth_date - relativedelta(years=1, days=1)
-        self.assertEqual(self.person.age(date), -2)
-
-        # Repeat the above, but with strings
-        date = str(self.birth_date + relativedelta(years=20))
-        self.assertEqual(self.person.age(date), 20)
-
-        date = str(self.birth_date + relativedelta(years=20) -
-                   relativedelta(days=1))
-        self.assertEqual(self.person.age(date), 19)
-
-        date = str(self.birth_date + relativedelta(years=20, day=1))
-        self.assertEqual(self.person.age(date), 20)
-
-        date = str(self.birth_date - relativedelta(days=1))
-        self.assertEqual(self.person.age(date), -1)
-
-        # Finally, test ints as input
-        date = self.birth_date.year + 20
-        self.assertEqual(self.person.age(date), 20)
-
-        date = self.birth_date.year - 1
-        self.assertEqual(self.person.age(date), -1)
-
-    def test_retirement_age(self):
-        """ Tests person.retirement_age """
-
-        # Test that the retirement age for stock person is accurate
-        delta = relativedelta(self.person.retirement_date,
-                              self.person.birth_date)
-        self.assertEqual(self.person.retirement_age, delta.years)
-        self.assertIsInstance(self.person.retirement_age, int)
-
-        # Test retiring on 65th birthday
-        retirement_date = self.birth_date + relativedelta(years=65)
-        person = Person(self.name, self.birth_date, retirement_date)
-        self.assertEqual(person.retirement_age, 65)
-
-        # Test retiring on day after 65th birthday
-        retirement_date = self.birth_date + relativedelta(years=65, day=1)
-        person = Person(self.name, self.birth_date, retirement_date)
-        self.assertEqual(person.retirement_age, 65)
-
-        # Test retiring on day before 65th birthday
-        retirement_date = self.birth_date + relativedelta(years=65) - \
-            relativedelta(days=1)
-        person = Person(self.name, self.birth_date, retirement_date)
-        self.assertEqual(person.retirement_age, 64)
-
-        # Test person with no known retirement date
-        person = Person(self.name, self.birth_date)
-        self.assertIsNone(person.retirement_age)
-
-
 class TestStrategyMethods(unittest.TestCase):
     """ A test suite for the `Strategy` class """
 
@@ -751,81 +584,123 @@ class TestWithdrawalStrategyMethods(unittest.TestCase):
 class TestTransactionStrategyMethods(unittest.TestCase):
     """ A test case for the TransactionStrategy class """
 
+    @classmethod
+    def setUpClass(cls):
+        cls.person = Person('Testy McTesterson', 1980)
+        cls.initial_year = 2000
+        cls.inflation_adjustments = {cls.initial_year: Decimal('0.02'),
+                                     cls.initial_year + 1: Decimal('0.015')}
+
     def test_init(self):
         """ Tests TransactionStrategy.__init__ """
-        # Test default init:
-        s = TransactionStrategy()
-
+        # TransactionStrategy doesn't have a default init, so test with
+        # TransactionInStrategy defaults:
+        s = TransactionStrategy(Settings.transaction_in_strategy,
+                                Settings.transaction_in_weights,
+                                Settings.transaction_in_timing)
         self.assertEqual(s.strategy, Settings.transaction_in_strategy)
-        self.assertEqual(s.rate, Settings.withdrawal_rate)
-        self.assertEqual(s.min_living_standard,
-                         Settings.withdrawal_min_living_standard)
+        self.assertEqual(s.weights, Settings.transaction_in_weights)
+        self.assertEqual(s.timing, Settings.transaction_in_timing)
+
+        # Try default init with TransactionInStrategy:
+        s = TransactionInStrategy()
+        self.assertEqual(s.strategy, Settings.transaction_in_strategy)
+        self.assertEqual(s.weights, Settings.transaction_in_weights)
+        self.assertEqual(s.timing, Settings.transaction_in_timing)
+
+        # Try default init with TransactionOutStrategy:
+        s = TransactionOutStrategy()
+        self.assertEqual(s.strategy, Settings.transaction_out_strategy)
+        self.assertEqual(s.weights, Settings.transaction_out_weights)
         self.assertEqual(s.timing, Settings.transaction_out_timing)
-        self.assertEqual(s.benefit_adjusted,
-                         Settings.withdrawal_benefit_adjusted)
-        self.assertEqual(s.inflation_adjusted,
-                         Settings.withdrawal_inflation_adjusted)
 
-        # Test explicit init:
-        strategy = 'Constant withdrawal'
-        rate = Decimal('1000')
-        min_living_standard = Decimal('500')
+        # Test explicit init for subclasses:
+        strategy = 'Weighted'
+        weights = {'RRSP': Decimal(0.5),
+                   'TFSA': Decimal(0.25),
+                   'TaxableAccount': Decimal(0.25)}
         timing = 'end'
-        benefit_adjusted = True
-        inflation_adjusted = True
         settings = Settings()
-        s = WithdrawalStrategy(strategy, rate, min_living_standard, timing,
-                               inflation_adjusted, settings)
-
+        s = TransactionInStrategy(strategy, weights, timing, settings)
         self.assertEqual(s.strategy, strategy)
-        self.assertEqual(s.rate, rate)
-        self.assertEqual(s.min_living_standard, min_living_standard)
+        self.assertEqual(s.weights, weights)
         self.assertEqual(s.timing, timing)
-        self.assertEqual(s.benefit_adjusted, benefit_adjusted)
-        self.assertEqual(s.inflation_adjusted, inflation_adjusted)
 
         # Test implicit init via Settings
-        settings.withdrawal_strategy = strategy
-        settings.withdrawal_rate = rate
-        settings.withdrawal_min_living_standard = min_living_standard
-        settings.withdrawal_benefit_adjusted = benefit_adjusted
-        settings.withdrawal_inflation_adjusted = inflation_adjusted
-        s = WithdrawalStrategy(settings=settings)
-
+        settings.transaction_in_strategy = strategy
+        settings.transaction_in_weights = weights
+        settings.transaction_in_timing = timing
+        s = TransactionInStrategy(settings=settings)
         self.assertEqual(s.strategy, strategy)
-        self.assertEqual(s.rate, rate)
-        self.assertEqual(s.min_living_standard, min_living_standard)
+        self.assertEqual(s.weights, weights)
         self.assertEqual(s.timing, timing)
-        self.assertEqual(s.benefit_adjusted, benefit_adjusted)
-        self.assertEqual(s.inflation_adjusted, inflation_adjusted)
 
         # Test invalid strategies
         with self.assertRaises(ValueError):
-            s = WithdrawalStrategy(strategy='Not a strategy')
+            s = TransactionInStrategy(strategy='Not a strategy')
         with self.assertRaises(TypeError):
-            s = WithdrawalStrategy(strategy=1)
-        # Test invalid rate
-        with self.assertRaises(decimal.InvalidOperation):
-            s = WithdrawalStrategy(rate='a')
-        # Test invalid min_living_standard
-        with self.assertRaises(decimal.InvalidOperation):
-            s = WithdrawalStrategy(min_living_standard='a')
+            s = TransactionInStrategy(strategy=1)
+        # Test invalid weight
+        with self.assertRaises(TypeError):  # not a dict
+            s = TransactionInStrategy(weights='a')
+        with self.assertRaises(TypeError):  # dict with non-str keys
+            s = TransactionInStrategy(weights={1: 5})
+        with self.assertRaises(TypeError):  # dict with non-numeric values
+            s = TransactionInStrategy(weights={'RRSP', 'Not a number'})
         # Test invalid timing
-        with self.assertRaises(ValueError):
-            s = WithdrawalStrategy(timing='a')
+        with self.assertRaises(TypeError):
+            s = TransactionInStrategy(timing={})
 
     def test_strategy_ordered(self):
         """ Tests TransactionStrategy._strategy_ordered. """
-        # TODO
-        pass
+        # First test an ordered strategy for inflows.
+        method = TransactionStrategy._strategy_ordered
+        s = TransactionInStrategy(method, {'RRSP': 1, 'TFSA': 2,
+                                           'TaxableAccount': 3})
+
+        # Set up some accounts for the tests.
+        rrsp = RRSP(self.person, self.inflation_adjustments, 200)
+        tfsa = TFSA(self.person, self.inflation_adjustments, 100)
+        taxableAccount = TaxableAccount()
+        accounts = [rrsp, tfsa, taxableAccount]
+
+        # Try a simple scenario: The amount being contributed is less
+        # than the available contribution room in the top-weighted
+        # account type.
+        results = s(Money(100), accounts)
+        self.assertEqual(results[rrsp], Money(100))
+        self.assertEqual(results[tfsa], Money(0))
+        self.assertEqual(results[taxableAccount], Money(0))
+
+        # Now contribute more than the RRSP will accomodate. The extra
+        # $50 should go to the TFSA, which is next in line.
+        results = s(Money(250), accounts)
+        self.assertEqual(results[rrsp], Money(200))
+        self.assertEqual(results[tfsa], Money(50))
+        self.assertEqual(results[taxableAccount], Money(0))
+
+        # Now contribute a lot of money - the RRSP and TFSA will get
+        # filled and the remainder will go to the taxable account.
+        results = s(Money(1000), accounts)
+        self.assertEqual(results[rrsp], Money(200))
+        self.assertEqual(results[tfsa], Money(100))
+        self.assertEqual(results[taxableAccount], Money(700))
+
+        # Now change the order and confirm that it still works
+        s.weights['RRSP'] = 2
+        s.weights['TFSA'] = 1
+        results = s(Money(100), accounts)
+        self.assertEqual(results[rrsp], Money(0))
+        self.assertEqual(results[tfsa], Money(100))
+        self.assertEqual(results[taxableAccount], Money(0))
 
     def test_strategy_weighted(self):
         """ Tests TransactionStrategy._strategy_weighted. """
         # TODO
         pass
 
-    def test_withdrawal_transaction_strategy(self):
-        """ Tests the WithdrawalTransactionStrategy subclass. """
+    def test_assign_mins(self):
+        """ Tests TransactionStrategy._assign_mins. """
         # TODO
         pass
 

@@ -10,10 +10,175 @@ import decimal
 from decimal import Decimal
 from settings import Settings
 import ledger
-from ledger import Money
-from ledger import Account
-from ledger import When
+from ledger import *
 from test_helper import *
+
+
+class TestPersonMethods(unittest.TestCase):
+    """ A test suite for the `Person` class. """
+
+    def setUp(self):
+        """ Sets up default vaules for testing """
+        self.name = "Testy McTesterson"
+        self.birth_date = datetime(2000, 2, 1)  # 1 February 2000
+        self.retirement_date = datetime(2065, 6, 26)  # 26 June 2065
+        self.person = Person(self.name, self.birth_date, self.retirement_date)
+
+    def test_init(self):
+        """ Tests Person.__init__ """
+
+        # Should work when all arguments are passed correctly
+        person = Person(self.name, self.birth_date, self.retirement_date)
+        self.assertEqual(person.name, self.name)
+        self.assertEqual(person.birth_date, self.birth_date)
+        self.assertEqual(person.retirement_date, self.retirement_date)
+        self.assertIsInstance(person.name, str)
+        self.assertIsInstance(person.birth_date, datetime)
+        self.assertIsInstance(person.retirement_date, datetime)
+
+        # Should work with optional arguments omitted
+        person = Person(self.name, self.birth_date)
+        self.assertEqual(person.name, self.name)
+        self.assertEqual(person.birth_date, self.birth_date)
+        self.assertIsNone(person.retirement_date)
+
+        # Should work with strings instead of dates
+        birth_date_str = "1 January 2000"
+        birth_date = datetime(2000, 1, 1)
+        person = Person(self.name, birth_date_str)
+        self.assertEqual(person.birth_date, birth_date)
+        self.assertIsInstance(person.birth_date, datetime)
+
+        # Should fail if retirement_date precedes birth_date
+        with self.assertRaises(ValueError):
+            person = Person(self.name, self.birth_date,
+                            self.birth_date - relativedelta(days=1))
+
+        # Should fail if a string is not parseable to a date
+        birth_date = "not a date"
+        with self.assertRaises(ValueError):
+            person = Person(self.name, birth_date)
+        with self.assertRaises(ValueError):
+            person = Person(self.name, self.birth_date, birth_date)
+
+        # Should work with non-str/non-datetime values as well
+        birth_date = 2000
+        retirement_date = birth_date + 65
+        person = Person(self.name, birth_date, retirement_date)
+        self.assertEqual(person.birth_date.year,
+                         datetime(2000, 1, 1).year)
+        self.assertEqual(person.birth_date.year + 65,
+                         person.retirement_date.year)
+        self.assertEqual(person.birth_date.month,
+                         person.retirement_date.month)
+        self.assertEqual(person.birth_date.day,
+                         person.retirement_date.day)
+
+        # Let's mix different types of non-datetime inputs. Should work.
+        birth_date = "3 February 2001"
+        retirement_date = 2002
+        person = Person(self.name, birth_date, retirement_date)
+        birth_date = datetime(2001, 2, 3)
+        self.assertEqual(person.birth_date, birth_date)
+        self.assertEqual(person.retirement_date.year, retirement_date)
+        self.assertEqual(person.birth_date.month,
+                         person.retirement_date.month)
+        self.assertEqual(person.birth_date.day,
+                         person.retirement_date.day)
+
+        # Let's mix datetime and non-datetime inputs. Should work.
+        birth_date = "3 February 2001"
+        retirement_date = datetime(2002, 1, 1)
+        person = Person(self.name, birth_date, retirement_date)
+        birth_date = datetime(2001, 2, 3)
+        self.assertEqual(person.birth_date, birth_date)
+        self.assertEqual(person.retirement_date.year, retirement_date.year)
+        self.assertEqual(person.birth_date.month, birth_date.month)
+        self.assertEqual(person.retirement_date.month,
+                         retirement_date.month)
+        self.assertEqual(person.birth_date.day, birth_date.day)
+        self.assertEqual(person.retirement_date.day, retirement_date.day)
+
+    def test_age(self):
+        """ Tests person.age """
+
+        # Test output for person's 20th birthday:
+        date = self.birth_date + relativedelta(years=20)
+        self.assertEqual(self.person.age(date), 20)
+        self.assertIsInstance(self.person.age(date), int)
+
+        # Test output for day before person's 20th birthday:
+        date = self.birth_date + relativedelta(years=20, days=-1)
+        self.assertEqual(self.person.age(date), 19)
+
+        # Test output for day after person's 20th birthday:
+        date = date + relativedelta(days=2)
+        self.assertEqual(self.person.age(date), 20)
+
+        # NOTE: The following tests for negative ages, and should
+        # probably be left undefined (i.e. implementation-specific)
+
+        # Test output for day before person's birth
+        date = self.birth_date - relativedelta(days=1)
+        self.assertEqual(self.person.age(date), -1)
+
+        # Test output for one year before person's birth
+        date = self.birth_date - relativedelta(years=1)
+        self.assertEqual(self.person.age(date), -1)
+
+        # Test output for one year and a day before person's birth
+        date = self.birth_date - relativedelta(years=1, days=1)
+        self.assertEqual(self.person.age(date), -2)
+
+        # Repeat the above, but with strings
+        date = str(self.birth_date + relativedelta(years=20))
+        self.assertEqual(self.person.age(date), 20)
+
+        date = str(self.birth_date + relativedelta(years=20) -
+                   relativedelta(days=1))
+        self.assertEqual(self.person.age(date), 19)
+
+        date = str(self.birth_date + relativedelta(years=20, day=1))
+        self.assertEqual(self.person.age(date), 20)
+
+        date = str(self.birth_date - relativedelta(days=1))
+        self.assertEqual(self.person.age(date), -1)
+
+        # Finally, test ints as input
+        date = self.birth_date.year + 20
+        self.assertEqual(self.person.age(date), 20)
+
+        date = self.birth_date.year - 1
+        self.assertEqual(self.person.age(date), -1)
+
+    def test_retirement_age(self):
+        """ Tests person.retirement_age """
+
+        # Test that the retirement age for stock person is accurate
+        delta = relativedelta(self.person.retirement_date,
+                              self.person.birth_date)
+        self.assertEqual(self.person.retirement_age, delta.years)
+        self.assertIsInstance(self.person.retirement_age, int)
+
+        # Test retiring on 65th birthday
+        retirement_date = self.birth_date + relativedelta(years=65)
+        person = Person(self.name, self.birth_date, retirement_date)
+        self.assertEqual(person.retirement_age, 65)
+
+        # Test retiring on day after 65th birthday
+        retirement_date = self.birth_date + relativedelta(years=65, day=1)
+        person = Person(self.name, self.birth_date, retirement_date)
+        self.assertEqual(person.retirement_age, 65)
+
+        # Test retiring on day before 65th birthday
+        retirement_date = self.birth_date + relativedelta(years=65) - \
+            relativedelta(days=1)
+        person = Person(self.name, self.birth_date, retirement_date)
+        self.assertEqual(person.retirement_age, 64)
+
+        # Test person with no known retirement date
+        person = Person(self.name, self.birth_date)
+        self.assertIsNone(person.retirement_age)
 
 
 class TestWhen(unittest.TestCase):
