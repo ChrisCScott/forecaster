@@ -131,7 +131,7 @@ class TestScenarioMethods(unittest.TestCase):
                             self.varying_bond_return,
                             self.varying_other_return,
                             self.varying_management_fees,
-                            self.varying_person1_raise_rate, 
+                            self.varying_person1_raise_rate,
                             self.varying_person2_raise_rate,
                             self.varying_initial_year)
 

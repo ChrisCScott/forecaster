@@ -2,6 +2,7 @@
 
 from numbers import Number
 import math
+from numpy import fv, pv
 import decimal
 from decimal import Decimal
 from collections import namedtuple
@@ -35,12 +36,13 @@ class Person(object):
 
         Args:
             name (str): The person's name.
-            birth_date: The person's date of birth.
+            birth_date (datetime): The person's date of birth.
                 May be passed as any value that can be cast to str and
                 converted to datetime by python-dateutils.parse().
-            retirement_date: The person's retirement date.Optional.
+            retirement_date (datetime): The person's retirement date.
                 May be passed as any value that can be cast to str and
                 converted to datetime by python-dateutils.parse().
+                Optional.
 
         Returns:
             An instance of class `Person`
@@ -254,46 +256,50 @@ class Asset(Money):
         self.amount -= amount
 
 
-# TODO: Turn `When` into a free method.
+def when_conv(when):
+    """ Converts various types of `when` inputs to Decimal.
+
+    The Decimal value is in [0,1], where 0 is the start of the period
+    and 1 is the end.
+
+    NOTE: `numpy` defines its `when` argument such that 'end' = 0 and
+    'start' = 1. If you're using that package, consider whether any
+    conversions are necessary.
+
+    Args:
+        `when` (float, Decimal, str): The timing of the transaction.
+            Must be in the range [0,1] or in ('start', 'end').
+
+    Raises:
+        decimal.InvalidOperation: `when` must be convertible to
+            type Decimal
+        ValueError: `when` must be in [0,1]
+
+    Returns:
+        A Decimal in [0,1]
+    """
+    # Attempt to convert strings 'start' and 'end' first
+    if isinstance(when, str):
+        if when == 'end':
+            when = 1
+        elif when == 'start':
+            when = 0
+
+    # Decimal can take a variety of input types (including str), so
+    # rather than throw an error on non-start/end input strings, try
+    # to cast to Decimal and throw a decimal.InvalidOperation error.
+    when = Decimal(when)
+
+    if when > 1 or when < 0:
+        raise ValueError("When: 'when' must be in [0,1]")
+
+    return when
 
 
-class When(Decimal):
-    """ Describes a point in time as a Decimal or str. """
-
-    # Decimal is immutable, so we need to override __new__, not __init__
-    def __new__(cls, value='0', *args, **kwargs):
-        """ Converts various types of `when` inputs to Decimal.
-
-        The Decimal value is in [0,1], where 0 is the end of the period
-        and 1 is the start. (This is how `numpy` defines its `when`
-        argument for financial methods.)
-
-        Args:
-            `when` (float, Decimal, str): The timing of the transaction.
-                Must be in the range [0,1] or in ('start', 'end').
-
-        Raises:
-            decimal.InvalidOperation: `when` must be convertible to
-                type Decimal
-            ValueError: `when` must be in [0,1]
-
-        Returns:
-            A Decimal in [0,1]
-        """
-        # Attempt to convert strings 'start' and 'end' first
-        if isinstance(value, str):
-            if value == 'end':
-                value = 0
-            elif value == 'start':
-                value = 1
-
-        # Decimal is an old-style class, so use old-style super
-        obj = super().__new__(cls, value, *args, **kwargs)
-        # Ensure the new value is in the range [0,1]
-        if obj > 1 or obj < 0:
-            raise ValueError("When: 'when' must be in [0,1]")
-
-        return obj
+# TODO: Add `owner` attribute at the `Account` level?
+# (This could make tax determinations easier)
+# Also change `person` attribute of RRSP to `contributor`, default to
+# `owner` if none provided?
 
 
 class Account(object):
@@ -322,9 +328,6 @@ class Account(object):
             Each element is a Money object.
         rate (dict): The rate of return (or interest) per year, before
             compounding.
-            Each element is float-like (e.g. float, Decimal).
-        apr (dict): The annual percentage rate per year, i.e. the rate
-            of return after compounding.
             Each element is float-like (e.g. float, Decimal).
         transactions (dict): The transactions to/from the account for
             each year. Each element is a dict of `{when: value}` pairs,
@@ -359,26 +362,14 @@ class Account(object):
             inflow/outflow transaction timing, etc.). Optional; uses
             global Settings class attributes if None given.
     """
-    # TODO: Convert all attributes into dicts (essentially, turn
-    # `Account` into a dict of `Account`). The same core logic will
-    # apply to most methods, although indexing will be required.
 
-    # TODO: Modify next_year to add to the dicts. (add a last_year
-    # attribute to make accessing the last elements convenient).
-
-    # TODO: Consider removing most properties and replacing them with
-    # methods. (Most setters are just there for type-checking anyways).
-    # The methods can operate on the values of the current year, and
-    # previous years' values can be treated as immutable.
-
-    # NOTE: Consider using lists instead - this would be more efficient
-    # and might map better to the logic of this method (which doesn't
-    # care about indexing but does want to maintain an ordered list that
-    # we append to), but it may be less convenient for client code that
-    # generally prefers to access attributes via a `year` key.
+    # TODO: Hide the dicts (e.g. self._balance) and expose properties
+    # that get/set only the current year (e.g. self.balance points to
+    # self._balance[self.last_year]). Allow users to get the dict via
+    # a *_history method (e.g. self.balance_history())
 
     def __init__(self, balance=0, rate=0, transactions={},
-                 nper=1, apr=False, initial_year=None, settings=Settings):
+                 nper=1, initial_year=None, settings=Settings):
         """ Constructor for `Account`.
 
         This constructor receives only values for the first year.
@@ -398,69 +389,77 @@ class Account(object):
                 pre-compounding figure.
             settings (Settings): Provides default values.
         """
-        # TODO: Implement a cached_property decorator and cache these
-        # secondary attributes until a primary attribute (i.e. one of
-        # the ones received by __init__) is changed. Ensure that the
-        # cache is invalidated when a primary attribute is invalidated.
-
-        # TODO: Type-check inputs.
+        # Set the scalar values first, 'cause they're easy!
         self.initial_year = int(initial_year if initial_year is not None
                                 else settings.initial_year)
         self.last_year = self.initial_year
-        self.balance = {self.initial_year: Money(balance)}
         self.nper = self._conv_nper(nper)
-        if apr:
-            rate = Decimal(self.apr_to_rate(rate, self.nper))
-        self.rate = {self.initial_year: rate}
-        self.transactions = {self.initial_year: transactions}
 
-        # Copy relevant values from the settings object
-        self._inflow_timing = When(settings.transaction_in_timing)
-        self._outflow_timing = When(settings.transaction_out_timing)
+        # Initialize dict values
+        self._balance = {}
+        self._rate = {}
+        self._transactions = {}
 
-    @staticmethod
-    def apr_to_rate(apr, nper=None):
-        """ The annual rate of return pre-compounding.
+        # Type-checking and such is handled by property setters.
+        self.balance = balance
+        self.rate = rate
+        self.transactions = transactions
 
-        Args:
-            apr (Decimal): Annual percentage rate (i.e. a measure of the
-                rate post-compounding).
-            nper (int): The number of compounding periods. Optional.
-                If not given, compounding is continuous.
-        """
-        if nper is None:  # Continuous
-            # Solve P(1+apr)=Pe^rt for r, given t=1:
-            # r = log(1+apr)/t = log(1+apr)
-            return math.log(1+apr)
-        else:  # Periodic
-            nper = Account._conv_nper(nper)
-            # Solve P(1+apr)=P(1+r/n)^nt for r, given t=1
-            # r = n [(1 + apr)^-nt - 1] = n [(1 + apr)^-n - 1]
-            return nper * (math.pow(1+apr, nper ** -1) - 1)
+        # We don't save the settings object, but we do need to save
+        # defaults for certain methods. These are not used when methods
+        # are called with explicit `when` arguments.
+        self._inflow_timing = when_conv(settings.transaction_in_timing)
+        self._outflow_timing = when_conv(settings.transaction_out_timing)
 
-    def apr(self, year=None):
-        """ The post-compounding annual percentage rate of return.
+    # String codes describing compounding periods (keys) and ints
+    # describing the number of such periods in a year (values):
+    _nper_mapping = {
+        'C': None,
+        'D': 365,
+        'W': 52,
+        'BW': 26,
+        'SM': 24,
+        'M': 12,
+        'BM': 6,
+        'Q': 4,
+        'SA': 2,
+        'A': 1
+        }
 
-        Args:
-            rate (Decimal): Rate of return (pre-compounding).
-            nper (int): The nuber of compounding periods. Optional.
-                If not given, compounding is continuous.
-        """
-        # Return most recent year by default
-        if year is None:
-            year = self.last_year
+    @property
+    def balance(self):
+        """ The balance of the account for the current year (Money). """
+        return self._balance[self.last_year]
 
-        if self.nper is None:  # Continuous
-            # Solve P(1+apr)=Pe^rt for apr, given t=1:
-            # apr = e^rt - 1 = e^r - 1
-            return math.exp(self.rate[year]) - 1
-        else:  # Periodic
-            # Solve P(1+apr)=P(1+r/n)^nt for apr, given t=1
-            # apr = (1 + r / n)^nt - 1 = (1 + r / n)^n - 1
-            return math.pow(1 + self.rate[year]/self.nper, self.nper) - 1
+    @balance.setter
+    def balance(self, val):
+        """ Sets the balance of the account for the current year. """
+        self._balance[self.last_year] = Money(val)
 
-    @staticmethod
-    def _conv_nper(nper):
+    @property
+    def rate(self):
+        """ The rate of the account for the current year (Decimal). """
+        return self._rate[self.last_year]
+
+    @rate.setter
+    def rate(self, val):
+        """ Sets the rate of the account for the current year. """
+        self._rate[self.last_year] = Decimal(val)
+
+    @property
+    def transactions(self):
+        """ The transactions in and out of the account this year (dict). """
+        return self._transactions[self.last_year]
+
+    @transactions.setter
+    def transactions(self, val):
+        """ Sets transactions in and out of the account for this year. """
+        self._transactions[self.last_year] = {
+            when_conv(x): Money(val[x]) for x in val
+        }
+
+    @classmethod
+    def _conv_nper(cls, nper):
         """ Number of periods in a year given a compounding frequency.
 
         Args:
@@ -477,20 +476,9 @@ class Account(object):
 
         # Try to parse a string based on known compounding frequencies
         if isinstance(nper, str):
-            mapping = {  # Fancy python-style switch statement
-                'C': None,
-                'D': 365,
-                'W': 52,
-                'BW': 26,
-                'SM': 24,
-                'M': 12,
-                'BM': 6,
-                'Q': 4,
-                'SA': 2,
-                'A': 1}
-            if nper not in mapping.keys():
+            if nper not in cls._nper_mapping:
                 raise ValueError('Account: str nper must have a known value')
-            return mapping[nper]
+            return cls._nper_mapping[nper]
         else:  # Attempt to cast to int
             if not nper == int(nper):
                 raise TypeError(
@@ -499,12 +487,8 @@ class Account(object):
                 raise ValueError('Account: nper must be greater than 0')
             return int(nper)
 
-    def add_transaction(self, value, when='end', year=None):
+    def add_transaction(self, value, when='end'):
         """ Adds a transaction to the account.
-
-        This is a public-facing method that does some input processing
-        and clean-up. Client code should generally call this method
-        instead of `_add_transaction` (note the underscore!)
 
         Args:
             value (Money): The value of the transaction. Positive values
@@ -522,16 +506,12 @@ class Account(object):
                 Decimal
             ValueError: `when` must be in [0,1]
         """
-        # Return most recent year by default
-        if year is None:
-            year = self.last_year
-
         # Convert `when` to a Decimal value.
         # Even if already a Decimal, this checks `when` for value/type
         if when is None:
             when = self._inflow_timing if value >= 0 else self._outflow_timing
         else:
-            when = When(when)
+            when = when_conv(when)
 
         # Try to cast non-Money objects to type Money
         if not isinstance(value, Money):
@@ -539,10 +519,15 @@ class Account(object):
 
         # If there's already a transaction at this time, then add them
         # together; simultaneous transactions are modelled as one sum.
-        if when in self.transactions[year]:  # Add to existing value
-            self.transactions[year][when] += value
+        if when in self.transactions:  # Add to existing value
+            self.transactions[when] += value
         else:  # Create new when/value pair.
-            self.transactions[year][when] = value
+            self.transactions[when] = value
+
+    # TODO: Add add_inflow and add_outflow methods?
+    # TODO: Cache results (in _inflows and _outflows dicts) and cause
+    # add_transactions to invalidate the cache, similar to
+    # TaxableAccount._get_capital_gain
 
     def inflows(self, year=None):
         """ The sum of all inflows to the account. """
@@ -550,8 +535,10 @@ class Account(object):
         if year is None:
             year = self.last_year
 
-        return sum([val for val in self.transactions[year].values()
-                   if val.amount > 0])
+        # Convert to Money at the end because the sum might return 0
+        # (an int) if there are no transactions
+        return Money(sum([val for val in self._transactions[year].values()
+                          if val.amount > 0]))
 
     def outflows(self, year=None):
         """ The sum of all outflows from the account. """
@@ -559,46 +546,30 @@ class Account(object):
         if year is None:
             year = self.last_year
 
-        return sum([val for val in self.transactions[year].values()
-                   if val.amount < 0])
-
-    def __iter__(self):
-        """ Iterates over balance entries """
-        for key in sorted(self.balance.keys()):
-            yield self.balance[key]
+        # Convert to Money at the end because the sum might return 0
+        # (an int) if there are no transactions
+        return Money(sum([val for val in self._transactions[year].values()
+                          if val.amount < 0]))
 
     def __len__(self):
         """ The number of years of transaction data in the account. """
         return self.last_year - self.initial_year + 1
 
+    # TODO: Remove accumulation_function, future_value, & present_value
+    # and replace with numpy.fv and numpy.pv?
+
     @staticmethod
-    def accumulation_function(self, t, rate, nper=1):
+    def accumulation_function(t, rate, nper=1):
         """ The accumulation function, A(t), from interest theory.
 
-        `t` is conventionally defined in such a way that 0 is the start
-        of the compounding sequence. This method works just fine that
-        way: accumulation_function(t) returns the same result as the
-        conventionally-defined A(t) in finance theory.
-
-        It's worth noting that this method _also_ works to determine the
-        accumulation from the time an inflow or outflow occurs until
-        the end of the period (i.e. the end of the year).
-        This is because the time period [0,1] is symmetric; the
-        accumulation from [0,t] is the same as the accumulation from
-        [1-t, 1]. Thus, for a transaction which occurs at time `when`,
-        `accumulation_function(when)` will yield the growth multiplier
-        for the transaction.
+        A(t) provides the growth (or discount) factor over the period
+        [0, t]. If `t` is negative, this method returns the inverse
+        (i.e. A(t)^-1).
 
         This method's output is not well-defined where t does not align
         with the start/end of a compounding period. (It will produce
         sensible output, but it might not correspond to how your bank
-        calculates interest)
-
-        Example:
-            For an account with 5% apr and a transaction that occurs
-            at time `when = 1` (i.e. the start of the period):
-                `account.accumulation_function(when)`
-            returns `1.05`.
+        calculates interest).
 
         Args:
             t (float, Decimal): Defines the period [0,t] over which the
@@ -609,26 +580,45 @@ class Account(object):
         Returns:
             The accumulation A(t), as a Decimal.
         """
-        acc = 1
-
         # Convert t and rate to Decimal
         t = Decimal(t)
         rate = Decimal(rate)
 
         # Use the exponential formula for continuous compounding: e^rt
         if nper is None:
-            acc = math.exp(rate * t)
+            # math.exp(rate * t) throws a warning, since there's an
+            # implicit float-Decimal multiplication.
+            acc = Decimal(math.e) ** (rate * t)
         # Otherwise use the discrete formula: (1+r/n)^nt
         else:
             acc = (1 + rate / nper) ** (nper * t)
 
         return acc
 
+    def value_at_time(self, value, now='start', time='end', year=None):
+        """ Returns the present (or future) value.
+
+        Args:
+            value (Money): The (nominal) value to be converted.
+            now (Decimal): The time associated with the nominal value.
+            time (Decimal): The time to which the nominal value is to
+                be converted.
+            year (int): The year in which to determine the future value.
+
+        Returns:
+            A Money object representing the present value
+            (if now > time) or the future value (if now < time) of
+            `value`.
+        """
+        if year is None:
+            year = self.last_year
+
+        return value * self.accumulation_function(
+            when_conv(time) - when_conv(now), self._rate[year], self.nper
+        )
+
     def future_value(self, value, when, year=None):
         """ The nominal value of a transaction at the end of the year.
-
-        Takes into account the compounding frequency and also the effect
-        of mid-period transactions.
 
         Args:
             value (Money): The value of the transaction.
@@ -636,36 +626,12 @@ class Account(object):
             year (int): The year in which to determine the future value.
 
         Returns:
-            A value of a transaction, including any gains (or losses)
-            earned (for inflows) or avoided (for outflows) from the time
-            a transaction was entered until the end of the accounting
-            period (i.e. until the end of the year).
-            Includes the value of the transaction itself.
+            The future value of the transaction as a Money object.
         """
-        # Future value (fv) is `fv = pv*A(t)`, where `pv` is the present
-        # value and `A(t)` is the accumulation function at time t.
-        # We're playing a bit of a trick here, since we don't want the
-        # accumulation over the period [0,t] (which is what A(t) is
-        # defined over), we want the accumulation over the period
-        # [1-t, 1] (at least, based on how `A(t)` is usually defined).
-        # However, `when` is defined in a backwards sort of way where 0
-        # is the end and 1 is the start, so `when` effectively gives you
-        # `1-t`. Since the interest rate in [0,1] is constant and the
-        # compounding periods in [0,1] are symmetric, using `when` gives
-        # us exactly what we want!
-
-        # Return most recent year by default
-        if year is None:
-            year = self.last_year
-        return value * Decimal(self.accumulation_function(when,
-                                                          self.rate[year],
-                                                          self.nper))
+        return self.value_at_time(value, when, 'end', year)
 
     def present_value(self, value, when, year=None):
         """ Initial value required to achieve a given end-of-year value.
-
-        Takes into account the compounding frequency and also the effect
-        of mid-period transactions.
 
         Args:
             value (Money): The present value of the transaction,
@@ -680,17 +646,33 @@ class Account(object):
             time `t` until the end of the accounting period (i.e. until
             end of the year).
         """
-        # Present value (pv) is `pv = fv/A(t)`, where `fv` is the future
-        # value and `A(t)` is the accumulation function at time t.
-        # See `future_value` for comments on some tricks being played
-        # with `accumulation_function` and `when` here.
+        return self.value_at_time(value, when, 'start', year)
 
-        # Return most recent year by default
+    def balance_at_time(self, time, year=None):
+        """ Returns the balance at a point in time.
+
+        Args:
+            when (Decimal, str): The timing of the transaction.
+        """
         if year is None:
             year = self.last_year
-        return value / Decimal(self.accumulation_function(when,
-                                                          self.rate[year],
-                                                          self.nper))
+
+        # We need to convert `time` to enable the comparison in the dict
+        # comprehension in the for loop below.
+        time = when_conv(time)
+
+        # Find the future value (at t=time) of the initial balance.
+        # This doesn't include any transactions of their growth.
+        balance = self.value_at_time(self._balance[year], 'start', time, year)
+
+        # Add in the future value of each transaction (except that that
+        # happen after `time`).
+        for when in [w for w in self._transactions[year].keys() if w <= time]:
+            balance += self.value_at_time(
+                self._transactions[year][when], when, time, year
+            )
+
+        return balance
 
     def next_balance(self, year=None):
         """ The balance at the start of the next year.
@@ -707,46 +689,14 @@ class Account(object):
 
         # First, find the future value of the initial balance assuming
         # there are no transactions.
-        balance = self.future_value(self.balance[year], 1, year)
+        balance = self.future_value(self._balance[year], 'start', year)
 
         # Then, add in the future value of each transaction. Note that
         # this accounts for both inflows and outflows; the future value
         # of an outflow will negate the future value of any inflows that
         # are removed. Order doesn't matter.
-        for when, value in self.transactions[year].items():
+        for when, value in self._transactions[year].items():
             balance += self.future_value(value, when, year)
-
-        return balance
-
-    def balance_at_time(self, time, year=None):
-        """ Returns the balance at a point in time.
-
-        Args:
-            time (When): The timing of the transaction.
-        """
-        if year is None:
-            year = self.last_year
-
-        # Parse the time input
-        time = when_conv(time)
-
-        # Find the future value of the initial balance assuming there
-        # are no transactions.
-        balance = self.future_value(self.balance[year], 1 - time, year)
-
-        # Add in the future value of each transaction up to and
-        # including `time`.
-        for when in [w for w in self.transactions[year].keys() if w >= time]:
-            # HACK: This is working around the fact that `present_value`
-            # and `future_value` each only take one time value, rather
-            # than a start time and an end time. Consider reimplementing
-            # `future_value` to take two time values.
-
-            # Determine the value at the end of the year
-            end_value = self.future_value(self.transactions[year][when], when)
-            # Figure out the balance at time `time` attributable to that
-            # final balance.
-            balance += self.present_value(self.transactions[year][when], time)
 
         return balance
 
@@ -757,9 +707,9 @@ class Account(object):
         transactions.
         """
         self.last_year += 1
-        self.balance[self.last_year] = self.next_balance()
-        self.rate[self.last_year] = self.rate[self.last_year - 1]
-        self.transactions[self.last_year] = {}
+        self.balance = self.next_balance(self.last_year - 1)
+        self.rate = self._rate[self.last_year - 1]
+        self.transactions = {}
 
     def max_outflow(self, when='end', year=None):
         """ An outflow which would reduce the end-of-year balance to 0.
@@ -777,17 +727,10 @@ class Account(object):
         Args:
             when (When): The timing of the transaction.
         """
-        # Return most recent year by default
-        if year is None:
-            year = self.last_year
-
-        # Parse `when`
-        when = When(when)
-
-        # We want the future balance, reduced by the growth.
-        # And, since this is an outflow, the result should be negative.
-        return -self.next_balance(year) / \
-            self.accumulation_function(when, self.rate[year], self.nper)
+        # If the balance is positive, the max outflow is simply the
+        # current balance (but negative). If the balance is negative,
+        # then there's no further outflows to be made.
+        return min(-self.balance_at_time(when, year), Money(0))
 
     def max_inflow(self, when='end', year=None):
         """ The maximum amount that can be contributed to the account.
@@ -813,107 +756,29 @@ class Account(object):
         """
         return Money('0')
 
-
-class SavingsAccount(Account):
-    """ A savings account. Contains assets and describes their growth.
-
-    Subclasses implement registered accounts (RRSPs, TFSAs) and more
-    complex non-registered (i.e. taxable) investment accounts.
-
-    Attributes:
-        contributions (Money): The sum of all contributions to the
-            account.
-        withdrawals (Money): The sum of all withdrawals from the
-            account.
-        taxable_income (Money): The taxable income for the year arising
-            from activity in the account.
-    """
-
-    # TODO: Expand SavingsAccount to handle:
-    # 1) multiple asset classes with different types of income (e.g.
-    # interest, dividends, capital gains, or combinations thereof).
-    # Perhaps implement an Asset class (with subclasses for each
-    # type of asset, e.g. stocks/bonds?) and track acb independently?
-    # 2) rebalancing of asset classes
-    # TODO: Remove aliases?
-
-    # Define aliases for `SavingsAccount` properties.
-    def contribute(self, value, when=None, year=None):
-        """ Adds a contribution transaction to the account.
-
-        This is a convenience method that wraps Account.add_transaction.
-        Values must be non-negative.
-        """
-        # TODO: Remove `year` attribute, so that only last year is
-        # treated as mutable?
-        if value < 0:
-            raise ValueError('SavingsAccount: Contributions must be positive.')
-
-        self.add_transaction(value, when, year)
-
-    def contributions(self, year=None):
-        """ The sum of all contributions to the account. """
-        return self.inflows(year)
-
-    def withdraw(self, value, when=None, year=None):
-        """ Adds a withdrawal transaction to the account.
-
-        This is a convenience method that wraps Account.add_transaction.
-        If `when` is not provided, the application-level default timing
-        for withdrawals is used.
-        """
-        # TODO: Remove `year` attribute, so that only last year is
-        # treated as mutable?
-        if value < 0:
-            raise ValueError('SavingsAccount: Withdrawals must be positive.')
-
-        self.add_transaction(value, when, year)
-
-    def withdrawals(self, year=None):
-        """ The sum of all withdrawals from the account. """
-        return self.outflows(year)
-
-    # Define new methods
     def taxable_income(self, year=None):
-        """ The total taxable income arising from growth of the account.
-
-        Returns:
-            The taxable income arising from growth of the account as a
-                `Money` object.
-        """
-        # TODO: Define an asset_allocation property and determine the
-        # taxable income based on that allocation.
-
-        # Assume all growth is immediately taxable (e.g. as in a
-        # conventional savings account earning interest)
-        if year is not None and year < self.last_year:
-            return self.balance[year + 1] - self.balance[year]
-        else:
-            return self.next_balance(year) - self.balance[year]
+        """ The taxable income arising from the account in a year. """
+        return Money(0)
 
     def tax_withheld(self, year=None):
-        """ The total sum of witholding taxes incurred in the year.
-
-        Returns:
-            The tax withheld on account activity (e.g. on withdrawals,
-            certain forms of income, etc.)
-        """
-        # Standard savings account doesn't have any witholding taxes.
+        """ The total sum of witholding taxes incurred in the year. """
         return Money(0)
 
     def tax_credit(self):
-        """ The total sum of tax credits available for the year.
+        """ The total sum of tax credits available for the year. """
+        return Money(0)
 
-        Returns:
-            The tax credits arising from account activity (e.g. for
-            certain witholding taxes and forms of income)
-        """
-        # Standard savings account doesn't have any tax credits.
+    def tax_deduction(self):
+        """ The total sum of tax deductions available for the year. """
         return Money(0)
 
 
-class RRSP(SavingsAccount):
-    """ A Registered Retirement Savings Plan (Canada).
+class RegisteredAccount(Account):
+    """ A registered retirement account (Canada).
+
+    This account isn't intended to use by client code. There are just
+    so many commonalities between RRSPs and TFSAs that it made sense
+    to combine them here.
 
     Args:
         person (Person): The annuitant of the RRSP.
@@ -923,32 +788,130 @@ class RRSP(SavingsAccount):
         contribution_room (Money): The amount of contribution room
             available in the first year.
     """
-
-    def __init__(self, person, inflation_adjustments, contribution_room=0,
+    def __init__(self, person, inflation_adjustments, contribution_room=None,
                  *args, **kwargs):
-        """ Initializes an RRSP object. """
+        """ Initializes a RegisteredAccount object. """
         super().__init__(*args, **kwargs)
-        # It's useful to check the age of the annuitant (for RRIF
-        # conversion/withdrawal purposes), so pass a person
-        # NOTE: We could make this more generic by requiring an age
-        # and then doing some calculations each year based on
-        # initial_year and initial_age, but this logic is already
-        # implemented in Person - why reinvent the wheel?
+
+        # NOTE: We could simply require an age, but then we'd need to
+        # reimplement some related logic already in Person.
         if not isinstance(person, Person):
-            raise TypeError('RRSP: person must be of type Person.')
+            raise TypeError(
+                'RegisteredAccount: person must be of type Person.'
+            )
         self.person = person
 
-        # NOTE: Set this before calling any RRSP methods
-        self.inflation_adjustments = inflation_adjustments
-        # TODO: type-check (dict of {year: Decimal})
+        # Convert keys and values of inflation_adjustments.
+        # NOTE: This creates a copy, which will reduce efficiency.
+        # Consider simply retaining a link to a central dict.
+        self._inflation_adjustments = {
+            int(x): Decimal(inflation_adjustments[x])
+            for x in inflation_adjustments
+        }
 
-        # Record contribution room for each year.
-        self.contribution_room = {self.initial_year: Money(contribution_room)}
+        if self.initial_year not in self._inflation_adjustments:
+            raise ValueError(
+                'RegisteredAccount: initial_year is outside of the range of ' +
+                'dates given by inflation_adjustments'
+            )
+
+        # Assign the default here instead of in the call signature
+        # to maintain consistency with subclasses.
+        if contribution_room is None:
+            contribution_room = 0
+        # Initialize _contribution_room, then use the setter.
+        self._contribution_room = {}
+        self.contribution_room = contribution_room
+
+    @property
+    def inflation_adjustment(self):
+        """ The inflation adjustment for the current year """
+        # NOTE: This property is immutable, so there's no setter
+        return self._inflation_adjustments[self.last_year]
+
+    @property
+    def contribution_room(self):
+        """ The contribution room for the current year. """
+        return self._contribution_room[self.last_year]
+
+    @contribution_room.setter
+    def contribution_room(self, val):
+        """ Sets contribution room for the current year. """
+        self._contribution_room[self.last_year] = Money(val)
+
+    def next_year(self, *args, **kwargs):
+        """ Confirms that the year is within the range of our data. """
+        # NOTE: Invoking super().next_year will increment self.last_year
+        super().next_year(*args, **kwargs)
+
+        if self.last_year not in self._inflation_adjustments:
+            raise ValueError('RegisteredAccount: next_year is outside range ' +
+                             'of inflation_adjustments.')
+
+        # Determine contribution room for the next year:
+        self.contribution_room = self.next_contribution_room(
+            year=self.last_year - 1, *args, **kwargs
+        )
+
+    def next_contribution_room(self, year=None, *args, **kwargs):
+        raise NotImplementedError(
+            'RegisteredAccount: next_contribution_room is not implemented. ' +
+            'Use RRSP or TFSA instead.'
+        )
+
+    def max_inflow(self, when='end', year=None):
+        """ Limits outflows based on available contribution room. """
+        if year is None:
+            year = self.last_year
+        return Money(self._contribution_room[year])
+
+
+class RRSP(RegisteredAccount):
+    """ A Registered Retirement Savings Plan (Canada). """
+
+    # Explicitly repeat superclass args for the sake of intellisense.
+    def __init__(self, person, inflation_adjustments, contribution_room=None,
+                 *args, **kwargs):
+        """ Initializes an RRSP object. """
+        super().__init__(person, inflation_adjustments, contribution_room,
+                         *args, **kwargs)
+
+        # Although `person` might provide a retirement_age, the RRSP
+        # won't necessarily be turned into an RRIF at the retirement
+        # date (depending on withdrawal strategy).
+        # TODO: Allow RRIF_conversion_year to be passed as an argument?
+        # We could use the below convert-at-71 logic if None is passed.
+        # TODO: Automatically trigger RRIF conversion when an outflow
+        # is detected? (Perhaps control this behaviour with an arg?)
+
         # The law requires that RRSPs be converted to RRIFs by a certain
         # age (currently 71). We can calculate that here:
         self.RRIF_conversion_year = self.initial_year + \
             Constants.RRSPRRIFConversionAge - \
             self.person.age(self.initial_year)
+
+        if self.initial_year in Constants.RRSPContributionRoomAccrualMax:
+            self._base_accrual = \
+                Constants.RRSPContributionRoomAccrualMax[self.initial_year]
+            self._base_accrual_year = self.initial_year
+        else:
+            # Find the offset for each year (for which we know accrual
+            # max) relative to the initial year.
+            offs = [self.initial_year - x
+                    for x in Constants.RRSPContributionRoomAccrualMax]
+            # Find the smallest offset
+            min_off = min(map(abs, offs))
+            if min_off not in offs:
+                min_off = -min_off
+            # Set the base year by applying the offset to initial_year
+            self._base_accrual_year = self.initial_year - min_off
+            self._base_accrual = Constants.RRSPContributionRoomAccrualMax[
+                self._base_accrual_year]
+
+    def convert_to_RRIF(self, year=None):
+        """ Converts the RRSP to an RRIF. """
+        year = self.last_year if year is None else year
+        self.RRIF_conversion_year = year
 
     def taxable_income(self, year=None):
         """ The total tax owing on withdrawals from the account.
@@ -958,13 +921,17 @@ class RRSP(SavingsAccount):
                 `Money` object.
         """
         # Return the sum of all withdrawals from the account.
-        return self.outflows(year)
+        return -self.outflows(year)
 
     def tax_withheld(self, year=None):
         """ The total tax withheld from the account for the year.
 
         For RRSPs, this is calculated according to a CRA formula.
         """
+        # Return most recent year by default
+        if year is None:
+            year = self.last_year
+
         # NOTE: It's possible to attract a lower tax rate by making
         # smaller one-off withdrawals, but in general multiple
         # withdrawals will be treated as a lump sum for the purpose of
@@ -976,117 +943,122 @@ class RRSP(SavingsAccount):
             # are hit by the withholding tax.
             taxable_income = self.taxable_income(year) - self.min_outflow(year)
 
+        # TODO: inflation-adjust `x` to match the inflation-adjustment
+        # year of taxable_income? (this would likely require identifying
+        # a year for which `x` is expressed in nominal dollars, probably
+        # in Constants; maybe make RRSPWithholdingTaxRate a dict of
+        # {year: {amount: rate}}?)
         tax_rate = max([Constants.RRSPWithholdingTaxRate[x]
                         for x in Constants.RRSPWithholdingTaxRate
-                        if x < taxable_income])
+                        if x < taxable_income.amount], default=0)
         return taxable_income * tax_rate
 
-    def next_year(self, income=Money(0), convert_to_RRIF=None,
-                  *args, **kwargs):
-        """ Updates contribution room """
-        # NOTE: Invoking super().next_year will increment self.last_year
-        super().next_year(*args, **kwargs)
+    def tax_deduction(self, year=None):
+        """ The total sum of tax deductions available for the year.
 
-        # Determine contribution room for the next year:
-        self.contribution_room[self.last_year] = \
-            self.accrual_rate(income, self.last_year)
+        For RRSPs, this the amount contributed in the year.
+        """
+        return self.inflows(year)
 
-        # If we haven't yet convered to an RRIF and the user has
-        # decided to retire, or if we're at the mandatory RRIF
-        # conversion age, then move up the conversion year:
-        if self.RRIF_conversion_year > self.last_year and (convert_to_RRIF or
-           self.person.age(self.last_year) >= Constants.RRSPRRIFConversionAge):
-            self.RRIF_conversion_year = self.last_year
+    def next_contribution_room(self, income, year=None, *args, **kwargs):
+        """ Determines the amount of contribution room for next year.
 
-    def accrual_rate(self, income, year):
-        """ Determines the amount of contribution room accrued in year. """
-        if self.person.age(year) > Constants.RRSPRRIFConversionAge:
+        Args:
+            income (Money): The amount of taxable income for this year
+                used to calculate RRSP contribution room.
+            year (int): The year in which the income is received.
+
+        Returns:
+            The contribution room for the RRSP for the year *after*
+            `year`.
+        """
+        # Return most recent year by default
+        if year is None:
+            year = self.last_year
+
+        if self.person.age(year + 1) > Constants.RRSPRRIFConversionAge:
             # If past the mandatory RRIF conversion age, no
             # contributions are allowed.
             return Money(0)
         else:
             # TODO: Add pension adjustment?
 
-            # Update contribution room based on this year's income and
-            # any leftover contribution room rolled over.
-            # First, determine the accrual based on income:
-            accrual = self.contribution_room[year - 1] + \
-                income * Constants.RRSPContributionRoomAccrualRate - \
-                self.inflows(year - 1)
+            # TODO: Move this logic to __init__, where we can determine
+            # baseline accrual maximum as of initial_year. Then, in
+            # each subsequent year, we can adjust relative to that.
+
+            # Convert income to Money type
+            income = Money(income)
+
+            # First, determine how much more contribution room will
+            # accrue due to this year's income:
+            accrual = income * Constants.RRSPContributionRoomAccrualRate
             # Second, compare to the (inflation-adjusted) max accrual:
-            if year in Constants.RRSPContributionRoomAccrualMax:
+            if year + 1 in Constants.RRSPContributionRoomAccrualMax:
                 # If the max accrual is known, use that.
-                max_accrual = Constants.RRSPContributionRoomAccrualMax
+                max_accrual = \
+                    Constants.RRSPContributionRoomAccrualMax[year + 1]
             else:
                 # Otherwise, inflation-adjust the closest known rate.
-                base_year = max(
-                    [x for x in Constants.RRSPContributionRoomAccrualMax
-                     if Constants.RRSPContributionRoomAccrualMax[x] < year])
-                max_accrual = \
-                    Constants.RRSPContributionRoomAccrualMax[base_year] / \
-                    self.inflation_adjustments[base_year] * \
-                    self.inflation_adjustments[year]
-            return min(accrual, max_accrual)
-
-    def max_inflow(self, when='end', year=None):
-        """ Limits outflows based on available contribution room. """
-        if year is None:
-            year = self.last_year
-        return Money(self.contribution_room[year])
+                max_accrual = (
+                    (self._base_accrual /
+                     self._inflation_adjustments[self._base_accrual_year]) *
+                    self._inflation_adjustments[year + 1]
+                )
+            # Don't forget to add in any rollovers:
+            rollover = self._contribution_room[year] - self.inflows(year)
+            return min(accrual, Money(max_accrual)) + rollover
 
     def min_outflow(self, when='end', year=None):
         """ Minimum RRSP withdrawal """
         if year is None:
             year = self.last_year
         # Minimum withdrawals are required the year after converting to
-        # an RRIF.
+        # an RRIF. How it is calculated depends on the person's age.
         if self.RRIF_conversion_year < self.last_year:
-            return Constants.RRSPRRIFMinWithdrawal[year] * self.balance[year]
+            age = self.person.age(year)
+            if age in Constants.RRSPRRIFMinWithdrawal:
+                return Constants.RRSPRRIFMinWithdrawal[age] * \
+                    self._balance[year]
+            elif age > max(Constants.RRSPRRIFMinWithdrawal):
+                return self._balance[year] * \
+                    max(Constants.RRSPRRIFMinWithdrawal.values())
+            else:
+                return self._balance[year] / (90 - age)
         else:
             return Money(0)
 
     # TODO: Determine whether there are any RRSP tax credits to
-    # implement in an overloaded tax_credit method.
+    # implement in an overloaded tax_credit method
+    # (e.g. pension tax credit?)
 
 
-class TFSA(SavingsAccount):
-    """ A Tax-Free Savings Account (Canada).
+# TODO: Implement SpousalRRSP?
 
-    Args:
-        person (Person): The annuitant of the RRSP.
-        inflation_adjustments (dict): {year, Decimal} pairs. Each
-            Decimal defines a cumulative inflation adjustment relative
-            to a baseline year.
-        contribution_room (Money): The amount of contribution room
-            available in the first year. Optional. If not provided,
-            contribution room will be inferred based on the age of
-            the person.
-    """
+
+class TFSA(RegisteredAccount):
+    """ A Tax-Free Savings Account (Canada). """
 
     def __init__(self, person, inflation_adjustments, contribution_room=None,
                  *args, **kwargs):
         """ Initializes a TFSA object. """
-        super().__init__(*args, **kwargs)
-        # We can use `person` to infer contribution room if none was
-        # provided.
-        # NOTE: We could make this more generic by requiring an age
-        # and then doing some calculations each year based on
-        # initial_year and initial_age, but this logic is already
-        # implemented in Person - why reinvent the wheel?
-        if not isinstance(person, Person):
-            raise TypeError('TFSA: person must be of type Person.')
-        self.person = person
-
-        self.inflation_adjustments = inflation_adjustments
-        # TODO: type-check (dict of {year: Decimal})
+        super().__init__(person, inflation_adjustments, contribution_room,
+                         *args, **kwargs)
 
         # This is our baseline for estimating contribution room
-        self.base_accrual = min(Constants.TFSAAnnualAccrual.values())
+        # (By law, inflation-adjustments are relative to 2009, the
+        # first year that TFSAs were available)
+        self._base_accrual = min(Constants.TFSAAnnualAccrual.values())
+        self._base_accrual_year = min(Constants.TFSAAnnualAccrual.keys())
 
         # If contribution_room is not provided, infer it based on age.
-        # NOTE: We could replace this with a single statement (summing
-        # a comprehension), but that would be a lot less readable.
         if contribution_room is None:
+            # Undo any setting of contribution_room that happened in
+            # super().__init__
+            self._contribution_room = {}
+            # Now proceed with determining the accumulated contribution
+            # room from the year that the person first became eligible
+            # up to initial_year.
             contribution_room = 0
             # Start with the year the person became eligible for a TFSA:
             start_year = self.initial_year - person.age(self.initial_year) + \
@@ -1096,54 +1068,51 @@ class TFSA(SavingsAccount):
             start_year = max(start_year,
                              min(Constants.TFSAAnnualAccrual.keys()))
             # Accumulate contribution room over applicable years
-            for year in range(start_year, self.initial_year + 1):
-                contribution_room += self.accrual_rate(year)
+            # (NOTE: We start with start_year - 1 because
+            # next_contribution_room returns the contribution room for
+            # the *following* year)
+            for year in range(start_year - 1, self.initial_year):
+                contribution_room += self.next_contribution_room(year)
 
-        # We'll be recording contribution room for each year, so use a
-        # dict:
-        self.contribution_room = {self.initial_year: Money(contribution_room)}
+        self.contribution_room = contribution_room
 
-    def accrual_rate(self, year):
-        """ The amount of contribution room accrued in `year` """
+    def next_contribution_room(self, year=None):
+        """ The amount of contribution room for next year """
+        # Return most recent year by default
+        if year is None:
+            year = self.last_year
+
         contribution_room = 0
         # If we already have an accrual rate set for this year, use that
-        if year in Constants.TFSAAnnualAccrual:
-            contribution_room += \
-                Money(Constants.TFSAAnnualAccrual[year])
+        if year + 1 in Constants.TFSAAnnualAccrual:
+            contribution_room += Money(Constants.TFSAAnnualAccrual[year + 1])
         # Otherwise, infer the accrual rate by inflation-adjusting the
         # base rate and rounding.
         else:
             contribution_room += Money(
-                round(self.base_accrual * self.inflation_adjustments[year] /
+                round(self._base_accrual *
+                      (self._inflation_adjustments[year + 1] /
+                       self._inflation_adjustments[self._base_accrual_year]
+                       ) /
                       Constants.TFSAInflationRoundingFactor) *
                 Constants.TFSAInflationRoundingFactor
             )
-        return contribution_room
-
-    def next_year(self, *args, **kwargs):
-        """ Updates contribution room """
-        # NOTE: Invoking super().next_year will increment self.last_year
-        super().next_year(*args, **kwargs)
-        # Roll over unused contribution room, add this year's accrual,
-        # and add the amount of any withdrawals.
-        self.contribution_room[self.last_year] = \
-            self.accrual_rate(self.last_year) + \
-            self.contribution_room[self.last_year - 1] - \
-            self.inflows(self.last_year - 1) + \
-            self.outflows(self.last_year - 1)
-
-    def max_inflow(self, when='end', year=None):
-        """ Limits outflows based on available contribution room. """
-        if year is None:
-            year = self.last_year
-        return Money(self.contribution_room[year])
+        # On top of this year's accrual, roll over unused contribution
+        # room, plus any withdrawals (less contributions) from last year
+        if year in self._contribution_room:
+            rollover = self._contribution_room[year] - (
+                self.outflows(year) + self.inflows(year)
+            )
+        else:
+            rollover = 0
+        return contribution_room + rollover
 
     def taxable_income(self, year=None):
         """ Returns $0 (TFSAs are not taxable.) """
         return Money(0)
 
 
-class TaxableAccount(SavingsAccount):
+class TaxableAccount(Account):
     """ A taxable account, non-registered account.
 
     This account uses Canadian rules for determining taxable income from
@@ -1163,20 +1132,75 @@ class TaxableAccount(SavingsAccount):
     # Perhaps also implement a tax_credit and/or tax_deduction method
     # (e.g. to account for Canadian dividends)
 
-    def __init__(self, acb=0, *args, **kwargs):
+    def __init__(self, acb=None, *args, **kwargs):
         """ Constructor for `TaxableAccount`. """
         super().__init__(*args, **kwargs)
-        acb = acb if acb is not None else self.balance
-        self.acb = {self.initial_year: acb}
 
-    # TODO: Memoize this method.
-    def _acb_and_capital_gain(self, year=None):
-        """ Determines both acb and capital gains. For internal use.
+        # If acb wasn't provided, assume there have been no capital
+        # gains or losses, so acb = balance.
+        acb = acb if acb is not None else self.balance
+        # Initialize the _acb dict and set via the property setter.
+        self._acb = {}
+        self.acb = acb
+
+        # Capital gain, unlike other variables, is determined at the end
+        # of the year.
+        self._capital_gain = {}
+
+    @property
+    def acb(self):
+        """ The adjusted cost base of assets in the account this year. """
+        return self._acb[self.last_year]
+
+    @acb.setter
+    def acb(self, val):
+        """ Sets the ACB for the account this year. """
+        self._acb[self.last_year] = Money(val)
+
+    def _get_capital_gain(self, year=None):
+        """ Helper method. Caches capital gain on first call. """
+        if year is None:
+            year = self.last_year
+        # If capital_gain hasn't yet been calculated, do so now
+        # (and also assign acb for next year; we get that for free!)
+        if year not in self._capital_gain:
+            self._acb[year + 1], self._capital_gain[year] = \
+                self._next_acb_and_capital_gain()
+        return self._capital_gain[year]
+
+    @property
+    def capital_gain(self):
+        """ The capital gains (or losses) for this year.
+
+        Note that, unlike other Account attributes, capital_gain is
+        given as of the *end* of the year, and is based on transaction
+        activity. Therefore, changing any transactions will affect
+        capital_gain.
+        """
+        # If capital_gain hasn't yet been calculated, do so now
+        # (and also assign acb for next year; we get that for free!)
+        return self._get_capital_gain()
+
+    @capital_gain.setter
+    def capital_gain(self, val):
+        self._capital_gain[self.last_year] = Money(val)
+
+    def add_transaction(self, value, when='end'):
+        super().add_transaction(value, when)
+        # Invalidate the figure for capital gains, since transactions
+        # will affect it.
+        self._capital_gain.pop(self.last_year, None)
+
+    def _next_acb_and_capital_gain(self, year=None):
+        """ ACB and capital gains at the end of a given year.
+
+        This method is intended for internal use. Importantly, unlike
+        other methods of Account types, this determines values at the
+        *end* of a year
 
         These can be implemented as separate functions. However, they
-        use the same underlying logic, but their results can't be
-        inferred from each other. (i.e. you can't determine capital
-        gains just from the acb at the start and end of the year).
+        are determined in an interrelated way, so it is much more
+        efficient to return both from one method.
 
         Returns:
             A (acb, capital_gains) tuple.
@@ -1187,41 +1211,33 @@ class TaxableAccount(SavingsAccount):
         # Set up initial conditions
         if year is None:
             year = self.last_year
-        acb = self.acb[year]
+
+        if year + 1 in self._acb and year in self._capital_gain:
+            return (self._acb[year + 1], self._capital_gain[year])
+
+        acb = self._acb[year]
         capital_gain = 0
 
         # Iterate over transactions in order of occurrence
-        for when in sorted(self.transactions.keys()):
-            value = self.transactions[when]
+        for when in sorted(self._transactions[year].keys()):
+            value = self._transactions[year][when]
             # There are different acb formulae for inflows and outflows
             if value >= 0:  # inflow
                 acb += value
             else:  # outflow
                 # Capital gains are calculated based on the acb and
                 # balance before the transaction occurred.
-                balance = self.balance_at_time(when) - value
+                balance = self.balance_at_time(when, year) - value
                 capital_gain += -value * (1 - (acb / balance))
                 acb *= 1 - (-value / balance)
 
         return (acb, capital_gain)
 
-    def next_acb(self, year=None):
-        """ Determines acb after contributions/withdrawals.
-
-        Returns:
-            The acb after all contributions and withdrawals are made,
-                as a Money object.
-        """
-        return self._acb_and_capital_gain(year)[0]
-
-    def capital_gain(self, year=None):
-        """ The total capital gain for the period.
-
-        Returns:
-            The capital gains from all withdrawals made during the year,
-                as a Money object.
-        """
-        return self._acb_and_capital_gain(year)[1]
+    def next_year(self, *args, **kwargs):
+        """ Updates instance attributes to the next year """
+        super().next_year(*args, **kwargs)
+        self.acb, self._capital_gain[self.last_year - 1] = \
+            self._next_acb_and_capital_gain(self.last_year - 1)
 
     def taxable_income(self, year=None):
         """ The total tax owing based on activity in the account.
@@ -1238,7 +1254,8 @@ class TaxableAccount(SavingsAccount):
         """
         year = self.last_year if year is None else year
 
-        return self.capital_gain(year) / 2
+        # Only 50% of capital gains are included in taxable income
+        return self._get_capital_gain(year) / 2
 
         # TODO: Track asset allocation and apportion growth in the
         # account between capital gains, dividends, etc.
@@ -1254,83 +1271,27 @@ class Debt(Account):
     If there is an outstanding balance, the balance value will be a
     *negative* value, in line with typical accounting principles.
 
-    Attributes:
+    Args:
+        minimum_payment (Money): The minimum annual payment on the debt.
+            Optional.
         reduction_rate (Money, Decimal, float, int): If provided, some
             (or all) of the debt payments are drawn from savings instead
             of living expenses. If Money, this is the amount drawn from
             savings. If a number in [0,1], this is the percentage of the
             payment that's drawn from savings. Optional.
-        minimum_payment (Money): The minimum annual payment on the debt.
-            Optional.
-        maximum_payment(when) (Money): The amount of a payment at time
-            `when` that would reduce the debt balance to 0.
         accelerate_payment (bool): If True, payments above the minimum
             may be made to pay off the balance earlier. Optional.
-        balance (Money): The balance of the debt.
-        withdrawals (Money): The amount withdrawn. This increases the
-            (negative-valued) balance.
-        payments (Money): The amount paid. This decreases the
-            (negative-valued) balance.
     """
 
-    def __init__(self, reduction_rate=1, minimum_payment=Money(0),
+    def __init__(self, minimum_payment=Money(0), reduction_rate=1,
                  accelerate_payment=False, *args, **kwargs):
         """ Constructor for `Debt`. """
         super().__init__(*args, **kwargs)
-        self.reduction_rate = Decimal(reduction_rate)
         self.minimum_payment = Money(minimum_payment)
+        self.reduction_rate = Decimal(reduction_rate)
         self.accelerate_payment = bool(accelerate_payment)
 
-    def pay(self, value, when=None, year=None):
-        """ Adds a payment transaction to the account.
-
-        This is a convenience method that wraps Account.add_transaction.
-        If `when` is not provided, the transactions are made in the
-        middle of the year (which should yield roughly the same results
-        as monthly, mid-month payments).
-
-        For convenience, the sign of `value` is ignored. This will
-        result in a positive-valued inflow to the account.
-
-        Args:
-            value (Money): A positive value for the payment transaction.
-            when (When): The timing of the payment.
-        """
-        # TODO: Remove `year` attribute, so that only last year is
-        # treated as mutable?
-        # TODO: Use different default for `when`? (check add_transaction)
-        self.add_transaction(abs(value), when, year)
-
-    def payments(self, year=None):
-        """ The sum of all payments to the account. """
-        return self.inflows(year)
-
-    def withdraw(self, value, when=None, year=None):
-        """ Adds a withdrawal transaction to the account.
-
-        This is a convenience method that wraps Account.add_transaction.
-        If `when` is not provided, the transactions are made in the
-        middle of the year (which should yield roughly the same results
-        as monthly, mid-month payments).
-
-        For convenience, the sign of `value` is ignored. This will
-        result in a negative-valued outflow from the account.
-
-        Args:
-            value (Money): A positive value for the withdrawal
-                transaction.
-            when (When): The timing of the payment.
-        """
-        # TODO: Remove `year` attribute, so that only last year is
-        # treated as mutable?
-        # TODO: Use different default for `when`? (check add_transaction)
-        self.add_transaction(-abs(value), when, year)
-
-    def withdrawals(self, year):
-        """ The sum of all withdrawals from the account. """
-        return self.outflows(year)
-
-    def maximum_payment(self, when, year=None):
+    def max_inflow(self, when, year=None):
         """ The payment at time `when` that would reduce balance to 0.
 
         This is in addition to any existing payments in the account.
@@ -1341,11 +1302,10 @@ class Debt(Account):
             debt.add_transaction(100, 'start')
             debt.maximum_payment('start') == 0  # True
         """
-        # TODO: Test this method.
-        return self.max_outflow(when, year)
+        return -self.balance_at_time(when, year)
 
 
-class OtherProperty(SavingsAccount):
+class OtherProperty(Account):
     """ An asset other than a bank account or similar financial vehicle.
 
     Unlike other SavingsAccount subclasses, the user can select whether
@@ -1362,7 +1322,12 @@ class OtherProperty(SavingsAccount):
 
     def taxable_income(self, year=None):
         """ The taxable income generated by the account for the year. """
+        # If taxable, assume all growth is immediately taxable (as in
+        # a conventional savings account)
         if self.taxable:
-            return super().taxable_income(year)
+            if year is not None and year < self.last_year:
+                return self._balance[year + 1] - self._balance[year]
+            else:
+                return self.next_balance(year) - self._balance[year]
         else:
-            return 0
+            return Money(0)

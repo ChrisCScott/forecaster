@@ -653,43 +653,68 @@ class TestTransactionStrategyMethods(unittest.TestCase):
 
     def test_strategy_ordered(self):
         """ Tests TransactionStrategy._strategy_ordered. """
-        # First test an ordered strategy for inflows.
+        # Run each test on inflows and outflows
         method = TransactionStrategy._strategy_ordered
-        s = TransactionInStrategy(method, {'RRSP': 1, 'TFSA': 2,
-                                           'TaxableAccount': 3})
+        s_in = TransactionInStrategy(method, {'RRSP': 1, 'TFSA': 2,
+                                              'TaxableAccount': 3})
+        s_out = TransactionInStrategy(method, {'RRSP': 1, 'TFSA': 2,
+                                               'TaxableAccount': 3})
 
         # Set up some accounts for the tests.
-        rrsp = RRSP(self.person, self.inflation_adjustments, 200)
-        tfsa = TFSA(self.person, self.inflation_adjustments, 100)
-        taxableAccount = TaxableAccount()
+        rrsp = RRSP(self.person, self.inflation_adjustments, 200,
+                    balance=Money(200),
+                    initial_year=min(self.inflation_adjustments.keys()))
+        tfsa = TFSA(self.person, self.inflation_adjustments, 100,
+                    balance=Money(100),
+                    initial_year=min(self.inflation_adjustments.keys()))
+        taxableAccount = TaxableAccount(balance=Money(1000))
         accounts = [rrsp, tfsa, taxableAccount]
 
         # Try a simple scenario: The amount being contributed is less
         # than the available contribution room in the top-weighted
         # account type.
-        results = s(Money(100), accounts)
+        results = s_in(Money(100), accounts)
         self.assertEqual(results[rrsp], Money(100))
+        self.assertEqual(results[tfsa], Money(0))
+        self.assertEqual(results[taxableAccount], Money(0))
+        # Try again with outflows.
+        results = s_out(-Money(100), accounts)
+        self.assertEqual(results[rrsp], Money(-100))
         self.assertEqual(results[tfsa], Money(0))
         self.assertEqual(results[taxableAccount], Money(0))
 
         # Now contribute more than the RRSP will accomodate. The extra
         # $50 should go to the TFSA, which is next in line.
-        results = s(Money(250), accounts)
+        results = s_in(Money(250), accounts)
         self.assertEqual(results[rrsp], Money(200))
         self.assertEqual(results[tfsa], Money(50))
+        self.assertEqual(results[taxableAccount], Money(0))
+        results = s_out(-Money(250), accounts)
+        self.assertEqual(results[rrsp], Money(-200))
+        self.assertEqual(results[tfsa], Money(-50))
         self.assertEqual(results[taxableAccount], Money(0))
 
         # Now contribute a lot of money - the RRSP and TFSA will get
         # filled and the remainder will go to the taxable account.
-        results = s(Money(1000), accounts)
+        results = s_in(Money(1000), accounts)
         self.assertEqual(results[rrsp], Money(200))
         self.assertEqual(results[tfsa], Money(100))
         self.assertEqual(results[taxableAccount], Money(700))
+        results = s_out(-Money(1000), accounts)
+        self.assertEqual(results[rrsp], Money(-200))
+        self.assertEqual(results[tfsa], Money(-100))
+        self.assertEqual(results[taxableAccount], Money(-700))
+
+        # For outflows only, try withdrawing more than the account have
+        results = s_out(-Money(10000), accounts)
+        self.assertEqual(results[rrsp], Money(-200))
+        self.assertEqual(results[tfsa], Money(-100))
+        self.assertEqual(results[taxableAccount], Money(-1000))
 
         # Now change the order and confirm that it still works
-        s.weights['RRSP'] = 2
-        s.weights['TFSA'] = 1
-        results = s(Money(100), accounts)
+        s_in.weights['RRSP'] = 2
+        s_in.weights['TFSA'] = 1
+        results = s_in(Money(100), accounts)
         self.assertEqual(results[rrsp], Money(0))
         self.assertEqual(results[tfsa], Money(100))
         self.assertEqual(results[taxableAccount], Money(0))

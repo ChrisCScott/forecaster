@@ -8,6 +8,7 @@ import warnings
 import math
 import decimal
 from decimal import Decimal
+from random import Random
 from settings import Settings
 import ledger
 from ledger import *
@@ -188,91 +189,210 @@ class TestWhen(unittest.TestCase):
         """ Tests `When.__new__` """
 
         # Test a simple, single-valued input
-        w = When(1)
+        w = when_conv(1)
         self.assertEqual(w, Decimal(1))
 
         # Test a magic input
-        w = When('start')
+        w = when_conv('start')
+        self.assertEqual(w, Decimal(0))
+
+        # Test a magic input
+        w = when_conv('end')
         self.assertEqual(w, Decimal(1))
 
-        # Test default initialization
-        w = When()
-        self.assertEqual(w, Decimal())
-
         # Test non-magic str input
-        w = When('1')
+        w = when_conv('1')
         self.assertEqual(w, Decimal(1))
 
         with self.assertRaises(decimal.InvalidOperation):
-            w = When('invalid input')
-
-
-# TODO: Update Account tests to use new multi-year data model
+            w = when_conv('invalid input')
 
 
 class TestAccountMethods(unittest.TestCase):
-    """ A test suite for the `Account` class """
+    """ A test suite for the `Account` class.
 
-    def test_init(self, AccountType=Account):
+    For each Account subclass, create a test case that subclasses from
+    this (or an intervening subclass). Then, in the setUpClass method,
+    assign to class attributes `args`, and/or `kwargs` to
+    determine which arguments will be prepended, postpended, or added
+    via keyword when an instance of the subclass is initialized.
+    Don't forget to also assign the subclass your're testing to
+    `cls.AccountType`, and to run `super().setUpClass()` at the top!
+
+    This way, the methods of this class will still be called even for
+    subclasses with mandatory positional arguments. You should still
+    override the relevant methods to test subclass-specific logic (e.g.
+    if the subclass modifies the treatment of the `rate` attribute
+    based on an init arg, you'll want to test that by overriding
+    `test_rate`)
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """ Sets up some class-specific variables for calling methods. """
+        cls.AccountType = Account
+
+        # Initialize the args and kwargs attributes. Subclasses will
+        # access these via add_args and get_args.
+        cls.args = {}
+        cls.kwargs = {}
+        cls.add_args(Account)
+        # Some subclasses add args that are based on initial_year, so
+        # store that here at the class level:
+        cls.initial_year = 2000
+
+    @classmethod
+    def add_args(cls, AccountType, *args, **kwargs):
+        """ Convenience method. Adds args to the front of the list. """
+        # Prepend args to the list of args for each superclass.
+        # (This matches the pattern for Account subclasses, which
+        # prepend their additional arguments)
+        for AT in cls.args:
+            la = list(args)
+            la.extend(cls.args[AT])
+            cls.args[AT] = la
+        cls.args[AccountType] = []
+
+        for AT in cls.kwargs:
+            cls.kwargs[AT].update(kwargs)
+        cls.kwargs[AccountType] = {}
+
+    @classmethod
+    def _get_args(cls, AccountType, arg_dict):
+        """ Gets args (pre/post/kw) for methods that target AccountType. """
+        # Get args for this account type
+        if AccountType in arg_dict:
+            return arg_dict[AccountType]
+        # If this account type doesn't have args registered, then
+        # iteratively check for each supertype's registered args.
+        else:
+            while AccountType is not Account:
+                AccountType = AccountType.__bases__[0]
+                if AccountType in arg_dict:
+                    return arg_dict[AccountType]
+
+    @classmethod
+    def get_args(cls, AccountType):
+        """ Convenience method. Returns (args, kwargs). """
+        return (cls._get_args(AccountType, cls.args),
+                cls._get_args(AccountType, cls.kwargs))
+
+    def test_init(self):
         """ Tests Account.__init__ """
+        args, kwargs = self.get_args(Account)
 
         # Basic test: All correct values, check for equality and type
         balance = Money(0)
-        apr = 1.0
+        rate = 1.0
         transactions = {1: Money(1), 0: Money(-1)}
-        nper = 1  # This is the easiest case, since apr==rate.
+        nper = 1  # This is the easiest case to test
+        initial_year = self.initial_year
         settings = Settings()
-        account = AccountType(balance, apr, transactions, nper, settings)
+        account = self.AccountType(*args, balance, rate, transactions,
+                                   nper, initial_year, settings,
+                                   **kwargs)
         # Test primary attributes
+        self.assertEqual(account._balance, {initial_year: balance})
+        self.assertEqual(account._rate, {initial_year: rate})
+        self.assertEqual(account._transactions, {initial_year: transactions})
         self.assertEqual(account.balance, balance)
-        self.assertEqual(account.apr, apr)
+        self.assertEqual(account.rate, rate)
         self.assertEqual(account.transactions, transactions)
         self.assertEqual(account.nper, 1)
-        self.assertEqual(account.settings, settings)
+        self.assertEqual(account.initial_year, initial_year)
+        self.assertEqual(account.last_year, initial_year)
+
+        # Check types
+        self.assertIsInstance(account._balance, dict)
+        for key, val in account._balance.items():
+            self.assertIsInstance(key, int)
+            self.assertIsInstance(val, Money)
         self.assertIsInstance(account.balance, Money)
-        self.assertIsInstance(account.apr, Decimal)
+        self.assertIsInstance(account._rate, dict)
+        for key, val in account._rate.items():
+            self.assertIsInstance(key, int)
+            self.assertIsInstance(val, (Decimal, float, int))
+        self.assertIsInstance(account.rate, Decimal)
+        self.assertIsInstance(account._transactions, dict)
+        for key, val in account._transactions.items():
+            self.assertIsInstance(key, int)
+            self.assertIsInstance(val, dict)
+            for key, v in val.items():
+                self.assertIsInstance(key, Decimal)
+                self.assertIsInstance(v, Money)
         self.assertIsInstance(account.transactions, dict)
+        for key, val in account.transactions.items():
+            self.assertIsInstance(key, Decimal)
+            self.assertIsInstance(val, Money)
         self.assertIsInstance(account.nper, int)
-        self.assertIsInstance(account.settings, Settings)
+        self.assertIsInstance(account.initial_year, int)
 
         # Basic test: Only balance provided.
-        account = AccountType(balance)
+        account = self.AccountType(*args, balance, **kwargs)
+        self.assertEqual(account._balance, {Settings.initial_year: balance})
+        self.assertEqual(account._rate, {Settings.initial_year: 0})
+        self.assertEqual(account._transactions, {Settings.initial_year: {}})
         self.assertEqual(account.balance, balance)
-        self.assertEqual(account.apr, 0)
+        self.assertEqual(account.rate, 0)
         self.assertEqual(account.transactions, {})
         self.assertEqual(account.nper, 1)
-        self.assertEqual(account.settings, Settings)
+        self.assertEqual(account.initial_year, Settings.initial_year)
 
         # Test with (Decimal-convertible) strings as input
         balance = "0"
-        apr = "1.0"
+        rate = "1.0"
         transactions = {'start': "1", 'end': "-1"}
         nper = 'A'
-        account = AccountType(balance, apr, transactions, nper)
-        # Test primary attributes
+        initial_year = self.initial_year
+        account = self.AccountType(*args, balance, rate, transactions,
+                                   nper, initial_year, settings,
+                                   **kwargs)
+        self.assertEqual(account._balance, {initial_year: Money(0)})
+        self.assertEqual(account._rate, {initial_year: 1})
+        self.assertEqual(account._transactions,
+                         {initial_year: {0: Money(1), 1: Money(-1)}})
         self.assertEqual(account.balance, Money(0))
-        self.assertEqual(account.apr, 1)
-        self.assertEqual(account.transactions, {1: Money(1), 0: Money(-1)})
+        self.assertEqual(account.rate, 1)
+        self.assertEqual(account.transactions, {0: Money(1), 1: Money(-1)})
         self.assertEqual(account.nper, 1)
-        self.assertIsInstance(account.balance, Money)
-        self.assertIsInstance(account.apr, Decimal)
-        self.assertIsInstance(account.transactions, dict)
+        self.assertEqual(account.initial_year, initial_year)
+        # Check types for conversion
+        self.assertIsInstance(account._balance[initial_year], Money)
+        self.assertIsInstance(account._rate[initial_year], Decimal)
+        self.assertIsInstance(account._transactions[initial_year], dict)
         for key, value in account.transactions.items():
             self.assertIsInstance(key, (float, int, Decimal))
             self.assertIsInstance(value, Money)
         self.assertIsInstance(account.nper, int)
+        self.assertIsInstance(account.initial_year, int)
 
         # Test 'when' values inside and outside of the range [0,1]
-        account = AccountType(balance, transactions={0: 1})
-        self.assertEqual(account.transactions[Decimal(0)], Money(1))
-        account = AccountType(balance, transactions={0.5: 1})
-        self.assertEqual(account.transactions[Decimal(0.5)], Money(1))
-        account = AccountType(balance, transactions={1: 1})
-        self.assertEqual(account.transactions[Decimal(1)], Money(1))
+        account = self.AccountType(*args,
+                                   balance=balance, transactions={0: 1},
+                                   initial_year=initial_year,
+                                   **kwargs)
+        self.assertEqual(account.transactions[Decimal(0)],
+                         Money(1))
+        account = self.AccountType(*args,
+                                   balance=balance, transactions={0.5: 1},
+                                   initial_year=initial_year,
+                                   **kwargs)
+        self.assertEqual(account.transactions[Decimal(0.5)],
+                         Money(1))
+        account = self.AccountType(*args,
+                                   balance=balance, transactions={1: 1},
+                                   initial_year=initial_year,
+                                   **kwargs)
+        self.assertEqual(account.transactions[Decimal(1)],
+                         Money(1))
         with self.assertRaises(ValueError):
-            account = AccountType(balance, transactions={-1: 1})
+            account = self.AccountType(*args,
+                                       balance=balance, transactions={-1: 1},
+                                       **kwargs)
         with self.assertRaises(ValueError):
-            account = AccountType(balance, transactions={2: 1})
+            account = self.AccountType(*args,
+                                       balance=balance, transactions={2: 1},
+                                       **kwargs)
 
         # Let's test invalid Decimal conversions next.
         # BasicContext causes most errors to raise exceptions
@@ -281,141 +401,153 @@ class TestAccountMethods(unittest.TestCase):
 
         # Test with values not convertible to Decimal
         with self.assertRaises(decimal.InvalidOperation):
-            account = AccountType(balance="invalid input")
+            account = self.AccountType(*args,
+                                       balance="invalid input",
+                                       **kwargs)
             # In some contexts, Decimal returns NaN instead of raising an error
             if account.balance == Money("NaN"):
                 raise decimal.InvalidOperation()
 
         with self.assertRaises(decimal.InvalidOperation):
-            account = AccountType(balance, apr="invalid input")
+            account = self.AccountType(*args,
+                                       balance=balance, rate="invalid input",
+                                       **kwargs)
             if account.rate == Decimal("NaN"):
                 raise decimal.InvalidOperation()
 
         with self.assertRaises((decimal.InvalidOperation, KeyError)):
-            account = AccountType(balance, transactions={"invalid input": 1})
-            if Decimal('NaN') in account.transactions.keys():
+            account = self.AccountType(*args,
+                                       balance=balance,
+                                       transactions={"invalid input": 1},
+                                       **kwargs)
+            if Decimal('NaN') in account.transactions:
                 raise decimal.InvalidOperation()
 
         # Test valid nper values:
-        account = AccountType(balance, nper='C')  # continuous
+        # Continuous (can be represented as either None or 'C')
+        account = self.AccountType(*args,
+                                   balance=balance, nper='C',
+                                   **kwargs)
         self.assertEqual(account.nper, None)
         self.assertIsInstance(account.nper, (type(None), str))
 
-        account = AccountType(balance, nper='D')  # daily
+        # Daily
+        account = self.AccountType(*args,
+                                   balance=balance, nper='D',
+                                   **kwargs)
         self.assertEqual(account.nper, 365)
         self.assertIsInstance(account.nper, int)
 
-        account = AccountType(balance, nper='W')  # weekly
+        # Weekly
+        account = self.AccountType(*args,
+                                   balance=balance, nper='W',
+                                   **kwargs)
         self.assertEqual(account.nper, 52)
 
-        account = AccountType(balance, nper='BW')  # biweekly
+        # Biweekly
+        account = self.AccountType(*args,
+                                   balance=balance, nper='BW',
+                                   **kwargs)
         self.assertEqual(account.nper, 26)
 
-        account = AccountType(balance, nper='SM')  # semi-monthly
+        # Semi-monthly
+        account = self.AccountType(*args,
+                                   balance=balance, nper='SM',
+                                   **kwargs)
         self.assertEqual(account.nper, 24)
 
-        account = AccountType(balance, nper='M')  # monthly
+        # Monthly
+        account = self.AccountType(*args,
+                                   balance=balance, nper='M',
+                                   **kwargs)
         self.assertEqual(account.nper, 12)
 
-        account = AccountType(balance, nper='BM')  # bimonthly
+        # Bimonthly
+        account = self.AccountType(*args,
+                                   balance=balance, nper='BM',
+                                   **kwargs)
         self.assertEqual(account.nper, 6)
 
-        account = AccountType(balance, nper='Q')  # quarterly
+        # Quarterly
+        account = self.AccountType(*args,
+                                   balance=balance, nper='Q',
+                                   **kwargs)
         self.assertEqual(account.nper, 4)
 
-        account = AccountType(balance, nper='SA')  # semiannually
+        # Semiannually
+        account = self.AccountType(*args,
+                                   balance=balance, nper='SA',
+                                   **kwargs)
         self.assertEqual(account.nper, 2)
 
-        account = AccountType(balance, nper='A')  # annually
+        # Annually
+        account = self.AccountType(*args,
+                                   balance=balance, nper='A',
+                                   **kwargs)
         self.assertEqual(account.nper, 1)
 
         # Test invalid nper values:
         with self.assertRaises(ValueError):
-            account = AccountType(balance, nper=0)
+            account = self.AccountType(*args,
+                                       balance=balance, nper=0,
+                                       **kwargs)
 
         with self.assertRaises(ValueError):
-            account = AccountType(balance, nper=-1)
+            account = self.AccountType(*args,
+                                       balance=balance, nper=-1,
+                                       **kwargs)
 
         with self.assertRaises(TypeError):
-            account = AccountType(balance, nper=0.5)
+            account = self.AccountType(*args,
+                                       balance=balance, nper=0.5,
+                                       **kwargs)
 
         with self.assertRaises(TypeError):
-            account = AccountType(balance, nper=1.5)
+            account = self.AccountType(*args,
+                                       balance=balance, nper=1.5,
+                                       **kwargs)
 
         with self.assertRaises(ValueError):
-            account = AccountType(balance, nper="invalid input")
+            account = self.AccountType(*args,
+                                       balance=balance, nper='invalid input',
+                                       **kwargs)
 
-        # Recurse onto all subclasses of AccountType
-        # (Recall that, at first iteration, AccountType=Account)
-        for SubType in AccountType.__subclasses__():
-            self.test_init(SubType)
-
-    def test_rate(self, AccountType=Account):
-        """ Tests rate and nper.
-
-        This also indirectly tests apr_to_rate and rate_to_apr """
-        # Simple account: Start with $1, apply 100% growth once per
-        # year, no transactions. Should yield a next_balance of $2.
-        account = AccountType(1, Decimal(1.0), {}, 1)
-        self.assertEqual(account.rate, Decimal(1))
-
-        # Update rate via apr.setter.
-        account.apr = Decimal(2.0)
-        self.assertEqual(account.rate, Decimal(2))
-
-        # Update rate via rate.setter.
-        account.rate = Decimal(3.0)
-        self.assertEqual(account.rate, Decimal(3))
-        self.assertEqual(account.apr, Decimal(3))
-
-        # Now let's update nper based on a str
-        account.nper = 'C'  # continuous growth
-        self.assertEqual(account.apr, Decimal(3))  # apr unchanged
-        # Derive r [rate] from P = P_0 * e^rt
-        self.assertEqual(account.rate, math.log(Decimal(3) + 1))
-        self.assertEqual(account.nper, None)
-
-        # Let's use a discrete compounding method (other than 'A'/1)
-        account.nper = 'M'  # monthly compounding
-        nper = account.nper
-        self.assertEqual(account.apr, Decimal(3))  # apr unchanged
-        # Derive r [rate] from P = P_0 * (1 + r/n)^nt
-        # This works out to r = n * [(1 + apr)^(1 / n) - 1]
-        self.assertAlmostEqual(account.rate,
-                               Decimal(nper * (((1 + 3) ** (nper ** -1)) - 1)),
-                               3)
-        self.assertEqual(account.nper, 12)  # Just to be safe, check nper
-
-        # Recurse onto all subclasses of AccountType
-        # (Recall that, at first iteration, AccountType=Account)
-        for SubType in AccountType.__subclasses__():
-            self.test_init(SubType)
-
-    def test_next(self, AccountType=Account):
+    def test_next(self, *next_args, **next_kwargs):
         """ Tests next_balance and next_year.
 
         This also indirectly tests present_value and future_value.
         """
+        args, kwargs = self.get_args(Account)
+
         # Simple account: Start with $1, apply 100% growth once per
         # year, no transactions. Should yield a next_balance of $2.
-        account = AccountType(1, 1.0, {}, 1)
-        self.assertEqual(account.next_balance, Money(2))
-        self.assertEqual(account.next_year().balance, Money(2))
+        account = self.AccountType(*args, 1, 1.0, {}, 1,
+                                   **kwargs)
+        self.assertEqual(account.next_balance(), Money(2))
+        account.next_year(*next_args, **next_kwargs)
+        self.assertEqual(account.balance, Money(2))
 
         # No growth: Start with $1 and apply 0% growth.
-        account = AccountType(1, 0)
-        self.assertEqual(account.next_balance, Money(1))
-        self.assertEqual(account.next_year().balance, Money(1))
+        account = self.AccountType(*args, 1, 0,
+                                   **kwargs)
+        self.assertEqual(account.next_balance(), Money(1))
+        account.next_year(*next_args, **next_kwargs)
+        self.assertEqual(account.balance, Money(1))
 
         # Try with continuous growth
-        account = AccountType(1, 1, {}, 'C')
-        self.assertAlmostEqual(account.next_balance, Money(2), 3)
-        self.assertAlmostEqual(account.next_year().balance, Money(2), 3)
+        account = self.AccountType(*args, 1, 1, {}, 'C',
+                                   **kwargs)
+        self.assertAlmostEqual(account.next_balance(), Money(math.e), 3)
+        account.next_year(*next_args, **next_kwargs)
+        self.assertAlmostEqual(account.balance, Money(math.e), 3)
 
         # Try with discrete growth
-        account = AccountType(1, 1, {}, 'M')  # monthly
-        self.assertAlmostEqual(account.next_balance, Money(2), 3)
-        self.assertAlmostEqual(account.next_year().balance, Money(2), 3)
+        account = self.AccountType(*args, 1, 1, {}, 'M',
+                                   **kwargs)  # monthly
+        self.assertAlmostEqual(account.next_balance(),
+                               Money((1+1/12) ** 12), 3)
+        account.next_year(*next_args, **next_kwargs)
+        self.assertAlmostEqual(account.balance, Money((1+1/12) ** 12), 3)
 
         # Repeat above with a $2 contribution halfway through the year
 
@@ -424,159 +556,961 @@ class TestAccountMethods(unittest.TestCase):
         # since it occurs mid-compounding-period. However, the output
         # should be sensible. In  particular, it should grow by $0-$1.
         # So check to confirm that the result is in the range [$4, $5]
-        account = AccountType(1, 1.0, {0.5: Money(2)}, 1)
-        self.assertGreaterEqual(account.next_balance, Money(4))
-        self.assertLessEqual(account.next_balance, Money(5))
-        self.assertGreaterEqual(account.next_year().balance, Money(4))
-        self.assertLessEqual(account.next_year().balance, Money(5))
+        account = self.AccountType(*args, 1, 1.0, {0.5: Money(2)}, 1,
+                                   **kwargs)
+        self.assertGreaterEqual(account.next_balance(), Money(4))
+        self.assertLessEqual(account.next_balance(), Money(5))
+        account.next_year(*next_args, **next_kwargs)
+        self.assertGreaterEqual(account.balance, Money(4))
+        self.assertLessEqual(account.balance, Money(5))
 
         # No growth: Start with $1, add $2, and apply 0% growth.
-        account = AccountType(1, 0, {0.5: Money(2)}, 1)
-        self.assertEqual(account.next_balance, Money(3))
-        self.assertEqual(account.next_year().balance, Money(3))
+        account = self.AccountType(*args, 1, 0, {0.5: Money(2)}, 1,
+                                   **kwargs)
+        self.assertEqual(account.next_balance(), Money(3))
+        account.next_year(*next_args, **next_kwargs)
+        self.assertEqual(account.balance, Money(3))
 
         # Try with continuous growth
-        # Initial $1 will grow to $2 (because apr = 100%)
-        # $2 added at mid-point will grow by a factor of e ^ rt
-        # r is the instantantaneous rate of growth, not the apr.
-        # This can be calculated via Account.apr_to_rate, or by deriving
-        # from P = P_0 * e^rt -> 1 + apr = e^rt where t=1
-        # so r = log(1 + apr) and $2 will grow to:
-        # 2 * e ^ (log(1 + apr)t)) = 2 * (1 + apr)^t
-        account = AccountType(1, 1, {0.5: Money(2)}, 'C')
-        next_val = 2 * Money(1) + Money(2) * (1 + 1) ** Decimal(0.5)
-        self.assertAlmostEqual(account.next_balance, next_val, 5)
-        self.assertAlmostEqual(account.next_year().balance, next_val, 5)
+        # This can be calculated from P = P_0 * e^rt
+        account = self.AccountType(*args, 1, 1, {0.5: Money(2)}, 'C',
+                                   **kwargs)
+        next_val = Money(1 * math.e + 2 * math.e ** 0.5)
+        self.assertAlmostEqual(account.next_balance(), next_val, 5)
+        account.next_year(*next_args, **next_kwargs)
+        self.assertAlmostEqual(account.balance, next_val, 5)
 
         # Try with discrete growth
-        # Initial $1 will grow to $2.
         # The $2 transaction happens at the start of a compounding
         # period, so behaviour is well-defined. It should grow by a
         # factor of (1 + r/n)^nt, for n = 12, t = 0.5
-        # where r is derived from:
-        # P = P_0 * (1 + r/n) ^ nt for P = P_0 * (1 + apr), apr = 1
-        # This reduces to r = n * [(1 + apr)^(1/n) - 1]
-        account = AccountType(1, 1, {0.5: Money(2)}, 'M')  # monthly
-        r = Decimal(12 * ((1 + 1) ** (1/12) - 1))
-        next_val = 2 * Money(1) + \
-            Money(2) * (1 + r / 12) ** (12 * Decimal(0.5))
-        self.assertEqual(account.rate, r)  # just to be safe
-        self.assertAlmostEqual(account.next_balance, next_val, 5)
-        self.assertAlmostEqual(account.next_year().balance, next_val, 5)
+        account = self.AccountType(*args, 1, 1, {0.5: Money(2)}, 'M',
+                                   **kwargs)  # monthly
+        next_val = Money((1 + 1/12) ** (12) + 2 * (1 + 1/12) ** (12 * 0.5))
+        self.assertAlmostEqual(account.next_balance(), next_val, 5)
+        account.next_year(*next_args, **next_kwargs)
+        self.assertAlmostEqual(account.balance, next_val, 5)
 
-        # Recurse onto all subclasses of AccountType
-        # (Recall that, at first iteration, AccountType=Account)
-        for SubType in AccountType.__subclasses__():
-            self.test_init(SubType)
-
-    # TODO: When cached properties are implemented, provide a test.
-    #    def test_cached_properties(self):
-        """ Tests cached properties for various account types.
-
-        Account: next_balance
-        SavingsAccount: contributions, withdrawals, taxable_income,
-            tax_withheld, tax_credit
-        RRSP: taxable_income, tax_withheld
-        TFSA: taxable_income
-        TaxableAccount: _acb_and_capital_gain, next_acb, capital_gain,
-            taxable_income
-        Debt: payments, withdrawals
-        OtherProperty: taxable_income
-        """
-    ''' Commented out:
-        # Simple test: apr = rate, next_balance = 2
-        account = AccountType(1, 1.0, {}, 1)
-        next_account = AccountType(2)
-        self.assertEqual(account.next_balance, Money(2))
-        # Bypass setter methods (so cache is not invalidated).
-        # If next_balance is cached, it will still return 2 (not 0)
-        account._balance = 0
-        self.assertEqual(account.next_balance, Money(2))
-        # Now update balance through the setter
-        account.balance = 0
-        next_account = AccountType(0)
-        self.assertEqual(account.next_balance, Money(0))
-    '''
-
-    def test_add_transaction(self, AccountType=Account):
+    def test_add_transaction(self):
         """ Tests add_transaction and related methods.
 
         Account: add_transaction
         SavingsAccount: contribute, withdraw
         Debt: pay, withdraw
         """
+        args, kwargs = self.get_args(Account)
+        # We need to make sure that initial_year is in the same range
+        # as inflation_adjustments, otherwise init will fail:
+        initial_year = self.initial_year
+
         # Start with an empty account and add a transaction.
-        account = AccountType(balance=0, apr=0, transactions={})
-        initial_year = account.initial_year
-        self.assertEqual(account.transactions, {initial_year: {}})
+        account = self.AccountType(*args, 0, 0, {},
+                                   initial_year=initial_year,
+                                   **kwargs)
+        self.assertEqual(account._transactions, {initial_year: {}})
         account.add_transaction(Money(1), 'end')
-        self.assertEqual(account.transactions, {initial_year: {0: Money(1)}})
+        self.assertEqual(account._transactions, {initial_year: {1: Money(1)}})
+        self.assertEqual(account.transactions, {1: Money(1)})
         self.assertEqual(account.inflows(initial_year), Money(1))
         # Just to be safe, confirm that new transactions are being seen
         # by next_balance
         self.assertEqual(account.next_balance(), Money(1))
 
         # Try adding multiple transactions at different times.
-        account = AccountType(balance=0, apr=0, transactions={})
-        account.add_transaction(Money(1), 0)
-        account.add_transaction(Money(2), 'start')
-        self.assertEqual(account.transactions, {initial_year:
-                                                {0: Money(1), 1: Money(2)}})
+        account = self.AccountType(*args, 0, 0, {},
+                                   initial_year=initial_year,
+                                   **kwargs)
+        account.add_transaction(Money(1), 'start')
+        account.add_transaction(Money(2), 1)
+        self.assertEqual(account._transactions, {initial_year:
+                                                 {0: Money(1), 1: Money(2)}})
+        self.assertEqual(account.inflows(), Money(3))
         self.assertEqual(account.outflows(), 0)
 
         # Try adding multiple transactions at the same time.
-        account = AccountType(balance=0, apr=0, transactions={})
+        account = self.AccountType(*args, 0, 0, {},
+                                   initial_year=initial_year,
+                                   **kwargs)
         account.add_transaction(Money(1), 'start')
-        account.add_transaction(Money(1), 1)
-        self.assertEqual(account.transactions, {initial_year: {1: Money(2)}})
+        account.add_transaction(Money(1), 0)
+        self.assertEqual(account._transactions, {initial_year: {0: Money(2)}})
         self.assertEqual(account.inflows(), Money(2))
-        self.assertEqual(account.outflows(), 0)
+        self.assertEqual(account.outflows(), Money(0))
 
         # Try adding both inflows and outflows at different times.
-        account = AccountType(balance=0, apr=0, transactions={})
+        account = self.AccountType(*args, 0, 0, {},
+                                   initial_year=initial_year,
+                                   **kwargs)
         account.add_transaction(Money(1), 'start')
         account.add_transaction(Money(-2), 'end')
-        self.assertEqual(account.transactions, {initial_year:
-                                                {1: Money(1), 0: Money(-2)}})
+        self.assertEqual(account._transactions, {initial_year:
+                                                 {0: Money(1), 1: Money(-2)}})
         self.assertEqual(account.inflows(), Money(1))
         self.assertEqual(account.outflows(), Money(-2))
 
         # Try adding simultaneous inflows and outflows
         # TODO: Consider whether this behaviour should be revised.
-        account = AccountType(balance=0, apr=0, transactions={})
+        account = self.AccountType(*args, 0, 0, {},
+                                   initial_year=initial_year,
+                                   **kwargs)
         account.add_transaction(Money(1), 'start')
         account.add_transaction(Money(-2), 'start')
-        self.assertEqual(account.transactions, {initial_year: {1: Money(-1)}})
+        self.assertEqual(account._transactions, {initial_year: {0: Money(-1)}})
         self.assertEqual(account.inflows(), 0)
         self.assertEqual(account.outflows(), Money(-1))
 
-        # Basic sanity tests for subclasses' aliases contribute/withdraw
-        if issubclass(AccountType, ledger.SavingsAccount):
-            account = AccountType(balance=0, apr=0, transactions={})
-            account.contribute(Money(1), 'start')
-            account.withdraw(Money(-2), 'end')
-            self.assertEqual(account.transactions, {initial_year:
-                                                    {1: Money(1),
-                                                     0: Money(-2)}})
-            self.assertEqual(account.contributions(), Money(1))
-            self.assertEqual(account.withdrawals(), Money(-2))
+        # TODO: Test add_transactions again after performing next_year
+        # (do this recursively?)
 
-        # Basic sanity tests for subclasses' aliases pay/withdraw
-        if issubclass(AccountType, ledger.Debt):
-            account = AccountType(balance=0, apr=0, transactions={})
-            account.pay(Money(1), 'start')
-            account.withdraw(Money(-2), 'end')
-            self.assertEqual(account.transactions, {initial_year:
-                                                    {1: Money(1),
-                                                     0: Money(-2)}})
-            self.assertEqual(account.payments(), Money(1))
-            self.assertEqual(account.withdrawals(), Money(-2))
+    def test_max_outflow(self):
+        args, kwargs = self.get_args(Account)
 
-    # TODO: Test tax-related functionality (once we know where we want
-    # it to live!)
-    # TODO: Test OtherProperty (once we've settled on its functionality)
-    # TODO: Test add_transactions again after performing next_year
-    # (do this recursively?)
+        # Simple scenario: $100 in a no-growth account with no
+        # transactions. Should return $100 for any point in time.
+        account = self.AccountType(*args, 100, 0, {}, 1,
+                                   **kwargs)
+        self.assertEqual(account.max_outflow('start'), Money(-100))
+        self.assertEqual(account.max_outflow(0.5), Money(-100))
+        self.assertEqual(account.max_outflow('end'), Money(-100))
+
+        # Try with negative balance - should return $0
+        account = self.AccountType(*args, -100, 1, {}, 1,
+                                   **kwargs)
+        self.assertEqual(account.max_outflow('start'), Money(0))
+        self.assertEqual(account.max_outflow('end'), Money(0))
+
+        # $100 in account that grows to $200 in one compounding period.
+        # No transactions.
+        # NOTE: Account balances mid-compounding-period are not
+        # well-defined in the current implementation, so avoid
+        # testing at when=0.5
+        account = self.AccountType(*args, 100, 1, {}, 1,
+                                   **kwargs)
+        self.assertEqual(account.max_outflow('start'), Money(-100))
+        # self.assertEqual(account.max_outflow(0.5), Money(-150))
+        self.assertEqual(account.max_outflow('end'), Money(-200))
+
+        # $100 in account that grows linearly by 100%. Add $100
+        # transactions at the start and end of the year.
+        # NOTE: Behaviour of transactions between compounding
+        # points is not well-defined, so avoid adding transactions at
+        # 0.5 (or anywhere other than 'start' or 'end') when nper = 1
+        account = self.AccountType(*args, 100, 1,
+                                   {'start': 100, 'end': 100}, 1,
+                                   **kwargs)
+        self.assertEqual(account.max_outflow('start'), Money(-200))
+        # self.assertEqual(account.max_outflow(0.25), Money(-250))
+        # self.assertEqual(account.max_outflow(0.5), Money(-300))
+        # self.assertEqual(account.max_outflow(0.75), Money(-350))
+        self.assertEqual(account.max_outflow('end'), Money(-500))
+
+        # Try with a negative starting balance and a positive ending
+        # balance. With -$100 start and 200% interest compounding at
+        # t=0.5, balance should be -$200 at t=0.5. Add $200 transaction
+        # at t=0.5 so balance = 0 and another transaction at t='end' so
+        # balance = $100.
+        account = self.AccountType(*args, -200, 2.0,
+                                   {'start': 100, 0.5: 200, 'end': 100}, 2,
+                                   **kwargs)
+        self.assertEqual(account.max_outflow('start'), Money(0))
+        self.assertEqual(account.balance_at_time('start'), Money(-100))
+        self.assertEqual(account.max_outflow(0.5), Money(0))
+        self.assertEqual(account.max_outflow('end'), Money(-100))
+
+        # Test compounding. First: discrete compounding, once at the
+        # halfway point. Add a $100 transaction at when=0.5 just to be
+        # sure.
+        account = self.AccountType(*args, 100, 1, {0.5: Money(100)}, 2,
+                                   **kwargs)
+        self.assertEqual(account.max_outflow('start'), Money(-100))
+        # self.assertEqual(account.max_outflow(0.25), Money(-125))
+        self.assertEqual(account.max_outflow(0.5), Money(-250))
+        # self.assertEqual(account.max_outflow(0.75), Money(-312.50))
+        self.assertEqual(account.max_outflow('end'), Money(-375))
+
+        # Now to test continuous compounding. Add a $100 transaction at
+        # when=0.5 just to be sure.
+        account = self.AccountType(*args, 100, 1, {0.5: Money(100)}, 'C',
+                                   **kwargs)
+        self.assertEqual(account.max_outflow('start'), Money(-100))
+        self.assertAlmostEqual(account.max_outflow(0.25),
+                               -Money(100 * math.e ** 0.25), 5)
+        self.assertAlmostEqual(account.max_outflow(0.5),
+                               -Money(100 * math.e ** 0.5 + 100), 5)
+        self.assertAlmostEqual(account.max_outflow(0.75),
+                               -Money(100 * math.e ** 0.75 +
+                                      100 * math.e ** 0.25), 5)
+        self.assertAlmostEqual(account.max_outflow('end'),
+                               -Money(100 * math.e +
+                                      100 * math.e ** 0.5), 5)
+
+    def test_max_inflow(self, when='end', year=None):
+        args, kwargs = self.get_args(Account)
+
+        # This method should always return Money('Infinity')
+        account = self.AccountType(*args, 100, **kwargs)
+        self.assertEqual(account.max_inflow(), Money('Infinity'))
+
+        account = self.AccountType(*args, -100, **kwargs)
+        self.assertEqual(account.max_inflow(), Money('Infinity'))
+
+    def test_min_outflow(self, when='end', year=None):
+        args, kwargs = self.get_args(Account)
+
+        # This method should always return $0
+        account = self.AccountType(*args, 100, **kwargs)
+        self.assertEqual(account.min_outflow(), Money(0))
+
+        account = self.AccountType(*args, -100, **kwargs)
+        self.assertEqual(account.min_outflow(), Money(0))
+
+    def test_min_inflow(self, when='end', year=None):
+        args, kwargs = self.get_args(Account)
+
+        # This method should always return $0
+        account = self.AccountType(*args, 100, **kwargs)
+        self.assertEqual(account.min_inflow(), Money(0))
+
+        account = self.AccountType(*args, -100, **kwargs)
+        self.assertEqual(account.min_inflow(), Money(0))
+
+    def test_taxable_income(self, year=None):
+        args, kwargs = self.get_args(Account)
+
+        # This method should always return $0
+        account = self.AccountType(*args, 100, 1.0, {0: 100, 1: -100},
+                                   **kwargs)
+        self.assertEqual(account.taxable_income(), Money(0))
+
+        account = self.AccountType(*args, -100, 1.0, {0: 100, 1: -100},
+                                   **kwargs)
+        self.assertEqual(account.taxable_income(), Money(0))
+
+    def test_tax_withheld(self, year=None):
+        args, kwargs = self.get_args(Account)
+
+        # This method should always return $0
+        account = self.AccountType(*args, 100, 1.0, {0: 100, 1: -100},
+                                   **kwargs)
+        self.assertEqual(account.tax_withheld(), Money(0))
+
+        account = self.AccountType(*args, -100, 1.0, {0: 100, 1: -100},
+                                   **kwargs)
+        self.assertEqual(account.tax_withheld(), Money(0))
+
+    def test_tax_credit(self):
+        args, kwargs = self.get_args(Account)
+
+        # This method should always return $0, regardless of balance,
+        # inflows, or outflows
+        account = self.AccountType(*args, 100, 1.0, {0: 100, 1: -100},
+                                   **kwargs)
+        self.assertEqual(account.tax_credit(), Money(0))
+
+        # Test with negative balance
+        account = self.AccountType(*args, -100, 1.0, {0: 100, 1: -100},
+                                   **kwargs)
+        self.assertEqual(account.tax_credit(), Money(0))
+
+    def test_tax_deduction(self):
+        args, kwargs = self.get_args(Account)
+
+        # This method should always return $0, regardless of balance,
+        # inflows, or outflows
+        account = self.AccountType(*args, 100, 1.0, {0: 100, 1: -100},
+                                   **kwargs)
+        self.assertEqual(account.tax_deduction(), Money(0))
+
+        # Test with negative balance
+        account = self.AccountType(*args, -100, 1.0, {0: 100, 1: -100},
+                                   **kwargs)
+        self.assertEqual(account.tax_deduction(), Money(0))
+
+
+class TestRegisteredAccountMethods(TestAccountMethods):
+    """ Tests RegisteredAccount. """
+
+    @classmethod
+    def setUpClass(cls):
+        """ Sets up variables for testing RegisteredAccount """
+        super().setUpClass()
+
+        cls.AccountType = RegisteredAccount
+
+        # RRSPs take three prepended arguments: person,
+        # inflation_adjustments, and contribution_room.
+        # NOTE: Pass all prepended arguments explicitly, even if optional.
+        cls.person = Person('Testy McTesterson', 1980, 2045)
+
+        # Randomly generate inflation adjustments based on inflation
+        # rates of 1%-20%. Be sure to include both Settings.initial_year
+        # and cls.initial_year in the range, since we use default-valued
+        # inits a lot (which calls Settings.initial_year).
+        # Add a few extra years on to the end for testing purposes.
+        cls.inflation_adjustments = {
+            min(cls.initial_year, Settings.initial_year): Decimal(1)
+        }
+        cls.extend_inflation_adjustments(
+            min(cls.inflation_adjustments),
+            max(cls.initial_year, Settings.initial_year) + 5)
+
+        cls.contribution_room = 0
+        # Insert prepended arguments at the front
+        cls.add_args(RegisteredAccount, cls.person, cls.inflation_adjustments,
+                     cls.contribution_room)
+
+    @classmethod
+    def extend_inflation_adjustments(cls, min_year, max_year):
+        """ Convenience method.
+
+        Ensures cls.inflation_adjustment spans min_year and max_year.
+        """
+        rand = Random()
+
+        # Extend inflation_adjustments forwards, assuming 1-20% inflation
+        i = min(cls.inflation_adjustments)
+        while i > min_year:
+            cls.inflation_adjustments[i - 1] = (
+                cls.inflation_adjustments[i] /
+                Decimal(1 + rand.randint(1, 20)/100)
+            )
+            i -= 1
+
+        # Extend inflation_adjustments forwards, assuming 1-20% inflation
+        i = max(cls.inflation_adjustments)
+        while i < max_year:
+            cls.inflation_adjustments[i + 1] = (
+                cls.inflation_adjustments[i] *
+                Decimal(1 + rand.randint(1, 20)/100)
+            )
+            i += 1
+
+    def test_init(self):
+        super().test_init()
+
+        args, kwargs = self.get_args(RegisteredAccount)
+
+        # Basic init using pre-built RegisteredAccount-specific args
+        # and default Account args
+        account = self.AccountType(*args, self.person,
+                                   self.inflation_adjustments,
+                                   self.contribution_room, **kwargs)
+        self.assertEqual(account.person, self.person)
+        self.assertEqual(account._inflation_adjustments,
+                         self.inflation_adjustments)
+        self.assertEqual(account.contribution_room, self.contribution_room)
+
+        # Try again with default contribution_room
+        account = self.AccountType(*args, self.person,
+                                   self.inflation_adjustments, **kwargs)
+        self.assertEqual(account.person, self.person)
+        self.assertEqual(account._inflation_adjustments,
+                         self.inflation_adjustments)
+        # Different subclasses have different default contribution room
+        # values. There's also no settings value for RegisteredAccount's
+        # contribution_room parameter (it has a hardcoded default of 0),
+        # so don't test this subclasses
+        if self.AccountType == RegisteredAccount:
+            self.assertEqual(account.contribution_room, 0)
+
+        # Test invalid `person` input
+        with self.assertRaises(TypeError):
+            account = self.AccountType(*args, 'invalid person',
+                                       self.inflation_adjustments, **kwargs)
+
+        # Try type conversion for inflation_adjustments
+        account = self.AccountType(*args, self.person,
+                                   {'2000': '0.02', 2001.0: 0.5,
+                                    Decimal(2002): 1, 2003: Decimal('0.03')},
+                                   contribution_room=500,
+                                   initial_year=2000, **kwargs)
+        self.assertEqual(account.person, self.person)
+        self.assertEqual(account._inflation_adjustments,
+                         {2000: Decimal('0.02'), 2001: Decimal('0.5'),
+                          2002: Decimal('1'), 2003: Decimal('0.03')})
+        self.assertEqual(account.contribution_room, Money('500'))
+
+        # Try invalid inflation_adjustments.
+        # First, pass in a non-dict
+        with self.assertRaises(TypeError):
+            account = self.AccountType(*args, self.person, 'invalid',
+                                       self.contribution_room, **kwargs)
+        # Second, pass a dict with a non-Decimal-convertible value
+        with self.assertRaises(decimal.InvalidOperation):
+            account = self.AccountType(*args, self.person, {2000: 'invalid'},
+                                       self.contribution_room, **kwargs)
+
+        # Finally, test a non-Money-convertible contribution_room:
+        with self.assertRaises(decimal.InvalidOperation):
+            account = self.AccountType(*args, self.person,
+                                       self.inflation_adjustments, 'invalid',
+                                       **kwargs)
+
+        # Test an initial year that's out of the range of inflation_adjustments
+        with self.assertRaises(ValueError):
+            account = self.AccountType(*args, self.person,
+                                       {2000: 0.02, 2001: 0.015},
+                                       initial_year=1999, **kwargs)
+
+    def test_properties(self):
+        # Properties are inflation_adjustment and contribution_room
+        args, kwargs = self.get_args(RegisteredAccount)
+
+        # Basic check: properties return scalars (current year's values)
+        account = self.AccountType(*args, self.person,
+                                   self.inflation_adjustments,
+                                   self.contribution_room, **kwargs)
+        self.assertEqual(account.inflation_adjustment,
+                         self.inflation_adjustments[account.initial_year])
+        self.assertEqual(account.contribution_room,
+                         self.contribution_room)
+
+        # NOTE: RegisteredAccount.next_year() raises NotImplementedError
+        # and some subclasses require args for next_year(). That is
+        # already dealt with by test_next, so check that properties are
+        # pointing to the current year's values after calling next_year
+        # in text_next.
+
+    def test_next(self, *next_args, **next_kwargs):
+        args, kwargs = self.get_args(RegisteredAccount)
+        # NOTE: Can test next_year for both ValueError (bad year) and
+        # NotImplementedError (if year is good)
+
+        if self.AccountType == RegisteredAccount:
+            # Check that incrementing past the last year raises a
+            # ValueError:
+            account = self.AccountType(
+                *args, self.person, self.inflation_adjustments,
+                self.contribution_room,
+                initial_year=max(self.inflation_adjustments),  # i.e. last year
+                **kwargs)
+            with self.assertRaises(ValueError):
+                account.next_year(*next_args, **next_kwargs)
+
+            account = self.AccountType(
+                *args, self.person, self.inflation_adjustments,
+                self.contribution_room,
+                **kwargs)
+            with self.assertRaises(NotImplementedError):
+                account.next_year(*next_args, **next_kwargs)
+        else:
+            super().test_next(*next_args, **next_kwargs)
+
+    def test_max_inflow(self):
+        args, kwargs = self.get_args(RegisteredAccount)
+
+        account = self.AccountType(*args, self.person,
+                                   self.inflation_adjustments,
+                                   self.contribution_room, **kwargs)
+        self.assertEqual(account.max_inflow(), self.contribution_room)
+
+        account = self.AccountType(*args, self.person,
+                                   self.inflation_adjustments,
+                                   1000000, **kwargs)
+        self.assertEqual(account.max_inflow(), Money(1000000))
+
+
+class TestRRSPMethods(TestRegisteredAccountMethods):
+    """ Test RRSP """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        cls.AccountType = RRSP
+
+        # Ensure that inflation_adjustments covers the entire range of
+        # Constants.RRSPContributionAccrualMax and the years where
+        # self.person is 71-95 (plus a few extra for testing)
+        min_year = min(min(Constants.RRSPContributionRoomAccrualMax),
+                       cls.person.birth_date.year +
+                       min(Constants.RRSPRRIFMinWithdrawal))
+        max_year = max(max(Constants.RRSPContributionRoomAccrualMax),
+                       cls.person.birth_date.year +
+                       max(Constants.RRSPRRIFMinWithdrawal)) + 2
+        cls.extend_inflation_adjustments(min_year, max_year)
+
+        # RRSPs take the same arguments as their superclass,
+        # RegisteredAccount, and we want to explicitly pass person/etc.,
+        # so there's no need to call add_args.
+
+    def test_init(self):
+        super().test_init()
+
+        args, kwargs = self.get_args(RRSP)
+
+        # The only thing that RRSP.__init__ does is set
+        # RRIF_conversion_year, so test that:
+        account = self.AccountType(*args, self.person,
+                                   self.inflation_adjustments,
+                                   self.contribution_room, **kwargs)
+        self.assertEqual(self.person.age(account.RRIF_conversion_year),
+                         Constants.RRSPRRIFConversionAge)
+
+    def test_taxable_income(self):
+        # RRSP.taxable_income() overrides super().taxable_income(), so
+        # there's no need to call the superclass testing method here.
+        args, kwargs = self.get_args(RRSP)
+
+        # Create an RRSP with a $1,000,000 balance and no withdrawals:
+        account = self.AccountType(*args, self.person,
+                                   self.inflation_adjustments,
+                                   self.contribution_room,
+                                   balance=1000000, **kwargs)
+        # Since withdrawals = $0, there's no taxable income
+        self.assertEqual(account.taxable_income(), 0)
+
+        # Now add a withdrawal, confirm it's included in taxable income
+        account.add_transaction(-100, 'end')
+        self.assertEqual(account.taxable_income(), Money(100))
+
+        # Now add a contribution (at a different time), confirm that it
+        # has no effect on taxable_income
+        account.add_transaction(100, 'start')
+        self.assertEqual(account.taxable_income(), Money(100))
+
+    def test_tax_withheld(self):
+        args, kwargs = self.get_args(RRSP)
+
+        # First, test RRSP (not RRIF) behaviour:
+        # Test RRSP with no withdrawals -> no tax withheld
+        account = self.AccountType(*args, self.person,
+                                   self.inflation_adjustments,
+                                   self.contribution_room,
+                                   balance=1000000,
+                                   **kwargs)
+        self.assertEqual(account.tax_withheld(), 0)
+
+        # Now add a withdrawal in the lowest withholding tax bracket,
+        # say $1. This should be taxed at the lowest rate
+        account.add_transaction(-1, 'end')
+        self.assertEqual(account.tax_withheld(), Money(
+            1 * min(Constants.RRSPWithholdingTaxRate.values())
+        ))
+        # Now add a transaction in the highest tax bracket, say $1000000
+        # This should be taxed at the highest rate
+        account.add_transaction(-999999, 'start')
+        self.assertEqual(account.tax_withheld(), Money(
+            1000000 * max(Constants.RRSPWithholdingTaxRate.values())
+        ))
+
+        # TODO: tax thresholds are not currently inflation-adjusted;
+        # implement inflation-adjustment and then test for it here?
+
+    def test_tax_deduction(self):
+        # RRSP.taxdeduction() overrides super().tax_deduction(), so
+        # there's no need to call the superclass testing method here.
+        args, kwargs = self.get_args(RRSP)
+
+        # Create an RRSP with a $1,000,000 balance and no contributions:
+        account = self.AccountType(*args, self.person,
+                                   self.inflation_adjustments,
+                                   self.contribution_room,
+                                   balance=1000000, **kwargs)
+        # Since contributions = $0, there's no taxable income
+        self.assertEqual(account.taxable_income(), 0)
+
+        # Now add an inflow, confirm it's included in taxable income
+        account.add_transaction(100, 'end')
+        self.assertEqual(account.tax_deduction(), Money(100))
+
+        # Now add an outflow (at a different time), confirm that it
+        # has no effect on taxable_income
+        account.add_transaction(-100, 'start')
+        self.assertEqual(account.tax_deduction(), Money(100))
+
+    def test_next(self):
+        # RRSP has a mandatory argument for next_year.
+        super().test_next(income=Money(100000))
+
+        args, kwargs = self.get_args(RRSP)
+
+        initial_contribution_room = Money(100)
+        # Set income to a non-Money object to test type-conversion.
+        # Use a value less than inflation-adjusted RRSPAccrualMax
+        income = 100000
+        # Basic test:
+        account = self.AccountType(*args, self.person,
+                                   self.inflation_adjustments,
+                                   initial_contribution_room,
+                                   **kwargs)
+        account.next_year(income=income)
+        self.assertEqual(account.contribution_room,
+                         initial_contribution_room +
+                         Money(income) *
+                         Constants.RRSPContributionRoomAccrualRate)
+
+        # Convert income to Money now to avoid having to explicitly
+        # convert results in every following test.
+        income = Money(income)
+
+        # Pick the initial year so that we'll know the accrual max. for
+        # next year
+        initial_year = min(Constants.RRSPContributionRoomAccrualMax) - 1
+        # Use income that's $1000 more than is necessary to max out RRSP
+        # contribution room accrual for the year.
+        income = (Constants.RRSPContributionRoomAccrualMax[initial_year + 1] /
+                  Constants.RRSPContributionRoomAccrualRate) + 1000
+        account = self.AccountType(*args, self.person,
+                                   self.inflation_adjustments,
+                                   initial_contribution_room,
+                                   initial_year=initial_year,
+                                   **kwargs)
+        account.next_year(income=income)
+        # New contribution room should be the max, plus rollover from
+        # the previous year.
+        self.assertEqual(
+            account.contribution_room,
+            initial_contribution_room +
+            Money(Constants.RRSPContributionRoomAccrualMax[initial_year + 1])
+        )
+
+        # Try again, but this time contribute the max. in the first year
+        account = self.AccountType(*args, self.person,
+                                   self.inflation_adjustments,
+                                   initial_contribution_room,
+                                   initial_year=initial_year,
+                                   **kwargs)
+        account.add_transaction(account.contribution_room)
+        account.next_year(income=income)
+        # New contribution room should be the max; no rollover.
+        self.assertEqual(
+            account.contribution_room,
+            Money(Constants.RRSPContributionRoomAccrualMax[initial_year + 1])
+        )
+
+        # Try again, but this time start with the last year for which we
+        # know the nominal accrual max already. The next year's accrual
+        # max will need to be estimated via inflation-adjustment:
+        initial_year = max(Constants.RRSPContributionRoomAccrualMax)
+        # Inflation-adjust the (known) accrual max for the previous year
+        # to get the max for this year.
+        max_accrual = (
+            Constants.RRSPContributionRoomAccrualMax[initial_year] *
+            self.inflation_adjustments[initial_year + 1] /
+            self.inflation_adjustments[initial_year]
+        )
+        account = self.AccountType(*args, self.person,
+                                   self.inflation_adjustments,
+                                   initial_contribution_room,
+                                   initial_year=initial_year,
+                                   **kwargs)
+        # Let's have income that's between the initial year's max
+        # accrual and the next year's max accrual:
+        income = Money(
+            (max_accrual +
+             Constants.RRSPContributionRoomAccrualMax[initial_year]
+             ) / 2
+        ) / Constants.RRSPContributionRoomAccrualRate
+        account.next_year(income=income)
+        # New contribution room should be simply determined by the
+        # accrual rate set in Constants plus rollover.
+        self.assertEqual(
+            account.contribution_room,
+            initial_contribution_room +
+            Constants.RRSPContributionRoomAccrualRate * income
+        )
+
+        # Try again, but now with income greater than the inflation-
+        # adjusted accrual max.
+        account = self.AccountType(*args, self.person,
+                                   self.inflation_adjustments,
+                                   initial_contribution_room,
+                                   initial_year=initial_year,
+                                   **kwargs)
+        account.add_transaction(account.contribution_room)  # no rollover
+        income = max_accrual / Constants.RRSPContributionRoomAccrualRate + 1000
+        account.next_year(income=income)
+        # New contribution room should be the max accrual; no rollover.
+        self.assertAlmostEqual(account.contribution_room,
+                               Money(max_accrual), 3)
+
+    def test_min_outflow(self):
+        # RRSP overrides min_outflow completely; no need to call super
+        args, kwargs = self.get_args(RRSP)
+
+        # Have a static RRSP (no inflows/outflows/change in balance)
+        balance = 1000000
+        initial_year = min(self.inflation_adjustments)
+        account = self.AccountType(*args, self.person,
+                                   self.inflation_adjustments,
+                                   self.contribution_room,
+                                   balance=balance,
+                                   rate=0,
+                                   initial_year=initial_year,
+                                   **kwargs)
+        # For each year over a lifetime, check min_outflow is correct:
+        for year in range(initial_year,
+                          self.person.birth_date.year +
+                          max(Constants.RRSPRRIFMinWithdrawal) + 1):
+            age = self.person.age(year)
+            # First, check that we've converted to an RRIF if required:
+            if age > Constants.RRSPRRIFConversionAge:
+                self.assertTrue(account.RRIF_conversion_year < year)
+            # Next, if we've converted to an RRIF, check various
+            # min_outflow scenarios:
+            if account.RRIF_conversion_year < year:
+                # If we've converted early, use the statutory formula
+                # (i.e. 1/(90-age))
+                if age < min(Constants.RRSPRRIFMinWithdrawal):
+                    min_outflow = account.balance / (90 - age)
+                # Otherwise, use the prescribed withdrawal amount:
+                else:
+                    if age > max(Constants.RRSPRRIFMinWithdrawal):
+                        min_outflow = account.balance * \
+                            max(Constants.RRSPRRIFMinWithdrawal.values())
+                    # If we're past the range of prescribed amounts,
+                    # use the largest prescribed amount
+                    else:
+                        min_outflow = account.balance * \
+                            Constants.RRSPRRIFMinWithdrawal[age]
+            # If this isn't an RRIF yet, there's no min. outflow.
+            else:
+                min_outflow = 0
+            self.assertEqual(account.min_outflow(), min_outflow)
+            # Advance the account and test again on the next year:
+            # (We aren't testing inflows/contribution room, so use
+            # income=0)
+            account.next_year(income=0)
+
+    def test_convert_to_RRIF(self):
+        args, kwargs = self.get_args(RRSP)
+
+        account = self.AccountType(*args, self.person,
+                                   self.inflation_adjustments,
+                                   self.contribution_room,
+                                   **kwargs)
+        self.assertNotEqual(account.RRIF_conversion_year, account.initial_year)
+        account.convert_to_RRIF()
+        self.assertEqual(account.RRIF_conversion_year, account.initial_year)
+
+        # TODO: If we implement automatic RRIF conversions, test that.
+
+
+class TestTFSAMethods(TestRegisteredAccountMethods):
+    """ Test TFSA """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.AccountType = TFSA
+
+        # Ensure that inflation_adjustments covers the entire range of
+        # Constants.TFSAAnnualAccrual
+        min_year = min(Constants.TFSAAnnualAccrual)
+        max_year = max(Constants.TFSAAnnualAccrual) + 10
+        cls.extend_inflation_adjustments(min_year, max_year)
+
+        # TFSAs take the same prepended arguments as its superclass,
+        # RegisteredAccount, so no need to call add_args
+
+    def test_init(self):
+        super().test_init()
+
+        args, kwargs = self.get_args(TFSA)
+
+        # TFSAs began in 2009. Confirm that we're using that as our
+        # baseline for future contribution_room determinations and that
+        # we've correctly set contribution_room to $5000.
+        # Basic test: manually set contribution_room
+        account = self.AccountType(*args, self.person,
+                                   self.inflation_adjustments,
+                                   self.contribution_room,
+                                   **kwargs)
+        self.assertEqual(account._base_accrual, Money(5000))
+        self.assertEqual(account._base_accrual_year, 2009)
+        self.assertEqual(account.contribution_room, self.contribution_room)
+
+        accruals = self.get_accruals()
+
+        # For each starting year, confirm that available contribution
+        # room is the sum of past accruals.
+        for year in accruals:
+            account = self.AccountType(
+                *args, self.person, self.inflation_adjustments,
+                initial_year=year,
+                **kwargs)
+            self.assertEqual(
+                account.contribution_room,
+                Money(sum([accruals[i]
+                           for i in range(min(accruals), year + 1)]))
+            )
+
+    def test_next(self):
+        super().test_next()
+
+        args, kwargs = self.get_args(TFSA)
+
+        # Set up variables for testing.
+        accruals = self.get_accruals()
+        rand = Random()
+        account = self.AccountType(*args, self.person,
+                                   self.inflation_adjustments,
+                                   rate=0,
+                                   initial_year=min(accruals),
+                                   balance=0,
+                                   **kwargs)
+
+        # For each year, confirm that the balance and contribution room
+        # are updated appropriately
+        transactions = Money(0)
+        for year in accruals:
+            # Add a transaction (either an inflow or outflow)
+            transaction = rand.randint(-account.balance.amount,
+                                       account.contribution_room.amount)
+            account.add_transaction(transaction)
+            # Confirm that contribution room is the same as accruals,
+            # less any net transactions
+            accrual = sum(
+                [accruals[i] for i in range(min(accruals), year + 1)]
+            )
+            self.assertEqual(
+                account.contribution_room, Money(accrual) - transactions
+            )
+            # Confirm that balance is equal to the sum of transactions
+            # over the previous years (note that this is a no-growth
+            # scenario, since rate=0)
+            self.assertEqual(account.balance, transactions)
+            # Advance the account to next year and repeat tests
+            account.next_year()
+            # Update the running total of transactions, to be referenced
+            # in the next round of tests.
+            transactions += Money(transaction)
+
+    def get_accruals(self):
+        # Build a secquence of accruals covering known accruals and
+        # 10 years where we'll need to estimate accruals with rounding
+        accruals = {}
+        base_year = min(Constants.TFSAAnnualAccrual)
+        base_accrual = Constants.TFSAAnnualAccrual[base_year]
+        for year in range(min(Constants.TFSAAnnualAccrual),
+                          max(Constants.TFSAAnnualAccrual) + 10):
+            if year in Constants.TFSAAnnualAccrual:
+                accruals[year] = Constants.TFSAAnnualAccrual[year]
+            else:
+                accrual = (
+                    base_accrual * self.inflation_adjustments[year] /
+                    self.inflation_adjustments[base_year]
+                )
+                accrual = round(
+                    accrual / Constants.TFSAInflationRoundingFactor
+                ) * Constants.TFSAInflationRoundingFactor
+                accruals[year] = accrual
+        return accruals
+
+    def test_taxable_income(self):
+        args, kwargs = self.get_args(TFSA)
+
+        # This method should always return $0
+        account = self.AccountType(*args, self.person,
+                                   self.inflation_adjustments,
+                                   self.contribution_room,
+                                   balance=1000,
+                                   **kwargs)
+        # Throw in some transactions for good measure:
+        account.add_transaction(100, 'start')
+        account.add_transaction(-200, 'end')
+        self.assertEqual(account.taxable_income(), Money(0))
+
+
+class TestTaxableAccountMethods(TestAccountMethods):
+    """ Test TaxableAccount """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.AccountType = TaxableAccount
+
+        # TaxableAccount.__init__ has one argument: acb
+        cls.add_args(TaxableAccount, None)
+
+    def test_init(self):
+        super().test_init()
+
+        args, kwargs = self.get_args(TaxableAccount)
+
+        # Default init
+        account = self.AccountType(*args, **kwargs)
+        self.assertEqual(account.acb, account.balance)
+        self.assertEqual(account.capital_gain, Money(0))
+
+        # Confirm that acb is set to balance by default
+        account = self.AccountType(*args, balance=100, **kwargs)
+        self.assertEqual(account.acb, account.balance)
+        self.assertEqual(account.capital_gain, Money(0))
+
+        # Confirm that initializing an account with unrealized capital
+        # gains still results in capital_gains = $0
+        account = self.AccountType(*args, acb=0, balance=100, rate=1, **kwargs)
+        self.assertEqual(account.acb, Money(0))
+        self.assertEqual(account.capital_gain, Money(0))
+        # While we're here, let's confirm that adding a transaction
+        # results in the capital gains being realized.
+        account.add_transaction(-200, 'end')
+        self.assertEqual(account.acb, Money(0))
+        self.assertEqual(account.capital_gain, Money(200))
+
+    def test_properties(self):
+        # Account doesn't currently have a test_properties method, so
+        # there's no need to call super().test_properties()
+
+        # TODO: Test acb and capital_gain. Be sure to test that adding
+        # a transaction causes capital_gain to be recalculated!
+        pass
+
+    def test_next(self):
+        super().test_next()
+        # TODO
+        pass
+
+    def test_taxable_income(self):
+        # Don't call super.test_taxable_income(). TaxableAccount
+        # overrides the behaviour of taxable_income(), and doesn't
+        # merely extend it.
+
+        # TODO
+        pass
+
+
+class TestDebtMethods(TestAccountMethods):
+    """ Test Debt. """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.AccountType = Debt
+
+        # Debt takes three args: reduction_rate (Decimal),
+        # minimum_payment (Money), and accelerate_payment (bool)
+        minimum_payment = Money(10)
+        reduction_rate = Decimal(1)
+        accelerate_payment = True
+        cls.add_args(Debt, minimum_payment, reduction_rate, accelerate_payment)
+
+    def test_init(self):
+        super().test_init()
+        # TODO
+        pass
+
+    def test_max_inflow(self):
+        # TODO
+        pass
+
+
+class TestOtherPropertyMethods(TestAccountMethods):
+    """ Test OtherProperty. """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.AccountType = OtherProperty
+
+        # OtherProperty has one prepended argument: taxable (bool)
+        cls.add_args(OtherProperty, True)
+
+    def test_taxable_income(self):
+        # TODO
+        pass
 
 if __name__ == '__main__':
     # NOTE: BasicContext is useful for debugging, as most errors are treated
