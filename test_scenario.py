@@ -136,7 +136,7 @@ class TestScenarioMethods(unittest.TestCase):
                             self.varying_initial_year)
 
         # Do an elementwise comparison to confirm initialization worked
-        for i in range(100):
+        for i in range(self.varying_length):
             year = i + self.varying_initial_year
             self.assertEqual(scenario.inflation[year],
                              self.varying_inflation[i])
@@ -153,6 +153,45 @@ class TestScenarioMethods(unittest.TestCase):
             self.assertEqual(scenario.person2_raise_rate[year],
                              self.varying_person2_raise_rate[i])
         self.assertEqual(scenario.initial_year, self.varying_initial_year)
+
+        # Test the above Scenario to confirm that defaults provided in
+        # Settings are being used for elements not expressly provided
+        # in the input dicts:
+        self.assertEqual(
+            scenario.inflation[
+                self.varying_initial_year + self.varying_length
+            ],
+            Settings.inflation)
+        self.assertEqual(
+            scenario.stock_return[
+                self.varying_initial_year + self.varying_length
+            ],
+            Settings.stock_return)
+        self.assertEqual(
+            scenario.bond_return[
+                self.varying_initial_year + self.varying_length
+            ],
+            Settings.bond_return)
+        self.assertEqual(
+            scenario.other_return[
+                self.varying_initial_year + self.varying_length
+            ],
+            Settings.other_return)
+        self.assertEqual(
+            scenario.management_fees[
+                self.varying_initial_year + self.varying_length
+            ],
+            Settings.management_fees)
+        self.assertEqual(
+            scenario.person1_raise_rate[
+                self.varying_initial_year + self.varying_length
+            ],
+            Settings.person1_raise_rate)
+        self.assertEqual(
+            scenario.person2_raise_rate[
+                self.varying_initial_year + self.varying_length
+            ],
+            Settings.person2_raise_rate)
 
         # Construct a varying scenario from dicts instead of lists
         years = list(range(self.varying_initial_year,
@@ -247,13 +286,89 @@ class TestScenarioMethods(unittest.TestCase):
 
     def test_real_value(self):
         """ Tests `Scenario.real_value()` """
-        # TODO: Implement test
-        pass
+        # Test a selection of the scenarios in the set
+        # (We could test all, but it's slooow)
+        for scenario in self.scenarios[0:9]:
+            initial_year = scenario.initial_year
+            last_year = scenario.initial_year + len(scenario) - 1
+            for nominal_year in range(initial_year, last_year + 1):
+                # This test takes forever if we iterate over every pair
+                # of nominal and real years, so keep real_year to within
+                # 10 years of nominal_year.
+                for real_year in range(max(initial_year, nominal_year - 10),
+                                       min(last_year + 1, nominal_year + 10)):
+                    # Test the real value associated with this
+                    # (nominal_year, real_year) pair by taking the
+                    # product of all annual inflation factors
+                    # (1 + inflation) between nominal_year and real_year
+                    accum = 1
+                    if nominal_year < real_year:
+                        # If we're inflation-adjusting to a future year,
+                        # then real_value should increase with inflation
+                        for year in range(nominal_year, real_year):
+                            accum *= Decimal(1 + scenario.inflation[year])
+                    else:
+                        # If we're inflation-adjusting to a past year,
+                        # then real_value should decrease with inflation
+                        for year in range(real_year, nominal_year):
+                            accum /= Decimal(1 + scenario.inflation[year])
+                    # Now that we know the cumulative inflation, we can
+                    # express in real-valued terms simply by multiplying
+                    self.assertAlmostEqual(
+                        scenario.real_value(Decimal(100),
+                                            nominal_year,
+                                            real_year),
+                        Decimal(100) * accum)
+                # Sanity check: Confirm that real = nominal for the year
+                # that we're using for expressing real values.
+                self.assertEqual(
+                    scenario.real_value(1, nominal_year, nominal_year),
+                    1)
 
     def test_len(self):
         """ Tests `Scenario.__len__`. """
-        # TODO: Implement test
-        pass
+
+        # Some variables that we'll use multiple times:
+        length = 100
+        initial_year = 2000
+
+        # Test a constant scenario
+        scenario = Scenario(0, 0, 0, 0, 0, 0, 0, initial_year)
+        self.assertEqual(len(scenario), 1)
+
+        # Test a scenario built from lists/constants
+        scenario = Scenario([0 for _ in range(0, length)],
+                            [0 for _ in range(0, length)],
+                            [0 for _ in range(0, length)],
+                            0, 0, 0, 0, initial_year)
+        self.assertEqual(len(scenario), length)
+
+        # Test a scenario built from dicts:
+        length = 100
+        scenario = Scenario({
+                year: 0
+                for year in range(initial_year, initial_year + length)
+            },
+            {
+                year: 0
+                for year in range(initial_year, initial_year + length - 1)
+            },
+            0, 0, 0, 0, 0, initial_year)
+        self.assertEqual(len(scenario), length)
+
+        # Test a scenario built from dicts and (longer) lists:
+        length = 100
+        scenario = Scenario({
+                year: 0
+                for year in range(initial_year, initial_year + length)
+            },
+            {
+                year: 0
+                for year in range(initial_year, initial_year + length - 1)
+            },
+            [0 for _ in range(0, length)],
+            0, 0, 0, 0, initial_year)
+        self.assertEqual(len(scenario), length)
 
 if __name__ == '__main__':
     unittest.main()

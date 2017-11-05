@@ -81,6 +81,10 @@ class Settings:
     allocation_risk_transition_period = 20
     allocation_adjust_for_early_retirement = True
 
+    ''' Debt defaults '''
+    DebtReductionRate = 1
+    DebtAcceleratePayment = False
+
     ''' RESP defaults '''
     RESPChildOtherIncome = 0
     RESPStartAge = 18

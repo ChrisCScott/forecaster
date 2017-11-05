@@ -183,10 +183,10 @@ class TestPersonMethods(unittest.TestCase):
 
 
 class TestWhen(unittest.TestCase):
-    """ A test case for the `When` class. """
+    """ A test case for the `when_conv` free method. """
 
-    def test_new(self):
-        """ Tests `When.__new__` """
+    def test_when_conv(self):
+        """ Tests `when_conv` """
 
         # Test a simple, single-valued input
         w = when_conv(1)
@@ -1439,37 +1439,105 @@ class TestTaxableAccountMethods(TestAccountMethods):
         self.assertEqual(account.acb, account.balance)
         self.assertEqual(account.capital_gain, Money(0))
 
-        # Confirm that initializing an account with unrealized capital
-        # gains still results in capital_gains = $0
+        # Confirm that initializing an account with explicit acb works.
+        # (In this case, acb is 0, so the balance is 100% capital gains,
+        # but those gains are unrealized, so capital_gain is $0)
         account = self.AccountType(*args, acb=0, balance=100, rate=1, **kwargs)
         self.assertEqual(account.acb, Money(0))
         self.assertEqual(account.capital_gain, Money(0))
-        # While we're here, let's confirm that adding a transaction
-        # results in the capital gains being realized.
-        account.add_transaction(-200, 'end')
-        self.assertEqual(account.acb, Money(0))
-        self.assertEqual(account.capital_gain, Money(200))
 
     def test_properties(self):
         # Account doesn't currently have a test_properties method, so
         # there's no need to call super().test_properties()
 
-        # TODO: Test acb and capital_gain. Be sure to test that adding
-        # a transaction causes capital_gain to be recalculated!
-        pass
+        args, kwargs = self.get_args(TaxableAccount)
+
+        # Init account with $50 acb.
+        # Balance is $100, of which $50 is capital gains.
+        account = self.AccountType(*args,
+                                   acb=50, balance=100, rate=1,
+                                   **kwargs)
+        # No capital gains are realized yet, so capital_gains=$0
+        self.assertEqual(account.capital_gain, Money(0))
+        # Withdrawal the entire end-of-year balance.
+        account.add_transaction(-200, 'end')
+        # Transactions will affect acb in the following year, not this
+        # one - therefore acb should be unchanged here.
+        self.assertEqual(account.acb, Money(50))
+        # capital_gains in this year should be updated to reflect the
+        # new transaction.
+        self.assertEqual(account.capital_gain, Money(150))
+        # Now add a start-of-year inflow to confirm that capital_gains
+        # isn't confused.
+        account.add_transaction(100, 'start')
+        self.assertEqual(account.acb, Money(50))
+        # By the time of the withdrawal, acb=$150 and balance=$400.
+        # The $200 withdrawal will yield a $125 capital gain.
+        self.assertEqual(account.capital_gain, Money(125))
 
     def test_next(self):
         super().test_next()
-        # TODO
-        pass
+
+        args, kwargs = self.get_args(TaxableAccount)
+
+        # Init account with $50 acb.
+        # Balance is $100, of which $50 is capital gains.
+        account = self.AccountType(*args,
+                                   acb=50, balance=100, rate=1,
+                                   **kwargs)
+        # No capital gains are realized yet, so capital_gains=$0
+        self.assertEqual(account.capital_gain, Money(0))
+        # Withdrawal the entire end-of-year balance.
+        account.add_transaction(-200, 'end')
+        self.assertEqual(account.capital_gain, Money(150))
+
+        account.next_year()
+        # Expect $0 balance, $0 acb, and (initially) $0 capital gains
+        self.assertEqual(account.balance, Money(0))
+        self.assertEqual(account.acb, Money(0))
+        self.assertEqual(account.capital_gain, Money(0))
+        # Add inflow in the new year. It will grow by 100%.
+        account.add_transaction(100, 'start')
+        self.assertEqual(account.acb, Money(0))
+        self.assertEqual(account.capital_gain, Money(0))
+
+        account.next_year()
+        # Expect $200 balance
+        self.assertEqual(account.acb, Money(100))
+        self.assertEqual(account.capital_gain, Money(0))
+        account.add_transaction(-200, 'start')
+        self.assertEqual(account.acb, Money(100))
+        self.assertEqual(account.capital_gain, Money(100))
 
     def test_taxable_income(self):
         # Don't call super.test_taxable_income(). TaxableAccount
-        # overrides the behaviour of taxable_income(), and doesn't
-        # merely extend it.
+        # completely overrides the behaviour of taxable_income().
 
-        # TODO
-        pass
+        args, kwargs = self.get_args(TaxableAccount)
+
+        # Init account with $50 acb.
+        # Balance is $100, of which $50 is capital gains.
+        account = self.AccountType(*args,
+                                   acb=50, balance=100, rate=1,
+                                   **kwargs)
+        # No capital gains are realized yet, so capital_gains=$0
+        self.assertEqual(account.taxable_income(), Money(0))
+        # Withdrawal the entire end-of-year balance.
+        account.add_transaction(-200, 'end')
+        self.assertEqual(account.taxable_income(), Money(150)/2)
+
+        account.next_year()
+        # Expect $0 balance, $0 acb, and (initially) $0 capital gains
+        self.assertEqual(account.taxable_income(), Money(0))
+        # Add inflow in the new year. It will grow by 100%.
+        account.add_transaction(100, 'start')
+        self.assertEqual(account.taxable_income(), Money(0))
+
+        account.next_year()
+        # Expect $200 balance
+        self.assertEqual(account.taxable_income(), Money(0))
+        account.add_transaction(-200, 'start')
+        self.assertEqual(account.taxable_income(), Money(100)/2)
 
 
 class TestDebtMethods(TestAccountMethods):
@@ -1489,28 +1557,99 @@ class TestDebtMethods(TestAccountMethods):
 
     def test_init(self):
         super().test_init()
-        # TODO
-        pass
+
+        args, kwargs = self.get_args(Debt)
+
+        # Test default init.
+        account = self.AccountType(*args, **kwargs)
+        self.assertEqual(account.minimum_payment, Money(0))
+        self.assertEqual(account.reduction_rate, Settings.DebtReductionRate)
+        self.assertEqual(account.accelerate_payment,
+                         Settings.DebtAcceleratePayment)
+
+        # Test init with appropriate-type args.
+        minimum_payment = Money(100)
+        reduction_rate = Decimal(1)
+        accelerate_payment = False
+        account = self.AccountType(*args, minimum_payment, reduction_rate,
+                                   accelerate_payment, **kwargs)
+        self.assertEqual(account.minimum_payment, minimum_payment)
+        self.assertEqual(account.reduction_rate, reduction_rate)
+        self.assertEqual(account.accelerate_payment, accelerate_payment)
+
+        # Test init with args of alternative types.
+        minimum_payment = 100
+        reduction_rate = 1
+        accelerate_payment = 'Evaluates to True, like all non-empty strings'
+        account = self.AccountType(*args, minimum_payment, reduction_rate,
+                                   accelerate_payment, **kwargs)
+        self.assertEqual(account.minimum_payment, minimum_payment)
+        self.assertEqual(account.reduction_rate, reduction_rate)
+        self.assertEqual(account.accelerate_payment, bool(accelerate_payment))
+
+        # Test init with args of non-convertible types
+        with self.assertRaises(decimal.InvalidOperation):
+            account = self.AccountType(*args, minimum_payment='invalid',
+                                       **kwargs)
+        with self.assertRaises(decimal.InvalidOperation):
+            account = self.AccountType(*args, reduction_rate='invalid',
+                                       **kwargs)
 
     def test_max_inflow(self):
-        # TODO
-        pass
+        args, kwargs = self.get_args(Debt)
+
+        # Test when balance is greater than minimum payment
+        account = self.AccountType(*args, 100, balance=-1000, **kwargs)
+        self.assertEqual(account.max_inflow(), Money(1000))
+
+        # Test when balance is less than minimum payment
+        account = self.AccountType(*args, 1000, balance=-100, **kwargs)
+        self.assertEqual(account.max_inflow(), Money(100))
+
+        # Test when minimum payment and balance are equal in size
+        account = self.AccountType(*args, 100, balance=-100, **kwargs)
+        self.assertEqual(account.max_inflow(), Money(100))
+
+        # Test with 0 balance
+        account = self.AccountType(*args, 100, balance=0, **kwargs)
+        self.assertEqual(account.max_inflow(), Money(0))
+
+    def test_min_inflow(self):
+        args, kwargs = self.get_args(Debt)
+
+        # Test when balance is greater than minimum payment
+        account = self.AccountType(*args, 100, balance=-1000, **kwargs)
+        self.assertEqual(account.min_inflow(), Money(100))
+
+        # Test when balance is less than minimum payment
+        account = self.AccountType(*args, 1000, balance=-100, **kwargs)
+        self.assertEqual(account.min_inflow(), Money(100))
+
+        # Test when minimum payment and balance are equal in size
+        account = self.AccountType(*args, 100, balance=-100, **kwargs)
+        self.assertEqual(account.min_inflow(), Money(100))
+
+        # Test with 0 balance
+        account = self.AccountType(*args, 100, balance=0, **kwargs)
+        self.assertEqual(account.min_inflow(), Money(0))
 
 
-class TestOtherPropertyMethods(TestAccountMethods):
-    """ Test OtherProperty. """
+class TestPrincipleResidenceMethods(TestAccountMethods):
+    """ Test PrincipleResidence. """
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.AccountType = OtherProperty
+        cls.AccountType = PrincipleResidence
 
-        # OtherProperty has one prepended argument: taxable (bool)
-        cls.add_args(OtherProperty, True)
+        # PrincipleResidence no additional arguments, so no need to call
+        # add_args
 
     def test_taxable_income(self):
-        # TODO
-        pass
+        # Currently, Account also always returns $0 for taxable income,
+        # so we can simply call the superclass's testing method.
+        # Still, since PrincipleResidence overrides
+        super().test_taxable_income()
 
 if __name__ == '__main__':
     # NOTE: BasicContext is useful for debugging, as most errors are treated

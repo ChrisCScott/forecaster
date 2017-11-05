@@ -1,6 +1,6 @@
 """ Basic economic classes, such as `Scenario` and `Money`. """
 import collections
-from numbers import Number
+from decimal import Decimal
 from settings import Settings
 
 
@@ -74,22 +74,35 @@ class Scenario(object):
                     'Scenario: input and default cannot both be None.')
             return Scenario._build_dict(default, initial_year)
 
-        # If input is already a default dict, update its default factory
-        # (if a default was provided) and return it without wrapping.
-        if isinstance(input, collections.defaultdict):
-            if default is not None:
-                input.default_factory = lambda: default
-            return input
+        # Convert `default` to a Decimal-returning default factory:
+        if default is not None:
+            _default = Decimal(default)
 
-        # Cast input to a defaultdict if input is a dict (but not a
-        # defaultdict).
+            def default():
+                return _default
+
+        if isinstance(input, collections.defaultdict):
+            # TODO: Do some type-checking and avoid creating a copy if
+            # the dict is already {int: Decimal} pairs.
+
+            # Update input's default factory if `default` was provided:
+            if default is not None:
+                input.default_factory = default
+            # Convert elements to {int: Decimal} pairs
+            return collections.defaultdict(input.default_factory, {
+                int(key): Decimal(input[key]) for key in input
+            })
+
+        # IF input was a dict, cast to default dict (if default was
+        # provided) and type-cast all entries to {int: Decimal} pairs.
         # NOTE: Consider whether we should wrap input in a defaultdict
         # to avoid stripping away the properties of custom dict-derived
         # objects that the user decides to pass in.
         if isinstance(input, dict):
             if default is not None:
-                return collections.defaultdict(lambda: default, input)
-            return input
+                return collections.defaultdict(default, input)
+            else:
+                return {int(key): Decimal(input[key]) for key in input}
 
         # If it's not a dict, but it is some sort of sequence (e.g. a
         # list) then convert it into a [default]dict
@@ -98,13 +111,15 @@ class Scenario(object):
                 raise ValueError(
                     'Scenario: initial_year is required if input is a list.')
             if default is not None:
-                return collections.defaultdict(
-                    lambda: default,
-                    zip(range(initial_year, initial_year + len(input)),
-                        input)
-                    )
-            return dict(zip(range(initial_year, initial_year + len(input)),
-                            input))
+                return collections.defaultdict(default, {
+                    key: Decimal(input[key - initial_year])
+                    for key in range(initial_year, initial_year + len(input))
+                })
+            else:
+                return {
+                    key: Decimal(input[key - initial_year])
+                    for key in range(initial_year, initial_year + len(input))
+                }
 
         # Otherwise, turn a scalar value into a defaultdict:
         # NOTE: default is ignored in this case
@@ -194,13 +209,20 @@ class Scenario(object):
             person2_raise_rate, initial_year, settings.person2_raise_rate)
         self.initial_year = initial_year
 
+        # TODO: Allow inflation to stretch into the past (based on
+        # historical data)? Either by allowing the inflation dict to
+        # have a broader range or by storing a (class-level?) dict of
+        # historical values and preferring to return inflation rates
+        # from there if available.
+
         # If any inputs were lists, confirm they're all the same length:
         # First, get lists of the list/dict input lengths.
         # (NOTE: For dicts, use their span, not the __len__ measure of
         # length, which is just the number of keys. The span is the
         # number of years covered by the dict)
         list_lengths = [len(x) for x in list_inputs]
-        dict_lengths = [max(x.keys()) - self.initial_year for x in dict_inputs]
+        dict_lengths = [max(x.keys()) - self.initial_year + 1
+                        for x in dict_inputs]
         # Ensure they're all the same length:
         if list_lengths != []:
             if not all(list_lengths[0] == length for length in list_lengths):
@@ -254,8 +276,7 @@ class Scenario(object):
         (see `Settings`). """
         if real_year is None:
             real_year = settings.display_year
-        discount = self.accumulation_function(nominal_year, real_year)
-        return value*discount
+        return value * self.accumulation_function(nominal_year, real_year)
 
     def __len__(self):
         """ Returns the number of years modelled by the Scenario. """
