@@ -130,10 +130,10 @@ class ContributionStrategy(Strategy):
                 "Constant living expenses"
                 "Percentage of gross income"
                 "Percentage of net income"
-        rate (Decimal, Money): A user-supplied contribution rate.
-            Has different meanings for different strategies; may be a
-            percentage (e.g. Decimal('0.03') means 3%) or a currency
-            value (e.g. 3000 for a $3000 contribution).
+        base_amount (Money): A user-supplied amount of money, used in
+            some strategies as a baseline for contributions.
+        rate (Decimal): A user-supplied contribution rate. Must be a
+            percentage (e.g. Decimal('0.03') means 3%).
         refund_reinvestment_rate (Decimal): The percentage of each tax
             refund that is reinvested in the year it's received.
         inflation_adjusted (bool): If True, `rate` is interpreted as a
@@ -165,8 +165,9 @@ class ContributionStrategy(Strategy):
             strategy.
     """
 
-    def __init__(self, strategy=None, rate=None, refund_reinvestment_rate=None,
-                 inflation_adjusted=None, settings=Settings):
+    def __init__(self, strategy=None, base_amount=None, rate=None,
+                 refund_reinvestment_rate=None, inflation_adjusted=None,
+                 settings=Settings):
         """ Constructor for ContributionStrategy. """
         # Use the subclass-specific default strategy if none provided
         if strategy is None:
@@ -174,11 +175,10 @@ class ContributionStrategy(Strategy):
         super().__init__(strategy, settings)
 
         # Use default values from settings if none are provided.
-        if isinstance(rate, Money):  # `Money` doesn't cast to Decimal
-            self.rate = rate
-        else:
-            self.rate = Decimal(rate) if rate is not None \
-                else settings.contribution_rate
+        self.base_amount = Money(base_amount) if base_amount is not None \
+            else settings.contribution_base_amount
+        self.rate = Decimal(rate) if rate is not None \
+            else settings.contribution_rate
         self.refund_reinvestment_rate = Decimal(refund_reinvestment_rate) \
             if refund_reinvestment_rate is not None \
             else settings.contribution_refund_reinvestment_rate
@@ -199,7 +199,7 @@ class ContributionStrategy(Strategy):
         # If inflation-adjusted, confirm that inflation_adjustment was provided
         else:
             self._param_check(inflation_adjustment, 'inflation adjustment')
-        return Money(self.rate * inflation_adjustment)
+        return Money(self.base_amount * inflation_adjustment)
 
     @strategy('Constant living expenses')
     def _strategy_constant_living_expenses(self, net_income,
@@ -213,7 +213,7 @@ class ContributionStrategy(Strategy):
         else:
             self._param_check(inflation_adjustment, 'inflation adjustment')
         self._param_check(net_income, 'net income')
-        return max(net_income - Money(self.rate * inflation_adjustment),
+        return max(net_income - Money(self.base_amount * inflation_adjustment),
                    Money(0))
 
     @strategy('Percentage of net income')
@@ -229,6 +229,20 @@ class ContributionStrategy(Strategy):
         # gross_income is required for this strategy. Check explicitly:
         self._param_check(gross_income, 'gross income')
         return self.rate * gross_income
+
+    @strategy('Percentage of earnings growth')
+    def _strategy_earnings_percent(self, net_income, inflation_adjustment=None,
+                                   *args, **kwargs):
+        """ Contribute a percentage of earnings above the base amount. """
+        # If not inflation-adjusted, ignore the discount rate
+        if not self.inflation_adjusted:
+            inflation_adjustment = 1
+        # If inflation-adjusted, confirm that inflation_adjustment was provided
+        else:
+            self._param_check(inflation_adjustment, 'inflation adjustment')
+        self._param_check(net_income, 'net income')
+        return self.rate * (net_income - (self.base_amount *
+                                          inflation_adjustment))
 
     def __call__(self, refund=0, other_contribution=0, net_income=None,
                  gross_income=None, inflation_adjustment=None,
@@ -541,9 +555,6 @@ class TransactionStrategy(Strategy):
         # are passed via `accounts`. (Ideally, treat them as a single
         # account and split contributions/withdrawals between them in a
         # reasonable way; e.g. proportional to current balance)
-        # TODO: Handle accounts with *minimum* inflows or outflows and
-        # ensure that those limits are respected by this method.
-        # Consider iterating over transactions
 
         # Build a dict of {Account, weight} pairs
         adict = {account: self.weights[type(account).__name__]
@@ -568,128 +579,151 @@ class TransactionStrategy(Strategy):
         return transactions
 
     @strategy('Weighted')
-    def _strategy_weighted(self, total, accounts, transactions=None,
-                           *args, **kwargs):
-        """ Contributes to/withdraws from all accounts based on weights.
+    def _strategy_weighted(self, total, accounts, *args, **kwargs):
+        """ Contributes to/withdraws from all accounts based on weights. """
+        # TODO: Handle the case where multiple objects of the same type
+        # are passed via `accounts`. (Ideally, treat them as a single
+        # account and split contributions/withdrawals between them in a
+        # reasonable way; e.g. proportional to current balance)
 
-        If any account has a contribution limit that is lower than the
-        weighted amount to be contributed, the excess contribution is
-        redistributed to other accounts.
-        """
+        # Due to recursion, there's no guarantee that weights will sum
+        # to 1, so we'll need to normalize weights.
+        normalization = sum([self.weights[type(account).__name__]
+                             for account in accounts])
 
-        # Build a dummy dict that we'll fill with values to return
-        # Since this method supports recursion, check for an existing
-        # transactions argument provided by the above caller.
-        if transactions is None:
-            transactions = {account: 0 for account in accounts}
+        transactions = {}
 
-        unmaxed_accounts = []
+        # Determine per-account contributions based on the weight:
+        for account in accounts:
+            transactions[account] = total * \
+                self.weights[type(account).__name__] / normalization
 
-        # Determine per-account contributions
-        for account in transactions:
-            # First, determine what the weights are saying the
-            # transaction should be.
-            weighted_transaction = total * self.weights[type(account).__name__]
-            # Then, find the max. amount that we can transact, which
-            # could be more or less than weighted_transaction.
-            # (NOTE: account for transaction amounts we previously
-            # allocated, which max_outflow/max_inflow don't include)
-            max_transaction = (
-                    account.max_outflow(self.timing) if total < 0
-                    else account.max_inflow()
-                ) - transactions[account]
-            # If we can make the weighted transaction without hitting
-            # the maximum, do that and store the account for possible
-            # later recursion
-            if abs(weighted_transaction) < abs(max_transaction):
-                transactions[account] += weighted_transaction
-                total -= weighted_transaction
-                unmaxed_accounts.append(account)
-            # If not, make the maximum transaction and don't include
-            # this account for future recursion.
-            else:
-                transactions[account] += max_transaction
-                total -= max_transaction
+        return transactions
 
-        # If there's money left to be allocated and accounts with room
-        # remaining, then recurse
-        if total != 0 and unmaxed_accounts != []:
-            return _strategy_weighted(total, unmaxed_accounts,
-                                      transactions=transactions)
-        # Otherwise, we're done - there's either no money left or
-        # no accounts to put it in.
-        else:
-            return transactions
-
-    def _assign_mins(self, total, accounts, transactions, *args, **kwargs):
-        """ Recursively assigns minimum inflows or outflows as needed. """
+    def _recurse_min(self, total, accounts, transactions, *args, **kwargs):
+        """ Recursively assigns minimum inflows/outflows to accounts. """
         # Check to see whether any accounts have minimum inflows or
         # outflows that aren't met by the allocation in `transactions`.
-        if total > 0:  # For inflows, check min_inflow()
-            override_accounts = \
-                {account: account.min_inflow() for account in transactions
-                 if account.min_inflow() > transactions[account]}
-        else:  # For outflows, check min_outflow()
-            override_accounts = \
-                {account: account.min_outflow() for account in transactions
-                 if abs(account.min_outflow()) > abs(transactions[account])}
+        if total > 0:  # For inflows, check min_inflow and max_inflow
+            override_accounts = {
+                account: account.min_inflow() for account in transactions
+                if account.min_inflow() > transactions[account]
+            }
+        else:
+            # For outflows, check min_outflow.
+            # (Recall that outflows are negative-valued)
+            override_accounts = {
+                account: account.min_outflow() for account in transactions
+                if account.min_outflow() < transactions[account]
+            }
 
-        # If there are no such accounts, we're done. End recursion.
+        # If there are no accounts that need to be tweaked, we're done.
         if len(override_accounts) == 0:
             return transactions
 
         # If we found some such accounts, set their transaction amounts
-        # manually and recurse onto the remaining dicts.
+        # manually and recurse onto the remaining accounts.
 
         # First, manually add the minimum transaction amounts to the
         # identified accounts:
         transactions.update(override_accounts)
         # Identify all accounts that haven't been manually set yet:
-        remaining_accounts = [account for account in transactions
+        remaining_accounts = [account for account in accounts
                               if account not in override_accounts]
 
-        # If we've allocated more than the original total, then
-        # simply allocate the minimum inflow or outflow to all
-        # remaining accounts and terminate recursion:
-        new_total = total - sum(override_accounts.values())
-        if (total > 0 and new_total < 0) or \
-           (total < 0 and new_total > 0):
-            # Depending on whether we're allocating inflows or outflows,
-            # look up each account's minimum inflows or outflows.
-            if total > 0:
+        # Determine the amount remaining to be allocated:
+        remaining_total = total - sum(override_accounts.values())
+
+        # If we've already allocated more than the original total
+        # (just on the overridden accounts!) then there's no room left
+        # to recurse on the strategy. Simply allocate the minimum
+        # inflow/outflow for each remaining accounts and terminate:
+        if (total > 0 and remaining_total < 0) or \
+           (total < 0 and remaining_total > 0) or \
+           remaining_total == 0:
+            if total > 0:  # Inflows
                 override_accounts = {account: account.min_inflow()
                                      for account in remaining_accounts}
-            else:
+            else:  # Outflows
                 override_accounts = {account: account.min_outflow()
                                      for account in remaining_accounts}
-            # Overwrite all transactions in the remaining accounts to
-            # be just the minimum inflow/outflow (note that this
-            # includes settings the transaction to 0 if the account has
-            # a $0 minimum inflow/outflow)
             transactions.update(override_accounts)
-        else:
-            # Otherwise, if there's still money to be allocated,
-            # recurse onto the remaining accounts:
-            # NOTE: If the signature of __call__ for this class changes,
-            # this self-invocation will likely need to change.
-            transactions.update(self(new_total, remaining_accounts))
+            return transactions
 
-        return transactions
+        # Otherwise, if there's still money to be allocated,
+        # recurse onto the remaining accounts:
+        remaining_transactions = super().__call__(
+            total=remaining_total,
+            accounts=remaining_accounts,
+            *args, **kwargs)
+
+        transactions.update(remaining_transactions)
+
+        # Now recurse to ensure that non of the non-maxed accounts have
+        # exceeded their max after applying the strategy.
+        return self._recurse_min(
+            remaining_total, remaining_accounts, transactions,
+            *args, **kwargs)
+
+    def _recurse_max(self, total, accounts, transactions, *args, **kwargs):
+        """ Recursively assigns minimum inflows/outflows to accounts. """
+        # Check to see whether any accounts have minimum inflows or
+        # outflows that aren't met by the allocation in `transactions`.
+        if total > 0:  # For inflows, check min_inflow and max_inflow
+            override_accounts = {
+                account: account.max_inflow() for account in transactions
+                if account.max_inflow() < transactions[account]
+            }
+        else:
+            # For outflows, check max_outflow.
+            # (Recall that outflows are negative-valued)
+            override_accounts = {
+                account: account.max_outflow() for account in transactions
+                if account.max_outflow() > transactions[account]
+            }
+
+        # If there are no accounts that need to be tweaked, we're done.
+        if len(override_accounts) == 0:
+            return transactions
+
+        # First, manually add the minimum transaction amounts to the
+        # identified accounts:
+        transactions.update(override_accounts)
+        # Identify all accounts that haven't been manually set yet:
+        remaining_accounts = [account for account in accounts
+                              if account not in override_accounts]
+
+        # Determine the amount to be allocated to the non-maxed accounts:
+        remaining_total = total - sum(override_accounts.values())
+
+        # Reassign money to non-maxed accounts according to the selected
+        # strategy.
+        remaining_transactions = super().__call__(
+            total=remaining_total,
+            accounts=remaining_accounts,
+            *args, **kwargs)
+
+        transactions.update(remaining_transactions)
+
+        # Now recurse to ensure that non of the non-maxed accounts have
+        # exceeded their max after applying the strategy.
+        return self._recurse_max(
+            remaining_total, remaining_accounts, transactions,
+            *args, **kwargs)
 
     def __call__(self, total, accounts, *args, **kwargs):
         """ Returns a dict of accounts mapped to transactions. """
-        # NOTE: The transactions returned by a strategy are only a
-        # proposal. Strategies don't have to account for account
-        # inflow/outflow minimum requirements, so when we receive a
-        # strategy's results we need to recursively check to see whether
-        # any of its inflows/outflows need to be overridden.
-        # That's done by _assign_mins(); if any accounts are overridden,
-        # then the same strategy is recursively called on the remaining
-        # (non-overridden) accounts.
+        # Get an initial proposal for the transactions based on the
+        # selected strategy:
         transactions = super().__call__(total=total, accounts=accounts,
                                         *args, **kwargs)
-        return self._assign_mins(total, accounts, transactions,
-                                 *args, **kwargs)
+        # Recursively ensure that minimum in/outflows are respected:
+        transactions = self._recurse_min(total, accounts, transactions,
+                                         *args, **kwargs)
+        # Recursively ensure that maximum in/outflows are respected:
+        transactions = self._recurse_max(total, accounts, transactions,
+                                         *args, **kwargs)
+        return transactions
 
 
 class TransactionInStrategy(TransactionStrategy):
@@ -742,15 +776,17 @@ class AllocationStrategy(Strategy):
             are included in `fixed_income`)
         max_equity (Decimal): The maximum percentage of a portfolio that
             may be invested in equities.
+        target (Decimal): A target value used by strategies to affect
+            their behaviour.
+            For example, for the `n-age` strategy, this is the value `n`
+            (e.g. `target=100` -> `100-age`).
+            For the `Transition to constant` strategy, this is the
+            percentage of equities to transition to (e.g. for
+            `Transition to 50-50`, use `Decimal('0.5')`)
         standard_retirement_age (int): The typical retirement age used
             in retirement planning. This is used if
             adjust_for_retirement_plan is False, otherwise the actual
             (estimated) retirement age for the person is used.
-        constant_strategy_target (int): The value `n` used by the
-            `n-age` strategy. (e.g. for `100-age`, this would be `100`.)
-        transition_strategy_target (Decimal): The percentage of equities
-            that the `Transition to constant` strategy transitions to.
-            (e.g. for `Transition to 50-50`, use `Decimal('0.5')`)
         risk_transition_period (int): The period of time over which the
             `Transition to constant` strategy transitions. For example,
             if set to 20, the strategy will transition from max_equity
@@ -772,53 +808,66 @@ class AllocationStrategy(Strategy):
         a percentage (e.g. Decimal('0.03') means 3%). They sum to 100%.
     """
     def __init__(self, strategy=None, min_equity=None, max_equity=None,
-                 standard_retirement_age=None, constant_strategy_target=None,
-                 transition_strategy_target=None, risk_transition_period=None,
-                 adjust_for_retirement_plan=None, settings=Settings):
+                 target=None, standard_retirement_age=None,
+                 risk_transition_period=None, adjust_for_retirement_plan=None,
+                 settings=Settings):
         """ Constructor for AllocationStrategy. """
         # Use the subclass-specific default strategy if none provided
         if strategy is None:
             strategy = settings.allocation_strategy
         super().__init__(strategy, settings)
 
+        # Pick the correct default setting depending on the strategy:
+        if self.strategy == (
+          AllocationStrategy._strategy_n_minus_age.strategy_key):
+            target_default = settings.allocation_constant_strategy_target
+        elif self.strategy == (
+          AllocationStrategy._strategy_transition_to_constant.strategy_key):
+            target_default = settings.allocation_transition_strategy_target
+        else:  # Just in case
+            target_default = 0
+
         # Default to Settings values where no input was provided.
-        self.min_equity = Decimal(min_equity) if min_equity is not None \
-            else settings.allocation_min_equity
-        self.max_equity = Decimal(max_equity) if max_equity is not None \
-            else settings.allocation_max_equity
-        self.standard_retirement_age = int(standard_retirement_age) \
-            if standard_retirement_age is not None \
-            else settings.allocation_standard_retirement_age
-        self.constant_strategy_target = int(constant_strategy_target) \
-            if constant_strategy_target is not None \
-            else settings.allocation_constant_strategy_target
-        self.transition_strategy_target = Decimal(transition_strategy_target) \
-            if transition_strategy_target is not None \
-            else settings.allocation_transition_strategy_target
-        self.risk_transition_period = Decimal(risk_transition_period) \
-            if risk_transition_period is not None \
-            else settings.allocation_risk_transition_period
-        self.adjust_for_retirement_plan = bool(adjust_for_retirement_plan) \
-            if adjust_for_retirement_plan is not None \
-            else settings.allocation_adjust_for_retirement_plan
+        self.min_equity = Decimal(
+            min_equity if min_equity is not None
+            else settings.allocation_min_equity)
+        self.max_equity = Decimal(
+            max_equity if max_equity is not None
+            else settings.allocation_max_equity)
+        self.standard_retirement_age = int(
+            standard_retirement_age if standard_retirement_age is not None
+            else settings.allocation_standard_retirement_age)
+        self.target = Decimal(target if target is not None else target_default)
+        self.risk_transition_period = int(
+            risk_transition_period if risk_transition_period is not None
+            else settings.allocation_risk_transition_period)
+        self.adjust_for_retirement_plan = bool(
+            adjust_for_retirement_plan
+            if adjust_for_retirement_plan is not None
+            else settings.allocation_adjust_for_retirement_plan)
 
         # All of the above are type-converted; no need to check types!
+
+        if self.max_equity < self.min_equity:
+            raise ValueError('AllocationStrategy: min_equity must not be ' +
+                             'greater than max_equity.')
 
     @strategy('n-age')
     def _strategy_n_minus_age(self, age, retirement_age=None,
                               *args, **kwargs):
         """ Used for 100-age, 110-age, 125-age, etc. strategies. """
-        # If we're adjusting for early retirement, determine an
-        # adjustment factor
+        # If we're adjusting for early/late retirement,
+        # pretend we're a few years younger if we're retiring later
+        # (or that we're older if retiring earlier)
         self._param_check(age, 'age')
-        if not self.adjust_for_retirement_plan:
-            adj = 0
-        else:
+        if self.adjust_for_retirement_plan:
             self._param_check(retirement_age, 'retirement age')
-            adj = retirement_age - self.standard_retirement_age
+            age += self.standard_retirement_age - retirement_age
+        else:
+            retirement_age = self.standard_retirement_age
         # The formula for `n-age` is just that (recall that
         # n=constant_strategy_target). Insert the adjustment factor too.
-        target = Decimal(self.constant_strategy_target - age + adj) / 100
+        target = Decimal(self.target - age) / 100
         # Ensure that we don't move past our min/max equities
         target = min(max(target, self.min_equity), self.max_equity)
         # Fixed income is simply whatever isn't in equities
@@ -829,18 +878,12 @@ class AllocationStrategy(Strategy):
                                          *args, **kwargs):
         """ Used for `Transition to 50-50`, `Transition to 70-30`, etc. """
         self._param_check(age, 'age')
-        if not self.adjust_for_retirement_plan:
+        # Assume we're retiring at the standard retirement age unless
+        # adjust_for_retirement_plan is True
+        if self.adjust_for_retirement_plan:
             self._param_check(retirement_age, 'retirement age')
+        else:
             retirement_age = self.standard_retirement_age
-        # NOTE: None of the below refers to min_equity; if target_equity
-        # is lower than min_equity, equity allocation will drop below
-        # min_equity. We could add a max(min_equity, target_equity)
-        # term, but then we might never reach target_equity, which seems
-        # to be the more-bad case. Alternatively, we could merge
-        # min_equity and target_equity, but the theory is that
-        # min_equity will generally be lower and might not be exposed to
-        # the user as directly, whereas target_equity is first-class
-        # user input.
 
         # If retirement is outside our risk transition window (e.g. if
         # it's more than 20 years away), maximize stock holdings.
@@ -850,22 +893,22 @@ class AllocationStrategy(Strategy):
         # If we've hit retirement, keep equity allocation constant at
         # our target
         elif age >= retirement_age:
-            min_equity = max(self.min_equity, self.target_equity)
+            min_equity = max(self.min_equity, self.target)
             return AssetAllocation(equity=min_equity,
                                    fixed_income=1-min_equity)
-        # Otherwise, smoothly move from max_equity to target_equity over
+        # Otherwise, smoothly move from max_equity to target over
         # the risk_transition_period
         else:
-            target = self.target_equity + \
-                (self.target_equity - self.max_equity) * \
+            target = self.target + \
+                (self.max_equity - self.target) * \
                 (retirement_age - age) / self.risk_transition_period
             return AssetAllocation(equity=target, fixed_income=1-target)
 
-    # Overloading this class solely for intellisense purposes. Would
-    # work just fine without overloading.
     def __call__(self, age, retirement_age=None, *args, **kwargs):
         """ Returns a dict of {account, Money} pairs. """
         # TODO: Add list (dict?) arguments with historical data (e.g.
         # withdrawals and principal) to allow for behaviour-aware
         # rebalancing.
+        # TODO: Move min_equity and max_equity logic here to simplify
+        # the logic of each strategy.
         return super().__call__(age, retirement_age, *args, **kwargs)

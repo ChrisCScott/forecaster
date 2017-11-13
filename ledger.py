@@ -20,19 +20,41 @@ class Person(object):
     """ Represents a person's basic information: age and retirement age.
 
     Attributes:
-        name: A string corresponding to the person's name.
-        birth_date: A datetime corresponding to the person's birth date.
-            If a non-datetime argument is received, will interpret
-            `int` as a birth year; other values will parsed as strings.
-        retirement_date: An optional datetime corresponding to the
-            person's retirement date.
-            If a non-datetime argument is received, will interpret
-            `int` as a birth year; other values will parsed as strings
+        name (str): The person's name. No specific form is required;
+            this is only used for display, not any computations.
+        birth_date (datetime): The person's birth date.
+            May be passed as an int (interpreted as the birth year) or
+            as a datetime-convertible value (e.g. a string in a
+            suitable format)
+        retirement_date (datetime): The person's retirement date.
+            Optional.
+            May be passed as an int (interpreted as the birth year) or
+            as a datetime-convertible value (e.g. a string in a
+            suitable format)
+        gross_income (dict): Annual gross income for several
     """
 
     # TODO: Add life expectancy?
-    def __init__(self, name, birth_date, retirement_date=None):
+    # TODO: Add gross_income(), net_income, taxable_income, tax_payable,
+    # tax_withheld, etc. as dicts. Perhaps also add next_year() (similar
+    # to Account)? This would require that each Forecast build new
+    # Person objects, but that might be the most practical way to go.
+    # TODO: Move contribution room information from TFSA/RRSP to here?
+    # (This will help with coordinating inflows to multiple RRSPs/TFSAs
+    # and perhaps will allow for the implementation of Spousal RRSPs).
+    # OR: Cause RRSP/TFSA to add their contribution_room attribute to
+    # the owning `Person`, not to `self`.
+    # TODO: Add estimated_retirement_date(...) method? Use Dr. Pfau's
+    # study's results on safe withdrawal rates and require total balance
+    # and desired income as input?
+
+    def __init__(self, name, birth_date, retirement_date=None,
+                 gross_income=0, spouse=None, tax_treatment=None,
+                 initial_year=None, settings=Settings):
         """ Constructor for `Person`.
+
+        TODO: Add Attributes list that includes `accounts` (which is
+        not an arg.)
 
         Args:
             name (str): The person's name.
@@ -43,6 +65,24 @@ class Person(object):
                 May be passed as any value that can be cast to str and
                 converted to datetime by python-dateutils.parse().
                 Optional.
+            gross_income (Money): The person's gross income in
+                `initial_year`.
+            spouse (Person): The person's spouse. Optional.
+                In ordinary use, the first person of the couple is
+                constructed with `spouse=None`, and the second person is
+                constructed with `spouse=person1`. Both persons will
+                automatically have their spouse attribute updated to
+                point at each other.
+            tax_treatment (Tax): The person's tax treatment. Optional.
+                This can be any callable object that accepts the form
+                `tax_treatment(taxable_income, year)` and returns a
+                Money object (which corresponds to total taxes payable
+                on `taxable_income`).
+            initial_year (int): The first year for which account data is
+                recorded.
+            settings (Settings): Defines default values (initial year,
+                inflow/outflow transaction timing, etc.). Optional; uses
+                global Settings class attributes if None given.
 
         Returns:
             An instance of class `Person`
@@ -80,6 +120,32 @@ class Person(object):
                 raise ValueError("Person: retirement_date precedes birth_date")
 
         self.retirement_date = retirement_date
+
+        if spouse is not None:
+            if not isinstance(spouse, Person):
+                raise TypeError('Person: spouse must be of type Person')
+            # Spousehood is mutual, so mutate both this object and
+            # the spouse object to point at each other.
+            spouse.spouse = self
+        self.spouse = spouse  # Assign to attr `spouse` even if None
+
+        # We need to set the initial_year in order to build dicts
+        self.initial_year = int(initial_year if initial_year is not None
+                                else settings.initial_year)
+        self.this_year = self.initial_year
+
+        # Set up tax treatment before calling tax_withheld()
+        self.tax_treatment = tax_treatment
+
+        # Set up gross/net income hidden dicts
+        self._gross_income = {}
+        self._net_income = {}
+        # Let the properties do typecasting/etc.
+        self.gross_income = gross_income
+        self.net_income = self.gross_income - self.tax_withheld()
+
+        # Build an empty set for accounts to add themselves to.
+        self.accounts = set()
 
     @property
     def retirement_date(self) -> datetime:
@@ -126,6 +192,26 @@ class Person(object):
             # losslessly convertible to an int
             self.retirement_date = self.birth_date + relativedelta(years=val)
 
+    @property
+    def gross_income(self):
+        """ The `Person`'s gross income for this year. """
+        return self._gross_income[self.this_year]
+
+    @gross_income.setter
+    def gross_income(self, val):
+        """ Sets gross_income and casts input value to `Money` """
+        self._gross_income[self.this_year] = Money(val)
+
+    @property
+    def net_income(self):
+        """ The `Person`'s gross income for this year. """
+        return self._net_income[self.this_year]
+
+    @gross_income.setter
+    def net_income(self, val):
+        """ Sets net_income and casts input value to `Money` """
+        self._net_income[self.this_year] = Money(val)
+
     def age(self, date) -> int:
         """ The age of the `Person` as of `date`.
 
@@ -153,17 +239,50 @@ class Person(object):
             date = parse(str(date), default=self.birth_date)
 
         # Remember to check whether the month/day are earlier in `date`
-        age_ = date.year - self.birth_date.year
+        age = date.year - self.birth_date.year
         if date.replace(self.birth_date.year) < self.birth_date:
-            age_ -= 1
+            age -= 1
 
         # We allow age to be negative, if that's what the caller wants.
         # if age_ < 0:
             # raise ValueError("Person: date must be after birth_date")
 
-        return age_
+        return age
 
-    # TODO: Add employment_income(year) method?
+    def next_year(self, raise_rate, tax):
+        # TODO (v2): Include temporary loss of income due to parental leave.
+        self.this_year += 1
+        self.gross_income[self.this_year] = (
+            self.gross_income[self.this_year] * (1 + raise_rate))
+        self.net_income[self.this_year] = self.gross_income[self.this_year] - \
+            self.taxable_income(self.this_year)
+
+    def taxable_income(self, year=None):
+        year = self.this_year if year is None else year
+        return self._gross_income[year]
+
+    def tax_withheld(self, year=None):
+        year = self.this_year if year is None else year
+        if self.tax_treatment is not None:
+            return self.tax_treatment(self._gross_income[year], year)
+        else:
+            return Money(0)
+
+    def tax_credit(self, year=None):
+        """ The total sum of tax credits available for the year. """
+        # TODO: Implement spousal tax credit?
+        # NOTE: Probably not - that's not specific to the Person (it
+        # depends on the other person's income), so it should go to
+        # a Tax subclass for inclusion in a holistic analysis.
+        return Money(0)
+
+    def tax_deduction(self, year=None):
+        """ The total sum of tax deductions available for the year. """
+        return Money(0)
+
+    def __gt__(self, other):
+        """ Allows for sorting, max, min, etc. based on gross income. """
+        return self.gross_income > other.gross_income
 
 
 class Money(PyMoney):
@@ -183,6 +302,11 @@ class Money(PyMoney):
     def __round__(self, ndigits=None):
         """ Rounds to ndigits """
         return Money(round(self.amount, ndigits), self.currency)
+
+    def __hash__(self):
+        """ Allows for use in sets and as dict keys. """
+        # Equality of Money objects is based on amount and currency.
+        return hash(self.amount) + hash(self.currency)
 
     def __eq__(self, other):
         """ Extends == operator to allow comparison with Decimal.
@@ -211,49 +335,6 @@ class Money(PyMoney):
             return self.amount > 0
         else:
             return super().__gt__(other)
-
-
-# TODO: Either use this class or delete it.
-class Asset(Money):
-    """ An asset having a value and an adjusted cost base.
-
-    Attributes:
-        acb (Money): The adjusted cost base of the asset.
-    """
-
-    def __init__(self, amount=Decimal('0.0'),
-                 currency=moneyed.DEFAULT_CURRENCY_CODE,
-                 acb=None):
-        """ Constructor for `Asset` """
-        # Let the Money class do its work:
-        super().__init__(amount, currency)
-
-        if acb is None:
-            self.acb = self.amount
-        else:
-            self.acb = acb
-
-    def buy(self, amount, transaction_cost=0):
-        """ Increase the asset value and update its acb.
-
-        Args:
-            amount (Money): The amount of this asset class to purchase.
-            transaction_cost (Money): The cost of the buy operation.
-                This amount is added to the acb. Optional.
-        """
-        self.amount += amount
-        self.acb += amount + transaction_cost
-
-    def sell(self, amount, transaction_cost=0):
-        """ Decrease the asset value and update its acb.
-
-        Args:
-            amount (Money): The amount of the asset class to sell.
-            transaction_cost (Money): The cost of the sell operation.
-                This amount is subtracted from the acb. Optional.
-        """
-        self.acb -= self.acb * amount / self.amount
-        self.amount -= amount
 
 
 def when_conv(when):
@@ -294,6 +375,123 @@ def when_conv(when):
         raise ValueError("When: 'when' must be in [0,1]")
 
     return when
+
+
+def nearest_val(vals, year):
+    """ Finds the nearest (past) value in `vals` to `year`.
+
+    This is a companion method to `inflation_adjust()`. It's meant to be
+    used when you want to pull a value out of an incomplete dict without
+    inflation-adjusting it (e.g. when you want to grab the most recent
+    percentage rate from a dict of `{year: Decimal}` pairs.)
+
+    If `year` is in `vals`, then this method returns `val[year]`.
+    If not, then this method tries to find the value for the last year
+    before `year` that is in `vals`. If that doesn't work, then this
+    method tries to find the first value in `vals` following `year`.
+
+    Returns:
+        A value in `vals` that has a key near to `year`, preferring
+        the nearest preceding year (if it exists) over the nearest
+        following year. Returns `None` if `vals` is empty.
+    """
+    if vals == {}:
+        return None
+
+    # If the year is explicitly represented, no need to inflation-adjust
+    if year in vals:
+        return vals[year]
+
+    # Look for the most recent year prior to `year` that's in vals
+    key = max((k for k in vals if k < year), default=year)
+
+    # If that didn't work, look for the closest following year.
+    if key == year:
+        key = min((k for k in vals if k > year), default=year)
+
+    return vals[key]
+
+
+def inflation_adjust(vals, inflation_adjustments, year):
+    """ Fills in partial time-series with inflation-adjusted values.
+
+    This method is targeted at inflation-adjusting input data (e.g.
+    as found in the Constants module), which tends to be incomplete
+    and can represent non-sequential years. New years are often entered
+    when something changes (i.e. when values change in real terms), so
+    this method prefers to infer inflation-adjusted values based on the
+    most recent *past* years when possible (since future years might
+    not be comparable).
+
+    If `year` is in `vals`, then this method returns the value in `vals`
+    without further inflation-adjusted (as that value is already in
+    nominal terms).
+
+    If `year` is not in `vals`, then this method attempts to interpolate
+    an inflation-adjusted value. It will first attempt to forward-adjust
+    by looking for the last year which is represented in `vals` and
+    `inflation_adjustment` but before `year` and inflation-adjusting
+    from there.
+
+    If that doesn't work, it will backwards-adjust by looking for the
+    first year in `vals` and `inflation_adjustment` following `year` and
+    adjust from there.
+
+    Args:
+        vals (dict): A dict of `{year: val}` pairs, where `val` is a
+            scalar, list, or dict. This dict may be incomplete, in the
+            sense that some years may not be represented.
+            If `val` is non-scalar, an object of the same type is
+            returned with each of its values inflation-adjusted.
+        inflation_adjustment (dict): A dict of `{year: Decimal}` pairs,
+            where the Decimal is a scaling factor that adjusts for
+            inflation (e.g. {2017: 1.25} for a 25% inflationary increase
+            over the base year in 2017).
+        year (int): The year for which an adjusted value is to be
+            generated.
+
+    Raises:
+        ValueError: No year is in both `vals` and
+            `inflation_adjustment`.
+    """
+    # If the year is explicitly represented, no need to inflation-adjust
+    if year in vals:
+        return vals[year]
+
+    # If year isn't represented, we'll need to inflation-adjust values,
+    # which means we need an inflation adjustment for year.
+    if year not in inflation_adjustments:
+        raise ValueError('inflation_adjust: year not in inflation_adjustment')
+
+    # Look for the most recent year prior to `year` that's in both dicts
+    key = max(
+        (k for k in vals if k < year and k in inflation_adjustments),
+        default=year
+    )
+
+    # If that didn't work, look for the closest following year.
+    if key == year:
+        key = min(
+            (k for k in vals if k > year and k in inflation_adjustments),
+            default=year
+        )
+
+    # If one of the above searches worked, return an inflation-adjusted
+    # value (or dict/list of values, depending on what the values of
+    # `vals` are)
+    if key != year:
+        val = vals[key]
+        adj = inflation_adjustments[year] / inflation_adjustments[key]
+        if isinstance(val, dict):
+            return {k: val[k] * adj for k in val}
+        elif isinstance(val, list):
+            return [v * adj for v in val]
+        else:
+            return val * adj
+    # If none of the above searches for a year worked, raise an error.
+    else:
+        raise ValueError('inflation_adjust: No year is in both vals and ' +
+                         'inflation_adjustment')
 
 
 # TODO: Add `owner` attribute at the `Account` level?
@@ -358,18 +556,14 @@ class Account(object):
                 A: Annually
             Note that `nper` is not a list; it's assumed that the
             compounding frequency (unlike the rate)
+        initial_year (int): The first year for which account data is
+            recorded.
         settings (Settings): Defines default values (initial year,
             inflow/outflow transaction timing, etc.). Optional; uses
             global Settings class attributes if None given.
     """
-
-    # TODO: Hide the dicts (e.g. self._balance) and expose properties
-    # that get/set only the current year (e.g. self.balance points to
-    # self._balance[self.last_year]). Allow users to get the dict via
-    # a *_history method (e.g. self.balance_history())
-
     def __init__(self, balance=0, rate=0, transactions={},
-                 nper=1, initial_year=None, settings=Settings):
+                 nper=1, initial_year=None, owner=None, settings=Settings):
         """ Constructor for `Account`.
 
         This constructor receives only values for the first year.
@@ -387,12 +581,13 @@ class Account(object):
             apr (bool): If True, rate is interpreted as an annual
                 percentage rate and will be converted to a
                 pre-compounding figure.
+            owner (Person): The owner of the account. Optional.
             settings (Settings): Provides default values.
         """
         # Set the scalar values first, 'cause they're easy!
         self.initial_year = int(initial_year if initial_year is not None
                                 else settings.initial_year)
-        self.last_year = self.initial_year
+        self.this_year = self.initial_year
         self.nper = self._conv_nper(nper)
 
         # Initialize dict values
@@ -404,6 +599,13 @@ class Account(object):
         self.balance = balance
         self.rate = rate
         self.transactions = transactions
+
+        # Type-check the owner
+        if owner is not None:
+            if not isinstance(owner, Person):
+                raise TypeError('Account: owner must be of type Person.')
+            owner.accounts.add(self)  # Track this account via owner.
+        self.owner = owner
 
         # We don't save the settings object, but we do need to save
         # defaults for certain methods. These are not used when methods
@@ -429,32 +631,32 @@ class Account(object):
     @property
     def balance(self):
         """ The balance of the account for the current year (Money). """
-        return self._balance[self.last_year]
+        return self._balance[self.this_year]
 
     @balance.setter
     def balance(self, val):
         """ Sets the balance of the account for the current year. """
-        self._balance[self.last_year] = Money(val)
+        self._balance[self.this_year] = Money(val)
 
     @property
     def rate(self):
         """ The rate of the account for the current year (Decimal). """
-        return self._rate[self.last_year]
+        return self._rate[self.this_year]
 
     @rate.setter
     def rate(self, val):
         """ Sets the rate of the account for the current year. """
-        self._rate[self.last_year] = Decimal(val)
+        self._rate[self.this_year] = Decimal(val)
 
     @property
     def transactions(self):
         """ The transactions in and out of the account this year (dict). """
-        return self._transactions[self.last_year]
+        return self._transactions[self.this_year]
 
     @transactions.setter
     def transactions(self, val):
         """ Sets transactions in and out of the account for this year. """
-        self._transactions[self.last_year] = {
+        self._transactions[self.this_year] = {
             when_conv(x): Money(val[x]) for x in val
         }
 
@@ -533,7 +735,7 @@ class Account(object):
         """ The sum of all inflows to the account. """
         # Return most recent year by default
         if year is None:
-            year = self.last_year
+            year = self.this_year
 
         # Convert to Money at the end because the sum might return 0
         # (an int) if there are no transactions
@@ -544,7 +746,7 @@ class Account(object):
         """ The sum of all outflows from the account. """
         # Return most recent year by default
         if year is None:
-            year = self.last_year
+            year = self.this_year
 
         # Convert to Money at the end because the sum might return 0
         # (an int) if there are no transactions
@@ -553,7 +755,7 @@ class Account(object):
 
     def __len__(self):
         """ The number of years of transaction data in the account. """
-        return self.last_year - self.initial_year + 1
+        return self.this_year - self.initial_year + 1
 
     # TODO: Remove accumulation_function, future_value, & present_value
     # and replace with numpy.fv and numpy.pv?
@@ -611,7 +813,7 @@ class Account(object):
             `value`.
         """
         if year is None:
-            year = self.last_year
+            year = self.this_year
 
         return value * self.accumulation_function(
             when_conv(time) - when_conv(now), self._rate[year], self.nper
@@ -655,7 +857,7 @@ class Account(object):
             when (Decimal, str): The timing of the transaction.
         """
         if year is None:
-            year = self.last_year
+            year = self.this_year
 
         # We need to convert `time` to enable the comparison in the dict
         # comprehension in the for loop below.
@@ -685,7 +887,7 @@ class Account(object):
         """
         # Return most recent year by default
         if year is None:
-            year = self.last_year
+            year = self.this_year
 
         # First, find the future value of the initial balance assuming
         # there are no transactions.
@@ -706,9 +908,9 @@ class Account(object):
         Sets the next year's balance and rate, but does not set any
         transactions.
         """
-        self.last_year += 1
-        self.balance = self.next_balance(self.last_year - 1)
-        self.rate = self._rate[self.last_year - 1]
+        self.this_year += 1
+        self.balance = self.next_balance(self.this_year - 1)
+        self.rate = self._rate[self.this_year - 1]
         self.transactions = {}
 
     def max_outflow(self, when='end', year=None):
@@ -827,30 +1029,30 @@ class RegisteredAccount(Account):
     def inflation_adjustment(self):
         """ The inflation adjustment for the current year """
         # NOTE: This property is immutable, so there's no setter
-        return self._inflation_adjustments[self.last_year]
+        return self._inflation_adjustments[self.this_year]
 
     @property
     def contribution_room(self):
         """ The contribution room for the current year. """
-        return self._contribution_room[self.last_year]
+        return self._contribution_room[self.this_year]
 
     @contribution_room.setter
     def contribution_room(self, val):
         """ Sets contribution room for the current year. """
-        self._contribution_room[self.last_year] = Money(val)
+        self._contribution_room[self.this_year] = Money(val)
 
     def next_year(self, *args, **kwargs):
         """ Confirms that the year is within the range of our data. """
-        # NOTE: Invoking super().next_year will increment self.last_year
+        # NOTE: Invoking super().next_year will increment self.this_year
         super().next_year(*args, **kwargs)
 
-        if self.last_year not in self._inflation_adjustments:
+        if self.this_year not in self._inflation_adjustments:
             raise ValueError('RegisteredAccount: next_year is outside range ' +
                              'of inflation_adjustments.')
 
         # Determine contribution room for the next year:
         self.contribution_room = self.next_contribution_room(
-            year=self.last_year - 1, *args, **kwargs
+            year=self.this_year - 1, *args, **kwargs
         )
 
     def next_contribution_room(self, year=None, *args, **kwargs):
@@ -862,7 +1064,7 @@ class RegisteredAccount(Account):
     def max_inflow(self, when='end', year=None):
         """ Limits outflows based on available contribution room. """
         if year is None:
-            year = self.last_year
+            year = self.this_year
         return Money(self._contribution_room[year])
 
 
@@ -890,27 +1092,16 @@ class RRSP(RegisteredAccount):
             Constants.RRSPRRIFConversionAge - \
             self.person.age(self.initial_year)
 
-        if self.initial_year in Constants.RRSPContributionRoomAccrualMax:
-            self._base_accrual = \
-                Constants.RRSPContributionRoomAccrualMax[self.initial_year]
-            self._base_accrual_year = self.initial_year
-        else:
-            # Find the offset for each year (for which we know accrual
-            # max) relative to the initial year.
-            offs = [self.initial_year - x
-                    for x in Constants.RRSPContributionRoomAccrualMax]
-            # Find the smallest offset
-            min_off = min(map(abs, offs))
-            if min_off not in offs:
-                min_off = -min_off
-            # Set the base year by applying the offset to initial_year
-            self._base_accrual_year = self.initial_year - min_off
-            self._base_accrual = Constants.RRSPContributionRoomAccrualMax[
-                self._base_accrual_year]
+        # Determine the max contribution room accrual in initial_year:
+        self._initial_accrual = inflation_adjust(
+            Constants.RRSPContributionRoomAccrualMax,
+            self._inflation_adjustments,
+            self.initial_year
+        )
 
     def convert_to_RRIF(self, year=None):
         """ Converts the RRSP to an RRIF. """
-        year = self.last_year if year is None else year
+        year = self.this_year if year is None else year
         self.RRIF_conversion_year = year
 
     def taxable_income(self, year=None):
@@ -930,7 +1121,7 @@ class RRSP(RegisteredAccount):
         """
         # Return most recent year by default
         if year is None:
-            year = self.last_year
+            year = self.this_year
 
         # NOTE: It's possible to attract a lower tax rate by making
         # smaller one-off withdrawals, but in general multiple
@@ -974,7 +1165,7 @@ class RRSP(RegisteredAccount):
         """
         # Return most recent year by default
         if year is None:
-            year = self.last_year
+            year = self.this_year
 
         if self.person.age(year + 1) > Constants.RRSPRRIFConversionAge:
             # If past the mandatory RRIF conversion age, no
@@ -994,17 +1185,11 @@ class RRSP(RegisteredAccount):
             # accrue due to this year's income:
             accrual = income * Constants.RRSPContributionRoomAccrualRate
             # Second, compare to the (inflation-adjusted) max accrual:
-            if year + 1 in Constants.RRSPContributionRoomAccrualMax:
-                # If the max accrual is known, use that.
-                max_accrual = \
-                    Constants.RRSPContributionRoomAccrualMax[year + 1]
-            else:
-                # Otherwise, inflation-adjust the closest known rate.
-                max_accrual = (
-                    (self._base_accrual /
-                     self._inflation_adjustments[self._base_accrual_year]) *
-                    self._inflation_adjustments[year + 1]
-                )
+            max_accrual = inflation_adjust(
+                Constants.RRSPContributionRoomAccrualMax,
+                self._inflation_adjustments,
+                year + 1
+            )
             # Don't forget to add in any rollovers:
             rollover = self._contribution_room[year] - self.inflows(year)
             return min(accrual, Money(max_accrual)) + rollover
@@ -1012,10 +1197,10 @@ class RRSP(RegisteredAccount):
     def min_outflow(self, when='end', year=None):
         """ Minimum RRSP withdrawal """
         if year is None:
-            year = self.last_year
+            year = self.this_year
         # Minimum withdrawals are required the year after converting to
         # an RRIF. How it is calculated depends on the person's age.
-        if self.RRIF_conversion_year < self.last_year:
+        if self.RRIF_conversion_year < self.this_year:
             age = self.person.age(year)
             if age in Constants.RRSPRRIFMinWithdrawal:
                 return Constants.RRSPRRIFMinWithdrawal[age] * \
@@ -1047,40 +1232,42 @@ class TFSA(RegisteredAccount):
 
         # This is our baseline for estimating contribution room
         # (By law, inflation-adjustments are relative to 2009, the
-        # first year that TFSAs were available)
-        self._base_accrual = min(Constants.TFSAAnnualAccrual.values())
+        # first year that TFSAs were available, and rounded to the
+        # nearest $500)
         self._base_accrual_year = min(Constants.TFSAAnnualAccrual.keys())
+        self._base_accrual = round(inflation_adjust(
+            Constants.TFSAAnnualAccrual,
+            self._inflation_adjustments,
+            self._base_accrual_year
+        ) / Constants.TFSAInflationRoundingFactor) * \
+            Constants.TFSAInflationRoundingFactor
 
         # If contribution_room is not provided, infer it based on age.
         if contribution_room is None:
-            # Undo any setting of contribution_room that happened in
-            # super().__init__
-            self._contribution_room = {}
-            # Now proceed with determining the accumulated contribution
-            # room from the year that the person first became eligible
-            # up to initial_year.
-            contribution_room = 0
-            # Start with the year the person became eligible for a TFSA:
-            start_year = self.initial_year - person.age(self.initial_year) + \
-                Constants.TFSAAccrualEligibilityAge
-            # If the user reached the eligible age before TFSAs existed,
-            # push the start_year back to the year TFSAs began.
-            start_year = max(start_year,
-                             min(Constants.TFSAAnnualAccrual.keys()))
-            # Accumulate contribution room over applicable years
-            # (NOTE: We start with start_year - 1 because
-            # next_contribution_room returns the contribution room for
-            # the *following* year)
-            for year in range(start_year - 1, self.initial_year):
-                contribution_room += self.next_contribution_room(year)
+            # Determine the accumulated contribution room from the year
+            # that the person first became eligible up to initial_year.
 
-        self.contribution_room = contribution_room
+            # The start age will be the later of (a) The year the person
+            # turned 18 (the eligibility age) and (b) the year that the
+            # TFSA program began (i.e. the first year of TFSA accrual):
+            start_year = max(
+                self.initial_year - person.age(self.initial_year) +
+                Constants.TFSAAccrualEligibilityAge,
+                min(Constants.TFSAAnnualAccrual.keys())
+            )
+            # Accumulate contribution room over applicable years
+            # (NOTE: next_contribution_room returns the room for the
+            # *following* year, hence the `start_year - 1` start)
+            self.contribution_room = sum([
+                self.next_contribution_room(year)
+                for year in range(start_year - 1, self.initial_year)
+            ])
 
     def next_contribution_room(self, year=None):
         """ The amount of contribution room for next year """
         # Return most recent year by default
         if year is None:
-            year = self.last_year
+            year = self.this_year
 
         contribution_room = 0
         # If we already have an accrual rate set for this year, use that
@@ -1155,17 +1342,17 @@ class TaxableAccount(Account):
     @property
     def acb(self):
         """ The adjusted cost base of assets in the account this year. """
-        return self._acb[self.last_year]
+        return self._acb[self.this_year]
 
     @acb.setter
     def acb(self, val):
         """ Sets the ACB for the account this year. """
-        self._acb[self.last_year] = Money(val)
+        self._acb[self.this_year] = Money(val)
 
     def _get_capital_gain(self, year=None):
         """ Helper method. Caches capital gain on first call. """
         if year is None:
-            year = self.last_year
+            year = self.this_year
         # If capital_gain hasn't yet been calculated, do so now
         # (and also assign acb for next year; we get that for free!)
         if year not in self._capital_gain:
@@ -1188,13 +1375,13 @@ class TaxableAccount(Account):
 
     @capital_gain.setter
     def capital_gain(self, val):
-        self._capital_gain[self.last_year] = Money(val)
+        self._capital_gain[self.this_year] = Money(val)
 
     def add_transaction(self, value, when='end'):
         super().add_transaction(value, when)
         # Invalidate the figure for capital gains, since transactions
         # will affect it.
-        self._capital_gain.pop(self.last_year, None)
+        self._capital_gain.pop(self.this_year, None)
 
     def _next_acb_and_capital_gain(self, year=None):
         """ ACB and capital gains at the end of a given year.
@@ -1215,7 +1402,7 @@ class TaxableAccount(Account):
 
         # Set up initial conditions
         if year is None:
-            year = self.last_year
+            year = self.this_year
 
         if year + 1 in self._acb and year in self._capital_gain:
             return (self._acb[year + 1], self._capital_gain[year])
@@ -1246,8 +1433,8 @@ class TaxableAccount(Account):
     def next_year(self, *args, **kwargs):
         """ Updates instance attributes to the next year """
         super().next_year(*args, **kwargs)
-        self.acb, self._capital_gain[self.last_year - 1] = \
-            self._next_acb_and_capital_gain(self.last_year - 1)
+        self.acb, self._capital_gain[self.this_year - 1] = \
+            self._next_acb_and_capital_gain(self.this_year - 1)
 
     def taxable_income(self, year=None):
         """ The total tax owing based on activity in the account.
@@ -1262,7 +1449,7 @@ class TaxableAccount(Account):
             Taxable income for the year from this account as a `Money`
                 object.
         """
-        year = self.last_year if year is None else year
+        year = self.this_year if year is None else year
 
         # Only 50% of capital gains are included in taxable income
         return self._get_capital_gain(year) / 2

@@ -5,5 +5,5 @@ This is a let's-learn-Python project. It's based on a financial forecasting Exce
 
 The Excel sheet was terribly inefficient for Monte Carlo simulations, so one of the goals of the software is to implement these at least somewhat efficiently.
 
-# Planned for Future Versions
+## Planned for Future Versions
 Education savings, RESP, and childcare are the key features of v. 2.

@@ -1,4 +1,4 @@
-''' This module provides a Year class for use in forecasts.
+''' This module provides a Forecast class for use in forecasts.
 
 This is where most of the financial forecasting logic of the Forecaster
 package lives. It applies Scenario, Strategy, and Tax information to
@@ -10,16 +10,20 @@ from strategy import Strategy
 from settings import Settings
 
 
-class Year(object):
-    ''' A year in a multi-year forecast.
+class Forecast(object):
+    ''' A financial forecast spanning multiple years.
 
-    A Year object contains various Account balances. It manages inflows
-    to and outflows from (or between) accounts based on Strategy and
-    Scenario information.
+    A `Forecast` contains various `Account`s with balances that grow
+    (or shrink) from year to year. The `Forecast` object also contains
+    `Person` objects describing the plannees, `Scenario` information
+    describing economic conditions over the course of the forecast, and
+    `Strategy` objects to describe the plannee's behaviour.
 
-    The Year object is built around either a single person or a family.
-    The reason for this is that married people have specific tax
-    treatment.
+    The `Forecast` manages inflows to and outflows from (or between)
+    accounts based on `Strategy` and `Scenario` information.
+
+    The `Forecast` is built around either a single person or a spousal
+    couple (since spouses have specific tax treatment).
 
     Attributes:
         person1 (Person): A person for whom the financial forecast is
@@ -30,6 +34,8 @@ class Year(object):
         contribution_transaction_strategy (TransactionStrategy): TODO
         withdrawal_transaction_strategy (WithdrawalTransactionStrategy): TODO
         allocation_strategy (AllocationStrategy): TODO
+
+        TODO: Move the below to `Person`?
         person1_gross_income (Money): The gross income of person1.
         person1_tax_payable (Money): The taxes payable on the income of
             person1.
@@ -37,39 +43,62 @@ class Year(object):
             Optional.
         person2_tax_payable (Money): The taxes payable on the income of
             person1. Optional.
-        gross_income (Money): The gross income for the family.
-        net_income (Money): The net income for the family.
-        gross_contribution (Money): The amount available to contribute
-            to savings, before any reductions. This is drawn from
-            net income and inter-year rollovers.
-        contribution_reduction (Money): Amounts diverted from savings,
-            such as certain debt repayments or childcare.
-        contributions_total (Money): The total amount contributed to
-            savings.
+
+        gross_income (dict): The gross income for the family, as
+            {year: Money} pairs.
+        net_income (dict): The net income for the family, as
+            {year: Money} pairs.
+        gross_contribution (dict): The amount available to contribute
+            to savings, before any reductions, as {year: Money} pairs.
+            This is drawn from net income and inter-year rollovers.
+        contribution_reduction (dict): Amounts diverted from savings,
+            such as certain debt repayments or childcare, as
+            {year: Money} pairs.
+
+        TODO: Delete this and instead sum over contributions.values()?
+        contributions_total (dict): The total amount contributed to
+            savings, as {year: Money} pairs.
+
         contributions (dict): The contributions to each account, stored
-            as {Account: Money} pairs.
-        withdrawals_total (Money): The total amount withdrawn from
-            savings.
+            as {year: dict} pairs, where the dict value comprises
+            {Account: Money} pairs.
+
+        TODO: Delete this and instead sum over withdrawals.values()?
+        withdrawals_total (dict): The total amount withdrawn from
+            savings, as {year: Money} pairs.
+
         withdrawals (dict): The withdrawals from each account, stored
-            as {Account: Money} pairs.
-        benefits_total (Money): The total amount of benefits recieved.
+            as {year: dict} pairs, where the dict value comprises
+            {Account: Money} pairs.
+
+        TODO: Delete this and instead sum over benefits.values()?
+        benefits_total (dict): The total amount of benefits recieved,
+            as {year: Money} pairs.
+
         benefits (dict): The benefits received from each source, stored
-            as {Benefit: Money} pairs.
-        tax_owed (Money): The amount of tax owed on income for this year
-        tax_paid (Money): The amount of tax paid this year. This
-            includes withholding taxes and payments of the previous
-            year's carryforward.
-        tax_carryforward (Money): The amount of tax remaining unpaid
-            from this year (to be paid next year).
-        savings_accounts (list): All savings accounts.
-        debts (list): All debts.
+            as {year: dict} pairs, where the dict value comprises
+            {Benefit: Money} pairs.
+        tax_payable (dict): The amount of tax owed on income for each
+            year, as {year: Money} pairs.
+        tax_withheld (dict): The amount of tax paid each year, as
+            {year: Money} pairs. This includes withholding taxes and
+            payments of the previous year's carryforward.
+        tax_carryforward (dict): The amount of tax remaining unpaid
+            from each year (to be paid in the next year), as
+            {year: Money} pairs.
+        assets (list): All savings accounts, residences, etc. (all of
+            which must be subclasses of `Account`)
+        debts (list): All debts (all of which must be `Debt` accounts or
+            subclasses thereof).
     '''
     # TODO: Redesign this class to be "Forecast", turn all Money-class
     # objects into dicts. Otherwise the overall logic is basically the
     # same. (Note that Account objects are getting a similar overhaul)
+    # TODO: Consider how to implement benefits/tax logic - should these
+    # be built by the Forecast? Passed as inputs?
 
-    def __init__(self, last_year=None, scenario=None, strategy=None,
-                 inputs=None, settings=Settings):
+    def __init__(self, assets=None, debts=None, scenario=None,
+                 strategy=None, inputs=None, settings=Settings):
         ''' Constructs an instance of class Year.
 
         Starts with the end-of-year values from `last_year` and builds
@@ -83,6 +112,7 @@ class Year(object):
         `scenario`, `strategy`, `settings` > `last_year`.
 
         Args:
+        TODO: Update this documentation
             last_year (Year): The previous year, used to initialize account
                 balances and carry forward tax information.
                 May be None (generally when constructing the first year)
@@ -138,6 +168,7 @@ class Year(object):
         # last_year. Check strategy to see whether person2 is defined.
         pass
 
+    # TODO: Implement this in `Person`
     @staticmethod
     def personal_gross_income(person, income, raise_rate,
                               retired=False):

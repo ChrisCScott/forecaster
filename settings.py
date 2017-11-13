@@ -45,6 +45,7 @@ class Settings:
 
     ''' ContributionStrategy defaults '''
     contribution_strategy = 'Percentage of net income'
+    contribution_base_amount = Decimal('20000')
     contribution_rate = Decimal('0.2')
     contribution_refund_reinvestment_rate = 1
     contribution_inflation_adjusted = True
@@ -79,7 +80,7 @@ class Settings:
     allocation_constant_strategy_target = 65
     allocation_transition_strategy_target = Decimal('0.5')
     allocation_risk_transition_period = 20
-    allocation_adjust_for_early_retirement = True
+    allocation_adjust_for_retirement_plan = True
 
     ''' Debt defaults '''
     DebtReductionRate = 1

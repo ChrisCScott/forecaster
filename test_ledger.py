@@ -10,6 +10,7 @@ import decimal
 from decimal import Decimal
 from random import Random
 from settings import Settings
+from tax import Tax
 import ledger
 from ledger import *
 from test_helper import *
@@ -20,10 +21,26 @@ class TestPersonMethods(unittest.TestCase):
 
     def setUp(self):
         """ Sets up default vaules for testing """
+        self.initial_year = Settings.initial_year
         self.name = "Testy McTesterson"
         self.birth_date = datetime(2000, 2, 1)  # 1 February 2000
         self.retirement_date = datetime(2065, 6, 26)  # 26 June 2065
-        self.person = Person(self.name, self.birth_date, self.retirement_date)
+        self.gross_income = Money(100000)  # $100000
+        self.tax_treatment = Tax(
+            {self.initial_year: {
+                Money(0): Decimal('0.1'),
+                Money(1000): Decimal('0.2'),
+                Money(100000): Decimal('0.3')}
+             },
+            {year: Decimal(1 + (year - self.initial_year) / 16)
+             for year in range(self.initial_year, self.initial_year + 100)},
+            {self.initial_year: Money(100)},
+            {self.initial_year: Decimal('0.15')})
+        self.spouse = Person("Spouse", 1998, None, Money(50000), None,
+                             self.tax_treatment, self.initial_year)
+        self.person = Person(self.name, self.birth_date, self.retirement_date,
+                             Money(100000), self.spouse, self.tax_treatment,
+                             self.initial_year)
 
     def test_init(self):
         """ Tests Person.__init__ """
@@ -99,6 +116,32 @@ class TestPersonMethods(unittest.TestCase):
                          retirement_date.month)
         self.assertEqual(person.birth_date.day, birth_date.day)
         self.assertEqual(person.retirement_date.day, retirement_date.day)
+
+        # Now confirm that we can pass gross_income, spouse,
+        # tax_treatment, and initial_year
+        gross_income = Money(100000)
+        person1 = Person(self.name, birth_date, retirement_date, gross_income,
+                         None, self.tax_treatment, self.initial_year)
+        self.assertEqual(person1.gross_income, gross_income)
+        self.assertEqual(person1._gross_income,
+                         {self.initial_year: gross_income})
+        self.assertEqual(person1.tax_treatment, self.tax_treatment)
+        self.assertEqual(person1.initial_year, self.initial_year)
+        self.assertIsNone(person1.spouse)
+        self.assertEqual(person1.accounts, set())
+
+        # Add a spouse and confirm that both Person objects are updated
+        person2 = Person("Spouse", self.initial_year - 20, None, Money(50000),
+                         person1, self.tax_treatment, self.initial_year)
+        self.assertEqual(person1.spouse, person2)
+        self.assertEqual(person2.spouse, person1)
+
+        # Add an account and confirm that the Person passed as owner is
+        # updated.
+        account1 = Account(owner=person1)
+        account2 = TaxableAccount(owner=person1)
+        self.assertEqual(person1.accounts, {account1, account2})
+        self.assertEqual(person2.accounts, set())
 
     def test_age(self):
         """ Tests person.age """
@@ -181,9 +224,33 @@ class TestPersonMethods(unittest.TestCase):
         person = Person(self.name, self.birth_date)
         self.assertIsNone(person.retirement_age)
 
+    def test_properties(self):
+        # TODO: Test gross_income and net_income
+        pass
 
-class TestWhen(unittest.TestCase):
-    """ A test case for the `when_conv` free method. """
+    def test_next(self):
+        # TODO
+        pass
+
+    def test_taxable_income(self):
+        # TODO
+        pass
+
+    def test_taxwithheld(self):
+        # TODO
+        pass
+
+    def test_tax_credit(self):
+        # TODO
+        pass
+
+    def test_tax_deduction(self):
+        # TODO
+        pass
+
+
+class TestFreeMethods(unittest.TestCase):
+    """ A test case for the free methods in the ledger module. """
 
     def test_when_conv(self):
         """ Tests `when_conv` """
@@ -206,6 +273,43 @@ class TestWhen(unittest.TestCase):
 
         with self.assertRaises(decimal.InvalidOperation):
             w = when_conv('invalid input')
+
+    def test_nearest_val(self):
+        """ Tests nearest_val(). """
+        vals = {1999: 2, 2001: 4, 2003: 8, 2006: 16}
+
+        self.assertEqual(nearest_val(vals, 1998), 2)
+        self.assertEqual(nearest_val(vals, 1999), 2)
+        self.assertEqual(nearest_val(vals, 2000), 2)
+        self.assertEqual(nearest_val(vals, 2001), 4)
+        self.assertEqual(nearest_val(vals, 2002), 4)
+        self.assertEqual(nearest_val(vals, 2003), 8)
+        self.assertEqual(nearest_val(vals, 2004), 8)
+        self.assertEqual(nearest_val(vals, 2005), 8)
+        self.assertEqual(nearest_val(vals, 2006), 16)
+        self.assertEqual(nearest_val(vals, 2007), 16)
+
+        self.assertEqual(nearest_val({}, 2000), None)
+
+    def test_inflation_adjust(self):
+        """ Tests inflation_adjust(). """
+        inf = {1998: Decimal(0.25), 2000: Decimal(0.5), 2001: 1, 2002: 2}
+        vals = {1999: 2, 2001: 4, 2003: 8, 2005: 16}
+
+        # Test each year from 1997 to 2006:
+        with self.assertRaises(ValueError):
+            inflation_adjust(vals, inf, 1997)
+        self.assertEqual(inflation_adjust(vals, inf, 1998), 1)
+        self.assertEqual(inflation_adjust(vals, inf, 1999), 2)
+        self.assertEqual(inflation_adjust(vals, inf, 2000), 2)
+        self.assertEqual(inflation_adjust(vals, inf, 2001), 4)
+        self.assertEqual(inflation_adjust(vals, inf, 2002), 8)
+        self.assertEqual(inflation_adjust(vals, inf, 2003), 8)
+        with self.assertRaises(ValueError):
+            inflation_adjust(vals, inf, 2004)
+        self.assertEqual(inflation_adjust(vals, inf, 2005), 16)
+        with self.assertRaises(ValueError):
+            inflation_adjust(vals, inf, 2006)
 
 
 class TestAccountMethods(unittest.TestCase):
@@ -287,9 +391,10 @@ class TestAccountMethods(unittest.TestCase):
         transactions = {1: Money(1), 0: Money(-1)}
         nper = 1  # This is the easiest case to test
         initial_year = self.initial_year
+        owner = Person("test", 2000)
         settings = Settings()
         account = self.AccountType(*args, balance, rate, transactions,
-                                   nper, initial_year, settings,
+                                   nper, initial_year, owner, settings,
                                    **kwargs)
         # Test primary attributes
         self.assertEqual(account._balance, {initial_year: balance})
@@ -300,30 +405,16 @@ class TestAccountMethods(unittest.TestCase):
         self.assertEqual(account.transactions, transactions)
         self.assertEqual(account.nper, 1)
         self.assertEqual(account.initial_year, initial_year)
-        self.assertEqual(account.last_year, initial_year)
+        self.assertEqual(account.this_year, initial_year)
 
         # Check types
-        self.assertIsInstance(account._balance, dict)
-        for key, val in account._balance.items():
-            self.assertIsInstance(key, int)
-            self.assertIsInstance(val, Money)
+        self.assertTrue(type_check(account._balance, {int: Money}))
         self.assertIsInstance(account.balance, Money)
-        self.assertIsInstance(account._rate, dict)
-        for key, val in account._rate.items():
-            self.assertIsInstance(key, int)
-            self.assertIsInstance(val, (Decimal, float, int))
+        self.assertTrue(type_check(account._rate, {int: Decimal}))
         self.assertIsInstance(account.rate, Decimal)
-        self.assertIsInstance(account._transactions, dict)
-        for key, val in account._transactions.items():
-            self.assertIsInstance(key, int)
-            self.assertIsInstance(val, dict)
-            for key, v in val.items():
-                self.assertIsInstance(key, Decimal)
-                self.assertIsInstance(v, Money)
-        self.assertIsInstance(account.transactions, dict)
-        for key, val in account.transactions.items():
-            self.assertIsInstance(key, Decimal)
-            self.assertIsInstance(val, Money)
+        self.assertTrue(type_check(account._transactions,
+                                   {int: {Decimal: Money}}))
+        self.assertTrue(type_check(account.transactions, {Decimal: Money}))
         self.assertIsInstance(account.nper, int)
         self.assertIsInstance(account.initial_year, int)
 
@@ -345,7 +436,7 @@ class TestAccountMethods(unittest.TestCase):
         nper = 'A'
         initial_year = self.initial_year
         account = self.AccountType(*args, balance, rate, transactions,
-                                   nper, initial_year, settings,
+                                   nper, initial_year, owner, settings,
                                    **kwargs)
         self.assertEqual(account._balance, {initial_year: Money(0)})
         self.assertEqual(account._rate, {initial_year: 1})
@@ -511,6 +602,8 @@ class TestAccountMethods(unittest.TestCase):
             account = self.AccountType(*args,
                                        balance=balance, nper='invalid input',
                                        **kwargs)
+
+        # TODO: Test new owner attribute
 
     def test_next(self, *next_args, **next_kwargs):
         """ Tests next_balance and next_year.
@@ -920,14 +1013,16 @@ class TestRegisteredAccountMethods(TestAccountMethods):
 
         # Try type conversion for inflation_adjustments
         account = self.AccountType(*args, self.person,
-                                   {'2000': '0.02', 2001.0: 0.5,
-                                    Decimal(2002): 1, 2003: Decimal('0.03')},
+                                   {'2000': '1', 2001.0: 1.25,
+                                    Decimal(2002): 1.5, 2003: Decimal('1.75'),
+                                    2017.0: Decimal(2.0)},
                                    contribution_room=500,
                                    initial_year=2000, **kwargs)
         self.assertEqual(account.person, self.person)
         self.assertEqual(account._inflation_adjustments,
-                         {2000: Decimal('0.02'), 2001: Decimal('0.5'),
-                          2002: Decimal('1'), 2003: Decimal('0.03')})
+                         {2000: Decimal('1'), 2001: Decimal('1.25'),
+                          2002: Decimal('1.5'), 2003: Decimal('1.75'),
+                          2017: Decimal('2')})
         self.assertEqual(account.contribution_room, Money('500'))
 
         # Try invalid inflation_adjustments.
