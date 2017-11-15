@@ -176,9 +176,11 @@ class Tax(object):
         # application is in a state where we can run efficiency metrics.
         if year not in self._tax_brackets:
             # Get the inflation-adjusted tax brackets for this year:
-            brackets = inflation_adjust(self._tax_brackets,
-                                        self._inflation_adjustments,
-                                        year)
+            ny = nearest_year(self._tax_brackets, year)
+            brackets = {key * self._inflation_adjustments[year] /
+                        self._inflation_adjustments[ny]:
+                        self._tax_brackets[ny][key]
+                        for key in self._tax_brackets[ny]}
             self.add_brackets(brackets, year)
         if bracket is None:
             return self._tax_brackets[year]
@@ -203,7 +205,7 @@ class Tax(object):
     def inflation_adjustments(self, year):
         # This one is easy - there's no extrapolating to do, just use
         # the values that you've been given.
-        return self.inflation_adjustments[year]
+        return self._inflation_adjustments[year]
 
     def personal_deduction(self, year):
         """ The inflation-adjusted personal deduction. """
@@ -213,7 +215,7 @@ class Tax(object):
 
     def credit_rate(self, year):
         """ The credit rate for the given year. """
-        return nearest_val(self._credit_rate, year)
+        return self._credit_rate[nearest_year(self._credit_rate, year)]
 
     def marginal_bracket(self, taxable_income, year):
         """ The top tax bracket that taxable_income falls into. """
@@ -318,35 +320,64 @@ class Tax(object):
                    other_credits={}):
         """ Applies available deductions/etc. based on income sources. """
         # TODO: Flesh out docstring.
-        tax_owed = Money(0)
-        for person in people:
-            # Check to see whether other_deductions and other_credits
-            # are indexable based on `person`, since deductions and
-            # credits are person-specific (i.e. there's no generic
-            # way to apply, say, a `Money(100)` deduction to 2 people -
-            # do we apply it to both? To just one? If the latter, which
-            # one? Is it split between them somehow?)
+
+        # Base case: If {} is passed, return $0.
+        if len(people) == 0:
+            return Money(0)
+
+        # Otherwise, grab someone at random and determine their taxes.
+        person = next(iter(people))
+
+        # Treat spouses in a special way; send them to a different
+        # method for processing and recurse on the remaining folks.
+        if person.spouse is not None:
+            # Prepare to pass the deductions and credits for each
+            # person to tax_spouses individually, without overriding
+            # tax_spouses default values.
+            kwargs = {}
             if person in other_deductions:
-                deductions = other_deductions[person]
-            else:
-                deductions = Money(0)
-
+                kwargs['person1_deductions'] = other_deductions[person]
             if person in other_credits:
-                credits = other_credits[person]
-            else:
-                credits = Money(0)
+                kwargs['person1_credits'] = other_credits[person]
+            if person.spouse in other_deductions:
+                kwargs['person2_deductions'] = \
+                    other_deductions[person.spouse]
+            if person.spouse in other_credits:
+                kwargs['person2_credits'] = other_credits[person.spouse]
+            # Process taxes for the couple and recurse on the remaining
+            # people.
+            return self.tax_spouses(person, person.spouse, year, **kwargs) + \
+                self.tax_people(people - {person, person.spouse}, year,
+                                other_deductions, other_credits)
+        # Otherwise, process this person as a single individual and
+        # recurse on the remaining folks:
+        else:
+            # We don't want to override default values for tax_person,
+            # so fill a kwargs dict with only explicitly-passed
+            # deductions and credits for this person.
+            kwargs = {}
+            if person in other_deductions:
+                kwargs['other_deductions'] = other_deductions[person]
+            if person in other_credits:
+                kwargs['other_credits'] = other_credits[person]
 
-            # Iteratively determine tax owing for each person.
-            tax_owed += self.tax_person(person, year, deductions, credits)
-        return tax_owed
+            # Determine tax owing for this person and then recurse.
+            return self.tax_person(person, year, **kwargs) + \
+                self.tax_people(people - {person}, year,
+                                other_deductions, other_credits)
 
-    # TODO: Implement tax_people and tax_person (this will involve
-    # making tax_people a simple loop and tax_person hold much of
-    # the logic of the former tax_on_sources (now tax_people).
-    # NOTE: This allows places with household taxpayers (like the US)
-    # to simply override tax_people to check for spouses. We'll do that
-    # in Canada as well to apply spousal tax credits and the like.
-    def __call__(self, taxpayers, year,
+    def tax_spouses(self, person1, person2, year,
+                    person1_deductions=Money(0), person1_credits=Money(0),
+                    person2_deductions=Money(0), person2_credits=Money(0)):
+        """ """
+        # TODO: Flesh out docstring
+        return self.tax_person(
+            person1, year, person1_deductions, person1_credits
+        ) + self.tax_person(
+            person2, year, person2_deductions, person2_credits
+        )
+
+    def __call__(self, income, year,
                  other_deductions=None, other_credits=None):
         """ Makes `Tax` objects callable. """
         year = int(year)
@@ -359,18 +390,28 @@ class Tax(object):
             kwargs['other_credits'] = other_credits
 
         # If taxpayers are non-scalar, interpret it as a group of people
-        if isinstance(taxpayers, collections.Iterable):
-            return self.tax_people(taxpayers, year, **kwargs)
-        # If it's just one taxpayer, 
-        elif isinstance(taxpayers, Person):
-            return self.tax_person(taxpayers, year, **kwargs)
+        if isinstance(income, collections.Iterable):
+            return self.tax_people(income, year, **kwargs)
+        # If it's just one taxpayer, use the appropriate method:
+        elif isinstance(income, Person):
+            return self.tax_person(income, year, **kwargs)
         # Otherwise, this is the easy case: interpret taxable_income as
         # Money (or Money-convertible)
         else:
-            return self.tax_money(taxpayers, year, **kwargs)
+            return self.tax_money(income, year, **kwargs)
 
 
 FedProvTuple = collections.namedtuple('FedProvTuple', 'federal provincial')
+
+
+class CanadaJurisdictionTax(Tax):
+    """ Federal or provincial tax treatment (Canada). """
+
+    def __init__(self, inflation_adjustments, jurisdiction='Federal'):
+        super().__init__(Constants.TaxBrackets[jurisdiction],
+                         inflation_adjustments,
+                         Constants.TaxBasicPersonalDeduction[jurisdiction],
+                         Constants.TaxCreditRate[jurisdiction])
 
 
 class CanadianResidentTax(object):
@@ -382,31 +423,66 @@ class CanadianResidentTax(object):
     """
 
     def __init__(self, inflation_adjustments, province='BC'):
-        self.federal_tax = Tax(
-            Constants.TaxFederalBrackets,
-            inflation_adjustments,
-            Constants.TaxFederalBasicPersonalDeduction,
-            Constants.TaxFederalCreditRate)
-        self.provincial_tax = Tax(
-            Constants.TaxProvincialBrackets[province],
-            inflation_adjustments,
-            Constants.TaxProvincialBasicPersonalDeduction[province],
-            Constants.TaxProvincialCreditRate[province])
+        self.federal_tax = CanadaJurisdictionTax(inflation_adjustments)
+        self.provincial_tax = CanadaJurisdictionTax(
+            inflation_adjustments, province)
 
-    def __call_both(taxable_income, year, other_federal_deductions,
-                    other_federal_credits, other_provincial_deductions,
-                    other_provincial_credits):
-        """ Convenience method for calling federal and provincial tax. """
-        return (
-            self.federal_tax(
-                taxable_income, year,
-                other_federal_deductions, other_federal_credits) +
-            self.provincial_tax(
-                taxable_income, year,
-                other_provincial_deductions, other_provincial_credits)
+    def _merge_brackets(self, brackets1, brackets2, bracket=None):
+        """ """
+        brackets = set(brackets1).union(brackets2)
+        bracket = {
+            bracket: brackets1[max(b for b in brackets1 if b <= bracket)] +
+            brackets2[max(b for b in brackets2 if b <= bracket)]
+        }
+        if bracket is None:
+            return brackets
+        else:
+            return brackets[bracket]
+
+    def tax_brackets(self, year, bracket=None):
+        """ Retrieve tax brackets for year. """
+        # Synthesize brackets from federal/provincial taxes
+        # NOTE: Avoid invoking the `_tax_brackets` dict directly,
+        # since they're extended on the fly by `tax_brackets()`
+        return self._merge_brackets(
+            self.federal_tax.tax_brackets(year),
+            self.provincial_tax.tax_brackets(year),
+            bracket
         )
 
-    def tax_deductions(self, sources, year):
+    def accum(self, year, bracket=None):
+        """ The accumulated tax payable for a given tax bracket. """
+        return self._merge_brackets(
+            self.federal_tax.accum(year),
+            self.provincial_tax.accum(year),
+            bracket
+        )
+
+    def inflation_adjustments(self, year):
+        # This is identical between federal and provincial taxes.
+        return self.federal_tax.inflation_adjustments(year)
+
+    def personal_deduction(self, year):
+        """ The inflation-adjusted personal deduction. """
+        return self.federal_tax.personal_deduction(year) + \
+            self.provincial_tax.personal_deduction(year)
+
+    def credit_rate(self, year):
+        """ The credit rate for the given year. """
+        return self.federal_tax.credit_rate(year) + \
+            self.provincial_tax.credit_rate(year)
+
+    def marginal_bracket(self, taxable_income, year):
+        """ The top tax bracket that taxable_income falls into. """
+        return max(self.federal_tax.marginal_bracket(year),
+                   self.provincial_tax.marginal_bracket(year))
+
+    def marginal_rate(self, taxable_income, year):
+        """ The marginal rate for the given income. """
+        return self.federal_tax.marginal_rate(taxable_income, year) + \
+            self.provincial_tax.marginal_rate(taxable_income, year)
+
+    def tax_deductions(self, people, year):
         """ Finds tax deductions available for each taxpayer.
 
         Args:
@@ -442,54 +518,30 @@ class CanadianResidentTax(object):
         # TODO: Implement tax credit logic.
         return FedProvTuple(Money(0), Money(0))
 
-    def sources_by_taxpayer(self, sources):
-        """ """
-        # First, identify taxpayers:
-        taxpayers = {
-            a.owner for a in sources if isinstance(a, Account)
-        }.update({p for p in sources if isinstance(p, Person)}) - {None}
+    # TODO: Reimplement __call__ - we can probably delete __call_both
+    def __call_both():
+        return (
+            self.federal_tax(
+                income, year,
+                other_federal_deductions, other_federal_credits) +
+            self.provincial_tax(
+                income, year,
+                other_provincial_deductions, other_provincial_credits)
+        )
 
-        # If no taxpayers are named, lump all sources together with one
-        # unnamed (i.e. None) taxpayer:
-        if taxpayers == {}:
-            return {None: sources}
-
-        # Set up a dict to populate.
-        sources_by_taxpayer = {}
-        # If we have accounts that don't have an owner, assume the
-        # worst - that is, assume that they are taxable in the hands of
-        # the highest-earning person. Select them as the default owner.
-        default_owner = max(taxpayers - {None})
-
-        # Populate the dict taxpayer-by-taxpayer.
-        for taxpayer in taxpayers:
-            sources_by_taxpayer[taxpayer] = {
-                a for a in sources
-                if isinstance(a, Account) and a.owner == taxpayer}
-            # If this is the default owner, add in any accounts without
-            # an explicit owner.
-            if taxpayer == default_owner:
-                sources_by_taxpayer.update({
-                    a for a in sources
-                    if isinstance(a, Account) and a.owner is None}
-                )
-
-        return sources_by_taxpayer
-
-    def __call__(self, taxable_income, year, other_federal_deductions=0,
-                 other_federal_credits=0, other_provincial_deductions=0,
-                 other_provincial_credits=0):
+    def __call__(self, income, year,
+                 other_federal_deductions=0, other_federal_credits=0,
+                 other_provincial_deductions=0, other_provincial_credits=0):
         # In the easiest case, we don't have any account information;
         # just pass the information on to federal/provincial Tax objects
-        if isinstance(taxable_income, Money):
+        if isinstance(income, Money):
             return self.__call_both(
-                taxable_income, year, other_federal_deductions,
+                income, year, other_federal_deductions,
                 other_federal_credits, other_provincial_deductions,
                 other_provincial_credits)
         # If income sources are provided, divide those up into a
         # separate call for each taxpayer.
         # First, divide up accounts by taxpayer.
-        sources = self.sources_by_taxpayer(taxable_income)
         deductions = self.tax_deductions(sources, year)
         credits = self.tax_deductions(sources, year)
 

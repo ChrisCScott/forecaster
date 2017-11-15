@@ -90,35 +90,33 @@ class Constants(object):
     OASRecoveryThreshold = {2017: Decimal('72809')}
     OASRecoveryTaxRate = Decimal('0.15')
 
-    # TODO (v2+): Either put all tax variables into a dicts of
-    # {jurisdiction: {year: val}} pairs (i.e. by combining fed/prov)
-    # or split apart each province into its own named variable.
-    """ Federal tax constants """
-    TaxFederalBasicPersonalDeduction = {2017: Decimal('11635')}
-    TaxFederalPensionCredit = {2017: Decimal('2000')}
-    TaxFederalCreditRate = Decimal('0.15')
-    TaxFederalBrackets = {
-        2017: {
-            Decimal(0), Decimal('0.15'),
-            Decimal('45961.23'), Decimal('0.205'),
-            Decimal('91921.45'), Decimal('0.26'),
-            Decimal('142493.82'), Decimal('0.29'),
-            Decimal('203000.00'), Decimal('0.33')
-        }
-    }
-
-    """ Provincial tax constants """
-    # TODO (v2+): Fill out other provinces
-    TaxProvincialBasicPersonalDeduction = {
+    # NOTE: This structure assumes that federal and provincial tax
+    # logic will be essentially the same (which is currently true).
+    # If we move to implementing various province-specific classes,
+    # consider splitting these apart for readability.
+    """ Tax constants """
+    TaxBasicPersonalDeduction = {
+        'Federal': {2017: Decimal('11635')},
         'BC': {2017: Decimal('10208')}
     }
-    TaxProvincialPensionCredit = {
+    TaxPensionCredit = {
+        'Federal': {2017: Decimal('2000')},
         'BC': {2017: Decimal('1000')}
     }
-    TaxProvincialCreditRate = {
-        'BC': Decimal('0.0506')
+    TaxCreditRate = {
+        'Federal': {2017: Decimal('0.15')},
+        'BC': {2017: Decimal('0.0506')}
     }
-    TaxProvincialBrackets = {
+    TaxBrackets = {
+        'Federal': {
+            2017: {
+                Decimal(0), Decimal('0.15'),
+                Decimal('45961.23'), Decimal('0.205'),
+                Decimal('91921.45'), Decimal('0.26'),
+                Decimal('142493.82'), Decimal('0.29'),
+                Decimal('203000.00'), Decimal('0.33')
+            }
+        },
         'BC': {
             2017: {
                 Decimal(0), Decimal('0.15'),

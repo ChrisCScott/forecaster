@@ -377,21 +377,21 @@ def when_conv(when):
     return when
 
 
-def nearest_val(vals, year):
-    """ Finds the nearest (past) value in `vals` to `year`.
+def nearest_year(vals, year):
+    """ Finds the nearest (past) year to `year` in `vals`.
 
     This is a companion method to `inflation_adjust()`. It's meant to be
     used when you want to pull a value out of an incomplete dict without
     inflation-adjusting it (e.g. when you want to grab the most recent
     percentage rate from a dict of `{year: Decimal}` pairs.)
 
-    If `year` is in `vals`, then this method returns `val[year]`.
-    If not, then this method tries to find the value for the last year
+    If `year` is in `vals`, then this method returns `year`.
+    If not, then this method tries to find the last year
     before `year` that is in `vals`. If that doesn't work, then this
-    method tries to find the first value in `vals` following `year`.
+    method tries to find the first year in `vals` following `year`.
 
     Returns:
-        A value in `vals` that has a key near to `year`, preferring
+        A year in `vals` is near to `year`, preferring
         the nearest preceding year (if it exists) over the nearest
         following year. Returns `None` if `vals` is empty.
     """
@@ -400,7 +400,7 @@ def nearest_val(vals, year):
 
     # If the year is explicitly represented, no need to inflation-adjust
     if year in vals:
-        return vals[year]
+        return year
 
     # Look for the most recent year prior to `year` that's in vals
     key = max((k for k in vals if k < year), default=year)
@@ -409,7 +409,7 @@ def nearest_val(vals, year):
     if key == year:
         key = min((k for k in vals if k > year), default=year)
 
-    return vals[key]
+    return key
 
 
 def inflation_adjust(vals, inflation_adjustments, year):
@@ -562,14 +562,14 @@ class Account(object):
             inflow/outflow transaction timing, etc.). Optional; uses
             global Settings class attributes if None given.
     """
-    def __init__(self, balance=0, rate=0, transactions={},
-                 nper=1, initial_year=None, owner=None, settings=Settings):
+    def __init__(self, owner, balance=0, rate=0, transactions={},
+                 nper=1, initial_year=None, settings=Settings):
         """ Constructor for `Account`.
 
         This constructor receives only values for the first year.
 
         Args:
-            initial_year (int): The first year (e.g. 2000)
+            owner (Person): The owner of the account. Optional.
             balance (Money): The balance for the first year
             rate (float, Decimal): The rate for the first year.
             transactions (dict): The transactions for the first year,
@@ -578,12 +578,15 @@ class Account(object):
                 `When` class and Money denotes the values of the
                 transaction (positive to inflow, negative for outflow).
             nper (int): The number of compounding periods per year.
-            apr (bool): If True, rate is interpreted as an annual
-                percentage rate and will be converted to a
-                pre-compounding figure.
-            owner (Person): The owner of the account. Optional.
+            initial_year (int): The first year (e.g. 2000)
             settings (Settings): Provides default values.
         """
+        # Type-check the owner
+        if not isinstance(owner, Person):
+            raise TypeError('Account: owner must be of type Person.')
+        owner.accounts.add(self)  # Track this account via owner.
+        self.owner = owner
+
         # Set the scalar values first, 'cause they're easy!
         self.initial_year = int(initial_year if initial_year is not None
                                 else settings.initial_year)
@@ -599,13 +602,6 @@ class Account(object):
         self.balance = balance
         self.rate = rate
         self.transactions = transactions
-
-        # Type-check the owner
-        if owner is not None:
-            if not isinstance(owner, Person):
-                raise TypeError('Account: owner must be of type Person.')
-            owner.accounts.add(self)  # Track this account via owner.
-        self.owner = owner
 
         # We don't save the settings object, but we do need to save
         # defaults for certain methods. These are not used when methods
@@ -966,11 +962,11 @@ class Account(object):
         """ The total sum of witholding taxes incurred in the year. """
         return Money(0)
 
-    def tax_credit(self):
+    def tax_credit(self, year=None):
         """ The total sum of tax credits available for the year. """
         return Money(0)
 
-    def tax_deduction(self):
+    def tax_deduction(self, year=None):
         """ The total sum of tax deductions available for the year. """
         return Money(0)
 
@@ -983,25 +979,31 @@ class RegisteredAccount(Account):
     to combine them here.
 
     Args:
-        person (Person): The annuitant of the RRSP.
         inflation_adjustments (dict): {year, Decimal} pairs. Each
             Decimal defines a cumulative inflation adjustment relative
             to a baseline year.
         contribution_room (Money): The amount of contribution room
-            available in the first year.
+            available in the first year. Optional.
+        contributor (Person): The contributor to the RRSP. Optional.
+            If not provided, the contributor is assumed to be the same
+            as the annuitant (i.e. the owner.)
     """
-    def __init__(self, person, inflation_adjustments, contribution_room=None,
-                 *args, **kwargs):
+    def __init__(self, owner, inflation_adjustments, balance=0, rate=0,
+                 transactions={}, nper=1, initial_year=None,
+                 settings=Settings, contribution_room=None, contributor=None):
         """ Initializes a RegisteredAccount object. """
-        super().__init__(*args, **kwargs)
+        super().__init__(
+            owner, balance, rate, transactions, nper, initial_year, settings)
 
-        # NOTE: We could simply require an age, but then we'd need to
-        # reimplement some related logic already in Person.
-        if not isinstance(person, Person):
+        # If no contributor was provided, assume it's the owner.
+        if contributor is None:
+            self.contributor = self.owner
+        elif not isinstance(contributor, Person):
             raise TypeError(
                 'RegisteredAccount: person must be of type Person.'
             )
-        self.person = person
+        else:
+            self.contributor = contributor
 
         # Convert keys and values of inflation_adjustments.
         # NOTE: This creates a copy, which will reduce efficiency.
@@ -1072,11 +1074,13 @@ class RRSP(RegisteredAccount):
     """ A Registered Retirement Savings Plan (Canada). """
 
     # Explicitly repeat superclass args for the sake of intellisense.
-    def __init__(self, person, inflation_adjustments, contribution_room=None,
-                 *args, **kwargs):
+    def __init__(self, owner, inflation_adjustments, balance=0, rate=0,
+                 transactions={}, nper=1, initial_year=None,
+                 settings=Settings, contribution_room=None, contributor=None):
         """ Initializes an RRSP object. """
-        super().__init__(person, inflation_adjustments, contribution_room,
-                         *args, **kwargs)
+        super().__init__(
+            owner, inflation_adjustments, balance, rate, transactions, nper,
+            initial_year, settings, contribution_room, contributor)
 
         # Although `person` might provide a retirement_age, the RRSP
         # won't necessarily be turned into an RRIF at the retirement
@@ -1090,7 +1094,7 @@ class RRSP(RegisteredAccount):
         # age (currently 71). We can calculate that here:
         self.RRIF_conversion_year = self.initial_year + \
             Constants.RRSPRRIFConversionAge - \
-            self.person.age(self.initial_year)
+            self.owner.age(self.initial_year)
 
         # Determine the max contribution room accrual in initial_year:
         self._initial_accrual = inflation_adjust(
@@ -1167,7 +1171,7 @@ class RRSP(RegisteredAccount):
         if year is None:
             year = self.this_year
 
-        if self.person.age(year + 1) > Constants.RRSPRRIFConversionAge:
+        if self.contributor.age(year + 1) > Constants.RRSPRRIFConversionAge:
             # If past the mandatory RRIF conversion age, no
             # contributions are allowed.
             return Money(0)
@@ -1201,7 +1205,7 @@ class RRSP(RegisteredAccount):
         # Minimum withdrawals are required the year after converting to
         # an RRIF. How it is calculated depends on the person's age.
         if self.RRIF_conversion_year < self.this_year:
-            age = self.person.age(year)
+            age = self.contributor.age(year)
             if age in Constants.RRSPRRIFMinWithdrawal:
                 return Constants.RRSPRRIFMinWithdrawal[age] * \
                     self._balance[year]
@@ -1224,11 +1228,13 @@ class RRSP(RegisteredAccount):
 class TFSA(RegisteredAccount):
     """ A Tax-Free Savings Account (Canada). """
 
-    def __init__(self, person, inflation_adjustments, contribution_room=None,
-                 *args, **kwargs):
+    def __init__(self, owner, inflation_adjustments, balance=0, rate=0,
+                 transactions={}, nper=1, initial_year=None,
+                 settings=Settings, contribution_room=None, contributor=None):
         """ Initializes a TFSA object. """
-        super().__init__(person, inflation_adjustments, contribution_room,
-                         *args, **kwargs)
+        super().__init__(
+            owner, inflation_adjustments, balance, rate, transactions, nper,
+            initial_year, settings, contribution_room, contributor)
 
         # This is our baseline for estimating contribution room
         # (By law, inflation-adjustments are relative to 2009, the
@@ -1251,7 +1257,7 @@ class TFSA(RegisteredAccount):
             # turned 18 (the eligibility age) and (b) the year that the
             # TFSA program began (i.e. the first year of TFSA accrual):
             start_year = max(
-                self.initial_year - person.age(self.initial_year) +
+                self.initial_year - self.contributor.age(self.initial_year) +
                 Constants.TFSAAccrualEligibilityAge,
                 min(Constants.TFSAAnnualAccrual.keys())
             )
@@ -1324,9 +1330,11 @@ class TaxableAccount(Account):
     # allow for modelling non-principle-residence real estate holdings.
     # (But we might want to also model rental income as well...)
 
-    def __init__(self, acb=None, *args, **kwargs):
+    def __init__(self, owner, balance=0, rate=0, transactions={},
+                 nper=1, initial_year=None, settings=Settings, acb=None):
         """ Constructor for `TaxableAccount`. """
-        super().__init__(*args, **kwargs)
+        super().__init__(
+            owner, balance, rate, transactions, nper, initial_year, settings)
 
         # If acb wasn't provided, assume there have been no capital
         # gains or losses, so acb = balance.
@@ -1480,10 +1488,13 @@ class Debt(Account):
             may be made to pay off the balance earlier. Optional.
     """
 
-    def __init__(self, minimum_payment=Money(0), reduction_rate=1,
-                 accelerate_payment=False, *args, **kwargs):
+    def __init__(self, owner, balance=0, rate=0, transactions={},
+                 nper=1, initial_year=None, settings=Settings,
+                 minimum_payment=Money(0), reduction_rate=1,
+                 accelerate_payment=False):
         """ Constructor for `Debt`. """
-        super().__init__(*args, **kwargs)
+        super().__init__(
+            owner, balance, rate, transactions, nper, initial_year, settings)
         self.minimum_payment = Money(minimum_payment)
         self.reduction_rate = Decimal(reduction_rate) \
             if reduction_rate is not None \

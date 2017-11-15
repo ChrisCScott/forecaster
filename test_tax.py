@@ -14,12 +14,20 @@ class TestTax(unittest.TestCase):
 
     def setUp(self):
         self.initial_year = 2000
-        # Build 100 years of inflation adjustments with
-        # steadily-climbing adjustment factors.
+        # Build 100 years of inflation adjustments with steadily growing
+        # adjustment factors. First, pick a nice number (ideally a power
+        # of 2 to avoid float precision issues); inflation_adjustment
+        # will grow by adding the inverse (1/n) of this number annually
+        growth_factor = 32
         year_range = range(self.initial_year, self.initial_year + 100)
         self.inflation_adjustments = {
-            year: 1 + (year - self.initial_year) / 32 for year in year_range
+            year: 1 + (year - self.initial_year) / growth_factor
+            for year in year_range
         }
+        # For convenience, store the year where inflation has doubled
+        # the nominal value of money
+        self.double_year = self.initial_year + growth_factor
+        # Build some brackets with nice round numbers:
         self.tax_brackets = {
             self.initial_year: {
                 Money(0): Decimal('0.1'),
@@ -152,38 +160,59 @@ class TestTax(unittest.TestCase):
         person1 = Person("Tester 1", self.initial_year - 20,
                          gross_income=100000, initial_year=self.initial_year)
         # Build three accounts: Two for one person and one for the other
-        # The entire balance of each account is withdrawn immediately
-        # and is fully taxable.
+        # The entire balance of each account is withdrawn immediately.
+        # Half of the taxable account withdrawal is taxable and 100% of
+        # the RRSP withdrawal is taxable.
+        balance1 = Money(1000000)
         account1 = TaxableAccount(
-            acb=0, balance=1000000, rate=Decimal('0.05'),
-            transactions={'start': -100000}, nper=1,
+            acb=0, balance=balance1, rate=Decimal('0.05'),
+            transactions={'start': -balance1}, nper=1,
             initial_year=self.initial_year, owner=person1)
+        balance2 = Money(500000)
         account2 = RRSP(
-            person1, self.inflation_adjustments, 0, balance=500000,
-            rate=Decimal('0.05'), transactions={'start': -50000}, nper=1,
+            person1, self.inflation_adjustments, 0, balance=balance2,
+            rate=Decimal('0.05'), transactions={'start': -balance2}, nper=1,
             initial_year=self.initial_year, owner=person1)
         # This is the result we would expect
-        tax_owed1 = person1.gross_income + account1.balance + \
-            account2.balance
-        self.assertEqual(tax(person1, person1.initial_year), tax_owed1)
+        taxable_income1 = person1.gross_income + balance1 / 2 + balance2
+        self.assertEqual(tax(person1, person1.initial_year),
+                         tax(taxable_income1, person1.initial_year))
 
         # Finally, test tax treatment of multiple people:
         person2 = Person("Tester 2", self.initial_year - 18,
                          gross_income=50000, initial_year=self.initial_year)
+        balance3 = Money(10000)
         account3 = TaxableAccount(
-            acb=0, balance=10000, rate=Decimal('0.05'),
-            transactions={'start': -10000}, nper=1,
+            acb=0, balance=balance3, rate=Decimal('0.05'),
+            transactions={'start': -balance3}, nper=1,
             initial_year=self.initial_year, owner=person2)
-        tax_owed2 = person2.gross_income + account3.balance
+        taxable_income2 = person2.gross_income + balance3 / 2  # 50% taxable
         # Make sure that we're getting the correct result for person2:
-        self.assertEqual(tax(person2, person2.initial_year), tax_owed2)
+        self.assertEqual(tax(person2, person2.initial_year),
+                         tax(taxable_income2, person2.initial_year))
 
         # Now confirm that the Tax object works with multiple people.
-        self.assertEqual(tax({person1, person2}, self.initial_year) +
-                         tax_owed1 + tax_owed2)
-        tax_owed1 = person1.gross_income + account1.balance + \
-            account2.balance
-        self.assertEqual(tax(person1, person1.initial_year), tax_owed1)
+        self.assertEqual(tax({person1, person2}, self.initial_year),
+                         tax(taxable_income1, self.initial_year) +
+                         tax(taxable_income2, self.initial_year))
+        # Try also with a single-member set; should return the same as
+        # it would if calling on the person directly.
+        self.assertEqual(tax({person1}, person1.initial_year),
+                         tax(person1, person1.initial_year))
+
+        # Last thing: Test inflation-adjustment.
+        # Start with a baseline result in initial_year. Then confirm
+        # that the tax owing on twice that amount in double_year should
+        # be exactly double the tax owing on the baseline result.
+        # (Anything else suggests that something is not being inflation-
+        # adjusted properly, e.g. a bracket or a deduction)
+        self.assertEqual(tax(taxable_income1 * 2, self.double_year) / 2,
+                         tax(taxable_income1, self.initial_year))
+
+
+class TestCanadianResidentTax(unittest.TestCase):
+    """  """
+    pass
 
 
 if __name__ == '__main__':
