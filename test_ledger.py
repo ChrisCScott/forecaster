@@ -225,28 +225,68 @@ class TestPersonMethods(unittest.TestCase):
         self.assertIsNone(person.retirement_age)
 
     def test_properties(self):
-        # TODO: Test gross_income and net_income
-        pass
+        initial_year = 2017
+        gross_income = 100
+        tax = Tax({initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
+                  {2017: 1, 2018: 1, 2019: 1, 2020: 1}, {2017: 0})
+        person = Person('Name', 2000, gross_income=gross_income,
+                        tax_treatment=tax, initial_year=initial_year)
+        self.assertEqual(person.gross_income, gross_income)
+        self.assertEqual(person.net_income, 100)
+        person.next_year(2)  # 200% raise - gross income is now $300
+        self.assertEqual(person.gross_income, 300)
+        self.assertEqual(person.net_income, 250)
 
     def test_next(self):
-        # TODO
-        pass
+        initial_year = 2017
+        gross_income = 100
+        tax = Tax({initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
+                  {2017: 1, 2018: 1, 2019: 1, 2020: 1}, {2017: 0})
+        person = Person('Name', 2000, gross_income=gross_income,
+                        tax_treatment=tax, initial_year=initial_year)
+        self.assertEqual(person.gross_income, gross_income)
+        self.assertEqual(person.net_income, Money(100))
+        self.assertEqual(person.this_year, initial_year)
+        person.next_year(2)  # 200% raise - gross income is now $300
+        self.assertEqual(person.gross_income, Money(300))
+        self.assertEqual(person.net_income, Money(250))
+        self.assertEqual(person.this_year, initial_year + 1)
 
     def test_taxable_income(self):
-        # TODO
-        pass
+        initial_year = 2017
+        gross_income = 100
+        tax = Tax({initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
+                  {2017: 1, 2018: 1, 2019: 1, 2020: 1}, {2017: 0})
+        person = Person('Name', 2000, gross_income=gross_income,
+                        tax_treatment=tax, initial_year=initial_year)
+        self.assertEqual(person.taxable_income(), gross_income)
 
     def test_taxwithheld(self):
-        # TODO
-        pass
+        initial_year = 2017
+        gross_income = 300
+        tax = Tax({initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
+                  {2017: 1, 2018: 1, 2019: 1, 2020: 1}, {2017: 0})
+        person = Person('Name', 2000, gross_income=gross_income,
+                        tax_treatment=tax, initial_year=initial_year)
+        self.assertEqual(person.tax_withheld(), Money(50))
 
     def test_tax_credit(self):
-        # TODO
-        pass
+        initial_year = 2017
+        gross_income = 300
+        tax = Tax({initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
+                  {2017: 1, 2018: 1, 2019: 1, 2020: 1}, {2017: 0})
+        person = Person('Name', 2000, gross_income=gross_income,
+                        tax_treatment=tax, initial_year=initial_year)
+        self.assertEqual(person.tax_credit(), Money(0))
 
     def test_tax_deduction(self):
-        # TODO
-        pass
+        initial_year = 2017
+        gross_income = 300
+        tax = Tax({initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
+                  {2017: 1, 2018: 1, 2019: 1, 2020: 1}, {2017: 0})
+        person = Person('Name', 2000, gross_income=gross_income,
+                        tax_treatment=tax, initial_year=initial_year)
+        self.assertEqual(person.tax_deduction(), Money(0))
 
 
 class TestFreeMethods(unittest.TestCase):
@@ -560,7 +600,8 @@ class TestAccountMethods(unittest.TestCase):
                                        balance=balance, nper='invalid input',
                                        **kwargs)
 
-        # TODO: Test new owner attribute
+        with self.assertRaises(TypeError):
+            account = self.AccountType("invalid owner", *args, **kwargs)
 
     def test_next(self, *args, next_args=[], next_kwargs={}, **kwargs):
         """ Tests next_balance and next_year.
@@ -695,7 +736,8 @@ class TestAccountMethods(unittest.TestCase):
         self.assertEqual(account.outflows(), Money(-2))
 
         # Try adding simultaneous inflows and outflows
-        # TODO: Consider whether this behaviour should be revised.
+        # NOTE: Consider whether this behaviour (i.e. simultaneous flows
+        # being combined into one net flow) should be revised.
         account = self.AccountType(self.owner, *args,
                                    initial_year=initial_year,
                                    **kwargs)
@@ -729,7 +771,7 @@ class TestAccountMethods(unittest.TestCase):
         # NOTE: Account balances mid-compounding-period are not
         # well-defined in the current implementation, so avoid
         # testing at when=0.5
-        account = self.AccountType(self.owner, *args, balance=100, rate=1, 
+        account = self.AccountType(self.owner, *args, balance=100, rate=1,
                                    transactions={}, nper=1, **kwargs)
         self.assertEqual(account.max_outflow('start'), Money(-100))
         # self.assertEqual(account.max_outflow(0.5), Money(-150))
@@ -1150,7 +1192,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
             1000000 * max(Constants.RRSPWithholdingTaxRate.values())
         ))
 
-        # TODO: tax thresholds are not currently inflation-adjusted;
+        # NOTE: tax thresholds are not currently inflation-adjusted;
         # implement inflation-adjustment and then test for it here?
 
     def test_tax_deduction(self, *args, **kwargs):
@@ -1321,7 +1363,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         account.convert_to_RRIF()
         self.assertEqual(account.RRIF_conversion_year, account.initial_year)
 
-        # TODO: If we implement automatic RRIF conversions, test that.
+        # NOTE: If we implement automatic RRIF conversions, test that.
 
 
 class TestTFSAMethods(TestRegisteredAccountMethods):

@@ -170,9 +170,10 @@ class TestTax(unittest.TestCase):
             initial_year=self.initial_year, owner=person1)
         balance2 = Money(500000)
         account2 = RRSP(
-            person1, self.inflation_adjustments, 0, balance=balance2,
-            rate=Decimal('0.05'), transactions={'start': -balance2}, nper=1,
-            initial_year=self.initial_year, owner=person1)
+            person1, self.inflation_adjustments, contribution_room=0,
+            balance=balance2, rate=Decimal('0.05'),
+            transactions={'start': -balance2}, nper=1,
+            initial_year=self.initial_year)
         # This is the result we would expect
         taxable_income1 = person1.gross_income + balance1 / 2 + balance2
         self.assertEqual(tax(person1, person1.initial_year),
@@ -211,8 +212,10 @@ class TestTax(unittest.TestCase):
 
 
 class TestCanadianResidentTax(unittest.TestCase):
-    """  """
-    pass
+    """ Tests CanadianResidentTax """
+
+    def test_init(self):
+        pass
 
 
 if __name__ == '__main__':

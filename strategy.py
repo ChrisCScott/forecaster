@@ -726,6 +726,10 @@ class TransactionStrategy(Strategy):
         return transactions
 
 
+# TODO: Delete the two subclasses of TransactionStrategy and leave it
+# to client code to init with settings values.
+
+
 class TransactionInStrategy(TransactionStrategy):
     ''' A TransactionStrategy that uses contribution defaults. '''
     def __init__(self, strategy=None, weights=None, timing=None,

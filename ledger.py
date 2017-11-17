@@ -2,18 +2,32 @@
 
 from numbers import Number
 import math
-from numpy import fv, pv
 import decimal
 from decimal import Decimal
 from collections import namedtuple
-from collections import Sequence
 from datetime import datetime
 from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
-import moneyed
 from moneyed import Money as PyMoney
 from settings import Settings
 from constants import Constants
+
+# TODO: Consider revising all Account-like objects to delete the
+# settings argument and make necessary arguments non-defaulted
+# (i.e. leave it to Forecaster to interact with Settings).
+# Modify next_year() to take an optional arg for each attribute being
+# updated, which will allow calling code to pass in an overriding input
+# value when appropriate.
+#   NOTE: This may require building dicts for tax* methods, otherwise
+#   we won't be able to recall any overridden tax data. See below notes.
+# TODO: Store taxable_income, tax_payable, tax_withheld, etc. as
+# dicts? (Or perhaps provide a generator method.)
+#   NOTE: Alternatively, add *_history() methods that return a dict,
+#   which avoids having to expose implementation details (e.g. it
+#   means that client code won't need to access _net_income, etc.,
+#   since they can access net_income_history())
+#   NOTE: We should do this for Accounts as well, for all
+#   underscore-prefixed dicts and tax* methods.
 
 
 class Person(object):
@@ -35,26 +49,41 @@ class Person(object):
     """
 
     # TODO: Add life expectancy?
-    # TODO: Add gross_income(), net_income, taxable_income, tax_payable,
-    # tax_withheld, etc. as dicts. Perhaps also add next_year() (similar
-    # to Account)? This would require that each Forecast build new
-    # Person objects, but that might be the most practical way to go.
-    # TODO: Move contribution room information from TFSA/RRSP to here?
-    # (This will help with coordinating inflows to multiple RRSPs/TFSAs
-    # and perhaps will allow for the implementation of Spousal RRSPs).
-    # OR: Cause RRSP/TFSA to add their contribution_room attribute to
-    # the owning `Person`, not to `self`.
-    # TODO: Add estimated_retirement_date(...) method? Use Dr. Pfau's
-    # study's results on safe withdrawal rates and require total balance
-    # and desired income as input?
+    # TODO: Move contribution room information from TFSA/RRSP to
+    # Person. This will allow for the use of multiple TFSA/RRSP accounts
+    # with shared contribution rooms.
+    #   NOTE: It is likely that each RRSP/TFSA will hold the logic re:
+    #   contribution room, but it may be useful to have a generic
+    #   mechanism in Person - e.g. a dict of {token: contribution_room}
+    #   pairs, plus a generic method for registering accounts. The
+    #   accounts themselves could provide the token - a unique hash if
+    #   the account has a unique contribution room or a static str if
+    #   its contribution room is shared (e.g. all RRSP objects could
+    #   use the token 'RRSP' - RegisteredAccount can implement this via
+    #   `str(type(self))`). Each account should expose a method for
+    #   getting a set of itself and all of the other accounts that it
+    #   shares a contribution room with, which should be easy - just
+    #   return `self.owner.contribution_room[self._token]`
+    #   (n.b. use `self.contributor` for RRSPs).
+    #   Client code can then ensure that it isn't double-contributing by
+    #   spreading contributions over all accounts that share
+    #   contribution room (and can find such accounts easily, without
+    #   ever touching tokens themselves)
+    # TODO: Add estimated_retirement_date(...) method? Perhaps add an
+    # arg for a generator function that takes certain arguments (total
+    # investable savings, target withdrawal, and [optionally] year?) and
+    # returns an estimated year of retirement?
+    #   NOTE: This would allow client code to implement Dr. Pfau's
+    #   study's results on safe withdrawal rates, or perhaps to take
+    #   into account the person's risk-tolerance.
 
     def __init__(self, name, birth_date, retirement_date=None,
                  gross_income=0, spouse=None, tax_treatment=None,
                  initial_year=None, settings=Settings):
         """ Constructor for `Person`.
 
-        TODO: Add Attributes list that includes `accounts` (which is
-        not an arg.)
+        Attributes:
+            accounts (set): All accounts naming this Person as an owner.
 
         Args:
             name (str): The person's name.
@@ -207,7 +236,7 @@ class Person(object):
         """ The `Person`'s gross income for this year. """
         return self._net_income[self.this_year]
 
-    @gross_income.setter
+    @net_income.setter
     def net_income(self, val):
         """ Sets net_income and casts input value to `Money` """
         self._net_income[self.this_year] = Money(val)
@@ -249,13 +278,14 @@ class Person(object):
 
         return age
 
-    def next_year(self, raise_rate, tax):
+    def next_year(self, raise_rate):
         # TODO (v2): Include temporary loss of income due to parental leave.
         self.this_year += 1
-        self.gross_income[self.this_year] = (
-            self.gross_income[self.this_year] * (1 + raise_rate))
-        self.net_income[self.this_year] = self.gross_income[self.this_year] - \
-            self.taxable_income(self.this_year)
+        self._gross_income[self.this_year] = (
+            self._gross_income[self.this_year - 1] * (1 + raise_rate))
+        self._net_income[self.this_year] = \
+            self._gross_income[self.this_year] - \
+            self.tax_withheld(self.this_year)
 
     def taxable_income(self, year=None):
         year = self.this_year if year is None else year
@@ -270,10 +300,14 @@ class Person(object):
 
     def tax_credit(self, year=None):
         """ The total sum of tax credits available for the year. """
-        # TODO: Implement spousal tax credit?
-        # NOTE: Probably not - that's not specific to the Person (it
-        # depends on the other person's income), so it should go to
-        # a Tax subclass for inclusion in a holistic analysis.
+        # NOTE: We don't implement the spousal tax credit here because
+        # Person is generic, not Canadian-specific.
+        # We could conceivably subclass Person into, say,
+        # CanadianResident and add Canadian tax information there -
+        # indeed, this might be the better approach than implementing a
+        # CanadianResidentTax object.
+        # TODO: Subclass Person into CanadianResident and replace
+        # `tax_treatment` arg with `province` arg?
         return Money(0)
 
     def tax_deduction(self, year=None):
@@ -492,12 +526,6 @@ def inflation_adjust(vals, inflation_adjustments, year):
     else:
         raise ValueError('inflation_adjust: No year is in both vals and ' +
                          'inflation_adjustment')
-
-
-# TODO: Add `owner` attribute at the `Account` level?
-# (This could make tax determinations easier)
-# Also change `person` attribute of RRSP to `contributor`, default to
-# `owner` if none provided?
 
 
 class Account(object):
@@ -722,10 +750,10 @@ class Account(object):
         else:  # Create new when/value pair.
             self.transactions[when] = value
 
-    # TODO: Add add_inflow and add_outflow methods?
-    # TODO: Cache results (in _inflows and _outflows dicts) and cause
-    # add_transactions to invalidate the cache, similar to
-    # TaxableAccount._get_capital_gain
+    # TODO: Add add_inflow and add_outflow methods? These could ignore
+    # sign (or, for add_inflow, raise an error with negative sign) and
+    # add an inflow (+) or outflow (-) with the magnitude of the input
+    # arg and the appropriate sign.
 
     def inflows(self, year=None):
         """ The sum of all inflows to the account. """
@@ -752,9 +780,6 @@ class Account(object):
     def __len__(self):
         """ The number of years of transaction data in the account. """
         return self.this_year - self.initial_year + 1
-
-    # TODO: Remove accumulation_function, future_value, & present_value
-    # and replace with numpy.fv and numpy.pv?
 
     @staticmethod
     def accumulation_function(t, rate, nper=1):
@@ -815,37 +840,6 @@ class Account(object):
             when_conv(time) - when_conv(now), self._rate[year], self.nper
         )
 
-    def future_value(self, value, when, year=None):
-        """ The nominal value of a transaction at the end of the year.
-
-        Args:
-            value (Money): The value of the transaction.
-            when (When): The timing of the transaction.
-            year (int): The year in which to determine the future value.
-
-        Returns:
-            The future value of the transaction as a Money object.
-        """
-        return self.value_at_time(value, when, 'end', year)
-
-    def present_value(self, value, when, year=None):
-        """ Initial value required to achieve a given end-of-year value.
-
-        Args:
-            value (Money): The present value of the transaction,
-                measured at t='end' (i.e. at the end of the year)
-            when (When): The timing of the transaction.
-            year (int): The year in which to determine the present value
-
-        Returns:
-            The sum of initial capital required at time t to achieve a
-            future (nominal) balance of `value`, including any gains (or
-            losses) earned (for inflows) or avoided (for outflows) from
-            time `t` until the end of the accounting period (i.e. until
-            end of the year).
-        """
-        return self.value_at_time(value, when, 'start', year)
-
     def balance_at_time(self, time, year=None):
         """ Returns the balance at a point in time.
 
@@ -887,14 +881,14 @@ class Account(object):
 
         # First, find the future value of the initial balance assuming
         # there are no transactions.
-        balance = self.future_value(self._balance[year], 'start', year)
+        balance = self.value_at_time(self._balance[year], 'start', 'end', year)
 
         # Then, add in the future value of each transaction. Note that
         # this accounts for both inflows and outflows; the future value
         # of an outflow will negate the future value of any inflows that
         # are removed. Order doesn't matter.
         for when, value in self._transactions[year].items():
-            balance += self.future_value(value, when, year)
+            balance += self.value_at_time(value, when, 'end', year)
 
         return balance
 
@@ -1143,6 +1137,7 @@ class RRSP(RegisteredAccount):
         # a year for which `x` is expressed in nominal dollars, probably
         # in Constants; maybe make RRSPWithholdingTaxRate a dict of
         # {year: {amount: rate}}?)
+        # TODO: Pass a Tax object for RRSP tax treatment?
         tax_rate = max([Constants.RRSPWithholdingTaxRate[x]
                         for x in Constants.RRSPWithholdingTaxRate
                         if x < taxable_income.amount], default=0)

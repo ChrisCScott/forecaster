@@ -43,7 +43,6 @@ class Forecast(object):
             Optional.
         person2_tax_payable (Money): The taxes payable on the income of
             person1. Optional.
-
         gross_income (dict): The gross income for the family, as
             {year: Money} pairs.
         net_income (dict): The net income for the family, as
@@ -54,35 +53,16 @@ class Forecast(object):
         contribution_reduction (dict): Amounts diverted from savings,
             such as certain debt repayments or childcare, as
             {year: Money} pairs.
-
-        TODO: Delete this and instead sum over contributions.values()?
-        contributions_total (dict): The total amount contributed to
-            savings, as {year: Money} pairs.
-
-        contributions (dict): The contributions to each account, stored
-            as {year: dict} pairs, where the dict value comprises
-            {Account: Money} pairs.
-
-        TODO: Delete this and instead sum over withdrawals.values()?
-        withdrawals_total (dict): The total amount withdrawn from
-            savings, as {year: Money} pairs.
-
-        withdrawals (dict): The withdrawals from each account, stored
-            as {year: dict} pairs, where the dict value comprises
-            {Account: Money} pairs.
-
-        TODO: Delete this and instead sum over benefits.values()?
-        benefits_total (dict): The total amount of benefits recieved,
+        contributions (Money): The total amount contributed to savings
+            accounts, as {year, Money} pairs.
+        withdrawals (dict): The total amount withdrawn from savings
+            accounts, as {year, Money} pairs.
+        benefits (dict): The total amount of benefits recieved,
             as {year: Money} pairs.
-
-        benefits (dict): The benefits received from each source, stored
-            as {year: dict} pairs, where the dict value comprises
-            {Benefit: Money} pairs.
         tax_payable (dict): The amount of tax owed on income for each
             year, as {year: Money} pairs.
-        tax_withheld (dict): The amount of tax paid each year, as
-            {year: Money} pairs. This includes withholding taxes and
-            payments of the previous year's carryforward.
+        tax_withheld (dict): The amount of tax withheld on income each
+            year, as {year: Money} pairs.
         tax_carryforward (dict): The amount of tax remaining unpaid
             from each year (to be paid in the next year), as
             {year: Money} pairs.
@@ -91,14 +71,12 @@ class Forecast(object):
         debts (list): All debts (all of which must be `Debt` accounts or
             subclasses thereof).
     '''
-    # TODO: Redesign this class to be "Forecast", turn all Money-class
-    # objects into dicts. Otherwise the overall logic is basically the
-    # same. (Note that Account objects are getting a similar overhaul)
     # TODO: Consider how to implement benefits/tax logic - should these
     # be built by the Forecast? Passed as inputs?
 
     def __init__(self, assets=None, debts=None, scenario=None,
-                 strategy=None, inputs=None, settings=Settings):
+                 strategy=None,
+                 inputs=None, settings=Settings):
         ''' Constructs an instance of class Year.
 
         Starts with the end-of-year values from `last_year` and builds
@@ -113,15 +91,19 @@ class Forecast(object):
 
         Args:
         TODO: Update this documentation
-            last_year (Year): The previous year, used to initialize account
-                balances and carry forward tax information.
-                May be None (generally when constructing the first year)
+            assets (iterable): A set/list/etc. of Account objects.
+            debts (iterable): A set/list/etc. of Debt objects.
             scenario (Scenario): Economic information for the year (e.g.
                 inflation and stock market returns)
+            contribution_strategy (ContributionStrategy): TODO
+            withdrawal_strategy (WithdrawalStrategy): TODO
+            contribution_transaction_strategy (TransactionStrategy): TODO
+            withdrawal_transaction_strategy (WithdrawalTransactionStrategy): TODO
+            allocation_strategy (AllocationStrategy): TODO
             strategy (Strategy): Defines the behaviour of the investor, such
                 as their approach to making contributions or withdrawals,
                 and asset allocation/investment choices.
-            inputs (InputYear): Any values provided in this InputYear
+            inputs (InputYear): Any values provided in this `InputYear`
                 will override any projection logic (i.e. the
                 corresponding values of last_year will be ignored).
                 This is useful for mapping out specific plans (e.g.

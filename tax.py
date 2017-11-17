@@ -116,16 +116,6 @@ class Tax(object):
     """
     def __init__(self, tax_brackets, inflation_adjustments,
                  personal_deduction={}, credit_rate={}):
-        # TODO: Consider whether this should receive persons/accounts as
-        # args, or whether this should be passed as an arg to persons/accounts
-            # NOTE: I think I favour receiving accounts/etc. here, since
-            # tax logic will require looking at account types and applying tax
-            # rules holistically in view of other accounts/etc.
-            # NOTE: (The exception here is `Person`, which will be passed a
-            # tax object for convenience)
-            # NOTE: This is likely to be significantly more efficient
-            # than the current implementation, which re-sorts accounts
-            # and identifies taxpayers with each invocation.
         # TODO: Add an initial_year arg. If it's provided, interpret any
         # scalar args (or, for tax_brackets, non-year-indexed dict) as
         # {initial_year: arg} dicts (i.e. single-value dicts). This will
@@ -401,10 +391,17 @@ class Tax(object):
             return self.tax_money(income, year, **kwargs)
 
 
+# NOTE: Eventually, we'll probably implement a separate class for each
+# province and delete this tuple. For now, though, the program logic is
+# simple enough that we can deal with all of this in one class
+# (CanadianResidentTax)
+# TODO (v2): Revise CanadianResidentTax to allow for different people to
+# be taxed at different provincial rates. (Build provincial tax
+# treatment objects dynamically based on input Persons?)
 FedProvTuple = collections.namedtuple('FedProvTuple', 'federal provincial')
 
 
-class CanadaJurisdictionTax(Tax):
+class CanadianResidentTax(Tax):
     """ Federal or provincial tax treatment (Canada). """
 
     def __init__(self, inflation_adjustments, jurisdiction='Federal'):
@@ -423,8 +420,8 @@ class CanadianResidentTax(object):
     """
 
     def __init__(self, inflation_adjustments, province='BC'):
-        self.federal_tax = CanadaJurisdictionTax(inflation_adjustments)
-        self.provincial_tax = CanadaJurisdictionTax(
+        self.federal_tax = CanadianResidentTax(inflation_adjustments)
+        self.provincial_tax = CanadianResidentTax(
             inflation_adjustments, province)
 
     def _merge_brackets(self, brackets1, brackets2, bracket=None):
@@ -518,45 +515,33 @@ class CanadianResidentTax(object):
         # TODO: Implement tax credit logic.
         return FedProvTuple(Money(0), Money(0))
 
-    # TODO: Reimplement __call__ - we can probably delete __call_both
-    def __call_both():
-        return (
-            self.federal_tax(
-                income, year,
-                other_federal_deductions, other_federal_credits) +
-            self.provincial_tax(
-                income, year,
-                other_provincial_deductions, other_provincial_credits)
-        )
-
     def __call__(self, income, year,
                  other_federal_deductions=0, other_federal_credits=0,
                  other_provincial_deductions=0, other_provincial_credits=0):
         # In the easiest case, we don't have any account information;
         # just pass the information on to federal/provincial Tax objects
         if isinstance(income, Money):
-            return self.__call_both(
-                income, year, other_federal_deductions,
-                other_federal_credits, other_provincial_deductions,
-                other_provincial_credits)
+            return (
+                self.federal_tax(
+                    income, year,
+                    other_federal_deductions, other_federal_credits) +
+                self.provincial_tax(
+                    income, year,
+                    other_provincial_deductions, other_provincial_credits)
+            )
         # If income sources are provided, divide those up into a
         # separate call for each taxpayer.
         # First, divide up accounts by taxpayer.
         deductions = self.tax_deductions(sources, year)
-        credits = self.tax_deductions(sources, year)
+        credits = self.tax_credits(sources, year)
 
-        # Now accumulate taxes owed by each of the taxpayers:
-        taxes_owing = 0
-        for taxpayer in sources:
-            # Add each taxpayer's federal and provincial tax to the
-            # total taxes owing for all taxpayers.
-            taxes_owing += self.__call_both(
-                sources[taxpayer], year,
+        return (
+            self.federal_tax(
+                income, year,
                 other_federal_deductions + deductions.federal,
-                other_federal_credits + credits.federal,
+                other_federal_credits + credits.federal) +
+            self.provincial_tax(
+                income, year,
                 other_provincial_deductions + deductions.provincial,
                 other_provincial_credits + credits.provincial)
-        # TODO: Implement Canada-specific specific tax deductions and
-        # credits, like the pension tax credit, spousal tax credits,
-        # spousal RRSP deductions, etc.
-        return taxes_owing
+            )
