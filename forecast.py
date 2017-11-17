@@ -5,9 +5,10 @@ package lives. It applies Scenario, Strategy, and Tax information to
 determine how account balances will grow or shrink year-over-year.
 '''
 
-from scenario import Scenario
-from strategy import Strategy
-from settings import Settings
+from scenario import *
+from strategy import *
+from ledger import *
+from tax import *
 
 
 class Forecast(object):
@@ -26,57 +27,129 @@ class Forecast(object):
     couple (since spouses have specific tax treatment).
 
     Attributes:
-        person1 (Person): A person for whom the financial forecast is
-            being generated.
-        person2 (Person): The spouse of person1. Optional.
-        contribution_strategy (ContributionStrategy): TODO
-        withdrawal_strategy (WithdrawalStrategy): TODO
-        contribution_transaction_strategy (TransactionStrategy): TODO
-        withdrawal_transaction_strategy (WithdrawalTransactionStrategy): TODO
-        allocation_strategy (AllocationStrategy): TODO
+        people (iterable): One or more `Person` objects for whom the
+            financial forecast is being generated. Typically a single
+            person or a person and their spouse.
+        assets (iterable): A set/list/etc. of `Account` objects.
+            All Person objects, assets, and debts must have the same
+            `this_year` attribute.
+        debts (iterable): A set/list/etc. of `Debt` objects.
+            All Person objects, assets, and debts must have the same
+            `this_year` attribute.
 
-        TODO: Move the below to `Person`?
-        person1_gross_income (Money): The gross income of person1.
-        person1_tax_payable (Money): The taxes payable on the income of
-            person1.
-        person2_gross_income (Money): The gross income of person2.
-            Optional.
-        person2_tax_payable (Money): The taxes payable on the income of
-            person1. Optional.
+        scenario (Scenario): Economic information for the forecast
+            (e.g. inflation and stock market returns for each year)
+
+        contribution_strategy (ContributionStrategy): A callable
+            object that determines the gross contribution for a
+            year. See the documentation for `ContributionStrategy` for
+            acceptable args when calling this object.
+        withdrawal_strategy (WithdrawalStrategy): A callable
+            object that determines the amount to withdraw for a
+            year. See the documentation for `WithdrawalStrategy` for
+            acceptable args when calling this object.
+        contribution_transaction_strategy (TransactionStrategy): A
+            callable object that determines the schedule of
+            transactions for any contributions during the year.
+            See the documentation for `TransactionStrategy` for
+            acceptable args when calling this object.
+        withdrawal_transaction_strategy
+            (WithdrawalTransactionStrategy):
+            A callable object that determines the schedule of
+            transactions for any contributions during the year.
+            See the documentation for `TransactionStrategy` for
+            acceptable args when calling this object.
+        allocation_strategy (AllocationStrategy): A callable object
+            that determines the allocation of stocks vs. bonds for
+            a given year. See the documentation for
+            `AllocationStrategy` for acceptable args when calling this
+            object.
+
+        tax_treatment (Tax): A callable object that determines the total
+            amount of tax owing in a year. See the documentation for
+            `Tax` for acceptable args when calling this object.
+
         gross_income (dict): The gross income for the family, as
             {year: Money} pairs.
+        taxes_withheld_on_income (dict): Taxes deducted at source (or
+            paid by installment during the year) on employment income.
         net_income (dict): The net income for the family, as
             {year: Money} pairs.
-        gross_contribution (dict): The amount available to contribute
+
+        contributions_from_income (dict): The amount to be contributed
+            to savings from employment income in each year, as
+            {year: Money} pairs.
+        contributions_from_carryover (dict): The amount to be
+            contributed to savings from inter-year carryovers (e.g. tax
+            refunds, recontributing excess withdrawals, etc.), as
+            {year: Money} pairs.
+        contributions_from_asset_sales (dict): The amount to be
+            contributed to savings from asset sales in each year, as
+            {year: Money} pairs.
+        gross_contributions (dict): The amount available to contribute
             to savings, before any reductions, as {year: Money} pairs.
-            This is drawn from net income and inter-year rollovers.
-        contribution_reduction (dict): Amounts diverted from savings,
+            This is the sum of net income and the various
+            contributions_from_* values.
+        reduction_from_debt (dict): The amount to be diverted from
+            contributions to debt repayment in each year, as
+            {year: Money} pairs.
+        reduction_from_other (dict): The amount to be diverted from
+            contributions for other spending purposes in each year, as
+            {year: Money} pairs.
+        contribution_reductions (dict): Amounts diverted from savings,
             such as certain debt repayments or childcare, as
             {year: Money} pairs.
-        contributions (Money): The total amount contributed to savings
-            accounts, as {year, Money} pairs.
-        withdrawals (dict): The total amount withdrawn from savings
-            accounts, as {year, Money} pairs.
-        benefits (dict): The total amount of benefits recieved,
-            as {year: Money} pairs.
-        tax_payable (dict): The amount of tax owed on income for each
-            year, as {year: Money} pairs.
-        tax_withheld (dict): The amount of tax withheld on income each
-            year, as {year: Money} pairs.
-        tax_carryforward (dict): The amount of tax remaining unpaid
-            from each year (to be paid in the next year), as
-            {year: Money} pairs.
-        assets (list): All savings accounts, residences, etc. (all of
-            which must be subclasses of `Account`)
-        debts (list): All debts (all of which must be `Debt` accounts or
-            subclasses thereof).
-    '''
-    # TODO: Consider how to implement benefits/tax logic - should these
-    # be built by the Forecast? Passed as inputs?
+        net_contributions (dict): The total amount contributed to
+            savings accounts, as {year, Money} pairs.
 
-    def __init__(self, assets=None, debts=None, scenario=None,
-                 strategy=None,
-                 inputs=None, settings=Settings):
+        principal (dict): The total value of all savings accounts (but
+            not other property) at the start of each year, as
+            {year: Money} pairs.
+        gross_return (dict): The total return on principal (only for the
+            amounts included in `principal`) by the end of the year, as
+            {year: Money} pairs.
+        tax_withheld_on_return (dict): Taxes deducted at source
+            on the returns on investments, as {year: Money} pairs.
+        net_return (dict): The total return on principal (only for the
+            amounts included in `principal`) by the end of the year, net
+            of withholding taxes, as {year: Money} pairs.
+
+        withdrawals_from_retirement_accounts (dict): The total value of
+            all withdrawals from retirement savings accounts over the
+            year, as {year: Money} pairs.
+        withdrawals_from_other_accounts (dict): The total value of all
+            withdrawals from other savings accounts (e.g. education or
+            health accounts, if provided) over the year, as
+            {year: Money} pairs.
+        gross_withdrawals (dict): The total amount withdrawn from all
+            accounts, as {year, Money} pairs.
+        tax_withheld_on_withdrawals (dict): Taxes deducted at source
+            on withdrawals from savings, as {year: Money} pairs.
+        net_withdrawals (dict): The total amount withdrawn from all
+            accounts, net of withholding taxes, as {year, Money} pairs.
+
+        total_tax_withheld (dict): The total amount of tax owing for
+            this year which was paid during this year (as opposed to
+            being paid in the following year the next year).
+            Note that this is not necessarily the same as the sum of
+            other `tax_withheld_on_*` attributes, since the tax
+            authority may require additional withholding taxes (or
+            payment by installments) based on the person's overall
+            circumstances.
+        total_tax_owing (dict): The total amount of tax owing for this
+            year (some of which may be paid in the following year). Does
+            not include outstanding amounts which became owing but were
+            not paid in the previous year.
+
+        living_standard (dict): The total amount of money available for
+            spending, net of taxes, contributions, debt payments, etc.
+    '''
+    # TODO (v2): Implement benefits logic.
+
+    def __init__(self, people, assets, debts, scenario, contribution_strategy,
+                 withdrawal_strategy, contribution_transaction_strategy,
+                 withdrawal_transaction_strategy, allocation_strategy,
+                 tax_treatment, inputs=None):
         ''' Constructs an instance of class Year.
 
         Starts with the end-of-year values from `last_year` and builds
@@ -90,85 +163,58 @@ class Forecast(object):
         `scenario`, `strategy`, `settings` > `last_year`.
 
         Args:
-        TODO: Update this documentation
+            people (iterable): A set/list/etc. of Person objects.
+                All Person objects, assets, and debts must have the same
+                `this_year` attribute.
             assets (iterable): A set/list/etc. of Account objects.
+                All Person objects, assets, and debts must have the same
+                `this_year` attribute.
             debts (iterable): A set/list/etc. of Debt objects.
-            scenario (Scenario): Economic information for the year (e.g.
-                inflation and stock market returns)
-            contribution_strategy (ContributionStrategy): TODO
-            withdrawal_strategy (WithdrawalStrategy): TODO
-            contribution_transaction_strategy (TransactionStrategy): TODO
-            withdrawal_transaction_strategy (WithdrawalTransactionStrategy): TODO
-            allocation_strategy (AllocationStrategy): TODO
-            strategy (Strategy): Defines the behaviour of the investor, such
-                as their approach to making contributions or withdrawals,
-                and asset allocation/investment choices.
-            inputs (InputYear): Any values provided in this `InputYear`
-                will override any projection logic (i.e. the
-                corresponding values of last_year will be ignored).
-                This is useful for mapping out specific plans (e.g.
-                taking a leave from work, buying a home) or for
-                providing the initial conditions for the first year.
+                All Person objects, assets, and debts must have the same
+                `this_year` attribute.
+            scenario (Scenario): Economic information for the forecast
+                (e.g. inflation and stock market returns for each year)
+            contribution_strategy (ContributionStrategy): A callable
+                object that determines the gross contribution for a
+                year. See the documentation for ContributionStrategy for
+                acceptable args when calling this object.
+            withdrawal_strategy (WithdrawalStrategy): A callable
+                object that determines the amount to withdraw for a
+                year. See the documentation for WithdrawalStrategy for
+                acceptable args when calling this object.
+            contribution_transaction_strategy (TransactionStrategy): A
+                callable object that determines the schedule of
+                transactions for any contributions during the year.
+                See the documentation for TransactionStrategy for
+                acceptable args when calling this object.
+            withdrawal_transaction_strategy
+                (WithdrawalTransactionStrategy):
+                A callable object that determines the schedule of
+                transactions for any contributions during the year.
+                See the documentation for TransactionStrategy for
+                acceptable args when calling this object.
+            allocation_strategy (AllocationStrategy): A callable object
+                that determines the allocation of stocks vs. bonds for
+                a given year. See the documentation for
+                AllocationStrategy for acceptable args when calling this
+                object.
+            tax_treatment (Tax): A callable object that determines the
+                total amount of tax owing in a year. See documentation
+                for `Tax` for acceptable args when calling this object.
+            inputs (dict): A dict of `{object: {year: input}}` pairs,
+                where `object` is an object with a `next_year` method
+                (e.g. a `Person` or `Account`) and `input` is a dict of
+                keywords args that is passed to next_year as `**input`.
                 Optional.
-                If `last_year` is None, all values not provided by
-                `inputs` will be initialized to the value provided by
-                `settings` (where possible), set to 0 (for balances), or
-                based on default tax rules assuming no prior activity
-                (for RRSP/TFSA/RESP contribution room, CPP, etc.).
-            settings (Settings): A settings object to provide various
-                default values/behaviours. Optional.
+
+                The keys in `input` are attributes of the object and
+                the values are inputs (e.g. Money or Decimal objects)
+                that override any projection logic.
+
+                These values are applied to the next year. This is
+                useful for mapping out specific plans (e.g. taking a
+                leave from work, buying a home) or for providing the
+                initial conditions for the first year.
         '''
-        self.last_year = last_year
-
-        # Initialize settings/scenario/strategy attributes based on the
-        # order of precedence explicit argument > last_year attribute >
-        # default value (according to the settings object, if provided.)
-        if settings is not None:
-            self.settings = settings
-        elif last_year is not None:
-            self.settings = last_year.settings
-        else:
-            self.settings = Settings()
-
-        if scenario is not None:
-            self.scenario = scenario
-        elif last_year is not None:
-            self.scenario = last_year.scenario
-        else:
-            self.scenario = Scenario(settings=self.settings)
-
-        if strategy is not None:
-            self.strategy = strategy
-        elif last_year is not None:
-            self.strategy = last_year.strategy
-        else:
-            self.strategy = Strategy(settings=self.settings)
-
-        # TODO: Test whether person1 is retired and use this to
-        # determine whether any employment income should be generated.
-        # NOTE: The people are defined in the Strategy object, not
-        # last_year. Check strategy to see whether person2 is defined.
+        # TODO
         pass
-
-    # TODO: Implement this in `Person`
-    @staticmethod
-    def personal_gross_income(person, income, raise_rate,
-                              retired=False):
-        """ The gross rate of income for this year, after raises.
-
-        Args:
-            person (Person): The person.
-                If None, this method returns None.
-            income (Money): The person's income for last year.
-            raise_rate (Decimal): The person's raise for this year, as a
-                percentage (e.g. a 3% raise is `Decimal(0.03)`)
-            retired (bool): True if the person is retired
-        """
-        # TODO: Consider adding a semi-retired status? Income could be
-        # reduced and constant in real terms (i.e. raises = inflation).
-        # This would require adding a scenario or inflation term.
-        if person is None:
-            return None
-        if retired:
-            return Money(0)
-        return income * (1 + raise_rate)
