@@ -1,10 +1,7 @@
 """ Defines basic recordkeeping classes, like `Person` and `Account`. """
 
-from numbers import Number
 import math
-import decimal
 from decimal import Decimal
-from collections import namedtuple
 from datetime import datetime
 from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
@@ -122,59 +119,56 @@ class Person(object):
             ValueError: retirement_date precedes birth_date
             OverflowError: birth_date or retirement_date are too large
         """
+        # First assign attributes that aren't wrapped by properties:
         if not isinstance(name, str):
             raise TypeError("Person: name must be a string")
         self.name = name
 
-        # If `birth_date` is not a `datetime`, attempt to parse
-        if not isinstance(birth_date, datetime):
-            # If the birth date omits a year, use this year. If it omits
-            # a month or day, use January and the 1st, respectively
-            default_date = datetime(datetime.today().year, 1, 1)
-            birth_date = parse(str(birth_date), default=default_date)
-
-        self.birth_date = birth_date
-
-        if retirement_date is not None:
-            if not isinstance(retirement_date, datetime):
-                # If `retirement_date` is not a `datetime`, attempt to parse.
-                # If month/day aren't given, use the corresponding values of
-                # birth_date
-                default_date = self.birth_date
-                retirement_date = parse(str(retirement_date),
-                                        default=default_date)
-
-            # `retirement_date` must follow `birth_date`
-            if retirement_date < birth_date:
-                raise ValueError("Person: retirement_date precedes birth_date")
-
-        self.retirement_date = retirement_date
-
-        if spouse is not None:
-            if not isinstance(spouse, Person):
-                raise TypeError('Person: spouse must be of type Person')
-            # Spousehood is mutual, so mutate both this object and
-            # the spouse object to point at each other.
-            spouse.spouse = self
-        self.spouse = spouse  # Assign to attr `spouse` even if None
+        # Build an empty set for accounts to add themselves to.
+        self.accounts = set()
 
         # We need to set the initial_year in order to build dicts
+        # TODO: Deal with this in a superclass (IncrementableByYear?)
         self.initial_year = int(initial_year if initial_year is not None
                                 else settings.initial_year)
         self.this_year = self.initial_year
 
         # Set up tax treatment before calling tax_withheld()
+        # TODO: Make this a mandatory argument?
         self.tax_treatment = tax_treatment
 
-        # Set up gross/net income hidden dicts
+        # For attributes wrapped by properties, create hidden attributes
+        # and assign to them using the properties:
+        self._birth_date = None
+        self._retirement_date = None
+        self._retirement_age = None
+        self._spouse = None
         self._gross_income = {}
         self._net_income = {}
-        # Let the properties do typecasting/etc.
+        self._contribution_room = {}
+        self.birth_date = birth_date
+        self.retirement_date = retirement_date
+        self.spouse = spouse
         self.gross_income = gross_income
         self.net_income = self.gross_income - self.tax_withheld()
 
-        # Build an empty set for accounts to add themselves to.
-        self.accounts = set()
+    @property
+    def birth_date(self) -> datetime:
+        """ The birth date of the Person. """
+        return self._birth_date
+
+    @birth_date.setter
+    def birth_date(self, val) -> None:
+        """ Sets the birth date of the Person. """
+        # If `birth_date` is not a `datetime`, attempt to parse
+        if not isinstance(val, datetime):
+            # Parsing will fail if it can't generate a year, month, and
+            # day. Use January 1 of this year as the default. If the
+            # input is a valid date but lacks a year, month, or day,
+            # then those will be filled in as needed.
+            default_date = datetime(datetime.today().year, 1, 1)
+            val = parse(str(val), default=default_date)
+        self._birth_date = val
 
     @property
     def retirement_date(self) -> datetime:
@@ -187,6 +181,12 @@ class Person(object):
         if val is None:
             self._retirement_date = None
             self._retirement_age = None
+            # NOTE: Delete this error when floating retirement dates
+            # are implemented
+            raise NotImplementedError(
+                'Person: retirement_date must not be None. ' +
+                'Floating retirement dates are not yet implemented.'
+            )
             return
 
         # If input is not a `datetime`, attempt to parse. If some values
@@ -222,6 +222,27 @@ class Person(object):
             self.retirement_date = self.birth_date + relativedelta(years=val)
 
     @property
+    def spouse(self) -> 'Person':
+        """ The Person's spouse. """
+        return self._spouse
+
+    @spouse.setter
+    def spouse(self, val) -> None:
+        """ Sets the Person's spouse. """
+        # If this Person already has a spouse, unlink them:
+        if hasattr(self, 'spouse') and self.spouse is not None:
+            self.spouse._spouse = None  # Use _spouse to avoid recursion
+
+        # If we're adding a new spouse, make sure that it links back:
+        if val is not None:
+            if not isinstance(val, Person):  # Spouse must be a Person
+                raise TypeError('Person: spouse must be of type Person')
+            val._spouse = self  # Use _spouse to avoid recursion
+
+        # Update the spouse attr whether or not the new value is None
+        self._spouse = val
+
+    @property
     def gross_income(self):
         """ The `Person`'s gross income for this year. """
         return self._gross_income[self.this_year]
@@ -240,6 +261,28 @@ class Person(object):
     def net_income(self, val):
         """ Sets net_income and casts input value to `Money` """
         self._net_income[self.this_year] = Money(val)
+
+    def contribution_room(self, account):
+        """ The contribution room for the given account.
+
+        The account must provide a `_contribution_token` attribute.
+
+        Returns:
+            A dict of {year: contribution_room} pairs for the account if
+            it has been registered, or None if it is not registered.
+        """
+        if account._contribution_token in self._contribution_room:
+            return self._contribution_room[account._contribution_token]
+        else:
+            return None
+
+    def register_contribution_room(self, account):
+        """ Prepares a Person to store contribution room for an account.
+
+        This has no effect if the account is already registered.
+        """
+        if account._contribution_token not in self._contribution_room:
+            self._contribution_room = {account._contribution_token: {}}
 
     def age(self, date) -> int:
         """ The age of the `Person` as of `date`.
@@ -280,12 +323,12 @@ class Person(object):
 
     def next_year(self, raise_rate):
         # TODO (v2): Include temporary loss of income due to parental leave.
+        # TODO (v1): Test for retirement
         self.this_year += 1
-        self._gross_income[self.this_year] = (
+        self.gross_income = (
             self._gross_income[self.this_year - 1] * (1 + raise_rate))
-        self._net_income[self.this_year] = \
-            self._gross_income[self.this_year] - \
-            self.tax_withheld(self.this_year)
+        self.net_income = \
+            self.gross_income - self.tax_withheld(self.this_year)
 
     def taxable_income(self, year=None):
         year = self.this_year if year is None else year
@@ -713,6 +756,15 @@ class Account(object):
                 raise ValueError('Account: nper must be greater than 0')
             return int(nper)
 
+    def contribution_group(self):
+        """ The accounts that share contribution room with this one.
+
+        Returns:
+            A set of accounts that should be considered together when
+            allocating contributions between them. Includes this account
+        """
+        return {self}
+
     def add_transaction(self, value, when='end'):
         """ Adds a transaction to the account.
 
@@ -763,8 +815,11 @@ class Account(object):
 
         # Convert to Money at the end because the sum might return 0
         # (an int) if there are no transactions
-        return Money(sum([val for val in self._transactions[year].values()
-                          if val.amount > 0]))
+        if year in self._transactions:
+            return Money(sum([val for val in self._transactions[year].values()
+                              if val.amount > 0]))
+        else:
+            return Money(0)
 
     def outflows(self, year=None):
         """ The sum of all outflows from the account. """
@@ -774,8 +829,11 @@ class Account(object):
 
         # Convert to Money at the end because the sum might return 0
         # (an int) if there are no transactions
-        return Money(sum([val for val in self._transactions[year].values()
-                          if val.amount < 0]))
+        if year in self._transactions:
+            return Money(sum([val for val in self._transactions[year].values()
+                              if val.amount < 0]))
+        else:
+            return Money(0)
 
     def __len__(self):
         """ The number of years of transaction data in the account. """
@@ -992,10 +1050,6 @@ class RegisteredAccount(Account):
         # If no contributor was provided, assume it's the owner.
         if contributor is None:
             self.contributor = self.owner
-        elif not isinstance(contributor, Person):
-            raise TypeError(
-                'RegisteredAccount: person must be of type Person.'
-            )
         else:
             self.contributor = contributor
 
@@ -1013,13 +1067,18 @@ class RegisteredAccount(Account):
                 'dates given by inflation_adjustments'
             )
 
-        # Assign the default here instead of in the call signature
-        # to maintain consistency with subclasses.
-        if contribution_room is None:
-            contribution_room = 0
-        # Initialize _contribution_room, then use the setter.
-        self._contribution_room = {}
-        self.contribution_room = contribution_room
+        # Set up a _contribution_token that's the same for all instances
+        # of a subclass but differs between subclasses.
+        self._contribution_token = type(self).__name__
+
+        # Prepare this account for having its contribution room tracked
+        self.contributor.register_contribution_room(self)
+        # Contribution room is stored with the contributor and shared
+        # between accounts. Accordingly, only set contribution room if
+        # it's explicitly provided, to avoid overwriting previously-
+        # determined contribution room data with a default value.
+        if contribution_room is not None:
+            self.contribution_room = contribution_room
 
     @property
     def inflation_adjustment(self):
@@ -1028,14 +1087,43 @@ class RegisteredAccount(Account):
         return self._inflation_adjustments[self.this_year]
 
     @property
+    def contributor(self):
+        """ The contributor to the account. """
+        return self._contributor
+
+    @contributor.setter
+    def contributor(self, val):
+        """ Sets the contributor to the account. """
+        if not isinstance(val, Person):
+            raise TypeError(
+                'RegisteredAccount: person must be of type Person.'
+            )
+        else:
+            self._contributor = val
+
+    @property
+    def contribution_group(self):
+        """ The accounts that share contribution room with this one. """
+        # TODO: Rather than generate a set on every invocation, we could
+        # generate this once and simply return it.
+        return {x for x in self.contributor.accounts
+                if hasattr(x, '_contribution_token') and
+                x._contribution_token == self._contribution_token}
+
+    @property
     def contribution_room(self):
-        """ The contribution room for the current year. """
-        return self._contribution_room[self.this_year]
+        """ Contribution room available for the current year. """
+        return self.contributor.contribution_room(self)[self.this_year]
 
     @contribution_room.setter
     def contribution_room(self, val):
-        """ Sets contribution room for the current year. """
-        self._contribution_room[self.this_year] = Money(val)
+        """ Updates contribution room for RRSPs """
+        self.contributor.contribution_room(self)[self.this_year] = Money(val)
+
+    @property
+    def contribution_room_history(self):
+        """ A dict of {year: contribution_room} pairs. """
+        return self.contributor.contribution_room(self)
 
     def next_year(self, *args, **kwargs):
         """ Confirms that the year is within the range of our data. """
@@ -1061,7 +1149,7 @@ class RegisteredAccount(Account):
         """ Limits outflows based on available contribution room. """
         if year is None:
             year = self.this_year
-        return Money(self._contribution_room[year])
+        return self.contribution_room_history[year]
 
 
 class RRSP(RegisteredAccount):
@@ -1070,7 +1158,7 @@ class RRSP(RegisteredAccount):
     # Explicitly repeat superclass args for the sake of intellisense.
     def __init__(self, owner, inflation_adjustments, balance=0, rate=0,
                  transactions={}, nper=1, initial_year=None,
-                 settings=Settings, contribution_room=None, contributor=None):
+                 settings=Settings, contribution_room=0, contributor=None):
         """ Initializes an RRSP object. """
         super().__init__(
             owner, inflation_adjustments, balance, rate, transactions, nper,
@@ -1190,7 +1278,8 @@ class RRSP(RegisteredAccount):
                 year + 1
             )
             # Don't forget to add in any rollovers:
-            rollover = self._contribution_room[year] - self.inflows(year)
+            rollover = self.contribution_room_history[year] - \
+                self.inflows(year)
             return min(accrual, Money(max_accrual)) + rollover
 
     def min_outflow(self, when='end', year=None):
@@ -1243,52 +1332,80 @@ class TFSA(RegisteredAccount):
         ) / Constants.TFSAInflationRoundingFactor) * \
             Constants.TFSAInflationRoundingFactor
 
-        # If contribution_room is not provided, infer it based on age.
-        if contribution_room is None:
-            # Determine the accumulated contribution room from the year
-            # that the person first became eligible up to initial_year.
-
-            # The start age will be the later of (a) The year the person
-            # turned 18 (the eligibility age) and (b) the year that the
-            # TFSA program began (i.e. the first year of TFSA accrual):
-            start_year = max(
-                self.initial_year - self.contributor.age(self.initial_year) +
-                Constants.TFSAAccrualEligibilityAge,
-                min(Constants.TFSAAnnualAccrual.keys())
-            )
+        # If contribution_room is not provided (and it's already known
+        # based on other TFSA accounts), infer it based on age.
+        if (
+            contribution_room is None and
+            self.initial_year not in self.contribution_room_history
+        ):
+            # We might already have set contribution room for years
+            # before this initial_year, in which case we should start
+            # extrapolate from the following year onwards:
+            if len(self.contribution_room_history) > 0:
+                start_year = max(
+                    year for year in self.contribution_room_history
+                    if year < self.initial_year
+                ) + 1
+                contribution_room = self.contribution_room_history[
+                    start_year - 1
+                ]
+            else:
+                # If there's no known contribution room, simply sum up
+                # all of the default accruals from the first year the
+                # owner was eligible:
+                start_year = max(
+                    self.initial_year -
+                    self.contributor.age(self.initial_year) +
+                    Constants.TFSAAccrualEligibilityAge,
+                    min(Constants.TFSAAnnualAccrual.keys())
+                )
+                contribution_room = 0
             # Accumulate contribution room over applicable years
-            # (NOTE: next_contribution_room returns the room for the
-            # *following* year, hence the `start_year - 1` start)
-            self.contribution_room = sum([
-                self.next_contribution_room(year)
-                for year in range(start_year - 1, self.initial_year)
-            ])
+            self.contribution_room = contribution_room + sum(
+                self._contribution_room_accrual(year)
+                for year in range(start_year, self.initial_year + 1)
+            )
 
-    def next_contribution_room(self, year=None):
-        """ The amount of contribution room for next year """
-        # Return most recent year by default
-        if year is None:
-            year = self.this_year
+    def _contribution_room_accrual(self, year):
+        """ The amount of contribution room accrued in a given year.
 
-        contribution_room = 0
+        This excludes any rollovers - it's just the statutory accrual.
+        """
+        # No accrual if the owner is too young to qualify:
+        if self.owner.age(year + 1) < Constants.TFSAAccrualEligibilityAge:
+            return Money(0)
+
         # If we already have an accrual rate set for this year, use that
-        if year + 1 in Constants.TFSAAnnualAccrual:
-            contribution_room += Money(Constants.TFSAAnnualAccrual[year + 1])
+        if year in Constants.TFSAAnnualAccrual:
+            return Money(Constants.TFSAAnnualAccrual[year])
         # Otherwise, infer the accrual rate by inflation-adjusting the
         # base rate and rounding.
         else:
-            contribution_room += Money(
+            return Money(
                 round(self._base_accrual *
-                      (self._inflation_adjustments[year + 1] /
+                      (self._inflation_adjustments[year] /
                        self._inflation_adjustments[self._base_accrual_year]
                        ) /
                       Constants.TFSAInflationRoundingFactor) *
                 Constants.TFSAInflationRoundingFactor
             )
+
+    def next_contribution_room(self, year=None):
+        """ The amount of contribution room for next year. """
+        # Return most recent year by default
+        if year is None:
+            year = self.this_year
+
+        # If the contribution room for next year is already known, use
+        # that:
+        if year + 1 in self.contribution_room_history:
+            return self.contribution_room_history[year + 1]
+
+        contribution_room = self._contribution_room_accrual(year + 1)
         # On top of this year's accrual, roll over unused contribution
         # room, plus any withdrawals (less contributions) from last year
-        if year in self._contribution_room:
-            rollover = self._contribution_room[year] - (
+        if year in self.contribution_room_history:
+            rollover = self.contribution_room_history[year] - (
                 self.outflows(year) + self.inflows(year)
             )
         else:

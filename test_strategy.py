@@ -1,6 +1,7 @@
 """ Unit tests for `Strategy` and related classes. """
 
 import unittest
+import decimal
 from decimal import Decimal
 from random import Random
 from ledger import Money
@@ -620,19 +621,21 @@ class TestTransactionStrategyMethods(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.person = Person('Testy McTesterson', 1980)
+        cls.person = Person('Testy McTesterson', 1980, retirement_date=2045)
         cls.initial_year = 2000
-        cls.inflation_adjustments = {cls.initial_year: Decimal('0.02'),
-                                     cls.initial_year + 1: Decimal('0.015')}
+        cls.inflation_adjustments = {
+            cls.initial_year: Decimal(1),
+            cls.initial_year + 1: Decimal(1.25),
+            min(Constants.RRSPContributionRoomAccrualMax): Decimal(1)}
 
         # Set up some accounts for the tests.
-        cls.rrsp = RRSP(cls.person, cls.inflation_adjustments, 200,
-                        balance=Money(200),
+        cls.rrsp = RRSP(cls.person, cls.inflation_adjustments,
+                        balance=Money(200), contribution_room=Money(200),
                         initial_year=min(cls.inflation_adjustments.keys()))
-        cls.tfsa = TFSA(cls.person, cls.inflation_adjustments, 100,
-                        balance=Money(100),
+        cls.tfsa = TFSA(cls.person, cls.inflation_adjustments,
+                        balance=Money(100), contribution_room=Money(100),
                         initial_year=min(cls.inflation_adjustments.keys()))
-        cls.taxableAccount = TaxableAccount(balance=Money(1000))
+        cls.taxableAccount = TaxableAccount(cls.person, balance=Money(1000))
         cls.accounts = [cls.rrsp, cls.tfsa, cls.taxableAccount]
 
     def test_init(self):
@@ -813,7 +816,7 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         results = s_in(val, self.accounts)
         # Do tests 1-3:
         self.assertEqual(results[self.tfsa], self.tfsa.max_inflow())
-        self.assertEqual(sum(results.values()), val)
+        self.assertAlmostEqual(sum(results.values()), val, places=3)
         self.assertGreater(results[self.rrsp], results[self.taxableAccount])
         # Now we move on to test 4, which is a bit trickier.
         # We want to be in the range defined by:
@@ -842,7 +845,7 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         val = Money(threshold + overage)
         results = s_out(val, self.accounts)
         self.assertEqual(results[self.tfsa], self.tfsa.max_outflow())
-        self.assertEqual(sum(results.values()), val)
+        self.assertAlmostEqual(sum(results.values()), val, places=3)
         self.assertLess(results[self.rrsp], results[self.taxableAccount])
         rrsp_vals = [
             val * rrsp_weight + overage * rrsp_weight / (1 - tfsa_weight),

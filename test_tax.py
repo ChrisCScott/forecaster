@@ -158,6 +158,7 @@ class TestTax(unittest.TestCase):
 
         # Now move on to testing tax treatment of one person:
         person1 = Person("Tester 1", self.initial_year - 20,
+                         retirement_date=self.initial_year + 45,
                          gross_income=100000, initial_year=self.initial_year)
         # Build three accounts: Two for one person and one for the other
         # The entire balance of each account is withdrawn immediately.
@@ -181,6 +182,7 @@ class TestTax(unittest.TestCase):
 
         # Finally, test tax treatment of multiple people:
         person2 = Person("Tester 2", self.initial_year - 18,
+                         retirement_date=self.initial_year + 47,
                          gross_income=50000, initial_year=self.initial_year)
         balance3 = Money(10000)
         account3 = TaxableAccount(

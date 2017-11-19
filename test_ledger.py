@@ -36,17 +36,22 @@ class TestPersonMethods(unittest.TestCase):
              for year in range(self.initial_year, self.initial_year + 100)},
             {self.initial_year: Money(100)},
             {self.initial_year: Decimal('0.15')})
-        self.spouse = Person("Spouse", 1998, None, Money(50000), None,
-                             self.tax_treatment, self.initial_year)
-        self.owner = Person(self.name, self.birth_date, self.retirement_date,
-                            Money(100000), self.spouse, self.tax_treatment,
-                            self.initial_year)
+        self.spouse = Person("Spouse", 1998, retirement_date=2063,
+                             gross_income=Money(50000), spouse=None,
+                             tax_treatment=self.tax_treatment,
+                             initial_year=self.initial_year)
+        self.owner = Person(self.name, self.birth_date,
+                            retirement_date=self.retirement_date,
+                            gross_income=Money(100000), spouse=self.spouse,
+                            tax_treatment=self.tax_treatment,
+                            initial_year=self.initial_year)
 
     def test_init(self):
         """ Tests Person.__init__ """
 
         # Should work when all arguments are passed correctly
-        person = Person(self.name, self.birth_date, self.retirement_date)
+        person = Person(self.name, self.birth_date,
+                        retirement_date=self.retirement_date)
         self.assertEqual(person.name, self.name)
         self.assertEqual(person.birth_date, self.birth_date)
         self.assertEqual(person.retirement_date, self.retirement_date)
@@ -55,34 +60,42 @@ class TestPersonMethods(unittest.TestCase):
         self.assertIsInstance(person.retirement_date, datetime)
 
         # Should work with optional arguments omitted
-        person = Person(self.name, self.birth_date)
+        # NOTE: This throws a NotImplementedError in v.0.1 if
+        # retirement_date is None, so pass it explicitly
+        person = Person(self.name, self.birth_date,
+                        retirement_date=self.retirement_date)
         self.assertEqual(person.name, self.name)
         self.assertEqual(person.birth_date, self.birth_date)
-        self.assertIsNone(person.retirement_date)
+        self.assertEqual(person.retirement_date, self.retirement_date)
+        self.assertIsNone(person.spouse)
+        self.assertIsNone(person.tax_treatment)
 
         # Should work with strings instead of dates
         birth_date_str = "1 January 2000"
         birth_date = datetime(2000, 1, 1)
-        person = Person(self.name, birth_date_str)
+        person = Person(self.name, birth_date_str,
+                        retirement_date=self.retirement_date)
         self.assertEqual(person.birth_date, birth_date)
         self.assertIsInstance(person.birth_date, datetime)
 
         # Should fail if retirement_date precedes birth_date
         with self.assertRaises(ValueError):
-            person = Person(self.name, self.birth_date,
-                            self.birth_date - relativedelta(days=1))
+            person = Person(
+                self.name, self.birth_date,
+                retirement_date=self.birth_date - relativedelta(days=1))
 
         # Should fail if a string is not parseable to a date
-        birth_date = "not a date"
         with self.assertRaises(ValueError):
-            person = Person(self.name, birth_date)
+            person = Person(self.name, 'invalid',
+                            retirement_date=self.retirement_date)
         with self.assertRaises(ValueError):
-            person = Person(self.name, self.birth_date, birth_date)
+            person = Person(self.name, self.birth_date,
+                            retirement_date='invalid')
 
         # Should work with non-str/non-datetime values as well
         birth_date = 2000
         retirement_date = birth_date + 65
-        person = Person(self.name, birth_date, retirement_date)
+        person = Person(self.name, birth_date, retirement_date=retirement_date)
         self.assertEqual(person.birth_date.year,
                          datetime(2000, 1, 1).year)
         self.assertEqual(person.birth_date.year + 65,
@@ -95,7 +108,7 @@ class TestPersonMethods(unittest.TestCase):
         # Let's mix different types of non-datetime inputs. Should work.
         birth_date = "3 February 2001"
         retirement_date = 2002
-        person = Person(self.name, birth_date, retirement_date)
+        person = Person(self.name, birth_date, retirement_date=retirement_date)
         birth_date = datetime(2001, 2, 3)
         self.assertEqual(person.birth_date, birth_date)
         self.assertEqual(person.retirement_date.year, retirement_date)
@@ -107,7 +120,7 @@ class TestPersonMethods(unittest.TestCase):
         # Let's mix datetime and non-datetime inputs. Should work.
         birth_date = "3 February 2001"
         retirement_date = datetime(2002, 1, 1)
-        person = Person(self.name, birth_date, retirement_date)
+        person = Person(self.name, birth_date, retirement_date=retirement_date)
         birth_date = datetime(2001, 2, 3)
         self.assertEqual(person.birth_date, birth_date)
         self.assertEqual(person.retirement_date.year, retirement_date.year)
@@ -120,8 +133,11 @@ class TestPersonMethods(unittest.TestCase):
         # Now confirm that we can pass gross_income, spouse,
         # tax_treatment, and initial_year
         gross_income = Money(100000)
-        person1 = Person(self.name, birth_date, retirement_date, gross_income,
-                         None, self.tax_treatment, self.initial_year)
+        person1 = Person(self.name, birth_date,
+                         retirement_date=retirement_date,
+                         gross_income=gross_income,
+                         spouse=None, tax_treatment=self.tax_treatment,
+                         initial_year=self.initial_year)
         self.assertEqual(person1.gross_income, gross_income)
         self.assertEqual(person1._gross_income,
                          {self.initial_year: gross_income})
@@ -131,8 +147,11 @@ class TestPersonMethods(unittest.TestCase):
         self.assertEqual(person1.accounts, set())
 
         # Add a spouse and confirm that both Person objects are updated
-        person2 = Person("Spouse", self.initial_year - 20, None, Money(50000),
-                         person1, self.tax_treatment, self.initial_year)
+        person2 = Person("Spouse", self.initial_year - 20,
+                         retirement_date=retirement_date,
+                         gross_income=Money(50000),
+                         spouse=person1, tax_treatment=self.tax_treatment,
+                         initial_year=self.initial_year)
         self.assertEqual(person1.spouse, person2)
         self.assertEqual(person2.spouse, person1)
 
@@ -206,30 +225,36 @@ class TestPersonMethods(unittest.TestCase):
 
         # Test retiring on 65th birthday
         retirement_date = self.birth_date + relativedelta(years=65)
-        person = Person(self.name, self.birth_date, retirement_date)
+        person = Person(self.name, self.birth_date,
+                        retirement_date=retirement_date)
         self.assertEqual(person.retirement_age, 65)
 
         # Test retiring on day after 65th birthday
         retirement_date = self.birth_date + relativedelta(years=65, day=1)
-        person = Person(self.name, self.birth_date, retirement_date)
+        person = Person(self.name, self.birth_date,
+                        retirement_date=retirement_date)
         self.assertEqual(person.retirement_age, 65)
 
         # Test retiring on day before 65th birthday
         retirement_date = self.birth_date + relativedelta(years=65) - \
             relativedelta(days=1)
-        person = Person(self.name, self.birth_date, retirement_date)
+        person = Person(self.name, self.birth_date,
+                        retirement_date=retirement_date)
         self.assertEqual(person.retirement_age, 64)
 
         # Test person with no known retirement date
-        person = Person(self.name, self.birth_date)
-        self.assertIsNone(person.retirement_age)
+        # NOTE: This is not currently implemented
+        # person = Person(self.name, self.birth_date)
+        # self.assertIsNone(person.retirement_age)
 
     def test_properties(self):
         initial_year = 2017
         gross_income = 100
         tax = Tax({initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
                   {2017: 1, 2018: 1, 2019: 1, 2020: 1}, {2017: 0})
-        person = Person('Name', 2000, gross_income=gross_income,
+        person = Person('Name', 2000,
+                        retirement_date=self.retirement_date,
+                        gross_income=gross_income,
                         tax_treatment=tax, initial_year=initial_year)
         self.assertEqual(person.gross_income, gross_income)
         self.assertEqual(person.net_income, 100)
@@ -242,7 +267,9 @@ class TestPersonMethods(unittest.TestCase):
         gross_income = 100
         tax = Tax({initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
                   {2017: 1, 2018: 1, 2019: 1, 2020: 1}, {2017: 0})
-        person = Person('Name', 2000, gross_income=gross_income,
+        person = Person('Name', 2000,
+                        retirement_date=self.retirement_date,
+                        gross_income=gross_income,
                         tax_treatment=tax, initial_year=initial_year)
         self.assertEqual(person.gross_income, gross_income)
         self.assertEqual(person.net_income, Money(100))
@@ -257,7 +284,9 @@ class TestPersonMethods(unittest.TestCase):
         gross_income = 100
         tax = Tax({initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
                   {2017: 1, 2018: 1, 2019: 1, 2020: 1}, {2017: 0})
-        person = Person('Name', 2000, gross_income=gross_income,
+        person = Person('Name', 2000,
+                        retirement_date=self.retirement_date,
+                        gross_income=gross_income,
                         tax_treatment=tax, initial_year=initial_year)
         self.assertEqual(person.taxable_income(), gross_income)
 
@@ -266,7 +295,9 @@ class TestPersonMethods(unittest.TestCase):
         gross_income = 300
         tax = Tax({initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
                   {2017: 1, 2018: 1, 2019: 1, 2020: 1}, {2017: 0})
-        person = Person('Name', 2000, gross_income=gross_income,
+        person = Person('Name', 2000,
+                        retirement_date=self.retirement_date,
+                        gross_income=gross_income,
                         tax_treatment=tax, initial_year=initial_year)
         self.assertEqual(person.tax_withheld(), Money(50))
 
@@ -275,7 +306,9 @@ class TestPersonMethods(unittest.TestCase):
         gross_income = 300
         tax = Tax({initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
                   {2017: 1, 2018: 1, 2019: 1, 2020: 1}, {2017: 0})
-        person = Person('Name', 2000, gross_income=gross_income,
+        person = Person('Name', 2000,
+                        retirement_date=self.retirement_date,
+                        gross_income=gross_income,
                         tax_treatment=tax, initial_year=initial_year)
         self.assertEqual(person.tax_credit(), Money(0))
 
@@ -284,7 +317,9 @@ class TestPersonMethods(unittest.TestCase):
         gross_income = 300
         tax = Tax({initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
                   {2017: 1, 2018: 1, 2019: 1, 2020: 1}, {2017: 0})
-        person = Person('Name', 2000, gross_income=gross_income,
+        person = Person('Name', 2000,
+                        retirement_date=self.retirement_date,
+                        gross_income=gross_income,
                         tax_treatment=tax, initial_year=initial_year)
         self.assertEqual(person.tax_deduction(), Money(0))
 
@@ -377,7 +412,7 @@ class TestAccountMethods(unittest.TestCase):
         cls.AccountType = Account
 
         # Every init requires an owner, so store that here:
-        cls.owner = Person("test", 2000)
+        cls.owner = Person("test", 2000, retirement_date=2065)
         # We often need to set initial_year, so store that as well:
         cls.initial_year = 2000
 
@@ -1400,15 +1435,16 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
         # room is the sum of past accruals.
         # Use a person who's at least old enough to qualify for all
         # available TFSA accruals.
-        owner = Person("test", 1950)
+        owner = Person("test", 1950, retirement_date=2015)
         for year in accruals:
             account = self.AccountType(
                 owner, self.inflation_adjustments, *args,
                 initial_year=year, **kwargs)
             self.assertEqual(
                 account.contribution_room,
-                Money(sum([accruals[i]
-                           for i in range(min(accruals), year + 1)]))
+                Money(sum([
+                    accruals[i] for i in range(min(accruals), year + 1)
+                    ]))
             )
 
     def test_next(self, *args, next_args=[], next_kwargs={}, **kwargs):
@@ -1418,7 +1454,7 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
         # Set up variables for testing.
         accruals = self.get_accruals()
         rand = Random()
-        owner = Person("test", 1950)
+        owner = Person("test", 1950, retirement_date=2015)
         account = self.AccountType(
             owner, self.inflation_adjustments, *args,
             rate=0, initial_year=min(accruals), balance=0, **kwargs)
