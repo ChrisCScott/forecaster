@@ -282,7 +282,7 @@ class Person(object):
         This has no effect if the account is already registered.
         """
         if account._contribution_token not in self._contribution_room:
-            self._contribution_room = {account._contribution_token: {}}
+            self._contribution_room[account._contribution_token] = {}
 
     def age(self, date) -> int:
         """ The age of the `Person` as of `date`.
@@ -1158,7 +1158,7 @@ class RRSP(RegisteredAccount):
     # Explicitly repeat superclass args for the sake of intellisense.
     def __init__(self, owner, inflation_adjustments, balance=0, rate=0,
                  transactions={}, nper=1, initial_year=None,
-                 settings=Settings, contribution_room=0, contributor=None):
+                 settings=Settings, contribution_room=None, contributor=None):
         """ Initializes an RRSP object. """
         super().__init__(
             owner, inflation_adjustments, balance, rate, transactions, nper,
@@ -1184,6 +1184,14 @@ class RRSP(RegisteredAccount):
             self._inflation_adjustments,
             self.initial_year
         )
+
+        # If no contribution room is provided and none is already known,
+        # set contribution_room to 0.
+        if (
+            contribution_room is None and
+            self.initial_year not in self.contribution_room_history
+        ):
+            self.contribution_room = 0
 
     def convert_to_RRIF(self, year=None):
         """ Converts the RRSP to an RRIF. """
