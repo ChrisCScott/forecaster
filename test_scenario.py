@@ -318,7 +318,7 @@ class TestScenarioMethods(unittest.TestCase):
                         scenario.real_value(Decimal(100),
                                             nominal_year,
                                             real_year),
-                        Decimal(100) * accum)
+                        Decimal(100) * accum, 4)
                 # Sanity check: Confirm that real = nominal for the year
                 # that we're using for expressing real values.
                 self.assertEqual(

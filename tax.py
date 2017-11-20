@@ -6,25 +6,8 @@ These classes are callable with the form `tax(taxable_income, year)`
 from constants import Constants
 import collections
 from decimal import Decimal
-from ledger import *
-
-
-class SumOfDicts(dict):
-    """ A dict that lazily sums the values of two or more dicts """
-    def __init__(self, *args):
-        # Accepts any number of input dicts (or dict-like objects)
-        self.dicts = args
-
-    def __missing__(self, key):
-        # Attempt to return (and store) the sum of key values across all
-        # dicts in the SumOfDicts
-        return self.setdefault(key, sum((d[key] for d in self.dicts)))
-
-    def __contains__(self, key):
-        # Override the `in` operator to use the underlying dicts so that
-        # iteration/etc. will automatically look through to those
-        return all(key in d for d in self.dicts)
-
+from ledger import Person, Account
+from utility import *
 
 # NOTE: Consider making this a ledger-like object that stores values
 # year-over-year. These values might include:
@@ -77,8 +60,6 @@ class Tax(object):
             must be convertible to Money and `rate` must be convertible
             to Decimal. `rate` will be interpreted as a percentage (e.g.
             Decimal('0.03') is interpreted as 3%)
-        inflation_adjustments (dict): A dict of `{year: Decimal}` pairs,
-            where the Decimal value is the adjustment for the year.
         personal_deduction (dict): A dict of `{year: deduction}` pairs,
             where `deduction` is convertible to Money.
             The personal deduction for a given year is deducted from
@@ -94,6 +75,13 @@ class Tax(object):
             $1000 tax brackets, then `accum[year][$1000]` is equal to
             `tax_brackets[year][$10] * $10 + tax_brackets[year][$100] *
             $100`.
+        inflation_adjust: A method with the following form:
+            `inflation_adjust(val, this_year, target_year)`.
+            Returns a Money object (assuming Money-typed `val` input).
+            Finds a nominal value in `target_year` with the same real
+            value as `val`, a nominal value in `this_year`. Optional.
+            If not provided, all values are assumed to be in real terms,
+            so no inflation adjustment is performed.
 
     Args:
         taxable_income (Money, iterable): Taxable income for the year,
@@ -114,8 +102,8 @@ class Tax(object):
             themselves. These will generally be boutique tax credits.
             Optional.
     """
-    def __init__(self, tax_brackets, inflation_adjustments,
-                 personal_deduction={}, credit_rate={}):
+    def __init__(self, tax_brackets, personal_deduction={}, credit_rate={},
+                 inflation_adjust=None):
         # TODO: Add an initial_year arg. If it's provided, interpret any
         # scalar args (or, for tax_brackets, non-year-indexed dict) as
         # {initial_year: arg} dicts (i.e. single-value dicts). This will
@@ -128,11 +116,7 @@ class Tax(object):
         for year in tax_brackets:
             self.add_brackets(tax_brackets[year], year)
 
-        # Enforce {int: Decimal} types for inflation_adjustments:
-        self._inflation_adjustments = {
-            int(year): Decimal(inflation_adjustments[year])
-            for year in inflation_adjustments
-        }
+        self.inflation_adjust = build_inflation_adjust(inflation_adjust)
 
         if personal_deduction != {}:
             # Enforce {int: Money} types for personal_deduction:
@@ -167,10 +151,11 @@ class Tax(object):
         if year not in self._tax_brackets:
             # Get the inflation-adjusted tax brackets for this year:
             ny = nearest_year(self._tax_brackets, year)
-            brackets = {key * self._inflation_adjustments[year] /
-                        self._inflation_adjustments[ny]:
-                        self._tax_brackets[ny][key]
-                        for key in self._tax_brackets[ny]}
+            brackets = {
+                self.inflation_adjust(key, ny, year):
+                self._tax_brackets[ny][key]
+                for key in self._tax_brackets[ny]
+            }
             self.add_brackets(brackets, year)
         if bracket is None:
             return self._tax_brackets[year]
@@ -183,25 +168,18 @@ class Tax(object):
         # add_brackets() does this for us.
         if year not in self._accum:
             # Get the inflation-adjusted tax brackets for this year:
-            brackets = inflation_adjust(self._tax_brackets,
-                                        self._inflation_adjustments,
-                                        year)
+            brackets = extend_inflation_adjusted(
+                self._tax_brackets, self.inflation_adjust, year)
             self.add_brackets(brackets, year)
         if bracket is None:
             return self._accum[year]
         else:
             return self._accum[year][bracket]
 
-    def inflation_adjustments(self, year):
-        # This one is easy - there's no extrapolating to do, just use
-        # the values that you've been given.
-        return self._inflation_adjustments[year]
-
     def personal_deduction(self, year):
         """ The inflation-adjusted personal deduction. """
-        return inflation_adjust(self._personal_deduction,
-                                self._inflation_adjustments,
-                                year)
+        return extend_inflation_adjusted(
+            self._personal_deduction, self.inflation_adjust, year)
 
     def credit_rate(self, year):
         """ The credit rate for the given year. """
@@ -294,12 +272,12 @@ class Tax(object):
         if other_credits is None:
             other_credits = Money(0)
         # Accumulate the relevant tax information for the person:
-        taxable_income = person.taxable_income(year) + \
-            sum((x.taxable_income(year) for x in person.accounts))
-        tax_credits = person.tax_credit(year) + \
-            sum((x.tax_credit(year) for x in person.accounts))
-        tax_deductions = person.tax_deduction(year) + \
-            sum((x.tax_deduction(year) for x in person.accounts))
+        taxable_income = person.taxable_income_history[year] + \
+            sum((x.taxable_income_history[year] for x in person.accounts))
+        tax_credits = person.tax_credit_history[year] + \
+            sum((x.tax_credit_history[year] for x in person.accounts))
+        tax_deductions = person.tax_deduction_history[year] + \
+            sum((x.tax_deduction_history[year] for x in person.accounts))
         # Apply deductions to income, find taxes payable based on that,
         # and then apply tax credits.
         return self.tax_money(
@@ -389,159 +367,3 @@ class Tax(object):
         # Money (or Money-convertible)
         else:
             return self.tax_money(income, year, **kwargs)
-
-
-# NOTE: Eventually, we'll probably implement a separate class for each
-# province and delete this tuple. For now, though, the program logic is
-# simple enough that we can deal with all of this in one class
-# (CanadianResidentTax)
-# TODO (v2): Revise CanadianResidentTax to allow for different people to
-# be taxed at different provincial rates. (Build provincial tax
-# treatment objects dynamically based on input Persons?)
-FedProvTuple = collections.namedtuple('FedProvTuple', 'federal provincial')
-
-
-class CanadianResidentTax(Tax):
-    """ Federal or provincial tax treatment (Canada). """
-
-    def __init__(self, inflation_adjustments, jurisdiction='Federal'):
-        super().__init__(Constants.TaxBrackets[jurisdiction],
-                         inflation_adjustments,
-                         Constants.TaxBasicPersonalDeduction[jurisdiction],
-                         Constants.TaxCreditRate[jurisdiction])
-
-
-class CanadianResidentTax(object):
-    """ Federal and provincial tax treatment for a Canadian resident.
-
-    Attributes:
-        inflation_adjustments (dict): A dict of `{year: Decimal}` pairs.
-        province (str): The province in which income tax is paid.
-    """
-
-    def __init__(self, inflation_adjustments, province='BC'):
-        self.federal_tax = CanadianResidentTax(inflation_adjustments)
-        self.provincial_tax = CanadianResidentTax(
-            inflation_adjustments, province)
-
-    def _merge_brackets(self, brackets1, brackets2, bracket=None):
-        """ """
-        brackets = set(brackets1).union(brackets2)
-        bracket = {
-            bracket: brackets1[max(b for b in brackets1 if b <= bracket)] +
-            brackets2[max(b for b in brackets2 if b <= bracket)]
-        }
-        if bracket is None:
-            return brackets
-        else:
-            return brackets[bracket]
-
-    def tax_brackets(self, year, bracket=None):
-        """ Retrieve tax brackets for year. """
-        # Synthesize brackets from federal/provincial taxes
-        # NOTE: Avoid invoking the `_tax_brackets` dict directly,
-        # since they're extended on the fly by `tax_brackets()`
-        return self._merge_brackets(
-            self.federal_tax.tax_brackets(year),
-            self.provincial_tax.tax_brackets(year),
-            bracket
-        )
-
-    def accum(self, year, bracket=None):
-        """ The accumulated tax payable for a given tax bracket. """
-        return self._merge_brackets(
-            self.federal_tax.accum(year),
-            self.provincial_tax.accum(year),
-            bracket
-        )
-
-    def inflation_adjustments(self, year):
-        # This is identical between federal and provincial taxes.
-        return self.federal_tax.inflation_adjustments(year)
-
-    def personal_deduction(self, year):
-        """ The inflation-adjusted personal deduction. """
-        return self.federal_tax.personal_deduction(year) + \
-            self.provincial_tax.personal_deduction(year)
-
-    def credit_rate(self, year):
-        """ The credit rate for the given year. """
-        return self.federal_tax.credit_rate(year) + \
-            self.provincial_tax.credit_rate(year)
-
-    def marginal_bracket(self, taxable_income, year):
-        """ The top tax bracket that taxable_income falls into. """
-        return max(self.federal_tax.marginal_bracket(year),
-                   self.provincial_tax.marginal_bracket(year))
-
-    def marginal_rate(self, taxable_income, year):
-        """ The marginal rate for the given income. """
-        return self.federal_tax.marginal_rate(taxable_income, year) + \
-            self.provincial_tax.marginal_rate(taxable_income, year)
-
-    def tax_deductions(self, people, year):
-        """ Finds tax deductions available for each taxpayer.
-
-        Args:
-            sources (dict): A dict of `{taxpayer: sources}` pairs, where
-                `taxpayer` is of type `Person` and `sources` is a set of
-                income sources (accounts and people).
-            year (int): The year in which money is expressed (used for
-                inflation adjustment)
-
-        Returns:
-            A dict of `{taxpayer: (fed_deduction, prov_deduction)}`
-            pairs, where `*_deduction` is of type Money.
-            These are bundled into a FedProvTuple for convenience.
-        """
-        # TODO: Implement tax deductions.
-        return FedProvTuple(Money(0), Money(0))
-
-    def tax_credits(self, sources, year):
-        """ Finds tax credits available for each taxpayer.
-
-        Args:
-            sources (dict): A dict of `{taxpayer: sources}` pairs, where
-                `taxpayer` is of type `Person` and `sources` is a set of
-                income sources (accounts and people).
-            year (int): The year in which money is expressed (used for
-                inflation adjustment)
-
-        Returns:
-            A dict of `{taxpayer: (fed_credit, prov_credit)}` pairs,
-            where `*_deduction` is of type Money.
-            These are bundled into a FedProvTuple for convenience.
-        """
-        # TODO: Implement tax credit logic.
-        return FedProvTuple(Money(0), Money(0))
-
-    def __call__(self, income, year,
-                 other_federal_deductions=0, other_federal_credits=0,
-                 other_provincial_deductions=0, other_provincial_credits=0):
-        # In the easiest case, we don't have any account information;
-        # just pass the information on to federal/provincial Tax objects
-        if isinstance(income, Money):
-            return (
-                self.federal_tax(
-                    income, year,
-                    other_federal_deductions, other_federal_credits) +
-                self.provincial_tax(
-                    income, year,
-                    other_provincial_deductions, other_provincial_credits)
-            )
-        # If income sources are provided, divide those up into a
-        # separate call for each taxpayer.
-        # First, divide up accounts by taxpayer.
-        deductions = self.tax_deductions(sources, year)
-        credits = self.tax_credits(sources, year)
-
-        return (
-            self.federal_tax(
-                income, year,
-                other_federal_deductions + deductions.federal,
-                other_federal_credits + credits.federal) +
-            self.provincial_tax(
-                income, year,
-                other_provincial_deductions + deductions.provincial,
-                other_provincial_credits + credits.provincial)
-            )

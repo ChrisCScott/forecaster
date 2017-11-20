@@ -4,8 +4,10 @@ import unittest
 import decimal
 from decimal import Decimal
 from random import Random
-from ledger import Money
+from ledger import *
+from ledger_Canada import *
 from settings import Settings
+from constants import Constants
 from strategy import *
 
 
@@ -629,10 +631,10 @@ class TestTransactionStrategyMethods(unittest.TestCase):
             min(Constants.RRSPContributionRoomAccrualMax): Decimal(1)}
 
         # Set up some accounts for the tests.
-        cls.rrsp = RRSP(cls.person, cls.inflation_adjustments,
+        cls.rrsp = RRSP(cls.person, inflation_adjust=cls.inflation_adjustments,
                         balance=Money(200), contribution_room=Money(200),
                         initial_year=min(cls.inflation_adjustments.keys()))
-        cls.tfsa = TFSA(cls.person, cls.inflation_adjustments,
+        cls.tfsa = TFSA(cls.person, inflation_adjust=cls.inflation_adjustments,
                         balance=Money(100), contribution_room=Money(100),
                         initial_year=min(cls.inflation_adjustments.keys()))
         cls.taxableAccount = TaxableAccount(cls.person, balance=Money(1000))

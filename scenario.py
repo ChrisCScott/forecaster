@@ -13,8 +13,8 @@ class Scenario(object):
     is independent of any user action.
 
     Attributes:
-        inflation (dict): A dict of {int, Decimal} pairs where the key
-            is the year and the Decimal is the rate of inflation.
+        inflation (dict): A dict of {year, inflation} pairs where the
+            year is an int and inflation is a Decimal.
         stock_return (dict): A dict of {int, Decimal} pairs where the
             key is the year and the Decimal is the rate of return for
             stocks.
@@ -278,6 +278,29 @@ class Scenario(object):
             real_year = settings.display_year
         return value * self.accumulation_function(nominal_year, real_year)
 
+    def inflation_adjustments(self, base_year):
+        """ Annual inflation adjustment factors relative to base_year.
+
+        Returns:
+            A dict of {year: adjustment} pairs where the year is an int
+            and the adjustment is a Decimal.
+            `adjustment` is the cumulative inflation since `base_year`
+            (or, for years prior to `base_year`, it is the present value
+            of $1 in base_year)
+        """
+        return {year: Decimal(self.accumulation_function(year, base_year))
+                for year in self}
+
+    def inflation_adjust(self, val, this_year, target_year):
+        """ Inflation-adjusts a value from this_year to target_year. """
+        # TODO: Cache inflation adjustments (memoize accumulation_function?)
+        return val * self.accumulation_function(this_year, target_year)
+
     def __len__(self):
         """ Returns the number of years modelled by the Scenario. """
         return self.__len
+
+    def __iter__(self):
+        """ Iterates over years modelled by the Scenario. """
+        for year in range(self.initial_year, self.initial_year + len(self)):
+            yield year

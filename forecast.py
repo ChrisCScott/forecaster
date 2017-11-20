@@ -149,7 +149,7 @@ class Forecast(object):
     def __init__(self, people, assets, debts, scenario, contribution_strategy,
                  withdrawal_strategy, contribution_transaction_strategy,
                  withdrawal_transaction_strategy, allocation_strategy,
-                 tax_treatment, inputs=None):
+                 tax_treatment, inputs=None, display_year=None):
         ''' Constructs an instance of class Year.
 
         Starts with the end-of-year values from `last_year` and builds
@@ -216,5 +216,98 @@ class Forecast(object):
                 leave from work, buying a home) or for providing the
                 initial conditions for the first year.
         '''
+        # Store input values
+        self.people = people
+        self.assets = assets
+        self.debts = debts
+        self.scenario = scenario
+        self.contribution_strategy = contribution_strategy
+        self.withdrawal_strategy = withdrawal_strategy
+        self.contribution_transaction_strategy = \
+            contribution_transaction_strategy
+        self.withdrawal_transaction_strategy = withdrawal_transaction_strategy
+        self.allocation_strategy = allocation_strategy
+        self.tax_treatment = tax_treatment
+        self.inputs = inputs
+
+        # Prepare output dicts:
+        self.gross_income = {}
+        self.taxes_withheld_on_income = {}
+        self.net_income = {}
+
+        self.contributions_from_income = {}
+        self.contributions_from_carryover = {}
+        self.contributions_from_asset_sales = {}
+        self.gross_contributions = {}
+        self.reduction_from_debt = {}
+        self.reduction_from_other = {}
+        self.contribution_reductions = {}
+        self.net_contributions = {}
+
+        self.principal = {}
+        self.gross_return = {}
+        self.tax_withheld_on_return = {}
+        self.net_return = {}
+
+        self.withdrawals_from_retirement_accounts = {}
+        self.withdrawals_from_other_accounts = {}
+        self.gross_withdrawals = {}
+        self.tax_withheld_on_withdrawals = {}
+        self.net_withdrawals = {}
+
+        self.total_tax_withheld = {}
+        self.total_tax_owing = {}
+
+        self.living_standard = {}
+
+        # Record the values for the initial year:
+        self.record_year()
+
+        # Build the forecast year-by-year:
+        for year in self.scenario:
+            self.next_year()
+            self.record_year(year)
+
+    def next_year(self):
+        """ Adds a year to the forecast. """
         # TODO
         pass
+
+    def record_year(self, year):
+        """ Stores high-level values across accounts for this year."""
+        self.gross_income[year] = sum(
+            person.gross_income for person in self.people)
+        self.taxes_withheld_on_income[year] = sum(
+            person.tax_withheld for person in self.people)
+        self.net_income[year] = sum(
+            person.net_income for person in self.people)
+
+        # TODO: Determine refunds and other contributions
+        self.contributions_from_income[year] = self.contribution_strategy(
+            refund=0, other_contributions=0, net_income=self.net_income[year],
+            gross_income=self.gross_income[year],
+            inflation_adjustment=self.scenario.inflation_adjustment()
+        )
+        self.contributions_from_carryover[year] = 
+        self.contributions_from_asset_sales[year] = 
+        self.gross_contributions[year] = 
+        self.reduction_from_debt[year] = 
+        self.reduction_from_other[year] = 
+        self.contribution_reductions[year] = 
+        self.net_contributions[year] = 
+
+        self.principal[year] = 
+        self.gross_return[year] = 
+        self.tax_withheld_on_return[year] = 
+        self.net_return[year] = 
+
+        self.withdrawals_from_retirement_accounts[year] = 
+        self.withdrawals_from_other_accounts[year] = 
+        self.gross_withdrawals[year] = 
+        self.tax_withheld_on_withdrawals[year] = 
+        self.net_withdrawals[year] = 
+
+        self.total_tax_withheld[year] = 
+        self.total_tax_owing[year] = 
+
+        self.living_standard[year] = 

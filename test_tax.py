@@ -3,9 +3,10 @@
 import unittest
 import decimal
 from decimal import Decimal
-from settings import Settings
 from tax import *
 from ledger import *
+# Include extra accounts to test handling of different tax* behaviour:
+from ledger_Canada import *
 from test_helper import *
 
 
@@ -52,21 +53,24 @@ class TestTax(unittest.TestCase):
         }
 
     def test_init(self):
-        tax = Tax(self.tax_brackets, self.inflation_adjustments,
-                  self.personal_deduction, self.credit_rate)
+        tax = Tax(
+            self.tax_brackets,
+            inflation_adjust=self.inflation_adjustments,
+            personal_deduction=self.personal_deduction,
+            credit_rate=self.credit_rate)
         self.assertEqual(tax._tax_brackets, self.tax_brackets)
         self.assertEqual(tax._accum, self.accum)
-        self.assertEqual(tax._inflation_adjustments,
-                         self.inflation_adjustments)
+        self.assertTrue(callable(tax.inflation_adjust))
         self.assertEqual(tax._personal_deduction, self.personal_deduction)
         self.assertEqual(tax._credit_rate, self.credit_rate)
 
         # Omit optional arguments
-        tax = Tax(self.tax_brackets, self.inflation_adjustments)
+        tax = Tax(
+            self.tax_brackets,
+            inflation_adjust=self.inflation_adjustments)
         self.assertEqual(tax._tax_brackets, self.tax_brackets)
         self.assertEqual(tax._accum, self.accum)
-        self.assertEqual(tax._inflation_adjustments,
-                         self.inflation_adjustments)
+        self.assertTrue(callable(tax.inflation_adjust))
         self.assertEqual(tax._personal_deduction, {
             self.initial_year: Decimal(0)
         })
@@ -87,18 +91,19 @@ class TestTax(unittest.TestCase):
             str(year): str(self.inflation_adjustments[year])
             for year in self.inflation_adjustments
         }
-        tax = Tax(tax_brackets, inflation_adjustments)
+        tax = Tax(tax_brackets, inflation_adjust=inflation_adjustments)
         self.assertEqual(tax._tax_brackets, self.tax_brackets)
-        self.assertEqual(tax._inflation_adjustments,
-                         self.inflation_adjustments)
+        self.assertTrue(callable(tax.inflation_adjust))
         # Check types on the outputs
         self.assertTrue(type_check(tax._tax_brackets, {int: {Money: Decimal}}))
-        self.assertTrue(type_check(tax._inflation_adjustments, {int: Decimal}))
 
     def test_call(self):
         # Set up variables, including some convenience variables.
-        tax = Tax(self.tax_brackets, self.inflation_adjustments,
-                  self.personal_deduction, self.credit_rate)
+        tax = Tax(
+            self.tax_brackets,
+            inflation_adjust=self.inflation_adjustments,
+            personal_deduction=self.personal_deduction,
+            credit_rate=self.credit_rate)
         year = self.initial_year
         deduction = self.personal_deduction[year]
         # Type-convert
@@ -171,7 +176,8 @@ class TestTax(unittest.TestCase):
             initial_year=self.initial_year, owner=person1)
         balance2 = Money(500000)
         account2 = RRSP(
-            person1, self.inflation_adjustments, contribution_room=0,
+            person1, inflation_adjust=self.inflation_adjustments,
+            contribution_room=0,
             balance=balance2, rate=Decimal('0.05'),
             transactions={'start': -balance2}, nper=1,
             initial_year=self.initial_year)
@@ -209,16 +215,9 @@ class TestTax(unittest.TestCase):
         # be exactly double the tax owing on the baseline result.
         # (Anything else suggests that something is not being inflation-
         # adjusted properly, e.g. a bracket or a deduction)
-        self.assertEqual(tax(taxable_income1 * 2, self.double_year) / 2,
-                         tax(taxable_income1, self.initial_year))
-
-
-class TestCanadianResidentTax(unittest.TestCase):
-    """ Tests CanadianResidentTax """
-
-    def test_init(self):
-        pass
-
+        double_tax = tax(taxable_income1 * 2, self.double_year)
+        single_tax = tax(taxable_income1, self.initial_year)
+        self.assertEqual(double_tax, single_tax * 2)
 
 if __name__ == '__main__':
     unittest.main()
