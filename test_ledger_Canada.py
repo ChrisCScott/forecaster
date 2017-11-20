@@ -370,11 +370,6 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
             initial_year,
             initial_year + 1
         )
-        account = self.AccountType(
-            owner, *args,
-            inflation_adjust=self.inflation_adjust,
-            contribution_room=initial_contribution_room,
-            initial_year=initial_year, **kwargs)
         # Let's have income that's between the initial year's max
         # accrual and the next year's max accrual:
         income = Money(
@@ -389,6 +384,11 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
             raise_rate={year: 0 for year in self.owner.raise_rate_history},
             tax_treatment=self.owner.tax_treatment,
             initial_year=self.initial_year)
+        account = self.AccountType(
+            owner, *args,
+            inflation_adjust=self.inflation_adjust,
+            contribution_room=initial_contribution_room,
+            initial_year=initial_year, **kwargs)
         account.next_year()
         # New contribution room should be simply determined by the
         # accrual rate set in Constants plus rollover.
@@ -400,12 +400,6 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
 
         # Try again, but now with income greater than the inflation-
         # adjusted accrual max.
-        account = self.AccountType(
-            owner, *args,
-            inflation_adjust=self.inflation_adjust,
-            contribution_room=initial_contribution_room,
-            initial_year=initial_year, **kwargs)
-        account.add_transaction(account.contribution_room)  # no rollover
         income = max_accrual / Constants.RRSPContributionRoomAccrualRate + 1000
         owner = Person(
             self.owner.name, self.owner.birth_date,
@@ -414,6 +408,12 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
             raise_rate={year: 0 for year in self.owner.raise_rate_history},
             tax_treatment=self.owner.tax_treatment,
             initial_year=self.initial_year)
+        account = self.AccountType(
+            owner, *args,
+            inflation_adjust=self.inflation_adjust,
+            contribution_room=initial_contribution_room,
+            initial_year=initial_year, **kwargs)
+        account.add_transaction(account.contribution_room)  # no rollover
         account.next_year()
         # New contribution room should be the max accrual; no rollover.
         self.assertAlmostEqual(account.contribution_room,
@@ -533,7 +533,8 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
             self.owner.name, 1950,
             retirement_date=2015,
             gross_income=self.owner.gross_income,
-            raise_rate={year: 0 for year in accruals},
+            raise_rate={
+                year: 0 for year in range(min(accruals), max(accruals) + 2)},
             tax_treatment=self.owner.tax_treatment,
             initial_year=min(accruals))
         account = self.AccountType(
