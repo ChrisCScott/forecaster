@@ -64,6 +64,11 @@ class Forecast(object):
             a given year. See the documentation for
             `AllocationStrategy` for acceptable args when calling this
             object.
+        debt_payment_strategy (DebtPaymentStrategy): A callable object
+            that determines the schedule of debt payments, including
+            accelerated debt payments drawn from gross contributions.
+            See the documentation for `DebtPaymentStrategy` for
+            acceptable args when calling this object.
 
         tax_treatment (Tax): A callable object that determines the total
             amount of tax owing in a year. See the documentation for
@@ -149,7 +154,7 @@ class Forecast(object):
     def __init__(self, people, assets, debts, scenario, contribution_strategy,
                  withdrawal_strategy, contribution_transaction_strategy,
                  withdrawal_transaction_strategy, allocation_strategy,
-                 tax_treatment, inputs=None, display_year=None):
+                 debt_payment_strategy, tax_treatment, inputs=None):
         ''' Constructs an instance of class Year.
 
         Starts with the end-of-year values from `last_year` and builds
@@ -198,6 +203,12 @@ class Forecast(object):
                 a given year. See the documentation for
                 AllocationStrategy for acceptable args when calling this
                 object.
+            debt_payment_strategy (DebtPaymentStrategy): A callable
+                object that determines the schedule of debt payments,
+                including accelerated debt payments drawn from gross
+                contributions. See the documentation for
+                `DebtPaymentStrategy` for acceptable args when calling
+                this object.
             tax_treatment (Tax): A callable object that determines the
                 total amount of tax owing in a year. See documentation
                 for `Tax` for acceptable args when calling this object.
@@ -227,6 +238,7 @@ class Forecast(object):
             contribution_transaction_strategy
         self.withdrawal_transaction_strategy = withdrawal_transaction_strategy
         self.allocation_strategy = allocation_strategy
+        self.debt_payment_strategy = debt_payment_strategy
         self.tax_treatment = tax_treatment
         self.inputs = inputs
 
@@ -270,11 +282,15 @@ class Forecast(object):
 
     def next_year(self):
         """ Adds a year to the forecast. """
-        # TODO
-        pass
+        for person in self.people:
+            person.next_year()
+
+        for account in self.accounts:
+            account.next_year()
 
     def record_year(self, year):
         """ Stores high-level values across accounts for this year."""
+        # Determine gorss/net income for the family:
         self.gross_income[year] = sum(
             person.gross_income for person in self.people)
         self.taxes_withheld_on_income[year] = sum(
@@ -283,31 +299,124 @@ class Forecast(object):
             person.net_income for person in self.people)
 
         # TODO: Determine refunds and other contributions
+        # Determine gross contributions:
+        refund = 0  # TODO: refund amounts
+        other_contributions = 0  # TODO: carryover amounts
         self.contributions_from_income[year] = self.contribution_strategy(
-            refund=0, other_contributions=0, net_income=self.net_income[year],
+            refund=refund,
+            other_contributions=other_contributions,
+            net_income=self.net_income[year],
             gross_income=self.gross_income[year],
-            inflation_adjustment=self.scenario.inflation_adjustment()
+            inflation_adjust=self.scenario.inflation_adjust
         )
-        self.contributions_from_carryover[year] = 
-        self.contributions_from_asset_sales[year] = 
-        self.gross_contributions[year] = 
-        self.reduction_from_debt[year] = 
-        self.reduction_from_other[year] = 
-        self.contribution_reductions[year] = 
-        self.net_contributions[year] = 
+        # TODO: Split contributions_from_carryover into *_refunds and
+        # *_carryover dicts?
+        self.contributions_from_carryover[year] = 0  # TODO
+        self.contributions_from_asset_sales[year] = 0  # TODO
+        self.gross_contributions[year] = (
+            self.contributions_from_income[year] +
+            self.contributions_from_carryover[year] +
+            self.contributions_from_asset_sales[year]
+        )
+        # Determine contribution reductions:
+        # TODO: Include reduced contributions to pay for last year's
+        # outstanding taxes?
+        self.reduction_from_other[year] = 0
+        debt_payments = self.debt_payment_strategy(
+            self.gross_contributions[year] - self.reduction_from_other[year],
+            self.debts
+        )
+        self.reduction_from_debt[year] = sum(debt_payments.values())
+        self.contribution_reductions[year] = (
+            self.reduction_from_debt[year] +
+            self.reduction_from_other[year]
+        )
+        # Due to minimum debt payments, contribution reductions can be
+        # greater than gross contributions. Ensure the net_contributions
+        # is not negative.
+        self.net_contributions[year] = max(
+            self.gross_contributions[year] -
+            self.contribution_reductions[year],
+            Money(0)
+        )
 
-        self.principal[year] = 
-        self.gross_return[year] = 
-        self.tax_withheld_on_return[year] = 
-        self.net_return[year] = 
+        # Add inflow transactions to debts and accounts based on our
+        # net contributions and debt payments:
+        contributions = self.contribution_transaction_strategy(
+                self.net_contributions[year],
+                self.accounts
+        )
+        for debt in self.debts:
+            debt.add_transaction(
+                debt_payments[debt], self.debt_payment_strategy.timing)
+        for account in self.accounts:
+            account.add_transaction(
+                contributions[debt],
+                self.contribution_transaction_strategy.timing
+            )
 
-        self.withdrawals_from_retirement_accounts[year] = 
-        self.withdrawals_from_other_accounts[year] = 
-        self.gross_withdrawals[year] = 
-        self.tax_withheld_on_withdrawals[year] = 
-        self.net_withdrawals[year] = 
+        self.principal[year] = sum(
+            account.balance for account in self.accounts)
+        # TODO: Implement return logic. Consider adding a return()
+        # method to Account?
+        # TODO: Move this to after withdrawal recording (since we don't
+        # need to know returns explicitly to calculate withdrawals)?
+        self.gross_return[year] = 0  # TODO
+        self.tax_withheld_on_return[year] = 0  # TODO
+        self.net_return[year] = 0  # TODO
 
-        self.total_tax_withheld[year] = 
-        self.total_tax_owing[year] = 
+        self.withdrawals_from_retirement_accounts[year] = \
+            self.withdrawal_strategy(
+            benefits=Money(0),
+            net_income=self.net_income[year],
+            gross_income=self.gross_income[year],
+            principal=self.principal[year],
+            inflation_adjustment=self.scenario.inflation_adjust,
+            # TODO: Figure out a more gracious way to handle
+            # retirement_year. Should we pick the earlier year? The
+            # later year? Should we instead forego the all-at-once
+            # model of retirement and base withdrawals instead on a
+            # target living standard (i.e. reduce withdrawals based on
+            # family income?)
+            # This probably calls for a separate method and a redesign
+            # of withdrawal_strategy.
+            retirement_year=max((
+                person.retirement_year for person in people
+                if person.retirement_year is not None),
+                default=None),
+            this_year=year
+        )
+        self.withdrawals_from_other_accounts[year] = 0  # TODO
+        self.gross_withdrawals[year] = (
+            self.withdrawals_from_retirement_accounts[year] +
+            self.withdrawals_from_other_accounts[year]
+        )
+        self.tax_withheld_on_withdrawals[year] = sum(
+            account.tax_withheld for account in accounts
+        )
+        self.net_withdrawals[year] = (
+            self.gross_withdrawals[year] -
+            self.tax_withheld_on_withdrawals[year]
+        )
 
-        self.living_standard[year] = 
+        self.total_tax_withheld[year] = sum(
+            self.taxes_withheld_on_income[year],
+            self.tax_withheld_on_return[year],
+            self.tax_withheld_on_withdrawals[year]
+        )
+        self.total_tax_owing[year] = self.tax_treatment(self.people, year)
+
+        # TODO: Check Excel spreadsheet for calculation of this.
+        # As currently shown, this deducts all taxes owing from the
+        # living standard - even if some of those taxes are attributable
+        # to activity within a savings account (and not withdrawal/etc.
+        # activity that funds the living standard)
+        self.living_standard[year] = sum(  # inflows
+            self.gross_income[year],
+            self.gross_withdrawals[year],
+            refund * (1 - self.contribution_strategy.refund_reinvestment_rate)
+        ) - sum(  # outflows
+            self.total_tax_owing[year],  # TODO: Use tax_withheld?
+            self.net_contributions[year],
+            self.contribution_reductions[year]
+        )
