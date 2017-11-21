@@ -165,6 +165,12 @@ class ContributionStrategy(Strategy):
             strategy.
     """
 
+    # TODO: Reimplement inflation-adjustment to use a method.
+    # (Replace inflation_adjusted? Instead of bool, maybe client code
+    # can simply test for whether inflation_adjust is None? Or perhaps
+    # add a non-passed attribute that returns True iff inflation_adjust
+    # is not None?)
+
     def __init__(self, strategy=None, base_amount=None, rate=None,
                  refund_reinvestment_rate=None, inflation_adjusted=None,
                  settings=Settings):
@@ -916,3 +922,115 @@ class AllocationStrategy(Strategy):
         # TODO: Move min_equity and max_equity logic here to simplify
         # the logic of each strategy.
         return super().__call__(age, retirement_age, *args, **kwargs)
+
+
+class DebtPaymentStrategy(Strategy):
+    """ Determines payments for a group of debts.
+
+    Attributes:
+        strategy (str, func): Either a string corresponding to a
+            particular strategy or an instance of the strategy itself.
+            See `strategies` for acceptable keys.
+        strategies (dict): {str, func} pairs where each key identifies
+            a strategy (in human-readable text) and each value is a
+            function with the same arguments and return value as
+            transactions(). See its documentation for more info.
+            Acceptable keys include:
+                "Snowball"
+                "Avalanche"
+        timing (str, Decimal): Transactions are modelled as lump sums
+            which take place at this time.
+            This is expressed according to the `when` convention
+            described in `ledger.Account`.
+
+    Args:
+        available (Money): The total amount available for repayment
+            across all accounts.
+        debts (list): Debts to repay.
+
+    Returns:
+        A dict of {Debt, Money} pairs where each Debt object
+        is one of the input accounts and each Money object is a
+        transaction for that account.
+    """
+    
+    def __init__(self, strategy, timing, settings=Settings):
+        """ Constructor for DebtPaymentStrategy. """
+        super().__init__(strategy, settings)
+
+        self.timing = timing
+
+        # NOTE: We leave it to calling code to interpret str-valued
+        # timing. (We could convert to `When` here - consider it.)
+        self._param_check(self.timing, 'timing', (Decimal, str))
+
+    @strategy('Snowball')
+    def _strategy_snowball(self, available, debts, *args, **kwargs):
+        """ Pays off the smallest debt first. """
+        # First, ensure all minimum payments are made.
+        transactions = {debt: debt.min_inflow(when=self.timing)}
+
+        available -= sum(transactions[debt] * debt.reduction_rate
+                         for debt in debts)
+
+        if available <= 0:
+            return transactions
+
+        # Iterate over debts from smallest balance to largest:
+        for debt in sorted(debts, key=lambda x: x.balance, reverse=False):
+            # Debts that don't reduce savings can be ignored - assume
+            # they're fully repaid in the first year.
+            if debt.reduction_rate == 0:
+                transactions[debt] = debt.max_inflow(self.timing)
+                pass
+
+            # Payment is either the outstanding balance or the total of
+            # the available money remaining for payments
+            payment = min(
+                debt.max_inflow(self.timing) - transactions[debt],  # balance
+                available / debt.reduction_rate  # money available
+            )
+            transactions[debt] += payment
+            # `available` is at least partially taken from savings;
+            # only deduct that portion of the payment from `available`
+            available -= payment * debt.reduction_rate
+
+        return transactions
+
+    @strategy('Avalance')
+    def _strategy_snowball(self, available, debts, *args, **kwargs):
+        """ Pays off the highest-interest debt first. """
+        # First, ensure all minimum payments are made.
+        transactions = {debt: debt.min_inflow(when=self.timing)}
+
+        available -= sum(transactions[debt] * debt.reduction_rate
+                         for debt in debts)
+
+        if available <= 0:
+            return transactions
+
+        # Iterate over debts from largest rate to smallest:
+        for debt in sorted(debts, key=lambda x: x.rate, reverse=True):
+            # Debts that don't reduce savings can be ignored - assume
+            # they're fully repaid in the first year.
+            if debt.reduction_rate == 0:
+                transactions[debt] = debt.max_inflow(self.timing)
+                pass
+
+            # Payment is either the outstanding balance or the total of
+            # the available money remaining for payments
+            payment = min(
+                debt.max_inflow(self.timing) - transactions[debt],  # balance
+                available / debt.reduction_rate  # money available
+            )
+            transactions[debt] += payment
+            # `available` is at least partially taken from savings;
+            # only deduct that portion of the payment from `available`
+            available -= payment * debt.reduction_rate
+
+        return transactions
+
+    # Overriding __call__ solely for intellisense purposes.
+    def __call__(self, available, debts, *args, **kwargs):
+        """ Returns a dict of {account, Money} pairs. """
+        return super().__call__(available, debts, *args, **kwargs)
