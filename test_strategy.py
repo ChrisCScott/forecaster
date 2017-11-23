@@ -1108,5 +1108,307 @@ class TestAllocationStrategyMethods(unittest.TestCase):
             self.assertEqual(s(age).equity, Decimal(0.5))
             self.assertEqual(s(age).fixed_income, Decimal(0.5))
 
+
+class TestDebtPaymentStrategyMethods(unittest.TestCase):
+    """ A test case for the DebtPaymentStrategy class """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.person = Person('Testy McTesterson', 1980, retirement_date=2045)
+        cls.initial_year = 2000
+        cls.inflation_adjustments = {
+            cls.initial_year: Decimal(1),
+            cls.initial_year + 1: Decimal(1.25),
+            min(Constants.RRSPContributionRoomAccrualMax): Decimal(1)}
+
+        # Set up some accounts for the tests.
+        # Debt 1: No interest, accelerated, $10 min.
+        cls.debt1 = Debt(cls.person, balance=Money(200), rate=0,
+                         initial_year=cls.initial_year,
+                         minimum_payment=Money(10), reduction_rate=1,
+                         accelerate_payment=True)
+        # Debt 2: Same as debt 1, but only 50% is drawn from savings
+        # (so payments should be 2x as large)
+        cls.debt2 = Debt(cls.person, balance=Money(200), rate=0,
+                         initial_year=cls.initial_year,
+                         minimum_payment=Money(10), reduction_rate=0.5,
+                         accelerate_payment=True)
+        # Debt 3: Non-accelerated debt with 12.5% interest rate.
+        cls.debt3 = Debt(cls.person, balance=Money(200), rate=0.125,
+                         initial_year=cls.initial_year,
+                         minimum_payment=Money(10), reduction_rate=1,
+                         accelerate_payment=False)
+        # Debt 4: Acclerated debt with 25% interest rate
+        cls.debt4 = Debt(cls.person, balance=Money(200), rate=0.25,
+                         initial_year=cls.initial_year,
+                         minimum_payment=Money(10), reduction_rate=1,
+                         accelerate_payment=True)
+        # Debt 5: Debt paid entirely from living expenses
+        cls.debt5 = Debt(cls.person, balance=Money(200), rate=0,
+                         initial_year=cls.initial_year,
+                         minimum_payment=Money(10), reduction_rate=0,
+                         accelerate_payment=True)
+        cls.debts = {cls.debt1, cls.debt2, cls.debt3, cls.debt4, cls.debt5}
+
+    def test_init(self):
+        """ Tests DebtPaymentStrategy.__init__ """
+        s = DebtPaymentStrategy()
+        # TransactionStrategy doesn't have a default init, so test with
+        # TransactionInStrategy defaults:
+        s = TransactionStrategy(Settings.transaction_in_strategy,
+                                Settings.transaction_in_weights,
+                                Settings.transaction_in_timing)
+        self.assertEqual(s.strategy, Settings.transaction_in_strategy)
+        self.assertEqual(s.weights, Settings.transaction_in_weights)
+        self.assertEqual(s.timing, Settings.transaction_in_timing)
+
+        # Try default init with TransactionInStrategy:
+        s = TransactionInStrategy()
+        self.assertEqual(s.strategy, Settings.transaction_in_strategy)
+        self.assertEqual(s.weights, Settings.transaction_in_weights)
+        self.assertEqual(s.timing, Settings.transaction_in_timing)
+
+        # Try default init with TransactionOutStrategy:
+        s = TransactionOutStrategy()
+        self.assertEqual(s.strategy, Settings.transaction_out_strategy)
+        self.assertEqual(s.weights, Settings.transaction_out_weights)
+        self.assertEqual(s.timing, Settings.transaction_out_timing)
+
+        # Test explicit init for subclasses:
+        strategy = 'Weighted'
+        weights = {'RRSP': Decimal(0.5),
+                   'TFSA': Decimal(0.25),
+                   'TaxableAccount': Decimal(0.25)}
+        timing = 'end'
+        settings = Settings()
+        s = TransactionInStrategy(strategy, weights, timing, settings)
+        self.assertEqual(s.strategy, strategy)
+        self.assertEqual(s.weights, weights)
+        self.assertEqual(s.timing, timing)
+
+        # Test implicit init via Settings
+        settings.transaction_in_strategy = strategy
+        settings.transaction_in_weights = weights
+        settings.transaction_in_timing = timing
+        s = TransactionInStrategy(settings=settings)
+        self.assertEqual(s.strategy, strategy)
+        self.assertEqual(s.weights, weights)
+        self.assertEqual(s.timing, timing)
+
+        # Test invalid strategies
+        with self.assertRaises(ValueError):
+            s = TransactionInStrategy(strategy='Not a strategy')
+        with self.assertRaises(TypeError):
+            s = TransactionInStrategy(strategy=1)
+        # Test invalid weight
+        with self.assertRaises(TypeError):  # not a dict
+            s = TransactionInStrategy(weights='a')
+        with self.assertRaises(TypeError):  # dict with non-str keys
+            s = TransactionInStrategy(weights={1: 5})
+        with self.assertRaises(TypeError):  # dict with non-numeric values
+            s = TransactionInStrategy(weights={'RRSP', 'Not a number'})
+        # Test invalid timing
+        with self.assertRaises(TypeError):
+            s = TransactionInStrategy(timing={})
+
+    def test_strategy_ordered(self):
+        """ Tests TransactionStrategy._strategy_ordered. """
+        # Run each test on inflows and outflows
+        method = TransactionStrategy._strategy_ordered
+        s_in = TransactionInStrategy(method, {
+            'RRSP': 1,
+            'TFSA': 2,
+            'TaxableAccount': 3
+            })
+        s_out = TransactionOutStrategy(method, {
+            'RRSP': 1,
+            'TFSA': 2,
+            'TaxableAccount': 3
+            })
+
+        # Try a simple scenario: The amount being contributed is less
+        # than the available contribution room in the top-weighted
+        # account type.
+        results = s_in(Money(100), self.accounts)
+        self.assertEqual(results[self.rrsp], Money(100))
+        self.assertEqual(results[self.tfsa], Money(0))
+        self.assertEqual(results[self.taxableAccount], Money(0))
+        # Try again with outflows.
+        results = s_out(-Money(100), self.accounts)
+        self.assertEqual(results[self.rrsp], Money(-100))
+        self.assertEqual(results[self.tfsa], Money(0))
+        self.assertEqual(results[self.taxableAccount], Money(0))
+
+        # Now contribute more than the rrsp will accomodate. The extra
+        # $50 should go to the tfsa, which is next in line.
+        results = s_in(Money(250), self.accounts)
+        self.assertEqual(results[self.rrsp], Money(200))
+        self.assertEqual(results[self.tfsa], Money(50))
+        self.assertEqual(results[self.taxableAccount], Money(0))
+        results = s_out(-Money(250), self.accounts)
+        self.assertEqual(results[self.rrsp], Money(-200))
+        self.assertEqual(results[self.tfsa], Money(-50))
+        self.assertEqual(results[self.taxableAccount], Money(0))
+
+        # Now contribute a lot of money - the rrsp and tfsa will get
+        # filled and the remainder will go to the taxable account.
+        results = s_in(Money(1000), self.accounts)
+        self.assertEqual(results[self.rrsp], Money(200))
+        self.assertEqual(results[self.tfsa], Money(100))
+        self.assertEqual(results[self.taxableAccount], Money(700))
+        results = s_out(-Money(1000), self.accounts)
+        self.assertEqual(results[self.rrsp], Money(-200))
+        self.assertEqual(results[self.tfsa], Money(-100))
+        self.assertEqual(results[self.taxableAccount], Money(-700))
+
+        # For outflows only, try withdrawing more than the accounts have
+        results = s_out(-Money(10000), self.accounts)
+        self.assertEqual(results[self.rrsp], Money(-200))
+        self.assertEqual(results[self.tfsa], Money(-100))
+        self.assertEqual(results[self.taxableAccount], Money(-1000))
+
+        # Now change the order and confirm that it still works
+        s_in.weights['RRSP'] = 2
+        s_in.weights['TFSA'] = 1
+        results = s_in(Money(100), self.accounts)
+        self.assertEqual(results[self.rrsp], Money(0))
+        self.assertEqual(results[self.tfsa], Money(100))
+        self.assertEqual(results[self.taxableAccount], Money(0))
+
+    def test_strategy_weighted(self):
+        """ Tests TransactionStrategy._strategy_weighted. """
+        # Run each test on inflows and outflows
+        method = TransactionStrategy._strategy_weighted
+        rrsp_weight = Decimal('0.4')
+        tfsa_weight = Decimal('0.3')
+        taxableAccount_weight = Decimal('0.3')
+        s_in = TransactionInStrategy(method, {
+            'RRSP': rrsp_weight,
+            'TFSA': tfsa_weight,
+            'TaxableAccount': taxableAccount_weight
+            })
+        s_out = TransactionOutStrategy(method, {
+            'RRSP': rrsp_weight,
+            'TFSA': tfsa_weight,
+            'TaxableAccount': taxableAccount_weight
+            })
+
+        # Try a simple scenario: The amount being contributed is less
+        # than the available contribution room for each account
+        val = Money(min([a.max_inflow() for a in self.accounts]))
+        results = s_in(val, self.accounts)
+        self.assertEqual(sum(results.values()), val)
+        self.assertEqual(results[self.rrsp], val * rrsp_weight)
+        self.assertEqual(results[self.tfsa], val * tfsa_weight)
+        self.assertEqual(results[self.taxableAccount],
+                         val * taxableAccount_weight)
+        # Try again with outflows. Amount withdrawn is less than
+        # the balance of each account.
+        val = -Money(max([a.max_outflow() for a in self.accounts]))
+        results = s_out(val, self.accounts)
+        self.assertEqual(sum(results.values()), val)
+        self.assertEqual(results[self.rrsp], val * rrsp_weight)
+        self.assertEqual(results[self.tfsa], val * tfsa_weight)
+        self.assertEqual(results[self.taxableAccount],
+                         val * taxableAccount_weight)
+
+        # Now contribute enough to exceed the TFSA's contribution room.
+        # This can be implemented in various reasonable ways, but we
+        # should ensure that:
+        # 1 - TFSA contribution is maxed
+        # 2 - The total amount contributed is equal to `val`
+        # 3 - More is contributed to RRSPs than taxable accounts.
+        # 4 - The proportion of RRSP to taxable contributions should be
+        #     in a reasonable range, depending on whether (a) only the
+        #     overage is reweighted to exclude the TFSA or (b) the
+        #     entire contribution to those accounts is reweighted to
+        #     exclude the TFSA. (This is left to the implementation.)
+        threshold = self.tfsa.max_inflow() / tfsa_weight
+        overage = Money(50)
+        val = Money(threshold + overage)
+        results = s_in(val, self.accounts)
+        # Do tests 1-3:
+        self.assertEqual(results[self.tfsa], self.tfsa.max_inflow())
+        self.assertAlmostEqual(sum(results.values()), val, places=3)
+        self.assertGreater(results[self.rrsp], results[self.taxableAccount])
+        # Now we move on to test 4, which is a bit trickier.
+        # We want to be in the range defined by:
+        # 1 - Only the overage is reweighted, and
+        # 2 - The entire contribution to the RRSP is reweighted
+        rrsp_vals = [
+            val * rrsp_weight + overage * rrsp_weight / (1 - tfsa_weight),
+            (val - self.tfsa.max_inflow()) * rrsp_weight / (1 - tfsa_weight)
+        ]
+        self.assertGreaterEqual(results[self.rrsp], min(rrsp_vals))
+        self.assertLessEqual(results[self.rrsp], max(rrsp_vals))
+        taxable_vals = [
+            val * taxableAccount_weight +
+            overage * taxableAccount_weight / (1 - tfsa_weight),
+            (val - self.tfsa.max_inflow()) *
+            taxableAccount_weight / (1 - tfsa_weight)
+        ]
+        self.assertGreaterEqual(results[self.taxableAccount],
+                                min(taxable_vals))
+        self.assertLessEqual(results[self.taxableAccount],
+                             max(taxable_vals))
+
+        # Try again with outflows.
+        threshold = self.tfsa.max_outflow() / tfsa_weight
+        overage = -overage
+        val = Money(threshold + overage)
+        results = s_out(val, self.accounts)
+        self.assertEqual(results[self.tfsa], self.tfsa.max_outflow())
+        self.assertAlmostEqual(sum(results.values()), val, places=3)
+        self.assertLess(results[self.rrsp], results[self.taxableAccount])
+        rrsp_vals = [
+            val * rrsp_weight + overage * rrsp_weight / (1 - tfsa_weight),
+            (val - self.tfsa.max_outflow()) * rrsp_weight / (1 - tfsa_weight)
+        ]
+        self.assertGreaterEqual(results[self.rrsp], min(rrsp_vals))
+        self.assertLessEqual(results[self.rrsp], max(rrsp_vals))
+        taxable_vals = [
+            val * taxableAccount_weight +
+            overage * taxableAccount_weight / (1 - tfsa_weight),
+            (val - self.tfsa.max_outflow()) *
+            taxableAccount_weight / (1 - tfsa_weight)
+        ]
+        self.assertGreaterEqual(results[self.taxableAccount],
+                                min(taxable_vals))
+        self.assertLessEqual(results[self.taxableAccount],
+                             max(taxable_vals))
+
+        # Now contribute a lot of money - the rrsp and tfsa will get
+        # filled and the remainder will go to the taxable account.
+        threshold = max(self.rrsp.max_inflow() / rrsp_weight,
+                        self.tfsa.max_inflow() / tfsa_weight)
+        overage = abs(overage)
+        val = threshold + overage
+        results = s_in(val, self.accounts)
+        self.assertEqual(sum(results.values()), val)
+        self.assertEqual(results[self.rrsp], self.rrsp.max_inflow())
+        self.assertEqual(results[self.tfsa], self.tfsa.max_inflow())
+        self.assertEqual(results[self.taxableAccount], val -
+                         (self.rrsp.max_inflow() + self.tfsa.max_inflow()))
+        # For withdrawals, try withdrawing just a little less than the
+        # total available balance. This will clear out the RRSP and TFSA
+        # NOTE: `overage` is positive; other values below are negative
+        val = self.rrsp.max_outflow() + self.tfsa.max_outflow() + \
+            self.taxableAccount.max_outflow() + overage
+        results = s_out(val, self.accounts)
+        self.assertEqual(sum(results.values()), val)
+        self.assertEqual(results[self.rrsp], self.rrsp.max_outflow())
+        self.assertEqual(results[self.tfsa], self.tfsa.max_outflow())
+        self.assertEqual(results[self.taxableAccount],
+                         self.taxableAccount.max_outflow() + overage)
+
+        # For outflows only, try withdrawing more than the accounts have
+        val = self.rrsp.max_outflow() + self.tfsa.max_outflow() + \
+            self.taxableAccount.max_outflow() - overage
+        results = s_out(val, self.accounts)
+        self.assertEqual(results[self.rrsp], self.rrsp.max_outflow())
+        self.assertEqual(results[self.tfsa], self.tfsa.max_outflow())
+        self.assertEqual(results[self.taxableAccount],
+                         self.taxableAccount.max_outflow())
+
 if __name__ == '__main__':
     unittest.main()

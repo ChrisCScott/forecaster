@@ -953,8 +953,8 @@ class DebtPaymentStrategy(Strategy):
         is one of the input accounts and each Money object is a
         transaction for that account.
     """
-    
-    def __init__(self, strategy, timing, settings=Settings):
+
+    def __init__(self, strategy='Avalanche', timing='end', settings=Settings):
         """ Constructor for DebtPaymentStrategy. """
         super().__init__(strategy, settings)
 

@@ -91,7 +91,7 @@ class TestRegisteredAccountMethods(TestAccountMethods):
         self.assertEqual(account.contribution_room, self.contribution_room)
 
         # Try again with default contribution_room
-        account = self.AccountType(self.owner, *args, 
+        account = self.AccountType(self.owner, *args,
                                    inflation_adjust=self.inflation_adjust,
                                    **kwargs)
         self.assertEqual(account.contributor, self.owner)
@@ -711,105 +711,6 @@ class TestTaxableAccountMethods(TestAccountMethods):
         self.assertEqual(account.taxable_income, Money(0))
         account.add_transaction(-200, 'start')
         self.assertEqual(account.taxable_income, Money(100)/2)
-
-
-class TestDebtMethods(TestAccountMethods):
-    """ Test Debt. """
-
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.AccountType = Debt
-
-        # Debt takes three args: reduction_rate (Decimal),
-        # minimum_payment (Money), and accelerate_payment (bool)
-        cls.minimum_payment = Money(10)
-        cls.reduction_rate = Decimal(1)
-        cls.accelerate_payment = True
-
-    def test_init(self, *args, **kwargs):
-        super().test_init(*args, **kwargs)
-
-        # Test default init.
-        account = self.AccountType(self.owner, *args, **kwargs)
-        self.assertEqual(account.minimum_payment, Money(0))
-        self.assertEqual(account.reduction_rate, Settings.DebtReductionRate)
-        self.assertEqual(account.accelerate_payment,
-                         Settings.DebtAcceleratePayment)
-
-        # Test init with appropriate-type args.
-        minimum_payment = Money(100)
-        reduction_rate = Decimal(1)
-        accelerate_payment = False
-        account = self.AccountType(
-            self.owner, *args,
-            minimum_payment=minimum_payment, reduction_rate=reduction_rate,
-            accelerate_payment=accelerate_payment, **kwargs)
-        self.assertEqual(account.minimum_payment, minimum_payment)
-        self.assertEqual(account.reduction_rate, reduction_rate)
-        self.assertEqual(account.accelerate_payment, accelerate_payment)
-
-        # Test init with args of alternative types.
-        minimum_payment = 100
-        reduction_rate = 1
-        accelerate_payment = 'Evaluates to True, like all non-empty strings'
-        account = self.AccountType(
-            self.owner, *args,
-            minimum_payment=minimum_payment, reduction_rate=reduction_rate,
-            accelerate_payment=accelerate_payment, **kwargs)
-        self.assertEqual(account.minimum_payment, minimum_payment)
-        self.assertEqual(account.reduction_rate, reduction_rate)
-        self.assertEqual(account.accelerate_payment, bool(accelerate_payment))
-
-        # Test init with args of non-convertible types
-        with self.assertRaises(decimal.InvalidOperation):
-            account = self.AccountType(
-                self.owner, *args, minimum_payment='invalid', **kwargs)
-        with self.assertRaises(decimal.InvalidOperation):
-            account = self.AccountType(
-                self.owner, *args, reduction_rate='invalid', **kwargs)
-
-    def test_max_inflow(self, *args, **kwargs):
-        # Test when balance is greater than minimum payment
-        account = self.AccountType(
-            self.owner, *args, minimum_payment=100, balance=-1000, **kwargs)
-        self.assertEqual(account.max_inflow(), Money(1000))
-
-        # Test when balance is less than minimum payment
-        account = self.AccountType(
-            self.owner, *args, minimum_payment=1000, balance=-100, **kwargs)
-        self.assertEqual(account.max_inflow(), Money(100))
-
-        # Test when minimum payment and balance are equal in size
-        account = self.AccountType(
-            self.owner, *args, minimum_payment=100, balance=-100, **kwargs)
-        self.assertEqual(account.max_inflow(), Money(100))
-
-        # Test with 0 balance
-        account = self.AccountType(
-            self.owner, *args, minimum_payment=100, balance=0, **kwargs)
-        self.assertEqual(account.max_inflow(), Money(0))
-
-    def test_min_inflow(self, *args, **kwargs):
-        # Test when balance is greater than minimum payment
-        account = self.AccountType(
-            self.owner, *args, minimum_payment=100, balance=-1000, **kwargs)
-        self.assertEqual(account.min_inflow(), Money(100))
-
-        # Test when balance is less than minimum payment
-        account = self.AccountType(
-            self.owner, *args, minimum_payment=1000, balance=-100, **kwargs)
-        self.assertEqual(account.min_inflow(), Money(100))
-
-        # Test when minimum payment and balance are equal in size
-        account = self.AccountType(
-            self.owner, *args, minimum_payment=100, balance=-100, **kwargs)
-        self.assertEqual(account.min_inflow(), Money(100))
-
-        # Test with 0 balance
-        account = self.AccountType(
-            self.owner, *args, minimum_payment=100, balance=0, **kwargs)
-        self.assertEqual(account.min_inflow(), Money(0))
 
 
 class TestPrincipleResidenceMethods(TestAccountMethods):
