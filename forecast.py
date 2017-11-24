@@ -247,33 +247,41 @@ class Forecast(object):
         self.inputs = inputs
 
         # Prepare output dicts:
+        # Income
         self.gross_income = {}
         self.taxes_withheld_on_income = {}
         self.net_income = {}
 
-        self.contributions_from_income = {}
-        self.contributions_from_carryover = {}
-        self.contributions_from_asset_sales = {}
+        # Gross contribution
+        self.refund = {}
+        self.carryover = {}
+        self.asset_sale = {}
         self.gross_contributions = {}
+
+        # Contribution reductions
         self.reduction_from_debt = {}
         self.reduction_from_other = {}
         self.contribution_reductions = {}
         self.net_contributions = {}
 
+        # Principal (and return on principal)
         self.principal = {}
         self.gross_return = {}
         self.tax_withheld_on_return = {}
         self.net_return = {}
 
+        # Withdrawals
         self.withdrawals_from_retirement_accounts = {}
         self.withdrawals_from_other_accounts = {}
         self.gross_withdrawals = {}
         self.tax_withheld_on_withdrawals = {}
         self.net_withdrawals = {}
 
+        # Total tax
         self.total_tax_withheld = {}
         self.total_tax_owing = {}
 
+        # Living standard
         self.living_standard = {}
 
         # Record the values for the initial year:
@@ -289,7 +297,10 @@ class Forecast(object):
         for person in self.people:
             person.next_year()
 
-        for account in self.accounts:
+        for account in self.assets:
+            account.next_year()
+
+        for account in self.debts:
             account.next_year()
 
     def record_income(self, year):
@@ -304,23 +315,15 @@ class Forecast(object):
     def record_gross_contribution(self, year):
         # TODO: Determine refunds and other contributions
         # Determine gross contributions:
-        refund = 0  # TODO: refund amounts
-        other_contributions = 0  # TODO: carryover amounts
-        self.contributions_from_income[year] = self.contribution_strategy(
-            refund=refund,
-            other_contributions=other_contributions,
+        self.refund[year] = 0  # TODO: refund amounts
+        self.carryover[year] = 0  # TODO
+        self.asset_sale[year] = 0  # TODO
+        self.gross_contributions[year] = self.contribution_strategy(
+            year=year,
+            refund=self.refund[year],
+            other_contributions=self.carryover[year] + self.asset_sale[year],
             net_income=self.net_income[year],
-            gross_income=self.gross_income[year],
-            inflation_adjust=self.scenario.inflation_adjust
-        )
-        # TODO: Split contributions_from_carryover into *_refunds and
-        # *_carryover dicts?
-        self.contributions_from_carryover[year] = 0  # TODO
-        self.contributions_from_asset_sales[year] = 0  # TODO
-        self.gross_contributions[year] = (
-            self.contributions_from_income[year] +
-            self.contributions_from_carryover[year] +
-            self.contributions_from_asset_sales[year]
+            gross_income=self.gross_income[year]
         )
 
     def record_contribution_reductions(self, year):
@@ -372,13 +375,13 @@ class Forecast(object):
         )
         for account in contributions:
             account.add_transaction(
-                contributions[debt],
+                contributions[account],
                 self.contribution_transaction_strategy.timing
             )
 
     def record_principal(self, year):
         self.principal[year] = sum(
-            account.balance for account in self.accounts)
+            account.balance for account in self.assets)
 
     def record_returns(self, year):
         self.gross_return[year] = sum(a.returns for a in self.assets)
@@ -391,7 +394,7 @@ class Forecast(object):
         # it probably makes sense to consider it all together.
         self.tax_withheld_on_return[year] = 0  # TODO
         self.net_return[year] = (
-            returns - self.tax_withheld_on_return[year]
+            self.gross_return[year] - self.tax_withheld_on_return[year]
         )
 
     def record_withdrawals(self, year):
@@ -403,9 +406,9 @@ class Forecast(object):
         # This probably calls for a separate method and a redesign
         # of withdrawal_strategy.
         retirement_year = max((
-            person.retirement_year for person in people
-            if person.retirement_year is not None),
-            default=None)
+            person.retirement_date for person in self.people
+            if person.retirement_date is not None),
+            default=None).year
 
         self.withdrawals_from_retirement_accounts[year] = \
             self.withdrawal_strategy(
@@ -413,9 +416,8 @@ class Forecast(object):
             net_income=self.net_income[year],
             gross_income=self.gross_income[year],
             principal=self.principal[year],
-            inflation_adjustment=self.scenario.inflation_adjust,
             retirement_year=retirement_year,
-            this_year=year
+            year=year
         )
         self.withdrawals_from_other_accounts[year] = 0  # TODO
         self.gross_withdrawals[year] = (
@@ -423,7 +425,7 @@ class Forecast(object):
             self.withdrawals_from_other_accounts[year]
         )
         self.tax_withheld_on_withdrawals[year] = sum(
-            account.tax_withheld for account in accounts
+            account.tax_withheld for account in self.assets
         )
         self.net_withdrawals[year] = (
             self.gross_withdrawals[year] -
@@ -432,9 +434,9 @@ class Forecast(object):
 
     def record_total_tax(self, year):
 
-        self.total_tax_withheld[year] = sum(
-            self.taxes_withheld_on_income[year],
-            self.tax_withheld_on_return[year],
+        self.total_tax_withheld[year] = (
+            self.taxes_withheld_on_income[year] +
+            self.tax_withheld_on_return[year] +
             self.tax_withheld_on_withdrawals[year]
         )
         self.total_tax_owing[year] = self.tax_treatment(self.people, year)
@@ -445,13 +447,14 @@ class Forecast(object):
         # living standard - even if some of those taxes are attributable
         # to activity within a savings account (and not withdrawal/etc.
         # activity that funds the living standard)
-        self.living_standard[year] = sum(  # inflows
-            self.gross_income[year],
-            self.gross_withdrawals[year],
-            refund * (1 - self.contribution_strategy.refund_reinvestment_rate)
-        ) - sum(  # outflows
-            self.total_tax_owing[year],  # TODO: Use tax_withheld?
-            self.net_contributions[year],
+        self.living_standard[year] = (  # inflows
+            self.gross_income[year] +
+            self.gross_withdrawals[year] +
+            self.refund[year] *
+            (1 - self.contribution_strategy.refund_reinvestment_rate)
+        ) - (  # outflows
+            self.total_tax_owing[year] +  # TODO: Use tax_withheld?
+            self.net_contributions[year] +
             self.contribution_reductions[year]
         )
 

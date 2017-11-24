@@ -59,22 +59,22 @@ class TestForecast(unittest.TestCase):
         )
         debt = Debt(
             person, balance=-1000, rate=1, minimum_payment=Money(100),
-            reduction_rate=1, accelerate_payment=True
+            reduction_rate=1, accelerate_payment=True,
+            initial_year=initial_year
         )
         contribution_strategy = ContributionStrategy(
             strategy=ContributionStrategy._strategy_constant_contribution,
             base_amount=Money('50000'),
             rate=Decimal(0),
             refund_reinvestment_rate=1,
-            inflation_adjusted=True
+            inflation_adjust=scenario.inflation_adjust
         )
         withdrawal_strategy = WithdrawalStrategy(
             strategy=WithdrawalStrategy._strategy_constant_withdrawal,
-            rate=Money('50000'),
-            min_living_standard=Money(0),
+            base_amount=Money('50000'),
             timing='end',
             income_adjusted=False,
-            inflation_adjusted=True
+            inflation_adjust=scenario.inflation_adjust
         )
         contribution_transaction_strategy = TransactionInStrategy(
             strategy=TransactionInStrategy._strategy_ordered,
@@ -107,6 +107,11 @@ class TestForecast(unittest.TestCase):
             withdrawal_transaction_strategy, allocation_strategy,
             debt_payment_strategy, tax
         )
+
+        # TODO: Calculate the expected results for key values for each
+        # year and test them here. (Use net_income, net_contributions,
+        # principal, net_return, net_withdrawals, total_tax_owing,
+        # and living_standard)
 
 if __name__ == '__main__':
     unittest.main()
