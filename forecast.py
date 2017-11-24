@@ -149,24 +149,27 @@ class Forecast(object):
         living_standard (dict): The total amount of money available for
             spending, net of taxes, contributions, debt payments, etc.
     '''
-    # TODO (v2): Implement benefits logic.
 
     def __init__(self, people, assets, debts, scenario, contribution_strategy,
                  withdrawal_strategy, contribution_transaction_strategy,
                  withdrawal_transaction_strategy, allocation_strategy,
-                 debt_payment_strategy, tax_treatment, inputs=None,
-                 context=None):
-        ''' Constructs an instance of class Year.
+                 debt_payment_strategy, tax_treatment, inputs=None):
+        ''' Constructs an instance of class Forecast.
 
-        Starts with the end-of-year values from `last_year` and builds
-        out another year. Generally, if `last_year` is provided, the
-        same `scenario`, `strategy`, and `settings` values will be used
-        (although it is possible to explicitly provide new ones if you
-        want.)
+        Iteratively advances `people`, `assets`, and `debts` to the next
+        year until all years of the `scenario` have been modelled.
 
-        Any values in `inputs` will override values in any other
-        argument. Thus, the order of precedence is `inputs` >
-        `scenario`, `strategy`, `settings` > `last_year`.
+        Any values in `inputs` will be passed to the associated object's
+        next_year method as an `inputs` keyword argument. This will
+        cause the object to override the value of the corresponding
+        property in that year.
+
+        Example:
+            `inputs = {account: {2000: {'balance': 0}}}`
+            `account.next_year(inputs[account])`
+            If `account.this_year` is advanced from `1999` to `2000` by
+            `next_year`, `account.balance` will be $0 for the year 2000
+            regardless of its balance or other activity in 1999.
 
         Args:
             people (iterable): A set/list/etc. of Person objects.
