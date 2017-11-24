@@ -150,11 +150,11 @@ class Tax(object):
         # application is in a state where we can run efficiency metrics.
         if year not in self._tax_brackets:
             # Get the inflation-adjusted tax brackets for this year:
-            ny = nearest_year(self._tax_brackets, year)
+            base_year = nearest_year(self._tax_brackets, year)
             brackets = {
-                self.inflation_adjust(key, ny, year):
-                self._tax_brackets[ny][key]
-                for key in self._tax_brackets[ny]
+                key * self.inflation_adjust(year, base_year):
+                self._tax_brackets[base_year][key]
+                for key in self._tax_brackets[base_year]
             }
             self.add_brackets(brackets, year)
         if bracket is None:

@@ -104,18 +104,25 @@ class TestContributionStrategyMethods(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
 
-        @staticmethod
-        def variable_inflation(year):
-            # Store a convenient inflation_adjust function that returns 50%
-            # for 2000, 100% for 2001, and 200% for 2002:
-            return {
-                2000: Decimal(0.5),
-                2001: Decimal(1),
-                2002: Decimal(2)
-                }[year]
+        inflation_adjustments = {
+            2000: Decimal(0.5),
+            2001: Decimal(1),
+            2002: Decimal(2)
+            }
 
         @staticmethod
-        def constant_2x_inflation(year):
+        def variable_inflation(year, base_year=None):
+            if base_year is None:
+                base_year = 2001
+            # Store a convenient inflation_adjust function that returns 50%
+            # for 2000, 100% for 2001, and 200% for 2002:
+            return (
+                inflation_adjustments[year] /
+                inflation_adjustments[base_year]
+            )
+
+        @staticmethod
+        def constant_2x_inflation(year, base_year=None):
             # A convenient inflation_adjust function that returns 200%
             # for any input (and doesn't require any particular `year`)
             return Decimal('2')
@@ -346,8 +353,11 @@ class TestWithdrawalStrategyMethods(unittest.TestCase):
                                      self.year_2: Decimal(2),
                                      self.year_10: Decimal(10)}
 
-        def inflation_adjust(year):
-            return self.inflation_adjustment[year]
+        def inflation_adjust(year, base_year=self.year_1):
+            return (
+                self.inflation_adjustment[year] /
+                self.inflation_adjustment[base_year]
+            )
 
         self.inflation_adjust = inflation_adjust
 

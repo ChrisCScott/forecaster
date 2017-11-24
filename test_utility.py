@@ -59,8 +59,8 @@ class TestFreeMethods(unittest.TestCase):
             2002: Decimal(2)}
         vals = {1999: 2, 2001: 4, 2003: 8}
 
-        def inflation_adjust(val, this_year, target_year):
-            return val * inf[target_year] / inf[this_year]
+        def inflation_adjust(target_year, base_year):
+            return inf[target_year] / inf[base_year]
 
         # Test each year from 1997 to 2004:
         with self.assertRaises(KeyError):

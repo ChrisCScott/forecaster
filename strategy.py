@@ -139,8 +139,9 @@ class ContributionStrategy(Strategy):
         inflation_adjust (callable): If provided, `base_amount` is
             interpreted as a real (i.e. inflation-adjusted) currency
             value. This callable object will be called as
-            `inflation_adjust(year)` to receive the inflation-adjustment
-            factor between real and nominal values for that year.
+            `inflation_adjust(year[, base_year])` to receive the
+            inflation-adjustment factor between real and nominal values
+            for that year (relative to base_year, if provided).
             Optional. If not provided, `base_amount` is not
             inflation_adjusted.
 
@@ -193,7 +194,7 @@ class ContributionStrategy(Strategy):
         if inflation_adjust is not None:
             self.inflation_adjust = inflation_adjust
         else:
-            self.inflation_adjust = lambda year: 1
+            self.inflation_adjust = lambda *args, **kwargs: 1
 
         # Types are enforced by explicit conversion; no need to check.
 
@@ -279,8 +280,9 @@ class WithdrawalStrategy(Strategy):
         inflation_adjust (callable): If provided, `base_amount` is
             interpreted as a real (i.e. inflation-adjusted) currency
             value. This callable object will be called as
-            `inflation_adjust(year)` to receive the inflation-adjustment
-            factor between real and nominal values for that year.
+            `inflation_adjust(year[, base_year])` to receive the
+            inflation-adjustment factor between real and nominal values
+            for that year (relative to base_year, if provided).
             Optional. If not provided, `base_amount` is not
             inflation_adjusted.
         income_adjusted (bool): If True, withdrawals are reduced to
@@ -336,7 +338,7 @@ class WithdrawalStrategy(Strategy):
         if inflation_adjust is not None:
             self.inflation_adjust = inflation_adjust
         else:
-            self.inflation_adjust = lambda year: 1
+            self.inflation_adjust = lambda *args, **kwargs: 1
 
         if not isinstance(self.timing, (Decimal, str)):
             raise TypeError('WithdrawalStrategy: timing must be Decimal ' +
@@ -357,28 +359,22 @@ class WithdrawalStrategy(Strategy):
                                     retirement_year, year=None,
                                     *args, **kwargs):
         """ Withdraw a percentage of principal (as of retirement). """
-        return self.rate * principal_history[retirement_year] * Decimal(
-            self.inflation_adjust(year) /
-            self.inflation_adjust(retirement_year)
-        )
+        return self.rate * principal_history[retirement_year] * \
+            self.inflation_adjust(year, retirement_year)
 
     @strategy('Percentage of net income')
     def _strategy_net_percent(self, net_income_history, retirement_year,
                               year=None, *args, **kwargs):
         """ Withdraw a percentage of max. net income (as of retirement). """
-        return self.rate * net_income_history[retirement_year] * Decimal(
-            self.inflation_adjust(year) /
-            self.inflation_adjust(retirement_year)
-        )
+        return self.rate * net_income_history[retirement_year] * \
+            self.inflation_adjust(year, retirement_year)
 
     @strategy('Percentage of gross income')
     def _strategy_gross_percent(self, gross_income_history, retirement_year,
                                 year=None, *args, **kwargs):
         """ Withdraw a percentage of gross income. """
-        return self.rate * gross_income_history[retirement_year] * Decimal(
-            self.inflation_adjust(year) /
-            self.inflation_adjust(retirement_year)
-        )
+        return self.rate * gross_income_history[retirement_year] * \
+            self.inflation_adjust(year, retirement_year)
 
     # TODO: Add another strategy that tweaks the withdrawal rate
     # periodically (e.g. every 10 years) based on actual portfolio

@@ -181,25 +181,25 @@ def extend_inflation_adjusted(vals, inflation_adjust, target_year):
         return vals[target_year]
 
     # Look for the most recent year prior to `year`
-    this_year = nearest_year(vals, target_year)
+    base_year = nearest_year(vals, target_year)
 
     # TODO: Update following to use the method instead.
     # If one of the above searches worked, return an inflation-adjusted
     # value (or dict/list of values, depending on what the values of
     # `vals` are)
-    if this_year != target_year:
-        val = vals[this_year]
+    if base_year != target_year:
+        val = vals[base_year]
         if isinstance(val, dict):
             return {
-                k: inflation_adjust(val[k], this_year, target_year)
+                k: val[k] * inflation_adjust(target_year, base_year)
                 for k in val
             }
         elif isinstance(val, collections.Iterable):
             return type(val)(
-                inflation_adjust(v, this_year, target_year) for v in val
+                v * inflation_adjust(target_year, base_year) for v in val
             )
         else:
-            return inflation_adjust(val, this_year, target_year)
+            return val * inflation_adjust(target_year, base_year)
     # If none of the above searches for a year worked, raise an error.
     else:
         raise ValueError('inflation_adjust: No year is in both vals and ' +
@@ -230,20 +230,20 @@ def build_inflation_adjust(inflation_adjust=None):
     if inflation_adjust is None:
         # Assume real values if no inflation-adjustment method is
         # given - i.e. always return val without adjustment.
-        def inflation_adjust(val, this_year, target_year):
-            return val
+        def inflation_adjust(target_year=None, base_year=None):
+            return Decimal(1)
     elif isinstance(inflation_adjust, dict):
         # If a dict of {year: Decimal} values has been passed in,
         # convert that to a suitable method:
-        inflation_adjustments = {
-            int(k): Decimal(inflation_adjust[k])
-            for k in inflation_adjust
-        }
+        default_base = min(inflation_adjust.keys())
+        inflation_dict = inflation_adjust
 
-        def inflation_adjust(val, this_year, target_year):
-            return val * (
-                inflation_adjustments[target_year] /
-                inflation_adjustments[this_year]
+        def inflation_adjust(target_year, base_year=None):
+            if base_year is None:
+                base_year = default_base
+            return Decimal(
+                inflation_dict[target_year] /
+                inflation_dict[base_year]
             )
     elif not callable(inflation_adjust):
         # If it's not a dict and not callable, then we don't know

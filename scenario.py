@@ -291,10 +291,12 @@ class Scenario(object):
         return {year: Decimal(self.accumulation_function(year, base_year))
                 for year in self}
 
-    def inflation_adjust(self, val, this_year, target_year):
-        """ Inflation-adjusts a value from this_year to target_year. """
+    def inflation_adjust(self, this_year, base_year=None):
+        """ Inflation-adjustment factor from this_year to target_year. """
+        if base_year is None:
+            base_year = self.initial_year
         # TODO: Cache inflation adjustments (memoize accumulation_function?)
-        return val * self.accumulation_function(this_year, target_year)
+        return self.accumulation_function(base_year, this_year)
 
     def __len__(self):
         """ Returns the number of years modelled by the Scenario. """

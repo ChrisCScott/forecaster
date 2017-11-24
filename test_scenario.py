@@ -284,45 +284,44 @@ class TestScenarioMethods(unittest.TestCase):
                     accum)
                 accum *= 1 + scenario.inflation[year]
 
-    def test_real_value(self):
-        """ Tests `Scenario.real_value()` """
+    def test_inflation_adjust(self):
+        """ Tests `Scenario.inflation_adjust()` """
         # Test a selection of the scenarios in the set
         # (We could test all, but it's slooow)
         for scenario in self.scenarios[0:9]:
             initial_year = scenario.initial_year
             last_year = scenario.initial_year + len(scenario) - 1
-            for nominal_year in range(initial_year, last_year + 1):
+            for base_year in range(initial_year, last_year + 1):
                 # This test takes forever if we iterate over every pair
                 # of nominal and real years, so keep real_year to within
                 # 10 years of nominal_year.
-                for real_year in range(max(initial_year, nominal_year - 10),
-                                       min(last_year + 1, nominal_year + 10)):
+                for this_year in range(max(initial_year, base_year - 10),
+                                       min(last_year + 1, base_year + 10)):
                     # Test the real value associated with this
                     # (nominal_year, real_year) pair by taking the
                     # product of all annual inflation factors
                     # (1 + inflation) between nominal_year and real_year
                     accum = 1
-                    if nominal_year < real_year:
+                    if base_year < this_year:
                         # If we're inflation-adjusting to a future year,
-                        # then real_value should increase with inflation
-                        for year in range(nominal_year, real_year):
+                        # then inflation_adjust should increase with inflation
+                        for year in range(base_year, this_year):
                             accum *= Decimal(1 + scenario.inflation[year])
                     else:
                         # If we're inflation-adjusting to a past year,
-                        # then real_value should decrease with inflation
-                        for year in range(real_year, nominal_year):
+                        # then inflation_adjust should decrease with inflation
+                        for year in range(this_year, base_year):
                             accum /= Decimal(1 + scenario.inflation[year])
                     # Now that we know the cumulative inflation, we can
                     # express in real-valued terms simply by multiplying
                     self.assertAlmostEqual(
-                        scenario.real_value(Decimal(100),
-                                            nominal_year,
-                                            real_year),
+                        Decimal(100) * scenario.inflation_adjust(
+                            this_year, base_year),
                         Decimal(100) * accum, 4)
                 # Sanity check: Confirm that real = nominal for the year
                 # that we're using for expressing real values.
                 self.assertEqual(
-                    scenario.real_value(1, nominal_year, nominal_year),
+                    scenario.inflation_adjust(base_year, base_year),
                     1)
 
     def test_len(self):
