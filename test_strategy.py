@@ -9,6 +9,7 @@ from ledger_Canada import *
 from settings import Settings
 from constants import Constants
 from strategy import *
+from test_helper import *
 
 
 class TestStrategyMethods(unittest.TestCase):
@@ -100,6 +101,28 @@ class TestStrategyMethods(unittest.TestCase):
 class TestContributionStrategyMethods(unittest.TestCase):
     """ A test case for the ContributionStrategy class """
 
+    @classmethod
+    def setUpClass(cls):
+
+        @staticmethod
+        def variable_inflation(year):
+            # Store a convenient inflation_adjust function that returns 50%
+            # for 2000, 100% for 2001, and 200% for 2002:
+            return {
+                2000: Decimal(0.5),
+                2001: Decimal(1),
+                2002: Decimal(2)
+                }[year]
+
+        @staticmethod
+        def constant_2x_inflation(year):
+            # A convenient inflation_adjust function that returns 200%
+            # for any input (and doesn't require any particular `year`)
+            return Decimal('2')
+
+        cls.variable_inflation = variable_inflation
+        cls.constant_2x_inflation = constant_2x_inflation
+
     def test_init(self):
         """ Tests ContributionStrategy.__init__ """
         # Test default init:
@@ -110,25 +133,23 @@ class TestContributionStrategyMethods(unittest.TestCase):
         self.assertEqual(s.rate, Settings.contribution_rate)
         self.assertEqual(s.refund_reinvestment_rate,
                          Settings.contribution_refund_reinvestment_rate)
-        self.assertEqual(s.inflation_adjusted,
-                         Settings.contribution_inflation_adjusted)
 
         # Test explicit init:
         strategy = 'Constant contribution'
         base_amount = Money('1000')
         rate = Decimal('0.5')
         refund_reinvestment_rate = Decimal('0.5')
-        inflation_adjusted = True
+        inflation_adjust = self.constant_2x_inflation
         settings = Settings()
-        s = ContributionStrategy(strategy, base_amount, rate,
-                                 refund_reinvestment_rate, inflation_adjusted,
-                                 settings)
-
+        s = ContributionStrategy(
+            strategy=strategy, base_amount=base_amount, rate=rate,
+            refund_reinvestment_rate=refund_reinvestment_rate,
+            inflation_adjust=inflation_adjust, settings=settings)
         self.assertEqual(s.strategy, strategy)
         self.assertEqual(s.base_amount, base_amount)
         self.assertEqual(s.rate, rate)
         self.assertEqual(s.refund_reinvestment_rate, refund_reinvestment_rate)
-        self.assertEqual(s.inflation_adjusted, inflation_adjusted)
+        self.assertEqual(s.inflation_adjust, inflation_adjust)
 
         # Test implicit init via Settings
         settings.contribution_strategy = strategy
@@ -136,14 +157,14 @@ class TestContributionStrategyMethods(unittest.TestCase):
         settings.contribution_rate = rate
         settings.contribution_refund_reinvestment_rate = \
             refund_reinvestment_rate
-        settings.contribution_inflation_adjusted = inflation_adjusted
         s = ContributionStrategy(settings=settings)
 
         self.assertEqual(s.strategy, strategy)
         self.assertEqual(s.base_amount, base_amount)
         self.assertEqual(s.rate, rate)
         self.assertEqual(s.refund_reinvestment_rate, refund_reinvestment_rate)
-        self.assertEqual(s.inflation_adjusted, inflation_adjusted)
+        self.assertEqual(s.inflation_adjust(2000), 1)
+        self.assertEqual(s.inflation_adjust(2050), 1)  # no inflation
 
         # Test invalid strategies
         with self.assertRaises(ValueError):
@@ -167,46 +188,50 @@ class TestContributionStrategyMethods(unittest.TestCase):
 
         # Default strategy
         s = ContributionStrategy(method)
-        # Test all default parameters (set inflation_adjustment to 1 in case
-        # inflation_adjusted == True)
-        self.assertEqual(s(inflation_adjustment=1),
-                         Money(Settings.contribution_base_amount))
+        # Test all default parameters (no inflation adjustments here)
+        self.assertEqual(s(), Money(Settings.contribution_base_amount))
         # Test refunds ($1) and other income ($2), for a total of $3
         # plus the default contribution rate.
-        self.assertEqual(s(Money(1), Money(2), inflation_adjustment=1),
+        self.assertEqual(s(refund=Money(1), other_contribution=Money(2)),
                          Money(s.base_amount) +
                          Money(1) * s.refund_reinvestment_rate +
                          Money(2))
         # Test that changing net_income and gross_income has no effect
-        self.assertEqual(s(0, 0, Money(100000), Money(200000), 1),
-                         Money(s.base_amount))
+        self.assertEqual(
+            s(refund=0, other_contribution=0, net_income=Money(100000),
+              gross_income=Money(200000)),
+            Money(s.base_amount))
         # Test different inflation_adjustments
-        self.assertEqual(s(inflation_adjustment=Decimal('0.5')),
-                         Money(s.base_amount)*Decimal('0.5'))
-        self.assertEqual(s(inflation_adjustment=Decimal('2')),
-                         Money(s.base_amount)*Decimal('2'))
+        s = ContributionStrategy(
+            strategy=method, inflation_adjust=self.variable_inflation)
+        self.assertEqual(
+            s(year=2000),
+            Money(s.base_amount)*self.variable_inflation(2000)
+        )
+        self.assertEqual(
+            s(year=2001),
+            Money(s.base_amount)*self.variable_inflation(2001)
+        )
+        self.assertEqual(
+            s(year=2002),
+            Money(s.base_amount)*self.variable_inflation(2002)
+        )
 
         # Customize some inputs
         base_amount = Money(500)
         rate = Decimal('0.5')
         refund_reinvestment_rate = 1
-        inflation_adjusted = False
-        s = ContributionStrategy(method, base_amount, rate,
-                                 refund_reinvestment_rate, inflation_adjusted)
+        s = ContributionStrategy(
+            strategy=method, base_amount=base_amount, rate=rate,
+            refund_reinvestment_rate=refund_reinvestment_rate)
         # Test all default parameters.
         self.assertEqual(s(), base_amount)
-        # Test that changing net_income, gross_income, and inflation_adjustment
-        # have no effect (note that inflation_adjusted==False)
-        self.assertEqual(s(0, 0, Money(100000), Money(200000), 2),
-                         base_amount)
-
-        # Turn inflation adjustment back on so we can test inflation_adjustment
-        s = ContributionStrategy(method, base_amount, rate,
-                                 refund_reinvestment_rate, True)
-        self.assertEqual(s(inflation_adjustment=Decimal('0.5')),
-                         base_amount * Decimal('0.5'))
-        self.assertEqual(s(inflation_adjustment=Decimal('2.0')),
-                         base_amount * Decimal('2.0'))
+        # Test that changing net_income, gross_income have no effect on
+        # a constant contribution:
+        self.assertEqual(s(
+            net_income=Money(100000), gross_income=Money(200000)
+            ),
+            base_amount)
 
     def test_strategy_constant_living_expenses(self):
         """ Tests ContributionStrategy._strategy_constant_living_expenses. """
@@ -214,33 +239,30 @@ class TestContributionStrategyMethods(unittest.TestCase):
         method = ContributionStrategy._strategy_constant_living_expenses
 
         # Default strategy
-        s = ContributionStrategy(method, Money(1000))
+        s = ContributionStrategy(
+            method, base_amount=Money(1000), inflation_adjust=lambda year:
+            {2000: Decimal(0.5), 2001: Decimal(1), 2002: Decimal(2)}[year])
         ex = Money(1500)  # excess money (this is the contribution)
         ni = s.base_amount + ex  # net income
-        # This method requires net_income and inflation_adjustment
-        self.assertEqual(s(net_income=ni, inflation_adjustment=1), ex)
+        # This method requires net_income
+        self.assertEqual(s(year=2001, net_income=ni), ex)
         # Test that changing gross_income has no effect
-        self.assertEqual(s(net_income=ni, gross_income=Money(20000),
-                           inflation_adjustment=1), ex)
-        # Test different inflation_adjustments.
-        # Recall that arguments to s() are in nominal terms for an
-        # arbitrary year, whereas arguments to __init__ are in real
-        # terms (if inflation_adjustment==True). Thus, our living
-        # standard of $1000 is affected by the discount rate, and
-        # our net income of $2500 is not.
-        # For inflation_adjustment=0.5, this means that our living expenses are
-        # $500 nominally and our income is $2500, for a contribution of
-        # $2000.
-        self.assertEqual(s(net_income=ni, inflation_adjustment=Decimal('0.5')),
-                         Money('2000'))
-        # For inflation_adjustment=2, this means that our living expenses are
-        # $2000 nominally and our income is $2500, for a contribution of
-        # $500
-        self.assertEqual(s(net_income=ni, inflation_adjustment=Decimal('2')),
-                         Money('500'))
+        self.assertEqual(
+            s(year=2001, net_income=ni, gross_income=Money(20000)), ex)
+
+        # Test different inflation_adjustments for different years.
+        # First, test nominal $2000 in a year where the inflation
+        # adjustment is 50%. Our real-value $1000 living expenses is
+        # reduced by 50% to $500 in nominal terms, leaving $2000 to
+        # contribute.
+        self.assertEqual(s(year=2000, net_income=Money(2500)), Money('2000'))
+        # For 2002, the inflation adjustment is 200%, meaning that our
+        # living expenses are $2000 nominally. For income of $2500
+        # the contribution is now just $500
+        self.assertEqual(s(year=2002, net_income=Money(2500)), Money('500'))
         # Test a lower net_income than the living standard:
         s = ContributionStrategy(method, Money(1000))
-        self.assertEqual(s(net_income=Money(500), inflation_adjustment=1), 0)
+        self.assertEqual(s(year=2000, net_income=Money(500)), 0)
 
     def test_strategy_net_percent(self):
         """ Tests ContributionStrategy._strategy_net_percent. """
@@ -250,18 +272,18 @@ class TestContributionStrategyMethods(unittest.TestCase):
         # Default strategy
         s = ContributionStrategy(method)
         ni = Money(1000)
-        # This method requires net_income and inflation_adjustment
-        self.assertEqual(s(net_income=ni, inflation_adjustment=1), ni * s.rate)
+        # This method requires net_income
+        self.assertEqual(s(net_income=ni), ni * s.rate)
         # Test that changing gross_income has no effect
-        self.assertEqual(s(net_income=ni, gross_income=Money(20000),
-                           inflation_adjustment=1), ni * s.rate)
+        self.assertEqual(s(net_income=ni, gross_income=Money(20000)),
+                         ni * s.rate)
+        s = ContributionStrategy(
+            strategy=method, inflation_adjust=self.variable_inflation)
         # Test different inflation_adjustments
-        # (Since the net_income argument is nominal, inflation_adjustment
-        # should have no effect)
-        self.assertEqual(s(net_income=ni, inflation_adjustment=Decimal('0.5')),
-                         ni * s.rate)
-        self.assertEqual(s(net_income=ni, inflation_adjustment=Decimal('2')),
-                         ni * s.rate)
+        # (Since the net_income argument is nominal, inflation should
+        # have no effect)
+        self.assertEqual(s(net_income=ni, year=2000), ni * s.rate)
+        self.assertEqual(s(net_income=ni, year=2002), ni * s.rate)
 
     def test_strategy_gross_percent(self):
         """ Tests ContributionStrategy._strategy_gross_percent. """
@@ -271,42 +293,42 @@ class TestContributionStrategyMethods(unittest.TestCase):
         # Default strategy
         s = ContributionStrategy(method)
         gi = Money(1000)  # gross income
-        # This method requires gross_income and inflation_adjustment
-        self.assertEqual(s(gross_income=gi, inflation_adjustment=1),
-                         gi * s.rate)
+        # This method requires gross_income
+        self.assertEqual(s(gross_income=gi), gi * s.rate)
         # Test that changing gross_income has no effect
-        self.assertEqual(s(gross_income=gi, net_income=Money(20000),
-                           inflation_adjustment=1), gi * s.rate)
+        self.assertEqual(s(gross_income=gi, net_income=Money(20000)),
+                         gi * s.rate)
         # Test different inflation_adjustments
         # (Since the gross_income argument is nominal, inflation_adjustment
         # should have no effect)
-        self.assertEqual(s(gross_income=gi,
-                         inflation_adjustment=Decimal('0.5')), gi * s.rate)
-        self.assertEqual(s(gross_income=gi, inflation_adjustment=Decimal('2')),
-                         gi * s.rate)
+        s = ContributionStrategy(
+            strategy=method, inflation_adjust=self.variable_inflation)
+        self.assertEqual(s(gross_income=gi, year=2000), gi * s.rate)
+        self.assertEqual(s(gross_income=gi, year=2002), gi * s.rate)
 
     def test_strategy_earnings_percent(self):
         """ Tests ContributionStrategy._strategy_earnings_percent. """
         method = ContributionStrategy._strategy_earnings_percent
 
         # Default strategy
-        s = ContributionStrategy(method)
+        s = ContributionStrategy(
+            method, inflation_adjust=self.variable_inflation)
         ni = s.base_amount * 2
-        # This method requires net_income and inflation_adjustment
-        self.assertEqual(s(net_income=ni, inflation_adjustment=1),
+        # This method requires net_income
+        # Also need to provide `year` because inflation_adjust needs it
+        # (2001 is the year for which inflation adjustment is 1)
+        self.assertEqual(s(net_income=ni, year=2001),
                          (ni - s.base_amount) * s.rate)
         # Test that changing gross_income has no effect
         self.assertEqual(s(net_income=ni, gross_income=Money(20000),
-                           inflation_adjustment=1),
+                           year=2001),
                          (ni - s.base_amount) * s.rate)
         # Test different inflation_adjustments
         # (This should inflation_adjust base_amount)
-        inflation = Decimal('0.5')
-        self.assertEqual(s(net_income=ni, inflation_adjustment=inflation),
-                         (ni - s.base_amount * inflation) * s.rate)
-        inflation = Decimal('2')
-        self.assertEqual(s(net_income=ni, inflation_adjustment=inflation),
-                         (ni - s.base_amount * inflation) * s.rate)
+        self.assertEqual(s(net_income=ni, year=2000),
+                         (ni - s.base_amount * Decimal('0.5')) * s.rate)
+        self.assertEqual(s(net_income=ni, year=2002),
+                         (ni - s.base_amount * Decimal(2)) * s.rate)
 
 
 class TestWithdrawalStrategyMethods(unittest.TestCase):
@@ -324,6 +346,11 @@ class TestWithdrawalStrategyMethods(unittest.TestCase):
                                      self.year_2: Decimal(2),
                                      self.year_10: Decimal(10)}
 
+        def inflation_adjust(year):
+            return self.inflation_adjustment[year]
+
+        self.inflation_adjust = inflation_adjust
+
     def test_init(self):
         """ Tests WithdrawalStrategy.__init__ """
         # Test default init:
@@ -331,46 +358,45 @@ class TestWithdrawalStrategyMethods(unittest.TestCase):
 
         self.assertEqual(s.strategy, Settings.withdrawal_strategy)
         self.assertEqual(s.rate, Settings.withdrawal_rate)
-        self.assertEqual(s.min_living_standard,
-                         Settings.withdrawal_min_living_standard)
+        self.assertEqual(s.base_amount,
+                         Settings.withdrawal_base_amount)
         self.assertEqual(s.timing, Settings.transaction_out_timing)
-        self.assertEqual(s.benefit_adjusted,
-                         Settings.withdrawal_benefit_adjusted)
-        self.assertEqual(s.inflation_adjusted,
-                         Settings.withdrawal_inflation_adjusted)
+        self.assertEqual(s.income_adjusted,
+                         Settings.withdrawal_income_adjusted)
 
         # Test explicit init:
         strategy = 'Constant withdrawal'
         rate = Decimal('1000')
-        min_living_standard = Decimal('500')
+        base_amount = Decimal('500')
         timing = 'end'
-        benefit_adjusted = True
-        inflation_adjusted = True
+        income_adjusted = True
+        inflation_adjust = self.inflation_adjust
         settings = Settings()
-        s = WithdrawalStrategy(strategy, rate, min_living_standard, timing,
-                               inflation_adjusted, settings)
+        s = WithdrawalStrategy(
+            strategy=strategy, base_amount=base_amount, rate=rate,
+            timing=timing, income_adjusted=income_adjusted,
+            inflation_adjust=inflation_adjust, settings=settings
+        )
 
         self.assertEqual(s.strategy, strategy)
         self.assertEqual(s.rate, rate)
-        self.assertEqual(s.min_living_standard, min_living_standard)
+        self.assertEqual(s.base_amount, base_amount)
         self.assertEqual(s.timing, timing)
-        self.assertEqual(s.benefit_adjusted, benefit_adjusted)
-        self.assertEqual(s.inflation_adjusted, inflation_adjusted)
+        self.assertEqual(s.income_adjusted, income_adjusted)
+        self.assertEqual(s.inflation_adjust, inflation_adjust)
 
         # Test implicit init via Settings
         settings.withdrawal_strategy = strategy
         settings.withdrawal_rate = rate
-        settings.withdrawal_min_living_standard = min_living_standard
-        settings.withdrawal_benefit_adjusted = benefit_adjusted
-        settings.withdrawal_inflation_adjusted = inflation_adjusted
+        settings.withdrawal_base_amount = base_amount
+        settings.withdrawal_income_adjusted = income_adjusted
         s = WithdrawalStrategy(settings=settings)
 
         self.assertEqual(s.strategy, strategy)
         self.assertEqual(s.rate, rate)
-        self.assertEqual(s.min_living_standard, min_living_standard)
+        self.assertEqual(s.base_amount, base_amount)
         self.assertEqual(s.timing, timing)
-        self.assertEqual(s.benefit_adjusted, benefit_adjusted)
-        self.assertEqual(s.inflation_adjusted, inflation_adjusted)
+        self.assertEqual(s.income_adjusted, income_adjusted)
 
         # Test invalid strategies
         with self.assertRaises(ValueError):
@@ -380,9 +406,9 @@ class TestWithdrawalStrategyMethods(unittest.TestCase):
         # Test invalid rate
         with self.assertRaises(decimal.InvalidOperation):
             s = WithdrawalStrategy(rate='a')
-        # Test invalid min_living_standard
+        # Test invalid base_amount
         with self.assertRaises(decimal.InvalidOperation):
-            s = WithdrawalStrategy(min_living_standard='a')
+            s = WithdrawalStrategy(base_amount='a')
         # Test invalid timing
         with self.assertRaises(ValueError):
             s = WithdrawalStrategy(timing='a')
@@ -395,35 +421,19 @@ class TestWithdrawalStrategyMethods(unittest.TestCase):
         method = WithdrawalStrategy._strategy_constant_withdrawal
 
         # Default strategy
-        s = WithdrawalStrategy(method, min_living_standard=0,
-                               inflation_adjusted=False)
+        s = WithdrawalStrategy(method, base_amount=Money(100))
         # Test all default parameters. (We don't need to provide any
         # inflation data since this instance is not inflation-adjusted.)
-        self.assertEqual(s(), Money(s.rate))
-
-        # Test that providing inflation-adjusted data has no effect when
-        # inflation_adjusted=False
-        s = WithdrawalStrategy(method, min_living_standard=0,
-                               inflation_adjusted=False)
-        # We should get the same result no matter which year we use.
-        for year in self.inflation_adjustment:
-            self.assertEqual(
-                s(0, inflation_adjustment=self.inflation_adjustment,
-                  this_year=year),
-                s.rate)
+        self.assertEqual(s(), Money(100))
 
         # Test different inflation_adjustments
-        s = WithdrawalStrategy(method, min_living_standard=0,
-                               inflation_adjusted=True)
+        s = WithdrawalStrategy(method, base_amount=Money(100),
+                               inflation_adjust=self.inflation_adjust)
         for year in self.inflation_adjustment:
-            self.assertEqual(s(inflation_adjustment=self.inflation_adjustment,
-                               this_year=year),
-                             Money(s.rate) * self.inflation_adjustment[year])
-
-        # Customize the rate
-        rate = Money(500)
-        s = WithdrawalStrategy(method, rate, 0, 'end', False, False)
-        self.assertEqual(s(), rate)
+            self.assertEqual(
+                s(year=year),
+                Money(s.base_amount) * self.inflation_adjustment[year]
+            )
 
     def test_strategy_principal_percent(self):
         """ Tests WithdrawalStrategy._strategy_principal_percent. """
@@ -437,44 +447,26 @@ class TestWithdrawalStrategyMethods(unittest.TestCase):
             # Randomly generate values in [$0, $1000000.00]
             principal[year] = Money(rand.randint(0, 100000000)/100)
 
-        s = WithdrawalStrategy(method, rate=0.5, min_living_standard=0,
-                               inflation_adjusted=False)
+        s = WithdrawalStrategy(strategy=method, rate=0.5)
         # Test results for the simple, no-inflation/no-benefits case:
         for year in self.inflation_adjustment:
-            self.assertEqual(s(principal=principal,
+            self.assertEqual(s(principal_history=principal,
                                retirement_year=retirement_year),
                              Money(s.rate * principal[retirement_year]))
 
-        # Test that providing inflation-adjusted data has no effect when
-        # inflation_adjusted=False
-        for year in self.inflation_adjustment:
-            self.assertEqual(
-                s(principal=principal, retirement_year=retirement_year,
-                  inflation_adjustment=self.inflation_adjustment,
-                  this_year=year),
-                Money(s.rate * principal[retirement_year]))
-
         # Test different inflation_adjustments
-        s.inflation_adjusted = True
+        s = WithdrawalStrategy(
+            strategy=method, rate=0.5, inflation_adjust=self.inflation_adjust)
         for year in self.inflation_adjustment:
             # Determine the inflation between retirement_year and
             # the current year (since all figs. are in nominal terms)
             inflation_adjustment = self.inflation_adjustment[year] / \
                 self.inflation_adjustment[retirement_year]
-            self.assertEqual(s(principal=principal,
+            self.assertEqual(s(principal_history=principal,
                                retirement_year=retirement_year,
-                               inflation_adjustment=self.inflation_adjustment,
-                               this_year=year),
+                               year=year),
                              Money(s.rate * principal[retirement_year]) *
                              inflation_adjustment)
-
-        # Customize the rate
-        rate = Decimal('0.04')
-        s = WithdrawalStrategy(method, rate, 0, 'end', False, False)
-        for year in self.inflation_adjustment:
-            self.assertEqual(s(principal=principal,
-                               retirement_year=retirement_year),
-                             rate * principal[retirement_year])
 
     def test_strategy_net_percent(self):
         """ Tests WithdrawalStrategy._strategy_net_percent. """
@@ -488,44 +480,26 @@ class TestWithdrawalStrategyMethods(unittest.TestCase):
             # Randomly generate values in [$0, $1000000.00]
             net_income[year] = Money(rand.randint(0, 100000000)/100)
 
-        s = WithdrawalStrategy(method, rate=0.5, min_living_standard=0,
-                               inflation_adjusted=False)
+        s = WithdrawalStrategy(strategy=method, rate=0.5, base_amount=0)
         # Test results for the simple, no-inflation/no-benefits case:
         for year in self.inflation_adjustment:
-            self.assertEqual(s(net_income=net_income,
+            self.assertEqual(s(net_income_history=net_income,
                                retirement_year=retirement_year),
                              Money(s.rate * net_income[retirement_year]))
 
-        # Test that providing inflation-adjusted data has no effect when
-        # inflation_adjusted=False
-        for year in self.inflation_adjustment:
-            self.assertEqual(
-                s(net_income=net_income, retirement_year=retirement_year,
-                  inflation_adjustment=self.inflation_adjustment,
-                  this_year=year),
-                Money(s.rate * net_income[retirement_year]))
-
         # Test different inflation_adjustments
-        s.inflation_adjusted = True
+        s = WithdrawalStrategy(strategy=method, rate=0.5, base_amount=0,
+                               inflation_adjust=self.inflation_adjust)
         for year in self.inflation_adjustment:
             # Determine the inflation between retirement_year and
             # the current year (since all figs. are in nominal terms)
             inflation_adjustment = self.inflation_adjustment[year] / \
                 self.inflation_adjustment[retirement_year]
-            self.assertEqual(s(net_income=net_income,
+            self.assertEqual(s(net_income_history=net_income,
                                retirement_year=retirement_year,
-                               inflation_adjustment=self.inflation_adjustment,
-                               this_year=year),
+                               year=year),
                              Money(s.rate * net_income[retirement_year]) *
                              inflation_adjustment)
-
-        # Customize the rate
-        rate = Decimal('0.04')
-        s = WithdrawalStrategy(method, rate, 0, 'end', False, False)
-        for year in self.inflation_adjustment:
-            self.assertEqual(s(net_income=net_income,
-                               retirement_year=retirement_year),
-                             rate * net_income[retirement_year])
 
     def test_strategy_gross_percent(self):
         """ Tests WithdrawalStrategy._strategy_gross_percent. """
@@ -539,83 +513,59 @@ class TestWithdrawalStrategyMethods(unittest.TestCase):
             # Randomly generate values in [$0, $1000000.00]
             gross_income[year] = Money(rand.randint(0, 100000000)/100)
 
-        s = WithdrawalStrategy(method, rate=0.5, min_living_standard=0,
-                               inflation_adjusted=False)
+        s = WithdrawalStrategy(method, rate=0.5, base_amount=0)
         # Test results for the simple, no-inflation/no-benefits case:
         for year in self.inflation_adjustment:
-            self.assertEqual(s(gross_income=gross_income,
+            self.assertEqual(s(gross_income_history=gross_income,
                                retirement_year=retirement_year),
                              Money(s.rate * gross_income[retirement_year]))
 
-        # Test that providing inflation-adjusted data has no effect when
-        # inflation_adjusted=False
-        for year in self.inflation_adjustment:
-            self.assertEqual(
-                s(gross_income=gross_income, retirement_year=retirement_year,
-                  inflation_adjustment=self.inflation_adjustment,
-                  this_year=year),
-                Money(s.rate * gross_income[retirement_year]))
-
         # Test different inflation_adjustments
-        s.inflation_adjusted = True
+        s = WithdrawalStrategy(strategy=method, rate=0.5, base_amount=0,
+                               inflation_adjust=self.inflation_adjust)
         for year in self.inflation_adjustment:
             # Determine the inflation between retirement_year and
             # the current year (since all figs. are in nominal terms)
             inflation_adjustment = self.inflation_adjustment[year] / \
                 self.inflation_adjustment[retirement_year]
-            self.assertEqual(s(gross_income=gross_income,
+            self.assertEqual(s(gross_income_history=gross_income,
                                retirement_year=retirement_year,
-                               inflation_adjustment=self.inflation_adjustment,
-                               this_year=year),
+                               year=year),
                              Money(s.rate * gross_income[retirement_year]) *
                              inflation_adjustment)
-
-        # Customize the rate
-        rate = Decimal('0.04')
-        s = WithdrawalStrategy(method, rate, 0, 'end', False, False)
-        for year in self.inflation_adjustment:
-            self.assertEqual(s(gross_income=gross_income,
-                               retirement_year=retirement_year),
-                             rate * gross_income[retirement_year])
 
     def test_call(self):
         """ Tests __call__ logic (but not strategy-specific logic). """
         # Select a simple, constant withdrawal strategy.
         method = WithdrawalStrategy._strategy_constant_withdrawal
 
-        # Test min_living_standard.
-        # No inflation-adjustment of target withdrawal rate
-        # (NOTE: min_withdrawal_strategy is always inflation-adjusted)
-        rate = Money(500)
-        s = WithdrawalStrategy(method, rate, Money(250), 'end', False, False)
-        # For each year, confirm that we withdraw either the
-        # non-inflation-adjusted rate or the inflation-adjusted min.
-        # living standard, whichever is greater.
-        for year in self.inflation_adjustment:
-            self.assertEqual(s(0,
-                               inflation_adjustment=self.inflation_adjustment,
-                               this_year=year),
-                             max(s.rate,
-                                 Money(250) * self.inflation_adjustment[year]))
-
-        # Test benefits. No inflation adjustment or living standard.
-        s = WithdrawalStrategy(method, rate, 0, 'end', True, False)
+        # Test other income. No inflation adjustment.
+        s = WithdrawalStrategy(
+            strategy=method, base_amount=Money(100), rate=0,
+            timing='end', income_adjusted=True)
         # $0 benefits -> no change:
-        self.assertEqual(s(Money(0)), Money(s.rate))
+        self.assertEqual(s(other_income=Money(0)),
+                         Money(s.base_amount))
         # $1 benefits -> $1 reduction
-        self.assertEqual(s(Money(1)), Money(s.rate) - Money(1))
+        self.assertEqual(s(other_income=Money(1)),
+                         Money(s.base_amount) - Money(1))
         # Benefits = withdrawal rate -> $0 withdrawal
-        self.assertEqual(s(Money(s.rate)), Money(0))
+        self.assertEqual(s(other_income=Money(s.base_amount)),
+                         Money(0))
         # Benefits > withdrawal rate -> $0 withdrawal
-        self.assertEqual(s(Money(s.rate) + Money(1)), Money(0))
+        self.assertEqual(s(other_income=Money(s.base_amount) + Money(1)),
+                         Money(0))
 
-        # Re-run above tests, but this time with benefit_adjusted=False
-        s = WithdrawalStrategy(method, rate, 0, 'end', False, False)
+        # Re-run above tests, but this time with income_adjusted=False
+        s = WithdrawalStrategy(
+            strategy=method, base_amount=Money(100), rate=0, timing='end',
+            income_adjusted=False)
         # In every case, there should be no change:
-        self.assertEqual(s(Money(0)), Money(s.rate))
-        self.assertEqual(s(Money(1)), Money(s.rate))
-        self.assertEqual(s(Money(s.rate)), Money(s.rate))
-        self.assertEqual(s(Money(s.rate) + Money(1)), Money(s.rate))
+        self.assertEqual(s(Money(0)), Money(s.base_amount))
+        self.assertEqual(s(Money(1)), Money(s.base_amount))
+        self.assertEqual(s(Money(s.base_amount)), Money(s.base_amount))
+        self.assertEqual(s(Money(s.base_amount) + Money(1)),
+                         Money(s.base_amount))
 
 
 class TestTransactionStrategyMethods(unittest.TestCase):
