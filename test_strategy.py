@@ -1114,301 +1114,280 @@ class TestDebtPaymentStrategyMethods(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        super().setUpClass()
         cls.person = Person('Testy McTesterson', 1980, retirement_date=2045)
         cls.initial_year = 2000
-        cls.inflation_adjustments = {
-            cls.initial_year: Decimal(1),
-            cls.initial_year + 1: Decimal(1.25),
-            min(Constants.RRSPContributionRoomAccrualMax): Decimal(1)}
 
-        # Set up some accounts for the tests.
-        # Debt 1: No interest, accelerated, $10 min.
-        cls.debt1 = Debt(cls.person, balance=Money(200), rate=0,
-                         initial_year=cls.initial_year,
-                         minimum_payment=Money(10), reduction_rate=1,
-                         accelerate_payment=True)
-        # Debt 2: Same as debt 1, but only 50% is drawn from savings
-        # (so payments should be 2x as large)
-        cls.debt2 = Debt(cls.person, balance=Money(200), rate=0,
-                         initial_year=cls.initial_year,
-                         minimum_payment=Money(10), reduction_rate=0.5,
-                         accelerate_payment=True)
-        # Debt 3: Non-accelerated debt with 12.5% interest rate.
-        cls.debt3 = Debt(cls.person, balance=Money(200), rate=0.125,
-                         initial_year=cls.initial_year,
-                         minimum_payment=Money(10), reduction_rate=1,
-                         accelerate_payment=False)
-        # Debt 4: Acclerated debt with 25% interest rate
-        cls.debt4 = Debt(cls.person, balance=Money(200), rate=0.25,
-                         initial_year=cls.initial_year,
-                         minimum_payment=Money(10), reduction_rate=1,
-                         accelerate_payment=True)
-        # Debt 5: Debt paid entirely from living expenses
-        cls.debt5 = Debt(cls.person, balance=Money(200), rate=0,
-                         initial_year=cls.initial_year,
-                         minimum_payment=Money(10), reduction_rate=0,
-                         accelerate_payment=True)
-        cls.debts = {cls.debt1, cls.debt2, cls.debt3, cls.debt4, cls.debt5}
+        # These accounts have different rates:
+        cls.debt_big_high_interest = Debt(
+            cls.person, balance=Money(1000), rate=1,
+            initial_year=cls.initial_year,
+            minimum_payment=Money(100), reduction_rate=1,
+            accelerate_payment=True
+        )
+        cls.debt_small_low_interest = Debt(
+            cls.person, balance=Money(100), rate=0,
+            initial_year=cls.initial_year,
+            minimum_payment=Money(10), reduction_rate=1,
+            accelerate_payment=True
+        )
+        cls.debt_medium = Debt(
+            cls.person, balance=Money(500), rate=0.5,
+            initial_year=cls.initial_year,
+            minimum_payment=Money(50), reduction_rate=1,
+            accelerate_payment=True
+        )
+
+        cls.debts = {
+            cls.debt_big_high_interest,
+            cls.debt_medium,
+            cls.debt_small_low_interest
+        }
+
+        cls.debt_not_accelerated = Debt(
+            cls.person, balance=Money(100), rate=0,
+            initial_year=cls.initial_year,
+            minimum_payment=Money(10), reduction_rate=1,
+            accelerate_payment=False
+        )
+        cls.debt_no_reduction = Debt(
+            cls.person, balance=Money(100), rate=0,
+            initial_year=cls.initial_year,
+            minimum_payment=Money(10), reduction_rate=1,
+            accelerate_payment=False
+        )
+        cls.debt_half_reduction = Debt(
+            cls.person, balance=Money(100), rate=0,
+            initial_year=cls.initial_year,
+            minimum_payment=Money(10), reduction_rate=0.5,
+            accelerate_payment=False
+        )
+
+    @staticmethod
+    def min_payment(debts, timing):
+        """ Finds the minimum payment *from savings* for `accounts`. """
+        # Find the minimum payment *from savings* for each account:
+        return sum(
+            debt.min_inflow(timing) * debt.reduction_rate
+            for debt in debts
+        )
+
+    @staticmethod
+    def max_payment(debts, timing):
+        """ Finds the maximum payment *from savings* for `accounts`. """
+        # Find the minimum payment *from savings* for each account:
+        return sum(
+            debt.max_inflow(timing) * debt.reduction_rate
+            for debt in debts
+        )
 
     def test_init(self):
         """ Tests DebtPaymentStrategy.__init__ """
         s = DebtPaymentStrategy()
-        # TransactionStrategy doesn't have a default init, so test with
-        # TransactionInStrategy defaults:
-        s = TransactionStrategy(Settings.transaction_in_strategy,
-                                Settings.transaction_in_weights,
-                                Settings.transaction_in_timing)
-        self.assertEqual(s.strategy, Settings.transaction_in_strategy)
-        self.assertEqual(s.weights, Settings.transaction_in_weights)
-        self.assertEqual(s.timing, Settings.transaction_in_timing)
+        self.assertEqual(s.strategy, Settings.debt_payment_strategy)
+        self.assertEqual(s.timing, Settings.debt_payment_timing)
 
-        # Try default init with TransactionInStrategy:
-        s = TransactionInStrategy()
-        self.assertEqual(s.strategy, Settings.transaction_in_strategy)
-        self.assertEqual(s.weights, Settings.transaction_in_weights)
-        self.assertEqual(s.timing, Settings.transaction_in_timing)
-
-        # Try default init with TransactionOutStrategy:
-        s = TransactionOutStrategy()
-        self.assertEqual(s.strategy, Settings.transaction_out_strategy)
-        self.assertEqual(s.weights, Settings.transaction_out_weights)
-        self.assertEqual(s.timing, Settings.transaction_out_timing)
-
-        # Test explicit init for subclasses:
-        strategy = 'Weighted'
-        weights = {'RRSP': Decimal(0.5),
-                   'TFSA': Decimal(0.25),
-                   'TaxableAccount': Decimal(0.25)}
+        # Test explicit init:
+        strategy = 'Snowball'
         timing = 'end'
         settings = Settings()
-        s = TransactionInStrategy(strategy, weights, timing, settings)
+        s = DebtPaymentStrategy(strategy, timing, settings)
         self.assertEqual(s.strategy, strategy)
-        self.assertEqual(s.weights, weights)
         self.assertEqual(s.timing, timing)
 
         # Test implicit init via Settings
-        settings.transaction_in_strategy = strategy
-        settings.transaction_in_weights = weights
-        settings.transaction_in_timing = timing
-        s = TransactionInStrategy(settings=settings)
+        settings.debt_payment_strategy = strategy
+        settings.debt_payment_timing = timing
+        s = DebtPaymentStrategy(settings=settings)
         self.assertEqual(s.strategy, strategy)
-        self.assertEqual(s.weights, weights)
         self.assertEqual(s.timing, timing)
 
         # Test invalid strategies
         with self.assertRaises(ValueError):
-            s = TransactionInStrategy(strategy='Not a strategy')
+            s = DebtPaymentStrategy(strategy='Not a strategy')
         with self.assertRaises(TypeError):
-            s = TransactionInStrategy(strategy=1)
-        # Test invalid weight
-        with self.assertRaises(TypeError):  # not a dict
-            s = TransactionInStrategy(weights='a')
-        with self.assertRaises(TypeError):  # dict with non-str keys
-            s = TransactionInStrategy(weights={1: 5})
-        with self.assertRaises(TypeError):  # dict with non-numeric values
-            s = TransactionInStrategy(weights={'RRSP', 'Not a number'})
+            s = DebtPaymentStrategy(strategy=1)
         # Test invalid timing
         with self.assertRaises(TypeError):
-            s = TransactionInStrategy(timing={})
+            s = DebtPaymentStrategy(timing={})
 
-    def test_strategy_ordered(self):
-        """ Tests TransactionStrategy._strategy_ordered. """
+    def test_strategy_snowball(self):
+        """ Tests DebtPaymentStrategy._strategy_snowball. """
         # Run each test on inflows and outflows
-        method = TransactionStrategy._strategy_ordered
-        s_in = TransactionInStrategy(method, {
-            'RRSP': 1,
-            'TFSA': 2,
-            'TaxableAccount': 3
-            })
-        s_out = TransactionOutStrategy(method, {
-            'RRSP': 1,
-            'TFSA': 2,
-            'TaxableAccount': 3
-            })
+        method = DebtPaymentStrategy._strategy_snowball
+        s = DebtPaymentStrategy(method)
 
-        # Try a simple scenario: The amount being contributed is less
-        # than the available contribution room in the top-weighted
-        # account type.
-        results = s_in(Money(100), self.accounts)
-        self.assertEqual(results[self.rrsp], Money(100))
-        self.assertEqual(results[self.tfsa], Money(0))
-        self.assertEqual(results[self.taxableAccount], Money(0))
-        # Try again with outflows.
-        results = s_out(-Money(100), self.accounts)
-        self.assertEqual(results[self.rrsp], Money(-100))
-        self.assertEqual(results[self.tfsa], Money(0))
-        self.assertEqual(results[self.taxableAccount], Money(0))
+        # Try a simple scenario: The amount being contributed is equal
+        # to the minimum payments for the accounts.
+        min_payment = self.min_payment(self.debts, s.timing)
+        excess = Money(0)
+        payment = min_payment + excess
+        results = s(payment, self.debts)
+        for debt in self.debts:
+            self.assertEqual(results[debt], debt.minimum_payment)
 
-        # Now contribute more than the rrsp will accomodate. The extra
-        # $50 should go to the tfsa, which is next in line.
-        results = s_in(Money(250), self.accounts)
-        self.assertEqual(results[self.rrsp], Money(200))
-        self.assertEqual(results[self.tfsa], Money(50))
-        self.assertEqual(results[self.taxableAccount], Money(0))
-        results = s_out(-Money(250), self.accounts)
-        self.assertEqual(results[self.rrsp], Money(-200))
-        self.assertEqual(results[self.tfsa], Money(-50))
-        self.assertEqual(results[self.taxableAccount], Money(0))
+        # Try paying less than the minimum. Minimum should still be paid
+        payment = Money(0)
+        results = s(payment, self.debts)
+        for debt in self.debts:
+            self.assertEqual(results[debt], debt.minimum_payment)
 
-        # Now contribute a lot of money - the rrsp and tfsa will get
-        # filled and the remainder will go to the taxable account.
-        results = s_in(Money(1000), self.accounts)
-        self.assertEqual(results[self.rrsp], Money(200))
-        self.assertEqual(results[self.tfsa], Money(100))
-        self.assertEqual(results[self.taxableAccount], Money(700))
-        results = s_out(-Money(1000), self.accounts)
-        self.assertEqual(results[self.rrsp], Money(-200))
-        self.assertEqual(results[self.tfsa], Money(-100))
-        self.assertEqual(results[self.taxableAccount], Money(-700))
+        # Try paying a bit more than the minimum
+        # The smallest debt should be paid first.
+        excess = Money(10)
+        payment = min_payment + excess
+        results = s(payment, self.debts)
+        self.assertEqual(
+            results[self.debt_small_low_interest],
+            self.debt_small_low_interest.minimum_payment + excess
+        )
+        self.assertEqual(
+            results[self.debt_medium],
+            self.debt_medium.minimum_payment
+        )
+        self.assertEqual(
+            results[self.debt_big_high_interest],
+            self.debt_big_high_interest.minimum_payment
+        )
 
-        # For outflows only, try withdrawing more than the accounts have
-        results = s_out(-Money(10000), self.accounts)
-        self.assertEqual(results[self.rrsp], Money(-200))
-        self.assertEqual(results[self.tfsa], Money(-100))
-        self.assertEqual(results[self.taxableAccount], Money(-1000))
+        # Now pay more than the first-paid debt will accomodate.
+        # The excess should go to the next-paid debt (medium).
+        payment = (
+            self.min_payment(
+                self.debts - {self.debt_small_low_interest}, s.timing) +
+            self.max_payment({self.debt_small_low_interest}, s.timing) +
+            excess
+        )
+        results = s(payment, self.debts)
+        self.assertEqual(
+            results[self.debt_small_low_interest],
+            self.debt_small_low_interest.max_inflow(s.timing)
+            )
+        self.assertEqual(
+            results[self.debt_medium],
+            self.debt_medium.minimum_payment + excess
+            )
+        self.assertEqual(
+            results[self.debt_big_high_interest],
+            self.debt_big_high_interest.minimum_payment
+            )
 
-        # Now change the order and confirm that it still works
-        s_in.weights['RRSP'] = 2
-        s_in.weights['TFSA'] = 1
-        results = s_in(Money(100), self.accounts)
-        self.assertEqual(results[self.rrsp], Money(0))
-        self.assertEqual(results[self.tfsa], Money(100))
-        self.assertEqual(results[self.taxableAccount], Money(0))
+        # Now pay more than the first and second-paid debts will
+        # accomodate. The excess should go to the next-paid debt.
+        payment = (
+            self.min_payment({self.debt_big_high_interest}, s.timing) +
+            self.max_payment(
+                self.debts - {self.debt_big_high_interest}, s.timing) +
+            excess
+        )
+        results = s(payment, self.debts)
+        self.assertEqual(
+            results[self.debt_small_low_interest],
+            self.debt_small_low_interest.max_inflow(s.timing)
+            )
+        self.assertEqual(
+            results[self.debt_medium],
+            self.debt_medium.max_inflow(s.timing)
+            )
+        self.assertEqual(
+            results[self.debt_big_high_interest],
+            self.debt_big_high_interest.minimum_payment + excess
+            )
 
-    def test_strategy_weighted(self):
-        """ Tests TransactionStrategy._strategy_weighted. """
+        # Now contribute more than the total max.
+        payment = self.max_payment(self.debts, s.timing) + excess
+        results = s(payment, self.debts)
+        for debt in self.debts:
+            self.assertEqual(results[debt], debt.max_inflow(s.timing))
+
+    def test_strategy_avalanche(self):
+        """ Tests DebtPaymentStrategy._strategy_avalanche. """
         # Run each test on inflows and outflows
-        method = TransactionStrategy._strategy_weighted
-        rrsp_weight = Decimal('0.4')
-        tfsa_weight = Decimal('0.3')
-        taxableAccount_weight = Decimal('0.3')
-        s_in = TransactionInStrategy(method, {
-            'RRSP': rrsp_weight,
-            'TFSA': tfsa_weight,
-            'TaxableAccount': taxableAccount_weight
-            })
-        s_out = TransactionOutStrategy(method, {
-            'RRSP': rrsp_weight,
-            'TFSA': tfsa_weight,
-            'TaxableAccount': taxableAccount_weight
-            })
+        method = DebtPaymentStrategy._strategy_avalanche
+        s = DebtPaymentStrategy(method)
 
-        # Try a simple scenario: The amount being contributed is less
-        # than the available contribution room for each account
-        val = Money(min([a.max_inflow() for a in self.accounts]))
-        results = s_in(val, self.accounts)
-        self.assertEqual(sum(results.values()), val)
-        self.assertEqual(results[self.rrsp], val * rrsp_weight)
-        self.assertEqual(results[self.tfsa], val * tfsa_weight)
-        self.assertEqual(results[self.taxableAccount],
-                         val * taxableAccount_weight)
-        # Try again with outflows. Amount withdrawn is less than
-        # the balance of each account.
-        val = -Money(max([a.max_outflow() for a in self.accounts]))
-        results = s_out(val, self.accounts)
-        self.assertEqual(sum(results.values()), val)
-        self.assertEqual(results[self.rrsp], val * rrsp_weight)
-        self.assertEqual(results[self.tfsa], val * tfsa_weight)
-        self.assertEqual(results[self.taxableAccount],
-                         val * taxableAccount_weight)
+        # Try a simple scenario: The amount being contributed is equal
+        # to the minimum payments for the accounts.
+        min_payment = self.min_payment(self.debts, s.timing)
+        excess = Money(0)
+        payment = min_payment + excess
+        results = s(payment, self.debts)
+        for debt in self.debts:
+            self.assertEqual(results[debt], debt.minimum_payment)
 
-        # Now contribute enough to exceed the TFSA's contribution room.
-        # This can be implemented in various reasonable ways, but we
-        # should ensure that:
-        # 1 - TFSA contribution is maxed
-        # 2 - The total amount contributed is equal to `val`
-        # 3 - More is contributed to RRSPs than taxable accounts.
-        # 4 - The proportion of RRSP to taxable contributions should be
-        #     in a reasonable range, depending on whether (a) only the
-        #     overage is reweighted to exclude the TFSA or (b) the
-        #     entire contribution to those accounts is reweighted to
-        #     exclude the TFSA. (This is left to the implementation.)
-        threshold = self.tfsa.max_inflow() / tfsa_weight
-        overage = Money(50)
-        val = Money(threshold + overage)
-        results = s_in(val, self.accounts)
-        # Do tests 1-3:
-        self.assertEqual(results[self.tfsa], self.tfsa.max_inflow())
-        self.assertAlmostEqual(sum(results.values()), val, places=3)
-        self.assertGreater(results[self.rrsp], results[self.taxableAccount])
-        # Now we move on to test 4, which is a bit trickier.
-        # We want to be in the range defined by:
-        # 1 - Only the overage is reweighted, and
-        # 2 - The entire contribution to the RRSP is reweighted
-        rrsp_vals = [
-            val * rrsp_weight + overage * rrsp_weight / (1 - tfsa_weight),
-            (val - self.tfsa.max_inflow()) * rrsp_weight / (1 - tfsa_weight)
-        ]
-        self.assertGreaterEqual(results[self.rrsp], min(rrsp_vals))
-        self.assertLessEqual(results[self.rrsp], max(rrsp_vals))
-        taxable_vals = [
-            val * taxableAccount_weight +
-            overage * taxableAccount_weight / (1 - tfsa_weight),
-            (val - self.tfsa.max_inflow()) *
-            taxableAccount_weight / (1 - tfsa_weight)
-        ]
-        self.assertGreaterEqual(results[self.taxableAccount],
-                                min(taxable_vals))
-        self.assertLessEqual(results[self.taxableAccount],
-                             max(taxable_vals))
+        # Try paying less than the minimum. Minimum should still be paid
+        payment = Money(0)
+        results = s(payment, self.debts)
+        for debt in self.debts:
+            self.assertEqual(results[debt], debt.minimum_payment)
 
-        # Try again with outflows.
-        threshold = self.tfsa.max_outflow() / tfsa_weight
-        overage = -overage
-        val = Money(threshold + overage)
-        results = s_out(val, self.accounts)
-        self.assertEqual(results[self.tfsa], self.tfsa.max_outflow())
-        self.assertAlmostEqual(sum(results.values()), val, places=3)
-        self.assertLess(results[self.rrsp], results[self.taxableAccount])
-        rrsp_vals = [
-            val * rrsp_weight + overage * rrsp_weight / (1 - tfsa_weight),
-            (val - self.tfsa.max_outflow()) * rrsp_weight / (1 - tfsa_weight)
-        ]
-        self.assertGreaterEqual(results[self.rrsp], min(rrsp_vals))
-        self.assertLessEqual(results[self.rrsp], max(rrsp_vals))
-        taxable_vals = [
-            val * taxableAccount_weight +
-            overage * taxableAccount_weight / (1 - tfsa_weight),
-            (val - self.tfsa.max_outflow()) *
-            taxableAccount_weight / (1 - tfsa_weight)
-        ]
-        self.assertGreaterEqual(results[self.taxableAccount],
-                                min(taxable_vals))
-        self.assertLessEqual(results[self.taxableAccount],
-                             max(taxable_vals))
+        # Try paying a bit more than the minimum.
+        # The highest-interest debt should be paid first.
+        excess = Money(10)
+        payment = min_payment + excess
+        results = s(payment, self.debts)
+        self.assertEqual(
+            results[self.debt_big_high_interest],
+            self.debt_big_high_interest.minimum_payment + excess
+        )
+        self.assertEqual(
+            results[self.debt_medium],
+            self.debt_medium.minimum_payment
+        )
+        self.assertEqual(
+            results[self.debt_small_low_interest],
+            self.debt_small_low_interest.minimum_payment
+        )
 
-        # Now contribute a lot of money - the rrsp and tfsa will get
-        # filled and the remainder will go to the taxable account.
-        threshold = max(self.rrsp.max_inflow() / rrsp_weight,
-                        self.tfsa.max_inflow() / tfsa_weight)
-        overage = abs(overage)
-        val = threshold + overage
-        results = s_in(val, self.accounts)
-        self.assertEqual(sum(results.values()), val)
-        self.assertEqual(results[self.rrsp], self.rrsp.max_inflow())
-        self.assertEqual(results[self.tfsa], self.tfsa.max_inflow())
-        self.assertEqual(results[self.taxableAccount], val -
-                         (self.rrsp.max_inflow() + self.tfsa.max_inflow()))
-        # For withdrawals, try withdrawing just a little less than the
-        # total available balance. This will clear out the RRSP and TFSA
-        # NOTE: `overage` is positive; other values below are negative
-        val = self.rrsp.max_outflow() + self.tfsa.max_outflow() + \
-            self.taxableAccount.max_outflow() + overage
-        results = s_out(val, self.accounts)
-        self.assertEqual(sum(results.values()), val)
-        self.assertEqual(results[self.rrsp], self.rrsp.max_outflow())
-        self.assertEqual(results[self.tfsa], self.tfsa.max_outflow())
-        self.assertEqual(results[self.taxableAccount],
-                         self.taxableAccount.max_outflow() + overage)
+        # Now pay more than the first-paid debt will accomodate.
+        # The extra $50 should go to the next-paid debt (medium).
+        payment = (
+            self.min_payment(
+                self.debts - {self.debt_big_high_interest}, s.timing) +
+            self.max_payment({self.debt_big_high_interest}, s.timing) +
+            excess
+        )
+        results = s(payment, self.debts)
+        self.assertEqual(
+            results[self.debt_big_high_interest],
+            self.debt_big_high_interest.max_inflow(s.timing)
+            )
+        self.assertEqual(
+            results[self.debt_medium],
+            self.debt_medium.minimum_payment + excess
+            )
+        self.assertEqual(
+            results[self.debt_small_low_interest],
+            self.debt_small_low_interest.minimum_payment
+            )
 
-        # For outflows only, try withdrawing more than the accounts have
-        val = self.rrsp.max_outflow() + self.tfsa.max_outflow() + \
-            self.taxableAccount.max_outflow() - overage
-        results = s_out(val, self.accounts)
-        self.assertEqual(results[self.rrsp], self.rrsp.max_outflow())
-        self.assertEqual(results[self.tfsa], self.tfsa.max_outflow())
-        self.assertEqual(results[self.taxableAccount],
-                         self.taxableAccount.max_outflow())
+        # Now pay more than the first and second-paid debts will
+        # accomodate. The excess should go to the next-paid debt.
+        payment = (
+            self.min_payment({self.debt_small_low_interest}, s.timing) +
+            self.max_payment(
+                self.debts - {self.debt_small_low_interest}, s.timing) +
+            excess
+        )
+        results = s(payment, self.debts)
+        self.assertEqual(
+            results[self.debt_big_high_interest],
+            self.debt_big_high_interest.max_inflow(s.timing)
+            )
+        self.assertEqual(
+            results[self.debt_medium],
+            self.debt_medium.max_inflow(s.timing)
+            )
+        self.assertEqual(
+            results[self.debt_small_low_interest],
+            self.debt_small_low_interest.minimum_payment + excess
+            )
+
+        # Now contribute more than the total max.
+        payment = self.max_payment(self.debts, s.timing) + excess
+        results = s(payment, self.debts)
+        for debt in self.debts:
+            self.assertEqual(results[debt], debt.max_inflow(s.timing))
 
 if __name__ == '__main__':
     unittest.main()

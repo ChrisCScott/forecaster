@@ -954,8 +954,15 @@ class DebtPaymentStrategy(Strategy):
         transaction for that account.
     """
 
-    def __init__(self, strategy='Avalanche', timing='end', settings=Settings):
+    def __init__(self, strategy=None, timing=None, settings=Settings):
         """ Constructor for DebtPaymentStrategy. """
+
+        # Pull values from Settings
+        if strategy is None:
+            strategy = settings.debt_payment_strategy
+        if timing is None:
+            timing = settings.debt_payment_timing
+
         super().__init__(strategy, settings)
 
         self.timing = timing
@@ -968,7 +975,10 @@ class DebtPaymentStrategy(Strategy):
     def _strategy_snowball(self, available, debts, *args, **kwargs):
         """ Pays off the smallest debt first. """
         # First, ensure all minimum payments are made.
-        transactions = {debt: debt.min_inflow(when=self.timing)}
+        transactions = {
+            debt: debt.min_inflow(when=self.timing)
+            for debt in debts
+        }
 
         available -= sum(transactions[debt] * debt.reduction_rate
                          for debt in debts)
@@ -977,7 +987,7 @@ class DebtPaymentStrategy(Strategy):
             return transactions
 
         # Iterate over debts from smallest balance to largest:
-        for debt in sorted(debts, key=lambda x: x.balance, reverse=False):
+        for debt in sorted(debts, key=lambda x: abs(x.balance), reverse=False):
             # Debts that don't reduce savings can be ignored - assume
             # they're fully repaid in the first year.
             if debt.reduction_rate == 0:
@@ -997,11 +1007,14 @@ class DebtPaymentStrategy(Strategy):
 
         return transactions
 
-    @strategy('Avalance')
-    def _strategy_snowball(self, available, debts, *args, **kwargs):
+    @strategy('Avalanche')
+    def _strategy_avalanche(self, available, debts, *args, **kwargs):
         """ Pays off the highest-interest debt first. """
         # First, ensure all minimum payments are made.
-        transactions = {debt: debt.min_inflow(when=self.timing)}
+        transactions = {
+            debt: debt.min_inflow(when=self.timing)
+            for debt in debts
+        }
 
         available -= sum(transactions[debt] * debt.reduction_rate
                          for debt in debts)
