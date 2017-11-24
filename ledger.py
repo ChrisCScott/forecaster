@@ -585,25 +585,28 @@ class Account(TaxSource):
         `account2.balance == 105  # True`
 
     Attributes:
-        balance (dict): The opening account balance for each year.
-            Each element is a Money object.
-        rate (dict): The rate of return (or interest) per year, before
-            compounding.
-            Each element is float-like (e.g. float, Decimal).
+        balance (Money): The opening account balance for this year.
+        balance_history (dict): A dict of {year: balance} pairs covering
+            all years in the range `initial_year: this year`
+        rate (Decimal): The rate of return (or interest) for this year,
+            before compounding.
+        rate_history (dict): A dict of {year: rate} pairs covering
+            all years in the range `initial_year: this year`
         transactions (dict): The transactions to/from the account for
-            each year. Each element is a dict of `{when: value}` pairs,
-            where:
+            this year. A dict of `{when: value}` pairs, where:
                 `when` (float, Decimal, str): Describes the timing of
-                    the transaction.
-                    Must be in the range [0,1] or in ('start', 'end').
-                    The definition of this range is counterintuitive:
-                    0 corresponds to 'end' and 1 corresponds to 'start'.
-                    (This is how `numpy` defines its `when` argument
-                    for financial methods.)
+                    the transaction in the year. In the range [0, 1].
                 `value` (Money): The inflows and outflows at time `when`.
                     Positive for inflows and negative for outflows.
                     Each element must be a Money object (or convertible
                     to one).
+        transactions_history (dict): A dict of {year: transactions}
+            pairs covering all years in the range
+            `initial_year: this year`
+        returns (Money): The returns (losses) of the account for the
+            year.
+        returns_history (dict): A dict of {year: returns} pairs covering
+            all years in the range `initial_year: this year`
         nper (int, str): The compounding frequency. May be given as
             a number of periods (an int) or via a code (a str). Codes
             include:
@@ -659,11 +662,13 @@ class Account(TaxSource):
         self._balance = {}
         self._rate = {}
         self._transactions = {}
+        self._returns = {}
 
         # Type-checking and such is handled by property setters.
         self.balance = balance
         self.rate = rate
         self.transactions = transactions
+        # NOTE: returns is calculated lazily
 
         # We don't save the settings object, but we do need to save
         # defaults for certain methods. These are not used when methods
@@ -732,6 +737,36 @@ class Account(TaxSource):
     def transactions_history(self):
         """ All transactions in and out of the account. """
         return self._transactions
+
+    @property
+    def returns(self):
+        """ Returns (losses) on the balance and transactions this year. """
+        # Find returns on the initial balance.
+        # This doesn't include any transactions or their growth.
+        returns = (
+            self.balance * self.accumulation_function(1, self.rate, self.nper)
+        )
+
+        # Add in the returns on each transaction.
+        # (Withdrawals will generate returns with the opposite sign of
+        # the returns on the initial balance and prior inflows, thereby
+        # cancelling out a portion of those returns.)
+        for when in {when for when in self.transactions_history}:
+            returns += (
+                self.transactions_history[when] *
+                self.accumulation_function(1 - when, self.rate, self.nper)
+            )
+
+        return returns
+
+    @property
+    def returns_history(self):
+        """ Returns (losses) on the balance and transactions each year. """
+        # We update _returns in `next_year`, meaning that the value for
+        # this year might not yet be stored. So store it:
+        if self.this_year not in self._returns:
+            self._returns[self.this_year] = self.returns
+        return self._returns
 
     @classmethod
     def _conv_nper(cls, nper):
@@ -962,6 +997,10 @@ class Account(TaxSource):
         Sets the next year's balance and rate, but does not set any
         transactions.
         """
+        # First, store returns for this year:
+        self.returns[self.this_year] = self.returns
+
+        # Now increment year via superclass:
         super().next_year(*args, **kwargs)
 
         # Ensure that the owner has been brought up to this year
