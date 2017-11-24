@@ -73,7 +73,7 @@ class TestForecast(unittest.TestCase):
             rate=Money('50000'),
             min_living_standard=Money(0),
             timing='end',
-            benefit_adjusted=False,
+            income_adjusted=False,
             inflation_adjusted=True
         )
         contribution_transaction_strategy = TransactionInStrategy(
