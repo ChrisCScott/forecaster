@@ -1056,6 +1056,10 @@ class Debt(Account):
             if accelerate_payment is not None \
             else Settings.DebtAcceleratePayment
 
+        # Debt must have a negative balance
+        if balance > 0:
+            self.balance = -self.balance
+
     def min_inflow(self, when='end', year=None):
         """ The minimum payment on the debt. """
         return min(-self.balance_at_time(when, year), self.minimum_payment)

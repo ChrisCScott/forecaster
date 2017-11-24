@@ -82,6 +82,10 @@ class Settings:
     allocation_risk_transition_period = 20
     allocation_adjust_for_retirement_plan = True
 
+    ''' DebtPaymentStrategy defaults '''
+    debt_payment_strategy = 'Avalanche'
+    debt_payment_timing = 'end'
+
     ''' Debt defaults '''
     DebtReductionRate = 1
     DebtAcceleratePayment = False
