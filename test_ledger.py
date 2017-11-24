@@ -595,6 +595,23 @@ class TestAccountMethods(unittest.TestCase):
         with self.assertRaises(TypeError):
             account = self.AccountType("invalid owner", *args, **kwargs)
 
+    def test_returns(self, *args, **kwargs):
+        """ Tests Account.returns and Account.returns_history. """
+        # Account with $1 balance and 100% non-compounded growth.
+        # Should have returns of $1 in its first year:
+        account = self.AccountType(
+            self.owner, *args, balance=1, rate=1.0, nper=1,
+            initial_year=self.initial_year, **kwargs)
+        self.assertEqual(account.returns, Money(1))  # $1 return
+        self.assertEqual(account.returns_history,
+                         {self.initial_year: Money(1)})
+
+        account.next_year()
+        self.assertEqual(account.returns_history,
+                         {self.initial_year: Money(1),
+                          self.initial_year + 1: Money(2)})
+        self.assertEqual(account.returns, Money(2))
+
     def test_next(self, *args, next_args=[], next_kwargs={}, **kwargs):
         """ Tests next_balance and next_year.
 
@@ -903,13 +920,23 @@ class TestAccountMethods(unittest.TestCase):
         self.assertEqual(account.tax_deduction, Money(0))
 
 
-class TestDebtMethods(TestAccountMethods):
+class TestDebtMethods(unittest.TestCase):
     """ Test Debt. """
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         cls.AccountType = Debt
+
+        # It's important to synchronize the initial years of related
+        # objects, so store it here:
+        cls.initial_year = 2000
+        # Every init requires an owner, so store that here:
+        cls.owner = Person(
+            "test", 2000,
+            raise_rate={year: 1 for year in range(2000, 2066)},
+            retirement_date=2065,
+            initial_year=cls.initial_year)
 
         # Debt takes three args: reduction_rate (Decimal),
         # minimum_payment (Money), and accelerate_payment (bool)
@@ -918,7 +945,9 @@ class TestDebtMethods(TestAccountMethods):
         cls.accelerate_payment = True
 
     def test_init(self, *args, **kwargs):
-        super().test_init(*args, **kwargs)
+        # Don't call the superclass init, since it's based on positive
+        # balances.
+        # super().test_init(*args, **kwargs)
 
         # Test default init.
         account = self.AccountType(self.owner, *args, **kwargs)

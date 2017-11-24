@@ -744,17 +744,20 @@ class Account(TaxSource):
         # Find returns on the initial balance.
         # This doesn't include any transactions or their growth.
         returns = (
-            self.balance * self.accumulation_function(1, self.rate, self.nper)
+            self.balance *
+            (self.accumulation_function(1, self.rate, self.nper) - 1)
         )
 
         # Add in the returns on each transaction.
         # (Withdrawals will generate returns with the opposite sign of
         # the returns on the initial balance and prior inflows, thereby
         # cancelling out a portion of those returns.)
-        for when in {when for when in self.transactions_history}:
+        for when in self.transactions:
             returns += (
-                self.transactions_history[when] *
-                self.accumulation_function(1 - when, self.rate, self.nper)
+                self.transactions[when] *
+                (self.accumulation_function(
+                    1 - when, self.rate, self.nper
+                    ) - 1)
             )
 
         return returns
@@ -998,7 +1001,7 @@ class Account(TaxSource):
         transactions.
         """
         # First, store returns for this year:
-        self.returns[self.this_year] = self.returns
+        self._returns[self.this_year] = self.returns
 
         # Now increment year via superclass:
         super().next_year(*args, **kwargs)
@@ -1096,7 +1099,7 @@ class Debt(Account):
             else Settings.DebtAcceleratePayment
 
         # Debt must have a negative balance
-        if balance > 0:
+        if self.balance > 0:
             self.balance = -self.balance
 
     def min_inflow(self, when='end', year=None):
