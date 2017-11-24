@@ -318,9 +318,14 @@ class Person(TaxSource):
         self._spouse = None
         self._gross_income = {}
         self._net_income = {}
-        self._raise_rate = {
-            int(k): Decimal(raise_rate[k]) for k in raise_rate
-        }
+        # NOTE: We formerly created a new dict for raise_rate with
+        # type-cast {int: Decimal} pairs, but this stripped out
+        # defaultdict functionality. For now, we just store the values
+        # as provided and leave it to other methods to fail if they
+        # aren't the right type.
+        # Another option would be to have the user pass a generator
+        # function (as we do with inflation_adjustments)
+        self._raise_rate = raise_rate
         self._contribution_room = {}
         self._contribution_groups = {}
         self.birth_date = birth_date
