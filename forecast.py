@@ -154,7 +154,8 @@ class Forecast(object):
     def __init__(self, people, assets, debts, scenario, contribution_strategy,
                  withdrawal_strategy, contribution_transaction_strategy,
                  withdrawal_transaction_strategy, allocation_strategy,
-                 debt_payment_strategy, tax_treatment, inputs=None):
+                 debt_payment_strategy, tax_treatment, inputs=None,
+                 context=None):
         ''' Constructs an instance of class Year.
 
         Starts with the end-of-year values from `last_year` and builds
@@ -273,7 +274,7 @@ class Forecast(object):
         self.living_standard = {}
 
         # Record the values for the initial year:
-        self.record_year()
+        self.record_year(scenario.initial_year)
 
         # Build the forecast year-by-year:
         for year in self.scenario:
@@ -288,9 +289,8 @@ class Forecast(object):
         for account in self.accounts:
             account.next_year()
 
-    def record_year(self, year):
-        """ Stores high-level values across accounts for this year."""
-        # Determine gorss/net income for the family:
+    def record_income(self, year):
+        # Determine gross/net income for the family:
         self.gross_income[year] = sum(
             person.gross_income for person in self.people)
         self.taxes_withheld_on_income[year] = sum(
@@ -298,6 +298,7 @@ class Forecast(object):
         self.net_income[year] = sum(
             person.net_income for person in self.people)
 
+    def record_gross_contribution(self, year):
         # TODO: Determine refunds and other contributions
         # Determine gross contributions:
         refund = 0  # TODO: refund amounts
@@ -318,22 +319,42 @@ class Forecast(object):
             self.contributions_from_carryover[year] +
             self.contributions_from_asset_sales[year]
         )
+
+    def record_contribution_reductions(self, year):
         # Determine contribution reductions:
         # TODO: Include reduced contributions to pay for last year's
         # outstanding taxes?
+        # NOTE: We'll add another reduction dict for childcare expenses
+        # in a future version.
+        # First determine miscellaneous other reductions (these take
+        # priority because they're generally user-input):
         self.reduction_from_other[year] = 0
+        # Then determine reductions due to debt payments:
         debt_payments = self.debt_payment_strategy(
             self.gross_contributions[year] - self.reduction_from_other[year],
             self.debts
         )
-        self.reduction_from_debt[year] = sum(debt_payments.values())
+        self.reduction_from_debt[year] = sum(
+            debt_payments[debt] * debt.reduction_rate for debt in debt_payments
+        )
+        # Now determine the total reductions across all reduction dicts:
         self.contribution_reductions[year] = (
             self.reduction_from_debt[year] +
             self.reduction_from_other[year]
         )
-        # Due to minimum debt payments, contribution reductions can be
-        # greater than gross contributions. Ensure the net_contributions
-        # is not negative.
+
+        # Apply debt payment transactions
+        for debt in debt_payments:
+            debt.add_transaction(
+                debt_payments[debt],
+                self.debt_payment_strategy.timing
+            )
+
+    def record_net_contributions(self, year):
+
+        # Reductions can potentially exceed gross_contributions (e.g.
+        # due to minimum debt payments or childcare expenses).
+        # Ensure the net_contributions is not negative:
         self.net_contributions[year] = max(
             self.gross_contributions[year] -
             self.contribution_reductions[year],
@@ -344,26 +365,44 @@ class Forecast(object):
         # net contributions and debt payments:
         contributions = self.contribution_transaction_strategy(
                 self.net_contributions[year],
-                self.accounts
+                self.assets
         )
-        for debt in self.debts:
-            debt.add_transaction(
-                debt_payments[debt], self.debt_payment_strategy.timing)
-        for account in self.accounts:
+        for account in contributions:
             account.add_transaction(
                 contributions[debt],
                 self.contribution_transaction_strategy.timing
             )
 
+    def record_principal(self, year):
         self.principal[year] = sum(
             account.balance for account in self.accounts)
-        # TODO: Implement return logic. Consider adding a return()
-        # method to Account?
-        # TODO: Move this to after withdrawal recording (since we don't
-        # need to know returns explicitly to calculate withdrawals)?
-        self.gross_return[year] = 0  # TODO
+
+    def record_returns(self, year):
+        self.gross_return[year] = sum(a.returns for a in self.assets)
+        # TODO: Figure out what to do with tax_withheld_on_return.
+        # Right now there's no way to distinguish between tax withheld
+        # in an account due to returns vs. due to withdrawals.
+        # IDEA: Eliminate disctinction between tax withheld on returns
+        # vs. withdrawals and only consider tax withheld on accounts?
+        # This will generally be paid from the accounts themselves, so
+        # it probably makes sense to consider it all together.
         self.tax_withheld_on_return[year] = 0  # TODO
-        self.net_return[year] = 0  # TODO
+        self.net_return[year] = (
+            returns - self.tax_withheld_on_return[year]
+        )
+
+    def record_withdrawals(self, year):
+        # TODO: Find a more graceful way to handle retirement_year.
+        # Should we pick the earlier year? The later year?
+        # Should we instead forego the all-at-once model of retirement
+        # and base withdrawals instead on a target living standard
+        # (i.e. reduce withdrawals based on family income?)
+        # This probably calls for a separate method and a redesign
+        # of withdrawal_strategy.
+        retirement_year = max((
+            person.retirement_year for person in people
+            if person.retirement_year is not None),
+            default=None)
 
         self.withdrawals_from_retirement_accounts[year] = \
             self.withdrawal_strategy(
@@ -372,18 +411,7 @@ class Forecast(object):
             gross_income=self.gross_income[year],
             principal=self.principal[year],
             inflation_adjustment=self.scenario.inflation_adjust,
-            # TODO: Figure out a more gracious way to handle
-            # retirement_year. Should we pick the earlier year? The
-            # later year? Should we instead forego the all-at-once
-            # model of retirement and base withdrawals instead on a
-            # target living standard (i.e. reduce withdrawals based on
-            # family income?)
-            # This probably calls for a separate method and a redesign
-            # of withdrawal_strategy.
-            retirement_year=max((
-                person.retirement_year for person in people
-                if person.retirement_year is not None),
-                default=None),
+            retirement_year=retirement_year,
             this_year=year
         )
         self.withdrawals_from_other_accounts[year] = 0  # TODO
@@ -399,6 +427,8 @@ class Forecast(object):
             self.tax_withheld_on_withdrawals[year]
         )
 
+    def record_total_tax(self, year):
+
         self.total_tax_withheld[year] = sum(
             self.taxes_withheld_on_income[year],
             self.tax_withheld_on_return[year],
@@ -406,6 +436,7 @@ class Forecast(object):
         )
         self.total_tax_owing[year] = self.tax_treatment(self.people, year)
 
+    def record_living_standard(self, year):
         # TODO: Check Excel spreadsheet for calculation of this.
         # As currently shown, this deducts all taxes owing from the
         # living standard - even if some of those taxes are attributable
@@ -420,3 +451,18 @@ class Forecast(object):
             self.net_contributions[year],
             self.contribution_reductions[year]
         )
+
+    def record_year(self, year):
+        """ Stores high-level values across accounts for this year."""
+        # NOTE: Order is important here. This method is only split into
+        # its various sub-methods for readability - it really is just
+        # one long chain of procedural logic.
+        self.record_income(year)
+        self.record_gross_contribution(year)
+        self.record_contribution_reductions(year)
+        self.record_net_contributions(year)
+        self.record_principal(year)
+        self.record_withdrawals(year)
+        self.record_returns(year)
+        self.record_total_tax(year)
+        self.record_living_standard(year)
