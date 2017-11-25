@@ -104,9 +104,9 @@ class Scenario(object):
             else:
                 return {int(key): Decimal(input[key]) for key in input}
 
-        # If it's not a dict, but it is some sort of sequence (e.g. a
-        # list) then convert it into a [default]dict
-        if isinstance(input, collections.Sequence):
+        # If it's not a dict, but it is iterable then convert it into a
+        # [default]dict
+        if isinstance(input, collections.Iterable):
             if initial_year is None:
                 raise ValueError(
                     'Scenario: initial_year is required if input is a list.')
@@ -128,7 +128,7 @@ class Scenario(object):
     def __init__(self, inflation=None, stock_return=None, bond_return=None,
                  other_return=None, management_fees=None,
                  person1_raise_rate=None, person2_raise_rate=None,
-                 initial_year=None, settings=Settings):
+                 initial_year=None, num_years=None, settings=Settings):
         """ Constructor for `Scenario`.
 
         Arguments may be dicts (of {year, value} pairs), lists (or
@@ -158,6 +158,7 @@ class Scenario(object):
                 expected for a raise for person2 this year, expressed as
                 a percentage (e.g. 0.05 for a 5% raise).
             initial_year (int): The first year of the projection.
+            num_years (int): The number of years in the projection.
 
         Raises:
             TypeError: Input with unexpected type.
@@ -207,7 +208,11 @@ class Scenario(object):
             person1_raise_rate, initial_year, settings.person1_raise_rate)
         self.person2_raise_rate = self._build_dict(
             person2_raise_rate, initial_year, settings.person2_raise_rate)
-        self.initial_year = initial_year
+        # We have some scalars to set as well:
+        self.initial_year = int(initial_year) if initial_year is not None \
+            else int(settings.initial_year)
+        self.num_years = int(num_years) if num_years is not None \
+            else int(settings.num_years)
 
         # TODO: Allow inflation to stretch into the past (based on
         # historical data)? Either by allowing the inflation dict to
@@ -268,16 +273,6 @@ class Scenario(object):
                 accum = accum*(1+self.discount_rate(year))
             return 1/accum
 
-    def real_value(self, value, nominal_year, real_year=None,
-                   settings=Settings):
-        """ Returns a value expressed in `real_year` terms.
-
-        If `real_year` is not provided, uses the current display year
-        (see `Settings`). """
-        if real_year is None:
-            real_year = settings.display_year
-        return value * self.accumulation_function(nominal_year, real_year)
-
     def inflation_adjustments(self, base_year):
         """ Annual inflation adjustment factors relative to base_year.
 
@@ -300,7 +295,7 @@ class Scenario(object):
 
     def __len__(self):
         """ Returns the number of years modelled by the Scenario. """
-        return self.__len
+        return self.num_years
 
     def __iter__(self):
         """ Iterates over years modelled by the Scenario. """
