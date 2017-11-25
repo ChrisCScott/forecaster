@@ -231,17 +231,27 @@ class ContributionStrategy(Strategy):
             net_income - (self.base_amount * self.inflation_adjust(year)))
 
     def __call__(self, year=None, refund=0, other_contribution=0,
-                 net_income=None, gross_income=None, *args, **kwargs):
+                 net_income=None, gross_income=None, 
+                 retirement_year=None, *args, **kwargs):
         """ Returns the gross contribution for the year. """
         # NOTE: We layer on refund and other_contribution amounts on top
         # of what the underlying strategy dictates.
         # TODO: Consider reimplementing with list (dict?) arguments for
         # consistency with WithdrawalStrategy.
-        return refund * self.refund_reinvestment_rate + other_contribution + \
-            super().__call__(
+
+        # We always contribute carryover/refunds/etc:
+        contribution = refund * self.refund_reinvestment_rate + \
+            other_contribution
+        # Only make contributions if we haven't yet retired:
+        if (
+            retirement_year is not None and year is not None and
+            retirement_year >= year
+        ):
+            contribution += super().__call__(
                 year=year, net_income=net_income, gross_income=gross_income,
                 *args, **kwargs
             )
+        return contribution
 
 
 class WithdrawalStrategy(Strategy):
@@ -387,19 +397,27 @@ class WithdrawalStrategy(Strategy):
                  *args, **kwargs):
         """ Returns the gross withdrawal for the year. """
         # This is what the strategy recommends, before benefit adjustment.
-        strategy_result = super().__call__(
-            year=year,
-            net_income_history=net_income_history,
-            gross_income_history=gross_income_history,
-            principal_history=principal_history,
-            retirement_year=retirement_year,
-            *args, **kwargs)
-        # Determine whether to (and how much to) reduce the withdrawal
-        # due to other income:
-        income_adjustment = Money(other_income if self.income_adjusted else 0)
-        # We want to deduct other income from the withdrawal amount, but
-        # we don't want to return a negative value.
-        return max(strategy_result - income_adjustment, Money(0))
+        if (
+            retirement_year is not None and year is not None and
+            retirement_year < year
+        ):
+            strategy_result = super().__call__(
+                year=year,
+                net_income_history=net_income_history,
+                gross_income_history=gross_income_history,
+                principal_history=principal_history,
+                retirement_year=retirement_year,
+                *args, **kwargs)
+            # Determine whether to (and how much to) reduce the
+            # withdrawal due to other income:
+            income_adjustment = Money(
+                other_income if self.income_adjusted else 0
+            )
+            # We want to deduct other income from the withdrawal amount,
+            # but we don't want to return a negative value.
+            return max(strategy_result - income_adjustment, Money(0))
+        else:  # No withdrawal if we haven't retired yet
+            return Money(0)
 
 
 class TransactionStrategy(Strategy):
