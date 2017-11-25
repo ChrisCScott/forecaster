@@ -284,13 +284,13 @@ class Forecast(object):
         # Living standard
         self.living_standard = {}
 
-        # Record the values for the initial year:
-        self.record_year(scenario.initial_year)
-
+        last_year = max(self.scenario)
         # Build the forecast year-by-year:
         for year in self.scenario:
-            self.next_year()
             self.record_year(year)
+            # Don't advance to the next year if this is the last one:
+            if year < last_year:
+                self.next_year()
 
     def next_year(self):
         """ Adds a year to the forecast. """
@@ -302,6 +302,12 @@ class Forecast(object):
 
         for account in self.debts:
             account.next_year()
+
+    def retirement_year(self):
+        return max((
+            person.retirement_date for person in self.people
+            if person.retirement_date is not None),
+            default=None).year
 
     def record_income(self, year):
         # Determine gross/net income for the family:
@@ -318,12 +324,15 @@ class Forecast(object):
         self.refund[year] = 0  # TODO: refund amounts
         self.carryover[year] = 0  # TODO
         self.asset_sale[year] = 0  # TODO
+
+        retirement_year = self.retirement_year()
         self.gross_contributions[year] = self.contribution_strategy(
             year=year,
             refund=self.refund[year],
             other_contributions=self.carryover[year] + self.asset_sale[year],
             net_income=self.net_income[year],
-            gross_income=self.gross_income[year]
+            gross_income=self.gross_income[year],
+            retirement_year=retirement_year
         )
 
     def record_contribution_reductions(self, year):
@@ -398,17 +407,7 @@ class Forecast(object):
         )
 
     def record_withdrawals(self, year):
-        # TODO: Find a more graceful way to handle retirement_year.
-        # Should we pick the earlier year? The later year?
-        # Should we instead forego the all-at-once model of retirement
-        # and base withdrawals instead on a target living standard
-        # (i.e. reduce withdrawals based on family income?)
-        # This probably calls for a separate method and a redesign
-        # of withdrawal_strategy.
-        retirement_year = max((
-            person.retirement_date for person in self.people
-            if person.retirement_date is not None),
-            default=None).year
+        retirement_year = self.retirement_year()
 
         self.withdrawals_from_retirement_accounts[year] = \
             self.withdrawal_strategy(

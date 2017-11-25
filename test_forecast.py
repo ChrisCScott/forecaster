@@ -24,14 +24,14 @@ class TestForecast(unittest.TestCase):
         """
         initial_year = 2000
         scenario = Scenario(
-            # At 100% inflation, adjustments will be [1, 2, 4, 8]
-            inflation=Decimal(1),
+            inflation=Decimal(0),  # No inflation
             stock_return=Decimal(1),  # 100% growth in stocks
             bond_return=Decimal(0.5),  # 50% growth in bonds
             other_return=0,  # No growth in other assets
             management_fees=Decimal(0),  # TODO: Refactor this attribute
             person1_raise_rate=Decimal(0.5),  # TODO: Refactor this attr
-            initial_year=initial_year
+            initial_year=initial_year,
+            num_years=4
         )
         tax = Tax(
             {
@@ -112,6 +112,108 @@ class TestForecast(unittest.TestCase):
         # year and test them here. (Use net_income, net_contributions,
         # principal, net_return, net_withdrawals, total_tax_owing,
         # and living_standard)
+        # Year 1:
+        year = initial_year
+        # Gross income: $100,000, taxes: $25,000
+        self.assertEqual(forecast.net_income[year], Money(75000))
+        # Gross contribution: $50,000, debt payments: $2000 (this will
+        # pay off the debt's $1000 principal and $1000 interest)
+        self.assertEqual(forecast.net_contributions[year],
+                         Money(48000))
+        # Account initial balance: $1000
+        self.assertEqual(forecast.principal[year], Money(1000))
+        # Growth: 100%
+        # NOTE: We should implement growth based on allocation (in this
+        # case 100% for stocks, 50% for bonds, portfolio split evenly),
+        # which would yield $750. No taxes/etc.
+        self.assertEqual(forecast.net_return[year], Money(1000))
+        # No withdrawals
+        self.assertEqual(forecast.net_withdrawals[year], Money(0))
+        # Taxable income: $100,000 + $1000. All income over $50,000 is
+        # taxable at 50%, for a total of $25500
+        self.assertEqual(forecast.total_tax_owing[year],
+                         Money(25500))
+        # Living standard: $100,000 - $25,500 - $50,000 = $24,500
+        self.assertEqual(forecast.living_standard[year], Money(24500))
+
+        # Year 2:
+        year += 1
+        # Gross income: $150,000 (50% raise), taxes: $50,000
+        self.assertEqual(forecast.net_income[year], Money(100000))
+        # Gross contribution: $50,000, debt payments: $0
+        self.assertEqual(forecast.net_contributions[year],
+                         Money(50000))
+        # Account initial balance: $50000 ($48000 contribution, plus
+        # $1000 initial balance and $1000 return last year)
+        self.assertEqual(forecast.principal[year], Money(50000))
+        # Growth: 100%
+        # NOTE: We should set growth based on allocation (see above)
+        self.assertEqual(forecast.net_return[year], Money(50000))
+        # No withdrawals - retirement is next year
+        self.assertEqual(forecast.net_withdrawals[year], Money(0))
+        # Taxable income: $150,000 + $50000. All income over $50,000 is
+        # taxable at 50%, for a total of $75000
+        self.assertEqual(forecast.total_tax_owing[year],
+                         Money(75000))
+        # Living standard: $150,000 - $75000 - $50,000 = $25,000
+        # TODO: Review Excel sheet; the living standard formula needs
+        # to be updated so that all taxes owing aren't held against
+        # it. (Any taxes paid out of accounts shouldn't be - perhaps
+        # only deduct taxes withheld?)
+        self.assertEqual(forecast.living_standard[year], Money(25000))
+
+        # Year 3:
+        year += 1
+        # Gross income: $225,000 (50% raise), taxes: $87,500
+        self.assertEqual(forecast.net_income[year], Money(137500))
+        # Gross contribution: $50,000, debt payments: $0
+        self.assertEqual(forecast.net_contributions[year],
+                         Money(50000))
+        # Account initial balance: $150000 ($50000 contribution, plus
+        # $50000 initial balance and $50000 return last year)
+        self.assertEqual(forecast.principal[year], Money(150000))
+        # Growth: 100%
+        # NOTE: We should set growth based on allocation (see above)
+        self.assertEqual(forecast.net_return[year], Money(150000))
+        # No withdrawals - retirement is this year, so withdrawals start
+        # next year.
+        self.assertEqual(forecast.net_withdrawals[year], Money(0))
+        # Taxable income: $225000 + $150000. All income over $50,000 is
+        # taxable at 50%, for a total of $162500
+        self.assertEqual(forecast.total_tax_owing[year],
+                         Money(162500))
+        # Living standard: $225,000 - $162,500 - $50,000 = $12,500
+        # TODO: Review Excel sheet; the living standard formula needs
+        # to be updated so that all taxes owing aren't held against
+        # it. (Any taxes paid out of accounts shouldn't be - perhaps
+        # only deduct taxes withheld?)
+        self.assertEqual(forecast.living_standard[year], Money(12500))
+
+        # Year 4:
+        year += 1
+        # Gross income: $0 (retired), taxes: $0
+        self.assertEqual(forecast.net_income[year], Money(0))
+        # Gross contribution: $0, debt payments: $0
+        self.assertEqual(forecast.net_contributions[year],
+                         Money(0))
+        # Account initial balance: $350000 ($50000 contribution, plus
+        # $150000 initial balance and $150000 return last year)
+        self.assertEqual(forecast.principal[year], Money(350000))
+        # Growth: 100%
+        # NOTE: We should set growth based on allocation (see above)
+        self.assertEqual(forecast.net_return[year], Money(350000))
+        # $50,000 withdrawal
+        self.assertEqual(forecast.net_withdrawals[year], Money(50000))
+        # Taxable income: $350000. All income over $50,000 is
+        # taxable at 50%, for a total of $150,000
+        self.assertEqual(forecast.total_tax_owing[year],
+                         Money(150000))
+        # Living standard: $0 + $50000 - $150000 = -$100,000
+        # TODO: Review Excel sheet; the living standard formula needs
+        # to be updated so that all taxes owing aren't held against
+        # it. (Any taxes paid out of accounts shouldn't be - perhaps
+        # only deduct taxes withheld?)
+        self.assertEqual(forecast.living_standard[year], Money(-100000))
 
 if __name__ == '__main__':
     unittest.main()
