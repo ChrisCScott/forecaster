@@ -547,8 +547,16 @@ class Person(TaxSource):
         # TODO (v2): Include temporary loss of income due to parental leave.
         # TODO (v1): Test for retirement
         super().next_year()
-        self.gross_income = (
-            self._gross_income[self.this_year - 1] * (1 + self.raise_rate))
+
+        # No income if retired, otherwise apply the raise rate:
+        if (
+            self.retirement_date is not None and
+            self.retirement_date.year < self.this_year
+        ):
+            self.gross_income = Money(0)
+        else:
+            self.gross_income = (
+                self._gross_income[self.this_year - 1] * (1 + self.raise_rate))
         self.net_income = \
             self.gross_income - self.tax_withheld
 
@@ -667,7 +675,7 @@ class Account(TaxSource):
         self._balance = {}
         self._rate = {}
         self._transactions = {}
-        self._returns = {}
+        self.__returns = {}
 
         # Type-checking and such is handled by property setters.
         self.balance = balance
@@ -743,13 +751,15 @@ class Account(TaxSource):
         """ All transactions in and out of the account. """
         return self._transactions
 
-    @property
-    def returns(self):
-        """ Returns (losses) on the balance and transactions this year. """
+    def _returns(self, year=None):
+        """ Returns (losses) on the balance and transactions for year. """
+        if year is None:
+            year = self.this_year
+
         # Find returns on the initial balance.
         # This doesn't include any transactions or their growth.
         returns = (
-            self.balance *
+            self._balance[year] *
             (self.accumulation_function(1, self.rate, self.nper) - 1)
         )
 
@@ -757,9 +767,9 @@ class Account(TaxSource):
         # (Withdrawals will generate returns with the opposite sign of
         # the returns on the initial balance and prior inflows, thereby
         # cancelling out a portion of those returns.)
-        for when in self.transactions:
+        for when in self._transactions[year]:
             returns += (
-                self.transactions[when] *
+                self._transactions[year][when] *
                 (self.accumulation_function(
                     1 - when, self.rate, self.nper
                     ) - 1)
@@ -768,13 +778,18 @@ class Account(TaxSource):
         return returns
 
     @property
+    def returns(self):
+        """ Returns (losses) on the balance and transactions this year. """
+        return self._returns(self.this_year)
+
+    @property
     def returns_history(self):
         """ Returns (losses) on the balance and transactions each year. """
         # We update _returns in `next_year`, meaning that the value for
         # this year might not yet be stored. So store it:
-        if self.this_year not in self._returns:
-            self._returns[self.this_year] = self.returns
-        return self._returns
+        if self.this_year not in self.__returns:
+            self.__returns[self.this_year] = self.returns
+        return self.__returns
 
     @classmethod
     def _conv_nper(cls, nper):
@@ -1006,7 +1021,7 @@ class Account(TaxSource):
         transactions.
         """
         # First, store returns for this year:
-        self._returns[self.this_year] = self.returns
+        self.__returns[self.this_year] = self.returns
 
         # Now increment year via superclass:
         super().next_year(*args, **kwargs)
@@ -1063,6 +1078,10 @@ class Account(TaxSource):
         returns Money('0')
         """
         return Money('0')
+
+    def _taxable_income(self, year=None):
+        """ Treats all returns as taxable. """
+        return max(self._returns(year), Money(0))
 
 
 class Debt(Account):
