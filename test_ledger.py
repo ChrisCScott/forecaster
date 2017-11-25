@@ -868,12 +868,13 @@ class TestAccountMethods(unittest.TestCase):
         self.assertEqual(account.min_inflow(), Money(0))
 
     def test_taxable_income(self, *args, **kwargs):
-        # This method should always return $0
+        # This method should return the growth in the account.
         account = self.AccountType(self.owner, *args, balance=100, rate=1.0,
                                    transactions={0: 100, 1: -100},
                                    **kwargs)
-        self.assertEqual(account.taxable_income, Money(0))
+        self.assertEqual(account.taxable_income, Money(200))
 
+        # Losses are not taxable:
         account = self.AccountType(self.owner, *args, balance=-100, rate=1.0,
                                    transactions={0: 100, 1: -100},
                                    **kwargs)
