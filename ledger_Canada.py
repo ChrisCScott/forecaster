@@ -375,8 +375,8 @@ class TFSA(RegisteredAccount):
         else:
             return Money(
                 round(
-                    self.inflation_adjust(
-                        self._base_accrual, self._base_accrual_year, year) /
+                    self._base_accrual * self.inflation_adjust(
+                        self._base_accrual_year, year) /
                     Constants.TFSAInflationRoundingFactor) *
                 Constants.TFSAInflationRoundingFactor
             )
