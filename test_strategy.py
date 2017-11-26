@@ -472,11 +472,20 @@ class TestWithdrawalStrategyMethods(unittest.TestCase):
             # the current year (since all figs. are in nominal terms)
             inflation_adjustment = self.inflation_adjustment[year] / \
                 self.inflation_adjustment[retirement_year]
-            self.assertEqual(s(principal_history=principal,
-                               retirement_year=retirement_year,
-                               year=year),
-                             Money(s.rate * principal[retirement_year]) *
-                             inflation_adjustment)
+            # For readability, we store the result of the strategy here
+            # and perform separate tests below depending on whether or
+            # not the plannee has retired yet:
+            test_withdrawal = s(
+                principal_history=principal,
+                retirement_year=retirement_year,
+                year=year
+            )
+            true_withdrawal = Money(s.rate * principal[retirement_year]) * \
+                inflation_adjustment
+            if year <= retirement_year:  # Not retired. No withdrawals
+                self.assertEqual(test_withdrawal, Money(0))
+            else:  # Retired. Withdraw according to strategy.
+                self.assertEqual(test_withdrawal, true_withdrawal)
 
     def test_strategy_net_percent(self):
         """ Tests WithdrawalStrategy._strategy_net_percent. """
@@ -505,11 +514,20 @@ class TestWithdrawalStrategyMethods(unittest.TestCase):
             # the current year (since all figs. are in nominal terms)
             inflation_adjustment = self.inflation_adjustment[year] / \
                 self.inflation_adjustment[retirement_year]
-            self.assertEqual(s(net_income_history=net_income,
-                               retirement_year=retirement_year,
-                               year=year),
-                             Money(s.rate * net_income[retirement_year]) *
-                             inflation_adjustment)
+            # For readability, we store the result of the strategy here
+            # and perform separate tests below depending on whether or
+            # not the plannee has retired yet:
+            test_withdrawal = s(
+                net_income_history=net_income,
+                retirement_year=retirement_year,
+                year=year
+            )
+            true_withdrawal = Money(s.rate * net_income[retirement_year]) * \
+                inflation_adjustment
+            if year <= retirement_year:  # Not retired. No withdrawals
+                self.assertEqual(test_withdrawal, Money(0))
+            else:  # Retired. Withdraw according to strategy.
+                self.assertEqual(test_withdrawal, true_withdrawal)
 
     def test_strategy_gross_percent(self):
         """ Tests WithdrawalStrategy._strategy_gross_percent. """
@@ -538,11 +556,20 @@ class TestWithdrawalStrategyMethods(unittest.TestCase):
             # the current year (since all figs. are in nominal terms)
             inflation_adjustment = self.inflation_adjustment[year] / \
                 self.inflation_adjustment[retirement_year]
-            self.assertEqual(s(gross_income_history=gross_income,
-                               retirement_year=retirement_year,
-                               year=year),
-                             Money(s.rate * gross_income[retirement_year]) *
-                             inflation_adjustment)
+            # For readability, we store the result of the strategy here
+            # and perform separate tests below depending on whether or
+            # not the plannee has retired yet:
+            test_withdrawal = s(
+                gross_income_history=gross_income,
+                retirement_year=retirement_year,
+                year=year
+            )
+            true_withdrawal = Money(s.rate * gross_income[retirement_year]) * \
+                inflation_adjustment
+            if year <= retirement_year:  # Not retired. No withdrawals
+                self.assertEqual(test_withdrawal, Money(0))
+            else:  # Retired. Withdraw according to strategy.
+                self.assertEqual(test_withdrawal, true_withdrawal)
 
     def test_call(self):
         """ Tests __call__ logic (but not strategy-specific logic). """

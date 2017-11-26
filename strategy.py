@@ -242,16 +242,18 @@ class ContributionStrategy(Strategy):
         # We always contribute carryover/refunds/etc:
         contribution = refund * self.refund_reinvestment_rate + \
             other_contribution
-        # Only make contributions if we haven't yet retired:
+        # Don't make contributions if we've retired:
         if (
-            retirement_year is not None and year is not None and
-            retirement_year >= year
+            year is not None and retirement_year is not None and
+            year > retirement_year
         ):
-            contribution += super().__call__(
+            return contribution
+        # If we're not yet retired, determine what to contribute:
+        else:
+            return contribution + super().__call__(
                 year=year, net_income=net_income, gross_income=gross_income,
                 *args, **kwargs
             )
-        return contribution
 
 
 class WithdrawalStrategy(Strategy):
@@ -396,11 +398,15 @@ class WithdrawalStrategy(Strategy):
                  principal_history=None, retirement_year=None,
                  *args, **kwargs):
         """ Returns the gross withdrawal for the year. """
-        # This is what the strategy recommends, before benefit adjustment.
+        # If we're not yet retired, no withdrawals:
         if (
-            retirement_year is not None and year is not None and
-            retirement_year < year
+            year is not None and retirement_year is not None and
+            year <= retirement_year
         ):
+            return Money(0)
+        else:
+            # First determine what the strategy recommends, before
+            # adjusting for other income.
             strategy_result = super().__call__(
                 year=year,
                 net_income_history=net_income_history,
@@ -416,8 +422,6 @@ class WithdrawalStrategy(Strategy):
             # We want to deduct other income from the withdrawal amount,
             # but we don't want to return a negative value.
             return max(strategy_result - income_adjustment, Money(0))
-        else:  # No withdrawal if we haven't retired yet
-            return Money(0)
 
 
 class TransactionStrategy(Strategy):
