@@ -164,18 +164,18 @@ class TestRegisteredAccountMethods(TestAccountMethods):
         # Add mandatory argument for building RegisteredAccount objects
         super().test_add_transaction(*args, **kwargs)
 
-    def test_next(self, *args, next_args=[], next_kwargs={}, **kwargs):
+    def test_next_year(self, *args, **kwargs):
         # next_contribution_room is not implemented for
         # RegisteredAccount, and it's required for next_year, so confirm
         # that trying to call next_year() throws an appropriate error.
         if self.AccountType == RegisteredAccount:
             account = RegisteredAccount(self.owner)
             with self.assertRaises(NotImplementedError):
-                account.next_year(*next_args, **next_kwargs)
+                account.next_year()
         # For other account types, try a conventional next_year test
         else:
-            super().test_next(*args, next_args=next_args,
-                              next_kwargs=next_kwargs, **kwargs)
+            super().test_next_year(
+                *args, **kwargs)
 
     def test_returns(self, *args, **kwargs):
         # super().test_returns calls next_year(), which calls
@@ -296,10 +296,8 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         account.add_transaction(-100, 'start')
         self.assertEqual(account.tax_deduction, Money(100))
 
-    def test_next(self, *args, next_args=[], next_kwargs={}, **kwargs):
-        super().test_next(*args, next_args=next_args,
-                          next_kwargs={'income': Money(100000), **kwargs},
-                          **kwargs)
+    def test_next_year(self, *args, **kwargs):
+        super().test_next_year(*args, **kwargs)
 
         initial_contribution_room = Money(100)
         # Set income to a non-Money object to test type-conversion.
@@ -529,9 +527,8 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
                     ]))
             )
 
-    def test_next(self, *args, next_args=[], next_kwargs={}, **kwargs):
-        super().test_next(*args, next_args=next_args,
-                          next_kwargs=next_kwargs, **kwargs)
+    def test_next_year(self, *args, **kwargs):
+        super().test_next_year(*args, **kwargs)
 
         # Set up variables for testing.
         accruals = self.get_accruals()
@@ -661,9 +658,8 @@ class TestTaxableAccountMethods(TestAccountMethods):
         # The $200 withdrawal will yield a $125 capital gain.
         self.assertEqual(account.capital_gain, Money(125))
 
-    def test_next(self, *args, next_args=[], next_kwargs={}, **kwargs):
-        super().test_next(*args, next_args=next_args, next_kwargs=next_kwargs,
-                          **kwargs)
+    def test_next_year(self, *args, **kwargs):
+        super().test_next_year(*args, **kwargs)
 
         # Init account with $50 acb.
         # Balance is $100, of which $50 is capital gains.

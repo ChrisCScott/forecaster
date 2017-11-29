@@ -2,8 +2,8 @@
 
 from decimal import Decimal
 from utility import *
-from ledger import Person, Account
-from settings import Settings
+from ledger import Person, Account, recorded_property, recorded_property_cached
+from settings_Canada import SettingsCanada
 from constants import Constants
 
 
@@ -29,7 +29,8 @@ class RegisteredAccount(Account):
             as the annuitant (i.e. the owner.)
     """
     def __init__(self, owner, balance=0, rate=0,
-                 transactions={}, nper=1, initial_year=None, settings=Settings,
+                 transactions={}, nper=1, initial_year=None,
+                 settings=SettingsCanada,
                  contribution_room=None, contributor=None,
                  inflation_adjust=None):
         """ Initializes a RegisteredAccount object. """
@@ -113,11 +114,9 @@ class RegisteredAccount(Account):
             'Use RRSP or TFSA instead.'
         )
 
-    def max_inflow(self, when='end', year=None):
+    def max_inflow(self, when='end'):
         """ Limits outflows based on available contribution room. """
-        if year is None:
-            year = self.this_year
-        return self.contribution_room_history[year]
+        return self.contribution_room_history[self.this_year]
 
 
 class RRSP(RegisteredAccount):
@@ -125,7 +124,8 @@ class RRSP(RegisteredAccount):
 
     # Explicitly repeat superclass args for the sake of intellisense.
     def __init__(self, owner, balance=0, rate=0,
-                 transactions={}, nper=1, initial_year=None, settings=Settings,
+                 transactions={}, nper=1, initial_year=None,
+                 settings=SettingsCanada,
                  contribution_room=None, contributor=None,
                  inflation_adjust=None):
         """ Initializes an RRSP object. """
@@ -162,14 +162,15 @@ class RRSP(RegisteredAccount):
             contribution_room is None and
             self.initial_year not in self.contribution_room_history
         ):
-            self.contribution_room = 0
+            self.contribution_room = Money(0)
 
     def convert_to_RRIF(self, year=None):
         """ Converts the RRSP to an RRIF. """
         year = self.this_year if year is None else year
         self.RRIF_conversion_year = year
 
-    def _taxable_income(self, year=None):
+    @recorded_property
+    def taxable_income(self):
         """ The total tax owing on withdrawals from the account.
 
         Returns:
@@ -177,28 +178,24 @@ class RRSP(RegisteredAccount):
                 `Money` object.
         """
         # Return the sum of all withdrawals from the account.
-        return -self.outflows(year)
+        return -self.outflows
 
-    def _tax_withheld(self, year=None):
+    @recorded_property
+    def tax_withheld(self):
         """ The total tax withheld from the account for the year.
 
         For RRSPs, this is calculated according to a CRA formula.
         """
-        # Return most recent year by default
-        if year is None:
-            year = self.this_year
-
         # NOTE: It's possible to attract a lower tax rate by making
         # smaller one-off withdrawals, but in general multiple
         # withdrawals will be treated as a lump sum for the purpose of
         # determining the tax rate, so we pretend it's a lump sum.
-        if self.RRIF_conversion_year > year:
-            taxable_income = self._taxable_income(year)
+        if self.RRIF_conversion_year > self.this_year:
+            taxable_income = self.taxable_income
         else:
             # Only withdrawals in excess of the minimum RRIF withdrawal
             # are hit by the withholding tax.
-            taxable_income = \
-                self._taxable_income(year) - self.min_outflow(year)
+            taxable_income = self.taxable_income - self.min_outflow
 
         # TODO: inflation-adjust `x` to match the inflation-adjustment
         # year of taxable_income? (this would likely require identifying
@@ -206,17 +203,20 @@ class RRSP(RegisteredAccount):
         # in Constants; maybe make RRSPWithholdingTaxRate a dict of
         # {year: {amount: rate}}?)
         # TODO: Pass a Tax object for RRSP tax treatment?
-        tax_rate = max([Constants.RRSPWithholdingTaxRate[x]
-                        for x in Constants.RRSPWithholdingTaxRate
-                        if x < taxable_income.amount], default=0)
+        tax_rate = max(
+            (Constants.RRSPWithholdingTaxRate[x]
+             for x in Constants.RRSPWithholdingTaxRate
+             if x < taxable_income.amount),
+            default=0)
         return taxable_income * tax_rate
 
-    def _tax_deduction(self, year=None):
+    @recorded_property
+    def tax_deduction(self):
         """ The total sum of tax deductions available for the year.
 
         For RRSPs, this the amount contributed in the year.
         """
-        return self.inflows(year)
+        return self.inflows
 
     def next_contribution_room(self, year=None, *args, **kwargs):
         """ Determines the amount of contribution room for next year.
@@ -260,25 +260,22 @@ class RRSP(RegisteredAccount):
             )
             # Don't forget to add in any rollovers:
             rollover = self.contribution_room_history[year] - \
-                self.inflows(year)
+                self.inflows_history[year]
             return min(accrual, Money(max_accrual)) + rollover
 
-    def min_outflow(self, when='end', year=None):
+    def min_outflow(self, when='end'):
         """ Minimum RRSP withdrawal """
-        if year is None:
-            year = self.this_year
         # Minimum withdrawals are required the year after converting to
         # an RRIF. How it is calculated depends on the person's age.
         if self.RRIF_conversion_year < self.this_year:
-            age = self.contributor.age(year)
+            age = self.contributor.age(self.this_year)
             if age in Constants.RRSPRRIFMinWithdrawal:
-                return Constants.RRSPRRIFMinWithdrawal[age] * \
-                    self._balance[year]
+                return Constants.RRSPRRIFMinWithdrawal[age] * self.balance
             elif age > max(Constants.RRSPRRIFMinWithdrawal):
-                return self._balance[year] * \
+                return self.balance * \
                     max(Constants.RRSPRRIFMinWithdrawal.values())
             else:
-                return self._balance[year] / (90 - age)
+                return self.balance / (90 - age)
         else:
             return Money(0)
 
@@ -303,8 +300,8 @@ class TFSA(RegisteredAccount):
 
     def __init__(self, owner, balance=0, rate=0,
                  transactions={}, nper=1, initial_year=None,
-                 settings=Settings, contribution_room=None, contributor=None,
-                 inflation_adjust=None):
+                 settings=SettingsCanada, contribution_room=None,
+                 contributor=None, inflation_adjust=None):
         """ Initializes a TFSA object. """
         super().__init__(
             owner, inflation_adjust=inflation_adjust, balance=balance,
@@ -397,13 +394,14 @@ class TFSA(RegisteredAccount):
         # room, plus any withdrawals (less contributions) from last year
         if year in self.contribution_room_history:
             rollover = self.contribution_room_history[year] - (
-                self.outflows(year) + self.inflows(year)
+                self.outflows_history[year] + self.inflows_history[year]
             )
         else:
             rollover = 0
         return contribution_room + rollover
 
-    def _taxable_income(self, year=None):
+    @recorded_property
+    def taxable_income(self, year=None):
         """ Returns $0 (TFSAs are not taxable.) """
         return Money(0)
 
@@ -433,8 +431,10 @@ class TaxableAccount(Account):
     # allow for modelling non-principle-residence real estate holdings.
     # (But we might want to also model rental income as well...)
 
+    # TODO: Revise ACB and capital gain to use @recorded_property
+
     def __init__(self, owner, balance=0, rate=0, transactions={},
-                 nper=1, initial_year=None, settings=Settings, acb=None):
+                 nper=1, initial_year=None, settings=SettingsCanada, acb=None):
         """ Constructor for `TaxableAccount`. """
         super().__init__(
             owner, balance=balance, rate=rate, transactions=transactions,
@@ -442,37 +442,16 @@ class TaxableAccount(Account):
 
         # If acb wasn't provided, assume there have been no capital
         # gains or losses, so acb = balance.
-        acb = acb if acb is not None else self.balance
-        # Initialize the _acb dict and set via the property setter.
-        self._acb = {}
-        self.acb = acb
+        self.acb = Money(acb if acb is not None else self.balance)
 
-        # Capital gain, unlike other variables, is determined at the end
-        # of the year.
-        self._capital_gain = {}
-
-    @property
+    @recorded_property_cached
     def acb(self):
         """ The adjusted cost base of assets in the account this year. """
-        return self._acb[self.this_year]
+        # This is set in advance in the previous year when capital_gains
+        # is determined.
+        return self._acb_history[self.this_year]
 
-    @acb.setter
-    def acb(self, val):
-        """ Sets the ACB for the account this year. """
-        self._acb[self.this_year] = Money(val)
-
-    def _get_capital_gain(self, year=None):
-        """ Helper method. Caches capital gain on first call. """
-        if year is None:
-            year = self.this_year
-        # If capital_gain hasn't yet been calculated, do so now
-        # (and also assign acb for next year; we get that for free!)
-        if year not in self._capital_gain:
-            self._acb[year + 1], self._capital_gain[year] = \
-                self._next_acb_and_capital_gain()
-        return self._capital_gain[year]
-
-    @property
+    @recorded_property_cached
     def capital_gain(self):
         """ The capital gains (or losses) for this year.
 
@@ -481,74 +460,37 @@ class TaxableAccount(Account):
         activity. Therefore, changing any transactions will affect
         capital_gain.
         """
-        # If capital_gain hasn't yet been calculated, do so now
-        # (and also assign acb for next year; we get that for free!)
-        return self._get_capital_gain()
-
-    @capital_gain.setter
-    def capital_gain(self, val):
-        self._capital_gain[self.this_year] = Money(val)
-
-    def add_transaction(self, value, when='end'):
-        super().add_transaction(value, when)
-        # Invalidate the figure for capital gains, since transactions
-        # will affect it.
-        self._capital_gain.pop(self.this_year, None)
-
-    def _next_acb_and_capital_gain(self, year=None):
-        """ ACB and capital gains at the end of a given year.
-
-        This method is intended for internal use. Importantly, unlike
-        other methods of Account types, this determines values at the
-        *end* of a year
-
-        These can be implemented as separate functions. However, they
-        are determined in an interrelated way, so it is much more
-        efficient to return both from one method.
-
-        Returns:
-            A (acb, capital_gains) tuple.
-        """
-        # See this link for information on calculating ACB/cap. gains:
-        # https://www.adjustedcostbase.ca/blog/how-to-calculate-adjusted-cost-base-acb-and-capital-gains/
-
-        # Set up initial conditions
-        if year is None:
-            year = self.this_year
-
-        if year + 1 in self._acb and year in self._capital_gain:
-            return (self._acb[year + 1], self._capital_gain[year])
-
-        # TODO (v2): include a percentage of returns in acb to model
-        # reinvestment of non-capital distributions (e.g. interest,
-        # dividends)? Perhaps add a % value to Constants to define
-        # this behaviour?
-
-        acb = self._acb[year]
+        acb = self.acb
         capital_gain = 0
+        transactions = self.transactions
 
-        # Iterate over transactions in order of occurrence
-        for when in sorted(self._transactions[year].keys()):
-            value = self._transactions[year][when]
+        # ACB is sensitive to transaction order, so be sure to iterate
+        # over transactions from first to last.
+        for when in sorted(transactions.keys()):
+            value = transactions[when]
             # There are different acb formulae for inflows and outflows
             if value >= 0:  # inflow
                 acb += value
             else:  # outflow
                 # Capital gains are calculated based on the acb and
                 # balance before the transaction occurred.
-                balance = self.balance_at_time(when, year) - value
+                balance = self.balance_at_time(when) - value
                 capital_gain += -value * (1 - (acb / balance))
                 acb *= 1 - (-value / balance)
 
-        return (acb, capital_gain)
+        # We've generated the ACB for the next year, so store it now.
+        self._acb_history[self.this_year + 1] = acb
+        return capital_gain
 
-    def next_year(self, *args, **kwargs):
-        """ Updates instance attributes to the next year """
-        super().next_year(*args, **kwargs)
-        self.acb, self._capital_gain[self.this_year - 1] = \
-            self._next_acb_and_capital_gain(self.this_year - 1)
+    def add_transaction(self, value, when='end'):
+        super().add_transaction(value, when)
+        # Invalidate the cache for acb and capital gains, since
+        # transactions will affect it.
+        self._capital_gain_history.pop(self.this_year, None)
+        self._acb_history.pop(self.this_year + 1, None)
 
-    def _taxable_income(self, year=None):
+    @recorded_property
+    def taxable_income(self):
         """ The total tax owing based on activity in the account.
 
         Tax can arise from realizing capital gains, receiving dividends
@@ -561,10 +503,8 @@ class TaxableAccount(Account):
             Taxable income for the year from this account as a `Money`
                 object.
         """
-        year = self.this_year if year is None else year
-
         # Only 50% of capital gains are included in taxable income
-        return self._get_capital_gain(year) / 2
+        return self.capital_gain / 2
 
         # TODO: Track asset allocation and apportion growth in the
         # account between capital gains, dividends, etc.
@@ -577,6 +517,7 @@ class TaxableAccount(Account):
 class PrincipleResidence(Account):
     """ A Canadian principle residence. Gains in value are not taxable. """
 
-    def _taxable_income(self, year=None):
+    @recorded_property
+    def taxable_income(self):
         """ The taxable income generated by the account for the year. """
         return Money(0)

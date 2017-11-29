@@ -1,5 +1,6 @@
 """ Defines basic recordkeeping classes, like `Person` and `Account`. """
 
+import inspect
 import math
 from decimal import Decimal
 from datetime import datetime
@@ -26,8 +27,177 @@ from settings import Settings
 #   underscore-prefixed dicts and tax* methods.
 
 
-class IncrementableByYear(object):
+class recorded_property(property):
+    """ A decorator for properties that record their annual amounts.
+
+    Methods decorated with this decorator (a) are decorated with the
+    @property decorator, and (b) sets a recorded_property flag attribute
+    on the decorated property.
+
+    `recorded_property`-decorated properties are processed by the Ledger
+    metaclass to automatically generate have a <name>_history property,
+    and a _<name> dict attribute to the class.
+
+    Example:
+        class ExampleLedger(Ledger):
+            @recorded_property
+            def taxable_income(self):
+                return <formula for taxable_income>
+    """
+    def __init__(self, fget=None, doc=None):
+        """ Init recorded_property.
+
+        This wraps the getter received via the @recorded_property
+        decoration into a method that returns a value from a dict of
+        recorded values if such a value is present for the key
+        `self.this_year`. If not, it calls the getter. No setter may be
+        provided; this decorator automatically generates one based on
+        this dict of recorded values.
+        """
+        self.__name__ = fget.__name__
+        self.history_prop_name = self.__name__ + '_history'
+        self.history_dict_name = '_' + self.history_prop_name
+
+        # Getter returns stored value if available, otherwise generates
+        # a new value (and does not cache it - we only automatically
+        # store a value when next_year() is called)
+        def getter(obj):
+            history_dict = getattr(obj, self.history_dict_name)
+            if obj.this_year in history_dict:
+                return history_dict[obj.this_year]
+            else:
+                return fget(obj)
+
+        def setter(obj, val):
+            history_dict = getattr(obj, self.history_dict_name)
+            history_dict[obj.this_year] = val
+
+        super().__init__(fget=getter, fset=setter, fdel=None, doc=doc)
+
+        def history(obj):
+            # For non-cached properties, the history dict might
+            # not include a property for the current year.
+            # NOTE: Consider building a new dict and adding the
+            # current year to that (if not already in the dict),
+            # so that *_history always contains the current year
+            history_dict = getattr(obj, self.history_dict_name)
+            if obj.this_year in history_dict:
+                return history_dict
+            else:
+                history_dict = dict(history_dict)  # copy dict
+                history_dict[obj.this_year] = fget(obj)  # add this year
+                return history_dict
+
+        history.__name__ = self.history_prop_name
+
+        # Cast history_function to a property with sane docstring.
+        self.history_property = property(
+            fget=history,
+            doc='Record of ' + self.__name__ + ' over all past years.'
+        )
+
+
+class recorded_property_cached(recorded_property):
+    """ A recorded property that is cached by Ledger classes. """
+    # NOTE: Due to how decorators' pie-notation works, this is much
+    # simpler than extending `recorded_property` to take a `cached`
+    # argument (since `@recorded_property` (with no args) calls only
+    # __init__ and `@recorded_property(cached=True)` calls __init__
+    # with the keyword arg `cached` and then `__call__` with the
+    # decorated method -- which makes `recorded_property` a much more
+    # complicated subclass of `property`.)
+    # NOTE: This doesn't address the situation where *_history is called
+    # before the corresponding property; LedgerType needs to deal with
+    # that scenario.
+    def __init__(self, fget=None, doc=None):
+        """ Overrides the property getter to cache on first call. """
+
+        # Wrap the getter in a method that will cache the property the
+        # first time it's called each year.
+        def getter(obj):
+            history_dict = getattr(obj, self.history_dict_name)
+            val = fget(obj)
+            history_dict[obj.this_year] = val
+            return val
+
+        # Property needs the original name and docstring:
+        getter.__name__ = fget.__name__
+        getter.__doc__ = fget.__doc__
+
+        super().__init__(fget=getter, doc=doc)
+
+        # Override history property with different method that adds the
+        # current year's value to the cache if it isn't already there:
+        def history(obj):
+            history_dict = getattr(obj, self.history_dict_name)
+            if obj.this_year not in history_dict:
+                history_dict[obj.this_year] = fget(obj)
+            return history_dict
+
+        history.__name__ = self.history_prop_name
+
+        # This property was set by super().__init__
+        self.history_property = property(
+            fget=history,
+            doc=self.history_property.__doc__
+        )
+
+
+class LedgerType(type):
+    """ A metaclass for Ledger classes.
+
+    This metaclass inspects the class for any
+    @recorded_property-decorated methods and generates a corresponding
+    *_history method and _* dict attribute.
+    """
+    def __init__(cls, *args, **kwargs):
+        # First, build the class normally.
+        super().__init__(*args, **kwargs)
+
+        # TODO: Redesign _history methods so that they only store *past*
+        # years (and thus add a new year when calling next_year).
+        # This also lets us add a setter function that adds the value
+        # to the history dict manually; be sure to avoid overwriting
+        # this in Ledger.next_year.
+        # (Perhaps tweak recorded_property to wrap the function so that
+        # we check for membership in the history dict before calling
+        # the function?)
+        # We may want to do this manual setting with some properties
+        # immediately after calling next_year, since they may be
+        # expensive to calculate and don't change with transactions or
+        # other mid-year account activity. The syntax for this would be
+        # odd (likely `self.gross_income = self.gross_income`), so
+        # consider adding a `cache_attribute('attr_name')` method to
+        # Ledger that does this for us.
+
+        # Prepare to store all recorded properties for the class.
+        cls._recorded_properties = set()
+        cls._recorded_properties_cached = set()
+
+        # Then identify all recorded_property attributes:
+        for name, prop in inspect.getmembers(
+            cls, lambda x: hasattr(x, 'history_property')
+        ):
+            # Store the identified recorded_property:
+            # (This will help Ledger build object-specific dicts for
+            # storing the values of each recorded property. We don't
+            # want to do this at the class level because dicts are
+            # mutable and we don't want to share the dict mutations
+            # between objects.)
+            cls._recorded_properties.add(prop)
+            if isinstance(prop, recorded_property_cached):
+                cls._recorded_properties_cached.add(prop)
+
+            # Add the new attribute to the class.
+            setattr(cls, prop.history_prop_name, prop.history_property)
+
+
+class Ledger(object, metaclass=LedgerType):
     """ An object with a next_year() method that tracks the curent year.
+
+    This object provides the basic infrastructure not only for advancing
+    through a sequence of years but also for managing any
+    `recorded_property`-decorated properties.
 
     Attributes:
         initial_year (int): The initial year for the object.
@@ -43,12 +213,34 @@ class IncrementableByYear(object):
             else settings.initial_year)
         self.this_year = self.initial_year
 
+        # Build a history dict for each recorded_property
+        for prop in self._recorded_properties:
+            setattr(self, prop.history_dict_name, {})
+
+        # NOTE: We don't call cache_properties here because subclasses
+        # may need to do more initing before properties can be called.
+        # Leave it to each subclass with cached properties to call
+        # cached_properties at the end of its init.
+
     def next_year(self, *args, **kwargs):
         """ Advances to the next year. """
+        # Record all recorded properties in the moment before advancing
+        # to the next year:
+        for recorded_property in self._recorded_properties:
+            history_dict = getattr(self, recorded_property.history_dict_name)
+            # Only add a value to the history dict if one has not
+            # already been added for this year:
+            if self.this_year not in history_dict:
+                # NOTE: We could alternatively do this via setattr
+                # (which would call the setter function defined by the
+                # recorded_property decorator - perhaps preferable?)
+                history_dict[self.this_year] = getattr(
+                    self, recorded_property.__name__)
+        # Advance to the next year after recording properties:
         self.this_year += 1
 
 
-class TaxSource(IncrementableByYear):
+class TaxSource(Ledger):
     """ An object that can be considered when calculating taxes.
 
     Provides standard tax-related properties, listed below.
@@ -77,33 +269,8 @@ class TaxSource(IncrementableByYear):
             the object for each year thus far.
     """
 
-    def __init__(self, initial_year=None, settings=Settings):
-        """ Inits TaxSource. """
-        super().__init__(initial_year, settings)
-
-        self.__taxable_income = {}
-        self.__tax_withheld = {}
-        self.__tax_credit = {}
-        self.__tax_deduction = {}
-
-    @property
+    @recorded_property
     def taxable_income(self):
-        """ Taxable income for the current year. """
-        # Taxable income can change depending on account activity, so
-        # recalculate it each time and store it in the internal dict.
-        self.__taxable_income[self.this_year] = \
-            self._taxable_income(self.this_year)
-        return self.__taxable_income[self.this_year]
-
-    @property
-    def taxable_income_history(self):
-        """ Taxable income for all years on record. """
-        # Taxable income for the current year can change depending on
-        # account activity, so recalculate it before returning the dict.
-        self.__taxable_income[self.this_year] = self.taxable_income
-        return self.__taxable_income
-
-    def _taxable_income(self, year):
         """ Taxable income for the given year.
 
         Subclasses should override this method rather than the
@@ -111,24 +278,8 @@ class TaxSource(IncrementableByYear):
         """
         return Money(0)
 
-    @property
+    @recorded_property
     def tax_withheld(self):
-        """ Tax withheld for the current year. """
-        # Tax withheld can change depending on account activity, so
-        # recalculate it each time and store it in the internal dict.
-        self.__tax_withheld[self.this_year] = \
-            self._tax_withheld(self.this_year)
-        return self.__tax_withheld[self.this_year]
-
-    @property
-    def tax_withheld_history(self):
-        """ Tax withheld for all years on record. """
-        # Tax withheld for the current year can change depending on
-        # account activity, so recalculate it before returning the dict.
-        self.__tax_withheld[self.this_year] = self.tax_withheld
-        return self.__tax_withheld
-
-    def _tax_withheld(self, year):
         """ Tax withheld for the given year.
 
         Subclasses should override this method rather than the
@@ -136,24 +287,8 @@ class TaxSource(IncrementableByYear):
         """
         return Money(0)
 
-    @property
+    @recorded_property
     def tax_credit(self):
-        """ Tax credit for the current year. """
-        # Tax credit can change depending on account activity, so
-        # recalculate it each time and store it in the internal dict.
-        self.__tax_credit[self.this_year] = \
-            self._tax_credit(self.this_year)
-        return self.__tax_credit[self.this_year]
-
-    @property
-    def tax_credit_history(self):
-        """ Tax credit for all years on record. """
-        # Tax credit for the current year can change depending on
-        # account activity, so recalculate it before returning the dict.
-        self.__tax_credit[self.this_year] = self.tax_credit
-        return self.__tax_credit
-
-    def _tax_credit(self, year):
         """ Tax credit for the given year.
 
         Subclasses should override this method rather than the
@@ -161,41 +296,14 @@ class TaxSource(IncrementableByYear):
         """
         return Money(0)
 
-    @property
+    @recorded_property
     def tax_deduction(self):
-        """ Tax deduction for the current year. """
-        # Tax deduction can change depending on account activity, so
-        # recalculate it each time and store it in the internal dict.
-        self.__tax_deduction[self.this_year] = \
-            self._tax_deduction(self.this_year)
-        return self.__tax_deduction[self.this_year]
-
-    @property
-    def tax_deduction_history(self):
-        """ Tax deduction for all years on record. """
-        # Tax deduction for the current year can change depending on
-        # account activity, so recalculate it before returning the dict.
-        self.__tax_deduction[self.this_year] = self.tax_deduction
-        return self.__tax_deduction
-
-    def _tax_deduction(self, year):
         """ Tax deduction for the given year.
 
         Subclasses should override this method rather than the
         tax_deduction and _tax_deduction_history properties.
         """
         return Money(0)
-
-    def next_year(self, *args, **kwargs):
-        """ Advances to the next year. """
-        # Since this moment is when the current year gets set in stone,
-        # recalculate and store the current tax* values before
-        # incrementing the year:
-        self.__taxable_income[self.this_year] = self.taxable_income
-        self.__tax_withheld[self.this_year] = self.tax_withheld
-        self.__tax_credit[self.this_year] = self.tax_credit
-        self.__tax_deduction[self.this_year] = self.tax_deduction
-        super().next_year(*args, **kwargs)
 
 
 class Person(TaxSource):
@@ -316,8 +424,6 @@ class Person(TaxSource):
         self._retirement_date = None
         self._retirement_age = None
         self._spouse = None
-        self._gross_income = {}
-        self._net_income = {}
         # NOTE: We formerly created a new dict for raise_rate with
         # type-cast {int: Decimal} pairs, but this stripped out
         # defaultdict functionality. For now, we just store the values
@@ -331,7 +437,7 @@ class Person(TaxSource):
         self.birth_date = birth_date
         self.retirement_date = retirement_date
         self.spouse = spouse
-        self.gross_income = gross_income
+        self.gross_income = Money(gross_income)
         self.net_income = self.gross_income - self.tax_withheld
 
     @property
@@ -424,35 +530,27 @@ class Person(TaxSource):
         # Update the spouse attr whether or not the new value is None
         self._spouse = val
 
-    @property
+    @recorded_property_cached
     def gross_income(self):
         """ The `Person`'s gross income for this year. """
-        return self._gross_income[self.this_year]
+        # No income if retired, otherwise apply the raise rate:
+        if (
+            self.retirement_date is not None and
+            self.retirement_date.year < self.this_year
+        ):
+            return Money(0)
+        else:
+            return self._gross_income_history[self.this_year - 1] * \
+                (1 + self.raise_rate)
 
-    @gross_income.setter
-    def gross_income(self, val):
-        """ Sets gross_income and casts input value to `Money` """
-        self._gross_income[self.this_year] = Money(val)
-
-    @property
-    def gross_income_history(self):
-        """ The `Person`'s gross income for all years on record. """
-        return self._gross_income
-
-    @property
+    @recorded_property_cached
     def net_income(self):
         """ The `Person`'s gross income for this year. """
-        return self._net_income[self.this_year]
+        gross_income = self.gross_income
+        return gross_income - self.tax_withheld
 
-    @net_income.setter
-    def net_income(self, val):
-        """ Sets net_income and casts input value to `Money` """
-        self._net_income[self.this_year] = Money(val)
-
-    @property
-    def net_income_history(self):
-        """ The `Person`'s net income for all years on record. """
-        return self._net_income
+    # TODO: Turn raise_rate into either a recorded_property or a
+    # generator function:
 
     @property
     def raise_rate(self):
@@ -543,31 +641,16 @@ class Person(TaxSource):
 
         return age
 
-    def next_year(self):
-        # TODO (v2): Include temporary loss of income due to parental leave.
-        # TODO (v1): Test for retirement
-        super().next_year()
+    # NOTE: Test overloading of recorded property by subclass
 
-        # No income if retired, otherwise apply the raise rate:
-        if (
-            self.retirement_date is not None and
-            self.retirement_date.year < self.this_year
-        ):
-            self.gross_income = Money(0)
-        else:
-            self.gross_income = (
-                self._gross_income[self.this_year - 1] * (1 + self.raise_rate))
-        self.net_income = \
-            self.gross_income - self.tax_withheld
+    @recorded_property
+    def taxable_income(self):
+        return self.gross_income
 
-    def _taxable_income(self, year=None):
-        year = self.this_year if year is None else year
-        return self._gross_income[year]
-
-    def _tax_withheld(self, year=None):
-        year = self.this_year if year is None else year
+    @recorded_property
+    def tax_withheld(self):
         if self.tax_treatment is not None:
-            return self.tax_treatment(self._gross_income[year], year)
+            return self.tax_treatment(self.gross_income, self.this_year)
         else:
             return Money(0)
 
@@ -671,16 +754,12 @@ class Account(TaxSource):
         # Set the scalar values first, 'cause they're easy!
         self.nper = self._conv_nper(nper)
 
-        # Initialize dict values
-        self._balance = {}
-        self._rate = {}
         self._transactions = {}
-        self.__returns = {}
 
-        # Type-checking and such is handled by property setters.
-        self.balance = balance
-        self.rate = rate
-        self.transactions = transactions
+        self.balance = Money(balance)
+        self.rate = Decimal(rate)
+        for when, value in transactions.items():
+            self.add_transaction(value, when)
         # NOTE: returns is calculated lazily
 
         # We don't save the settings object, but we do need to save
@@ -704,62 +783,43 @@ class Account(TaxSource):
         'A': 1
         }
 
-    @property
+    @recorded_property_cached
     def balance(self):
-        """ The balance of the account for the current year (Money). """
-        return self._balance[self.this_year]
+        """ The balance of the account for the current year (Money).
 
-    @balance.setter
-    def balance(self, val):
-        """ Sets the balance of the account for the current year. """
-        self._balance[self.this_year] = Money(val)
+        This is the balance after applying all transactions and any
+        growth/losses from the rate.
+        """
+        # First, grow last year's initial balance based on the rate:
+        balance = self.value_at_time(
+            self._balance_history[self.this_year - 1], 'start', 'end')
 
-    @property
-    def balance_history(self):
-        """ All year-opening balances of the account. """
-        return self._balance
+        # Then, grow each transactions and add it to the year-end total.
+        # NOTE: This accounts for both inflows and outflows; outflows
+        # and their growth are negative and will reduce the balance.
+        transactions_history = self._transactions_history
+        for when, value in transactions_history[self.this_year - 1].items():
+            balance += self.value_at_time(value, when, 'end')
 
-    @property
+        return balance
+
+    @recorded_property_cached
     def rate(self):
         """ The rate of the account for the current year (Decimal). """
-        return self._rate[self.this_year]
+        return self._rate_history[self.this_year - 1]
 
-    @rate.setter
-    def rate(self, val):
-        """ Sets the rate of the account for the current year. """
-        self._rate[self.this_year] = Decimal(val)
-
-    @property
-    def rate_history(self):
-        """ All annual rates of the account. """
-        return self._rate
-
-    @property
+    @recorded_property
     def transactions(self):
         """ The transactions in and out of the account this year (dict). """
-        return self._transactions[self.this_year]
-
-    @transactions.setter
-    def transactions(self, val):
-        """ Sets transactions in and out of the account for this year. """
-        self._transactions[self.this_year] = {
-            when_conv(x): Money(val[x]) for x in val
-        }
-
-    @property
-    def transactions_history(self):
-        """ All transactions in and out of the account. """
         return self._transactions
 
-    def _returns(self, year=None):
-        """ Returns (losses) on the balance and transactions for year. """
-        if year is None:
-            year = self.this_year
-
+    @recorded_property
+    def returns(self):
+        """ Returns (losses) on the balance and transactions this year. """
         # Find returns on the initial balance.
         # This doesn't include any transactions or their growth.
         returns = (
-            self._balance[year] *
+            self.balance *
             (self.accumulation_function(1, self.rate, self.nper) - 1)
         )
 
@@ -767,29 +827,15 @@ class Account(TaxSource):
         # (Withdrawals will generate returns with the opposite sign of
         # the returns on the initial balance and prior inflows, thereby
         # cancelling out a portion of those returns.)
-        for when in self._transactions[year]:
+        for when in self._transactions:
             returns += (
-                self._transactions[year][when] *
+                self._transactions[when] *
                 (self.accumulation_function(
                     1 - when, self.rate, self.nper
                     ) - 1)
             )
 
         return returns
-
-    @property
-    def returns(self):
-        """ Returns (losses) on the balance and transactions this year. """
-        return self._returns(self.this_year)
-
-    @property
-    def returns_history(self):
-        """ Returns (losses) on the balance and transactions each year. """
-        # We update _returns in `next_year`, meaning that the value for
-        # this year might not yet be stored. So store it:
-        if self.this_year not in self.__returns:
-            self.__returns[self.this_year] = self.returns
-        return self.__returns
 
     @classmethod
     def _conv_nper(cls, nper):
@@ -871,33 +917,19 @@ class Account(TaxSource):
     # add an inflow (+) or outflow (-) with the magnitude of the input
     # arg and the appropriate sign.
 
-    def inflows(self, year=None):
+    @recorded_property
+    def inflows(self):
         """ The sum of all inflows to the account. """
-        # Return most recent year by default
-        if year is None:
-            year = self.this_year
+        return Money(sum(
+            val for val in self._transactions.values() if val.amount > 0)
+        )
 
-        # Convert to Money at the end because the sum might return 0
-        # (an int) if there are no transactions
-        if year in self._transactions:
-            return Money(sum([val for val in self._transactions[year].values()
-                              if val.amount > 0]))
-        else:
-            return Money(0)
-
-    def outflows(self, year=None):
+    @recorded_property
+    def outflows(self):
         """ The sum of all outflows from the account. """
-        # Return most recent year by default
-        if year is None:
-            year = self.this_year
-
-        # Convert to Money at the end because the sum might return 0
-        # (an int) if there are no transactions
-        if year in self._transactions:
-            return Money(sum([val for val in self._transactions[year].values()
-                              if val.amount < 0]))
-        else:
-            return Money(0)
+        return Money(sum(
+            val for val in self._transactions.values() if val.amount < 0)
+        )
 
     def __len__(self):
         """ The number of years of transaction data in the account. """
@@ -940,7 +972,7 @@ class Account(TaxSource):
 
         return acc
 
-    def value_at_time(self, value, now='start', time='end', year=None):
+    def value_at_time(self, value, now='start', time='end'):
         """ Returns the present (or future) value.
 
         Args:
@@ -948,140 +980,93 @@ class Account(TaxSource):
             now (Decimal): The time associated with the nominal value.
             time (Decimal): The time to which the nominal value is to
                 be converted.
-            year (int): The year in which to determine the future value.
 
         Returns:
             A Money object representing the present value
             (if now > time) or the future value (if now < time) of
             `value`.
         """
-        if year is None:
-            year = self.this_year
-
         return value * self.accumulation_function(
-            when_conv(time) - when_conv(now), self._rate[year], self.nper
+            when_conv(time) - when_conv(now), self.rate, self.nper
         )
 
-    def balance_at_time(self, time, year=None):
+    def balance_at_time(self, time):
         """ Returns the balance at a point in time.
 
         Args:
             when (Decimal, str): The timing of the transaction.
         """
-        if year is None:
-            year = self.this_year
-
         # We need to convert `time` to enable the comparison in the dict
         # comprehension in the for loop below.
         time = when_conv(time)
 
         # Find the future value (at t=time) of the initial balance.
         # This doesn't include any transactions of their growth.
-        balance = self.value_at_time(self._balance[year], 'start', time, year)
+        balance = self.value_at_time(self.balance, 'start', time)
 
         # Add in the future value of each transaction (except that that
         # happen after `time`).
-        for when in [w for w in self._transactions[year].keys() if w <= time]:
+        for when in {w for w in self._transactions.keys() if w <= time}:
             balance += self.value_at_time(
-                self._transactions[year][when], when, time, year
+                self._transactions[when], when, time
             )
-
-        return balance
-
-    def next_balance(self, year=None):
-        """ The balance at the start of the next year.
-
-        This is the balance after applying all transactions and any
-        growth/losses from the rate.
-
-        Returns:
-            The new balance as a `Money` object.
-        """
-        # Return most recent year by default
-        if year is None:
-            year = self.this_year
-
-        # First, find the future value of the initial balance assuming
-        # there are no transactions.
-        balance = self.value_at_time(self._balance[year], 'start', 'end', year)
-
-        # Then, add in the future value of each transaction. Note that
-        # this accounts for both inflows and outflows; the future value
-        # of an outflow will negate the future value of any inflows that
-        # are removed. Order doesn't matter.
-        for when, value in self._transactions[year].items():
-            balance += self.value_at_time(value, when, 'end', year)
 
         return balance
 
     def next_year(self, *args, **kwargs):
         """ Adds another year to the account.
 
-        Sets the next year's balance and rate, but does not set any
-        transactions.
+        This method will call the next_year method for the owner if they
+        haven't been advanced to the next year.
         """
-        # First, store returns for this year:
-        self.__returns[self.this_year] = self.returns
-
-        # Now increment year via superclass:
-        super().next_year(*args, **kwargs)
-
         # Ensure that the owner has been brought up to this year
         while self.owner.this_year < self.this_year:
             self.owner.next_year()
 
-        self.balance = self.next_balance(self.this_year - 1)
-        self.rate = self._rate[self.this_year - 1]
-        self.transactions = {}
+        # Now increment year via superclass:
+        super().next_year(*args, **kwargs)
 
-    def max_outflow(self, when='end', year=None):
+        # Clear out transactions for the new year:
+        self._transactions = {}
+
+    def max_outflow(self, when='end'):
         """ An outflow which would reduce the end-of-year balance to 0.
-
-        Returns a value which, if withdrawn at time `when`, would result
-        in the account balance being 0 at the end of the year, after all
-        other transactions are accounted for.
 
         NOTE: This does not guarantee that the account balance will not
         be negative at a time between `when` and `end`.
 
-        Equivalently, this is the future value of the account, net of
-        all existing transactions, at present time `when`.
-
         Args:
             when (When): The timing of the transaction.
+
+        Returns:
+            A value which, if withdrawn at time `when`, would make the
+            account balance 0 at the end of the year, after all
+            transactions are accounted for.
         """
         # If the balance is positive, the max outflow is simply the
         # current balance (but negative). If the balance is negative,
         # then there's no further outflows to be made.
-        return min(-self.balance_at_time(when, year), Money(0))
+        return min(-self.balance_at_time(when), Money(0))
 
-    def max_inflow(self, when='end', year=None):
-        """ The maximum amount that can be contributed to the account.
-
-        For non-registered accounts, there is no maximum, so this method
-        returns Money('Infinity')
-        """
+    def max_inflow(self, when='end'):
+        """ The maximum amount that can be contributed to the account. """
+        # For non-registered accounts, there is no maximum
         return Money('Infinity')
 
-    def min_outflow(self, when='end', year=None):
-        """ The minimum amount to be withdrawn from the account.
-
-        For non-registered accounts, there is no minimum, so this method
-        returns Money('0')
-        """
+    def min_outflow(self, when='end'):
+        """ The minimum amount to be withdrawn from the account. """
+        # For non-registered accounts, there is no minimum
         return Money('0')
 
-    def min_inflow(self, when='end', year=None):
-        """ The minimum amount to be contributed to the account.
-
-        For non-registered accounts, there is no minimum, so this method
-        returns Money('0')
-        """
+    def min_inflow(self, when='end'):
+        """ The minimum amount to be contributed to the account. """
+        # For non-registered accounts, there is no minimum
         return Money('0')
 
-    def _taxable_income(self, year=None):
+    @recorded_property
+    def taxable_income(self):
         """ Treats all returns as taxable. """
-        return max(self._returns(year), Money(0))
+        return max(self.returns, Money(0))
 
 
 class Debt(Account):
@@ -1126,11 +1111,11 @@ class Debt(Account):
         if self.balance > 0:
             self.balance = -self.balance
 
-    def min_inflow(self, when='end', year=None):
+    def min_inflow(self, when='end'):
         """ The minimum payment on the debt. """
-        return min(-self.balance_at_time(when, year), self.minimum_payment)
+        return min(-self.balance_at_time(when), self.minimum_payment)
 
-    def max_inflow(self, when='end', year=None):
+    def max_inflow(self, when='end'):
         """ The payment at time `when` that would reduce balance to 0.
 
         This is in addition to any existing payments in the account.
@@ -1141,4 +1126,4 @@ class Debt(Account):
             debt.add_transaction(100, 'start')
             debt.maximum_payment('start') == 0  # True
         """
-        return -self.balance_at_time(when, year)
+        return -self.balance_at_time(when)
