@@ -19,8 +19,9 @@ class TestForecast(unittest.TestCase):
     def test_basic(self):
         """ Test with one account, one debt, and constant Scenario.
 
-        For simplicity, this Scenario will extend over 4 years: an
-        initial year, a second year, a retirement year, and a final year
+        For simplicity, this Scenario extends over 4 years: an initial
+        year, a second year, a retirement year, and a final year.
+        There is no inflation in this example.
         """
         initial_year = 2000
         scenario = Scenario(

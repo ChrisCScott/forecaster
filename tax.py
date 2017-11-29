@@ -11,16 +11,16 @@ from utility import *
 
 # NOTE: Consider making this a ledger-like object that stores values
 # year-over-year. These values might include:
-    # taxable_income (sum of sources' taxable income),
-    # tax_withheld (sum of sources' withholdings, *plus* additional
-    #   mandatory tax instalment payments for when withholdings at source
-    #   fall below the CRA's thresholds)
-    # tax_credits (sum of sources' tax credits, plus any additional credits
-    #   arising from the overall context)
-    # tax_deductions (sum of sources' tax deductions, plus any additional
-    #   deductions arising from the overall context)
-    # tax_refund_or_owing (total amount paid to persons [refund] or payable
-    #   to CRA [owing]; refunds are positive and owing is negative)
+#   taxable_income (sum of sources' taxable income),
+#   tax_withheld (sum of sources' withholdings, *plus* additional
+#       mandatory tax instalment payments for when withholdings at
+#       source fall below the CRA's thresholds)
+#   tax_credits (sum of sources' tax credits, plus any additional
+#       credits arising from the overall context)
+#   tax_deductions (sum of sources' tax deductions, plus any additional
+#           deductions arising from the overall context)
+#   tax_refund_or_owing (total refund paid to persons or amount owing to
+#       tax authority; refunds are positive and owing is negative)
 # One of the challenges with this approach is that tax objects may be
 # invoked several times in a given year. It may be better to leave it
 # to Forecast to track that information. Or perhaps just store the last-
@@ -263,7 +263,7 @@ class Tax(object):
 
     def tax_person(self, person, year,
                    other_deductions=Money(0), other_credits=Money(0)):
-        """ """
+        """ Returns tax treatment for an individual person. """
         # TODO: Flesh out docstring.
 
         # Some calling methods might pass None, so deal with the here:
@@ -337,7 +337,7 @@ class Tax(object):
     def tax_spouses(self, person1, person2, year,
                     person1_deductions=Money(0), person1_credits=Money(0),
                     person2_deductions=Money(0), person2_credits=Money(0)):
-        """ """
+        """ Tax treatment for a pair of spouses. """
         # TODO: Flesh out docstring
         return self.tax_person(
             person1, year, person1_deductions, person1_credits
