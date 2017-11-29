@@ -165,12 +165,6 @@ class ContributionStrategy(Strategy):
             strategy.
     """
 
-    # TODO: Reimplement inflation-adjustment to use a method.
-    # (Replace inflation_adjusted? Instead of bool, maybe client code
-    # can simply test for whether inflation_adjust is None? Or perhaps
-    # add a non-passed attribute that returns True iff inflation_adjust
-    # is not None?)
-
     def __init__(self, strategy=None, base_amount=None, rate=None,
                  refund_reinvestment_rate=None, inflation_adjust=None,
                  settings=Settings):

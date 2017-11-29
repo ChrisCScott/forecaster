@@ -15,16 +15,6 @@ from settings import Settings
 # Modify next_year() to take an optional arg for each attribute being
 # updated, which will allow calling code to pass in an overriding input
 # value when appropriate.
-#   NOTE: This may require building dicts for tax* methods, otherwise
-#   we won't be able to recall any overridden tax data. See below notes.
-# TODO: Store taxable_income, tax_payable, tax_withheld, etc. as
-# dicts? (Or perhaps provide a generator method.)
-#   NOTE: Alternatively, add *_history() methods that return a dict,
-#   which avoids having to expose implementation details (e.g. it
-#   means that client code won't need to access _net_income, etc.,
-#   since they can access net_income_history())
-#   NOTE: We should do this for Accounts as well, for all
-#   underscore-prefixed dicts and tax* methods.
 
 
 class recorded_property(property):
@@ -153,22 +143,6 @@ class LedgerType(type):
     def __init__(cls, *args, **kwargs):
         # First, build the class normally.
         super().__init__(*args, **kwargs)
-
-        # TODO: Redesign _history methods so that they only store *past*
-        # years (and thus add a new year when calling next_year).
-        # This also lets us add a setter function that adds the value
-        # to the history dict manually; be sure to avoid overwriting
-        # this in Ledger.next_year.
-        # (Perhaps tweak recorded_property to wrap the function so that
-        # we check for membership in the history dict before calling
-        # the function?)
-        # We may want to do this manual setting with some properties
-        # immediately after calling next_year, since they may be
-        # expensive to calculate and don't change with transactions or
-        # other mid-year account activity. The syntax for this would be
-        # odd (likely `self.gross_income = self.gross_income`), so
-        # consider adding a `cache_attribute('attr_name')` method to
-        # Ledger that does this for us.
 
         # Prepare to store all recorded properties for the class.
         cls._recorded_properties = set()
@@ -325,26 +299,6 @@ class Person(TaxSource):
     """
 
     # TODO: Add life expectancy?
-    # TODO: Move contribution room information from TFSA/RRSP to
-    # Person. This will allow for the use of multiple TFSA/RRSP accounts
-    # with shared contribution rooms.
-    #   NOTE: It is likely that each RRSP/TFSA will hold the logic re:
-    #   contribution room, but it may be useful to have a generic
-    #   mechanism in Person - e.g. a dict of {token: contribution_room}
-    #   pairs, plus a generic method for registering accounts. The
-    #   accounts themselves could provide the token - a unique hash if
-    #   the account has a unique contribution room or a static str if
-    #   its contribution room is shared (e.g. all RRSP objects could
-    #   use the token 'RRSP' - RegisteredAccount can implement this via
-    #   `str(type(self))`). Each account should expose a method for
-    #   getting a set of itself and all of the other accounts that it
-    #   shares a contribution room with, which should be easy - just
-    #   return `self.owner.contribution_room[self._token]`
-    #   (n.b. use `self.contributor` for RRSPs).
-    #   Client code can then ensure that it isn't double-contributing by
-    #   spreading contributions over all accounts that share
-    #   contribution room (and can find such accounts easily, without
-    #   ever touching tokens themselves)
     # TODO: Add estimated_retirement_date(...) method? Perhaps add an
     # arg for a generator function that takes certain arguments (total
     # investable savings, target withdrawal, and [optionally] year?) and

@@ -241,10 +241,6 @@ class RRSP(RegisteredAccount):
         else:
             # TODO: Add pension adjustment?
 
-            # TODO: Move this logic to __init__, where we can determine
-            # baseline accrual maximum as of initial_year. Then, in
-            # each subsequent year, we can adjust relative to that.
-
             # Contribution room is determined based on the contributor's
             # gross income for the previous year.
             income = self.contributor.gross_income_history[year]
@@ -430,8 +426,6 @@ class TaxableAccount(Account):
     # CapitalAsset class where all growth is capital gains - this would
     # allow for modelling non-principle-residence real estate holdings.
     # (But we might want to also model rental income as well...)
-
-    # TODO: Revise ACB and capital gain to use @recorded_property
 
     def __init__(self, owner, balance=0, rate=0, transactions={},
                  nper=1, initial_year=None, settings=SettingsCanada, acb=None):

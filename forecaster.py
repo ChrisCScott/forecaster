@@ -1,9 +1,9 @@
-''' This module provides a `Forecaster` object which manages one or more
-`Forecast` objects. Multiple `Forecast` objects may be generated based
-on historical data, user input, and/or Monte Carlo simulations. '''
+''' This module provides classes for creating and managing Forecasts. '''
+
+from forecast import Forecast
 
 
-class Forecast:
+class Forecaster(object):
     ''' A multi-year forecast of personal account balances and income.
 
     Each instance constructs several `Year` objects and can produce

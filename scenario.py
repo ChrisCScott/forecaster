@@ -82,9 +82,6 @@ class Scenario(object):
                 return _default
 
         if isinstance(input, collections.defaultdict):
-            # TODO: Do some type-checking and avoid creating a copy if
-            # the dict is already {int: Decimal} pairs.
-
             # Update input's default factory if `default` was provided:
             if default is not None:
                 input.default_factory = default
