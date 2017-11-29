@@ -52,9 +52,7 @@ class Settings:
 
     ''' TransactionStrategy defaults for inflows/contributions '''
     transaction_in_strategy = 'Ordered'
-    transaction_in_weights = {
-        'RRSP': 1, 'TFSA': 2, 'TaxableAccount': 3
-        }
+    transaction_in_weights = {'Account': 1}
     transaction_in_timing = 'end'
 
     ''' WithdrawalStrategy defaults '''
@@ -66,9 +64,7 @@ class Settings:
 
     ''' TransactionStrategy defaults for outflows/withdrawals '''
     transaction_out_strategy = 'Ordered'
-    transaction_out_weights = {
-        'RRSP': 1, 'TFSA': 2, 'SavingsAccount': 3
-        }
+    transaction_out_weights = {'Account': 1}
     transaction_out_timing = 'end'
 
     ''' AllocationStrategy defaults '''
