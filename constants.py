@@ -110,20 +110,20 @@ class Constants(object):
     TaxBrackets = {
         'Federal': {
             2017: {
-                Decimal(0), Decimal('0.15'),
-                Decimal('45961.23'), Decimal('0.205'),
-                Decimal('91921.45'), Decimal('0.26'),
-                Decimal('142493.82'), Decimal('0.29'),
-                Decimal('203000.00'), Decimal('0.33')
+                Decimal(0): Decimal('0.15'),
+                Decimal('45961.23'): Decimal('0.205'),
+                Decimal('91921.45'): Decimal('0.26'),
+                Decimal('142493.82'): Decimal('0.29'),
+                Decimal('203000.00'): Decimal('0.33')
             }
         },
         'BC': {
             2017: {
-                Decimal(0), Decimal('0.15'),
-                Decimal('45961.23'), Decimal('0.205'),
-                Decimal('91921.45'), Decimal('0.26'),
-                Decimal('142493.82'), Decimal('0.29'),
-                Decimal('203000.00'), Decimal('0.33')
+                Decimal(0): Decimal('0.15'),
+                Decimal('45961.23'): Decimal('0.205'),
+                Decimal('91921.45'): Decimal('0.26'),
+                Decimal('142493.82'): Decimal('0.29'),
+                Decimal('203000.00'): Decimal('0.33')
             }
         }
     }
