@@ -43,6 +43,67 @@ class Scenario(object):
             Optional. If not provided, uses value from Settings.
     """
 
+    def __init__(self, inflation=None, stock_return=None, bond_return=None,
+                 other_return=None, management_fees=None, initial_year=None,
+                 num_years=None, settings=Settings, **kwargs):
+        """ Constructor for `Scenario`.
+
+        Arguments may be dicts (of {year, value} pairs), lists (or
+        similar `Sequence`) or scalar values.
+
+        When an argument is not provided, the corresponding value from
+        the defaults provided by `settings` is used.
+
+        Args:
+            inflation (Decimal, list, dict): The rate of inflation.
+            stock_return (dict[int, Decimal]): `{year: return}` pairs
+                for stocks.
+            bond_return (dict[int, Decimal]): `{year: return}` pairs
+                for bonds.
+            other_return (dict[int, Decimal]): `{year: return}` pairs
+                for other assets (not stocks/bonds), e.g. real estate.
+            management_fees (Decimal, list, dict): The management fees
+                charged on investments.
+            person1_raise_rate (Decimal, list, dict): The amount that is
+                expected for a raise for person1 this year, expressed as
+                a percentage (e.g. 0.05 for a 5% raise).
+            person2_raise_rate (Decimal, list, dict): The amount that is
+                expected for a raise for person2 this year, expressed as
+                a percentage (e.g. 0.05 for a 5% raise).
+            initial_year (int): The first year of the projection.
+            num_years (int): The number of years in the projection.
+
+        Raises:
+            TypeError: Input with unexpected type.
+            ValueError: Input lists not of matching lengths.
+        """
+        # Set the years that the Scenario spans:
+        # NOTE: If we decouple Scenario from Settings for implicit init,
+        # it would make sense to implicitly set these values by
+        # inspecting other inputs. E.g. Find initial_year by doing
+        # `max(min(d) for d in dict_inputs)`
+        # and find num years by doing
+        # `min(max(d) for d in dict_inputs) - initial_year + 1`
+        # (But be sure to check for negative num_year)
+        # This won't work if all inputs are non-dict, which is probably
+        # OK; test for that situation as well.
+        self.initial_year = int(initial_year) if initial_year is not None \
+            else int(settings.initial_year)
+        self.num_years = int(num_years) if num_years is not None \
+            else int(settings.num_years)
+
+        # Now build dicts from the inputs
+        self.inflation = self._build_dict(
+            inflation, self.initial_year, settings.inflation)
+        self.stock_return = self._build_dict(
+            stock_return, self.initial_year, settings.stock_return)
+        self.bond_return = self._build_dict(
+            bond_return, self.initial_year, settings.bond_return)
+        self.other_return = self._build_dict(
+            other_return, self.initial_year, settings.other_return)
+        self.management_fees = self._build_dict(
+            management_fees, self.initial_year, settings.management_fees)
+
     @staticmethod
     def _build_dict(input=None, initial_year=None, default=None):
         """ Helper function that turns `input` into a dict.
@@ -74,8 +135,9 @@ class Scenario(object):
                     'Scenario: input and default cannot both be None.')
             return Scenario._build_dict(default, initial_year)
 
-        # Convert `default` to a Decimal-returning default factory:
-        if default is not None:
+        # Convert a non-callable `default` to a Decimal-returning
+        # default factory:
+        if default is not None and not callable(default):
             _default = Decimal(default)
 
             def default():
@@ -120,78 +182,8 @@ class Scenario(object):
 
         # Otherwise, turn a scalar value into a defaultdict:
         # NOTE: default is ignored in this case
+        input = Decimal(input)
         return collections.defaultdict(lambda: input)
-
-    def __init__(self, inflation=None, stock_return=None, bond_return=None,
-                 other_return=None, management_fees=None,
-                 person1_raise_rate=None, person2_raise_rate=None,
-                 initial_year=None, num_years=None, settings=Settings):
-        """ Constructor for `Scenario`.
-
-        Arguments may be dicts (of {year, value} pairs), lists (or
-        similar `Sequence`) or scalar values.
-
-        When an argument is not provided, the corresponding value from
-        the defaults provided by `settings` is used.
-
-        Lists must have matching lengths. Each element provides a value
-        for a year, starting with `initial_year`. Dicts can be of any
-        size; any missing key values are filled in with defaults.
-
-        Args:
-            inflation (Decimal, list, dict): The rate of inflation.
-            stock_return (Decimal, list, dict): The rate of return for
-                stocks.
-            bond_return (Decimal, list, dict): The rate of return for
-                bonds.
-            other_return (Decimal, list, dict): The rate of return for
-                other assets.
-            management_fees (Decimal, list, dict): The management fees
-                charged on investments.
-            person1_raise_rate (Decimal, list, dict): The amount that is
-                expected for a raise for person1 this year, expressed as
-                a percentage (e.g. 0.05 for a 5% raise).
-            person2_raise_rate (Decimal, list, dict): The amount that is
-                expected for a raise for person2 this year, expressed as
-                a percentage (e.g. 0.05 for a 5% raise).
-            initial_year (int): The first year of the projection.
-            num_years (int): The number of years in the projection.
-
-        Raises:
-            TypeError: Input with unexpected type.
-            ValueError: Input lists not of matching lengths.
-        """
-        # Set the years that the Scenario spans:
-        # NOTE: If we decouple Scenario from Settings for implicit init,
-        # it would make sense to implicitly set these values by
-        # inspecting other inputs. E.g. Find initial_year by doing
-        # `max(min(d) for d in dict_inputs)`
-        # and find num years by doing
-        # `min(max(d) for d in dict_inputs) - initial_year + 1`
-        # (But be sure to check for negative num_year)
-        # This won't work if all inputs are non-dict, which is probably
-        # OK; test for that situation as well.
-        self.initial_year = int(initial_year) if initial_year is not None \
-            else int(settings.initial_year)
-        self.num_years = int(num_years) if num_years is not None \
-            else int(settings.num_years)
-
-        # Now build dicts from the inputs
-        self.inflation = self._build_dict(
-            inflation, self.initial_year, settings.inflation)
-        self.stock_return = self._build_dict(
-            stock_return, self.initial_year, settings.stock_return)
-        self.bond_return = self._build_dict(
-            bond_return, self.initial_year, settings.bond_return)
-        self.other_return = self._build_dict(
-            other_return, self.initial_year, settings.other_return)
-        self.management_fees = self._build_dict(
-            management_fees, self.initial_year,
-            settings.management_fees)
-        self.person1_raise_rate = self._build_dict(
-            person1_raise_rate, self.initial_year, settings.person1_raise_rate)
-        self.person2_raise_rate = self._build_dict(
-            person2_raise_rate, self.initial_year, settings.person2_raise_rate)
 
     def discount_rate(self, year):
         """ Returns the discount rate for `year`.
@@ -222,8 +214,7 @@ class Scenario(object):
         """ Annual inflation adjustment factors relative to base_year.
 
         Returns:
-            A dict of {year: adjustment} pairs where the year is an int
-            and the adjustment is a Decimal.
+            dict[int, Decimal]: `{year: adjustment}` pairs.
             `adjustment` is the cumulative inflation since `base_year`
             (or, for years prior to `base_year`, it is the present value
             of $1 in base_year)
@@ -231,18 +222,53 @@ class Scenario(object):
         return {year: Decimal(self.accumulation_function(year, base_year))
                 for year in self}
 
-    def inflation_adjust(self, this_year, base_year=None):
-        """ Inflation-adjustment factor from this_year to target_year. """
+    def inflation_adjust(self, target_year, base_year=None):
+        """ Inflation-adjustment factor from base_year to target_year.
+
+        Args:
+            target_year (int): The year for which an
+                inflation-adjustment factor is desired.
+            base_year (int): The year in which inflation-adjusted
+                figures are expressed.
+                The inflation adjustment for this year is 1.
+
+        Returns:
+            Decimal: The inflation-adjustment factor from base_year to
+            target_year. This is the product of inflation-adjustments
+            for each year (or its inverse, if target_year precedes
+            base_year).
+        """
         if base_year is None:
             base_year = self.initial_year
         # TODO: Cache inflation adjustments (memoize accumulation_function?)
-        return self.accumulation_function(base_year, this_year)
+        return self.accumulation_function(base_year, target_year)
+
+    def rate_of_return(self, year, stocks, bonds, other):
+        """ The rate of return on a portfolio for a given year.
+
+        Args:
+            year (int): The year.
+            stocks (Decimal): The proportion of stocks in the portfolio.
+            fixed_income (Decimal): The proportion of bonds assets in
+                the portfolio.
+
+        Returns:
+            Decimal: The rate of return, as a pecentage. For example, a
+            5% rate of return would be `Decimal('0.05')`.
+        """
+        return (stocks * self.stock_return[year] +
+                bonds * self.bond_return[year] +
+                other * self.other_return[year]) / (stocks + bonds + other)
 
     def __len__(self):
-        """ Returns the number of years modelled by the Scenario. """
+        """ The number of years modelled by the Scenario. """
         return self.num_years
 
     def __iter__(self):
-        """ Iterates over years modelled by the Scenario. """
+        """ Iterates over years modelled by the Scenario.
+
+        Yields:
+            int: Each year modelled by the Scenario, in ascending order.
+        """
         for year in range(self.initial_year, self.initial_year + len(self)):
             yield year

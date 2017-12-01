@@ -619,12 +619,15 @@ class TestTransactionStrategyMethods(unittest.TestCase):
 
         # Set up some accounts for the tests.
         cls.rrsp = RRSP(cls.person, inflation_adjust=cls.inflation_adjustments,
-                        balance=Money(200), contribution_room=Money(200),
+                        balance=Money(200), rate=0,
+                        contribution_room=Money(200),
                         initial_year=min(cls.inflation_adjustments.keys()))
         cls.tfsa = TFSA(cls.person, inflation_adjust=cls.inflation_adjustments,
-                        balance=Money(100), contribution_room=Money(100),
+                        balance=Money(100), rate=0,
+                        contribution_room=Money(100),
                         initial_year=min(cls.inflation_adjustments.keys()))
-        cls.taxableAccount = TaxableAccount(cls.person, balance=Money(1000))
+        cls.taxableAccount = TaxableAccount(cls.person, balance=Money(1000),
+                                            rate=0)
         cls.accounts = [cls.rrsp, cls.tfsa, cls.taxableAccount]
 
     def test_init(self):
@@ -1023,12 +1026,12 @@ class TestAllocationStrategyMethods(unittest.TestCase):
         s = AllocationStrategy(method, 0, 1, n, 65, 10, False)
 
         for age in range(0, n):
-            self.assertAlmostEqual(s(age).equity, Decimal((n - age)/100))
-            self.assertAlmostEqual(s(age).fixed_income,
+            self.assertAlmostEqual(s(age)['stocks'], Decimal((n - age)/100))
+            self.assertAlmostEqual(s(age)['bonds'],
                                    Decimal(1 - (n - age)/100))
         for age in range(n, n + 100):
-            self.assertEqual(s(age).equity, s.min_equity)
-            self.assertEqual(s(age).fixed_income, 1 - s.min_equity)
+            self.assertEqual(s(age)['stocks'], s.min_equity)
+            self.assertEqual(s(age)['bonds'], 1 - s.min_equity)
 
         # Try with adjustments for retirement plans enabled.
         # Use n = 120, but a retirement age that's 20 years early.
@@ -1042,14 +1045,14 @@ class TestAllocationStrategyMethods(unittest.TestCase):
                                True)
 
         for age in range(0, n + diff):
-            self.assertAlmostEqual(s(age, retirement_age).equity,
+            self.assertAlmostEqual(s(age, retirement_age)['stocks'],
                                    Decimal((n + diff - age)/100))
-            self.assertAlmostEqual(s(age, retirement_age).fixed_income,
+            self.assertAlmostEqual(s(age, retirement_age)['bonds'],
                                    Decimal(1 - (n + diff - age)/100))
         for age in range(n + diff, n + diff + 100):
-            self.assertEqual(s(age, retirement_age).equity,
+            self.assertEqual(s(age, retirement_age)['stocks'],
                              s.min_equity)
-            self.assertEqual(s(age, retirement_age).fixed_income,
+            self.assertEqual(s(age, retirement_age)['bonds'],
                              1 - s.min_equity)
 
         # Finally, try n=120 without adjusting the retirement age to
@@ -1061,17 +1064,17 @@ class TestAllocationStrategyMethods(unittest.TestCase):
                                False)
 
         for age in range(0, 20):
-            self.assertEqual(s(age).equity, s.max_equity)
-            self.assertEqual(s(age).fixed_income, 1 - s.max_equity)
+            self.assertEqual(s(age)['stocks'], s.max_equity)
+            self.assertEqual(s(age)['bonds'], 1 - s.max_equity)
         for age in range(20, n):
-            self.assertAlmostEqual(s(age, retirement_age).equity,
+            self.assertAlmostEqual(s(age, retirement_age)['stocks'],
                                    Decimal((n - age)/100))
-            self.assertAlmostEqual(s(age, retirement_age).fixed_income,
+            self.assertAlmostEqual(s(age, retirement_age)['bonds'],
                                    Decimal(1 - (n - age)/100))
         for age in range(n, n + 100):
-            self.assertEqual(s(age, retirement_age).equity,
+            self.assertEqual(s(age, retirement_age)['stocks'],
                              s.min_equity)
-            self.assertEqual(s(age, retirement_age).fixed_income,
+            self.assertEqual(s(age, retirement_age)['bonds'],
                              1 - s.min_equity)
 
     def test_strategy_transition_to_constant(self):
@@ -1083,17 +1086,17 @@ class TestAllocationStrategyMethods(unittest.TestCase):
         s = AllocationStrategy(method, 0, 1, 0.5, 65, 10, False)
 
         for age in range(18, 54):
-            self.assertEqual(s(age).equity, Decimal(1))
-            self.assertEqual(s(age).fixed_income, Decimal(0))
+            self.assertEqual(s(age)['stocks'], Decimal(1))
+            self.assertEqual(s(age)['bonds'], Decimal(0))
         for age in range(55, 65):
             self.assertAlmostEqual(
-                s(age).equity, Decimal(1*(65-age)/10 + 0.5*(age-55)/10))
+                s(age)['stocks'], Decimal(1*(65-age)/10 + 0.5*(age-55)/10))
             self.assertAlmostEqual(
-                s(age).fixed_income,
+                s(age)['bonds'],
                 Decimal(1-(1*(65-age)/10 + 0.5*(age-55)/10)))
         for age in range(66, 100):
-            self.assertEqual(s(age).equity, Decimal(0.5))
-            self.assertEqual(s(age).fixed_income, Decimal(0.5))
+            self.assertEqual(s(age)['stocks'], Decimal(0.5))
+            self.assertEqual(s(age)['bonds'], Decimal(0.5))
 
 
 class TestDebtPaymentStrategyMethods(unittest.TestCase):

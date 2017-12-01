@@ -3,7 +3,7 @@ define contribution and withdrawal strategies and associated flags. """
 
 from collections import namedtuple
 import inspect
-from ledger import *
+from ledger import Money, Decimal
 from settings import Settings
 
 
@@ -225,7 +225,7 @@ class ContributionStrategy(Strategy):
             net_income - (self.base_amount * self.inflation_adjust(year)))
 
     def __call__(self, year=None, refund=0, other_contribution=0,
-                 net_income=None, gross_income=None, 
+                 net_income=None, gross_income=None,
                  retirement_year=None, *args, **kwargs):
         """ Returns the gross contribution for the year. """
         # NOTE: We layer on refund and other_contribution amounts on top
@@ -698,9 +698,6 @@ class TransactionOutStrategy(TransactionStrategy):
         super().__init__(strategy, weights, timing, settings)
 
 
-AssetAllocation = namedtuple('AssetAllocation', 'equity fixed_income')
-
-
 class AllocationStrategy(Strategy):
     """ Generates an asset allocation for a point in time. Callable.
 
@@ -740,6 +737,8 @@ class AllocationStrategy(Strategy):
             be adjusted to increase risk for later retirement or
             decrease risk for later retirement. If False, the standard
             retirement age will be used.
+        scenario (Scenario): Optional. Must be provided in order to call
+            rate_of_return.
 
     Args:
         age (int): The current age of the plannee.
@@ -747,14 +746,15 @@ class AllocationStrategy(Strategy):
             plannee.
 
     Returns:
-        An Allocation object describing the asset allocation. Each
-        element of the Allocation tuple is of type Decimal and expresses
-        a percentage (e.g. Decimal('0.03') means 3%). They sum to 100%.
+        dict[str, Decimal]: `{asset: allocation}` pairs, where `asset`
+        is a string in `{'stocks', 'bonds'}` and `allocation` is the
+        percentage of a portfolio that is made up of that asset class.
+        Allocations sum to 1 (e.g. `Decimal(0.03` means 3%).
     """
     def __init__(self, strategy=None, min_equity=None, max_equity=None,
                  target=None, standard_retirement_age=None,
                  risk_transition_period=None, adjust_for_retirement_plan=None,
-                 settings=Settings):
+                 scenario=None, settings=Settings):
         """ Constructor for AllocationStrategy. """
         # Use the subclass-specific default strategy if none provided
         if strategy is None:
@@ -789,6 +789,7 @@ class AllocationStrategy(Strategy):
             adjust_for_retirement_plan
             if adjust_for_retirement_plan is not None
             else settings.allocation_adjust_for_retirement_plan)
+        self.scenario = scenario
 
         # All of the above are type-converted; no need to check types!
 
@@ -814,8 +815,8 @@ class AllocationStrategy(Strategy):
         target = Decimal(self.target - age) / 100
         # Ensure that we don't move past our min/max equities
         target = min(max(target, self.min_equity), self.max_equity)
-        # Fixed income is simply whatever isn't in equities
-        return AssetAllocation(equity=target, fixed_income=1-target)
+        # Bonds is simply whatever isn't in equities
+        return {'stocks': target, 'bonds': 1-target}
 
     @strategy('Transition to constant')
     def _strategy_transition_to_constant(self, age, retirement_age=None,
@@ -832,21 +833,45 @@ class AllocationStrategy(Strategy):
         # If retirement is outside our risk transition window (e.g. if
         # it's more than 20 years away), maximize stock holdings.
         if age <= retirement_age - self.risk_transition_period:
-            return AssetAllocation(equity=self.max_equity,
-                                   fixed_income=1-self.max_equity)
+            return {'stocks': self.max_equity, 'bonds': 1-self.max_equity}
         # If we've hit retirement, keep equity allocation constant at
         # our target
         elif age >= retirement_age:
             min_equity = max(self.min_equity, self.target)
-            return AssetAllocation(equity=min_equity,
-                                   fixed_income=1-min_equity)
+            return {'stocks': min_equity, 'bonds': 1-min_equity}
         # Otherwise, smoothly move from max_equity to target over
         # the risk_transition_period
         else:
             target = self.target + \
                 (self.max_equity - self.target) * \
                 (retirement_age - age) / self.risk_transition_period
-            return AssetAllocation(equity=target, fixed_income=1-target)
+            return {'stocks': target, 'bonds': 1-target}
+
+    def rate_of_return(self, year, age, retirement_age=None, *args, **kwargs):
+        """ Rate of return for `year` accounting for asset allocation.
+
+        This method requires that the AllocationStrategy object have a
+        `scenario` attribute, which provides rates of return for
+        individual asset classes.
+
+        Args:
+            year (int): The year for which the rate of return will be
+                determined.
+            age (int): The age of the person.
+            retirement_age (int): The (estimated) retirement age of the
+                person.
+
+        Returns:
+            Decimal: The rate of return. For example, `Decimal('0.05')`
+            means a 5% return.
+        """
+        allocation = self(age=age, retirement_age=retirement_age)
+        default_return = Decimal(0)
+        return self.scenario.rate_of_return(
+            year=year,
+            stocks=allocation.setdefault('stocks', default_return),
+            bonds=allocation.setdefault('bonds', default_return),
+            other=allocation.setdefault('other', default_return))
 
     def __call__(self, age, retirement_age=None, *args, **kwargs):
         """ Returns a dict of {account, Money} pairs. """

@@ -295,7 +295,21 @@ class Person(TaxSource):
             May be passed as an int (interpreted as the birth year) or
             as a datetime-convertible value (e.g. a string in a
             suitable format)
-        gross_income (dict): Annual gross income for several
+        gross_income (Money): Annual gross income for the current year.
+        gross_income_history (dict[int, Money]): Gross income for all
+            years on record.
+        net_income (Money): Annual net income for the current year.
+        net_income_history (dict[int, Money]): Net income for all
+            years on record.
+        raise_rate (Decimal): The person's raise in gross income this
+            year relative to last year.
+        raise_rate_history (dict[int, Decimal]): Raises for all years
+            on record.
+        spouse (Person): The person's spouse. This linkage is
+            one-to-one; the spouse's `spouse` attribute points back to
+            this Person.
+        tax_treatment (Tax): The tax treatment of the person. A callable
+            object; see documentation for `Tax` for more information.
     """
 
     # TODO: Add life expectancy?
@@ -311,8 +325,9 @@ class Person(TaxSource):
     # arg with a `province` (str) arg?
 
     def __init__(self, name, birth_date, retirement_date=None,
-                 gross_income=0, raise_rate={}, spouse=None,
-                 tax_treatment=None, initial_year=None, settings=Settings):
+                 gross_income=0, raise_rate=None, spouse=None,
+                 tax_treatment=None, allocation_strategy=None,
+                 initial_year=None, settings=Settings):
         """ Constructor for `Person`.
 
         Attributes:
@@ -329,9 +344,12 @@ class Person(TaxSource):
                 Optional.
             gross_income (Money): The person's gross income in
                 `initial_year`.
-            raise_rate (dict): A dict of `{year: raise}` pairs, where
-                `raise` is a Decimal interpreted as a percentage (e.g.
-                `Decimal('0.03')` indicates a 3% raise).
+            raise_rate (dict[int, Decimal], callable): The person's
+                raise for each year, as a callable object with the
+                signature `raise_rate(year)` or a dict of
+                `{year: raise}` pairs. The raise is a Decimal
+                interpreted as a percentage (e.g. `Decimal('0.03')`
+                indicates a 3% raise).
             spouse (Person): The person's spouse. Optional.
                 In ordinary use, the first person of the couple is
                 constructed with `spouse=None`, and the second person is
@@ -343,6 +361,9 @@ class Person(TaxSource):
                 `tax_treatment(taxable_income, year)` and returns a
                 Money object (which corresponds to total taxes payable
                 on `taxable_income`).
+            allocation_strategy (AllocationStrategy): The person's
+                asset allocation strategy for accounts they own. This
+                can be used by accounts to determine their raise_rate.
             initial_year (int): The first year for which account data is
                 recorded.
             settings (Settings): Defines default values (initial year,
@@ -360,39 +381,46 @@ class Person(TaxSource):
         """
         super().__init__(initial_year, settings)
 
-        # First assign attributes that aren't wrapped by properties:
-        if not isinstance(name, str):
-            raise TypeError("Person: name must be a string")
-        self.name = name
-
-        # Build an empty set for accounts to add themselves to.
-        self.accounts = set()
-
-        # Set up tax treatment before calling tax_withheld()
-        # TODO: Make this a mandatory argument?
-        self.tax_treatment = tax_treatment
-
-        # For attributes wrapped by properties, create hidden attributes
-        # and assign to them using the properties:
+        # For attributes wrapped by ordinary properties, create hidden
+        # attributes and assign to them using the properties:
+        self._name = None
         self._birth_date = None
         self._retirement_date = None
-        self._retirement_age = None
+        self._raise_rate_function = None
         self._spouse = None
-        # NOTE: We formerly created a new dict for raise_rate with
-        # type-cast {int: Decimal} pairs, but this stripped out
-        # defaultdict functionality. For now, we just store the values
-        # as provided and leave it to other methods to fail if they
-        # aren't the right type.
-        # Another option would be to have the user pass a generator
-        # function (as we do with inflation_adjustments)
-        self._raise_rate = raise_rate
+        self._allocation_strategy = None
+        self._tax_treatment = None
         self._contribution_room = {}
         self._contribution_groups = {}
-        self.birth_date = birth_date
-        self.retirement_date = retirement_date
+        self.name = name if name is not None else settings.person1_name
+        self.birth_date = birth_date if birth_date is not None \
+            else settings.person1_birth_date
+        self.retirement_date = retirement_date if retirement_date is not None \
+            else settings.person1_retirement_date
+        self.raise_rate_function = raise_rate if raise_rate is not None \
+            else settings.person1_raise_rate
         self.spouse = spouse
+        self.allocation_strategy = allocation_strategy
+        # Set up tax treatment before calling tax_withheld()
+        self.tax_treatment = tax_treatment
+
+        # Now provide initial-year values for recorded properties:
+        # NOTE: Be sure to do type-checking here.
         self.gross_income = Money(gross_income)
         self.net_income = self.gross_income - self.tax_withheld
+
+        # Finally, build an empty set for accounts to add themselves to.
+        self.accounts = set()
+
+    @property
+    def name(self) -> str:
+        """ The name of the Person. """
+        return self._name
+
+    @name.setter
+    def name(self, val) -> None:
+        """ Sets the Person's name. """
+        self._name = str(val)
 
     @property
     def birth_date(self) -> datetime:
@@ -447,7 +475,7 @@ class Person(TaxSource):
     @property
     def retirement_age(self) -> int:
         """ The age of the Person at retirement """
-        return self._retirement_age
+        return relativedelta(self.retirement_date, self.birth_date).years
 
     @retirement_age.setter
     def retirement_age(self, val) -> None:
@@ -462,6 +490,29 @@ class Person(TaxSource):
             # Note that relativedelta will scold you if the input is not
             # losslessly convertible to an int
             self.retirement_date = self.birth_date + relativedelta(years=val)
+
+    @property
+    def raise_rate_function(self):
+        """ """
+        return self._raise_rate_function
+
+    @raise_rate_function.setter
+    def raise_rate_function(self, val) -> None:
+        """ """
+        # Is raise_rate isn't callable, convert it to a suitable method:
+        if not callable(val):  # Make callable if dict or scalar
+            if isinstance(val, dict):
+                # assume dict of {year: raise} pairs
+                def func(year): return val[year]
+            else:
+                # If we can cast this to Decimal, return a constant rate
+                val = Decimal(val)
+
+                def func(year): return val
+            self._raise_rate_function = func
+        else:
+            # If the input is callable, use it without modification.
+            self._raise_rate_function = val
 
     @property
     def spouse(self) -> 'Person':
@@ -484,10 +535,37 @@ class Person(TaxSource):
         # Update the spouse attr whether or not the new value is None
         self._spouse = val
 
+    @property
+    def tax_treatment(self):
+        """ The tax treatment of the Person. """
+        return self._tax_treatment
+
+    @tax_treatment.setter
+    def tax_treatment(self, val) -> None:
+        """ Sets the Person's tax treatment. """
+        # Due to import dependencies, we can't type-check against
+        # Tax here; leave it to calling code to fail if it provides
+        # an object of the wrong type.
+        self._tax_treatment = val
+
+    @property
+    def allocation_strategy(self):
+        """ The asset allocation strategy of the Person. """
+        return self._allocation_strategy
+
+    @allocation_strategy.setter
+    def allocation_strategy(self, val) -> None:
+        """ Sets the Person's asset allocation strategy. """
+        # Due to import dependencies, we can't type-check against
+        # Strategy here; leave it to calling code to fail if it provides
+        # an object of the wrong type.
+        self._allocation_strategy = val
+
     @recorded_property_cached
     def gross_income(self):
         """ The `Person`'s gross income for this year. """
-        # No income if retired, otherwise apply the raise rate:
+        # No income if retired, otherwise apply the raise rate to last
+        # year's income:
         if (
             self.retirement_date is not None and
             self.retirement_date.year < self.this_year
@@ -503,23 +581,10 @@ class Person(TaxSource):
         gross_income = self.gross_income
         return gross_income - self.tax_withheld
 
-    # TODO: Turn raise_rate into either a recorded_property or a
-    # generator function:
-
-    @property
+    @recorded_property_cached
     def raise_rate(self):
         """ The `Person`'s raise for the current year. """
-        return self._raise_rate[self.this_year]
-
-    @raise_rate.setter
-    def raise_rate(self, val):
-        """ Sets the `Person`'s raise for the current year. """
-        self._raise_rate[self.this_year] = Decimal(val)
-
-    @property
-    def raise_rate_history(self):
-        """ The `Person`'s raise for all years. """
-        return self._raise_rate
+        return self._raise_rate_function(self.this_year)
 
     def contribution_room(self, account):
         """ The contribution room for the given account.
@@ -678,8 +743,16 @@ class Account(TaxSource):
             inflow/outflow transaction timing, etc.). Optional; uses
             global Settings class attributes if None given.
     """
-    def __init__(self, owner, balance=0, rate=0, transactions={},
-                 nper=1, initial_year=None, settings=Settings):
+    def __init__(self,
+                 owner,
+                 balance=0,
+                 rate=None,
+                 transactions={},
+                 nper=1,
+                 initial_year=None,
+                 default_inflow_timing=None,
+                 default_outflow_timing=None,
+                 settings=Settings):
         """ Constructor for `Account`.
 
         This constructor receives only values for the first year.
@@ -695,32 +768,44 @@ class Account(TaxSource):
                 transaction (positive to inflow, negative for outflow).
             nper (int): The number of compounding periods per year.
             initial_year (int): The first year (e.g. 2000)
+            default_inflow_timing (Decimal): The default timing used for
+                inflow transactions (when a timing is not explicitly
+                provided).
+            default_outflow_timing (Decimal): The default timing used
+                for outflow transactions (when a timing is not
+                explicitly provided).
             settings (Settings): Provides default values.
         """
         super().__init__(initial_year, settings)
 
-        # Type-check the owner
-        if not isinstance(owner, Person):
-            raise TypeError('Account: owner must be of type Person.')
-        owner.accounts.add(self)  # Track this account via owner.
-        self.owner = owner
-
-        # Set the scalar values first, 'cause they're easy!
-        self.nper = self._conv_nper(nper)
-
+        # Set hidden attributes to support properties that need them to
+        # be set in advance:
+        self._owner = None
         self._transactions = {}
+        self._rate_function = None
 
+        # Set the various property values based on inputs:
+        self.owner = owner
         self.balance = Money(balance)
-        self.rate = Decimal(rate)
-        for when, value in transactions.items():
-            self.add_transaction(value, when)
+        # If rate is not provided, infer from owner's asset allocation:
+        self.rate_function = rate if rate is not None else \
+            self.rate_from_asset_allocation
+        self.nper = self._conv_nper(nper)
+        self._inflow_timing = when_conv(
+            default_inflow_timing
+            if default_inflow_timing is not None
+            else settings.transaction_in_timing)
+        self._outflow_timing = when_conv(
+            default_outflow_timing
+            if default_outflow_timing is not None
+            else settings.transaction_out_timing)
         # NOTE: returns is calculated lazily
 
-        # We don't save the settings object, but we do need to save
-        # defaults for certain methods. These are not used when methods
-        # are called with explicit `when` arguments.
-        self._inflow_timing = when_conv(settings.transaction_in_timing)
-        self._outflow_timing = when_conv(settings.transaction_out_timing)
+        # Add each transaction manually to populate the transactions
+        # dict; this will do the necessary type-checking and conversions
+        # on each element:
+        for when, value in transactions.items():
+            self.add_transaction(value, when)
 
     # String codes describing compounding periods (keys) and ints
     # describing the number of such periods in a year (values):
@@ -736,6 +821,20 @@ class Account(TaxSource):
         'SA': 2,
         'A': 1
         }
+
+    @property
+    def owner(self) -> Person:
+        """ The account's owner. """
+        return self._owner
+
+    @owner.setter
+    def owner(self, val) -> None:
+        """ Sets the account's owner. """
+        # Type-check the input
+        if not isinstance(val, Person):
+            raise TypeError('Account: owner must be of type Person.')
+        val.accounts.add(self)  # Track this account via owner.
+        self._owner = val
 
     @recorded_property_cached
     def balance(self):
@@ -757,10 +856,37 @@ class Account(TaxSource):
 
         return balance
 
+    @property
+    def rate_function(self):
+        """ A function that generates a rate for a given year.
+
+        The function is callable with one (potentially optional)
+        argument: year.
+        """
+        return self._rate_function
+
+    @rate_function.setter
+    def rate_function(self, val):
+        """ Sets the rate function """
+        # If input isn't callable, convert it to a suitable method:
+        if not callable(val):
+            if isinstance(val, dict):
+                # assume dict of {year: rate} pairs
+                def func(year): return val[year]
+            else:
+                # If we can cast this to Decimal, return a constant rate
+                val = Decimal(val)
+
+                def func(year): return val
+            self._rate_function = func
+        else:
+            # If the input is callable, use it without modification.
+            self._rate_function = val
+
     @recorded_property_cached
     def rate(self):
         """ The rate of the account for the current year (Decimal). """
-        return self._rate_history[self.this_year - 1]
+        return self.rate_function(self.this_year)
 
     @recorded_property
     def transactions(self):
@@ -888,6 +1014,23 @@ class Account(TaxSource):
     def __len__(self):
         """ The number of years of transaction data in the account. """
         return self.this_year - self.initial_year + 1
+
+    def rate_from_asset_allocation(self, year=None):
+        """ The rate of return for a portfolio with a given composition.
+
+        This determines the portfolio composition based on the owner's
+        asset allocation strategy, and their age and (estimated)
+        retirement age.
+
+        Args:
+            year (int): The year for which a rate is desired. Optional;
+                defaults to the current year.
+        """
+        year = year if year is not None else self.this_year
+        return self.owner.allocation_strategy.rate_of_return(
+            year=year,
+            age=self.owner.age(year),
+            retirement_age=self.owner.retirement_age)
 
     @staticmethod
     def accumulation_function(t, rate, nper=1):

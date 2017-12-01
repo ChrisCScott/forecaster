@@ -30,7 +30,6 @@ class TestForecast(unittest.TestCase):
             bond_return=Decimal(0.5),  # 50% growth in bonds
             other_return=0,  # No growth in other assets
             management_fees=Decimal(0),  # TODO: Refactor this attribute
-            person1_raise_rate=Decimal(0.5),  # TODO: Refactor this attr
             initial_year=initial_year,
             num_years=4
         )
@@ -51,7 +50,7 @@ class TestForecast(unittest.TestCase):
             'Test', 1980,
             retirement_date=2002,
             gross_income=Money(100000),
-            raise_rate=scenario.person1_raise_rate,
+            raise_rate=Decimal(0.5),
             tax_treatment=tax,
             initial_year=initial_year
         )
@@ -109,10 +108,8 @@ class TestForecast(unittest.TestCase):
             debt_payment_strategy, tax
         )
 
-        # TODO: Calculate the expected results for key values for each
-        # year and test them here. (Use net_income, net_contributions,
-        # principal, net_return, net_withdrawals, total_tax_owing,
-        # and living_standard)
+        # Calculate the expected results for the values of principal
+        # importance in each year and test them here.
         # Year 1:
         year = initial_year
         # Gross income: $100,000, taxes: $25,000

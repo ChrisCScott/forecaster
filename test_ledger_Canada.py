@@ -314,7 +314,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
             initial_year=self.initial_year)
         # Basic test:
         account = self.AccountType(
-            owner, *args,
+            owner, *args, rate=0,
             inflation_adjust=self.inflation_adjust,
             contribution_room=initial_contribution_room, **kwargs)
         account.next_year()
@@ -338,7 +338,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
             tax_treatment=self.owner.tax_treatment,
             initial_year=self.initial_year)
         account = self.AccountType(
-            owner, *args,
+            owner, *args, rate=0,
             inflation_adjust=self.inflation_adjust,
             contribution_room=initial_contribution_room,
             initial_year=initial_year, **kwargs)
@@ -353,7 +353,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
 
         # Try again, but this time contribute the max. in the first year
         account = self.AccountType(
-            owner, *args,
+            owner, *args, rate=0,
             inflation_adjust=self.inflation_adjust,
             contribution_room=initial_contribution_room,
             initial_year=initial_year, **kwargs)
@@ -390,7 +390,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
             tax_treatment=self.owner.tax_treatment,
             initial_year=self.initial_year)
         account = self.AccountType(
-            owner, *args,
+            owner, *args, rate=0,
             inflation_adjust=self.inflation_adjust,
             contribution_room=initial_contribution_room,
             initial_year=initial_year, **kwargs)
@@ -414,7 +414,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
             tax_treatment=self.owner.tax_treatment,
             initial_year=self.initial_year)
         account = self.AccountType(
-            owner, *args,
+            owner, *args, rate=0,
             inflation_adjust=self.inflation_adjust,
             contribution_room=initial_contribution_room,
             initial_year=initial_year, **kwargs)

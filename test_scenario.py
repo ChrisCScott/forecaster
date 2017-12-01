@@ -26,28 +26,20 @@ class TestScenarioMethods(unittest.TestCase):
         bond_return = []
         other_return = []
         management_fees = []
-        person1_raise_rate = []
-        person2_raise_rate = []
         # Build lists for each variable using a reasonable range.
         #   inflation:          [0, 30%]
         #   stock_return:       [-50%, 50%]
         #   bond_return:        [-25%, 25%]
         #   other_return:       [-10%, 10%]
         #   management_fees:    [0.15%, 2%]
-        #   person1_raise_rate: [0, 10%]
-        #   person2_raise_rate: [0, 10%]
         for _ in range(length):
             inflation.append(rand.random() * 0.3)
             stock_return.append(rand.random() - 0.5)
             bond_return.append(rand.random() * 0.5 - 0.5)
             other_return.append(rand.random() * 0.2 - 0.1)
             management_fees.append(rand.random() * 0.0185 + 0.0015)
-            person1_raise_rate.append(rand.random() * 0.1)
-            person2_raise_rate.append(rand.random() * 0.1)
         return Scenario(inflation, stock_return, bond_return,
-                        other_return, management_fees,
-                        person1_raise_rate, person2_raise_rate,
-                        initial_year)
+                        other_return, management_fees, initial_year)
 
     @classmethod
     def setUpClass(cls):
@@ -59,8 +51,6 @@ class TestScenarioMethods(unittest.TestCase):
         cls.constant_bond_return = 0.04
         cls.constant_other_return = 0.03
         cls.constant_management_fees = 0.01
-        cls.constant_person1_raise_rate = 0.03
-        cls.constant_person2_raise_rate = 0.025
         cls.constant_num_years = 100
         cls.constant_scenario = Scenario(
             inflation=cls.constant_inflation,
@@ -68,8 +58,6 @@ class TestScenarioMethods(unittest.TestCase):
             bond_return=cls.constant_bond_return,
             other_return=cls.constant_other_return,
             management_fees=cls.constant_management_fees,
-            person1_raise_rate=cls.constant_person1_raise_rate,
-            person2_raise_rate=cls.constant_person2_raise_rate,
             initial_year=cls.constant_initial_year,
             num_years=100)
 
@@ -82,8 +70,6 @@ class TestScenarioMethods(unittest.TestCase):
         cls.varying_bond_return = [0]
         cls.varying_other_return = [0]
         cls.varying_management_fees = [0]
-        cls.varying_person1_raise_rate = [0]
-        cls.varying_person2_raise_rate = [0]
         # Values will jump around, but will generally increase in magnitude
         for i in range(cls.varying_num_years-1):
             cls.varying_inflation.append(0.0025 * i)
@@ -91,23 +77,21 @@ class TestScenarioMethods(unittest.TestCase):
             cls.varying_bond_return.append(pow(-1, i+1) * 0.005 * i)
             cls.varying_other_return.append(pow(-1, i) * 0.001 * i)
             cls.varying_management_fees.append(0.0002 * i)
-            cls.varying_person1_raise_rate.append(pow(-1, i+1) * 0.001 * i)
-            cls.varying_person2_raise_rate.append(pow(-1, i) * 0.001 * i)
         cls.varying_scenario = Scenario(
             inflation=cls.varying_inflation,
             stock_return=cls.varying_stock_return,
             bond_return=cls.varying_bond_return,
             other_return=cls.varying_other_return,
             management_fees=cls.varying_management_fees,
-            person1_raise_rate=cls.varying_person1_raise_rate,
-            person2_raise_rate=cls.varying_person2_raise_rate,
             initial_year=cls.varying_initial_year,
             num_years=cls.varying_num_years)
 
         cls.scenarios = [cls.constant_scenario, cls.varying_scenario]
         # Add a scenario of all 0 values
-        cls.scenarios.append(Scenario(0, 0, 0, 0, 0, 0, 0,
-                                      cls.constant_initial_year))
+        cls.scenarios.append(Scenario(
+            inflation=0, stock_return=0, bond_return=0, other_return=0,
+            management_fees=0, initial_year=cls.constant_initial_year,
+            num_year=10))
         for _ in range(10):  # add some random scenarios to the test set
             cls.scenarios.append(cls.get_random_scenario())
 
@@ -117,7 +101,9 @@ class TestScenarioMethods(unittest.TestCase):
         Also tests `inflation()`, `stock_return()`, and `bond_return()`
         """
         # Test initialization with scalar values.
-        scenario = Scenario(0, 0, 0, 0, 0, 0, 0, 2000)
+        scenario = Scenario(
+            inflation=0, stock_return=0, bond_return=0, other_return=0,
+            management_fees=0, initial_year=2000, num_years=100)
         # Confirm we can pull 100 (identical) years from the scenario
         for i in range(100):
             year = i + 2000
@@ -126,8 +112,6 @@ class TestScenarioMethods(unittest.TestCase):
             self.assertEqual(scenario.bond_return[year], 0)
             self.assertEqual(scenario.other_return[year], 0)
             self.assertEqual(scenario.management_fees[year], 0)
-            self.assertEqual(scenario.person1_raise_rate[year], 0)
-            self.assertEqual(scenario.person2_raise_rate[year], 0)
         self.assertEqual(scenario.initial_year, 2000)
 
         # Test the varying scenario next, using list inputs
@@ -136,8 +120,6 @@ class TestScenarioMethods(unittest.TestCase):
                             self.varying_bond_return,
                             self.varying_other_return,
                             self.varying_management_fees,
-                            self.varying_person1_raise_rate,
-                            self.varying_person2_raise_rate,
                             self.varying_initial_year)
 
         # Do an elementwise comparison to confirm initialization worked
@@ -153,10 +135,6 @@ class TestScenarioMethods(unittest.TestCase):
                              self.varying_other_return[i])
             self.assertEqual(scenario.management_fees[year],
                              self.varying_management_fees[i])
-            self.assertEqual(scenario.person1_raise_rate[year],
-                             self.varying_person1_raise_rate[i])
-            self.assertEqual(scenario.person2_raise_rate[year],
-                             self.varying_person2_raise_rate[i])
         self.assertEqual(scenario.initial_year, self.varying_initial_year)
 
         # Test the above Scenario to confirm that defaults provided in
@@ -187,16 +165,6 @@ class TestScenarioMethods(unittest.TestCase):
                 self.varying_initial_year + self.varying_num_years
             ],
             Settings.management_fees)
-        self.assertEqual(
-            scenario.person1_raise_rate[
-                self.varying_initial_year + self.varying_num_years
-            ],
-            Settings.person1_raise_rate)
-        self.assertEqual(
-            scenario.person2_raise_rate[
-                self.varying_initial_year + self.varying_num_years
-            ],
-            Settings.person2_raise_rate)
 
         # Construct a varying scenario from dicts instead of lists
         years = list(range(self.varying_initial_year,
@@ -207,8 +175,6 @@ class TestScenarioMethods(unittest.TestCase):
         bond_return = dict(zip(years, self.varying_bond_return))
         other_return = dict(zip(years, self.varying_other_return))
         management_fees = dict(zip(years, self.varying_management_fees))
-        person1_raise_rate = dict(zip(years, self.varying_person1_raise_rate))
-        person2_raise_rate = dict(zip(years, self.varying_person2_raise_rate))
 
         # Do an elementwise comparison to confirm initialization worked
         for year in years:
@@ -218,16 +184,13 @@ class TestScenarioMethods(unittest.TestCase):
             self.assertEqual(scenario.other_return[year], other_return[year])
             self.assertEqual(scenario.management_fees[year],
                              management_fees[year])
-            self.assertEqual(scenario.person1_raise_rate[year],
-                             person1_raise_rate[year])
-            self.assertEqual(scenario.person2_raise_rate[year],
-                             person2_raise_rate[year])
         self.assertEqual(scenario.initial_year, self.varying_initial_year)
 
         # Mix constant, list, and dict inputs
-        scenario = Scenario(0.02, self.varying_stock_return, bond_return,
-                            Decimal(0.03), self.varying_management_fees,
-                            person1_raise_rate, 0.04)
+        scenario = Scenario(
+            inflation=0.02, stock_return=self.varying_stock_return,
+            bond_return=bond_return, other_return=Decimal(0.03),
+            management_fees=self.varying_management_fees)
 
         for i in range(len(self.varying_stock_return)):
             year = i + scenario.initial_year
@@ -238,9 +201,6 @@ class TestScenarioMethods(unittest.TestCase):
             self.assertEqual(scenario.other_return[year], Decimal(0.03))
             self.assertEqual(scenario.management_fees[year],
                              self.varying_management_fees[i])
-            self.assertEqual(scenario.person1_raise_rate[year],
-                             person1_raise_rate[year])
-            self.assertEqual(scenario.person2_raise_rate[year], 0.04)
         self.assertEqual(scenario.initial_year, Settings.initial_year)
 
     def test_accumulation_function(self):
@@ -252,8 +212,9 @@ class TestScenarioMethods(unittest.TestCase):
             self.assertAlmostEqual(
                 scenario.accumulation_function(
                     self.constant_initial_year, year),
-                pow(1 + self.constant_inflation,
-                    year - self.constant_initial_year))
+                pow(Decimal(1 + self.constant_inflation),
+                    year - self.constant_initial_year),
+                4)
 
         # for arbitrary scenarios, test against a year-by-year accumulation
         for scenario in self.scenarios:
@@ -316,8 +277,7 @@ class TestScenarioMethods(unittest.TestCase):
         # Test a constant scenario
         scenario = Scenario(
             inflation=0, stock_return=0, bond_return=0, other_return=0,
-            management_fees=0, person1_raise_rate=0, person2_raise_rate=0,
-            initial_year=initial_year, num_years=num_years)
+            management_fees=0, initial_year=initial_year, num_years=num_years)
         self.assertEqual(len(scenario), num_years)
 
         # Test a scenario built from lists/constants
@@ -330,29 +290,36 @@ class TestScenarioMethods(unittest.TestCase):
 
         # Test a scenario built from dicts:
         num_years = 100
-        scenario = Scenario({
+        scenario = Scenario(
+            inflation={
                 year: 0
                 for year in range(initial_year, initial_year + num_years)
             },
-            {
+            stock_return={
                 year: 0
                 for year in range(initial_year, initial_year + num_years - 1)
             },
-            0, 0, 0, 0, 0, initial_year)
+            bond_return=0,
+            other_return=0,
+            management_fees=0,
+            initial_year=initial_year)
         self.assertEqual(len(scenario), num_years)
 
         # Test a scenario built from dicts and (longer) lists:
         num_years = 100
-        scenario = Scenario({
+        scenario = Scenario(
+            inflation={
                 year: 0
                 for year in range(initial_year, initial_year + num_years)
             },
-            {
+            stock_return={
                 year: 0
                 for year in range(initial_year, initial_year + num_years - 1)
             },
-            [0 for _ in range(0, num_years)],
-            0, 0, 0, 0, initial_year)
+            bond_return=[0 for _ in range(0, num_years)],
+            other_return=0,
+            management_fees=0,
+            initial_year=initial_year)
         self.assertEqual(len(scenario), num_years)
 
 if __name__ == '__main__':

@@ -8,15 +8,6 @@ class (i.e. one object should determine both federal and provincial
 taxes with the same `__init__` and `__call__` signatures.)
 * `TestTaxCanada`: Implement a test case for the Canada-specific Tax
 subclass.
-* `Account`: Revise `rate` to be dynamically generated each year (e.g.
-based on an `AllocationStrategy` or, in the case of `Debt`, potentially
-based on the rate of inflation, for variable-rate debts). Consider:
-    * `Person`, `Account`: Make `Strategy` objects properties of
-    `Person`, thus allowing `Account`s to easily reference their owners'
-    current `AllocationStrategy` when setting the rate.
-    * `AllocationStrategy`: Take `Scenario` as an input at `__init__`
-    and use that to output a `rate` (perhaps from a method that takes an
-    `AssetAllocation` as an input, to avoid duplication of effort?)
 
 ## Medium Priority
 * `Forecaster`: Implement `Forecaster` class with these features:
@@ -97,3 +88,9 @@ constant based on the portfolio on the retirement date.
 `__call__` to simplify the logic of each strategy.
 * `AllocationStrategy`: Add strategy that rebalances based on current
 withdrawal rate and portfolio balance.
+* `Person`: Make `asset_allocation` a @recorded_property, so that
+several accounts can access an allocation for a given year without
+forcing recalculation?
+    * Alternatively, if we want to support different allocations for
+    each account, consider making asset_allocation an attribute at
+    the Account level. (There's currently no need for this.)

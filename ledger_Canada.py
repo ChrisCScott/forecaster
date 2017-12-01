@@ -28,7 +28,7 @@ class RegisteredAccount(Account):
             If not provided, the contributor is assumed to be the same
             as the annuitant (i.e. the owner.)
     """
-    def __init__(self, owner, balance=0, rate=0,
+    def __init__(self, owner, balance=0, rate=None,
                  transactions={}, nper=1, initial_year=None,
                  settings=SettingsCanada,
                  contribution_room=None, contributor=None,
@@ -123,7 +123,7 @@ class RRSP(RegisteredAccount):
     """ A Registered Retirement Savings Plan (Canada). """
 
     # Explicitly repeat superclass args for the sake of intellisense.
-    def __init__(self, owner, balance=0, rate=0,
+    def __init__(self, owner, balance=0, rate=None,
                  transactions={}, nper=1, initial_year=None,
                  settings=SettingsCanada,
                  contribution_room=None, contributor=None,
@@ -294,7 +294,7 @@ class RRSP(RegisteredAccount):
 class TFSA(RegisteredAccount):
     """ A Tax-Free Savings Account (Canada). """
 
-    def __init__(self, owner, balance=0, rate=0,
+    def __init__(self, owner, balance=0, rate=None,
                  transactions={}, nper=1, initial_year=None,
                  settings=SettingsCanada, contribution_room=None,
                  contributor=None, inflation_adjust=None):
@@ -427,7 +427,7 @@ class TaxableAccount(Account):
     # allow for modelling non-principle-residence real estate holdings.
     # (But we might want to also model rental income as well...)
 
-    def __init__(self, owner, balance=0, rate=0, transactions={},
+    def __init__(self, owner, balance=0, rate=None, transactions={},
                  nper=1, initial_year=None, settings=SettingsCanada, acb=None):
         """ Constructor for `TaxableAccount`. """
         super().__init__(

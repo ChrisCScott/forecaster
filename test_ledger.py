@@ -11,6 +11,8 @@ from decimal import Decimal
 from random import Random
 from settings import Settings
 from tax import Tax
+from strategy import AllocationStrategy
+from scenario import Scenario
 import ledger
 from ledger import *
 from utility import *
@@ -27,6 +29,7 @@ class TestPersonMethods(unittest.TestCase):
         self.birth_date = datetime(2000, 2, 1)  # 1 February 2000
         self.retirement_date = datetime(2065, 6, 26)  # 26 June 2065
         self.gross_income = Money(100000)  # $100000
+        self.raise_rate = Decimal(1)  # 100%
         self.tax_treatment = Tax(
             {self.initial_year: {
                 Money(0): Decimal('0.1'),
@@ -39,20 +42,48 @@ class TestPersonMethods(unittest.TestCase):
              },
             personal_deduction={self.initial_year: Money(100)},
             credit_rate={self.initial_year: Decimal('0.15')})
-        self.spouse = Person("Spouse", 1998, retirement_date=2063,
-                             gross_income=Money(50000), spouse=None,
-                             tax_treatment=self.tax_treatment,
-                             initial_year=self.initial_year)
-        self.owner = Person(self.name, self.birth_date,
-                            retirement_date=self.retirement_date,
-                            gross_income=Money(100000), spouse=self.spouse,
-                            tax_treatment=self.tax_treatment,
-                            initial_year=self.initial_year)
+        scenario = Scenario(
+            inflation=0,
+            stock_return=1,
+            bond_return=0.5,
+            other_return=0,
+            management_fees=0.03125,
+            initial_year=self.initial_year,
+            num_years=100)
+        self.allocation_strategy = AllocationStrategy(
+            strategy=AllocationStrategy._strategy_n_minus_age,
+            min_equity=Decimal(0.5),
+            max_equity=Decimal(0.5),
+            target=Decimal(0.5),
+            standard_retirement_age=65,
+            risk_transition_period=20,
+            adjust_for_retirement_plan=False,
+            scenario=scenario)
+        self.spouse = Person(
+            name="Spouse",
+            birth_date=1998,
+            retirement_date=2063,
+            gross_income=Money(50000),
+            raise_rate=self.raise_rate,
+            spouse=None,
+            tax_treatment=self.tax_treatment,
+            allocation_strategy=self.allocation_strategy,
+            initial_year=self.initial_year)
+        self.owner = Person(
+            name=self.name,
+            birth_date=self.birth_date,
+            retirement_date=self.retirement_date,
+            gross_income=self.gross_income,
+            raise_rate=self.raise_rate,
+            spouse=self.spouse,
+            tax_treatment=self.tax_treatment,
+            allocation_strategy=self.allocation_strategy,
+            initial_year=self.initial_year)
 
     def test_init(self):
         """ Tests Person.__init__ """
 
-        # Should work when all arguments are passed correctly
+        # Should work when all required arguments are passed correctly
         person = Person(self.name, self.birth_date,
                         retirement_date=self.retirement_date)
         self.assertEqual(person.name, self.name)
@@ -61,16 +92,8 @@ class TestPersonMethods(unittest.TestCase):
         self.assertIsInstance(person.name, str)
         self.assertIsInstance(person.birth_date, datetime)
         self.assertIsInstance(person.retirement_date, datetime)
-
-        # Should work with optional arguments omitted
-        # NOTE: This throws a NotImplementedError in v.0.1 if
-        # retirement_date is None, so pass it explicitly
-        person = Person(self.name, self.birth_date,
-                        retirement_date=self.retirement_date)
-        self.assertEqual(person.name, self.name)
-        self.assertEqual(person.birth_date, self.birth_date)
-        self.assertEqual(person.retirement_date, self.retirement_date)
         self.assertIsNone(person.spouse)
+        self.assertIsNone(person.allocation_strategy)
         self.assertIsNone(person.tax_treatment)
 
         # Should work with strings instead of dates
@@ -134,12 +157,13 @@ class TestPersonMethods(unittest.TestCase):
         self.assertEqual(person.retirement_date.day, retirement_date.day)
 
         # Now confirm that we can pass gross_income, spouse,
-        # tax_treatment, and initial_year
+        # tax_treatment, allocation_strategy, and initial_year
         gross_income = Money(100000)
         person1 = Person(self.name, birth_date,
                          retirement_date=retirement_date,
                          gross_income=gross_income,
                          spouse=None, tax_treatment=self.tax_treatment,
+                         allocation_strategy=self.allocation_strategy,
                          initial_year=self.initial_year)
         self.assertEqual(person1.gross_income, gross_income)
         self.assertEqual(person1.gross_income_history,
@@ -147,6 +171,7 @@ class TestPersonMethods(unittest.TestCase):
         self.assertEqual(person1.tax_treatment, self.tax_treatment)
         self.assertEqual(person1.initial_year, self.initial_year)
         self.assertIsNone(person1.spouse)
+        self.assertEqual(person1.allocation_strategy, self.allocation_strategy)
         self.assertEqual(person1.accounts, set())
 
         # Add a spouse and confirm that both Person objects are updated
@@ -250,27 +275,8 @@ class TestPersonMethods(unittest.TestCase):
         # person = Person(self.name, self.birth_date)
         # self.assertIsNone(person.retirement_age)
 
-    def test_properties(self):
-        initial_year = 2017
-        gross_income = 100
-        tax = Tax(
-            {initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
-            inflation_adjust={2017: 1, 2018: 1, 2019: 1, 2020: 1},
-            personal_deduction={2017: 0})
-        person = Person(
-            'Name', 2000,
-            raise_rate={initial_year+1: 2},
-            retirement_date=self.retirement_date,
-            gross_income=gross_income,
-            tax_treatment=tax,
-            initial_year=initial_year)
-        self.assertEqual(person.gross_income, gross_income)
-        self.assertEqual(person.net_income, 100)
-        person.next_year()  # 200% raise - gross income is now $300
-        self.assertEqual(person.gross_income, 300)
-        self.assertEqual(person.net_income, 250)
-
     def test_next(self):
+        """ Test next_year to confirm that properties are advanced. """
         initial_year = 2017
         gross_income = 100
         tax = Tax(
@@ -279,7 +285,7 @@ class TestPersonMethods(unittest.TestCase):
             personal_deduction={2017: 0})
         person = Person(
             'Name', 2000,
-            raise_rate={initial_year+1: 2},
+            raise_rate=2.0,
             retirement_date=self.retirement_date,
             gross_income=gross_income,
             tax_treatment=tax,
@@ -367,10 +373,28 @@ class TestAccountMethods(unittest.TestCase):
         # objects, so store it here:
         cls.initial_year = 2000
         # Every init requires an owner, so store that here:
+        scenario = Scenario(
+            inflation=0,
+            stock_return=1,
+            bond_return=0.5,
+            other_return=0,
+            management_fees=0.03125,
+            initial_year=cls.initial_year,
+            num_years=100)
+        cls.allocation_strategy = AllocationStrategy(
+            strategy=AllocationStrategy._strategy_n_minus_age,
+            min_equity=Decimal(0.5),
+            max_equity=Decimal(0.5),
+            target=Decimal(0.5),
+            standard_retirement_age=65,
+            risk_transition_period=20,
+            adjust_for_retirement_plan=False,
+            scenario=scenario)
         cls.owner = Person(
             "test", 2000,
             raise_rate={year: 1 for year in range(2000, 2066)},
             retirement_date=2065,
+            allocation_strategy=cls.allocation_strategy,
             initial_year=cls.initial_year)
 
     def test_init(self, *args, **kwargs):
@@ -412,9 +436,9 @@ class TestAccountMethods(unittest.TestCase):
         self.assertIsInstance(account.nper, int)
         self.assertIsInstance(account.initial_year, int)
 
-        # Basic test: Only balance provided.
-        account = self.AccountType(self.owner, *args, balance=balance,
-                                   **kwargs)
+        # Basic test: Only balance and rate provided.
+        account = self.AccountType(
+            self.owner, *args, balance=balance, rate=0, **kwargs)
         self.assertEqual(account.balance_history, {
             Settings.initial_year: balance
             })
@@ -427,6 +451,28 @@ class TestAccountMethods(unittest.TestCase):
         self.assertEqual(account.transactions, {})
         self.assertEqual(account.nper, 1)
         self.assertEqual(account.initial_year, Settings.initial_year)
+
+        # Try again, but this time don't set rate explicitly; instead
+        # use default behaviour and infer its rate from its owner's
+        # asset allocation (which is 50% stocks, 50% bonds, with 75%
+        # return overall)
+        account = self.AccountType(
+            self.owner, *args, balance=balance, **kwargs)
+        self.assertEqual(account.balance_history, {
+            Settings.initial_year: balance
+            })
+        self.assertEqual(account.transactions_history, {
+            Settings.initial_year: {}
+            })
+        self.assertEqual(account.balance, balance)
+        self.assertEqual(account.rate, Decimal(0.75))
+        self.assertEqual(account.rate_history,
+                         {Settings.initial_year: Decimal(0.75)})
+        self.assertEqual(account.transactions, {})
+        self.assertEqual(account.nper, 1)
+        self.assertEqual(account.initial_year, Settings.initial_year)
+        self.assertEqual(account.rate_function,
+                         account.rate_from_asset_allocation)
 
         # Test with (Decimal-convertible) strings as input
         balance = "0"
@@ -481,8 +527,8 @@ class TestAccountMethods(unittest.TestCase):
                                        transactions={2: 1}, **kwargs)
 
         # Let's test invalid Decimal conversions next.
-        # BasicContext causes most errors to raise exceptions
-        # In particular, invalid input will raise InvalidOperation
+        # (BasicContext causes most Decimal-conversion errors to raise
+        # exceptions. Invalid input will raise InvalidOperation)
         decimal.setcontext(decimal.BasicContext)
 
         # Test with values not convertible to Decimal
@@ -509,97 +555,71 @@ class TestAccountMethods(unittest.TestCase):
             if Decimal('NaN') in account.transactions:
                 raise decimal.InvalidOperation()
 
+        # Finally, test passing an invalid owner:
+        with self.assertRaises(TypeError):
+            account = self.AccountType("invalid owner", *args, **kwargs)
+
+    def test_nper(self, *args, **kwargs):
+        """ Test setting nper to various values, valid and otherwise. """
         # Test valid nper values:
         # Continuous (can be represented as either None or 'C')
-        account = self.AccountType(self.owner, *args,
-                                   balance=balance, nper='C',
-                                   **kwargs)
+        account = self.AccountType(self.owner, *args, nper='C', **kwargs)
         self.assertEqual(account.nper, None)
         self.assertIsInstance(account.nper, (type(None), str))
 
         # Daily
-        account = self.AccountType(self.owner, *args,
-                                   balance=balance, nper='D',
-                                   **kwargs)
+        account = self.AccountType(self.owner, *args, nper='D', **kwargs)
         self.assertEqual(account.nper, 365)
         self.assertIsInstance(account.nper, int)
 
         # Weekly
-        account = self.AccountType(self.owner, *args,
-                                   balance=balance, nper='W',
-                                   **kwargs)
+        account = self.AccountType(self.owner, *args, nper='W', **kwargs)
         self.assertEqual(account.nper, 52)
 
         # Biweekly
-        account = self.AccountType(self.owner, *args,
-                                   balance=balance, nper='BW',
-                                   **kwargs)
+        account = self.AccountType(self.owner, *args, nper='BW', **kwargs)
         self.assertEqual(account.nper, 26)
 
         # Semi-monthly
-        account = self.AccountType(self.owner, *args,
-                                   balance=balance, nper='SM',
-                                   **kwargs)
+        account = self.AccountType(self.owner, *args, nper='SM', **kwargs)
         self.assertEqual(account.nper, 24)
 
         # Monthly
-        account = self.AccountType(self.owner, *args,
-                                   balance=balance, nper='M',
-                                   **kwargs)
+        account = self.AccountType(self.owner, *args, nper='M', **kwargs)
         self.assertEqual(account.nper, 12)
 
         # Bimonthly
-        account = self.AccountType(self.owner, *args,
-                                   balance=balance, nper='BM',
-                                   **kwargs)
+        account = self.AccountType(self.owner, *args, nper='BM', **kwargs)
         self.assertEqual(account.nper, 6)
 
         # Quarterly
-        account = self.AccountType(self.owner, *args,
-                                   balance=balance, nper='Q',
-                                   **kwargs)
+        account = self.AccountType(self.owner, *args, nper='Q', **kwargs)
         self.assertEqual(account.nper, 4)
 
         # Semiannually
-        account = self.AccountType(self.owner, *args,
-                                   balance=balance, nper='SA',
-                                   **kwargs)
+        account = self.AccountType(self.owner, *args, nper='SA', **kwargs)
         self.assertEqual(account.nper, 2)
 
         # Annually
-        account = self.AccountType(self.owner, *args,
-                                   balance=balance, nper='A',
-                                   **kwargs)
+        account = self.AccountType(self.owner, *args, nper='A', **kwargs)
         self.assertEqual(account.nper, 1)
 
         # Test invalid nper values:
         with self.assertRaises(ValueError):
-            account = self.AccountType(self.owner, *args,
-                                       balance=balance, nper=0,
-                                       **kwargs)
+            account = self.AccountType(self.owner, *args, nper=0, **kwargs)
 
         with self.assertRaises(ValueError):
-            account = self.AccountType(self.owner, *args,
-                                       balance=balance, nper=-1,
-                                       **kwargs)
+            account = self.AccountType(self.owner, *args, nper=-1, **kwargs)
 
         with self.assertRaises(TypeError):
-            account = self.AccountType(self.owner, *args,
-                                       balance=balance, nper=0.5,
-                                       **kwargs)
+            account = self.AccountType(self.owner, *args, nper=0.5, **kwargs)
 
         with self.assertRaises(TypeError):
-            account = self.AccountType(self.owner, *args,
-                                       balance=balance, nper=1.5,
-                                       **kwargs)
+            account = self.AccountType(self.owner, *args, nper=1.5, **kwargs)
 
         with self.assertRaises(ValueError):
-            account = self.AccountType(self.owner, *args,
-                                       balance=balance, nper='invalid input',
+            account = self.AccountType(self.owner, *args, nper='invalid',
                                        **kwargs)
-
-        with self.assertRaises(TypeError):
-            account = self.AccountType("invalid owner", *args, **kwargs)
 
     def test_returns(self, *args, **kwargs):
         """ Tests Account.returns and Account.returns_history. """
