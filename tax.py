@@ -76,10 +76,10 @@ class Tax(object):
             `tax_brackets[year][$10] * $10 + tax_brackets[year][$100] *
             $100`.
         inflation_adjust: A method with the following form:
-            `inflation_adjust(val, this_year, target_year)`.
-            Returns a Money object (assuming Money-typed `val` input).
-            Finds a nominal value in `target_year` with the same real
-            value as `val`, a nominal value in `this_year`. Optional.
+            `inflation_adjust(target_year, base_year)`.
+            Returns a Decimal scaling factor. Multiplying this by a
+            nominal value in base_year will yield a nominal value in
+            target_year with the same real value. Optional.
             If not provided, all values are assumed to be in real terms,
             so no inflation adjustment is performed.
 
@@ -347,7 +347,37 @@ class Tax(object):
 
     def __call__(self, income, year,
                  other_deductions=None, other_credits=None):
-        """ Makes `Tax` objects callable. """
+        """ Determines taxes owing on one or more income sources.
+
+        Each `Person` object passed as input may have a number of tax
+        sources (e.g. `Account`s, `Benefit`s) associated with them,
+        which `Tax` will take into account when calculating taxes.
+        They don't need to be passed explicitly.
+
+        Args:
+            income (Money, Person, iterable): Taxable income for the
+                year, either as a single scalar Money object, a single
+                Person object, or as an iterable (list, set, etc.) of
+                Person objects.
+            year (int): The taxation year. This determines which tax
+                rules and inflation-adjusted brackets are used.
+            other_deductions (Money, dict[Person, Money]):
+                Any other deductions which can be applied and which
+                aren't modelled by the income sources themselves.
+                These will generally be itemized deductions.
+                If `income` is passed as a 
+                It's a good idea to be familiar with the Tax
+                implementation you're working with before passing any of
+                these, otherwise you risk double-counting.
+                Optional.
+            other_credits (Money): Any other tax credits which can be
+                applied and which aren't evident from the income sources
+                themselves. These are usually boutique tax credits.
+                Optional.
+
+            Returns:
+                Money: The total amount of tax owing for the year.
+        """
         year = int(year)
         # The different tax_* methods have different defaults for
         # optional arguments, so build a kwargs dict:
