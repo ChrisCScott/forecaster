@@ -3,13 +3,6 @@ This list sets out various changes or additions that are planned for the
 next release version.
 
 ## High Priority
-* `TaxCanada`: Implement a Canada-specific Tax subclass that mimics the Tax
-class (i.e. one object should determine both federal and provincial
-taxes with the same `__init__` and `__call__` signatures.)
-* `TestTaxCanada`: Implement a test case for the Canada-specific Tax
-subclass.
-
-## Medium Priority
 * `Forecaster`: Implement `Forecaster` class with these features:
     * Accepts a `Settings` object and an `inputs` dict and initializes
     a Forecast accordingly. This will involve initializing the various
@@ -21,6 +14,14 @@ subclass.
 `Settings` as an input to all `Ledger`, `Tax`, `Scenario`, or `Strategy`
 classes. Make necessary arguments non-defaulted and use sensible
 explicit defaults for each object.
+* `ForecasterCanada`: Implement `ForecasterCanada` and integrate with
+`SettingsCanada`.
+    * Provide methods in `Forecaster` which apply settings defaults for
+    `Account`s and can accept arguments which allow them to build
+    arbitrary `Account` subclasses (like RRSP). Presumably the
+    necessary args are `AccountType`, `*args`, and `**kwargs`.
+
+## Medium Priority
 * `Forecast`: Determine refunds and other contributions
 * `Forecast`: Revise tax treatment to deal with insufficient tax
 withheld (include a contribution reduction in the following year to pay
