@@ -365,14 +365,17 @@ class Tax(object):
                 Any other deductions which can be applied and which
                 aren't modelled by the income sources themselves.
                 These will generally be itemized deductions.
-                If `income` is passed as a 
+                If `income` is passed as an iterable, this should also
+                be an iterable; otherwise it should be a Money object.
                 It's a good idea to be familiar with the Tax
                 implementation you're working with before passing any of
                 these, otherwise you risk double-counting.
                 Optional.
-            other_credits (Money): Any other tax credits which can be
-                applied and which aren't evident from the income sources
-                themselves. These are usually boutique tax credits.
+            other_credits (Money, dict[Person, Money]):
+                Any other tax credits which can be applied and which
+                aren't modelled by the income sources themselves.
+                These are usually boutique tax credits.
+                See `other_deductions` for further comments.
                 Optional.
 
             Returns:
