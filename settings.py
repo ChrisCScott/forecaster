@@ -17,9 +17,9 @@ class Settings:
     # TODO: Read defaults from a file, fall back to the below values
     # where the .ini doesn't provide a value. (This sounds like a good
     # role for an __init__ function...)
+    """ Application-level and UI defaults """
     initial_year = datetime.datetime.now().year  # Model starts with this year
     display_year = initial_year  # Base year for displaying real-valued amounts
-    num_years = 100  # Model this number of years from the initial_year
     num_children = 3  # How many children may be represented
     currency = 'CAD'  # Use Canadian dollars as the default currency
 
@@ -29,19 +29,17 @@ class Settings:
     bond_return = 0.04
     other_return = inflation + 0.01
     management_fees = 0.005
-    person1_raise_rate = inflation + 0.01
-    person2_raise_rate = inflation + 0.01
+    num_years = 100  # Model this number of years from the initial_year
 
-    """ Defaults for `Strategy` instances. """
-    # TODO: update to match an actual Person data model
+    """ Defaults for `Person` instances. """
     person1_name = 'Person 1'
-    person1_birth_date = datetime.datetime.now().replace(
-        year=datetime.datetime.now().year-30)
-    person1_retirement_date = 65
-    person2_name = 'Person 2'
-    person2_birth_date = datetime.datetime.now().replace(
-        year=datetime.datetime.now().year-30)
-    person2_retirement_date = 65
+    person1_birth_date = '1 January 1980'
+    person1_retirement_date = '31 December 2045'
+    person1_raise_rate = inflation + 0.01
+    person2_name = None
+    person2_birth_date = None
+    person2_retirement_date = None
+    person2_raise_rate = None
 
     ''' ContributionStrategy defaults '''
     contribution_strategy = 'Percentage of net income'
@@ -82,8 +80,8 @@ class Settings:
     debt_payment_timing = 'end'
 
     ''' Debt defaults '''
-    DebtReductionRate = 1
-    DebtAcceleratePayment = False
+    debt_reduction_rate = 1
+    debt_accelerate_payment = False
 
     ''' RESP defaults '''
     RESPChildOtherIncome = 0
