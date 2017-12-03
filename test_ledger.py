@@ -344,6 +344,26 @@ class TestPersonMethods(unittest.TestCase):
                         tax_treatment=tax, initial_year=initial_year)
         self.assertEqual(person.tax_deduction, Money(0))
 
+    def test_inputs(self):
+        initial_year = 2017
+        gross_income = 500
+        inputs = {'gross_income': {
+            initial_year: Money(1000), initial_year+2: Money(0)
+            }
+        }
+        person = Person('Name', 2000,
+                        gross_income=gross_income,
+                        raise_rate=1,
+                        initial_year=initial_year,
+                        inputs=inputs)
+        # We've gross income for the first and third years; the second
+        # year should be set programmatically based on a 100% raise.
+        self.assertEqual(person.gross_income, Money(1000))
+        person.next_year()
+        self.assertEqual(person.gross_income, Money(2000))
+        person.next_year()
+        self.assertEqual(person.gross_income, Money(0))
+
 
 class TestAccountMethods(unittest.TestCase):
     """ A test suite for the `Account` class.
@@ -974,9 +994,9 @@ class TestDebtMethods(unittest.TestCase):
         # Test default init.
         account = self.AccountType(self.owner, *args, **kwargs)
         self.assertEqual(account.minimum_payment, Money(0))
-        self.assertEqual(account.reduction_rate, Settings.DebtReductionRate)
+        self.assertEqual(account.reduction_rate, Settings.debt_reduction_rate)
         self.assertEqual(account.accelerate_payment,
-                         Settings.DebtAcceleratePayment)
+                         Settings.debt_accelerate_payment)
 
         # Test init with appropriate-type args.
         minimum_payment = Money(100)

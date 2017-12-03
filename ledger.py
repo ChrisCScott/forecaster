@@ -59,8 +59,13 @@ class recorded_property(property):
                 return fget(obj)
 
         def setter(obj, val):
-            history_dict = getattr(obj, self.history_dict_name)
-            history_dict[obj.this_year] = val
+            # Don't overwrite a value provided via an inputs dict:
+            if not (
+                self.__name__ in obj.inputs and
+                obj.this_year in obj.inputs[self.__name__]
+            ):
+                history_dict = getattr(obj, self.history_dict_name)
+                history_dict[obj.this_year] = val
 
         super().__init__(fget=getter, fset=setter, fdel=None, doc=doc)
 
@@ -179,22 +184,40 @@ class Ledger(object, metaclass=LedgerType):
             with each call to next_year()
         next_year(): A method that increments this_year.
     """
-    def __init__(self, initial_year=None, settings=Settings):
-        """ Inits IncrementableByYear. """
+    def __init__(self, initial_year=None, settings=Settings, inputs={}):
+        """ Inits IncrementableByYear.
+
+        Behaviour when a `year` in `inputs` is equal to `initial_year`
+        is undefined. Initialization is not guaranteed to respect such a
+        value; if you want to set an initial-year value, it's better to
+        pass it as an appropriate argument at `__init__` time.
+
+        Args:
+            initial_year (int): The initial year for the object.
+            settings (Settings): An object with various
+                application-level default values.
+            inputs (dict[str, dict[int, *]]): `{property: {year: val}}`
+                pairs. Every `val` is treated as a manual entry that
+                overrides any programmatic value for that year generated
+                by `next_year`.
+        """
         self.initial_year = int(
             initial_year
             if initial_year is not None
             else settings.initial_year)
         self.this_year = self.initial_year
+        self.inputs = inputs
 
         # Build a history dict for each recorded_property
         for prop in self._recorded_properties:
-            setattr(self, prop.history_dict_name, {})
-
-        # NOTE: We don't call cache_properties here because subclasses
-        # may need to do more initing before properties can be called.
-        # Leave it to each subclass with cached properties to call
-        # cached_properties at the end of its init.
+            # Use input values if available for this property:
+            if prop.__name__ in inputs:
+                setattr(self, prop.history_dict_name,
+                        dict(inputs[prop.__name__]))
+            # Otherwise, use an empty dict and leave it to __init__ and
+            # next_year to fill it programmatically.
+            else:
+                setattr(self, prop.history_dict_name, {})
 
     def next_year(self, *args, **kwargs):
         """ Advances to the next year. """
@@ -327,7 +350,7 @@ class Person(TaxSource):
     def __init__(self, name, birth_date, retirement_date=None,
                  gross_income=0, raise_rate=None, spouse=None,
                  tax_treatment=None, allocation_strategy=None,
-                 initial_year=None, settings=Settings):
+                 initial_year=None, settings=Settings, inputs={}):
         """ Constructor for `Person`.
 
         Attributes:
@@ -369,6 +392,15 @@ class Person(TaxSource):
             settings (Settings): Defines default values (initial year,
                 inflow/outflow transaction timing, etc.). Optional; uses
                 global Settings class attributes if None given.
+            inputs (dict[str, dict[int, *]]): `{attr: {year: val}}`
+                pairs, where `attr` is one of the following:
+                    taxable_income
+                    tax_withheld
+                    tax_credit
+                    tax_deduction
+                    gross_income
+                    net_income
+                    raise_rate
 
         Returns:
             An instance of class `Person`
@@ -379,7 +411,8 @@ class Person(TaxSource):
             ValueError: retirement_date precedes birth_date
             OverflowError: birth_date or retirement_date are too large
         """
-        super().__init__(initial_year, settings)
+        super().__init__(initial_year=initial_year, settings=settings,
+                         inputs=inputs)
 
         # For attributes wrapped by ordinary properties, create hidden
         # attributes and assign to them using the properties:
@@ -493,12 +526,17 @@ class Person(TaxSource):
 
     @property
     def raise_rate_function(self):
-        """ """
+        """ A function that returns the Person's raise for a given year.
+
+        Returns:
+            callable: A function with signature
+            `raise_rate(year) -> Decimal`.
+        """
         return self._raise_rate_function
 
     @raise_rate_function.setter
     def raise_rate_function(self, val) -> None:
-        """ """
+        """ Sets raise_rate_function. """
         # Is raise_rate isn't callable, convert it to a suitable method:
         if not callable(val):  # Make callable if dict or scalar
             if isinstance(val, dict):
@@ -743,16 +781,12 @@ class Account(TaxSource):
             inflow/outflow transaction timing, etc.). Optional; uses
             global Settings class attributes if None given.
     """
-    def __init__(self,
-                 owner,
-                 balance=0,
-                 rate=None,
-                 transactions={},
-                 nper=1,
-                 initial_year=None,
-                 default_inflow_timing=None,
-                 default_outflow_timing=None,
-                 settings=Settings):
+    def __init__(
+        self, owner,
+        balance=0, rate=None, transactions={}, nper=1, initial_year=None,
+        default_inflow_timing=None, default_outflow_timing=None,
+        settings=Settings, inputs={}
+    ):
         """ Constructor for `Account`.
 
         This constructor receives only values for the first year.
@@ -776,7 +810,8 @@ class Account(TaxSource):
                 explicitly provided).
             settings (Settings): Provides default values.
         """
-        super().__init__(initial_year, settings)
+        super().__init__(initial_year=initial_year, settings=settings,
+                         inputs=inputs)
 
         # Set hidden attributes to support properties that need them to
         # be set in advance:
@@ -1188,21 +1223,24 @@ class Debt(Account):
     # accelerate_payment to Money type and test for >0?) to set a cap on
     # how much to accelerate payments by.
 
-    def __init__(self, owner, balance=0, rate=0, transactions={},
-                 nper=1, initial_year=None, settings=Settings,
-                 minimum_payment=Money(0), reduction_rate=1,
-                 accelerate_payment=False):
+    def __init__(
+        self, owner,
+        balance=0, rate=0, transactions={}, nper=1, initial_year=None,
+        settings=Settings, inputs={},
+        minimum_payment=Money(0), reduction_rate=1, accelerate_payment=False
+    ):
         """ Constructor for `Debt`. """
         super().__init__(
             owner, balance=balance, rate=rate, transactions=transactions,
-            nper=nper, initial_year=initial_year, settings=settings)
+            nper=nper, initial_year=initial_year,
+            settings=settings, inputs=inputs)
         self.minimum_payment = Money(minimum_payment)
         self.reduction_rate = Decimal(reduction_rate) \
             if reduction_rate is not None \
-            else Settings.DebtReductionRate
+            else Settings.debt_reduction_rate
         self.accelerate_payment = bool(accelerate_payment) \
             if accelerate_payment is not None \
-            else Settings.DebtAcceleratePayment
+            else Settings.debt_accelerate_payment
 
         # Debt must have a negative balance
         if self.balance > 0:

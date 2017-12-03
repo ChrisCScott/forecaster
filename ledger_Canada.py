@@ -30,13 +30,14 @@ class RegisteredAccount(Account):
     """
     def __init__(self, owner, balance=0, rate=None,
                  transactions={}, nper=1, initial_year=None,
-                 settings=SettingsCanada,
+                 settings=SettingsCanada, inputs={},
                  contribution_room=None, contributor=None,
                  inflation_adjust=None):
         """ Initializes a RegisteredAccount object. """
         super().__init__(
             owner, balance=balance, rate=rate, transactions=transactions,
-            nper=nper, initial_year=initial_year, settings=settings)
+            nper=nper, initial_year=initial_year, settings=settings,
+            inputs=inputs)
 
         # If no contributor was provided, assume it's the owner.
         if contributor is None:
@@ -125,14 +126,14 @@ class RRSP(RegisteredAccount):
     # Explicitly repeat superclass args for the sake of intellisense.
     def __init__(self, owner, balance=0, rate=None,
                  transactions={}, nper=1, initial_year=None,
-                 settings=SettingsCanada,
+                 settings=SettingsCanada, inputs={},
                  contribution_room=None, contributor=None,
                  inflation_adjust=None):
         """ Initializes an RRSP object. """
         super().__init__(
             owner, inflation_adjust=inflation_adjust, balance=balance,
             rate=rate, transactions=transactions, nper=nper,
-            initial_year=initial_year, settings=settings,
+            initial_year=initial_year, settings=settings, inputs=inputs,
             contribution_room=contribution_room, contributor=contributor)
 
         # Although `person` might provide a retirement_age, the RRSP
@@ -296,13 +297,14 @@ class TFSA(RegisteredAccount):
 
     def __init__(self, owner, balance=0, rate=None,
                  transactions={}, nper=1, initial_year=None,
-                 settings=SettingsCanada, contribution_room=None,
-                 contributor=None, inflation_adjust=None):
+                 settings=SettingsCanada, inputs={},
+                 contribution_room=None, contributor=None,
+                 inflation_adjust=None):
         """ Initializes a TFSA object. """
         super().__init__(
             owner, inflation_adjust=inflation_adjust, balance=balance,
             rate=rate, transactions=transactions, nper=nper,
-            initial_year=initial_year, settings=settings,
+            initial_year=initial_year, settings=settings, inputs=inputs,
             contribution_room=contribution_room, contributor=contributor)
 
         # This is our baseline for estimating contribution room
@@ -428,11 +430,13 @@ class TaxableAccount(Account):
     # (But we might want to also model rental income as well...)
 
     def __init__(self, owner, balance=0, rate=None, transactions={},
-                 nper=1, initial_year=None, settings=SettingsCanada, acb=None):
+                 nper=1, initial_year=None, settings=SettingsCanada,
+                 inputs={}, acb=None):
         """ Constructor for `TaxableAccount`. """
         super().__init__(
             owner, balance=balance, rate=rate, transactions=transactions,
-            nper=nper, initial_year=initial_year, settings=settings)
+            nper=nper, initial_year=initial_year, settings=settings,
+            inputs=inputs)
 
         # If acb wasn't provided, assume there have been no capital
         # gains or losses, so acb = balance.
