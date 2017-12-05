@@ -35,10 +35,12 @@ class Settings:
     person1_name = 'Person 1'
     person1_birth_date = '1 January 1980'
     person1_retirement_date = '31 December 2045'
+    person1_gross_income = Decimal('50000')
     person1_raise_rate = inflation + 0.01
     person2_name = None
     person2_birth_date = None
     person2_retirement_date = None
+    person2_gross_income = None
     person2_raise_rate = None
 
     ''' ContributionStrategy defaults '''
