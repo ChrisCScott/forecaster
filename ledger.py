@@ -7,14 +7,6 @@ from datetime import datetime
 from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
 from utility import *
-from settings import Settings
-
-# TODO: Consider revising all Account-like objects to delete the
-# settings argument and make necessary arguments non-defaulted
-# (i.e. leave it to Forecaster to interact with Settings).
-# Modify next_year() to take an optional arg for each attribute being
-# updated, which will allow calling code to pass in an overriding input
-# value when appropriate.
 
 
 class recorded_property(property):
@@ -182,9 +174,8 @@ class Ledger(object, metaclass=LedgerType):
         initial_year (int): The initial year for the object.
         this_year (int): The current year for the object. Incremented
             with each call to next_year()
-        next_year(): A method that increments this_year.
     """
-    def __init__(self, initial_year=None, settings=Settings, inputs={}):
+    def __init__(self, initial_year, inputs={}):
         """ Inits IncrementableByYear.
 
         Behaviour when a `year` in `inputs` is equal to `initial_year`
@@ -194,17 +185,12 @@ class Ledger(object, metaclass=LedgerType):
 
         Args:
             initial_year (int): The initial year for the object.
-            settings (Settings): An object with various
-                application-level default values.
             inputs (dict[str, dict[int, *]]): `{property: {year: val}}`
                 pairs. Every `val` is treated as a manual entry that
                 overrides any programmatic value for that year generated
                 by `next_year`.
         """
-        self.initial_year = int(
-            initial_year
-            if initial_year is not None
-            else settings.initial_year)
+        self.initial_year = int(initial_year)
         self.this_year = self.initial_year
         self.inputs = inputs
 
@@ -235,6 +221,10 @@ class Ledger(object, metaclass=LedgerType):
                     self, recorded_property.__name__)
         # Advance to the next year after recording properties:
         self.this_year += 1
+
+    # TODO: implement __deepcopy__ member for Ledger that shallow-
+    # copies `inputs` (and other non-mutable attributes) but does
+    # deep-copy *_history dicts.
 
 
 class TaxSource(Ledger):
@@ -324,6 +314,9 @@ class Person(TaxSource):
         net_income (Money): Annual net income for the current year.
         net_income_history (dict[int, Money]): Net income for all
             years on record.
+        raise_rate_function (callable): A function for determining the
+            Person's raise rate for a given year. A callable object with
+            the form `raise_rate_function(year) -> Decimal`.
         raise_rate (Decimal): The person's raise in gross income this
             year relative to last year.
         raise_rate_history (dict[int, Decimal]): Raises for all years
@@ -347,16 +340,16 @@ class Person(TaxSource):
     # to provide the spousal tax credit, and replace the `tax_treatment`
     # arg with a `province` (str) arg?
 
-    def __init__(self, name, birth_date, retirement_date=None,
-                 gross_income=0, raise_rate=None, spouse=None,
-                 tax_treatment=None, allocation_strategy=None,
-                 initial_year=None, settings=Settings, inputs={}):
+    def __init__(self, initial_year, name, birth_date, retirement_date=None,
+                 gross_income=0, raise_rate=0, spouse=None,
+                 tax_treatment=None, allocation_strategy=None, inputs={}):
         """ Constructor for `Person`.
 
         Attributes:
             accounts (set): All accounts naming this Person as an owner.
 
         Args:
+            initial_year (int): The first year of recorded data.
             name (str): The person's name.
             birth_date (datetime): The person's date of birth.
                 May be passed as any value that can be cast to str and
@@ -387,13 +380,9 @@ class Person(TaxSource):
             allocation_strategy (AllocationStrategy): The person's
                 asset allocation strategy for accounts they own. This
                 can be used by accounts to determine their raise_rate.
-            initial_year (int): The first year for which account data is
-                recorded.
-            settings (Settings): Defines default values (initial year,
-                inflow/outflow transaction timing, etc.). Optional; uses
-                global Settings class attributes if None given.
             inputs (dict[str, dict[int, *]]): `{attr: {year: val}}`
-                pairs, where `attr` is one of the following:
+                pairs, where `attr` is any one of `Person`'s recorded
+                propertes, namely:
                     taxable_income
                     tax_withheld
                     tax_credit
@@ -411,8 +400,7 @@ class Person(TaxSource):
             ValueError: retirement_date precedes birth_date
             OverflowError: birth_date or retirement_date are too large
         """
-        super().__init__(initial_year=initial_year, settings=settings,
-                         inputs=inputs)
+        super().__init__(initial_year=initial_year, inputs=inputs)
 
         # For attributes wrapped by ordinary properties, create hidden
         # attributes and assign to them using the properties:
@@ -425,13 +413,10 @@ class Person(TaxSource):
         self._tax_treatment = None
         self._contribution_room = {}
         self._contribution_groups = {}
-        self.name = name if name is not None else settings.person1_name
-        self.birth_date = birth_date if birth_date is not None \
-            else settings.person1_birth_date
-        self.retirement_date = retirement_date if retirement_date is not None \
-            else settings.person1_retirement_date
-        self.raise_rate_function = raise_rate if raise_rate is not None \
-            else settings.person1_raise_rate
+        self.name = name
+        self.birth_date = birth_date
+        self.retirement_date = retirement_date
+        self.raise_rate_function = raise_rate
         self.spouse = spouse
         self.allocation_strategy = allocation_strategy
         # Set up tax treatment before calling tax_withheld()
@@ -777,15 +762,12 @@ class Account(TaxSource):
             compounding frequency (unlike the rate)
         initial_year (int): The first year for which account data is
             recorded.
-        settings (Settings): Defines default values (initial year,
-            inflow/outflow transaction timing, etc.). Optional; uses
-            global Settings class attributes if None given.
     """
     def __init__(
         self, owner,
-        balance=0, rate=None, transactions={}, nper=1, initial_year=None,
-        default_inflow_timing=None, default_outflow_timing=None,
-        settings=Settings, inputs={}
+        balance=0, rate=None, transactions={}, nper=1,
+        default_inflow_timing='end', default_outflow_timing='end',
+        inputs={}, initial_year=None
     ):
         """ Constructor for `Account`.
 
@@ -808,10 +790,16 @@ class Account(TaxSource):
             default_outflow_timing (Decimal): The default timing used
                 for outflow transactions (when a timing is not
                 explicitly provided).
-            settings (Settings): Provides default values.
         """
-        super().__init__(initial_year=initial_year, settings=settings,
-                         inputs=inputs)
+        # Use the explicitly-provided initial year if available,
+        # otherwise default to the owner's initial year:
+        if initial_year is None:
+            if not hasattr(owner, 'initial_year'):
+                raise TypeError(
+                    'Account: owner must have initial_year attribute.')
+            else:
+                initial_year = owner.initial_year
+        super().__init__(initial_year=initial_year, inputs=inputs)
 
         # Set hidden attributes to support properties that need them to
         # be set in advance:
@@ -822,18 +810,17 @@ class Account(TaxSource):
         # Set the various property values based on inputs:
         self.owner = owner
         self.balance = Money(balance)
-        # If rate is not provided, infer from owner's asset allocation:
-        self.rate_function = rate if rate is not None else \
-            self.rate_from_asset_allocation
+        # If rate is not provided, infer from owner's asset allocation
+        # or set to 0 if no asset allocation is defined:
+        if rate is None:
+            if self.owner.allocation_strategy is not None:
+                rate = self.rate_from_asset_allocation
+            else:
+                rate = 0
+        self.rate_function = rate
         self.nper = self._conv_nper(nper)
-        self._inflow_timing = when_conv(
-            default_inflow_timing
-            if default_inflow_timing is not None
-            else settings.transaction_in_timing)
-        self._outflow_timing = when_conv(
-            default_outflow_timing
-            if default_outflow_timing is not None
-            else settings.transaction_out_timing)
+        self._inflow_timing = when_conv(default_inflow_timing)
+        self._outflow_timing = when_conv(default_outflow_timing)
         # NOTE: returns is calculated lazily
 
         # Add each transaction manually to populate the transactions
@@ -1225,22 +1212,18 @@ class Debt(Account):
 
     def __init__(
         self, owner,
-        balance=0, rate=0, transactions={}, nper=1, initial_year=None,
-        settings=Settings, inputs={},
-        minimum_payment=Money(0), reduction_rate=1, accelerate_payment=False
+        balance=0, rate=None, transactions={}, nper=1,
+        inputs={}, initial_year=None, minimum_payment=Money(0),
+        reduction_rate=1, accelerate_payment=False, **kwargs
     ):
         """ Constructor for `Debt`. """
         super().__init__(
-            owner, balance=balance, rate=rate, transactions=transactions,
-            nper=nper, initial_year=initial_year,
-            settings=settings, inputs=inputs)
+            owner, balance=balance, rate=rate,
+            transactions=transactions, nper=nper,
+            inputs=inputs, initial_year=initial_year, **kwargs)
         self.minimum_payment = Money(minimum_payment)
-        self.reduction_rate = Decimal(reduction_rate) \
-            if reduction_rate is not None \
-            else Settings.debt_reduction_rate
-        self.accelerate_payment = bool(accelerate_payment) \
-            if accelerate_payment is not None \
-            else Settings.debt_accelerate_payment
+        self.reduction_rate = Decimal(reduction_rate)
+        self.accelerate_payment = bool(accelerate_payment)
 
         # Debt must have a negative balance
         if self.balance > 0:

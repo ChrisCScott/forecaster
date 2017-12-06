@@ -1,7 +1,7 @@
 """ Basic economic classes, such as `Scenario` and `Money`. """
 import collections
 from decimal import Decimal
-from settings import Settings
+from utility import *
 
 
 class Scenario(object):
@@ -23,36 +23,22 @@ class Scenario(object):
             bonds.
         other_return (dict): A dict of {int, Decimal} pairs where the
             key is the year and the Decimal is the rate of return for
-            stocks.
-            Optional. If not provided, uses value from Settings.
+            stocks. Optional.
         management_fees (dict): A dict of {int, Decimal} pairs where the
             key is the year and the Decimal is the management fees on
-            investments.
-            Optional. If not provided, uses value from Settings.
-        person1_raise_rate (dict): A dict of {int, Decimal} pairs where
-            the key is the year and the Decimal is the percentage rate
-            of growth in wages for person1 (e.g. a 3% raise is
-            `Decimal(0.03)`).
-            Optional. If not provided, uses value from Settings.
-        person2_raise_rate (dict): A dict of {int, Decimal} pairs where
-            the key is the year and the Decimal is the percentage rate
-            of growth in wages for person2 (e.g. a 3% raise is
-            `Decimal(0.03)`).
-            Optional. If not provided, uses value from Settings.
-        initial_year (int): The first year of the simulation.
-            Optional. If not provided, uses value from Settings.
+            investments. Optional.
+        initial_year (int): The first year of the simulation. Optional.
     """
 
-    def __init__(self, inflation=None, stock_return=None, bond_return=None,
-                 other_return=None, management_fees=None, initial_year=None,
-                 num_years=None, settings=Settings, **kwargs):
+    def __init__(
+        self, initial_year, num_years,
+        inflation=0, stock_return=0, bond_return=0, other_return=0,
+        management_fees=0, **kwargs
+    ):
         """ Constructor for `Scenario`.
 
         Arguments may be dicts (of {year, value} pairs), lists (or
         similar `Sequence`) or scalar values.
-
-        When an argument is not provided, the corresponding value from
-        the defaults provided by `settings` is used.
 
         Args:
             inflation (Decimal, list, dict): The rate of inflation.
@@ -78,31 +64,16 @@ class Scenario(object):
             ValueError: Input lists not of matching lengths.
         """
         # Set the years that the Scenario spans:
-        # NOTE: If we decouple Scenario from Settings for implicit init,
-        # it would make sense to implicitly set these values by
-        # inspecting other inputs. E.g. Find initial_year by doing
-        # `max(min(d) for d in dict_inputs)`
-        # and find num years by doing
-        # `min(max(d) for d in dict_inputs) - initial_year + 1`
-        # (But be sure to check for negative num_year)
-        # This won't work if all inputs are non-dict, which is probably
-        # OK; test for that situation as well.
-        self.initial_year = int(initial_year) if initial_year is not None \
-            else int(settings.initial_year)
-        self.num_years = int(num_years) if num_years is not None \
-            else int(settings.num_years)
+        self.initial_year = int(initial_year)
+        self.num_years = int(num_years)
 
         # Now build dicts from the inputs
-        self.inflation = self._build_dict(
-            inflation, self.initial_year, settings.inflation)
-        self.stock_return = self._build_dict(
-            stock_return, self.initial_year, settings.stock_return)
-        self.bond_return = self._build_dict(
-            bond_return, self.initial_year, settings.bond_return)
-        self.other_return = self._build_dict(
-            other_return, self.initial_year, settings.other_return)
-        self.management_fees = self._build_dict(
-            management_fees, self.initial_year, settings.management_fees)
+        self.inflation = self._build_dict(inflation, self.initial_year)
+        self.stock_return = self._build_dict(stock_return, self.initial_year)
+        self.bond_return = self._build_dict(bond_return, self.initial_year)
+        self.other_return = self._build_dict(other_return, self.initial_year)
+        self.management_fees = self._build_dict(management_fees,
+                                                self.initial_year)
 
     @staticmethod
     def _build_dict(input=None, initial_year=None, default=None):
@@ -194,11 +165,6 @@ class Scenario(object):
         """ Returns the discount to be applied over the period from
         `year1` to `year2`. If `year1 > year2` then the discount rate is
         inverted. """
-
-        # TODO: Cache list of accumulations from Settings.displayYear
-        # to each other year? This method gets a lot of use, so it would
-        # be more efficient. But remember to check for changes to
-        # Settings.displayYear. """
         accum = 1
         if year1 <= year2:
             # Find the product of all intervening years' discount rates

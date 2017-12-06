@@ -7,7 +7,7 @@ from decimal import Decimal
 from random import Random
 from ledger_Canada import *
 from tax import Tax
-from settings import Settings
+from constants_Canada import ConstantsCanada as Constants
 from utility import *
 from test_ledger import TestAccountMethods
 from test_helper import *
@@ -24,16 +24,11 @@ class TestRegisteredAccountMethods(TestAccountMethods):
         cls.AccountType = RegisteredAccount
 
         # Randomly generate inflation adjustments based on inflation
-        # rates of 1%-20%. Be sure to include both Settings.initial_year
-        # and cls.initial_year in the range, since we use default-valued
-        # inits a lot (which calls Settings.initial_year).
-        # Add a few extra years on to the end for testing purposes.
-        cls.inflation_adjustments = {
-            min(cls.initial_year, Settings.initial_year): Decimal(1)
-        }
+        # rates of 1%-20%. Add a few extra years on to the end for
+        # testing purposes.
+        cls.inflation_adjustments = {cls.initial_year: Decimal(1)}
         cls.extend_inflation_adjustments(
-            min(cls.inflation_adjustments),
-            max(cls.initial_year, Settings.initial_year) + 5)
+            min(cls.inflation_adjustments), cls.initial_year + 5)
 
         # HACK: Assigning directly to cls.inflation_adjust creates a
         # bound method, so we need to create a static method and then
@@ -82,32 +77,30 @@ class TestRegisteredAccountMethods(TestAccountMethods):
 
         # Basic init using pre-built RegisteredAccount-specific args
         # and default Account args
-        account = self.AccountType(self.owner, *args,
-                                   inflation_adjust=self.inflation_adjust,
-                                   contribution_room=self.contribution_room,
-                                   **kwargs)
+        account = self.AccountType(
+            self.owner, *args,
+            inflation_adjust=self.inflation_adjust,
+            contribution_room=self.contribution_room, **kwargs)
         self.assertEqual(account.contributor, self.owner)
         self.assertEqual(account.inflation_adjust, self.inflation_adjust)
         self.assertEqual(account.contribution_room, self.contribution_room)
 
         # Try again with default contribution_room
-        account = self.AccountType(self.owner, *args,
-                                   inflation_adjust=self.inflation_adjust,
-                                   **kwargs)
+        account = self.AccountType(
+            self.owner, *args,
+            inflation_adjust=self.inflation_adjust, **kwargs)
         self.assertEqual(account.contributor, self.owner)
         self.assertEqual(account.inflation_adjust, self.inflation_adjust)
         # Different subclasses have different default contribution room
-        # values. There's also no settings value for RegisteredAccount's
-        # contribution_room parameter (it has a hardcoded default of 0),
-        # so don't test this subclasses
+        # values, so don't test subclasses
         if self.AccountType == RegisteredAccount:
             self.assertEqual(account.contribution_room, 0)
 
         # Test invalid `person` input
         with self.assertRaises(TypeError):
-            account = self.AccountType('invalid person', *args,
-                                       inflation_adjust=self.inflation_adjust,
-                                       **kwargs)
+            account = self.AccountType(
+                self.initial_year, 'invalid person', *args,
+                inflation_adjust=self.inflation_adjust, **kwargs)
 
         # Try type conversion for inflation_adjustments
         inflation_adjustments = {
@@ -124,10 +117,10 @@ class TestRegisteredAccountMethods(TestAccountMethods):
                 inflation_adjustments[this_year]
             )
 
-        account = self.AccountType(self.owner,
-                                   *args, contribution_room=500,
-                                   inflation_adjust=self.inflation_adjust,
-                                   initial_year=2000, **kwargs)
+        account = self.AccountType(
+            self.owner, *args,
+            contribution_room=500, inflation_adjust=self.inflation_adjust,
+            **kwargs)
         self.assertEqual(account.contributor, self.owner)
         self.assertEqual(account.contribution_room, Money('500'))
 
@@ -299,64 +292,67 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
     def test_next_year(self, *args, **kwargs):
         super().test_next_year(*args, **kwargs)
 
+        initial_year = min(Constants.RRSPContributionRoomAccrualMax)
         initial_contribution_room = Money(100)
         # Set income to a non-Money object to test type-conversion.
-        # Use a value less than inflation-adjusted RRSPAccrualMax
-        income = Money(100000)
+        # Use a value that won't result in a deduction exceeding the
+        # inflation-adjusted RRSPAccrualMax (~$25,000 in 2017)
+        income = Money(100000)  # -> $18,000 deduction
         # Build a copy of self.owner with the income defined above and
         # no raises (so income is the same each year).
         owner = Person(
-            self.owner.name, self.owner.birth_date,
+            initial_year, self.owner.name, self.owner.birth_date,
             retirement_date=self.owner.retirement_date,
             gross_income=income,
-            raise_rate={year: 0 for year in self.owner.raise_rate_history},
-            tax_treatment=self.owner.tax_treatment,
-            initial_year=self.initial_year)
+            raise_rate=0,
+            tax_treatment=self.owner.tax_treatment)
         # Basic test:
         account = self.AccountType(
-            owner, *args, rate=0,
-            inflation_adjust=self.inflation_adjust,
+            owner, *args,
+            rate=0, inflation_adjust=self.inflation_adjust,
             contribution_room=initial_contribution_room, **kwargs)
         account.next_year()
-        self.assertEqual(account.contribution_room,
-                         initial_contribution_room +
-                         Money(income) *
-                         Constants.RRSPContributionRoomAccrualRate)
+        self.assertEqual(
+            account.contribution_room,
+            initial_contribution_room + Money(income) *
+            Constants.RRSPContributionRoomAccrualRate
+        )
 
         # Pick the initial year so that we'll know the accrual max. for
         # next year
         initial_year = min(Constants.RRSPContributionRoomAccrualMax) - 1
         # Use income that's $1000 more than is necessary to max out RRSP
         # contribution room accrual for the year.
-        income = (Constants.RRSPContributionRoomAccrualMax[initial_year + 1] /
-                  Constants.RRSPContributionRoomAccrualRate) + 1000
+        income = (
+            Constants.RRSPContributionRoomAccrualMax[initial_year + 1] /
+            Constants.RRSPContributionRoomAccrualRate
+        ) + 1000
         owner = Person(
-            self.owner.name, self.owner.birth_date,
+            initial_year, self.owner.name, self.owner.birth_date,
             retirement_date=self.owner.retirement_date,
             gross_income=income,
-            raise_rate={year: 0 for year in self.owner.raise_rate_history},
-            tax_treatment=self.owner.tax_treatment,
-            initial_year=self.initial_year)
+            raise_rate=0,
+            tax_treatment=self.owner.tax_treatment)
         account = self.AccountType(
-            owner, *args, rate=0,
-            inflation_adjust=self.inflation_adjust,
-            contribution_room=initial_contribution_room,
-            initial_year=initial_year, **kwargs)
+            owner, *args,
+            rate=0, inflation_adjust=self.inflation_adjust,
+            contribution_room=initial_contribution_room, **kwargs)
         account.next_year()
         # New contribution room should be the max, plus rollover from
         # the previous year.
         self.assertEqual(
             account.contribution_room,
             initial_contribution_room +
-            Money(Constants.RRSPContributionRoomAccrualMax[initial_year + 1])
+            Money(Constants.RRSPContributionRoomAccrualMax[
+                initial_year + 1
+            ])
         )
 
         # Try again, but this time contribute the max. in the first year
         account = self.AccountType(
-            owner, *args, rate=0,
-            inflation_adjust=self.inflation_adjust,
-            contribution_room=initial_contribution_room,
-            initial_year=initial_year, **kwargs)
+            owner, *args,
+            rate=0, inflation_adjust=self.inflation_adjust,
+            contribution_room=initial_contribution_room, **kwargs)
         account.add_transaction(account.contribution_room)
         account.next_year()
         # New contribution room should be the max; no rollover.
@@ -383,17 +379,15 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
              ) / 2
         ) / Constants.RRSPContributionRoomAccrualRate
         owner = Person(
-            self.owner.name, self.owner.birth_date,
+            initial_year, self.owner.name, self.owner.birth_date,
             retirement_date=self.owner.retirement_date,
             gross_income=income,
-            raise_rate={year: 0 for year in self.owner.raise_rate_history},
-            tax_treatment=self.owner.tax_treatment,
-            initial_year=self.initial_year)
+            raise_rate=0,
+            tax_treatment=self.owner.tax_treatment)
         account = self.AccountType(
-            owner, *args, rate=0,
-            inflation_adjust=self.inflation_adjust,
-            contribution_room=initial_contribution_room,
-            initial_year=initial_year, **kwargs)
+            owner, *args,
+            rate=0, inflation_adjust=self.inflation_adjust,
+            contribution_room=initial_contribution_room, **kwargs)
         account.next_year()
         # New contribution room should be simply determined by the
         # accrual rate set in Constants plus rollover.
@@ -407,17 +401,15 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         # adjusted accrual max.
         income = max_accrual / Constants.RRSPContributionRoomAccrualRate + 1000
         owner = Person(
-            self.owner.name, self.owner.birth_date,
+            initial_year, self.owner.name, self.owner.birth_date,
             retirement_date=self.owner.retirement_date,
             gross_income=income,
-            raise_rate={year: 0 for year in self.owner.raise_rate_history},
-            tax_treatment=self.owner.tax_treatment,
-            initial_year=self.initial_year)
+            raise_rate=0,
+            tax_treatment=self.owner.tax_treatment)
         account = self.AccountType(
-            owner, *args, rate=0,
-            inflation_adjust=self.inflation_adjust,
-            contribution_room=initial_contribution_room,
-            initial_year=initial_year, **kwargs)
+            owner, *args,
+            rate=0, inflation_adjust=self.inflation_adjust,
+            contribution_room=initial_contribution_room, **kwargs)
         account.add_transaction(account.contribution_room)  # no rollover
         account.next_year()
         # New contribution room should be the max accrual; no rollover.
@@ -432,7 +424,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
             self.owner, *args,
             inflation_adjust=self.inflation_adjust,
             contribution_room=self.contribution_room,
-            balance=balance, rate=0, initial_year=initial_year, **kwargs)
+            balance=balance, rate=0, **kwargs)
         last_year = min(
             max(self.inflation_adjustments) + 1,
             max(self.owner.raise_rate_history)
@@ -514,7 +506,7 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
         # room is the sum of past accruals.
         # Use a person who's at least old enough to qualify for all
         # available TFSA accruals.
-        owner = Person("test", 1950, retirement_date=2015)
+        owner = Person(self.initial_year, "test", 1950, retirement_date=2015)
         for year in accruals:
             account = self.AccountType(
                 owner, *args,
@@ -534,17 +526,15 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
         accruals = self.get_accruals()
         rand = Random()
         owner = Person(
-            self.owner.name, 1950,
+            min(accruals), self.owner.name, 1950,
             retirement_date=2015,
             gross_income=self.owner.gross_income,
             raise_rate={
                 year: 0 for year in range(min(accruals), max(accruals) + 2)},
-            tax_treatment=self.owner.tax_treatment,
-            initial_year=min(accruals))
+            tax_treatment=self.owner.tax_treatment)
         account = self.AccountType(
-            owner, *args,
-            inflation_adjust=self.inflation_adjust,
-            rate=0, initial_year=min(accruals), balance=0, **kwargs)
+            owner, *args, inflation_adjust=self.inflation_adjust,
+            rate=0, balance=0, **kwargs)
 
         # For each year, confirm that the balance and contribution room
         # are updated appropriately
@@ -616,20 +606,23 @@ class TestTaxableAccountMethods(TestAccountMethods):
         super().test_init(*args, **kwargs)
 
         # Default init
-        account = self.AccountType(self.owner, *args, **kwargs)
+        account = self.AccountType(
+            self.owner, *args, **kwargs)
         self.assertEqual(account.acb, account.balance)
         self.assertEqual(account.capital_gain, Money(0))
 
         # Confirm that acb is set to balance by default
-        account = self.AccountType(self.owner, *args, balance=100, **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=100, **kwargs)
         self.assertEqual(account.acb, account.balance)
         self.assertEqual(account.capital_gain, Money(0))
 
         # Confirm that initializing an account with explicit acb works.
         # (In this case, acb is 0, so the balance is 100% capital gains,
         # but those gains are unrealized, so capital_gain is $0)
-        account = self.AccountType(self.owner, *args,
-                                   acb=0, balance=100, rate=1, **kwargs)
+        account = self.AccountType(
+            self.owner, *args,
+            acb=0, balance=100, rate=1, **kwargs)
         self.assertEqual(account.acb, Money(0))
         self.assertEqual(account.capital_gain, Money(0))
 
@@ -637,9 +630,9 @@ class TestTaxableAccountMethods(TestAccountMethods):
 
         # Init account with $50 acb.
         # Balance is $100, of which $50 is capital gains.
-        account = self.AccountType(self.owner, *args,
-                                   acb=50, balance=100, rate=1,
-                                   **kwargs)
+        account = self.AccountType(
+            self.owner, *args,
+            acb=50, balance=100, rate=1, **kwargs)
         # No capital gains are realized yet, so capital_gains=$0
         self.assertEqual(account.capital_gain, Money(0))
         # Withdrawal the entire end-of-year balance.
@@ -663,9 +656,9 @@ class TestTaxableAccountMethods(TestAccountMethods):
 
         # Init account with $50 acb.
         # Balance is $100, of which $50 is capital gains.
-        account = self.AccountType(self.owner, *args,
-                                   acb=50, balance=100, rate=1,
-                                   **kwargs)
+        account = self.AccountType(
+            self.owner, *args,
+            acb=50, balance=100, rate=1, **kwargs)
         # No capital gains are realized yet, so capital_gains=$0
         self.assertEqual(account.capital_gain, Money(0))
         # Withdrawal the entire end-of-year balance.
@@ -693,9 +686,9 @@ class TestTaxableAccountMethods(TestAccountMethods):
     def test_taxable_income(self, *args, **kwargs):
         # Init account with $50 acb.
         # Balance is $100, of which $50 is capital gains.
-        account = self.AccountType(self.owner, *args,
-                                   acb=50, balance=100, rate=1,
-                                   **kwargs)
+        account = self.AccountType(
+            self.owner, *args,
+            acb=50, balance=100, rate=1, **kwargs)
         # No capital gains are realized yet, so capital_gains=$0
         self.assertEqual(account.taxable_income, Money(0))
         # Withdrawal the entire end-of-year balance.

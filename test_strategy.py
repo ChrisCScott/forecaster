@@ -6,8 +6,8 @@ from decimal import Decimal
 from random import Random
 from ledger import *
 from ledger_Canada import *
-from settings import Settings
-from constants import Constants
+from constants_Canada import ConstantsCanada as Constants
+from scenario import Scenario
 from strategy import *
 from test_helper import *
 
@@ -23,34 +23,46 @@ class TestStrategyMethods(unittest.TestCase):
         def test_strategy(self, val=1):
             return val
 
+        @strategy('Test2')
+        def test_strategy2(self, val=2):
+            return val
+
     def test_init(self):
         """ Tests Strategy.__init__ """
         # Test a basic initialization
         s = self.Subclass('Test')
 
-        self.assertEqual(s.strategies, {'Test': self.Subclass.test_strategy})
+        self.assertEqual(s.strategies, {
+            'Test': self.Subclass.test_strategy,
+            'Test2': self.Subclass.test_strategy2}
+        )
         self.assertEqual(s(), 1)
         self.assertEqual(s(2), 2)
 
         # Test a basic initialization where we pass a function
         s = self.Subclass(self.Subclass.test_strategy)
 
-        self.assertEqual(s.strategies, {'Test': self.Subclass.test_strategy})
+        self.assertEqual(s.strategies, {
+            'Test': self.Subclass.test_strategy,
+            'Test2': self.Subclass.test_strategy2}
+        )
         self.assertEqual(s(), 1)
         self.assertEqual(s(2), 2)
 
         # Test a basic initialization where we pass a bound method
         s = self.Subclass(s.test_strategy)
 
-        self.assertEqual(s.strategies, {'Test': self.Subclass.test_strategy})
+        self.assertEqual(s.strategies, {
+            'Test': self.Subclass.test_strategy,
+            'Test2': self.Subclass.test_strategy2}
+        )
         self.assertEqual(s(), 1)
         self.assertEqual(s(2), 2)
 
-        # Test a fully-argumented initialization
-        settings = Settings()
-        s = self.Subclass('Test', settings)
-
-        self.assertEqual(s.strategies, {'Test': self.Subclass.test_strategy})
+        self.assertEqual(s.strategies, {
+            'Test': self.Subclass.test_strategy,
+            'Test2': self.Subclass.test_strategy2}
+        )
         self.assertEqual(s(), 1)
         self.assertEqual(s(2), 2)
 
@@ -92,7 +104,8 @@ class TestStrategyMethods(unittest.TestCase):
         # methods bound to objects are not the same. `s.strategies`
         # contains unbound functions, not comparable to s._strategy_*
         # methods)
-        s = ContributionStrategy()
+        s = ContributionStrategy(
+            ContributionStrategy._strategy_constant_contribution)
         for strategy in strategies:
             self.assertIn(strategy, s.strategies.keys())
             self.assertIn(strategies[strategy], s.strategies.values())
@@ -133,13 +146,13 @@ class TestContributionStrategyMethods(unittest.TestCase):
     def test_init(self):
         """ Tests ContributionStrategy.__init__ """
         # Test default init:
-        s = ContributionStrategy()
+        strategy = "Constant contribution"
+        s = ContributionStrategy(strategy)
 
-        self.assertEqual(s.strategy, Settings.contribution_strategy)
-        self.assertEqual(s.base_amount, Settings.contribution_base_amount)
-        self.assertEqual(s.rate, Settings.contribution_rate)
-        self.assertEqual(s.refund_reinvestment_rate,
-                         Settings.contribution_refund_reinvestment_rate)
+        self.assertEqual(s.strategy, strategy)
+        self.assertEqual(s.base_amount, Money(0))
+        self.assertEqual(s.rate, Decimal(0))
+        self.assertEqual(s.refund_reinvestment_rate, Decimal(1))
 
         # Test explicit init:
         strategy = 'Constant contribution'
@@ -147,31 +160,15 @@ class TestContributionStrategyMethods(unittest.TestCase):
         rate = Decimal('0.5')
         refund_reinvestment_rate = Decimal('0.5')
         inflation_adjust = self.constant_2x_inflation
-        settings = Settings()
         s = ContributionStrategy(
             strategy=strategy, base_amount=base_amount, rate=rate,
             refund_reinvestment_rate=refund_reinvestment_rate,
-            inflation_adjust=inflation_adjust, settings=settings)
+            inflation_adjust=inflation_adjust)
         self.assertEqual(s.strategy, strategy)
         self.assertEqual(s.base_amount, base_amount)
         self.assertEqual(s.rate, rate)
         self.assertEqual(s.refund_reinvestment_rate, refund_reinvestment_rate)
         self.assertEqual(s.inflation_adjust, inflation_adjust)
-
-        # Test implicit init via Settings
-        settings.contribution_strategy = strategy
-        settings.contribution_base_amount = base_amount
-        settings.contribution_rate = rate
-        settings.contribution_refund_reinvestment_rate = \
-            refund_reinvestment_rate
-        s = ContributionStrategy(settings=settings)
-
-        self.assertEqual(s.strategy, strategy)
-        self.assertEqual(s.base_amount, base_amount)
-        self.assertEqual(s.rate, rate)
-        self.assertEqual(s.refund_reinvestment_rate, refund_reinvestment_rate)
-        self.assertEqual(s.inflation_adjust(2000), 1)
-        self.assertEqual(s.inflation_adjust(2050), 1)  # no inflation
 
         # Test invalid strategies
         with self.assertRaises(ValueError):
@@ -180,29 +177,31 @@ class TestContributionStrategyMethods(unittest.TestCase):
             s = ContributionStrategy(strategy=1)
         # Test invalid base_amount
         with self.assertRaises(decimal.InvalidOperation):
-            s = ContributionStrategy(base_amount='a')
+            s = ContributionStrategy(strategy=strategy, base_amount='a')
         # Test invalid rate
         with self.assertRaises(decimal.InvalidOperation):
-            s = ContributionStrategy(rate='a')
+            s = ContributionStrategy(strategy=strategy, rate='a')
         # Test invalid refund_reinvestment_rate
         with self.assertRaises(decimal.InvalidOperation):
-            s = ContributionStrategy(refund_reinvestment_rate='a')
+            s = ContributionStrategy(
+                strategy=strategy, refund_reinvestment_rate='a')
 
     def test_strategy_constant_contribution(self):
         """ Tests ContributionStrategy._strategy_constant_contribution. """
         # Rather than hardcode the key, let's look it up here.
         method = ContributionStrategy._strategy_constant_contribution
 
-        # Default strategy
-        s = ContributionStrategy(method)
+        # Default strategy. Set to $1 constant contributions.
+        s = ContributionStrategy(method, base_amount=Money(1))
         # Test all default parameters (no inflation adjustments here)
-        self.assertEqual(s(), Money(Settings.contribution_base_amount))
+        self.assertEqual(s(), s.base_amount)
         # Test refunds ($1) and other income ($2), for a total of $3
         # plus the default contribution rate.
-        self.assertEqual(s(refund=Money(1), other_contribution=Money(2)),
-                         Money(s.base_amount) +
-                         Money(1) * s.refund_reinvestment_rate +
-                         Money(2))
+        self.assertEqual(
+            s(refund=Money(1), other_contribution=Money(2)),
+            Money(s.base_amount) +
+            Money(1) * s.refund_reinvestment_rate +
+            Money(2))
         # Test that changing net_income and gross_income has no effect
         self.assertEqual(
             s(refund=0, other_contribution=0, net_income=Money(100000),
@@ -364,15 +363,14 @@ class TestWithdrawalStrategyMethods(unittest.TestCase):
     def test_init(self):
         """ Tests WithdrawalStrategy.__init__ """
         # Test default init:
-        s = WithdrawalStrategy()
+        strategy = "Constant withdrawal"
+        s = WithdrawalStrategy(strategy)
 
-        self.assertEqual(s.strategy, Settings.withdrawal_strategy)
-        self.assertEqual(s.rate, Settings.withdrawal_rate)
-        self.assertEqual(s.base_amount,
-                         Settings.withdrawal_base_amount)
-        self.assertEqual(s.timing, Settings.transaction_out_timing)
-        self.assertEqual(s.income_adjusted,
-                         Settings.withdrawal_income_adjusted)
+        self.assertEqual(s.strategy, strategy)
+        self.assertEqual(s.rate, Decimal(0))
+        self.assertEqual(s.base_amount, Money(0))
+        self.assertEqual(s.timing, 'end')
+        self.assertEqual(s.income_adjusted, False)
 
         # Test explicit init:
         strategy = 'Constant withdrawal'
@@ -381,11 +379,10 @@ class TestWithdrawalStrategyMethods(unittest.TestCase):
         timing = 'end'
         income_adjusted = True
         inflation_adjust = self.inflation_adjust
-        settings = Settings()
         s = WithdrawalStrategy(
             strategy=strategy, base_amount=base_amount, rate=rate,
             timing=timing, income_adjusted=income_adjusted,
-            inflation_adjust=inflation_adjust, settings=settings
+            inflation_adjust=inflation_adjust
         )
 
         self.assertEqual(s.strategy, strategy)
@@ -395,19 +392,6 @@ class TestWithdrawalStrategyMethods(unittest.TestCase):
         self.assertEqual(s.income_adjusted, income_adjusted)
         self.assertEqual(s.inflation_adjust, inflation_adjust)
 
-        # Test implicit init via Settings
-        settings.withdrawal_strategy = strategy
-        settings.withdrawal_rate = rate
-        settings.withdrawal_base_amount = base_amount
-        settings.withdrawal_income_adjusted = income_adjusted
-        s = WithdrawalStrategy(settings=settings)
-
-        self.assertEqual(s.strategy, strategy)
-        self.assertEqual(s.rate, rate)
-        self.assertEqual(s.base_amount, base_amount)
-        self.assertEqual(s.timing, timing)
-        self.assertEqual(s.income_adjusted, income_adjusted)
-
         # Test invalid strategies
         with self.assertRaises(ValueError):
             s = WithdrawalStrategy(strategy='Not a strategy')
@@ -415,13 +399,13 @@ class TestWithdrawalStrategyMethods(unittest.TestCase):
             s = WithdrawalStrategy(strategy=1)
         # Test invalid rate
         with self.assertRaises(decimal.InvalidOperation):
-            s = WithdrawalStrategy(rate='a')
+            s = WithdrawalStrategy(strategy=strategy, rate='a')
         # Test invalid base_amount
         with self.assertRaises(decimal.InvalidOperation):
-            s = WithdrawalStrategy(base_amount='a')
+            s = WithdrawalStrategy(strategy=strategy, base_amount='a')
         # Test invalid timing
         with self.assertRaises(ValueError):
-            s = WithdrawalStrategy(timing='a')
+            s = WithdrawalStrategy(strategy=strategy, timing='a')
         # No need to test bool-valued attributes - everything is
         # bool-convertible!
 
@@ -610,96 +594,71 @@ class TestTransactionStrategyMethods(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.person = Person('Testy McTesterson', 1980, retirement_date=2045)
         cls.initial_year = 2000
+        cls.person = Person(
+            cls.initial_year, 'Testy McTesterson', 1980, retirement_date=2045)
         cls.inflation_adjustments = {
             cls.initial_year: Decimal(1),
             cls.initial_year + 1: Decimal(1.25),
             min(Constants.RRSPContributionRoomAccrualMax): Decimal(1)}
 
         # Set up some accounts for the tests.
-        cls.rrsp = RRSP(cls.person, inflation_adjust=cls.inflation_adjustments,
-                        balance=Money(200), rate=0,
-                        contribution_room=Money(200),
-                        initial_year=min(cls.inflation_adjustments.keys()))
-        cls.tfsa = TFSA(cls.person, inflation_adjust=cls.inflation_adjustments,
-                        balance=Money(100), rate=0,
-                        contribution_room=Money(100),
-                        initial_year=min(cls.inflation_adjustments.keys()))
-        cls.taxableAccount = TaxableAccount(cls.person, balance=Money(1000),
-                                            rate=0)
+        initial_year = min(cls.inflation_adjustments.keys())
+        cls.rrsp = RRSP(
+            cls.person,
+            inflation_adjust=cls.inflation_adjustments,
+            balance=Money(200), rate=0, contribution_room=Money(200))
+        cls.tfsa = TFSA(
+            cls.person,
+            inflation_adjust=cls.inflation_adjustments,
+            balance=Money(100), rate=0, contribution_room=Money(100))
+        cls.taxableAccount = TaxableAccount(
+            cls.person, balance=Money(1000), rate=0)
         cls.accounts = [cls.rrsp, cls.tfsa, cls.taxableAccount]
 
     def test_init(self):
         """ Tests TransactionStrategy.__init__ """
-        # TransactionStrategy doesn't have a default init, so test with
-        # TransactionInStrategy defaults:
-        s = TransactionStrategy(Settings.transaction_in_strategy,
-                                Settings.transaction_in_weights,
-                                Settings.transaction_in_timing)
-        self.assertEqual(s.strategy, Settings.transaction_in_strategy)
-        self.assertEqual(s.weights, Settings.transaction_in_weights)
-        self.assertEqual(s.timing, Settings.transaction_in_timing)
-
-        # Try default init with TransactionInStrategy:
-        s = TransactionInStrategy()
-        self.assertEqual(s.strategy, Settings.transaction_in_strategy)
-        self.assertEqual(s.weights, Settings.transaction_in_weights)
-        self.assertEqual(s.timing, Settings.transaction_in_timing)
-
-        # Try default init with TransactionOutStrategy:
-        s = TransactionOutStrategy()
-        self.assertEqual(s.strategy, Settings.transaction_out_strategy)
-        self.assertEqual(s.weights, Settings.transaction_out_weights)
-        self.assertEqual(s.timing, Settings.transaction_out_timing)
-
-        # Test explicit init for subclasses:
+        # Test explicit init:
         strategy = 'Weighted'
         weights = {'RRSP': Decimal(0.5),
                    'TFSA': Decimal(0.25),
                    'TaxableAccount': Decimal(0.25)}
         timing = 'end'
-        settings = Settings()
-        s = TransactionInStrategy(strategy, weights, timing, settings)
+        s = TransactionStrategy(strategy, weights, timing)
+
         self.assertEqual(s.strategy, strategy)
         self.assertEqual(s.weights, weights)
         self.assertEqual(s.timing, timing)
 
-        # Test implicit init via Settings
-        settings.transaction_in_strategy = strategy
-        settings.transaction_in_weights = weights
-        settings.transaction_in_timing = timing
-        s = TransactionInStrategy(settings=settings)
+        # Test implicit init for optional args:
+        s = TransactionStrategy(strategy, weights)
+
         self.assertEqual(s.strategy, strategy)
         self.assertEqual(s.weights, weights)
-        self.assertEqual(s.timing, timing)
+        self.assertEqual(s.timing, 'end')
 
         # Test invalid strategies
         with self.assertRaises(ValueError):
-            s = TransactionInStrategy(strategy='Not a strategy')
+            s = TransactionStrategy(strategy='Not a strategy', weights={})
         with self.assertRaises(TypeError):
-            s = TransactionInStrategy(strategy=1)
+            s = TransactionStrategy(strategy=1, weights={})
         # Test invalid weight
         with self.assertRaises(TypeError):  # not a dict
-            s = TransactionInStrategy(weights='a')
+            s = TransactionStrategy(strategy=strategy, weights='a')
         with self.assertRaises(TypeError):  # dict with non-str keys
-            s = TransactionInStrategy(weights={1: 5})
+            s = TransactionStrategy(strategy=strategy, weights={1: 5})
         with self.assertRaises(TypeError):  # dict with non-numeric values
-            s = TransactionInStrategy(weights={'RRSP', 'Not a number'})
+            s = TransactionStrategy(
+                strategy=strategy, weights={'RRSP', 'Not a number'})
         # Test invalid timing
         with self.assertRaises(TypeError):
-            s = TransactionInStrategy(timing={})
+            s = TransactionStrategy(strategy=strategy, weights={}, timing={})
 
     def test_strategy_ordered(self):
         """ Tests TransactionStrategy._strategy_ordered. """
         # Run each test on inflows and outflows
         method = TransactionStrategy._strategy_ordered
-        s_in = TransactionInStrategy(method, {
-            'RRSP': 1,
-            'TFSA': 2,
-            'TaxableAccount': 3
-            })
-        s_out = TransactionOutStrategy(method, {
+        s = TransactionStrategy(method, {
             'RRSP': 1,
             'TFSA': 2,
             'TaxableAccount': 3
@@ -708,48 +667,49 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         # Try a simple scenario: The amount being contributed is less
         # than the available contribution room in the top-weighted
         # account type.
-        results = s_in(Money(100), self.accounts)
+        results = s(Money(100), self.accounts)
         self.assertEqual(results[self.rrsp], Money(100))
         self.assertEqual(results[self.tfsa], Money(0))
         self.assertEqual(results[self.taxableAccount], Money(0))
         # Try again with outflows.
-        results = s_out(-Money(100), self.accounts)
+        results = s(-Money(100), self.accounts)
         self.assertEqual(results[self.rrsp], Money(-100))
         self.assertEqual(results[self.tfsa], Money(0))
         self.assertEqual(results[self.taxableAccount], Money(0))
 
-        # Now contribute more than the rrsp will accomodate. The extra
-        # $50 should go to the tfsa, which is next in line.
-        results = s_in(Money(250), self.accounts)
+        # Now contribute (withdraw) more than the rrsp will accomodate.
+        # The extra $50 should go to the tfsa, which is next in line.
+        results = s(Money(250), self.accounts)
         self.assertEqual(results[self.rrsp], Money(200))
         self.assertEqual(results[self.tfsa], Money(50))
         self.assertEqual(results[self.taxableAccount], Money(0))
-        results = s_out(-Money(250), self.accounts)
+        results = s(-Money(250), self.accounts)
         self.assertEqual(results[self.rrsp], Money(-200))
         self.assertEqual(results[self.tfsa], Money(-50))
         self.assertEqual(results[self.taxableAccount], Money(0))
 
-        # Now contribute a lot of money - the rrsp and tfsa will get
-        # filled and the remainder will go to the taxable account.
-        results = s_in(Money(1000), self.accounts)
+        # Now contribute (withdraw) a lot of money - the rrsp and tfsa
+        # will get filled (emptied) and the remainder will go to the
+        # taxable account.
+        results = s(Money(1000), self.accounts)
         self.assertEqual(results[self.rrsp], Money(200))
         self.assertEqual(results[self.tfsa], Money(100))
         self.assertEqual(results[self.taxableAccount], Money(700))
-        results = s_out(-Money(1000), self.accounts)
+        results = s(-Money(1000), self.accounts)
         self.assertEqual(results[self.rrsp], Money(-200))
         self.assertEqual(results[self.tfsa], Money(-100))
         self.assertEqual(results[self.taxableAccount], Money(-700))
 
         # For outflows only, try withdrawing more than the accounts have
-        results = s_out(-Money(10000), self.accounts)
+        results = s(-Money(10000), self.accounts)
         self.assertEqual(results[self.rrsp], Money(-200))
         self.assertEqual(results[self.tfsa], Money(-100))
         self.assertEqual(results[self.taxableAccount], Money(-1000))
 
         # Now change the order and confirm that it still works
-        s_in.weights['RRSP'] = 2
-        s_in.weights['TFSA'] = 1
-        results = s_in(Money(100), self.accounts)
+        s.weights['RRSP'] = 2
+        s.weights['TFSA'] = 1
+        results = s(Money(100), self.accounts)
         self.assertEqual(results[self.rrsp], Money(0))
         self.assertEqual(results[self.tfsa], Money(100))
         self.assertEqual(results[self.taxableAccount], Money(0))
@@ -761,12 +721,7 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         rrsp_weight = Decimal('0.4')
         tfsa_weight = Decimal('0.3')
         taxableAccount_weight = Decimal('0.3')
-        s_in = TransactionInStrategy(method, {
-            'RRSP': rrsp_weight,
-            'TFSA': tfsa_weight,
-            'TaxableAccount': taxableAccount_weight
-            })
-        s_out = TransactionOutStrategy(method, {
+        s = TransactionStrategy(method, {
             'RRSP': rrsp_weight,
             'TFSA': tfsa_weight,
             'TaxableAccount': taxableAccount_weight
@@ -775,7 +730,7 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         # Try a simple scenario: The amount being contributed is less
         # than the available contribution room for each account
         val = Money(min([a.max_inflow() for a in self.accounts]))
-        results = s_in(val, self.accounts)
+        results = s(val, self.accounts)
         self.assertEqual(sum(results.values()), val)
         self.assertEqual(results[self.rrsp], val * rrsp_weight)
         self.assertEqual(results[self.tfsa], val * tfsa_weight)
@@ -784,7 +739,7 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         # Try again with outflows. Amount withdrawn is less than
         # the balance of each account.
         val = -Money(max([a.max_outflow() for a in self.accounts]))
-        results = s_out(val, self.accounts)
+        results = s(val, self.accounts)
         self.assertEqual(sum(results.values()), val)
         self.assertEqual(results[self.rrsp], val * rrsp_weight)
         self.assertEqual(results[self.tfsa], val * tfsa_weight)
@@ -805,7 +760,7 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         threshold = self.tfsa.max_inflow() / tfsa_weight
         overage = Money(50)
         val = Money(threshold + overage)
-        results = s_in(val, self.accounts)
+        results = s(val, self.accounts)
         # Do tests 1-3:
         self.assertEqual(results[self.tfsa], self.tfsa.max_inflow())
         self.assertAlmostEqual(sum(results.values()), val, places=3)
@@ -835,7 +790,7 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         threshold = self.tfsa.max_outflow() / tfsa_weight
         overage = -overage
         val = Money(threshold + overage)
-        results = s_out(val, self.accounts)
+        results = s(val, self.accounts)
         self.assertEqual(results[self.tfsa], self.tfsa.max_outflow())
         self.assertAlmostEqual(sum(results.values()), val, places=3)
         self.assertLess(results[self.rrsp], results[self.taxableAccount])
@@ -862,7 +817,7 @@ class TestTransactionStrategyMethods(unittest.TestCase):
                         self.tfsa.max_inflow() / tfsa_weight)
         overage = abs(overage)
         val = threshold + overage
-        results = s_in(val, self.accounts)
+        results = s(val, self.accounts)
         self.assertEqual(sum(results.values()), val)
         self.assertEqual(results[self.rrsp], self.rrsp.max_inflow())
         self.assertEqual(results[self.tfsa], self.tfsa.max_inflow())
@@ -873,7 +828,7 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         # NOTE: `overage` is positive; other values below are negative
         val = self.rrsp.max_outflow() + self.tfsa.max_outflow() + \
             self.taxableAccount.max_outflow() + overage
-        results = s_out(val, self.accounts)
+        results = s(val, self.accounts)
         self.assertEqual(sum(results.values()), val)
         self.assertEqual(results[self.rrsp], self.rrsp.max_outflow())
         self.assertEqual(results[self.tfsa], self.tfsa.max_outflow())
@@ -883,7 +838,7 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         # For outflows only, try withdrawing more than the accounts have
         val = self.rrsp.max_outflow() + self.tfsa.max_outflow() + \
             self.taxableAccount.max_outflow() - overage
-        results = s_out(val, self.accounts)
+        results = s(val, self.accounts)
         self.assertEqual(results[self.rrsp], self.rrsp.max_outflow())
         self.assertEqual(results[self.tfsa], self.tfsa.max_outflow())
         self.assertEqual(results[self.taxableAccount],
@@ -905,26 +860,17 @@ class TestAllocationStrategyMethods(unittest.TestCase):
         # adjust_for_retirement_plan (bool)
 
         # Test default init:
-        s = AllocationStrategy()
-        self.assertEqual(s.strategy, Settings.allocation_strategy)
-        self.assertEqual(s.min_equity, Settings.allocation_min_equity)
-        self.assertEqual(s.max_equity, Settings.allocation_max_equity)
+        strategy = AllocationStrategy._strategy_n_minus_age
+        target = 100
+        s = AllocationStrategy(strategy, target)
+        self.assertEqual(s.strategy, strategy.strategy_key)
+        self.assertEqual(s.min_equity, 0)
+        self.assertEqual(s.max_equity, 1)
         # The default target varies depending on the strategy
-        if s.strategy == AllocationStrategy._strategy_n_minus_age.strategy_key:
-            self.assertEqual(s.target,
-                             Settings.allocation_constant_strategy_target)
-        elif s.strategy == (
-          AllocationStrategy._strategy_transition_to_constant.strategy_key):
-            self.assertEqual(s.target,
-                             Settings.allocation_transition_strategy_target)
-        else:
-            self.assertEqual(s.target, 0)
-        self.assertEqual(s.standard_retirement_age,
-                         Settings.allocation_standard_retirement_age)
-        self.assertEqual(s.risk_transition_period,
-                         Settings.allocation_risk_transition_period)
-        self.assertEqual(s.adjust_for_retirement_plan,
-                         Settings.allocation_adjust_for_retirement_plan)
+        self.assertEqual(s.target, target)
+        self.assertEqual(s.standard_retirement_age, 65)
+        self.assertEqual(s.risk_transition_period, 20)
+        self.assertEqual(s.adjust_for_retirement_plan, True)
 
         # Test explicit init:
         strategy = AllocationStrategy._strategy_n_minus_age
@@ -934,40 +880,11 @@ class TestAllocationStrategyMethods(unittest.TestCase):
         standard_retirement_age = 65.0
         risk_transition_period = '10'
         adjust_for_retirement_plan = 'Evaluates to True'
-        settings = Settings()
-        s = AllocationStrategy(strategy, min_equity, max_equity, target,
-                               standard_retirement_age, risk_transition_period,
-                               adjust_for_retirement_plan, settings)
-        self.assertEqual(s.strategy, strategy.strategy_key)
-        self.assertEqual(s.min_equity, Decimal(min_equity))
-        self.assertEqual(s.max_equity, Decimal(max_equity))
-        self.assertEqual(s.target, Decimal(target))
-        self.assertEqual(s.standard_retirement_age,
-                         int(standard_retirement_age))
-        self.assertEqual(s.risk_transition_period,
-                         int(risk_transition_period))
-        self.assertEqual(s.adjust_for_retirement_plan,
-                         bool(adjust_for_retirement_plan))
-
-        # Type-check:
-        self.assertIsInstance(s.strategy, str)
-        self.assertIsInstance(s.min_equity, Decimal)
-        self.assertIsInstance(s.max_equity, Decimal)
-        self.assertIsInstance(s.target, Decimal)
-        self.assertIsInstance(s.standard_retirement_age, int)
-        self.assertIsInstance(s.risk_transition_period, int)
-        self.assertIsInstance(s.adjust_for_retirement_plan, bool)
-
-        # Test implicit init via Settings
-        settings.allocation_strategy = strategy.strategy_key
-        settings.allocation_min_equity = min_equity
-        settings.allocation_max_equity = max_equity
-        settings.allocation_constant_strategy_target = target
-        settings.allocation_standard_retirement_age = standard_retirement_age
-        settings.allocation_risk_transition_period = risk_transition_period
-        settings.allocation_adjust_for_retirement_plan = \
-            adjust_for_retirement_plan
-        s = AllocationStrategy(settings=settings)
+        s = AllocationStrategy(
+            strategy, target, min_equity=min_equity, max_equity=max_equity,
+            standard_retirement_age=standard_retirement_age,
+            risk_transition_period=risk_transition_period,
+            adjust_for_retirement_plan=adjust_for_retirement_plan)
         self.assertEqual(s.strategy, strategy.strategy_key)
         self.assertEqual(s.min_equity, Decimal(min_equity))
         self.assertEqual(s.max_equity, Decimal(max_equity))
@@ -990,31 +907,33 @@ class TestAllocationStrategyMethods(unittest.TestCase):
 
         # Test invalid strategies
         with self.assertRaises(ValueError):
-            s = AllocationStrategy(strategy='Not a strategy')
+            s = AllocationStrategy(strategy='Not a strategy', target=1)
         with self.assertRaises(TypeError):
-            s = AllocationStrategy(strategy=1)
+            s = AllocationStrategy(strategy=1, target=1)
         # Test invalid min_equity (Decimal)
         with self.assertRaises(decimal.InvalidOperation):
-            s = AllocationStrategy(min_equity='invalid')
+            s = AllocationStrategy(strategy, 1, min_equity='invalid')
         # Test invalid max_equity (Decimal)
         with self.assertRaises(decimal.InvalidOperation):
-            s = AllocationStrategy(max_equity='invalid')
+            s = AllocationStrategy(strategy, 1, max_equity='invalid')
         # Test invalid target (Decimal)
         with self.assertRaises(decimal.InvalidOperation):
-            s = AllocationStrategy(target='invalid')
+            s = AllocationStrategy(strategy, target='invalid')
         # Test invalid standard_retirement_age (int)
         with self.assertRaises(ValueError):
-            s = AllocationStrategy(standard_retirement_age='invalid')
+            s = AllocationStrategy(
+                strategy, 1, standard_retirement_age='invalid')
         # Test invalid risk_transition_period (int)
         with self.assertRaises(ValueError):
-            s = AllocationStrategy(risk_transition_period='invalid')
+            s = AllocationStrategy(
+                strategy, 1, risk_transition_period='invalid')
         # No need to test invalid adjust_for_retirement_plan (bool)
 
         # Test mismatched min and max equity thresholds
         with self.assertRaises(ValueError):
-            s = AllocationStrategy(min_equity=1, max_equity=0)
+            s = AllocationStrategy(strategy, 1, min_equity=1, max_equity=0)
         # Confirm that the thresholds *can* be the same:
-        s = AllocationStrategy(min_equity=0.5, max_equity=0.5)
+        s = AllocationStrategy(strategy, 1, min_equity=0.5, max_equity=0.5)
         self.assertEqual(s.min_equity, s.max_equity)
 
     def test_strategy_n_minus_age(self):
@@ -1023,7 +942,10 @@ class TestAllocationStrategyMethods(unittest.TestCase):
 
         # Create a basic strategy that puts 100-age % into equity
         n = 100
-        s = AllocationStrategy(method, 0, 1, n, 65, 10, False)
+        s = AllocationStrategy(
+            method, n,
+            min_equity=0, max_equity=1, standard_retirement_age=65,
+            risk_transition_period=10, adjust_for_retirement_plan=False)
 
         for age in range(0, n):
             self.assertAlmostEqual(s(age)['stocks'], Decimal((n - age)/100))
@@ -1041,8 +963,10 @@ class TestAllocationStrategyMethods(unittest.TestCase):
         standard_retirement_age = 65
         diff = -20
         retirement_age = standard_retirement_age + diff
-        s = AllocationStrategy(method, 0, 1, n, standard_retirement_age, 10,
-                               True)
+        s = AllocationStrategy(
+            method, n,
+            min_equity=0, max_equity=1, standard_retirement_age=65,
+            risk_transition_period=10, adjust_for_retirement_plan=True)
 
         for age in range(0, n + diff):
             self.assertAlmostEqual(s(age, retirement_age)['stocks'],
@@ -1060,8 +984,10 @@ class TestAllocationStrategyMethods(unittest.TestCase):
         n = 120
         standard_retirement_age = 65
         retirement_age = standard_retirement_age - 20
-        s = AllocationStrategy(method, 0, 1, n, standard_retirement_age, 10,
-                               False)
+        s = AllocationStrategy(
+            method, n,
+            min_equity=0, max_equity=1, standard_retirement_age=65,
+            risk_transition_period=10, adjust_for_retirement_plan=False)
 
         for age in range(0, 20):
             self.assertEqual(s(age)['stocks'], s.max_equity)
@@ -1083,7 +1009,10 @@ class TestAllocationStrategyMethods(unittest.TestCase):
 
         # Create a basic strategy that transitions from 100% stocks to
         # 50% stocks between the ages of 55 and 65.
-        s = AllocationStrategy(method, 0, 1, 0.5, 65, 10, False)
+        s = AllocationStrategy(
+            method, 0.5,
+            min_equity=0, max_equity=1, standard_retirement_age=65,
+            risk_transition_period=10, adjust_for_retirement_plan=False)
 
         for age in range(18, 54):
             self.assertEqual(s(age)['stocks'], Decimal(1))
@@ -1105,27 +1034,25 @@ class TestDebtPaymentStrategyMethods(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.person = Person('Testy McTesterson', 1980, retirement_date=2045)
         cls.initial_year = 2000
+        cls.person = Person(cls.initial_year, 'Testy McTesterson', 1980,
+                            retirement_date=2045)
 
         # These accounts have different rates:
         cls.debt_big_high_interest = Debt(
-            cls.person, balance=Money(1000), rate=1,
-            initial_year=cls.initial_year,
-            minimum_payment=Money(100), reduction_rate=1,
-            accelerate_payment=True
+            cls.person,
+            balance=Money(1000), rate=1, minimum_payment=Money(100),
+            reduction_rate=1, accelerate_payment=True
         )
         cls.debt_small_low_interest = Debt(
-            cls.person, balance=Money(100), rate=0,
-            initial_year=cls.initial_year,
-            minimum_payment=Money(10), reduction_rate=1,
-            accelerate_payment=True
+            cls.person,
+            balance=Money(100), rate=0, minimum_payment=Money(10),
+            reduction_rate=1, accelerate_payment=True
         )
         cls.debt_medium = Debt(
-            cls.person, balance=Money(500), rate=0.5,
-            initial_year=cls.initial_year,
-            minimum_payment=Money(50), reduction_rate=1,
-            accelerate_payment=True
+            cls.person,
+            balance=Money(500), rate=0.5, minimum_payment=Money(50),
+            reduction_rate=1, accelerate_payment=True
         )
 
         cls.debts = {
@@ -1135,22 +1062,19 @@ class TestDebtPaymentStrategyMethods(unittest.TestCase):
         }
 
         cls.debt_not_accelerated = Debt(
-            cls.person, balance=Money(100), rate=0,
-            initial_year=cls.initial_year,
-            minimum_payment=Money(10), reduction_rate=1,
-            accelerate_payment=False
+            cls.person,
+            balance=Money(100), rate=0, minimum_payment=Money(10),
+            reduction_rate=1, accelerate_payment=False
         )
         cls.debt_no_reduction = Debt(
-            cls.person, balance=Money(100), rate=0,
-            initial_year=cls.initial_year,
-            minimum_payment=Money(10), reduction_rate=1,
-            accelerate_payment=False
+            cls.person,
+            balance=Money(100), rate=0, minimum_payment=Money(10),
+            reduction_rate=1, accelerate_payment=False
         )
         cls.debt_half_reduction = Debt(
-            cls.person, balance=Money(100), rate=0,
-            initial_year=cls.initial_year,
-            minimum_payment=Money(10), reduction_rate=0.5,
-            accelerate_payment=False
+            cls.person,
+            balance=Money(100), rate=0, minimum_payment=Money(10),
+            reduction_rate=0.5, accelerate_payment=False
         )
 
     @staticmethod
@@ -1173,22 +1097,15 @@ class TestDebtPaymentStrategyMethods(unittest.TestCase):
 
     def test_init(self):
         """ Tests DebtPaymentStrategy.__init__ """
-        s = DebtPaymentStrategy()
-        self.assertEqual(s.strategy, Settings.debt_payment_strategy)
-        self.assertEqual(s.timing, Settings.debt_payment_timing)
+        strategy = DebtPaymentStrategy._strategy_avalanche.strategy_key
+        s = DebtPaymentStrategy(strategy)
+        self.assertEqual(s.strategy, strategy)
+        self.assertEqual(s.timing, 'end')
 
         # Test explicit init:
         strategy = 'Snowball'
         timing = 'end'
-        settings = Settings()
-        s = DebtPaymentStrategy(strategy, timing, settings)
-        self.assertEqual(s.strategy, strategy)
-        self.assertEqual(s.timing, timing)
-
-        # Test implicit init via Settings
-        settings.debt_payment_strategy = strategy
-        settings.debt_payment_timing = timing
-        s = DebtPaymentStrategy(settings=settings)
+        s = DebtPaymentStrategy(strategy, timing)
         self.assertEqual(s.strategy, strategy)
         self.assertEqual(s.timing, timing)
 

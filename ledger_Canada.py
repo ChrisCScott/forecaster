@@ -3,8 +3,7 @@
 from decimal import Decimal
 from utility import *
 from ledger import Person, Account, recorded_property, recorded_property_cached
-from settings_Canada import SettingsCanada
-from constants import Constants
+from constants_Canada import ConstantsCanada as Constants
 
 
 class RegisteredAccount(Account):
@@ -29,15 +28,13 @@ class RegisteredAccount(Account):
             as the annuitant (i.e. the owner.)
     """
     def __init__(self, owner, balance=0, rate=None,
-                 transactions={}, nper=1, initial_year=None,
-                 settings=SettingsCanada, inputs={},
+                 transactions={}, nper=1, inputs={}, initial_year=None,
                  contribution_room=None, contributor=None,
-                 inflation_adjust=None):
+                 inflation_adjust=None, **kwargs):
         """ Initializes a RegisteredAccount object. """
         super().__init__(
             owner, balance=balance, rate=rate, transactions=transactions,
-            nper=nper, initial_year=initial_year, settings=settings,
-            inputs=inputs)
+            nper=nper, inputs=inputs, initial_year=initial_year, **kwargs)
 
         # If no contributor was provided, assume it's the owner.
         if contributor is None:
@@ -95,19 +92,21 @@ class RegisteredAccount(Account):
         """ A dict of {year: contribution_room} pairs. """
         return self.contributor.contribution_room(self)
 
-    def next_year(self, *args, **kwargs):
+    def next_year(self):
         """ Confirms that the year is within the range of our data. """
+        # Calculate contribution room accrued based on this year's
+        # transaction/etc. information
+        contribution_room = self.next_contribution_room()
         # NOTE: Invoking super().next_year will increment self.this_year
-        super().next_year(*args, **kwargs)
+        super().next_year()
 
         # Ensure that the contributor has advanced to this year.
         while self.contributor.this_year < self.this_year:
             self.contributor.next_year()
 
-        # Determine contribution room for the next year:
-        self.contribution_room = self.next_contribution_room(
-            year=self.this_year - 1, *args, **kwargs
-        )
+        # The contribution room we accrued last year becomes available
+        # in the next year, so assign after calling `next_year`:
+        self.contribution_room = contribution_room
 
     def next_contribution_room(self, year=None, *args, **kwargs):
         raise NotImplementedError(
@@ -125,16 +124,16 @@ class RRSP(RegisteredAccount):
 
     # Explicitly repeat superclass args for the sake of intellisense.
     def __init__(self, owner, balance=0, rate=None,
-                 transactions={}, nper=1, initial_year=None,
-                 settings=SettingsCanada, inputs={},
+                 transactions={}, nper=1, inputs={}, initial_year=None,
                  contribution_room=None, contributor=None,
-                 inflation_adjust=None):
+                 inflation_adjust=None, **kwargs):
         """ Initializes an RRSP object. """
         super().__init__(
-            owner, inflation_adjust=inflation_adjust, balance=balance,
-            rate=rate, transactions=transactions, nper=nper,
-            initial_year=initial_year, settings=settings, inputs=inputs,
-            contribution_room=contribution_room, contributor=contributor)
+            owner, inflation_adjust=inflation_adjust,
+            balance=balance, rate=rate, transactions=transactions,
+            nper=nper, inputs=inputs, initial_year=initial_year,
+            contribution_room=contribution_room, contributor=contributor,
+            **kwargs)
 
         # Although `person` might provide a retirement_age, the RRSP
         # won't necessarily be turned into an RRIF at the retirement
@@ -219,7 +218,7 @@ class RRSP(RegisteredAccount):
         """
         return self.inflows
 
-    def next_contribution_room(self, year=None, *args, **kwargs):
+    def next_contribution_room(self):
         """ Determines the amount of contribution room for next year.
 
         Args:
@@ -231,9 +230,7 @@ class RRSP(RegisteredAccount):
             The contribution room for the RRSP for the year *after*
             `year`.
         """
-        # Return most recent year by default
-        if year is None:
-            year = self.this_year
+        year = self.this_year
 
         if self.contributor.age(year + 1) > Constants.RRSPRRIFConversionAge:
             # If past the mandatory RRIF conversion age, no
@@ -244,20 +241,20 @@ class RRSP(RegisteredAccount):
 
             # Contribution room is determined based on the contributor's
             # gross income for the previous year.
-            income = self.contributor.gross_income_history[year]
+            income = self.contributor.gross_income
 
             # First, determine how much more contribution room will
             # accrue due to this year's income:
             accrual = income * Constants.RRSPContributionRoomAccrualRate
-            # Second, compare to the (inflation-adjusted) max accrual:
+            # Second, compare to the (inflation-adjusted) max accrual
+            # for next year:
             max_accrual = extend_inflation_adjusted(
                 Constants.RRSPContributionRoomAccrualMax,
                 self.inflation_adjust,
                 year + 1
             )
             # Don't forget to add in any rollovers:
-            rollover = self.contribution_room_history[year] - \
-                self.inflows_history[year]
+            rollover = self.contribution_room - self.inflows
             return min(accrual, Money(max_accrual)) + rollover
 
     def min_outflow(self, when='end'):
@@ -296,16 +293,16 @@ class TFSA(RegisteredAccount):
     """ A Tax-Free Savings Account (Canada). """
 
     def __init__(self, owner, balance=0, rate=None,
-                 transactions={}, nper=1, initial_year=None,
-                 settings=SettingsCanada, inputs={},
+                 transactions={}, nper=1, inputs={}, initial_year=None,
                  contribution_room=None, contributor=None,
-                 inflation_adjust=None):
+                 inflation_adjust=None, **kwargs):
         """ Initializes a TFSA object. """
         super().__init__(
-            owner, inflation_adjust=inflation_adjust, balance=balance,
-            rate=rate, transactions=transactions, nper=nper,
-            initial_year=initial_year, settings=settings, inputs=inputs,
-            contribution_room=contribution_room, contributor=contributor)
+            owner, inflation_adjust=inflation_adjust,
+            balance=balance, rate=rate, transactions=transactions, nper=nper,
+            inputs=inputs, initial_year=initial_year,
+            contribution_room=contribution_room, contributor=contributor,
+            **kwargs)
 
         # This is our baseline for estimating contribution room
         # (By law, inflation-adjustments are relative to 2009, the
@@ -376,11 +373,9 @@ class TFSA(RegisteredAccount):
                 Constants.TFSAInflationRoundingFactor
             )
 
-    def next_contribution_room(self, year=None):
+    def next_contribution_room(self):
         """ The amount of contribution room for next year. """
-        # Return most recent year by default
-        if year is None:
-            year = self.this_year
+        year = self.this_year
 
         # If the contribution room for next year is already known, use
         # that:
@@ -399,7 +394,7 @@ class TFSA(RegisteredAccount):
         return contribution_room + rollover
 
     @recorded_property
-    def taxable_income(self, year=None):
+    def taxable_income(self):
         """ Returns $0 (TFSAs are not taxable.) """
         return Money(0)
 
@@ -423,20 +418,20 @@ class TaxableAccount(Account):
     # relative proportions of sources of taxable income?)
     # Perhaps also implement a tax_credit and/or tax_deduction method
     # (e.g. to account for Canadian dividends)
-    # TODO: Define a proportion of growth attributable to capital gains
-    # (perhaps via Settings)? Potentially subclass this method into a
-    # CapitalAsset class where all growth is capital gains - this would
-    # allow for modelling non-principle-residence real estate holdings.
+    # TODO: Define a proportion of growth attributable to capital gains?
+    # Potentially subclass this method into a CapitalAsset class where
+    # all growth is capital gains - this would allow for modelling
+    # non-principle-residence real estate holdings.
     # (But we might want to also model rental income as well...)
 
-    def __init__(self, owner, balance=0, rate=None, transactions={},
-                 nper=1, initial_year=None, settings=SettingsCanada,
-                 inputs={}, acb=None):
+    def __init__(
+        self, owner, balance=0, rate=None, transactions={},
+        nper=1, inputs={}, initial_year=None, acb=None, **kwargs
+    ):
         """ Constructor for `TaxableAccount`. """
         super().__init__(
-            owner, balance=balance, rate=rate, transactions=transactions,
-            nper=nper, initial_year=initial_year, settings=settings,
-            inputs=inputs)
+            owner=owner, balance=balance, rate=rate, transactions=transactions,
+            nper=nper, inputs=inputs, initial_year=initial_year, **kwargs)
 
         # If acb wasn't provided, assume there have been no capital
         # gains or losses, so acb = balance.

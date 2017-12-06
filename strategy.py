@@ -4,7 +4,7 @@ define contribution and withdrawal strategies and associated flags. """
 from collections import namedtuple
 import inspect
 from ledger import Money, Decimal
-from settings import Settings
+from utility import *
 
 
 def strategy(key):
@@ -73,7 +73,7 @@ class Strategy(object, metaclass=StrategyType):
             the call signature for the subclass.
     """
 
-    def __init__(self, strategy, settings=Settings):
+    def __init__(self, strategy):
         # NOTE: `strategy` is required here, but providing a suitable
         # default value in __init__ of each subclass is recommended.
 
@@ -89,8 +89,6 @@ class Strategy(object, metaclass=StrategyType):
         if self.strategy not in self.strategies:
             raise ValueError('Strategy: Unsupported strategy ' +
                              'value: ' + self.strategy)
-        if not (settings == Settings or isinstance(settings, Settings)):
-            raise TypeError('Strategy: settings must be Settings object.')
 
     def __call__(self, *args, **kwargs):
         """ Makes the Strategy object callable. """
@@ -165,23 +163,14 @@ class ContributionStrategy(Strategy):
             strategy.
     """
 
-    def __init__(self, strategy=None, base_amount=None, rate=None,
-                 refund_reinvestment_rate=None, inflation_adjust=None,
-                 settings=Settings):
+    def __init__(self, strategy, base_amount=0, rate=0,
+                 refund_reinvestment_rate=1, inflation_adjust=None):
         """ Constructor for ContributionStrategy. """
-        # Use the subclass-specific default strategy if none provided
-        if strategy is None:
-            strategy = settings.contribution_strategy
-        super().__init__(strategy, settings)
+        super().__init__(strategy)
 
-        # Use default values from settings if none are provided.
-        self.base_amount = Money(base_amount) if base_amount is not None \
-            else settings.contribution_base_amount
-        self.rate = Decimal(rate) if rate is not None \
-            else settings.contribution_rate
-        self.refund_reinvestment_rate = Decimal(refund_reinvestment_rate) \
-            if refund_reinvestment_rate is not None \
-            else settings.contribution_refund_reinvestment_rate
+        self.base_amount = Money(base_amount)
+        self.rate = Decimal(rate)
+        self.refund_reinvestment_rate = Decimal(refund_reinvestment_rate)
 
         # If no inflation_adjustment is specified, create a default
         # value so that methods don't need to test for None
@@ -319,25 +308,15 @@ class WithdrawalStrategy(Strategy):
             strategy.
     """
 
-    def __init__(self, strategy=None, base_amount=None, rate=None,
-                 timing=None, income_adjusted=None, inflation_adjust=None,
-                 settings=Settings):
+    def __init__(self, strategy, base_amount=0, rate=0,
+                 timing='end', income_adjusted=False, inflation_adjust=None):
         """ Constructor for ContributionStrategy. """
-        # Use the subclass-specific default strategy if none provided
-        if strategy is None:
-            strategy = settings.withdrawal_strategy
-        super().__init__(strategy, settings)
+        super().__init__(strategy)
 
-        # Use default values from settings if none are provided
-        self.base_amount = Money(base_amount) if base_amount is not None \
-            else Money(settings.withdrawal_base_amount)
-        self.rate = Decimal(rate) if rate is not None \
-            else Decimal(settings.withdrawal_rate)
-        self.timing = timing if timing is not None \
-            else settings.transaction_out_timing
-        self.income_adjusted = bool(income_adjusted) \
-            if income_adjusted is not None \
-            else bool(settings.withdrawal_income_adjusted)
+        self.base_amount = Money(base_amount)
+        self.rate = Decimal(rate)
+        self.timing = timing
+        self.income_adjusted = bool(income_adjusted)
 
         # If no inflation_adjustment is specified, create a default
         # value so that methods don't need to test for None
@@ -459,11 +438,9 @@ class TransactionStrategy(Strategy):
         is one of the input accounts and each Money object is a
         transaction for that account.
     """
-    def __init__(self, strategy, weights, timing, settings=Settings):
+    def __init__(self, strategy, weights, timing='end'):
         """ Constructor for TransactionStrategy. """
-        # We use different defaults for inflows and outflows, so
-        # rely on subclasses to provide defaults.
-        super().__init__(strategy, settings)
+        super().__init__(strategy)
 
         self.weights = weights
         self.timing = timing
@@ -663,41 +640,6 @@ class TransactionStrategy(Strategy):
         return transactions
 
 
-# NOTE: We could delete the two subclasses of TransactionStrategy and
-# leave it to client code to init with settings values. This would
-# likely be part of a larger refactoring project where all settings-init
-# logic is moved to some new module/class (Context?) and Settings is
-# removed as an arg from all ledger/tax/scenario/strategy/etc. classes.
-
-
-class TransactionInStrategy(TransactionStrategy):
-    ''' A TransactionStrategy that uses contribution defaults. '''
-    def __init__(self, strategy=None, weights=None, timing=None,
-                 settings=Settings):
-        """ Constructor for TransactionStrategy. """
-        if strategy is None:
-            strategy = settings.transaction_in_strategy
-        if weights is None:
-            weights = settings.transaction_in_weights
-        if timing is None:
-            timing = settings.transaction_in_timing
-        super().__init__(strategy, weights, timing, settings)
-
-
-class TransactionOutStrategy(TransactionStrategy):
-    """ A TransactionStrategy that uses withdrawal defaults. """
-    def __init__(self, strategy=None, weights=None, timing=None,
-                 settings=Settings):
-        """ Constructor for TransactionStrategy. """
-        if strategy is None:
-            strategy = settings.transaction_out_strategy
-        if weights is None:
-            weights = settings.transaction_out_weights
-        if timing is None:
-            timing = settings.transaction_out_timing
-        super().__init__(strategy, weights, timing, settings)
-
-
 class AllocationStrategy(Strategy):
     """ Generates an asset allocation for a point in time. Callable.
 
@@ -751,44 +693,18 @@ class AllocationStrategy(Strategy):
         percentage of a portfolio that is made up of that asset class.
         Allocations sum to 1 (e.g. `Decimal(0.03` means 3%).
     """
-    def __init__(self, strategy=None, min_equity=None, max_equity=None,
-                 target=None, standard_retirement_age=None,
-                 risk_transition_period=None, adjust_for_retirement_plan=None,
-                 scenario=None, settings=Settings):
+    def __init__(self, strategy, target, min_equity=0, max_equity=1,
+                 standard_retirement_age=65, risk_transition_period=20,
+                 adjust_for_retirement_plan=True, scenario=None):
         """ Constructor for AllocationStrategy. """
-        # Use the subclass-specific default strategy if none provided
-        if strategy is None:
-            strategy = settings.allocation_strategy
-        super().__init__(strategy, settings)
+        super().__init__(strategy)
 
-        # Pick the correct default setting depending on the strategy:
-        if self.strategy == (
-          AllocationStrategy._strategy_n_minus_age.strategy_key):
-            target_default = settings.allocation_constant_strategy_target
-        elif self.strategy == (
-          AllocationStrategy._strategy_transition_to_constant.strategy_key):
-            target_default = settings.allocation_transition_strategy_target
-        else:  # Just in case
-            target_default = 0
-
-        # Default to Settings values where no input was provided.
-        self.min_equity = Decimal(
-            min_equity if min_equity is not None
-            else settings.allocation_min_equity)
-        self.max_equity = Decimal(
-            max_equity if max_equity is not None
-            else settings.allocation_max_equity)
-        self.standard_retirement_age = int(
-            standard_retirement_age if standard_retirement_age is not None
-            else settings.allocation_standard_retirement_age)
-        self.target = Decimal(target if target is not None else target_default)
-        self.risk_transition_period = int(
-            risk_transition_period if risk_transition_period is not None
-            else settings.allocation_risk_transition_period)
-        self.adjust_for_retirement_plan = bool(
-            adjust_for_retirement_plan
-            if adjust_for_retirement_plan is not None
-            else settings.allocation_adjust_for_retirement_plan)
+        self.min_equity = Decimal(min_equity)
+        self.max_equity = Decimal(max_equity)
+        self.standard_retirement_age = int(standard_retirement_age)
+        self.target = Decimal(target)
+        self.risk_transition_period = int(risk_transition_period)
+        self.adjust_for_retirement_plan = bool(adjust_for_retirement_plan)
         self.scenario = scenario
 
         # All of the above are type-converted; no need to check types!
@@ -913,16 +829,10 @@ class DebtPaymentStrategy(Strategy):
         transaction for that account.
     """
 
-    def __init__(self, strategy=None, timing=None, settings=Settings):
+    def __init__(self, strategy, timing='end'):
         """ Constructor for DebtPaymentStrategy. """
 
-        # Pull values from Settings
-        if strategy is None:
-            strategy = settings.debt_payment_strategy
-        if timing is None:
-            timing = settings.debt_payment_timing
-
-        super().__init__(strategy, settings)
+        super().__init__(strategy)
 
         self.timing = timing
 

@@ -9,7 +9,6 @@ import math
 import decimal
 from decimal import Decimal
 from random import Random
-from settings import Settings
 from tax import Tax
 from strategy import AllocationStrategy
 from scenario import Scenario
@@ -24,7 +23,7 @@ class TestPersonMethods(unittest.TestCase):
 
     def setUp(self):
         """ Sets up default vaules for testing """
-        self.initial_year = Settings.initial_year
+        self.initial_year = 2020
         self.name = "Testy McTesterson"
         self.birth_date = datetime(2000, 2, 1)  # 1 February 2000
         self.retirement_date = datetime(2065, 6, 26)  # 26 June 2065
@@ -60,6 +59,7 @@ class TestPersonMethods(unittest.TestCase):
             adjust_for_retirement_plan=False,
             scenario=scenario)
         self.spouse = Person(
+            initial_year=self.initial_year,
             name="Spouse",
             birth_date=1998,
             retirement_date=2063,
@@ -67,9 +67,9 @@ class TestPersonMethods(unittest.TestCase):
             raise_rate=self.raise_rate,
             spouse=None,
             tax_treatment=self.tax_treatment,
-            allocation_strategy=self.allocation_strategy,
-            initial_year=self.initial_year)
+            allocation_strategy=self.allocation_strategy)
         self.owner = Person(
+            initial_year=self.initial_year,
             name=self.name,
             birth_date=self.birth_date,
             retirement_date=self.retirement_date,
@@ -77,15 +77,15 @@ class TestPersonMethods(unittest.TestCase):
             raise_rate=self.raise_rate,
             spouse=self.spouse,
             tax_treatment=self.tax_treatment,
-            allocation_strategy=self.allocation_strategy,
-            initial_year=self.initial_year)
+            allocation_strategy=self.allocation_strategy)
 
     def test_init(self):
         """ Tests Person.__init__ """
 
         # Should work when all required arguments are passed correctly
-        person = Person(self.name, self.birth_date,
-                        retirement_date=self.retirement_date)
+        person = Person(
+            self.initial_year, self.name, self.birth_date,
+            retirement_date=self.retirement_date)
         self.assertEqual(person.name, self.name)
         self.assertEqual(person.birth_date, self.birth_date)
         self.assertEqual(person.retirement_date, self.retirement_date)
@@ -99,29 +99,34 @@ class TestPersonMethods(unittest.TestCase):
         # Should work with strings instead of dates
         birth_date_str = "1 January 2000"
         birth_date = datetime(2000, 1, 1)
-        person = Person(self.name, birth_date_str,
-                        retirement_date=self.retirement_date)
+        person = Person(
+            self.initial_year, self.name, birth_date_str,
+            retirement_date=self.retirement_date)
         self.assertEqual(person.birth_date, birth_date)
         self.assertIsInstance(person.birth_date, datetime)
 
         # Should fail if retirement_date precedes birth_date
         with self.assertRaises(ValueError):
             person = Person(
-                self.name, self.birth_date,
+                self.initial_year, self.name, self.birth_date,
                 retirement_date=self.birth_date - relativedelta(days=1))
 
         # Should fail if a string is not parseable to a date
         with self.assertRaises(ValueError):
-            person = Person(self.name, 'invalid',
-                            retirement_date=self.retirement_date)
+            person = Person(
+                self.initial_year, self.name, 'invalid',
+                retirement_date=self.retirement_date)
         with self.assertRaises(ValueError):
-            person = Person(self.name, self.birth_date,
-                            retirement_date='invalid')
+            person = Person(
+                self.initial_year, self.name, self.birth_date,
+                retirement_date='invalid')
 
         # Should work with non-str/non-datetime values as well
         birth_date = 2000
         retirement_date = birth_date + 65
-        person = Person(self.name, birth_date, retirement_date=retirement_date)
+        person = Person(
+            self.initial_year, self.name, birth_date,
+            retirement_date=retirement_date)
         self.assertEqual(person.birth_date.year,
                          datetime(2000, 1, 1).year)
         self.assertEqual(person.birth_date.year + 65,
@@ -134,7 +139,9 @@ class TestPersonMethods(unittest.TestCase):
         # Let's mix different types of non-datetime inputs. Should work.
         birth_date = "3 February 2001"
         retirement_date = 2002
-        person = Person(self.name, birth_date, retirement_date=retirement_date)
+        person = Person(
+            self.initial_year, self.name, birth_date,
+            retirement_date=retirement_date)
         birth_date = datetime(2001, 2, 3)
         self.assertEqual(person.birth_date, birth_date)
         self.assertEqual(person.retirement_date.year, retirement_date)
@@ -146,7 +153,9 @@ class TestPersonMethods(unittest.TestCase):
         # Let's mix datetime and non-datetime inputs. Should work.
         birth_date = "3 February 2001"
         retirement_date = datetime(2002, 1, 1)
-        person = Person(self.name, birth_date, retirement_date=retirement_date)
+        person = Person(
+            self.initial_year, self.name, birth_date,
+            retirement_date=retirement_date)
         birth_date = datetime(2001, 2, 3)
         self.assertEqual(person.birth_date, birth_date)
         self.assertEqual(person.retirement_date.year, retirement_date.year)
@@ -159,12 +168,12 @@ class TestPersonMethods(unittest.TestCase):
         # Now confirm that we can pass gross_income, spouse,
         # tax_treatment, allocation_strategy, and initial_year
         gross_income = Money(100000)
-        person1 = Person(self.name, birth_date,
-                         retirement_date=retirement_date,
-                         gross_income=gross_income,
-                         spouse=None, tax_treatment=self.tax_treatment,
-                         allocation_strategy=self.allocation_strategy,
-                         initial_year=self.initial_year)
+        person1 = Person(
+            self.initial_year, self.name, birth_date,
+            retirement_date=retirement_date,
+            gross_income=gross_income,
+            spouse=None, tax_treatment=self.tax_treatment,
+            allocation_strategy=self.allocation_strategy)
         self.assertEqual(person1.gross_income, gross_income)
         self.assertEqual(person1.gross_income_history,
                          {self.initial_year: gross_income})
@@ -175,11 +184,11 @@ class TestPersonMethods(unittest.TestCase):
         self.assertEqual(person1.accounts, set())
 
         # Add a spouse and confirm that both Person objects are updated
-        person2 = Person("Spouse", self.initial_year - 20,
-                         retirement_date=retirement_date,
-                         gross_income=Money(50000),
-                         spouse=person1, tax_treatment=self.tax_treatment,
-                         initial_year=self.initial_year)
+        person2 = Person(
+            self.initial_year, "Spouse", self.initial_year - 20,
+            retirement_date=retirement_date,
+            gross_income=Money(50000),
+            spouse=person1, tax_treatment=self.tax_treatment)
         self.assertEqual(person1.spouse, person2)
         self.assertEqual(person2.spouse, person1)
 
@@ -253,21 +262,24 @@ class TestPersonMethods(unittest.TestCase):
 
         # Test retiring on 65th birthday
         retirement_date = self.birth_date + relativedelta(years=65)
-        person = Person(self.name, self.birth_date,
-                        retirement_date=retirement_date)
+        person = Person(
+            self.initial_year, self.name, self.birth_date,
+            retirement_date=retirement_date)
         self.assertEqual(person.retirement_age, 65)
 
         # Test retiring on day after 65th birthday
         retirement_date = self.birth_date + relativedelta(years=65, day=1)
-        person = Person(self.name, self.birth_date,
-                        retirement_date=retirement_date)
+        person = Person(
+            self.initial_year, self.name, self.birth_date,
+            retirement_date=retirement_date)
         self.assertEqual(person.retirement_age, 65)
 
         # Test retiring on day before 65th birthday
         retirement_date = self.birth_date + relativedelta(years=65) - \
             relativedelta(days=1)
-        person = Person(self.name, self.birth_date,
-                        retirement_date=retirement_date)
+        person = Person(
+            self.initial_year, self.name, self.birth_date,
+            retirement_date=retirement_date)
         self.assertEqual(person.retirement_age, 64)
 
         # Test person with no known retirement date
@@ -284,12 +296,11 @@ class TestPersonMethods(unittest.TestCase):
             inflation_adjust={2017: 1, 2018: 1, 2019: 1, 2020: 1},
             personal_deduction={2017: 0})
         person = Person(
-            'Name', 2000,
+            initial_year, 'Name', 2000,
             raise_rate=2.0,
             retirement_date=self.retirement_date,
             gross_income=gross_income,
-            tax_treatment=tax,
-            initial_year=initial_year)
+            tax_treatment=tax)
         self.assertEqual(person.gross_income, gross_income)
         self.assertEqual(person.net_income, Money(100))
         self.assertEqual(person.this_year, initial_year)
@@ -303,10 +314,10 @@ class TestPersonMethods(unittest.TestCase):
         gross_income = 100
         tax = Tax({initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
                   {2017: 1, 2018: 1, 2019: 1, 2020: 1}, {2017: 0})
-        person = Person('Name', 2000,
-                        retirement_date=self.retirement_date,
-                        gross_income=gross_income,
-                        tax_treatment=tax, initial_year=initial_year)
+        person = Person(
+            initial_year, 'Name', 2000,
+            retirement_date=self.retirement_date,
+            gross_income=gross_income, tax_treatment=tax)
         self.assertEqual(person.taxable_income, gross_income)
 
     def test_taxwithheld(self):
@@ -316,10 +327,10 @@ class TestPersonMethods(unittest.TestCase):
             {initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
             inflation_adjust={2017: 1, 2018: 1, 2019: 1, 2020: 1},
             personal_deduction={2017: 0})
-        person = Person('Name', 2000,
-                        retirement_date=self.retirement_date,
-                        gross_income=gross_income,
-                        tax_treatment=tax, initial_year=initial_year)
+        person = Person(
+            self.initial_year, 'Name', 2000,
+            retirement_date=self.retirement_date,
+            gross_income=gross_income, tax_treatment=tax)
         self.assertEqual(person.tax_withheld, Money(50))
 
     def test_tax_credit(self):
@@ -327,10 +338,10 @@ class TestPersonMethods(unittest.TestCase):
         gross_income = 300
         tax = Tax({initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
                   {2017: 1, 2018: 1, 2019: 1, 2020: 1}, {2017: 0})
-        person = Person('Name', 2000,
-                        retirement_date=self.retirement_date,
-                        gross_income=gross_income,
-                        tax_treatment=tax, initial_year=initial_year)
+        person = Person(
+            self.initial_year, 'Name', 2000,
+            retirement_date=self.retirement_date, gross_income=gross_income,
+            tax_treatment=tax)
         self.assertEqual(person.tax_credit, Money(0))
 
     def test_tax_deduction(self):
@@ -338,10 +349,10 @@ class TestPersonMethods(unittest.TestCase):
         gross_income = 300
         tax = Tax({initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
                   {2017: 1, 2018: 1, 2019: 1, 2020: 1}, {2017: 0})
-        person = Person('Name', 2000,
-                        retirement_date=self.retirement_date,
-                        gross_income=gross_income,
-                        tax_treatment=tax, initial_year=initial_year)
+        person = Person(
+            self.initial_year, 'Name', 2000,
+            retirement_date=self.retirement_date, gross_income=gross_income,
+            tax_treatment=tax)
         self.assertEqual(person.tax_deduction, Money(0))
 
     def test_inputs(self):
@@ -351,11 +362,9 @@ class TestPersonMethods(unittest.TestCase):
             initial_year: Money(1000), initial_year+2: Money(0)
             }
         }
-        person = Person('Name', 2000,
-                        gross_income=gross_income,
-                        raise_rate=1,
-                        initial_year=initial_year,
-                        inputs=inputs)
+        person = Person(
+            initial_year, 'Name', 2000, retirement_date=2065,
+            gross_income=gross_income, raise_rate=1, inputs=inputs)
         # We've gross income for the first and third years; the second
         # year should be set programmatically based on a 100% raise.
         self.assertEqual(person.gross_income, Money(1000))
@@ -411,11 +420,10 @@ class TestAccountMethods(unittest.TestCase):
             adjust_for_retirement_plan=False,
             scenario=scenario)
         cls.owner = Person(
-            "test", 2000,
+            cls.initial_year, "test", 2000,
             raise_rate={year: 1 for year in range(2000, 2066)},
             retirement_date=2065,
-            allocation_strategy=cls.allocation_strategy,
-            initial_year=cls.initial_year)
+            allocation_strategy=cls.allocation_strategy)
 
     def test_init(self, *args, **kwargs):
         """ Tests Account.__init__ """
@@ -427,11 +435,9 @@ class TestAccountMethods(unittest.TestCase):
         transactions = {1: Money(1), 0: Money(-1)}
         nper = 1  # This is the easiest case to test
         initial_year = self.initial_year
-        settings = Settings()
-        account = self.AccountType(owner, *args, balance=balance, rate=rate,
-                                   transactions=transactions, nper=nper,
-                                   initial_year=initial_year,
-                                   settings=settings, **kwargs)
+        account = self.AccountType(
+            owner, *args, balance=balance, rate=rate,
+            transactions=transactions, nper=nper, **kwargs)
         # Test primary attributes
         self.assertEqual(account.balance_history, {initial_year: balance})
         self.assertEqual(account.rate_history, {initial_year: rate})
@@ -460,17 +466,17 @@ class TestAccountMethods(unittest.TestCase):
         account = self.AccountType(
             self.owner, *args, balance=balance, rate=0, **kwargs)
         self.assertEqual(account.balance_history, {
-            Settings.initial_year: balance
+            self.initial_year: balance
             })
-        self.assertEqual(account.rate_history, {Settings.initial_year: 0})
+        self.assertEqual(account.rate_history, {self.initial_year: 0})
         self.assertEqual(account.transactions_history, {
-            Settings.initial_year: {}
+            self.initial_year: {}
             })
         self.assertEqual(account.balance, balance)
         self.assertEqual(account.rate, 0)
         self.assertEqual(account.transactions, {})
         self.assertEqual(account.nper, 1)
-        self.assertEqual(account.initial_year, Settings.initial_year)
+        self.assertEqual(account.initial_year, self.initial_year)
 
         # Try again, but this time don't set rate explicitly; instead
         # use default behaviour and infer its rate from its owner's
@@ -479,18 +485,18 @@ class TestAccountMethods(unittest.TestCase):
         account = self.AccountType(
             self.owner, *args, balance=balance, **kwargs)
         self.assertEqual(account.balance_history, {
-            Settings.initial_year: balance
+            self.initial_year: balance
             })
         self.assertEqual(account.transactions_history, {
-            Settings.initial_year: {}
+            self.initial_year: {}
             })
         self.assertEqual(account.balance, balance)
         self.assertEqual(account.rate, Decimal(0.75))
         self.assertEqual(account.rate_history,
-                         {Settings.initial_year: Decimal(0.75)})
+                         {self.initial_year: Decimal(0.75)})
         self.assertEqual(account.transactions, {})
         self.assertEqual(account.nper, 1)
-        self.assertEqual(account.initial_year, Settings.initial_year)
+        self.assertEqual(account.initial_year, self.initial_year)
         self.assertEqual(account.rate_function,
                          account.rate_from_asset_allocation)
 
@@ -500,10 +506,10 @@ class TestAccountMethods(unittest.TestCase):
         transactions = {'start': "1", 'end': "-1"}
         nper = 'A'
         initial_year = self.initial_year
-        account = self.AccountType(self.owner, *args, balance=balance,
-                                   rate=rate, transactions=transactions,
-                                   nper=nper, initial_year=initial_year,
-                                   settings=settings, **kwargs)
+        account = self.AccountType(
+            self.owner, *args,
+            balance=balance, rate=rate, transactions=transactions, nper=nper,
+            **kwargs)
         self.assertEqual(account.balance_history, {initial_year: Money(0)})
         self.assertEqual(account.rate_history, {initial_year: 1})
         self.assertEqual(account.transactions_history,
@@ -524,27 +530,29 @@ class TestAccountMethods(unittest.TestCase):
         self.assertIsInstance(account.initial_year, int)
 
         # Test 'when' values inside and outside of the range [0,1]
-        account = self.AccountType(self.owner, *args,
-                                   balance=balance, transactions={0: 1},
-                                   initial_year=initial_year, **kwargs)
+        account = self.AccountType(
+            self.owner, *args,
+            balance=balance, transactions={0: 1}, **kwargs)
         self.assertEqual(account.transactions[Decimal(0)],
                          Money(1))
-        account = self.AccountType(self.owner, *args,
-                                   balance=balance, transactions={0.5: 1},
-                                   initial_year=initial_year, **kwargs)
+        account = self.AccountType(
+            self.owner, *args,
+            balance=balance, transactions={0.5: 1}, **kwargs)
         self.assertEqual(account.transactions[Decimal(0.5)],
                          Money(1))
-        account = self.AccountType(self.owner, *args,
-                                   balance=balance, transactions={1: 1},
-                                   initial_year=initial_year, **kwargs)
+        account = self.AccountType(
+            self.owner, *args,
+            balance=balance, transactions={1: 1}, **kwargs)
         self.assertEqual(account.transactions[Decimal(1)],
                          Money(1))
         with self.assertRaises(ValueError):
-            account = self.AccountType(self.owner, *args, balance=balance,
-                                       transactions={-1: 1}, **kwargs)
+            account = self.AccountType(
+                self.owner, *args,
+                balance=balance, transactions={-1: 1}, **kwargs)
         with self.assertRaises(ValueError):
-            account = self.AccountType(self.owner, *args, balance=balance,
-                                       transactions={2: 1}, **kwargs)
+            account = self.AccountType(
+                self.owner, *args,
+                balance=balance, transactions={2: 1}, **kwargs)
 
         # Let's test invalid Decimal conversions next.
         # (BasicContext causes most Decimal-conversion errors to raise
@@ -553,93 +561,107 @@ class TestAccountMethods(unittest.TestCase):
 
         # Test with values not convertible to Decimal
         with self.assertRaises(decimal.InvalidOperation):
-            account = self.AccountType(self.owner, *args,
-                                       balance="invalid input",
-                                       **kwargs)
+            account = self.AccountType(
+                self.owner, *args,
+                balance="invalid input", **kwargs)
             # In some contexts, Decimal returns NaN instead of raising an error
             if account.balance == Money("NaN"):
                 raise decimal.InvalidOperation()
 
         with self.assertRaises(decimal.InvalidOperation):
-            account = self.AccountType(self.owner, *args,
-                                       balance=balance, rate="invalid input",
-                                       **kwargs)
+            account = self.AccountType(
+                self.owner, *args,
+                balance=balance, rate="invalid input", **kwargs)
             if account.rate == Decimal("NaN"):
                 raise decimal.InvalidOperation()
 
         with self.assertRaises((decimal.InvalidOperation, KeyError)):
-            account = self.AccountType(self.owner, *args,
-                                       balance=balance,
-                                       transactions={"invalid input": 1},
-                                       **kwargs)
+            account = self.AccountType(
+                self.owner, *args,
+                balance=balance, transactions={"invalid input": 1}, **kwargs)
             if Decimal('NaN') in account.transactions:
                 raise decimal.InvalidOperation()
 
         # Finally, test passing an invalid owner:
         with self.assertRaises(TypeError):
-            account = self.AccountType("invalid owner", *args, **kwargs)
+            account = self.AccountType(
+                "invalid owner", *args, **kwargs)
 
     def test_nper(self, *args, **kwargs):
         """ Test setting nper to various values, valid and otherwise. """
         # Test valid nper values:
         # Continuous (can be represented as either None or 'C')
-        account = self.AccountType(self.owner, *args, nper='C', **kwargs)
+        account = self.AccountType(
+            self.owner, *args, nper='C', **kwargs)
         self.assertEqual(account.nper, None)
         self.assertIsInstance(account.nper, (type(None), str))
 
         # Daily
-        account = self.AccountType(self.owner, *args, nper='D', **kwargs)
+        account = self.AccountType(
+            self.owner, *args, nper='D', **kwargs)
         self.assertEqual(account.nper, 365)
         self.assertIsInstance(account.nper, int)
 
         # Weekly
-        account = self.AccountType(self.owner, *args, nper='W', **kwargs)
+        account = self.AccountType(
+            self.owner, *args, nper='W', **kwargs)
         self.assertEqual(account.nper, 52)
 
         # Biweekly
-        account = self.AccountType(self.owner, *args, nper='BW', **kwargs)
+        account = self.AccountType(
+            self.owner, *args, nper='BW', **kwargs)
         self.assertEqual(account.nper, 26)
 
         # Semi-monthly
-        account = self.AccountType(self.owner, *args, nper='SM', **kwargs)
+        account = self.AccountType(
+            self.owner, *args, nper='SM', **kwargs)
         self.assertEqual(account.nper, 24)
 
         # Monthly
-        account = self.AccountType(self.owner, *args, nper='M', **kwargs)
+        account = self.AccountType(
+            self.owner, *args, nper='M', **kwargs)
         self.assertEqual(account.nper, 12)
 
         # Bimonthly
-        account = self.AccountType(self.owner, *args, nper='BM', **kwargs)
+        account = self.AccountType(
+            self.owner, *args, nper='BM', **kwargs)
         self.assertEqual(account.nper, 6)
 
         # Quarterly
-        account = self.AccountType(self.owner, *args, nper='Q', **kwargs)
+        account = self.AccountType(
+            self.owner, *args, nper='Q', **kwargs)
         self.assertEqual(account.nper, 4)
 
         # Semiannually
-        account = self.AccountType(self.owner, *args, nper='SA', **kwargs)
+        account = self.AccountType(
+            self.owner, *args, nper='SA', **kwargs)
         self.assertEqual(account.nper, 2)
 
         # Annually
-        account = self.AccountType(self.owner, *args, nper='A', **kwargs)
+        account = self.AccountType(
+            self.owner, *args, nper='A', **kwargs)
         self.assertEqual(account.nper, 1)
 
         # Test invalid nper values:
         with self.assertRaises(ValueError):
-            account = self.AccountType(self.owner, *args, nper=0, **kwargs)
+            account = self.AccountType(
+                self.owner, *args, nper=0, **kwargs)
 
         with self.assertRaises(ValueError):
-            account = self.AccountType(self.owner, *args, nper=-1, **kwargs)
+            account = self.AccountType(
+                self.owner, *args, nper=-1, **kwargs)
 
         with self.assertRaises(TypeError):
-            account = self.AccountType(self.owner, *args, nper=0.5, **kwargs)
+            account = self.AccountType(
+                self.owner, *args, nper=0.5, **kwargs)
 
         with self.assertRaises(TypeError):
-            account = self.AccountType(self.owner, *args, nper=1.5, **kwargs)
+            account = self.AccountType(
+                self.owner, *args, nper=1.5, **kwargs)
 
         with self.assertRaises(ValueError):
-            account = self.AccountType(self.owner, *args, nper='invalid',
-                                       **kwargs)
+            account = self.AccountType(
+                self.owner, *args, nper='invalid', **kwargs)
 
     def test_returns(self, *args, **kwargs):
         """ Tests Account.returns and Account.returns_history. """
@@ -647,7 +669,7 @@ class TestAccountMethods(unittest.TestCase):
         # Should have returns of $1 in its first year:
         account = self.AccountType(
             self.owner, *args, balance=1, rate=1.0, nper=1,
-            initial_year=self.initial_year, **kwargs)
+            **kwargs)
         self.assertEqual(account.returns, Money(1))  # $1 return
         self.assertEqual(account.returns_history,
                          {self.initial_year: Money(1)})
@@ -662,26 +684,29 @@ class TestAccountMethods(unittest.TestCase):
         """ Tests next_year. """
         # Simple account: Start with $1, apply 100% growth once per
         # year, no transactions. Should yield a new balance of $2.
-        account = self.AccountType(self.owner, *args, balance=1, rate=1.0,
-                                   transactions={}, nper=1, **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=1, rate=1.0,
+            transactions={}, nper=1, **kwargs)
         account.next_year()
         self.assertEqual(account.balance, Money(2))
 
         # No growth: Start with $1 and apply 0% growth.
-        account = self.AccountType(self.owner, *args, balance=1, rate=0,
-                                   **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=1, rate=0, **kwargs)
         account.next_year()
         self.assertEqual(account.balance, Money(1))
 
         # Try with continuous growth
-        account = self.AccountType(self.owner, *args, balance=1, rate=1,
-                                   transactions={}, nper='C', **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=1, rate=1,
+            transactions={}, nper='C', **kwargs)
         account.next_year()
         self.assertAlmostEqual(account.balance, Money(math.e), 3)
 
         # Try with discrete (monthly) growth
-        account = self.AccountType(self.owner, *args, balance=1, rate=1,
-                                   transactions={}, nper='M', **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=1, rate=1,
+            transactions={}, nper='M', **kwargs)
         account.next_year()
         self.assertAlmostEqual(account.balance, Money((1+1/12) ** 12), 3)
 
@@ -692,25 +717,25 @@ class TestAccountMethods(unittest.TestCase):
         # since it occurs mid-compounding-period. However, the output
         # should be sensible. In  particular, it should grow by $0-$1.
         # So check to confirm that the result is in the range [$4, $5]
-        account = self.AccountType(self.owner, *args, balance=1, rate=1.0,
-                                   transactions={0.5: Money(2)}, nper=1,
-                                   **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=1, rate=1.0,
+            transactions={0.5: Money(2)}, nper=1, **kwargs)
         account.next_year()
         self.assertGreaterEqual(account.balance, Money(4))
         self.assertLessEqual(account.balance, Money(5))
 
         # No growth: Start with $1, add $2, and apply 0% growth.
-        account = self.AccountType(self.owner, *args, balance=1, rate=0,
-                                   transactions={0.5: Money(2)}, nper=1,
-                                   **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=1, rate=0,
+            transactions={0.5: Money(2)}, nper=1, **kwargs)
         account.next_year()
         self.assertEqual(account.balance, Money(3))
 
         # Try with continuous growth
         # This can be calculated from P = P_0 * e^rt
-        account = self.AccountType(self.owner, *args, balance=1, rate=1,
-                                   transactions={0.5: Money(2)}, nper='C',
-                                   **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=1, rate=1,
+            transactions={0.5: Money(2)}, nper='C', **kwargs)
         next_val = Money(1 * math.e + 2 * math.e ** 0.5)
         account.next_year()
         self.assertAlmostEqual(account.balance, next_val, 5)
@@ -719,9 +744,9 @@ class TestAccountMethods(unittest.TestCase):
         # The $2 transaction happens at the start of a compounding
         # period, so behaviour is well-defined. It should grow by a
         # factor of (1 + r/n)^nt, for n = 12, t = 0.5
-        account = self.AccountType(self.owner, *args, balance=1, rate=1,
-                                   transactions={0.5: Money(2)}, nper='M',
-                                   **kwargs)  # monthly
+        account = self.AccountType(
+            self.owner, *args, balance=1, rate=1,
+            transactions={0.5: Money(2)}, nper='M', **kwargs)  # monthly
         next_val = Money((1 + 1/12) ** (12) + 2 * (1 + 1/12) ** (12 * 0.5))
         account.next_year()
         self.assertAlmostEqual(account.balance, next_val, 5)
@@ -733,9 +758,8 @@ class TestAccountMethods(unittest.TestCase):
         initial_year = self.initial_year
 
         # Start with an empty account and add a transaction.
-        account = self.AccountType(self.owner, *args,
-                                   initial_year=initial_year,
-                                   **kwargs)
+        account = self.AccountType(
+            self.owner, *args, **kwargs)
         self.assertEqual(account.transactions_history, {
             initial_year: {}
             })
@@ -748,9 +772,8 @@ class TestAccountMethods(unittest.TestCase):
         self.assertEqual(account.inflows, Money(1))
 
         # Try adding multiple transactions at different times.
-        account = self.AccountType(self.owner, *args,
-                                   initial_year=initial_year,
-                                   **kwargs)
+        account = self.AccountType(
+            self.owner, *args, **kwargs)
         account.add_transaction(Money(1), 'start')
         account.add_transaction(Money(2), 1)
         self.assertEqual(account.transactions_history, {
@@ -760,9 +783,8 @@ class TestAccountMethods(unittest.TestCase):
         self.assertEqual(account.outflows, 0)
 
         # Try adding multiple transactions at the same time.
-        account = self.AccountType(self.owner, *args,
-                                   initial_year=initial_year,
-                                   **kwargs)
+        account = self.AccountType(
+            self.owner, *args, **kwargs)
         account.add_transaction(Money(1), 'start')
         account.add_transaction(Money(1), 0)
         self.assertEqual(account.transactions_history, {
@@ -772,9 +794,8 @@ class TestAccountMethods(unittest.TestCase):
         self.assertEqual(account.outflows, Money(0))
 
         # Try adding both inflows and outflows at different times.
-        account = self.AccountType(self.owner, *args,
-                                   initial_year=initial_year,
-                                   **kwargs)
+        account = self.AccountType(
+            self.owner, *args, **kwargs)
         account.add_transaction(Money(1), 'start')
         account.add_transaction(Money(-2), 'end')
         self.assertEqual(account.transactions_history, {
@@ -786,9 +807,8 @@ class TestAccountMethods(unittest.TestCase):
         # Try adding simultaneous inflows and outflows
         # NOTE: Consider whether this behaviour (i.e. simultaneous flows
         # being combined into one net flow) should be revised.
-        account = self.AccountType(self.owner, *args,
-                                   initial_year=initial_year,
-                                   **kwargs)
+        account = self.AccountType(
+            self.owner, *args, **kwargs)
         account.add_transaction(Money(1), 'start')
         account.add_transaction(Money(-2), 'start')
         self.assertEqual(account.transactions_history, {
@@ -804,15 +824,17 @@ class TestAccountMethods(unittest.TestCase):
 
         # Simple scenario: $100 in a no-growth account with no
         # transactions. Should return $100 for any point in time.
-        account = self.AccountType(self.owner, *args, balance=100, rate=0,
-                                   transactions={}, nper=1, **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=100, rate=0,
+            transactions={}, nper=1, **kwargs)
         self.assertEqual(account.max_outflow('start'), Money(-100))
         self.assertEqual(account.max_outflow(0.5), Money(-100))
         self.assertEqual(account.max_outflow('end'), Money(-100))
 
         # Try with negative balance - should return $0
-        account = self.AccountType(self.owner, *args, balance=-100, rate=1,
-                                   transactions={}, nper=1, **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=-100, rate=1,
+            transactions={}, nper=1, **kwargs)
         self.assertEqual(account.max_outflow('start'), Money(0))
         self.assertEqual(account.max_outflow('end'), Money(0))
 
@@ -821,8 +843,9 @@ class TestAccountMethods(unittest.TestCase):
         # NOTE: Account balances mid-compounding-period are not
         # well-defined in the current implementation, so avoid
         # testing at when=0.5
-        account = self.AccountType(self.owner, *args, balance=100, rate=1,
-                                   transactions={}, nper=1, **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=100, rate=1,
+            transactions={}, nper=1, **kwargs)
         self.assertEqual(account.max_outflow('start'), Money(-100))
         # self.assertEqual(account.max_outflow(0.5), Money(-150))
         self.assertEqual(account.max_outflow('end'), Money(-200))
@@ -832,9 +855,9 @@ class TestAccountMethods(unittest.TestCase):
         # NOTE: Behaviour of transactions between compounding
         # points is not well-defined, so avoid adding transactions at
         # 0.5 (or anywhere other than 'start' or 'end') when nper = 1
-        account = self.AccountType(self.owner, *args, balance=100, rate=1,
-                                   transactions={'start': 100, 'end': 100},
-                                   nper=1, **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=100, rate=1,
+            transactions={'start': 100, 'end': 100}, nper=1, **kwargs)
         self.assertEqual(account.max_outflow('start'), Money(-200))
         # self.assertEqual(account.max_outflow(0.25), Money(-250))
         # self.assertEqual(account.max_outflow(0.5), Money(-300))
@@ -846,10 +869,10 @@ class TestAccountMethods(unittest.TestCase):
         # t=0.5, balance should be -$200 at t=0.5. Add $200 transaction
         # at t=0.5 so balance = 0 and another transaction at t='end' so
         # balance = $100.
-        account = self.AccountType(self.owner, *args, balance=-200, rate=2.0,
-                                   transactions={'start': 100, 0.5: 200,
-                                                 'end': 100},
-                                   nper=2, **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=-200, rate=2.0,
+            transactions={'start': 100, 0.5: 200, 'end': 100}, nper=2,
+            **kwargs)
         self.assertEqual(account.max_outflow('start'), Money(0))
         self.assertEqual(account.balance_at_time('start'), Money(-100))
         self.assertEqual(account.max_outflow(0.5), Money(0))
@@ -858,9 +881,9 @@ class TestAccountMethods(unittest.TestCase):
         # Test compounding. First: discrete compounding, once at the
         # halfway point. Add a $100 transaction at when=0.5 just to be
         # sure.
-        account = self.AccountType(self.owner, *args, balance=100, rate=1,
-                                   transactions={0.5: Money(100)}, nper=2,
-                                   **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=100, rate=1,
+            transactions={0.5: Money(100)}, nper=2, **kwargs)
         self.assertEqual(account.max_outflow('start'), Money(-100))
         # self.assertEqual(account.max_outflow(0.25), Money(-125))
         self.assertEqual(account.max_outflow(0.5), Money(-250))
@@ -869,9 +892,9 @@ class TestAccountMethods(unittest.TestCase):
 
         # Now to test continuous compounding. Add a $100 transaction at
         # when=0.5 just to be sure.
-        account = self.AccountType(self.owner, *args, balance=100, rate=1,
-                                   transactions={0.5: Money(100)}, nper='C',
-                                   **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=100, rate=1,
+            transactions={0.5: Money(100)}, nper='C', **kwargs)
         self.assertEqual(account.max_outflow('start'), Money(-100))
         self.assertAlmostEqual(account.max_outflow(0.25),
                                -Money(100 * math.e ** 0.25), 5)
@@ -886,79 +909,85 @@ class TestAccountMethods(unittest.TestCase):
 
     def test_max_inflow(self, *args, **kwargs):
         # This method should always return Money('Infinity')
-        account = self.AccountType(self.owner, *args, balance=100, **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=100, **kwargs)
         self.assertEqual(account.max_inflow(), Money('Infinity'))
 
-        account = self.AccountType(self.owner, *args, balance=-100, **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=-100, **kwargs)
         self.assertEqual(account.max_inflow(), Money('Infinity'))
 
     def test_min_outflow(self, *args, **kwargs):
         # This method should always return $0
-        account = self.AccountType(self.owner, *args, balance=100, **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=100, **kwargs)
         self.assertEqual(account.min_outflow(), Money(0))
 
-        account = self.AccountType(self.owner, *args, balance=-100, **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=-100, **kwargs)
         self.assertEqual(account.min_outflow(), Money(0))
 
     def test_min_inflow(self, *args, **kwargs):
         # This method should always return $0
-        account = self.AccountType(self.owner, *args, balance=100, **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=100, **kwargs)
         self.assertEqual(account.min_inflow(), Money(0))
 
-        account = self.AccountType(self.owner, *args, balance=-100, **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=-100, **kwargs)
         self.assertEqual(account.min_inflow(), Money(0))
 
     def test_taxable_income(self, *args, **kwargs):
         # This method should return the growth in the account.
-        account = self.AccountType(self.owner, *args, balance=100, rate=1.0,
-                                   transactions={0: 100, 1: -100},
-                                   **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=100, rate=1.0,
+            transactions={0: 100, 1: -100}, **kwargs)
         self.assertEqual(account.taxable_income, Money(200))
 
         # Losses are not taxable:
-        account = self.AccountType(self.owner, *args, balance=-100, rate=1.0,
-                                   transactions={0: 100, 1: -100},
-                                   **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=-100, rate=1.0,
+            transactions={0: 100, 1: -100}, **kwargs)
         self.assertEqual(account.taxable_income, Money(0))
 
     def test_tax_withheld(self, *args, **kwargs):
         # This method should always return $0
-        account = self.AccountType(self.owner, *args, balance=100, rate=1.0,
-                                   transactions={0: 100, 1: -100},
-                                   **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=100, rate=1.0,
+            transactions={0: 100, 1: -100}, **kwargs)
         self.assertEqual(account.tax_withheld, Money(0))
 
-        account = self.AccountType(self.owner, *args, balance=-100, rate=1.0,
-                                   transactions={0: 100, 1: -100},
-                                   **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=-100, rate=1.0,
+            transactions={0: 100, 1: -100}, **kwargs)
         self.assertEqual(account.tax_withheld, Money(0))
 
     def test_tax_credit(self, *args, **kwargs):
         # This method should always return $0, regardless of balance,
         # inflows, or outflows
-        account = self.AccountType(self.owner, *args, balance=100, rate=1.0,
-                                   transactions={0: 100, 1: -100},
-                                   **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=100, rate=1.0,
+            transactions={0: 100, 1: -100}, **kwargs)
         self.assertEqual(account.tax_credit, Money(0))
 
         # Test with negative balance
-        account = self.AccountType(self.owner, *args, balance=-100, rate=1.0,
-                                   transactions={0: 100, 1: -100},
-                                   **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=-100, rate=1.0,
+            transactions={0: 100, 1: -100}, **kwargs)
         self.assertEqual(account.tax_credit, Money(0))
 
     def test_tax_deduction(self, *args, **kwargs):
         # This method should always return $0, regardless of balance,
         # inflows, or outflows
-        account = self.AccountType(self.owner, *args, balance=100, rate=1.0,
-                                   transactions={0: 100, 1: -100},
-                                   **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=100, rate=1.0,
+            transactions={0: 100, 1: -100}, **kwargs)
         self.assertEqual(account.tax_deduction, Money(0))
 
         # Test with negative balance
-        account = self.AccountType(self.owner, *args, balance=-100, rate=1.0,
-                                   transactions={0: 100, 1: -100},
-                                   **kwargs)
+        account = self.AccountType(
+            self.owner, *args, balance=-100, rate=1.0,
+            transactions={0: 100, 1: -100}, **kwargs)
         self.assertEqual(account.tax_deduction, Money(0))
 
 
@@ -975,10 +1004,9 @@ class TestDebtMethods(unittest.TestCase):
         cls.initial_year = 2000
         # Every init requires an owner, so store that here:
         cls.owner = Person(
-            "test", 2000,
+            cls.initial_year, "test", 2000,
             raise_rate={year: 1 for year in range(2000, 2066)},
-            retirement_date=2065,
-            initial_year=cls.initial_year)
+            retirement_date=2065)
 
         # Debt takes three args: reduction_rate (Decimal),
         # minimum_payment (Money), and accelerate_payment (bool)
@@ -992,11 +1020,11 @@ class TestDebtMethods(unittest.TestCase):
         # super().test_init(*args, **kwargs)
 
         # Test default init.
-        account = self.AccountType(self.owner, *args, **kwargs)
+        account = self.AccountType(
+            self.owner, *args, **kwargs)
         self.assertEqual(account.minimum_payment, Money(0))
-        self.assertEqual(account.reduction_rate, Settings.debt_reduction_rate)
-        self.assertEqual(account.accelerate_payment,
-                         Settings.debt_accelerate_payment)
+        self.assertEqual(account.reduction_rate, 1)
+        self.assertEqual(account.accelerate_payment, False)
 
         # Test init with appropriate-type args.
         minimum_payment = Money(100)
@@ -1025,51 +1053,61 @@ class TestDebtMethods(unittest.TestCase):
         # Test init with args of non-convertible types
         with self.assertRaises(decimal.InvalidOperation):
             account = self.AccountType(
-                self.owner, *args, minimum_payment='invalid', **kwargs)
+                self.owner, *args,
+                minimum_payment='invalid', **kwargs)
         with self.assertRaises(decimal.InvalidOperation):
             account = self.AccountType(
-                self.owner, *args, reduction_rate='invalid', **kwargs)
+                self.owner, *args,
+                reduction_rate='invalid', **kwargs)
 
     def test_max_inflow(self, *args, **kwargs):
         # Test when balance is greater than minimum payment
         account = self.AccountType(
-            self.owner, *args, minimum_payment=100, balance=-1000, **kwargs)
+            self.owner, *args,
+            minimum_payment=100, balance=-1000, **kwargs)
         self.assertEqual(account.max_inflow(), Money(1000))
 
         # Test when balance is less than minimum payment
         account = self.AccountType(
-            self.owner, *args, minimum_payment=1000, balance=-100, **kwargs)
+            self.owner, *args,
+            minimum_payment=1000, balance=-100, **kwargs)
         self.assertEqual(account.max_inflow(), Money(100))
 
         # Test when minimum payment and balance are equal in size
         account = self.AccountType(
-            self.owner, *args, minimum_payment=100, balance=-100, **kwargs)
+            self.owner, *args,
+            minimum_payment=100, balance=-100, **kwargs)
         self.assertEqual(account.max_inflow(), Money(100))
 
         # Test with 0 balance
         account = self.AccountType(
-            self.owner, *args, minimum_payment=100, balance=0, **kwargs)
+            self.owner, *args,
+            minimum_payment=100, balance=0, **kwargs)
         self.assertEqual(account.max_inflow(), Money(0))
 
     def test_min_inflow(self, *args, **kwargs):
         # Test when balance is greater than minimum payment
         account = self.AccountType(
-            self.owner, *args, minimum_payment=100, balance=-1000, **kwargs)
+            self.owner, *args,
+            minimum_payment=100, balance=-1000, **kwargs)
         self.assertEqual(account.min_inflow(), Money(100))
 
         # Test when balance is less than minimum payment
         account = self.AccountType(
-            self.owner, *args, minimum_payment=1000, balance=-100, **kwargs)
+            self.owner, *args,
+            minimum_payment=1000, balance=-100, **kwargs)
         self.assertEqual(account.min_inflow(), Money(100))
 
         # Test when minimum payment and balance are equal in size
         account = self.AccountType(
-            self.owner, *args, minimum_payment=100, balance=-100, **kwargs)
+            self.owner, *args,
+            minimum_payment=100, balance=-100, **kwargs)
         self.assertEqual(account.min_inflow(), Money(100))
 
         # Test with 0 balance
         account = self.AccountType(
-            self.owner, *args, minimum_payment=100, balance=0, **kwargs)
+            self.owner, *args,
+            minimum_payment=100, balance=0, **kwargs)
         self.assertEqual(account.min_inflow(), Money(0))
 
 if __name__ == '__main__':
