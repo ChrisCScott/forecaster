@@ -7,7 +7,6 @@ from tax import Tax
 from strategy import ContributionStrategy, WithdrawalStrategy, \
     TransactionStrategy, AllocationStrategy, DebtPaymentStrategy
 from scenario import Scenario
-from constants import Constants
 from settings import Settings
 from utility import *
 
@@ -41,8 +40,8 @@ class Forecaster(object):
     """
 
     def __init__(
-        self, person1=None, person2=None, people=set(), assets=set(),
-        debts=set(), scenario=None, contribution_strategy=None,
+        self, person1=None, person2=None, people=None, assets=None,
+        debts=None, scenario=None, contribution_strategy=None,
         withdrawal_strategy=None, contribution_transaction_strategy=None,
         withdrawal_transaction_strategy=None, allocation_strategy=None,
         debt_payment_strategy=None, tax_treatment=None, initial_year=None,
@@ -76,15 +75,15 @@ class Forecaster(object):
         # TODO: Make person* properties that update `people` when set
         # (or add add_person1 and add_person2 methods)?
         self.person1 = person1
-        self.person2 = person1
-        self.people = people
+        self.person2 = person2
+        self.people = people if people is not None else set()
         # Ensure that person1/person2 are in the `people` set:
         if self.person1 is not None:
             self.people.add(self.person1)
         if self.person2 is not None:
             self.people.add(self.person2)
-        self.assets = assets
-        self.debts = debts
+        self.assets = assets if assets is not None else set()
+        self.debts = debts if debts is not None else set()
         self.contribution_strategy = contribution_strategy
         self.withdrawal_strategy = withdrawal_strategy
         self.transaction_in_strategy = contribution_transaction_strategy
@@ -115,6 +114,12 @@ class Forecaster(object):
             self.set_transaction_out_strategy()
         if self.allocation_strategy is None:
             self.set_allocation_strategy()
+        if self.debt_payment_strategy is None:
+            self.set_debt_payment_strategy()
+        # Tax treatment also depends on Scenario. Person depends on Tax,
+        # so build Tax first.
+        if self.tax_treatment is None:
+            self.set_tax_treatment()
         # Finally, set `Person` objects.
         if self.person1 is None:
             self.set_person1()
@@ -137,42 +142,33 @@ class Forecaster(object):
         # build several others, so build it first.
         # Scenario is not mutable, so no need to make a copy.
         scenario = scenario if scenario is not None else self.scenario
+        # To swap out `scenario`, we build a memo that points the
+        # existing scenario to the new scenario; deepcopy will do the
+        # replacement for us.
+        # Be sure to `copy` memo each time it's passed to deepcopy!
+        memo = {id(self.scenario): scenario}
         # Person and Account objects are mutated by `Forecast`, so copy
         # them to preserve initial state for additional `Forecast`s
-        # TODO: implement __deepcopy__ member for Ledger that shallow-
-        # copies `inputs` (and other non-mutable attributes) but does
-        # deep-copy *_history dicts.
-        people = {deepcopy(person) for person in self.people}
-        assets = {deepcopy(asset) for asset in self.assets}
-        debts = {deepcopy(debt) for debt in self.debts}
-        # Strategies are not mutated by `Forecast`, but if `Scenario` is
-        # replaced by this method then we need to mutuate them here to
-        # adjust their inflation_adjust attributes. A shallow copy
-        # should be sufficient.
-        contribution_strategy = copy(self.contribution_strategy)
-        withdrawal_strategy = copy(self.withdrawal_strategy)
-        transaction_in_strategy = copy(self.transaction_in_strategy)
-        transaction_out_strategy = copy(self.transaction_out_strategy)
-        debt_payment_strategy = copy(self.debt_payment_strategy)
+        people = {deepcopy(person, memo=copy(memo)) for person in self.people}
+        assets = {deepcopy(asset, memo=copy(memo)) for asset in self.assets}
+        debts = {deepcopy(debt, memo=copy(memo)) for debt in self.debts}
+        # Strategies are not mutated by `Forecast`, but we deepcopy them
+        # anyways so that we can swap out the scenario.
+        contribution_strategy = deepcopy(
+            self.contribution_strategy, memo=copy(memo))
+        withdrawal_strategy = deepcopy(
+            self.withdrawal_strategy, memo=copy(memo))
+        transaction_in_strategy = deepcopy(
+            self.transaction_in_strategy, memo=copy(memo))
+        transaction_out_strategy = deepcopy(
+            self.transaction_out_strategy, memo=copy(memo))
+        debt_payment_strategy = deepcopy(
+            self.debt_payment_strategy, memo=copy(memo))
         # allocation_strategy is copied as an attribute of `Person`
 
-        if scenario != self.scenario:
-            # TODO: Implement a `change_scenario` method for each Ledger
-            # or other Scenario-related class and put the relevant logic
-            # there (e.g. AllocationStrategy's logic involves updating
-            # its `scenario` attribute, whereas ledger_Canada classes
-            # involve updating their `inflation_adjust` attributes.
-            # Then simplify this to just testing each object for a
-            # `change_scenario` attribute and calling it.
-            for person in people:
-                self.replace_scenario(person.allocation_strategy, scenario)
-            for account in assets.union(debts):
-                self.replace_scenario(account, scenario)
-            self.replace_scenario(contribution_strategy, scenario)
-            self.replace_scenario(withdrawal_strategy, scenario)
-            self.replace_scenario(transaction_in_strategy, scenario)
-            self.replace_scenario(transaction_out_strategy, scenario)
-            self.replace_scenario(debt_payment_strategy, scenario)
+        # Tax treatment is inflation-adjusted according to `Scenario`
+        # by `Forecast`, so make a deep copy:
+        tax_treatment = deepcopy(self.tax_treatment, memo=copy(memo))
 
         # NOTE: We use the tax treatment of person1; this behaviour
         # should likely be revisited, since in the multi-person/multi-
@@ -184,9 +180,8 @@ class Forecaster(object):
             withdrawal_strategy=withdrawal_strategy,
             contribution_transaction_strategy=transaction_in_strategy,
             withdrawal_transaction_strategy=transaction_out_strategy,
-            allocation_strategy=allocation_strategy,
             debt_payment_strategy=debt_payment_strategy,
-            tax_treatment=self.person1.tax_treatment)
+            tax_treatment=tax_treatment)
 
     def replace_scenario(self, obj, scenario):
         """ TODO """
@@ -236,10 +231,10 @@ class Forecaster(object):
         # If there's no explicit val and no default, don't add anything.
 
     def add_person(
-        self, name=None, birth_date=None,
+        self, name, birth_date,
         retirement_date=None, gross_income=None, raise_rate=None,
         spouse=None, tax_treatment=None, allocation_strategy=None,
-        inputs=None, PersonType=Person, **kwargs
+        inputs=None, initial_year=None, PersonType=Person, **kwargs
     ) -> Person:
         """ Adds a Person to the forecast.
 
@@ -289,9 +284,10 @@ class Forecaster(object):
         self.set_kwarg(kwargs, 'allocation_strategy', allocation_strategy,
                        self.allocation_strategy)
         self.set_kwarg(kwargs, 'inputs', inputs, None)
+        self.set_kwarg(kwargs, 'initial_year', initial_year, self.initial_year)
 
         # Construct a person with the keyword arguments we've assembled:
-        person = PersonType(initial_year=self.initial_year, **kwargs)
+        person = PersonType(**kwargs)
         self.people.add(person)
         # Return the Person so that subclass methods can do
         # post-processing (if they need to)
@@ -301,7 +297,7 @@ class Forecaster(object):
         self, name=None, birth_date=None,
         retirement_date=None, gross_income=None, raise_rate=None,
         spouse=None, tax_treatment=None, allocation_strategy=None,
-        inputs=None, PersonType=Person, **kwargs
+        inputs=None, initial_year=None, PersonType=Person, **kwargs
     ):
         """ Adds a person to the forecast based on person1's settings.
 
@@ -311,7 +307,7 @@ class Forecaster(object):
         # Remember to remove any previously-instantiated person1
         if self.person1 is not None:
             self.people.remove(self.person1)
-        self.set_kwarg(kwargs, 'name', name, self.settings.person1_birth_date)
+        self.set_kwarg(kwargs, 'name', name, self.settings.person1_name)
         # `Settings` defines a non-person by setting `name` to None
         if kwargs['name'] is None:
             return None
@@ -333,6 +329,7 @@ class Forecaster(object):
         self.set_kwarg(kwargs, 'allocation_strategy', allocation_strategy,
                        None)
         self.set_kwarg(kwargs, 'inputs', inputs, None)
+        self.set_kwarg(kwargs, 'initial_year', initial_year, self.initial_year)
 
         self.person1 = self.add_person(PersonType=PersonType, **kwargs)
         return self.person1
@@ -341,7 +338,7 @@ class Forecaster(object):
         self, name=None, birth_date=None,
         retirement_date=None, gross_income=None, raise_rate=None,
         spouse=None, tax_treatment=None, allocation_strategy=None,
-        inputs=None, PersonType=Person, **kwargs
+        inputs=None, initial_year=None, PersonType=Person, **kwargs
     ):
         """ Adds a person to the forecast based on person2's settings.
 
@@ -374,36 +371,16 @@ class Forecaster(object):
         self.set_kwarg(kwargs, 'allocation_strategy', allocation_strategy,
                        None)
         self.set_kwarg(kwargs, 'inputs', inputs, None)
+        self.set_kwarg(kwargs, 'initial_year', initial_year, self.initial_year)
 
         self.person2 = self.add_person(PersonType=PersonType, **kwargs)
         return self.person2
 
-    def add_account(
+    def _add_account(
         self, owner=None, balance=None, rate=None, transactions=None,
         nper=None, default_inflow_timing=None, default_outflow_timing=None,
-        inputs=None, AccountType=Account, **kwargs
+        inputs=None, initial_year=None, AccountType=Account, **kwargs
     ):
-        """ Adds an Account to the forecast.
-
-        Subclasses of Forecaster that build subclasses of Account can
-        make use of this method by passing in a suitable `AccountType`
-        argument along with any `kwargs` specific to that `AccountType`.
-
-        See `Account` for documentation on additional args.
-
-        Args:
-            inputs (dict[str, dict[int, *]]): `{arg: {year: val}}`
-                pairs, where `arg` is the name of a @recorded_property
-                of `Account` and `val` is the value of that property for
-                `year`.
-            AccountType (type): The class of `Account` being built by
-                the method. This class's `__init__` method must accept
-                all of the args of `Account`.
-
-        Returns:
-            `Account`: An object of type `AccountType` constructed with
-            the relevant args, inputs, settings, and default values.
-        """
         # NOTE: We don't actually need to list Account's various args
         # in the call signature here; we could just use `inputs`,
         # `AccountType` and `**kwargs`. Doing it that way would be less
@@ -419,29 +396,60 @@ class Forecaster(object):
         self.set_kwarg(kwargs, 'default_outflow_timing',
                        default_outflow_timing, None)
         self.set_kwarg(kwargs, 'inputs', inputs, None)
+        self.set_kwarg(kwargs, 'initial_year', initial_year, self.initial_year)
 
-        account = AccountType(initial_year=self.initial_year, **kwargs)
+        account = AccountType(**kwargs)
+        return account
+
+    def add_asset(
+        self, owner=None, balance=None, rate=None, transactions=None,
+        nper=None, default_inflow_timing=None, default_outflow_timing=None,
+        inputs=None, initial_year=None, AccountType=Account, **kwargs
+    ):
+        """ Adds an asset to the forecast and to the `assets` set.
+
+        This method should be used instead of the hidden method
+        `_add_account` because, in addition to building an object of the
+        appropriate type, it also manages object membership in the
+        `assets` set.
+
+        See `_add_account` for additional documentation.
+
+        Args:
+            AccountType (type): The class of `Account` being built by
+                the method. This class's `__init__` method must accept
+                all of the args of `Account`.
+
+        Returns:
+            `Account`: An object of type `AccountType` constructed with
+            the relevant args, inputs, settings, and default values.
+        """
+        account = self._add_account(
+            owner=owner, balance=balance, rate=rate, transactions=transactions,
+            nper=nper, default_inflow_timing=default_inflow_timing,
+            default_outflow_timing=default_outflow_timing, inputs=inputs,
+            initial_year=initial_year, AccountType=AccountType
+        )
         self.assets.add(account)
         return account
 
     def add_debt(
-        self, minimum_payment=None, reduction_rate=None,
-        accelerate_payment=None, AccountType=Debt, **kwargs
+        self, owner=None, balance=None, rate=None, transactions=None,
+        nper=None, default_inflow_timing=None, default_outflow_timing=None,
+        inputs=None, initial_year=None, minimum_payment=None,
+        reduction_rate=None, accelerate_payment=None, AccountType=Debt,
+        **kwargs
     ):
         """ Adds a Debt to the forecast.
 
-        Subclasses of Forecaster that build subclasses of Account can
-        make use of this method by passing in a suitable `AccountType`
-        argument along with any `kwargs` specific to that `AccountType`.
+        This method should be used instead of the hidden method
+        `_add_account` because, in addition to building an object of the
+        appropriate type, it also manages object membership in the
+        `assets` set.
 
-        See `Debt` and `Forecaster.addAccount` for documentation on
-        additional args.
+        See `_add_account` for additional documentation.
 
         Args:
-            inputs (dict[str, dict[int, *]]): `{arg: {year: val}}`
-                pairs, where `arg` is the name of a @recorded_property
-                of `Debt` and `val` is the value of that property for
-                `year`.
             AccountType (type): The class of `Debt` being built by
                 the method. This class's `__init__` method must accept
                 all of the args of `Debt`.
@@ -456,8 +464,13 @@ class Forecaster(object):
         self.set_kwarg(kwargs, 'accelerate_payment', accelerate_payment,
                        self.settings.debt_accelerate_payment)
 
-        account = self.addAccount(AccountType=Debt, **kwargs)
-        self.assets.add(account)
+        account = self._add_account(
+            owner=owner, balance=balance, rate=rate, transactions=transactions,
+            nper=nper, default_inflow_timing=default_inflow_timing,
+            default_outflow_timing=default_outflow_timing, inputs=inputs,
+            initial_year=initial_year, AccountType=AccountType, **kwargs)
+
+        self.debts.add(account)
         return account
 
     def set_scenario(
@@ -495,7 +508,8 @@ class Forecaster(object):
         self.set_kwarg(kwargs, 'refund_reinvestment_rate',
                        refund_reinvestment_rate,
                        self.settings.contribution_refund_reinvestment_rate)
-        self.set_kwarg(kwargs, 'inflation_adjust', inflation_adjust, None)
+        self.set_kwarg(kwargs, 'inflation_adjust', inflation_adjust,
+                       self.scenario.inflation_adjust)
 
         self.contribution_strategy = StrategyType(**kwargs)
         return self.contribution_strategy
@@ -516,7 +530,8 @@ class Forecaster(object):
                        self.settings.transaction_out_timing)
         self.set_kwarg(kwargs, 'income_adjusted', income_adjusted,
                        self.settings.withdrawal_income_adjusted)
-        self.set_kwarg(kwargs, 'inflation_adjust', inflation_adjust, None)
+        self.set_kwarg(kwargs, 'inflation_adjust', inflation_adjust,
+                       self.scenario.inflation_adjust)
 
         self.withdrawal_strategy = StrategyType(**kwargs)
         return self.contribution_strategy
@@ -591,7 +606,7 @@ class Forecaster(object):
         self.set_kwarg(kwargs, 'adjust_for_retirement_plan',
                        adjust_for_retirement_plan,
                        self.settings.allocation_adjust_for_retirement_plan)
-        self.set_kwarg(kwargs, 'scenario', scenario, None)
+        self.set_kwarg(kwargs, 'scenario', scenario, self.scenario)
 
         self.allocation_strategy = StrategyType(**kwargs)
         return self.allocation_strategy
@@ -614,7 +629,9 @@ class Forecaster(object):
         inflation_adjust=None, TaxType=Tax, **kwargs
     ):
         """ TODO """
-        self.set_kwarg(kwargs, 'tax_brackets', tax_brackets, None)
+        # By default, set a single 0% bracket starting at $0:
+        self.set_kwarg(
+            kwargs, 'tax_brackets', tax_brackets, {self.initial_year: {0: 0}})
         self.set_kwarg(kwargs, 'personal_deduction', personal_deduction, None)
         self.set_kwarg(kwargs, 'credit_rate', credit_rate, None)
         # default to the inflation-adjust provided by `scenario`, if

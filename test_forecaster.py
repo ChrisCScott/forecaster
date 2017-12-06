@@ -1,9 +1,12 @@
 """ Unit tests for `Forecaster`. """
 
 import unittest
+import types
+from numbers import Number
 import decimal
 from decimal import Decimal
-from collections import defaultdict
+import collections
+from copy import copy, deepcopy
 from settings import Settings
 from tax import Tax
 from ledger import Person, Account, Debt
@@ -106,13 +109,116 @@ class TestForecaster(unittest.TestCase):
                 initial_year=self.initial_year
             )
 
+    @staticmethod
+    def complex_equal(self, other, memo=None):
+        """ Tests complicated class instances for equality.
+
+        This method is used (instead of __eq__) because equality
+        semantics are only needed for testing code and can mess up
+        things like set membership, require extensive (and inefficient)
+        comparisons, and/or can result in infinite recursion.
+        """
+        # The memo dict maps each object to the set of objects that it's
+        # been compared to. If they've been compared, that means that we
+        # don't need to re-evaluate their equality - if they're unequal,
+        # that'll be discovered at a higher level of recursion:
+        if memo is None:
+            memo = collections.defaultdict(lambda: set())
+        if id(other) in memo[id(self)]:
+            return True
+        else:
+            memo[id(self)].add(id(other))
+            memo[id(other)].add(id(self))
+
+        # There are a few cases to deal with:
+        # 1) These are dicts, in which case we need to compare keys and
+        #    values.
+        # 2) These are complicated objects, in which case we need to
+        #    recurse onto their attributes dict (i.e. obj.__dict__)
+        # 3) These are non-dict iterables, in which case we can try
+        #    to recurse onto their elements in sequence.
+        #    (NOTE: This is tricky for unordered iterables like set,
+        #    since two sets with equal objects might iterate in
+        #    different orders if member ids are different.)
+        # 4) These are non-iterable, uncomplicated objects, in which
+        #    case we can use the == operator.
+
+        if (  # Objects of unrelated types can be assumed to be nonequal
+            not isinstance(self, type(other)) and
+            not isinstance(other, type(self))
+        ):
+            return False
+        elif isinstance(self, dict):
+            # For dicts, confirm that they represent the same keys and
+            # then recurse onto each of the values:
+            return self.keys() == other.keys() and \
+                all(
+                    TestForecaster.complex_equal(self[key], other[key], memo)
+                    for key in self
+                )
+        elif hasattr(self, '__dict__'):
+            # For complicated objects, recurse onto the attributes dict:
+            return TestForecaster.complex_equal(
+                self.__dict__, other.__dict__, memo)
+        elif isinstance(self, list):
+            # For lists, iterate over the elements in sequence:
+            return len(self) == len(other) and all(
+                TestForecaster.complex_equal(self[i], other[i], memo)
+                for i in range(0, len(self))
+            )
+        elif isinstance(self, set):
+            # For sets, we can't rely on `in`, so we want to test each
+            # element in one set against every element in the other set.
+            # This will involve comparing objects which are not equal,
+            # so we need to copy the dict before recursing.
+            return len(self) == len(other) and all(
+                any(
+                    TestForecaster.complex_equal(val1, val2, copy(memo))
+                    for val2 in other
+                ) for val1 in self
+            )
+        else:
+            # For simple objects, use the standard == operator
+            return self == other
+
+    def assertEqual(self, first, second, msg=None):
+        """ Overloaded to test equality of complex objects. """
+        self.assertTrue(TestForecaster.complex_equal(first, second), msg)
+
+    def assertNotEqual(self, first, second, msg=None):
+        """ Overloaded to test non-equality of complex objects. """
+        self.assertFalse(TestForecaster.complex_equal(first, second), msg)
+
+    def test_assertEqual(self):
+        """ Tests overloaded TestForecaster.assertEqual. """
+        # Compare an object to itself
+        person1 = self.person1
+        self.assertEqual(person1, person1)
+        # Compare two idential instances of an object:
+        person2 = deepcopy(person1)
+        self.assertEqual(person1, person2)
+        # Compare two instances of an object that differ only in a
+        # complicated attribute. (Simple case: set it to None)
+        allocation_strategy = person2.allocation_strategy
+        person2.allocation_strategy = None
+        self.assertNotEqual(person1, person2)
+        # Try again, but this time the difference is in a sub-attribute
+        allocation_strategy.scenario.inflation = {2000: 1, 2001: 1.5}
+        person2.allocation_strategy = allocation_strategy
+        self.assertNotEqual(person1, person2)
+
     def test_init(self):
         """ Tests Forecaster.__init__ """
         # Test default init:
         forecaster = Forecaster()
+        # TODO: Test attributes of Scenario, Strategy, etc. directly.
+        # (Yes, this will be lengthy and tedious.)
         self.assertEqual(forecaster.person1, self.person1)
         self.assertEqual(forecaster.person2, self.person2)
-        self.assertEqual(forecaster.people, {self.person1, self.person2})
+        if self.person2 is not None:
+            self.assertEqual(forecaster.people, {self.person1, self.person2})
+        else:  # We don't add `None` to the `people` set.
+            self.assertEqual(forecaster.people, {self.person1})
         self.assertEqual(forecaster.assets, set())
         self.assertEqual(forecaster.debts, set())
         self.assertEqual(
@@ -130,37 +236,131 @@ class TestForecaster(unittest.TestCase):
         self.assertEqual(forecaster.settings, Settings)
         self.assertEqual(forecaster.initial_year, Settings.initial_year)
 
-        # Test explicit init
+        # Test init with custom settings:
         settings = Settings()
         settings.person1_name = 'Test Name'
-        initial_year = 2000
-        forecaster = Forecaster(settings=settings, initial_year=initial_year)
-        self.assertIsNone(forecaster.person1)
-        self.assertIsNone(forecaster.person2)
-        self.assertEqual(forecaster.people, set())
+        person1 = Person(
+            name=settings.person1_name,
+            birth_date=settings.person1_birth_date,
+            retirement_date=settings.person1_retirement_date,
+            gross_income=settings.person1_gross_income,
+            raise_rate=settings.person1_raise_rate,
+            spouse=None,
+            tax_treatment=None,
+            allocation_strategy=self.allocation_strategy,
+            initial_year=settings.initial_year
+        )
+        forecaster = Forecaster(settings=settings)
+        self.assertEqual(forecaster.person1, person1)  # custom person1
+        self.assertEqual(forecaster.person2, self.person2)
+        if self.person2 is not None:
+            self.assertEqual(forecaster.people,
+                             {forecaster.person1, forecaster.person2})
+        else:  # We don't add `None` to the `people` set.
+            self.assertEqual(forecaster.people, {forecaster.person1})
         self.assertEqual(forecaster.assets, set())
         self.assertEqual(forecaster.debts, set())
-        self.assertIsNone(forecaster.contribution_strategy)
-        self.assertIsNone(forecaster.withdrawal_strategy)
-        self.assertIsNone(forecaster.transaction_in_strategy)
-        self.assertIsNone(forecaster.transaction_out_strategy)
-        self.assertIsNone(forecaster.allocation_strategy)
-        self.assertIsNone(forecaster.debt_payment_strategy)
+        self.assertEqual(
+            forecaster.contribution_strategy, self.contribution_strategy)
+        self.assertEqual(
+            forecaster.withdrawal_strategy, self.withdrawal_strategy)
+        self.assertEqual(
+            forecaster.transaction_in_strategy, self.transaction_in_strategy)
+        self.assertEqual(
+            forecaster.transaction_out_strategy, self.transaction_out_strategy)
+        self.assertEqual(
+            forecaster.allocation_strategy, self.allocation_strategy)
+        self.assertEqual(
+            forecaster.debt_payment_strategy, self.debt_payment_strategy)
         self.assertEqual(forecaster.settings, settings)
-        self.assertEqual(forecaster.settings.person1_name, 'Test Name')
+        self.assertEqual(forecaster.initial_year, settings.initial_year)
+
+        # Test init with custom inputs (persons, strategies, etc.):
+        forecaster = Forecaster(person1=person1)
+        self.assertEqual(forecaster.person1, person1)  # custom person1
+        self.assertEqual(forecaster.person2, self.person2)
+        if self.person2 is not None:
+            self.assertEqual(forecaster.people, {person1, self.person2})
+        else:  # We don't add `None` to the `people` set.
+            self.assertEqual(forecaster.people, {person1})
+        self.assertEqual(forecaster.assets, set())
+        self.assertEqual(forecaster.debts, set())
+        self.assertEqual(
+            forecaster.contribution_strategy, self.contribution_strategy)
+        self.assertEqual(
+            forecaster.withdrawal_strategy, self.withdrawal_strategy)
+        self.assertEqual(
+            forecaster.transaction_in_strategy, self.transaction_in_strategy)
+        self.assertEqual(
+            forecaster.transaction_out_strategy, self.transaction_out_strategy)
+        self.assertEqual(
+            forecaster.allocation_strategy, self.allocation_strategy)
+        self.assertEqual(
+            forecaster.debt_payment_strategy, self.debt_payment_strategy)
+        self.assertEqual(forecaster.settings, Settings)
+        self.assertEqual(forecaster.initial_year, Settings.initial_year)
+
+        # Test init with custom initial year:
+        initial_year = 1999
+        forecaster = Forecaster(initial_year=initial_year)
         self.assertEqual(forecaster.initial_year, initial_year)
+        self.assertEqual(forecaster.person1.initial_year, initial_year)
+        if self.person2 is not None:
+            self.assertEqual(forecaster.person2.initial_year, initial_year)
+        for account in forecaster.assets.union(forecaster.debts):
+            self.assertEqual(account.initial_year, initial_year)
 
     def test_add_person(self):
-        """ TODO """
-        pass
+        """ Test Forecaster.add_person. """
+        forecaster = Forecaster()
+        people = copy(forecaster.people)
+        person = forecaster.add_person('Test', 2000, retirement_date=2065)
+        self.assertEqual(person, Person(
+            self.initial_year, 'Test', 2000,
+            retirement_date=2065,
+            tax_treatment=forecaster.tax_treatment,
+            allocation_strategy=forecaster.allocation_strategy
+        ))
+        self.assertEqual(forecaster.people - people, {person})
 
-    def test_add_account(self):
-        """ TODO """
-        pass
+    def test_add_asset(self):
+        """ Test Forecaster.add_asset. """
+        forecaster = Forecaster()
+        assets = copy(forecaster.assets)
+        asset = forecaster.add_asset()
+        self.assertEqual(asset, Account(
+            owner=forecaster.person1,
+            balance=Money(0),
+            rate=None,
+            transactions={},
+            nper=1,
+            default_inflow_timing=Settings.transaction_in_timing,
+            default_outflow_timing=Settings.transaction_out_timing,
+            inputs={},
+            initial_year=forecaster.person1.initial_year
+        ))
+        self.assertEqual(forecaster.assets - assets, {asset})
 
     def test_add_debt(self):
-        """ TODO """
-        pass
+        """ Test Forecaster.add_debt. """
+        forecaster = Forecaster()
+        debts = copy(forecaster.debts)
+        debt = forecaster.add_debt()
+        self.assertEqual(debt, Debt(
+            owner=forecaster.person1,
+            balance=Money(0),
+            rate=None,
+            transactions={},
+            nper=1,
+            default_inflow_timing=Settings.debt_payment_timing,
+            default_outflow_timing=Settings.transaction_out_timing,
+            inputs={},
+            initial_year=forecaster.person1.initial_year,
+            minimum_payment=Money(0),
+            reduction_rate=Settings.debt_reduction_rate,
+            accelerate_payment=Settings.debt_accelerate_payment
+        ))
+        self.assertEqual(forecaster.debts - debts, {debt})
 
 if __name__ == '__main__':
     unittest.main()
