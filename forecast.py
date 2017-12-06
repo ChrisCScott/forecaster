@@ -59,11 +59,6 @@ class Forecast(object):
             transactions for any contributions during the year.
             See the documentation for `TransactionStrategy` for
             acceptable args when calling this object.
-        allocation_strategy (AllocationStrategy): A callable object
-            that determines the allocation of stocks vs. bonds for
-            a given year. See the documentation for
-            `AllocationStrategy` for acceptable args when calling this
-            object.
         debt_payment_strategy (DebtPaymentStrategy): A callable object
             that determines the schedule of debt payments, including
             accelerated debt payments drawn from gross contributions.
@@ -152,7 +147,7 @@ class Forecast(object):
 
     def __init__(self, people, assets, debts, scenario, contribution_strategy,
                  withdrawal_strategy, contribution_transaction_strategy,
-                 withdrawal_transaction_strategy, allocation_strategy,
+                 withdrawal_transaction_strategy,
                  debt_payment_strategy, tax_treatment, inputs=None):
         ''' Constructs an instance of class Forecast.
 
@@ -202,11 +197,6 @@ class Forecast(object):
                 transactions for any contributions during the year.
                 See the documentation for TransactionStrategy for
                 acceptable args when calling this object.
-            allocation_strategy (AllocationStrategy): A callable object
-                that determines the allocation of stocks vs. bonds for
-                a given year. See the documentation for
-                AllocationStrategy for acceptable args when calling this
-                object.
             debt_payment_strategy (DebtPaymentStrategy): A callable
                 object that determines the schedule of debt payments,
                 including accelerated debt payments drawn from gross
@@ -241,7 +231,6 @@ class Forecast(object):
         self.contribution_transaction_strategy = \
             contribution_transaction_strategy
         self.withdrawal_transaction_strategy = withdrawal_transaction_strategy
-        self.allocation_strategy = allocation_strategy
         self.debt_payment_strategy = debt_payment_strategy
         self.tax_treatment = tax_treatment
         self.inputs = inputs
@@ -290,18 +279,17 @@ class Forecast(object):
             self.record_year(year)
             # Don't advance to the next year if this is the last one:
             if year < last_year:
-                self.next_year()
+                self.next_year(year)
 
-    def next_year(self):
+    def next_year(self, year):
         """ Adds a year to the forecast. """
         for person in self.people:
-            person.next_year()
+            while person.this_year <= year:
+                person.next_year()
 
-        for account in self.assets:
-            account.next_year()
-
-        for account in self.debts:
-            account.next_year()
+        for account in self.assets.union(self.debts):
+            while account.this_year <= year:
+                account.next_year()
 
     def retirement_year(self):
         return max((

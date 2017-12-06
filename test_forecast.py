@@ -4,7 +4,6 @@ import unittest
 import decimal
 from decimal import Decimal
 from collections import defaultdict
-from settings import Settings
 from tax import Tax
 from ledger import Person, Account, Debt
 from scenario import Scenario
@@ -25,13 +24,13 @@ class TestForecast(unittest.TestCase):
         """
         initial_year = 2000
         scenario = Scenario(
+            initial_year=initial_year,
+            num_years=4,
             inflation=Decimal(0),  # No inflation
             stock_return=Decimal(1),  # 100% growth in stocks
             bond_return=Decimal(0.5),  # 50% growth in bonds
             other_return=0,  # No growth in other assets
             management_fees=Decimal(0),  # TODO: Refactor this attribute
-            initial_year=initial_year,
-            num_years=4
         )
         tax = Tax(
             {
@@ -47,20 +46,18 @@ class TestForecast(unittest.TestCase):
             inflation_adjust=scenario.inflation_adjust
         )
         person = Person(
-            'Test', 1980,
+            initial_year, 'Test', 1980,
             retirement_date=2002,
             gross_income=Money(100000),
             raise_rate=Decimal(0.5),
-            tax_treatment=tax,
-            initial_year=initial_year
+            tax_treatment=tax
         )
         account = Account(
-            person, balance=1000, rate=1, nper=1, initial_year=initial_year
+            person, balance=1000, rate=1, nper=1
         )
         debt = Debt(
             person, balance=-1000, rate=1, minimum_payment=Money(100),
-            reduction_rate=1, accelerate_payment=True,
-            initial_year=initial_year
+            reduction_rate=1, accelerate_payment=True
         )
         contribution_strategy = ContributionStrategy(
             strategy=ContributionStrategy._strategy_constant_contribution,
@@ -76,13 +73,13 @@ class TestForecast(unittest.TestCase):
             income_adjusted=False,
             inflation_adjust=scenario.inflation_adjust
         )
-        contribution_transaction_strategy = TransactionInStrategy(
-            strategy=TransactionInStrategy._strategy_ordered,
+        contribution_transaction_strategy = TransactionStrategy(
+            strategy=TransactionStrategy._strategy_ordered,
             weights={'Account': 1},
             timing='end'
         )
-        withdrawal_transaction_strategy = TransactionOutStrategy(
-            strategy=TransactionInStrategy._strategy_ordered,
+        withdrawal_transaction_strategy = TransactionStrategy(
+            strategy=TransactionStrategy._strategy_ordered,
             weights={'Account': 1},
             timing='end'
         )
@@ -104,7 +101,7 @@ class TestForecast(unittest.TestCase):
         forecast = Forecast(
             {person}, {account}, {debt}, scenario, contribution_strategy,
             withdrawal_strategy, contribution_transaction_strategy,
-            withdrawal_transaction_strategy, allocation_strategy,
+            withdrawal_transaction_strategy,
             debt_payment_strategy, tax
         )
 
