@@ -3,25 +3,16 @@ This list sets out various changes or additions that are planned for the
 next release version.
 
 ## High Priority
-* `Forecaster`: Implement `Forecaster` class with these features:
-    * Accepts a `Settings` object and an `inputs` dict and initializes
-    a Forecast accordingly. This will involve initializing the various
-    `Scenario`, `Strategy`, `Person`, `Account`, and `Debt` objects.
-    * Init should draw values from `inputs`, which should always take
-    priority over `Settings`.
-    * Provide methods for generating statistics from a `Forecast`
-* `Settings`: Tie together `Settings` and `Forecaster`; remove
-`Settings` as an input to all `Ledger`, `Tax`, `Scenario`, or `Strategy`
-classes. Make necessary arguments non-defaulted and use sensible
-explicit defaults for each object.
 * `ForecasterCanada`: Implement `ForecasterCanada` and integrate with
 `SettingsCanada`.
     * Provide methods in `Forecaster` which apply settings defaults for
     `Account`s and can accept arguments which allow them to build
     arbitrary `Account` subclasses (like RRSP). Presumably the
     necessary args are `AccountType`, `*args`, and `**kwargs`.
+* `Forecaster`: Test `scenario` substitution.
 
 ## Medium Priority
+* `Forecaster`: Enable generation of statistics from `Forecast`
 * `Forecast`: Determine refunds and other contributions
 * `Forecast`: Revise tax treatment to deal with insufficient tax
 withheld (include a contribution reduction in the following year to pay
@@ -34,6 +25,7 @@ liability and any additional liability for the increased withdrawals).
 * `Forecast`: Improve `living_standard` calculation
 * `Person`, `Forecast`: Make `Strategy` objects properties of `Person`,
 thus allowing different people to follow different strategies.
+    * Done with `AllocationStrategy`, not currently planned for others.
 * `RRSP`: Inflation-adjust RRSP withholding tax rates (e.g. by changing
 `RRSPWithholdingTaxRate` to a `{year: {bracket: rate}}` dict?)
 * `RRSP`: Implement and test Spousal RRSPs (potentially as a subclass,
@@ -95,3 +87,5 @@ forcing recalculation?
     * Alternatively, if we want to support different allocations for
     each account, consider making asset_allocation an attribute at
     the Account level. (There's currently no need for this.)
+* `forecaster_Canada`: Refactor module so that all Canada-specific
+classes are moved to a separate `forecaster_Canada` (sub-)module.
