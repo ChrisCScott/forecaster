@@ -162,39 +162,38 @@ class TestTax(unittest.TestCase):
                          bracket * self.tax_brackets[year][bracket])
 
         # Now move on to testing tax treatment of one person:
-        person1 = Person("Tester 1", self.initial_year - 20,
+        person1 = Person(self.initial_year, "Tester 1", self.initial_year - 20,
                          retirement_date=self.initial_year + 45,
-                         gross_income=100000, initial_year=self.initial_year)
+                         gross_income=100000)
         # Build three accounts: Two for one person and one for the other
         # The entire balance of each account is withdrawn immediately.
         # Half of the taxable account withdrawal is taxable and 100% of
         # the RRSP withdrawal is taxable.
         balance1 = Money(1000000)
         account1 = TaxableAccount(
+            owner=person1,
             acb=0, balance=balance1, rate=Decimal('0.05'),
-            transactions={'start': -balance1}, nper=1,
-            initial_year=self.initial_year, owner=person1)
+            transactions={'start': -balance1}, nper=1)
         balance2 = Money(500000)
         account2 = RRSP(
-            person1, inflation_adjust=self.inflation_adjustments,
-            contribution_room=0,
-            balance=balance2, rate=Decimal('0.05'),
-            transactions={'start': -balance2}, nper=1,
-            initial_year=self.initial_year)
+            owner=person1,
+            inflation_adjust=self.inflation_adjustments,
+            contribution_room=0, balance=balance2, rate=Decimal('0.05'),
+            transactions={'start': -balance2}, nper=1)
         # This is the result we would expect
         taxable_income1 = person1.gross_income + balance1 / 2 + balance2
         self.assertEqual(tax(person1, person1.initial_year),
                          tax(taxable_income1, person1.initial_year))
 
         # Finally, test tax treatment of multiple people:
-        person2 = Person("Tester 2", self.initial_year - 18,
-                         retirement_date=self.initial_year + 47,
-                         gross_income=50000, initial_year=self.initial_year)
+        person2 = Person(
+            self.initial_year, "Tester 2", self.initial_year - 18,
+            retirement_date=self.initial_year + 47, gross_income=50000)
         balance3 = Money(10000)
         account3 = TaxableAccount(
+            owner=person2,
             acb=0, balance=balance3, rate=Decimal('0.05'),
-            transactions={'start': -balance3}, nper=1,
-            initial_year=self.initial_year, owner=person2)
+            transactions={'start': -balance3}, nper=1)
         taxable_income2 = person2.gross_income + balance3 / 2  # 50% taxable
         # Make sure that we're getting the correct result for person2:
         self.assertEqual(tax(person2, person2.initial_year),

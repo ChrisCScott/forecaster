@@ -2,10 +2,10 @@
 
 import unittest
 from decimal import Decimal
-from settings import Settings
 from tax_Canada import *
 from ledger import Person
 from ledger_Canada import *
+from constants_Canada import ConstantsCanada as Constants
 from test_helper import *
 
 
@@ -115,23 +115,23 @@ class TestCanadianResidentTax(unittest.TestCase):
         )
 
         # Test a call on one Person:
-        person1 = Person("Tester 1", self.initial_year - 20,
-                         retirement_date=self.initial_year + 45,
-                         gross_income=100000, initial_year=self.initial_year)
+        person1 = Person(
+            self.initial_year, "Tester 1", self.initial_year - 20,
+            retirement_date=self.initial_year + 45, gross_income=100000)
         account1 = TaxableAccount(
+            owner=person1,
             acb=0, balance=Money(1000000), rate=Decimal('0.05'),
-            transactions={'start': -Money(1000000)}, nper=1,
-            initial_year=self.initial_year, owner=person1)
+            transactions={'start': -Money(1000000)}, nper=1)
         # NOTE: by using an RRSP here, a pension income tax credit will
         # be applied by TaxCanadaJurisdiction. Be aware of this if you
         # want to test this output against a generic Tax object with
         # Canadian brackets.
         account2 = RRSP(
-            person1, inflation_adjust=self.inflation_adjustments,
+            person1,
+            inflation_adjust=self.inflation_adjustments,
             contribution_room=0,
             balance=Money(500000), rate=Decimal('0.05'),
-            transactions={'start': -Money(500000)}, nper=1,
-            initial_year=self.initial_year)
+            transactions={'start': -Money(500000)}, nper=1)
         self.assertEqual(
             tax(person1, self.initial_year),
             tax.federal_tax(person1, self.initial_year) +
@@ -145,13 +145,13 @@ class TestCanadianResidentTax(unittest.TestCase):
         )
 
         # Finally, test tax treatment of multiple people:
-        person2 = Person("Tester 2", self.initial_year - 18,
-                         retirement_date=self.initial_year + 47,
-                         gross_income=50000, initial_year=self.initial_year)
+        person2 = Person(
+            self.initial_year, "Tester 2", self.initial_year - 18,
+            retirement_date=self.initial_year + 47, gross_income=50000)
         account3 = TaxableAccount(
+            owner=person2,
             acb=0, balance=Money(10000), rate=Decimal('0.05'),
-            transactions={'start': -Money(10000)}, nper=1,
-            initial_year=self.initial_year, owner=person2)
+            transactions={'start': -Money(10000)}, nper=1)
         # Make sure that we're getting the correct result for person2:
         self.assertEqual(
             tax(person2, self.initial_year),

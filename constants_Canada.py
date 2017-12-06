@@ -5,7 +5,7 @@ room accrual rates, and other non-user-modifiable constants. """
 from decimal import Decimal
 
 
-class Constants(object):
+class ConstantsCanada(object):
     """ Container for constants used by application logic.
 
     This class is not passed as an argument to any methods and is

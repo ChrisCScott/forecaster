@@ -3,7 +3,6 @@
 These classes are callable with the form `tax(taxable_income, year)`
 """
 
-from constants import Constants
 import collections
 from decimal import Decimal
 from ledger import Person, Account
@@ -104,6 +103,7 @@ class Tax(object):
     """
     def __init__(self, tax_brackets, personal_deduction={}, credit_rate={},
                  inflation_adjust=None):
+        """ TODO """
         # TODO: Add an initial_year arg. If it's provided, interpret any
         # scalar args (or, for tax_brackets, non-year-indexed dict) as
         # {initial_year: arg} dicts (i.e. single-value dicts). This will

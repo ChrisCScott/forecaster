@@ -1,6 +1,6 @@
 """ A module providing Canada-specific tax treatment. """
 
-from constants import Constants
+from constants_Canada import ConstantsCanada
 import collections
 from decimal import Decimal
 from tax import Tax
@@ -14,11 +14,11 @@ class TaxCanadaJurisdiction(Tax):
 
     def __init__(self, inflation_adjustments, jurisdiction='Federal'):
         super().__init__(
-            tax_brackets=Constants.TaxBrackets[jurisdiction],
-            personal_deduction=Constants.TaxBasicPersonalDeduction[
+            tax_brackets=ConstantsCanada.TaxBrackets[jurisdiction],
+            personal_deduction=ConstantsCanada.TaxBasicPersonalDeduction[
                 jurisdiction
             ],
-            credit_rate=Constants.TaxCreditRate[jurisdiction],
+            credit_rate=ConstantsCanada.TaxCreditRate[jurisdiction],
             inflation_adjust=inflation_adjustments)
 
         self.jurisdiction = jurisdiction
@@ -85,7 +85,7 @@ class TaxCanadaJurisdiction(Tax):
         # pension credit, so determine that (inflation-adjusted
         # amount) here:
         deduction_max = Money(extend_inflation_adjusted(
-            Constants.TaxPensionCredit[self.jurisdiction],
+            ConstantsCanada.TaxPensionCredit[self.jurisdiction],
             self.inflation_adjust,
             year
         ))
