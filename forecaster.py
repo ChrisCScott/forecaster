@@ -127,61 +127,43 @@ class Forecaster(object):
             self.set_person2()
         # Accounts will need to be set manually.
 
-    def forecast(self, scenario=None):
+    def forecast(self, **kwargs):
         """ TODO """
-        # For each `None` attribute, build it dynamically from
-        # self.settings.
-        # Consider how to accomodate the `scenario` arg - some objects
-        # (like allocation_strategy) might be tied to a particular
-        # scenario.
-        # IDEA: Instead of building Person/Account/etc objects, store
-        # args for building them instead? This way, we can generate
-        # multiple forecasts and re-use Forecaster's internal data.
 
-        # `Scenario` doesn't depend on any other object and is used to
-        # build several others, so build it first.
-        # Scenario is not mutable, so no need to make a copy.
-        scenario = scenario if scenario is not None else self.scenario
-        # To swap out `scenario`, we build a memo that points the
-        # existing scenario to the new scenario; deepcopy will do the
-        # replacement for us.
-        # Be sure to `copy` memo each time it's passed to deepcopy!
-        memo = {id(self.scenario): scenario}
-        # Person and Account objects are mutated by `Forecast`, so copy
-        # them to preserve initial state for additional `Forecast`s
-        people = {deepcopy(person, memo=copy(memo)) for person in self.people}
-        assets = {deepcopy(asset, memo=copy(memo)) for asset in self.assets}
-        debts = {deepcopy(debt, memo=copy(memo)) for debt in self.debts}
-        # Strategies are not mutated by `Forecast`, but we deepcopy them
-        # anyways so that we can swap out the scenario.
-        contribution_strategy = deepcopy(
-            self.contribution_strategy, memo=copy(memo))
-        withdrawal_strategy = deepcopy(
-            self.withdrawal_strategy, memo=copy(memo))
-        transaction_in_strategy = deepcopy(
-            self.transaction_in_strategy, memo=copy(memo))
-        transaction_out_strategy = deepcopy(
-            self.transaction_out_strategy, memo=copy(memo))
-        debt_payment_strategy = deepcopy(
-            self.debt_payment_strategy, memo=copy(memo))
-        # allocation_strategy is copied as an attribute of `Person`
+        # Build a dict of args to pass to Forecast.__init__ based on
+        # the `Forecaster`'s attributes:
+        forecast_kwargs = {
+            'scenario': self.scenario,
+            'people': self.people,
+            'assets': self.assets,
+            'debts': self.debts,
+            'contribution_strategy': self.contribution_strategy,
+            'withdrawal_strategy': self.withdrawal_strategy,
+            'contribution_transaction_strategy': self.transaction_in_strategy,
+            'withdrawal_transaction_strategy': self.transaction_out_strategy,
+            'debt_payment_strategy': self.debt_payment_strategy,
+            'tax_treatment': self.tax_treatment
+        }
 
-        # Tax treatment is inflation-adjusted according to `Scenario`
-        # by `Forecast`, so make a deep copy:
-        tax_treatment = deepcopy(self.tax_treatment, memo=copy(memo))
+        # This is the clever bit: `Forecast` mutates many of its
+        # arguments, so we need to deepcopy this arg list. We also
+        # want to allow the user to replace any arguments to `Forecast`
+        # so that they can test out different scenarios, account mixes,
+        # etc. We can do these both by using the deepcopy memo arg!
+        # This memo maps each of the forecast_kwarg values to the
+        # corresponding input kwarg; those values will be replaced with
+        # the input values when we pass `memo` to deepcopy.
+        memo = {
+            id(forecast_kwargs[key]): kwargs[key]
+            for key in kwargs if key in forecast_kwargs
+        }
+        forecast_kwargs = deepcopy(forecast_kwargs, memo=memo)
+        # If any of the input kwargs aren't in forecast_kwargs, add them
+        forecast_kwargs.update({
+            key: kwargs[key] for key in kwargs if key not in forecast_kwargs
+        })
 
-        # NOTE: We use the tax treatment of person1; this behaviour
-        # should likely be revisited, since in the multi-person/multi-
-        # jurisdiction case we're probably not dealing with person2's
-        # tax treatment correctly.
-        return Forecast(
-            people=people, assets=assets, debts=debts, scenario=scenario,
-            contribution_strategy=contribution_strategy,
-            withdrawal_strategy=withdrawal_strategy,
-            contribution_transaction_strategy=transaction_in_strategy,
-            withdrawal_transaction_strategy=transaction_out_strategy,
-            debt_payment_strategy=debt_payment_strategy,
-            tax_treatment=tax_treatment)
+        return Forecast(**forecast_kwargs)
 
     def replace_scenario(self, obj, scenario):
         """ TODO """
@@ -428,7 +410,7 @@ class Forecaster(object):
             owner=owner, balance=balance, rate=rate, transactions=transactions,
             nper=nper, default_inflow_timing=default_inflow_timing,
             default_outflow_timing=default_outflow_timing, inputs=inputs,
-            initial_year=initial_year, AccountType=AccountType
+            initial_year=initial_year, AccountType=AccountType, **kwargs
         )
         self.assets.add(account)
         return account
@@ -582,14 +564,18 @@ class Forecaster(object):
 
         # Different strategies have different defaults in Settings:
         if (
+            # pylint: disable=no-member
+            # Pylint thinks there's no strategy_key member. It's wrong
             kwargs['strategy'] ==
-            AllocationStrategy._strategy_n_minus_age.strategy_key
+            AllocationStrategy.strategy_n_minus_age.strategy_key
         ):
             target_default = \
                 self.settings.allocation_constant_strategy_target
         elif (
+            # pylint: disable=no-member
+            # Pylint thinks there's no strategy_key member. It's wrong
             kwargs['strategy'] ==
-            AllocationStrategy._strategy_transition_to_constant.strategy_key
+            AllocationStrategy.strategy_transition_to_const.strategy_key
         ):
             target_default = \
                 self.settings.allocation_transition_strategy_target
@@ -642,4 +628,5 @@ class Forecaster(object):
             else None
         )
 
-        return TaxType(**kwargs)
+        self.tax_treatment = TaxType(**kwargs)
+        return self.tax_treatment

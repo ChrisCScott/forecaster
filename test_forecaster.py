@@ -1,19 +1,17 @@
 """ Unit tests for `Forecaster`. """
 
 import unittest
-import types
-from numbers import Number
-import decimal
-from decimal import Decimal
 import collections
 from copy import copy, deepcopy
 from settings import Settings
 from tax import Tax
 from ledger import Person, Account, Debt
 from scenario import Scenario
-from strategy import *
-from forecast import Forecast
+from strategy import ContributionStrategy, WithdrawalStrategy, \
+    TransactionStrategy, AllocationStrategy, DebtPaymentStrategy
 from forecaster import Forecaster
+from utility import Money
+# pylint: disable=W0614,W0401,
 from test_helper import *
 
 
@@ -60,13 +58,15 @@ class TestForecaster(unittest.TestCase):
 
         # We use different target values for different strategies.
         if (
+            # pylint: disable=E1101
             Settings.allocation_strategy ==
-            AllocationStrategy._strategy_n_minus_age.strategy_key
+            AllocationStrategy.strategy_n_minus_age.strategy_key
         ):
             target = Settings.allocation_constant_strategy_target
         elif (
+            # pylint: disable=E1101
             Settings.allocation_strategy ==
-            AllocationStrategy._strategy_transition_to_constant.strategy_key
+            AllocationStrategy.strategy_transition_to_const.strategy_key
         ):
             target = Settings.allocation_transition_strategy_target
         self.allocation_strategy = AllocationStrategy(
@@ -83,6 +83,12 @@ class TestForecaster(unittest.TestCase):
             strategy=Settings.debt_payment_strategy,
             timing=Settings.debt_payment_timing
         )
+        self.tax_treatment = Tax(
+            tax_brackets={self.initial_year: {0: 0}},
+            personal_deduction={},
+            credit_rate={},
+            inflation_adjust=self.scenario.inflation_adjust
+        )
         self.person1 = Person(
             name=Settings.person1_name,
             birth_date=Settings.person1_birth_date,
@@ -90,7 +96,7 @@ class TestForecaster(unittest.TestCase):
             gross_income=Settings.person1_gross_income,
             raise_rate=Settings.person1_raise_rate,
             spouse=None,
-            tax_treatment=None,
+            tax_treatment=self.tax_treatment,
             allocation_strategy=self.allocation_strategy,
             initial_year=self.initial_year
         )
@@ -110,7 +116,7 @@ class TestForecaster(unittest.TestCase):
             )
 
     @staticmethod
-    def complex_equal(self, other, memo=None):
+    def complex_equal(first, second, memo=None):
         """ Tests complicated class instances for equality.
 
         This method is used (instead of __eq__) because equality
@@ -123,12 +129,12 @@ class TestForecaster(unittest.TestCase):
         # don't need to re-evaluate their equality - if they're unequal,
         # that'll be discovered at a higher level of recursion:
         if memo is None:
-            memo = collections.defaultdict(lambda: set())
-        if id(other) in memo[id(self)]:
+            memo = collections.defaultdict(set)
+        if id(second) in memo[id(first)]:
             return True
         else:
-            memo[id(self)].add(id(other))
-            memo[id(other)].add(id(self))
+            memo[id(first)].add(id(second))
+            memo[id(second)].add(id(first))
 
         # There are a few cases to deal with:
         # 1) These are dicts, in which case we need to compare keys and
@@ -144,42 +150,46 @@ class TestForecaster(unittest.TestCase):
         #    case we can use the == operator.
 
         if (  # Objects of unrelated types can be assumed to be nonequal
-            not isinstance(self, type(other)) and
-            not isinstance(other, type(self))
+                not isinstance(first, type(second)) and
+                not isinstance(second, type(first))
         ):
             return False
-        elif isinstance(self, dict):
+        elif isinstance(first, dict):
             # For dicts, confirm that they represent the same keys and
             # then recurse onto each of the values:
-            return self.keys() == other.keys() and \
+            return first.keys() == second.keys() and \
                 all(
-                    TestForecaster.complex_equal(self[key], other[key], memo)
-                    for key in self
+                    TestForecaster.complex_equal(first[key], second[key], memo)
+                    for key in first
                 )
-        elif hasattr(self, '__dict__'):
+        elif hasattr(first, '__dict__'):
             # For complicated objects, recurse onto the attributes dict:
             return TestForecaster.complex_equal(
-                self.__dict__, other.__dict__, memo)
-        elif isinstance(self, list):
+                first.__dict__, second.__dict__, memo)
+        elif isinstance(first, list):
             # For lists, iterate over the elements in sequence:
-            return len(self) == len(other) and all(
-                TestForecaster.complex_equal(self[i], other[i], memo)
-                for i in range(0, len(self))
+            return len(first) == len(second) and all(
+                TestForecaster.complex_equal(first[i], second[i], memo)
+                for i in range(0, len(first))
             )
-        elif isinstance(self, set):
+        elif isinstance(first, set):
             # For sets, we can't rely on `in`, so we want to test each
             # element in one set against every element in the other set.
             # This will involve comparing objects which are not equal,
             # so we need to copy the dict before recursing.
-            return len(self) == len(other) and all(
+            # NOTE: Ideally we would update memo for each successful
+            # comparison, but this would complicate the logic below.
+            # This refinement only adds efficiency (i.e. the code is
+            # correct as-is), so we've left it in its simpler form.
+            return len(first) == len(second) and all(
                 any(
                     TestForecaster.complex_equal(val1, val2, copy(memo))
-                    for val2 in other
-                ) for val1 in self
+                    for val2 in second
+                ) for val1 in first
             )
         else:
             # For simple objects, use the standard == operator
-            return self == other
+            return first == second
 
     def assertEqual(self, first, second, msg=None):
         """ Overloaded to test equality of complex objects. """
@@ -240,13 +250,13 @@ class TestForecaster(unittest.TestCase):
         settings = Settings()
         settings.person1_name = 'Test Name'
         person1 = Person(
-            name=settings.person1_name,
+            name='Test Name',
             birth_date=settings.person1_birth_date,
             retirement_date=settings.person1_retirement_date,
             gross_income=settings.person1_gross_income,
             raise_rate=settings.person1_raise_rate,
             spouse=None,
-            tax_treatment=None,
+            tax_treatment=self.tax_treatment,
             allocation_strategy=self.allocation_strategy,
             initial_year=settings.initial_year
         )
@@ -361,6 +371,31 @@ class TestForecaster(unittest.TestCase):
             accelerate_payment=Settings.debt_accelerate_payment
         ))
         self.assertEqual(forecaster.debts - debts, {debt})
+
+    def test_forecast(self):
+        """ Tests Forecaster.forecast """
+        # Run a simple forecast with $0 income and $0 balances:
+        forecaster = Forecaster()
+        forecaster.set_person1(gross_income=Money(0))
+        forecaster.add_asset(owner=forecaster.person1, AccountType=Account)
+        forecaster.add_debt(owner=forecaster.person1, AccountType=Debt)
+        forecaster.set_person2(name=None)  # Remove person2, if present
+        forecast = forecaster.forecast()
+        # Test that it starts and ends in the right place and that
+        # income and total balance (principal) are correct (i.e. $0)
+        self.assertEqual(
+            forecast.scenario.initial_year, forecaster.initial_year)
+        self.assertEqual(
+            len(forecast.principal), forecaster.scenario.num_years)
+        for principal in forecast.principal.values():
+            self.assertEqual(principal, Money(0))
+        for gross_income in forecast.gross_income.values():
+            self.assertEqual(gross_income, Money(0))
+
+        # Run the simple forecast again, but this time with a different
+        # scenario. All inflation_adjust and scenario attributes should
+        # be updated too.
+        # TODO
 
 if __name__ == '__main__':
     unittest.main()
