@@ -84,16 +84,3 @@ class Settings:
     ''' Debt defaults '''
     debt_reduction_rate = 1
     debt_accelerate_payment = False
-
-    ''' RESP defaults '''
-    RESPChildOtherIncome = 0
-    RESPStartAge = 18
-    RESPYearsInSchool = 4
-
-    ''' CPP defaults '''
-    CPPPerson1InitialYearTAPE = 0
-    CPPPerson1InitialYearDroppablePeriods = 0
-    CPPPerson1InitialYearDroppableTAPE = 0
-    CPPPerson2InitialYearTAPE = 0
-    CPPPerson2InitialYearDroppablePeriods = 0
-    CPPPerson2InitialYearDroppableTAPE = 0
