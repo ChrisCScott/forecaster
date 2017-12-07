@@ -50,7 +50,7 @@ class TestPersonMethods(unittest.TestCase):
             initial_year=self.initial_year,
             num_years=100)
         self.allocation_strategy = AllocationStrategy(
-            strategy=AllocationStrategy._strategy_n_minus_age,
+            strategy=AllocationStrategy.strategy_n_minus_age,
             min_equity=Decimal(0.5),
             max_equity=Decimal(0.5),
             target=Decimal(0.5),
@@ -411,7 +411,7 @@ class TestAccountMethods(unittest.TestCase):
             initial_year=cls.initial_year,
             num_years=100)
         cls.allocation_strategy = AllocationStrategy(
-            strategy=AllocationStrategy._strategy_n_minus_age,
+            strategy=AllocationStrategy.strategy_n_minus_age,
             min_equity=Decimal(0.5),
             max_equity=Decimal(0.5),
             target=Decimal(0.5),

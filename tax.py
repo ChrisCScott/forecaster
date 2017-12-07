@@ -5,7 +5,7 @@ These classes are callable with the form `tax(taxable_income, year)`
 
 import collections
 from decimal import Decimal
-from ledger import Person, Account
+from ledger import Person
 from utility import *
 
 # NOTE: Consider making this a ledger-like object that stores values
@@ -101,13 +101,22 @@ class Tax(object):
             themselves. These will generally be boutique tax credits.
             Optional.
     """
-    def __init__(self, tax_brackets, personal_deduction={}, credit_rate={},
-                 inflation_adjust=None):
+    def __init__(
+        self, tax_brackets, personal_deduction=None, credit_rate=None,
+        inflation_adjust=None
+    ):
         """ TODO """
         # TODO: Add an initial_year arg. If it's provided, interpret any
         # scalar args (or, for tax_brackets, non-year-indexed dict) as
         # {initial_year: arg} dicts (i.e. single-value dicts). This will
         # make building a Tax object much less confusing.
+
+        # Don't set these args to {} in the call signature, or else
+        # the mutated dicts will be shared between instances.
+        if personal_deduction is None:
+            personal_deduction = {}
+        if credit_rate is None:
+            credit_rate = {}
 
         # Enforce {int: {Money: Decimal}} types for tax_brackets and
         # generate an entry in `accum` for each new bracket:

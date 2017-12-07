@@ -183,7 +183,6 @@ def extend_inflation_adjusted(vals, inflation_adjust, target_year):
     # Look for the most recent year prior to `year`
     base_year = nearest_year(vals, target_year)
 
-    # TODO: Update following to use the method instead.
     # If one of the above searches worked, return an inflation-adjusted
     # value (or dict/list of values, depending on what the values of
     # `vals` are)
@@ -230,15 +229,21 @@ def build_inflation_adjust(inflation_adjust=None):
     if inflation_adjust is None:
         # Assume real values if no inflation-adjustment method is
         # given - i.e. always return val without adjustment.
+        # pylint: disable=W0613,E0102
         def inflation_adjust(target_year=None, base_year=None):
+            """ No inflation adjustment; returns 1 every year. """
             return Decimal(1)
     elif isinstance(inflation_adjust, dict):
         # If a dict of {year: Decimal} values has been passed in,
         # convert that to a suitable method:
+        # NOTE: This will raise an error if there are no keys in the
+        # dict.
         default_base = min(inflation_adjust.keys())
         inflation_dict = inflation_adjust
 
+        # pylint: disable=E0102
         def inflation_adjust(target_year, base_year=None):
+            """ Inflation adjustment from """
             if base_year is None:
                 base_year = default_base
             return Decimal(

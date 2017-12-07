@@ -1,13 +1,11 @@
 """ This module provides the `Strategy` class and subclasses, which
 define contribution and withdrawal strategies and associated flags. """
 
-from collections import namedtuple
 import inspect
 from ledger import Money, Decimal
-from utility import *
 
 
-def strategy(key):
+def strategy_method(key):
     """ A decorator for strategy methods, used by Strategy subclasses
 
     Methods decorated with this decorator will be automatically added
@@ -17,7 +15,7 @@ def strategy(key):
 
     Example:
         class ExampleStrategy(Strategy):
-            @strategy('method key')
+            @strategy_method('method key')
             def _strategy_method(self):
                 return
 
@@ -25,6 +23,10 @@ def strategy(key):
             ExampleStrategy._strategy_method
     """
     def decorator(function):
+        """ Decorator returned by strategy_method.
+
+        Adds strategy_key attribute.
+        """
         function.strategy_key = key
         return function
     return decorator
@@ -51,12 +53,13 @@ class StrategyType(type):
         # that has a `strategy_key` attribute of its own.
         cls.strategies = {
             s[1].strategy_key: s[1]
-            for s in inspect.getmembers(cls,
-                                        lambda x: hasattr(x, 'strategy_key')
-                                        )
+            for s in inspect.getmembers(
+                cls, lambda x: hasattr(x, 'strategy_key')
+            )
         }
 
 
+# pylint: disable=too-few-public-methods
 class Strategy(object, metaclass=StrategyType):
     """ An abstract callable class for determining a strategy.
 
@@ -86,7 +89,7 @@ class Strategy(object, metaclass=StrategyType):
         # Check types and values:
         if not isinstance(self.strategy, str):
             raise TypeError('Strategy: strategy must be a str')
-        if self.strategy not in self.strategies:
+        if self.strategy not in type(self).strategies:
             raise ValueError('Strategy: Unsupported strategy ' +
                              'value: ' + self.strategy)
 
@@ -95,7 +98,7 @@ class Strategy(object, metaclass=StrategyType):
         # Call the selected strategy method.
         # The method is unbound (as it's assigned at the class level) so
         # technically it's a function. We must pass `self` explicitly.
-        return self.strategies[self.strategy](self, *args, **kwargs)
+        return type(self).strategies[self.strategy](self, *args, **kwargs)
 
     @staticmethod
     def _param_check(var, var_name, var_type=None):
@@ -163,8 +166,14 @@ class ContributionStrategy(Strategy):
             strategy.
     """
 
-    def __init__(self, strategy, base_amount=0, rate=0,
-                 refund_reinvestment_rate=1, inflation_adjust=None):
+    # pylint: disable=too-many-arguments
+    # We need to pass the strategy's state variables at init time. There
+    # are 6 of them (including self). Refactoring to use a dict or
+    # similar would hurt readability.
+    def __init__(
+        self, strategy, base_amount=0, rate=0, refund_reinvestment_rate=1,
+        inflation_adjust=None
+    ):
         """ Constructor for ContributionStrategy. """
         super().__init__(strategy)
 
@@ -182,33 +191,36 @@ class ContributionStrategy(Strategy):
         # Types are enforced by explicit conversion; no need to check.
 
     # Begin defining subclass-specific strategies
-    @strategy('Constant contribution')
-    def _strategy_constant_contribution(self, year=None, *args, **kwargs):
+    # pylint: disable=W0613
+    @strategy_method('Constant contribution')
+    def strategy_const_contribution(self, year=None, *args, **kwargs):
         """ Contribute a constant amount each year. """
         return Money(self.base_amount * self.inflation_adjust(year))
 
-    @strategy('Constant living expenses')
-    def _strategy_constant_living_expenses(self, net_income, year=None,
-                                           *args, **kwargs):
+    @strategy_method('Constant living expenses')
+    def strategy_const_living_expenses(
+            self, net_income, year=None, *args, **kwargs
+    ):
         """ Contribute the money remaining after living expenses. """
         return max(
             net_income - Money(self.base_amount * self.inflation_adjust(year)),
             Money(0)
         )
 
-    @strategy('Percentage of net income')
-    def _strategy_net_percent(self, net_income, *args, **kwargs):
+    @strategy_method('Percentage of net income')
+    def strategy_net_percent(self, net_income, *args, **kwargs):
         """ Contribute a percentage of net income. """
         return self.rate * net_income
 
-    @strategy('Percentage of gross income')
-    def _strategy_gross_percent(self, gross_income, *args, **kwargs):
+    @strategy_method('Percentage of gross income')
+    def strategy_gross_percent(self, gross_income, *args, **kwargs):
         """ Contribute a percentage of gross income. """
         return self.rate * gross_income
 
-    @strategy('Percentage of earnings growth')
-    def _strategy_earnings_percent(self, net_income, year=None,
-                                   *args, **kwargs):
+    @strategy_method('Percentage of earnings growth')
+    def strategy_earnings_percent(
+        self, net_income, year=None, *args, **kwargs
+    ):
         """ Contribute a percentage of earnings above the base amount. """
         return self.rate * (
             net_income - (self.base_amount * self.inflation_adjust(year)))
@@ -232,11 +244,10 @@ class ContributionStrategy(Strategy):
         ):
             return contribution
         # If we're not yet retired, determine what to contribute:
-        else:
-            return contribution + super().__call__(
-                year=year, net_income=net_income, gross_income=gross_income,
-                *args, **kwargs
-            )
+        return contribution + super().__call__(
+            year=year, net_income=net_income, gross_income=gross_income,
+            *args, **kwargs
+        )
 
 
 class WithdrawalStrategy(Strategy):
@@ -308,8 +319,11 @@ class WithdrawalStrategy(Strategy):
             strategy.
     """
 
-    def __init__(self, strategy, base_amount=0, rate=0,
-                 timing='end', income_adjusted=False, inflation_adjust=None):
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self, strategy, base_amount=0, rate=0, timing='end',
+        income_adjusted=False, inflation_adjust=None
+    ):
         """ Constructor for ContributionStrategy. """
         super().__init__(strategy)
 
@@ -334,29 +348,32 @@ class WithdrawalStrategy(Strategy):
                              'or \'end\' if of type str')
 
     # Begin defining subclass-specific strategies
-    @strategy('Constant withdrawal')
-    def _strategy_constant_withdrawal(self, year=None, *args, **kwargs):
+    # pylint: disable=W0613
+    @strategy_method('Constant withdrawal')
+    def strategy_const_withdrawal(self, year=None, *args, **kwargs):
         """ Withdraw a constant amount each year. """
         return Money(self.base_amount * self.inflation_adjust(year))
 
-    @strategy('Percentage of principal')
-    def _strategy_principal_percent(self, principal_history,
-                                    retirement_year, year=None,
-                                    *args, **kwargs):
+    @strategy_method('Percentage of principal')
+    def strategy_principal_percent(
+        self, principal_history, retirement_year, year=None, *args, **kwargs
+    ):
         """ Withdraw a percentage of principal (as of retirement). """
         return self.rate * principal_history[retirement_year] * \
             self.inflation_adjust(year, retirement_year)
 
-    @strategy('Percentage of net income')
-    def _strategy_net_percent(self, net_income_history, retirement_year,
-                              year=None, *args, **kwargs):
+    @strategy_method('Percentage of net income')
+    def strategy_net_percent(
+        self, net_income_history, retirement_year, year=None, *args, **kwargs
+    ):
         """ Withdraw a percentage of max. net income (as of retirement). """
         return self.rate * net_income_history[retirement_year] * \
             self.inflation_adjust(year, retirement_year)
 
-    @strategy('Percentage of gross income')
-    def _strategy_gross_percent(self, gross_income_history, retirement_year,
-                                year=None, *args, **kwargs):
+    @strategy_method('Percentage of gross income')
+    def strategy_gross_percent(
+        self, gross_income_history, retirement_year, year=None, *args, **kwargs
+    ):
         """ Withdraw a percentage of gross income. """
         return self.rate * gross_income_history[retirement_year] * \
             self.inflation_adjust(year, retirement_year)
@@ -366,10 +383,11 @@ class WithdrawalStrategy(Strategy):
     # performance? (This sort of thing is why this class was redesigned
     # to take dicts as inputs instead of a handful of scalar values.)
 
-    def __call__(self, year=None, other_income=Money(0),
-                 net_income_history=None, gross_income_history=None,
-                 principal_history=None, retirement_year=None,
-                 *args, **kwargs):
+    def __call__(
+        self, year=None, other_income=Money(0),
+        net_income_history=None, gross_income_history=None,
+        principal_history=None, retirement_year=None, *args, **kwargs
+    ):
         """ Returns the gross withdrawal for the year. """
         # If we're not yet retired, no withdrawals:
         if (
@@ -377,24 +395,24 @@ class WithdrawalStrategy(Strategy):
             year <= retirement_year
         ):
             return Money(0)
-        else:
-            # First determine what the strategy recommends, before
-            # adjusting for other income.
-            strategy_result = super().__call__(
-                year=year,
-                net_income_history=net_income_history,
-                gross_income_history=gross_income_history,
-                principal_history=principal_history,
-                retirement_year=retirement_year,
-                *args, **kwargs)
-            # Determine whether to (and how much to) reduce the
-            # withdrawal due to other income:
-            income_adjustment = Money(
-                other_income if self.income_adjusted else 0
-            )
-            # We want to deduct other income from the withdrawal amount,
-            # but we don't want to return a negative value.
-            return max(strategy_result - income_adjustment, Money(0))
+
+        # First determine what the strategy recommends, before
+        # adjusting for other income.
+        strategy_result = super().__call__(
+            year=year,
+            net_income_history=net_income_history,
+            gross_income_history=gross_income_history,
+            principal_history=principal_history,
+            retirement_year=retirement_year,
+            *args, **kwargs)
+        # Determine whether to (and how much to) reduce the
+        # withdrawal due to other income:
+        income_adjustment = Money(
+            other_income if self.income_adjusted else 0
+        )
+        # We want to deduct other income from the withdrawal amount,
+        # but we don't want to return a negative value.
+        return max(strategy_result - income_adjustment, Money(0))
 
 
 class TransactionStrategy(Strategy):
@@ -450,14 +468,16 @@ class TransactionStrategy(Strategy):
             self._param_check(key, 'account type (key)', str)
             # TODO: Check that val is Decimal-convertible instead of
             # a rigid type check?
-            self._param_check(val, 'account weight (value)',
-                              (Decimal, float, int))
+            self._param_check(
+                val, 'account weight (value)', (Decimal, float, int)
+            )
         # NOTE: We leave it to calling code to interpret str-valued
         # timing. (We could convert to `When` here - consider it.)
         self._param_check(self.timing, 'timing', (Decimal, str))
 
-    @strategy('Ordered')
-    def _strategy_ordered(self, total, accounts, *args, **kwargs):
+    # pylint: disable=W0613
+    @strategy_method('Ordered')
+    def strategy_ordered(self, total, accounts, *args, **kwargs):
         """ Contributes/withdraws in order of account priority.
 
         The account with the lowest-valued priority is contributed to
@@ -492,8 +512,9 @@ class TransactionStrategy(Strategy):
 
         return transactions
 
-    @strategy('Weighted')
-    def _strategy_weighted(self, total, accounts, *args, **kwargs):
+    # pylint: disable=W0613
+    @strategy_method('Weighted')
+    def strategy_weighted(self, total, accounts, *args, **kwargs):
         """ Contributes to/withdraws from all accounts based on weights. """
         # TODO: Handle the case where multiple objects of the same type
         # are passed via `accounts`. (Ideally, treat them as a single
@@ -532,7 +553,7 @@ class TransactionStrategy(Strategy):
             }
 
         # If there are no accounts that need to be tweaked, we're done.
-        if len(override_accounts) == 0:
+        if not override_accounts:
             return transactions
 
         # If we found some such accounts, set their transaction amounts
@@ -597,7 +618,7 @@ class TransactionStrategy(Strategy):
             }
 
         # If there are no accounts that need to be tweaked, we're done.
-        if len(override_accounts) == 0:
+        if not override_accounts:
             return transactions
 
         # First, manually add the minimum transaction amounts to the
@@ -693,9 +714,12 @@ class AllocationStrategy(Strategy):
         percentage of a portfolio that is made up of that asset class.
         Allocations sum to 1 (e.g. `Decimal(0.03` means 3%).
     """
-    def __init__(self, strategy, target, min_equity=0, max_equity=1,
-                 standard_retirement_age=65, risk_transition_period=20,
-                 adjust_for_retirement_plan=True, scenario=None):
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self, strategy, target, min_equity=0, max_equity=1,
+        standard_retirement_age=65, risk_transition_period=20,
+        adjust_for_retirement_plan=True, scenario=None
+    ):
         """ Constructor for AllocationStrategy. """
         super().__init__(strategy)
 
@@ -713,9 +737,11 @@ class AllocationStrategy(Strategy):
             raise ValueError('AllocationStrategy: min_equity must not be ' +
                              'greater than max_equity.')
 
-    @strategy('n-age')
-    def _strategy_n_minus_age(self, age, retirement_age=None,
-                              *args, **kwargs):
+    @strategy_method('n-age')
+    # pylint: disable=W0613
+    def strategy_n_minus_age(
+        self, age, retirement_age=None, *args, **kwargs
+    ):
         """ Used for 100-age, 110-age, 125-age, etc. strategies. """
         # If we're adjusting for early/late retirement,
         # pretend we're a few years younger if we're retiring later
@@ -734,9 +760,11 @@ class AllocationStrategy(Strategy):
         # Bonds is simply whatever isn't in equities
         return {'stocks': target, 'bonds': 1-target}
 
-    @strategy('Transition to constant')
-    def _strategy_transition_to_constant(self, age, retirement_age=None,
-                                         *args, **kwargs):
+    @strategy_method('Transition to constant')
+    # pylint: disable=W0613
+    def strategy_transition_to_const(
+        self, age, retirement_age=None, *args, **kwargs
+    ):
         """ Used for `Transition to 50-50`, `Transition to 70-30`, etc. """
         self._param_check(age, 'age')
         # Assume we're retiring at the standard retirement age unless
@@ -757,13 +785,12 @@ class AllocationStrategy(Strategy):
             return {'stocks': min_equity, 'bonds': 1-min_equity}
         # Otherwise, smoothly move from max_equity to target over
         # the risk_transition_period
-        else:
-            target = self.target + \
-                (self.max_equity - self.target) * \
-                (retirement_age - age) / self.risk_transition_period
-            return {'stocks': target, 'bonds': 1-target}
+        target = self.target + \
+            (self.max_equity - self.target) * \
+            (retirement_age - age) / self.risk_transition_period
+        return {'stocks': target, 'bonds': 1-target}
 
-    def rate_of_return(self, year, age, retirement_age=None, *args, **kwargs):
+    def rate_of_return(self, year, age, retirement_age=None):
         """ Rate of return for `year` accounting for asset allocation.
 
         This method requires that the AllocationStrategy object have a
@@ -789,11 +816,9 @@ class AllocationStrategy(Strategy):
             bonds=allocation.setdefault('bonds', default_return),
             other=allocation.setdefault('other', default_return))
 
+    # pylint: disable=W0235
     def __call__(self, age, retirement_age=None, *args, **kwargs):
         """ Returns a dict of {account, Money} pairs. """
-        # TODO: Add list (dict?) arguments with historical data (e.g.
-        # withdrawals and principal) to allow for behaviour-aware
-        # rebalancing.
         # TODO: Move min_equity and max_equity logic here to simplify
         # the logic of each strategy.
         return super().__call__(age, retirement_age, *args, **kwargs)
@@ -840,8 +865,9 @@ class DebtPaymentStrategy(Strategy):
         # timing. (We could convert to `When` here - consider it.)
         self._param_check(self.timing, 'timing', (Decimal, str))
 
-    @strategy('Snowball')
-    def _strategy_snowball(self, available, debts, *args, **kwargs):
+    # pylint: disable=W0613
+    @strategy_method('Snowball')
+    def strategy_snowball(self, available, debts, *args, **kwargs):
         """ Pays off the smallest debt first. """
         # First, ensure all minimum payments are made.
         transactions = {
@@ -861,7 +887,7 @@ class DebtPaymentStrategy(Strategy):
             # they're fully repaid in the first year.
             if debt.reduction_rate == 0:
                 transactions[debt] = debt.max_inflow(self.timing)
-                pass
+                continue
 
             # Payment is either the outstanding balance or the total of
             # the available money remaining for payments
@@ -876,8 +902,8 @@ class DebtPaymentStrategy(Strategy):
 
         return transactions
 
-    @strategy('Avalanche')
-    def _strategy_avalanche(self, available, debts, *args, **kwargs):
+    @strategy_method('Avalanche')
+    def strategy_avalanche(self, available, debts, *args, **kwargs):
         """ Pays off the highest-interest debt first. """
         # First, ensure all minimum payments are made.
         transactions = {
@@ -897,7 +923,7 @@ class DebtPaymentStrategy(Strategy):
             # they're fully repaid in the first year.
             if debt.reduction_rate == 0:
                 transactions[debt] = debt.max_inflow(self.timing)
-                pass
+                continue
 
             # Payment is either the outstanding balance or the total of
             # the available money remaining for payments
@@ -913,6 +939,7 @@ class DebtPaymentStrategy(Strategy):
         return transactions
 
     # Overriding __call__ solely for intellisense purposes.
+    # pylint: disable=W0235
     def __call__(self, available, debts, *args, **kwargs):
         """ Returns a dict of {account, Money} pairs. """
         return super().__call__(available, debts, *args, **kwargs)

@@ -19,11 +19,11 @@ class TestStrategyMethods(unittest.TestCase):
     # __init__ will fail for every input. The easiest fix is to
     # create a subclass with a validly-decorated strategy.
     class Subclass(Strategy):
-        @strategy('Test')
+        @strategy_method('Test')
         def test_strategy(self, val=1):
             return val
 
-        @strategy('Test2')
+        @strategy_method('Test2')
         def test_strategy2(self, val=2):
             return val
 
@@ -78,14 +78,14 @@ class TestStrategyMethods(unittest.TestCase):
         # are being added to `strategies`. We use ContributionStrategy
         # for this test. It should have at least these four strategies:
         strategies = {
-            ContributionStrategy._strategy_constant_contribution.strategy_key:
-                ContributionStrategy._strategy_constant_contribution,
-            ContributionStrategy._strategy_constant_living_expenses.strategy_key:  # noqa
-                ContributionStrategy._strategy_constant_living_expenses,
-            ContributionStrategy._strategy_gross_percent.strategy_key:
-                ContributionStrategy._strategy_gross_percent,
-            ContributionStrategy._strategy_net_percent.strategy_key:
-                ContributionStrategy._strategy_net_percent
+            ContributionStrategy.strategy_const_contribution.strategy_key:
+                ContributionStrategy.strategy_const_contribution,
+            ContributionStrategy.strategy_const_living_expenses.strategy_key:  # noqa
+                ContributionStrategy.strategy_const_living_expenses,
+            ContributionStrategy.strategy_gross_percent.strategy_key:
+                ContributionStrategy.strategy_gross_percent,
+            ContributionStrategy.strategy_net_percent.strategy_key:
+                ContributionStrategy.strategy_net_percent
         }
         # Unfortunately, unittest.assertDictContainsSubset is deprecated
         # so we'll have to do this the long way...
@@ -96,7 +96,7 @@ class TestStrategyMethods(unittest.TestCase):
 
         # Also made sure that no strategies for other subclasses are
         # being added to this particular subclass instance.
-        self.assertNotIn(WithdrawalStrategy._strategy_principal_percent,
+        self.assertNotIn(WithdrawalStrategy.strategy_principal_percent,
                          ContributionStrategy.strategies.values())
 
         # Finally, repeat the above with object instances instead of
@@ -105,7 +105,7 @@ class TestStrategyMethods(unittest.TestCase):
         # contains unbound functions, not comparable to s._strategy_*
         # methods)
         s = ContributionStrategy(
-            ContributionStrategy._strategy_constant_contribution)
+            ContributionStrategy.strategy_const_contribution)
         for strategy in strategies:
             self.assertIn(strategy, s.strategies.keys())
             self.assertIn(strategies[strategy], s.strategies.values())
@@ -189,7 +189,7 @@ class TestContributionStrategyMethods(unittest.TestCase):
     def test_strategy_constant_contribution(self):
         """ Tests ContributionStrategy._strategy_constant_contribution. """
         # Rather than hardcode the key, let's look it up here.
-        method = ContributionStrategy._strategy_constant_contribution
+        method = ContributionStrategy.strategy_const_contribution
 
         # Default strategy. Set to $1 constant contributions.
         s = ContributionStrategy(method, base_amount=Money(1))
@@ -242,7 +242,7 @@ class TestContributionStrategyMethods(unittest.TestCase):
     def test_strategy_constant_living_expenses(self):
         """ Tests ContributionStrategy._strategy_constant_living_expenses. """
         # Rather than hardcode the key, let's look it up here.
-        method = ContributionStrategy._strategy_constant_living_expenses
+        method = ContributionStrategy.strategy_const_living_expenses
 
         # Default strategy
         s = ContributionStrategy(
@@ -273,7 +273,7 @@ class TestContributionStrategyMethods(unittest.TestCase):
     def test_strategy_net_percent(self):
         """ Tests ContributionStrategy._strategy_net_percent. """
         # Rather than hardcode the key, let's look it up here.
-        method = ContributionStrategy._strategy_net_percent
+        method = ContributionStrategy.strategy_net_percent
 
         # Default strategy
         s = ContributionStrategy(method)
@@ -294,7 +294,7 @@ class TestContributionStrategyMethods(unittest.TestCase):
     def test_strategy_gross_percent(self):
         """ Tests ContributionStrategy._strategy_gross_percent. """
         # Rather than hardcode the key, let's look it up here.
-        method = ContributionStrategy._strategy_gross_percent
+        method = ContributionStrategy.strategy_gross_percent
 
         # Default strategy
         s = ContributionStrategy(method)
@@ -314,7 +314,7 @@ class TestContributionStrategyMethods(unittest.TestCase):
 
     def test_strategy_earnings_percent(self):
         """ Tests ContributionStrategy._strategy_earnings_percent. """
-        method = ContributionStrategy._strategy_earnings_percent
+        method = ContributionStrategy.strategy_earnings_percent
 
         # Default strategy
         s = ContributionStrategy(
@@ -412,7 +412,7 @@ class TestWithdrawalStrategyMethods(unittest.TestCase):
     def test_strategy_constant_withdrawal(self):
         """ Tests WithdrawalStrategy._strategy_constant_withdrawal. """
         # Rather than hardcode the key, let's look it up here.
-        method = WithdrawalStrategy._strategy_constant_withdrawal
+        method = WithdrawalStrategy.strategy_const_withdrawal
 
         # Default strategy
         s = WithdrawalStrategy(method, base_amount=Money(100))
@@ -432,7 +432,7 @@ class TestWithdrawalStrategyMethods(unittest.TestCase):
     def test_strategy_principal_percent(self):
         """ Tests WithdrawalStrategy._strategy_principal_percent. """
         # Rather than hardcode the key, let's look it up here.
-        method = WithdrawalStrategy._strategy_principal_percent
+        method = WithdrawalStrategy.strategy_principal_percent
 
         rand = Random()
         principal = {}
@@ -474,7 +474,7 @@ class TestWithdrawalStrategyMethods(unittest.TestCase):
     def test_strategy_net_percent(self):
         """ Tests WithdrawalStrategy._strategy_net_percent. """
         # Rather than hardcode the key, let's look it up here.
-        method = WithdrawalStrategy._strategy_net_percent
+        method = WithdrawalStrategy.strategy_net_percent
 
         rand = Random()
         net_income = {}
@@ -516,7 +516,7 @@ class TestWithdrawalStrategyMethods(unittest.TestCase):
     def test_strategy_gross_percent(self):
         """ Tests WithdrawalStrategy._strategy_gross_percent. """
         # Rather than hardcode the key, let's look it up here.
-        method = WithdrawalStrategy._strategy_gross_percent
+        method = WithdrawalStrategy.strategy_gross_percent
 
         rand = Random()
         gross_income = {}
@@ -558,7 +558,7 @@ class TestWithdrawalStrategyMethods(unittest.TestCase):
     def test_call(self):
         """ Tests __call__ logic (but not strategy-specific logic). """
         # Select a simple, constant withdrawal strategy.
-        method = WithdrawalStrategy._strategy_constant_withdrawal
+        method = WithdrawalStrategy.strategy_const_withdrawal
 
         # Test other income. No inflation adjustment.
         s = WithdrawalStrategy(
@@ -657,7 +657,7 @@ class TestTransactionStrategyMethods(unittest.TestCase):
     def test_strategy_ordered(self):
         """ Tests TransactionStrategy._strategy_ordered. """
         # Run each test on inflows and outflows
-        method = TransactionStrategy._strategy_ordered
+        method = TransactionStrategy.strategy_ordered
         s = TransactionStrategy(method, {
             'RRSP': 1,
             'TFSA': 2,
@@ -717,7 +717,7 @@ class TestTransactionStrategyMethods(unittest.TestCase):
     def test_strategy_weighted(self):
         """ Tests TransactionStrategy._strategy_weighted. """
         # Run each test on inflows and outflows
-        method = TransactionStrategy._strategy_weighted
+        method = TransactionStrategy.strategy_weighted
         rrsp_weight = Decimal('0.4')
         tfsa_weight = Decimal('0.3')
         taxableAccount_weight = Decimal('0.3')
@@ -860,7 +860,7 @@ class TestAllocationStrategyMethods(unittest.TestCase):
         # adjust_for_retirement_plan (bool)
 
         # Test default init:
-        strategy = AllocationStrategy._strategy_n_minus_age
+        strategy = AllocationStrategy.strategy_n_minus_age
         target = 100
         s = AllocationStrategy(strategy, target)
         self.assertEqual(s.strategy, strategy.strategy_key)
@@ -873,7 +873,7 @@ class TestAllocationStrategyMethods(unittest.TestCase):
         self.assertEqual(s.adjust_for_retirement_plan, True)
 
         # Test explicit init:
-        strategy = AllocationStrategy._strategy_n_minus_age
+        strategy = AllocationStrategy.strategy_n_minus_age
         min_equity = 0
         max_equity = 1
         target = '0.5'
@@ -938,7 +938,7 @@ class TestAllocationStrategyMethods(unittest.TestCase):
 
     def test_strategy_n_minus_age(self):
         """ Tests AllocationStrategy._strategy_n_minus_age. """
-        method = AllocationStrategy._strategy_n_minus_age
+        method = AllocationStrategy.strategy_n_minus_age
 
         # Create a basic strategy that puts 100-age % into equity
         n = 100
@@ -1005,7 +1005,7 @@ class TestAllocationStrategyMethods(unittest.TestCase):
 
     def test_strategy_transition_to_constant(self):
         """ Tests AllocationStrategy._strategy_transition_to_constant. """
-        method = AllocationStrategy._strategy_transition_to_constant
+        method = AllocationStrategy.strategy_transition_to_const
 
         # Create a basic strategy that transitions from 100% stocks to
         # 50% stocks between the ages of 55 and 65.
@@ -1097,7 +1097,7 @@ class TestDebtPaymentStrategyMethods(unittest.TestCase):
 
     def test_init(self):
         """ Tests DebtPaymentStrategy.__init__ """
-        strategy = DebtPaymentStrategy._strategy_avalanche.strategy_key
+        strategy = DebtPaymentStrategy.strategy_avalanche.strategy_key
         s = DebtPaymentStrategy(strategy)
         self.assertEqual(s.strategy, strategy)
         self.assertEqual(s.timing, 'end')
@@ -1121,7 +1121,7 @@ class TestDebtPaymentStrategyMethods(unittest.TestCase):
     def test_strategy_snowball(self):
         """ Tests DebtPaymentStrategy._strategy_snowball. """
         # Run each test on inflows and outflows
-        method = DebtPaymentStrategy._strategy_snowball
+        method = DebtPaymentStrategy.strategy_snowball
         s = DebtPaymentStrategy(method)
 
         # Try a simple scenario: The amount being contributed is equal
@@ -1210,7 +1210,7 @@ class TestDebtPaymentStrategyMethods(unittest.TestCase):
     def test_strategy_avalanche(self):
         """ Tests DebtPaymentStrategy._strategy_avalanche. """
         # Run each test on inflows and outflows
-        method = DebtPaymentStrategy._strategy_avalanche
+        method = DebtPaymentStrategy.strategy_avalanche
         s = DebtPaymentStrategy(method)
 
         # Try a simple scenario: The amount being contributed is equal
