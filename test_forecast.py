@@ -9,6 +9,7 @@ from ledger import Person, Account, Debt
 from scenario import Scenario
 from strategy import *
 from forecast import Forecast
+from forecaster import Forecaster  # Import for convenience
 from test_helper import *
 
 
@@ -60,32 +61,32 @@ class TestForecast(unittest.TestCase):
             reduction_rate=1, accelerate_payment=True
         )
         contribution_strategy = ContributionStrategy(
-            strategy=ContributionStrategy._strategy_constant_contribution,
+            strategy=ContributionStrategy.strategy_const_contribution,
             base_amount=Money('50000'),
             rate=Decimal(0),
             refund_reinvestment_rate=1,
             inflation_adjust=scenario.inflation_adjust
         )
         withdrawal_strategy = WithdrawalStrategy(
-            strategy=WithdrawalStrategy._strategy_constant_withdrawal,
+            strategy=WithdrawalStrategy.strategy_const_withdrawal,
             base_amount=Money('50000'),
             timing='end',
             income_adjusted=False,
             inflation_adjust=scenario.inflation_adjust
         )
         contribution_transaction_strategy = TransactionStrategy(
-            strategy=TransactionStrategy._strategy_ordered,
+            strategy=TransactionStrategy.strategy_ordered,
             weights={'Account': 1},
             timing='end'
         )
         withdrawal_transaction_strategy = TransactionStrategy(
-            strategy=TransactionStrategy._strategy_ordered,
+            strategy=TransactionStrategy.strategy_ordered,
             weights={'Account': 1},
             timing='end'
         )
         # Constant 50-50 split between stocks and bonds:
         allocation_strategy = AllocationStrategy(
-            strategy=AllocationStrategy._strategy_n_minus_age,
+            strategy=AllocationStrategy.strategy_n_minus_age,
             min_equity=Decimal(0.5),
             max_equity=Decimal(0.5),
             target=Decimal(0.5),
@@ -94,7 +95,7 @@ class TestForecast(unittest.TestCase):
             adjust_for_retirement_plan=True
         )
         debt_payment_strategy = DebtPaymentStrategy(
-            strategy=DebtPaymentStrategy._strategy_avalanche,
+            strategy=DebtPaymentStrategy.strategy_avalanche,
             timing='end'
         )
 
@@ -209,6 +210,62 @@ class TestForecast(unittest.TestCase):
         # it. (Any taxes paid out of accounts shouldn't be - perhaps
         # only deduct taxes withheld?)
         self.assertEqual(forecast.living_standard[year], Money(-100000))
+
+    def test_types(self):
+        """ Tests types of objects in Forecast attribute dicts. """
+        # Use Forecaster to build a Forecast easily:
+        forecaster = Forecaster()
+        forecaster.add_asset(owner=forecaster.person1)
+        forecaster.add_debt(owner=forecaster.person1)
+        forecast = forecaster.forecast()
+
+        self.assertTrue(
+            type_check(forecast.asset_sale, {int: Money}))
+        self.assertTrue(
+            type_check(forecast.carryover, {int: Money}))
+        self.assertTrue(
+            type_check(forecast.contribution_reductions, {int: Money}))
+        self.assertTrue(
+            type_check(forecast.gross_contributions, {int: Money}))
+        self.assertTrue(
+            type_check(forecast.gross_income, {int: Money}))
+        self.assertTrue(
+            type_check(forecast.gross_return, {int: Money}))
+        self.assertTrue(
+            type_check(forecast.gross_withdrawals, {int: Money}))
+        self.assertTrue(
+            type_check(forecast.living_standard, {int: Money}))
+        self.assertTrue(
+            type_check(forecast.net_contributions, {int: Money}))
+        self.assertTrue(
+            type_check(forecast.net_income, {int: Money}))
+        self.assertTrue(
+            type_check(forecast.net_return, {int: Money}))
+        self.assertTrue(
+            type_check(forecast.net_withdrawals, {int: Money}))
+        self.assertTrue(
+            type_check(forecast.principal, {int: Money}))
+        self.assertTrue(
+            type_check(forecast.reduction_from_debt, {int: Money}))
+        self.assertTrue(
+            type_check(forecast.reduction_from_other, {int: Money}))
+        self.assertTrue(
+            type_check(forecast.refund, {int: Money}))
+        self.assertTrue(
+            type_check(forecast.tax_withheld_on_return, {int: Money}))
+        self.assertTrue(
+            type_check(forecast.tax_withheld_on_withdrawals, {int: Money}))
+        self.assertTrue(
+            type_check(forecast.taxes_withheld_on_income, {int: Money}))
+        self.assertTrue(
+            type_check(forecast.total_tax_owing, {int: Money}))
+        self.assertTrue(
+            type_check(forecast.total_tax_withheld, {int: Money}))
+        self.assertTrue(
+            type_check(forecast.withdrawals_from_other_accounts, {int: Money}))
+        self.assertTrue(
+            type_check(
+                forecast.withdrawals_from_retirement_accounts, {int: Money}))
 
 if __name__ == '__main__':
     unittest.main()
