@@ -3,7 +3,7 @@
 import unittest
 from decimal import Decimal
 from random import Random
-from scenario import Scenario
+from forecaster.scenario import Scenario
 
 
 class TestScenarioMethods(unittest.TestCase):

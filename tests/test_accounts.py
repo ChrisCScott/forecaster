@@ -1,377 +1,15 @@
-''' Unit tests for `People` and `Account` classes. '''
+""" Module for testing forecaster.accounts classes. """
 
 import unittest
-from datetime import datetime
-from dateutil.parser import parse
-from dateutil.relativedelta import relativedelta
-import warnings
 import math
 import decimal
 from decimal import Decimal
-from random import Random
-from tax import Tax
-from strategy import AllocationStrategy
-from scenario import Scenario
-import ledger
-from ledger import *
-from utility import *
-from test_helper import *
-
-
-class TestPersonMethods(unittest.TestCase):
-    """ A test suite for the `Person` class. """
-
-    def setUp(self):
-        """ Sets up default vaules for testing """
-        self.initial_year = 2020
-        self.name = "Testy McTesterson"
-        self.birth_date = datetime(2000, 2, 1)  # 1 February 2000
-        self.retirement_date = datetime(2065, 6, 26)  # 26 June 2065
-        self.gross_income = Money(100000)  # $100000
-        self.raise_rate = Decimal(1)  # 100%
-        self.tax_treatment = Tax(
-            {self.initial_year: {
-                Money(0): Decimal('0.1'),
-                Money(1000): Decimal('0.2'),
-                Money(100000): Decimal('0.3')}
-             },
-            inflation_adjust={
-                year: Decimal(1 + (year - self.initial_year) / 16)
-                for year in range(self.initial_year, self.initial_year + 100)
-             },
-            personal_deduction={self.initial_year: Money(100)},
-            credit_rate={self.initial_year: Decimal('0.15')})
-        scenario = Scenario(
-            inflation=0,
-            stock_return=1,
-            bond_return=0.5,
-            other_return=0,
-            management_fees=0.03125,
-            initial_year=self.initial_year,
-            num_years=100)
-        self.allocation_strategy = AllocationStrategy(
-            strategy=AllocationStrategy.strategy_n_minus_age,
-            min_equity=Decimal(0.5),
-            max_equity=Decimal(0.5),
-            target=Decimal(0.5),
-            standard_retirement_age=65,
-            risk_transition_period=20,
-            adjust_for_retirement_plan=False,
-            scenario=scenario)
-        self.spouse = Person(
-            initial_year=self.initial_year,
-            name="Spouse",
-            birth_date=1998,
-            retirement_date=2063,
-            gross_income=Money(50000),
-            raise_rate=self.raise_rate,
-            spouse=None,
-            tax_treatment=self.tax_treatment,
-            allocation_strategy=self.allocation_strategy)
-        self.owner = Person(
-            initial_year=self.initial_year,
-            name=self.name,
-            birth_date=self.birth_date,
-            retirement_date=self.retirement_date,
-            gross_income=self.gross_income,
-            raise_rate=self.raise_rate,
-            spouse=self.spouse,
-            tax_treatment=self.tax_treatment,
-            allocation_strategy=self.allocation_strategy)
-
-    def test_init(self):
-        """ Tests Person.__init__ """
-
-        # Should work when all required arguments are passed correctly
-        person = Person(
-            self.initial_year, self.name, self.birth_date,
-            retirement_date=self.retirement_date)
-        self.assertEqual(person.name, self.name)
-        self.assertEqual(person.birth_date, self.birth_date)
-        self.assertEqual(person.retirement_date, self.retirement_date)
-        self.assertIsInstance(person.name, str)
-        self.assertIsInstance(person.birth_date, datetime)
-        self.assertIsInstance(person.retirement_date, datetime)
-        self.assertIsNone(person.spouse)
-        self.assertIsNone(person.allocation_strategy)
-        self.assertIsNone(person.tax_treatment)
-
-        # Should work with strings instead of dates
-        birth_date_str = "1 January 2000"
-        birth_date = datetime(2000, 1, 1)
-        person = Person(
-            self.initial_year, self.name, birth_date_str,
-            retirement_date=self.retirement_date)
-        self.assertEqual(person.birth_date, birth_date)
-        self.assertIsInstance(person.birth_date, datetime)
-
-        # Should fail if retirement_date precedes birth_date
-        with self.assertRaises(ValueError):
-            person = Person(
-                self.initial_year, self.name, self.birth_date,
-                retirement_date=self.birth_date - relativedelta(days=1))
-
-        # Should fail if a string is not parseable to a date
-        with self.assertRaises(ValueError):
-            person = Person(
-                self.initial_year, self.name, 'invalid',
-                retirement_date=self.retirement_date)
-        with self.assertRaises(ValueError):
-            person = Person(
-                self.initial_year, self.name, self.birth_date,
-                retirement_date='invalid')
-
-        # Should work with non-str/non-datetime values as well
-        birth_date = 2000
-        retirement_date = birth_date + 65
-        person = Person(
-            self.initial_year, self.name, birth_date,
-            retirement_date=retirement_date)
-        self.assertEqual(person.birth_date.year,
-                         datetime(2000, 1, 1).year)
-        self.assertEqual(person.birth_date.year + 65,
-                         person.retirement_date.year)
-        self.assertEqual(person.birth_date.month,
-                         person.retirement_date.month)
-        self.assertEqual(person.birth_date.day,
-                         person.retirement_date.day)
-
-        # Let's mix different types of non-datetime inputs. Should work.
-        birth_date = "3 February 2001"
-        retirement_date = 2002
-        person = Person(
-            self.initial_year, self.name, birth_date,
-            retirement_date=retirement_date)
-        birth_date = datetime(2001, 2, 3)
-        self.assertEqual(person.birth_date, birth_date)
-        self.assertEqual(person.retirement_date.year, retirement_date)
-        self.assertEqual(person.birth_date.month,
-                         person.retirement_date.month)
-        self.assertEqual(person.birth_date.day,
-                         person.retirement_date.day)
-
-        # Let's mix datetime and non-datetime inputs. Should work.
-        birth_date = "3 February 2001"
-        retirement_date = datetime(2002, 1, 1)
-        person = Person(
-            self.initial_year, self.name, birth_date,
-            retirement_date=retirement_date)
-        birth_date = datetime(2001, 2, 3)
-        self.assertEqual(person.birth_date, birth_date)
-        self.assertEqual(person.retirement_date.year, retirement_date.year)
-        self.assertEqual(person.birth_date.month, birth_date.month)
-        self.assertEqual(person.retirement_date.month,
-                         retirement_date.month)
-        self.assertEqual(person.birth_date.day, birth_date.day)
-        self.assertEqual(person.retirement_date.day, retirement_date.day)
-
-        # Now confirm that we can pass gross_income, spouse,
-        # tax_treatment, allocation_strategy, and initial_year
-        gross_income = Money(100000)
-        person1 = Person(
-            self.initial_year, self.name, birth_date,
-            retirement_date=retirement_date,
-            gross_income=gross_income,
-            spouse=None, tax_treatment=self.tax_treatment,
-            allocation_strategy=self.allocation_strategy)
-        self.assertEqual(person1.gross_income, gross_income)
-        self.assertEqual(person1.gross_income_history,
-                         {self.initial_year: gross_income})
-        self.assertEqual(person1.tax_treatment, self.tax_treatment)
-        self.assertEqual(person1.initial_year, self.initial_year)
-        self.assertIsNone(person1.spouse)
-        self.assertEqual(person1.allocation_strategy, self.allocation_strategy)
-        self.assertEqual(person1.accounts, set())
-
-        # Add a spouse and confirm that both Person objects are updated
-        person2 = Person(
-            self.initial_year, "Spouse", self.initial_year - 20,
-            retirement_date=retirement_date,
-            gross_income=Money(50000),
-            spouse=person1, tax_treatment=self.tax_treatment)
-        self.assertEqual(person1.spouse, person2)
-        self.assertEqual(person2.spouse, person1)
-
-        # Add an account and confirm that the Person passed as owner is
-        # updated.
-        account1 = Account(owner=person1)
-        account2 = Account(owner=person1)
-        self.assertEqual(person1.accounts, {account1, account2})
-        self.assertEqual(person2.accounts, set())
-
-    def test_age(self):
-        """ Tests person.age """
-
-        # Test output for person's 20th birthday:
-        date = self.birth_date + relativedelta(years=20)
-        self.assertEqual(self.owner.age(date), 20)
-        self.assertIsInstance(self.owner.age(date), int)
-
-        # Test output for day before person's 20th birthday:
-        date = self.birth_date + relativedelta(years=20, days=-1)
-        self.assertEqual(self.owner.age(date), 19)
-
-        # Test output for day after person's 20th birthday:
-        date = date + relativedelta(days=2)
-        self.assertEqual(self.owner.age(date), 20)
-
-        # NOTE: The following tests for negative ages, and should
-        # probably be left undefined (i.e. implementation-specific)
-
-        # Test output for day before person's birth
-        date = self.birth_date - relativedelta(days=1)
-        self.assertEqual(self.owner.age(date), -1)
-
-        # Test output for one year before person's birth
-        date = self.birth_date - relativedelta(years=1)
-        self.assertEqual(self.owner.age(date), -1)
-
-        # Test output for one year and a day before person's birth
-        date = self.birth_date - relativedelta(years=1, days=1)
-        self.assertEqual(self.owner.age(date), -2)
-
-        # Repeat the above, but with strings
-        date = str(self.birth_date + relativedelta(years=20))
-        self.assertEqual(self.owner.age(date), 20)
-
-        date = str(self.birth_date + relativedelta(years=20) -
-                   relativedelta(days=1))
-        self.assertEqual(self.owner.age(date), 19)
-
-        date = str(self.birth_date + relativedelta(years=20, day=1))
-        self.assertEqual(self.owner.age(date), 20)
-
-        date = str(self.birth_date - relativedelta(days=1))
-        self.assertEqual(self.owner.age(date), -1)
-
-        # Finally, test ints as input
-        date = self.birth_date.year + 20
-        self.assertEqual(self.owner.age(date), 20)
-
-        date = self.birth_date.year - 1
-        self.assertEqual(self.owner.age(date), -1)
-
-    def test_retirement_age(self):
-        """ Tests person.retirement_age """
-
-        # Test that the retirement age for stock person is accurate
-        delta = relativedelta(self.owner.retirement_date,
-                              self.owner.birth_date)
-        self.assertEqual(self.owner.retirement_age, delta.years)
-        self.assertIsInstance(self.owner.retirement_age, int)
-
-        # Test retiring on 65th birthday
-        retirement_date = self.birth_date + relativedelta(years=65)
-        person = Person(
-            self.initial_year, self.name, self.birth_date,
-            retirement_date=retirement_date)
-        self.assertEqual(person.retirement_age, 65)
-
-        # Test retiring on day after 65th birthday
-        retirement_date = self.birth_date + relativedelta(years=65, day=1)
-        person = Person(
-            self.initial_year, self.name, self.birth_date,
-            retirement_date=retirement_date)
-        self.assertEqual(person.retirement_age, 65)
-
-        # Test retiring on day before 65th birthday
-        retirement_date = self.birth_date + relativedelta(years=65) - \
-            relativedelta(days=1)
-        person = Person(
-            self.initial_year, self.name, self.birth_date,
-            retirement_date=retirement_date)
-        self.assertEqual(person.retirement_age, 64)
-
-        # Test person with no known retirement date
-        # NOTE: This is not currently implemented
-        # person = Person(self.name, self.birth_date)
-        # self.assertIsNone(person.retirement_age)
-
-    def test_next(self):
-        """ Test next_year to confirm that properties are advanced. """
-        initial_year = 2017
-        gross_income = 100
-        tax = Tax(
-            {initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
-            inflation_adjust={2017: 1, 2018: 1, 2019: 1, 2020: 1},
-            personal_deduction={2017: 0})
-        person = Person(
-            initial_year, 'Name', 2000,
-            raise_rate=2.0,
-            retirement_date=self.retirement_date,
-            gross_income=gross_income,
-            tax_treatment=tax)
-        self.assertEqual(person.gross_income, gross_income)
-        self.assertEqual(person.net_income, Money(100))
-        self.assertEqual(person.this_year, initial_year)
-        person.next_year()  # 200% raise - gross income is now $300
-        self.assertEqual(person.gross_income, Money(300))
-        self.assertEqual(person.net_income, Money(250))
-        self.assertEqual(person.this_year, initial_year + 1)
-
-    def test_taxable_income(self):
-        initial_year = 2017
-        gross_income = 100
-        tax = Tax({initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
-                  {2017: 1, 2018: 1, 2019: 1, 2020: 1}, {2017: 0})
-        person = Person(
-            initial_year, 'Name', 2000,
-            retirement_date=self.retirement_date,
-            gross_income=gross_income, tax_treatment=tax)
-        self.assertEqual(person.taxable_income, gross_income)
-
-    def test_taxwithheld(self):
-        initial_year = 2017
-        gross_income = 300
-        tax = Tax(
-            {initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
-            inflation_adjust={2017: 1, 2018: 1, 2019: 1, 2020: 1},
-            personal_deduction={2017: 0})
-        person = Person(
-            self.initial_year, 'Name', 2000,
-            retirement_date=self.retirement_date,
-            gross_income=gross_income, tax_treatment=tax)
-        self.assertEqual(person.tax_withheld, Money(50))
-
-    def test_tax_credit(self):
-        initial_year = 2017
-        gross_income = 300
-        tax = Tax({initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
-                  {2017: 1, 2018: 1, 2019: 1, 2020: 1}, {2017: 0})
-        person = Person(
-            self.initial_year, 'Name', 2000,
-            retirement_date=self.retirement_date, gross_income=gross_income,
-            tax_treatment=tax)
-        self.assertEqual(person.tax_credit, Money(0))
-
-    def test_tax_deduction(self):
-        initial_year = 2017
-        gross_income = 300
-        tax = Tax({initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
-                  {2017: 1, 2018: 1, 2019: 1, 2020: 1}, {2017: 0})
-        person = Person(
-            self.initial_year, 'Name', 2000,
-            retirement_date=self.retirement_date, gross_income=gross_income,
-            tax_treatment=tax)
-        self.assertEqual(person.tax_deduction, Money(0))
-
-    def test_inputs(self):
-        initial_year = 2017
-        gross_income = 500
-        inputs = {'gross_income': {
-            initial_year: Money(1000), initial_year+2: Money(0)
-            }
-        }
-        person = Person(
-            initial_year, 'Name', 2000, retirement_date=2065,
-            gross_income=gross_income, raise_rate=1, inputs=inputs)
-        # We've gross income for the first and third years; the second
-        # year should be set programmatically based on a 100% raise.
-        self.assertEqual(person.gross_income, Money(1000))
-        person.next_year()
-        self.assertEqual(person.gross_income, Money(2000))
-        person.next_year()
-        self.assertEqual(person.gross_income, Money(0))
+from forecaster.person import Person
+from forecaster.accounts import Account, Debt, RegisteredAccount, when_conv
+from forecaster.strategy import AllocationStrategy
+from forecaster.scenario import Scenario
+from forecaster.ledger import Money
+from forecaster.tests.test_helper import type_check
 
 
 class TestAccountMethods(unittest.TestCase):
@@ -439,6 +77,8 @@ class TestAccountMethods(unittest.TestCase):
             owner, *args, balance=balance, rate=rate,
             transactions=transactions, nper=nper, **kwargs)
         # Test primary attributes
+        # pylint: disable=no-member
+        # Pylint is confused by members added by metaclass
         self.assertEqual(account.balance_history, {initial_year: balance})
         self.assertEqual(account.rate_history, {initial_year: rate})
         self.assertEqual(account.transactions_history, {
@@ -452,6 +92,8 @@ class TestAccountMethods(unittest.TestCase):
         self.assertEqual(account.this_year, initial_year)
 
         # Check types
+        # pylint: disable=no-member
+        # Pylint is confused by members added by metaclass
         self.assertTrue(type_check(account.balance_history, {int: Money}))
         self.assertIsInstance(account.balance, Money)
         self.assertTrue(type_check(account.rate_history, {int: Decimal}))
@@ -463,6 +105,8 @@ class TestAccountMethods(unittest.TestCase):
         self.assertIsInstance(account.initial_year, int)
 
         # Basic test: Only balance and rate provided.
+        # pylint: disable=no-member
+        # Pylint is confused by members added by metaclass
         account = self.AccountType(
             self.owner, *args, balance=balance, rate=0, **kwargs)
         self.assertEqual(account.balance_history, {
@@ -482,6 +126,8 @@ class TestAccountMethods(unittest.TestCase):
         # use default behaviour and infer its rate from its owner's
         # asset allocation (which is 50% stocks, 50% bonds, with 75%
         # return overall)
+        # pylint: disable=no-member
+        # Pylint is confused by members added by metaclass
         account = self.AccountType(
             self.owner, *args, balance=balance, **kwargs)
         self.assertEqual(account.balance_history, {
@@ -510,6 +156,8 @@ class TestAccountMethods(unittest.TestCase):
             self.owner, *args,
             balance=balance, rate=rate, transactions=transactions, nper=nper,
             **kwargs)
+        # pylint: disable=no-member
+        # Pylint is confused by members added by metaclass
         self.assertEqual(account.balance_history, {initial_year: Money(0)})
         self.assertEqual(account.rate_history, {initial_year: 1})
         self.assertEqual(account.transactions_history,
@@ -530,6 +178,8 @@ class TestAccountMethods(unittest.TestCase):
         self.assertIsInstance(account.initial_year, int)
 
         # Test 'when' values inside and outside of the range [0,1]
+        # pylint: disable=no-member,unsubscriptable-object
+        # Pylint is confused by members added by metaclass
         account = self.AccountType(
             self.owner, *args,
             balance=balance, transactions={0: 1}, **kwargs)
@@ -575,6 +225,8 @@ class TestAccountMethods(unittest.TestCase):
             if account.rate == Decimal("NaN"):
                 raise decimal.InvalidOperation()
 
+        # pylint: disable=unsupported-membership-test
+        # Pylint is confused by members added by metaclass
         with self.assertRaises((decimal.InvalidOperation, KeyError)):
             account = self.AccountType(
                 self.owner, *args,
@@ -670,6 +322,8 @@ class TestAccountMethods(unittest.TestCase):
         account = self.AccountType(
             self.owner, *args, balance=1, rate=1.0, nper=1,
             **kwargs)
+        # pylint: disable=no-member
+        # Pylint is confused by members added by metaclass
         self.assertEqual(account.returns, Money(1))  # $1 return
         self.assertEqual(account.returns_history,
                          {self.initial_year: Money(1)})
@@ -758,6 +412,8 @@ class TestAccountMethods(unittest.TestCase):
         initial_year = self.initial_year
 
         # Start with an empty account and add a transaction.
+        # pylint: disable=no-member
+        # Pylint is confused by members added by metaclass
         account = self.AccountType(
             self.owner, *args, **kwargs)
         self.assertEqual(account.transactions_history, {
@@ -991,6 +647,100 @@ class TestAccountMethods(unittest.TestCase):
         self.assertEqual(account.tax_deduction, Money(0))
 
 
+class TestRegisteredAccountMethods(TestAccountMethods):
+    """ Tests RegisteredAccount. """
+
+    @classmethod
+    def setUpClass(cls):
+        """ Sets up variables for testing RegisteredAccount """
+        super().setUpClass()
+
+        cls.AccountType = RegisteredAccount
+        cls.contribution_room = 0
+
+    def test_init(self, *args, **kwargs):
+        super().test_init(
+            *args, contribution_room=self.contribution_room, **kwargs)
+
+        # Basic init using pre-built RegisteredAccount-specific args
+        # and default Account args
+        account = self.AccountType(
+            self.owner, *args,
+            contribution_room=self.contribution_room, **kwargs)
+        self.assertEqual(account.contributor, self.owner)
+        self.assertEqual(account.contribution_room, self.contribution_room)
+
+        # Try again with default contribution_room
+        account = self.AccountType(
+            self.owner, *args, **kwargs)
+        self.assertEqual(account.contributor, self.owner)
+        # Different subclasses have different default contribution room
+        # values, so don't test subclasses
+        if self.AccountType == RegisteredAccount:
+            self.assertEqual(account.contribution_room, 0)
+
+        # Test invalid `person` input
+        with self.assertRaises(TypeError):
+            account = self.AccountType(
+                self.initial_year, 'invalid person', *args, **kwargs)
+
+        # Finally, test a non-Money-convertible contribution_room:
+        with self.assertRaises(decimal.InvalidOperation):
+            account = self.AccountType(
+                self.owner, *args,
+                contribution_room='invalid', **kwargs)
+
+    def test_properties(self, *args, **kwargs):
+        # Basic check: properties return scalars (current year's values)
+        account = self.AccountType(
+            self.owner, *args,
+            contribution_room=self.contribution_room, **kwargs)
+        self.assertEqual(account.contribution_room,
+                         self.contribution_room)
+
+        # NOTE: RegisteredAccount.next_year() raises NotImplementedError
+        # and some subclasses require args for next_year(). That is
+        # already dealt with by test_next, so check that properties are
+        # pointing to the current year's values after calling next_year
+        # in text_next.
+
+    def test_add_transaction(self, *args, **kwargs):
+        # Add mandatory argument for building RegisteredAccount objects
+        super().test_add_transaction(*args, **kwargs)
+
+    def test_next_year(self, *args, **kwargs):
+        # next_contribution_room is not implemented for
+        # RegisteredAccount, and it's required for next_year, so confirm
+        # that trying to call next_year() throws an appropriate error.
+        if self.AccountType == RegisteredAccount:
+            account = RegisteredAccount(self.owner)
+            with self.assertRaises(NotImplementedError):
+                account.next_year()
+        # For other account types, try a conventional next_year test
+        else:
+            super().test_next_year(
+                *args, **kwargs)
+
+    def test_returns(self, *args, **kwargs):
+        # super().test_returns calls next_year(), which calls
+        # next_contribution_room(), which is not implemented for
+        # RegisteredAccount. Don't test returns for this class,
+        # and instead allow subclasses to pass through.
+        if self.AccountType != RegisteredAccount:
+            super().test_returns(*args, **kwargs)
+
+    def test_max_inflow(self, *args, **kwargs):
+        account = self.AccountType(
+            self.owner, *args,
+            contribution_room=self.contribution_room, **kwargs)
+        self.assertEqual(account.max_inflow(), self.contribution_room)
+
+        account = self.AccountType(
+            self.owner, *args,
+            contribution_room=1000000, **kwargs)
+        self.assertEqual(account.max_inflow(), Money(1000000))
+
+
 class TestDebtMethods(unittest.TestCase):
     """ Test Debt. """
 
@@ -1109,6 +859,33 @@ class TestDebtMethods(unittest.TestCase):
             self.owner, *args,
             minimum_payment=100, balance=0, **kwargs)
         self.assertEqual(account.min_inflow(), Money(0))
+
+
+class TestFreeMethods(unittest.TestCase):
+    """ Tests free methods in forecaster.person module. """
+    
+    def test_when_conv(self):
+        """ Tests `when_conv` """
+
+        # Test a simple, single-valued input
+        w = when_conv(1)
+        self.assertEqual(w, Decimal(1))
+
+        # Test a magic input
+        w = when_conv('start')
+        self.assertEqual(w, Decimal(0))
+
+        # Test a magic input
+        w = when_conv('end')
+        self.assertEqual(w, Decimal(1))
+
+        # Test non-magic str input
+        w = when_conv('1')
+        self.assertEqual(w, Decimal(1))
+
+        with self.assertRaises(decimal.InvalidOperation):
+            w = when_conv('invalid input')
+
 
 if __name__ == '__main__':
     # NOTE: BasicContext is useful for debugging, as most errors are treated

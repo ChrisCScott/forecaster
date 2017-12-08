@@ -1,34 +1,33 @@
 """ Tests Canada-specific accounts in the ledger_Canada module. """
 
 import unittest
-from collections import defaultdict
 import decimal
 from decimal import Decimal
 from random import Random
-from ledger_Canada import *
-from tax import Tax
-from constants_Canada import ConstantsCanada as Constants
-from utility import *
-from test_ledger import TestAccountMethods
-from test_helper import *
+from forecaster.person import Person
+from forecaster.ledger import Money
+from forecaster.canada.accounts import RRSP, TFSA, TaxableAccount, \
+    PrincipleResidence
+from forecaster.canada.constants import Constants
+from forecaster.test_accounts import TestAccountMethods, \
+    TestRegisteredAccountMethods
+# pylint: disable=wildcard-import,unused-wildcard-import
+from forecaster.test_helper import *
 
 
-class TestRegisteredAccountMethods(TestAccountMethods):
-    """ Tests RegisteredAccount. """
+class TestRRSPMethods(TestRegisteredAccountMethods):
+    """ Test RRSP """
 
     @classmethod
     def setUpClass(cls):
-        """ Sets up variables for testing RegisteredAccount """
         super().setUpClass()
 
-        cls.AccountType = RegisteredAccount
+        cls.AccountType = RRSP
 
         # Randomly generate inflation adjustments based on inflation
         # rates of 1%-20%. Add a few extra years on to the end for
         # testing purposes.
         cls.inflation_adjustments = {cls.initial_year: Decimal(1)}
-        cls.extend_inflation_adjustments(
-            min(cls.inflation_adjustments), cls.initial_year + 5)
 
         # HACK: Assigning directly to cls.inflation_adjust creates a
         # bound method, so we need to create a static method and then
@@ -41,7 +40,16 @@ class TestRegisteredAccountMethods(TestAccountMethods):
             )
         cls.inflation_adjust = inflation_adjust
 
-        cls.contribution_room = 0
+        # Ensure that inflation_adjustments covers the entire range of
+        # Constants.RRSPContributionAccrualMax and the years where
+        # self.owner is 71-95 (plus a few extra for testing)
+        min_year = min(min(Constants.RRSPContributionRoomAccrualMax),
+                       cls.owner.birth_date.year +
+                       min(Constants.RRSPRRIFMinWithdrawal))
+        max_year = max(max(Constants.RRSPContributionRoomAccrualMax),
+                       cls.owner.birth_date.year +
+                       max(Constants.RRSPRRIFMinWithdrawal)) + 2
+        cls.extend_inflation_adjustments(min_year, max_year)
 
     @classmethod
     def extend_inflation_adjustments(cls, min_year, max_year):
@@ -70,37 +78,17 @@ class TestRegisteredAccountMethods(TestAccountMethods):
             i += 1
 
     def test_init(self, *args, **kwargs):
-        super().test_init(*args,
-                          inflation_adjust=self.inflation_adjust,
-                          contribution_room=self.contribution_room,
-                          **kwargs)
+        super().test_init(*args, **kwargs)
 
-        # Basic init using pre-built RegisteredAccount-specific args
-        # and default Account args
+        # The only thing that RRSP.__init__ does is set inflation_adjust
+        # and RRIF_conversion_year, so test those:
         account = self.AccountType(
             self.owner, *args,
             inflation_adjust=self.inflation_adjust,
             contribution_room=self.contribution_room, **kwargs)
-        self.assertEqual(account.contributor, self.owner)
+        self.assertEqual(self.owner.age(account.RRIF_conversion_year),
+                         Constants.RRSPRRIFConversionAge)
         self.assertEqual(account.inflation_adjust, self.inflation_adjust)
-        self.assertEqual(account.contribution_room, self.contribution_room)
-
-        # Try again with default contribution_room
-        account = self.AccountType(
-            self.owner, *args,
-            inflation_adjust=self.inflation_adjust, **kwargs)
-        self.assertEqual(account.contributor, self.owner)
-        self.assertEqual(account.inflation_adjust, self.inflation_adjust)
-        # Different subclasses have different default contribution room
-        # values, so don't test subclasses
-        if self.AccountType == RegisteredAccount:
-            self.assertEqual(account.contribution_room, 0)
-
-        # Test invalid `person` input
-        with self.assertRaises(TypeError):
-            account = self.AccountType(
-                self.initial_year, 'invalid person', *args,
-                inflation_adjust=self.inflation_adjust, **kwargs)
 
         # Try type conversion for inflation_adjustments
         inflation_adjustments = {
@@ -131,98 +119,6 @@ class TestRegisteredAccountMethods(TestAccountMethods):
                 self.owner, *args,
                 inflation_adjust='invalid',
                 contribution_room=self.contribution_room, **kwargs)
-
-        # Finally, test a non-Money-convertible contribution_room:
-        with self.assertRaises(decimal.InvalidOperation):
-            account = self.AccountType(
-                self.owner, *args,
-                contribution_room='invalid', **kwargs)
-
-    def test_properties(self, *args, **kwargs):
-        # Basic check: properties return scalars (current year's values)
-        account = self.AccountType(
-            self.owner, *args,
-            inflation_adjust=self.inflation_adjust,
-            contribution_room=self.contribution_room, **kwargs)
-        self.assertEqual(account.contribution_room,
-                         self.contribution_room)
-
-        # NOTE: RegisteredAccount.next_year() raises NotImplementedError
-        # and some subclasses require args for next_year(). That is
-        # already dealt with by test_next, so check that properties are
-        # pointing to the current year's values after calling next_year
-        # in text_next.
-
-    def test_add_transaction(self, *args, **kwargs):
-        # Add mandatory argument for building RegisteredAccount objects
-        super().test_add_transaction(*args, **kwargs)
-
-    def test_next_year(self, *args, **kwargs):
-        # next_contribution_room is not implemented for
-        # RegisteredAccount, and it's required for next_year, so confirm
-        # that trying to call next_year() throws an appropriate error.
-        if self.AccountType == RegisteredAccount:
-            account = RegisteredAccount(self.owner)
-            with self.assertRaises(NotImplementedError):
-                account.next_year()
-        # For other account types, try a conventional next_year test
-        else:
-            super().test_next_year(
-                *args, **kwargs)
-
-    def test_returns(self, *args, **kwargs):
-        # super().test_returns calls next_year(), which calls
-        # next_contribution_room(), which is not implemented for
-        # RegisteredAccount. Don't test returns for this class,
-        # and instead allow subclasses to pass through.
-        if self.AccountType != RegisteredAccount:
-            super().test_returns(*args, **kwargs)
-
-    def test_max_inflow(self, *args, **kwargs):
-        account = self.AccountType(
-            self.owner, *args,
-            inflation_adjust=self.inflation_adjust,
-            contribution_room=self.contribution_room, **kwargs)
-        self.assertEqual(account.max_inflow(), self.contribution_room)
-
-        account = self.AccountType(
-            self.owner, *args,
-            inflation_adjust=self.inflation_adjust,
-            contribution_room=1000000, **kwargs)
-        self.assertEqual(account.max_inflow(), Money(1000000))
-
-
-class TestRRSPMethods(TestRegisteredAccountMethods):
-    """ Test RRSP """
-
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-
-        cls.AccountType = RRSP
-
-        # Ensure that inflation_adjustments covers the entire range of
-        # Constants.RRSPContributionAccrualMax and the years where
-        # self.owner is 71-95 (plus a few extra for testing)
-        min_year = min(min(Constants.RRSPContributionRoomAccrualMax),
-                       cls.owner.birth_date.year +
-                       min(Constants.RRSPRRIFMinWithdrawal))
-        max_year = max(max(Constants.RRSPContributionRoomAccrualMax),
-                       cls.owner.birth_date.year +
-                       max(Constants.RRSPRRIFMinWithdrawal)) + 2
-        cls.extend_inflation_adjustments(min_year, max_year)
-
-    def test_init(self, *args, **kwargs):
-        super().test_init(*args, **kwargs)
-
-        # The only thing that RRSP.__init__ does is set
-        # RRIF_conversion_year, so test that:
-        account = self.AccountType(
-            self.owner, *args,
-            inflation_adjust=self.inflation_adjust,
-            contribution_room=self.contribution_room, **kwargs)
-        self.assertEqual(self.owner.age(account.RRIF_conversion_year),
-                         Constants.RRSPRRIFConversionAge)
 
     def test_taxable_income(self, *args, **kwargs):
         # Create an RRSP with a $1,000,000 balance and no withdrawals:
@@ -427,6 +323,10 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
             balance=balance, rate=0, **kwargs)
         last_year = min(
             max(self.inflation_adjustments) + 1,
+            # pylint: disable=no-member
+            # Pylint gets confused by attributes added by metaclass.
+            # recorded_property members always have a corresponding
+            # *_history member:
             max(self.owner.raise_rate_history)
         )
         # For each year over a lifetime, check min_outflow is correct:
@@ -479,11 +379,53 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
         super().setUpClass()
         cls.AccountType = TFSA
 
+        # Randomly generate inflation adjustments based on inflation
+        # rates of 1%-20%. Add a few extra years on to the end for
+        # testing purposes.
+        cls.inflation_adjustments = {cls.initial_year: Decimal(1)}
+
+        # HACK: Assigning directly to cls.inflation_adjust creates a
+        # bound method, so we need to create a static method and then
+        # assign to a class attribute:
+        @staticmethod
+        def inflation_adjust(target_year, base_year):
+            return (
+                cls.inflation_adjustments[target_year] /
+                cls.inflation_adjustments[base_year]
+            )
+        cls.inflation_adjust = inflation_adjust
+
         # Ensure that inflation_adjustments covers the entire range of
         # Constants.TFSAAnnualAccrual
         min_year = min(Constants.TFSAAnnualAccrual)
         max_year = max(Constants.TFSAAnnualAccrual) + 10
         cls.extend_inflation_adjustments(min_year, max_year)
+
+    @classmethod
+    def extend_inflation_adjustments(cls, min_year, max_year):
+        """ Convenience method.
+
+        Ensures cls.inflation_adjustment spans min_year and max_year.
+        """
+        rand = Random()
+
+        # Extend inflation_adjustments backwards, assuming 1-20% inflation
+        i = min(cls.inflation_adjustments)
+        while i > min_year:
+            cls.inflation_adjustments[i - 1] = (
+                cls.inflation_adjustments[i] /
+                Decimal(1 + rand.randint(1, 20)/100)
+            )
+            i -= 1
+
+        # Extend inflation_adjustments forwards, assuming 1-20% inflation
+        i = max(cls.inflation_adjustments)
+        while i < max_year:
+            cls.inflation_adjustments[i + 1] = (
+                cls.inflation_adjustments[i] *
+                Decimal(1 + rand.randint(1, 20)/100)
+            )
+            i += 1
 
     def test_init(self, *args, **kwargs):
         super().test_init(*args, **kwargs)
@@ -518,6 +460,32 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
                     accruals[i] for i in range(min(accruals), year + 1)
                     ]))
             )
+        self.assertEqual(account.inflation_adjust, self.inflation_adjust)
+
+        # Try type conversion for inflation_adjustments
+        inflation_adjustments = {
+            '2000': '1',
+            2001.0: 1.25,
+            Decimal(2002): 1.5,
+            2003: Decimal('1.75'),
+            2017.0: Decimal(2.0)
+        }
+
+        def inflation_adjust(val, this_year, target_year):
+            return val * (
+                inflation_adjustments[target_year] /
+                inflation_adjustments[this_year]
+            )
+
+        account = self.AccountType(
+            self.owner, *args, inflation_adjust=self.inflation_adjust,
+            **kwargs)
+        self.assertEqual(account.inflation_adjust, self.inflation_adjust)
+
+        # Try an invalid inflation_adjustment.
+        with self.assertRaises(TypeError):
+            account = self.AccountType(
+                self.owner, *args, inflation_adjust='invalid', **kwargs)
 
     def test_next_year(self, *args, **kwargs):
         super().test_next_year(*args, **kwargs)

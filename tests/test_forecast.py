@@ -1,16 +1,17 @@
 """ Unit tests for `Forecast`. """
 
 import unittest
-import decimal
 from decimal import Decimal
-from collections import defaultdict
-from tax import Tax
-from ledger import Person, Account, Debt
-from scenario import Scenario
-from strategy import *
-from forecast import Forecast
-from forecaster import Forecaster  # Import for convenience
-from test_helper import *
+from forecaster.ledger import Money
+from forecaster.person import Person
+from forecaster.accounts import Account, Debt
+from forecaster.scenario import Scenario
+from forecaster.strategy import ContributionStrategy, WithdrawalStrategy, \
+    TransactionStrategy, AllocationStrategy, DebtPaymentStrategy
+from forecaster.tax import Tax
+from forecaster.forecast import Forecast
+from forecaster.forecaster import Forecaster  # Import for convenience
+from forecaster.tests.test_helper import type_check
 
 
 class TestForecast(unittest.TestCase):
@@ -262,10 +263,10 @@ class TestForecast(unittest.TestCase):
         self.assertTrue(
             type_check(forecast.total_tax_withheld, {int: Money}))
         self.assertTrue(
-            type_check(forecast.withdrawals_from_other_accounts, {int: Money}))
+            type_check(forecast.withdrawals_for_other, {int: Money}))
         self.assertTrue(
             type_check(
-                forecast.withdrawals_from_retirement_accounts, {int: Money}))
+                forecast.withdrawals_for_retirement, {int: Money}))
 
 if __name__ == '__main__':
     unittest.main()

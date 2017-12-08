@@ -1,12 +1,12 @@
 """ A module providing Canada-specific tax treatment. """
 
-from constants_Canada import ConstantsCanada
-import collections
-from decimal import Decimal
-from tax import Tax
-from ledger import Person, Account
-from ledger_Canada import *
-from utility import *
+from forecaster.tax import Tax
+from forecaster.person import Person
+from forecaster.ledger import Money
+from forecaster.canada.accounts import RRSP
+from forecaster.canada.constants import Constants
+# pylint: disable=unused-import,unused-wildcard-import
+from forecaster.utility import *
 
 
 class TaxCanadaJurisdiction(Tax):
@@ -14,11 +14,11 @@ class TaxCanadaJurisdiction(Tax):
 
     def __init__(self, inflation_adjustments, jurisdiction='Federal'):
         super().__init__(
-            tax_brackets=ConstantsCanada.TaxBrackets[jurisdiction],
-            personal_deduction=ConstantsCanada.TaxBasicPersonalDeduction[
+            tax_brackets=Constants.TaxBrackets[jurisdiction],
+            personal_deduction=Constants.TaxBasicPersonalDeduction[
                 jurisdiction
             ],
-            credit_rate=ConstantsCanada.TaxCreditRate[jurisdiction],
+            credit_rate=Constants.TaxCreditRate[jurisdiction],
             inflation_adjust=inflation_adjustments)
 
         self.jurisdiction = jurisdiction
@@ -85,7 +85,7 @@ class TaxCanadaJurisdiction(Tax):
         # pension credit, so determine that (inflation-adjusted
         # amount) here:
         deduction_max = Money(extend_inflation_adjusted(
-            ConstantsCanada.TaxPensionCredit[self.jurisdiction],
+            Constants.TaxPensionCredit[self.jurisdiction],
             self.inflation_adjust,
             year
         ))

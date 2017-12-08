@@ -1,13 +1,13 @@
 ''' Unit tests for `Tax` classes. '''
 
 import unittest
-import decimal
 from decimal import Decimal
-from tax import *
-from ledger import *
+from forecaster.tax import Tax
+from forecaster.ledger import Money
+from forecaster.person import Person
 # Include extra accounts to test handling of different tax* behaviour:
-from ledger_Canada import *
-from test_helper import *
+from forecaster.canada.accounts import RRSP, TaxableAccount
+from forecaster.tests.test_helper import type_check
 
 
 class TestTax(unittest.TestCase):

@@ -2,10 +2,11 @@
 
 import unittest
 from decimal import Decimal
-from tax_Canada import *
-from ledger import Person
-from ledger_Canada import *
-from constants_Canada import ConstantsCanada as Constants
+from forecaster.person import Person
+from forecaster.canada.tax import TaxCanada
+from forecaster.canada.accounts import RRSP, TaxableAccount, Money
+from forecaster.canada.constants import Constants
+# pylint: disable=wildcard-import,unused-wildcard-import
 from test_helper import *
 
 

@@ -1,36 +1,12 @@
 """ Tests free methods and classes in the utility module. """
 
 import unittest
-import decimal
 from decimal import Decimal
-from utility import *
-from test_helper import *
+from forecaster.utility import nearest_year, extend_inflation_adjusted
 
 
 class TestFreeMethods(unittest.TestCase):
     """ A test case for the free methods in the utility module. """
-
-    def test_when_conv(self):
-        """ Tests `when_conv` """
-
-        # Test a simple, single-valued input
-        w = when_conv(1)
-        self.assertEqual(w, Decimal(1))
-
-        # Test a magic input
-        w = when_conv('start')
-        self.assertEqual(w, Decimal(0))
-
-        # Test a magic input
-        w = when_conv('end')
-        self.assertEqual(w, Decimal(1))
-
-        # Test non-magic str input
-        w = when_conv('1')
-        self.assertEqual(w, Decimal(1))
-
-        with self.assertRaises(decimal.InvalidOperation):
-            w = when_conv('invalid input')
 
     def test_nearest_year(self):
         """ Tests nearest_year(). """

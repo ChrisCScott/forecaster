@@ -1,10 +1,15 @@
-""" """
+""" A module providing Canada-specific default values. """
 
-from settings import Settings
+from forecaster.settings import Settings as SuperSettings
 
 
-class SettingsCanada(Settings):
+class Settings(SuperSettings):
     """ Container for Canada-specific variables. """
+
+    # We use triple-quoted strings as comments to group sets of related
+    # settings. It's nice to have a format for heading-style comments
+    # that's distinct from #-prefixed comments (which we also use.)
+    # pylint: disable=pointless-string-statement
 
     ''' Override transaction strategy weights for Canadian accounts. '''
     transaction_in_weights = {

@@ -5,12 +5,17 @@ room accrual rates, and other non-user-modifiable constants. """
 from decimal import Decimal
 
 
-class ConstantsCanada(object):
+class Constants(object):
     """ Container for constants used by application logic.
 
     This class is not passed as an argument to any methods and is
     invoked directly at the class level by client code.
     """
+
+    # We use triple-quoted strings as comments to group sets of related
+    # settings. It's nice to have a format for heading-style comments
+    # that's distinct from #-prefixed comments (which we also use.)
+    # pylint: disable=pointless-string-statement
 
     """ RESP constants """
     RESPContributionRoom = Decimal('50000')

@@ -1,122 +1,11 @@
 """ A module for Canada-specific ledger subclasses. """
 
-from decimal import Decimal
-from utility import *
-from ledger import Person, Account, recorded_property, recorded_property_cached
-from constants_Canada import ConstantsCanada as Constants
-
-
-class RegisteredAccount(Account):
-    """ A registered retirement account (Canada).
-
-    This account isn't intended to use by client code. There are just
-    so many commonalities between RRSPs and TFSAs that it made sense
-    to combine them here.
-
-    Args:
-        inflation_adjust: A method with the following form:
-            `inflation_adjust(val, this_year, target_year)`.
-            Returns a Money object (assuming Money-typed `val` input).
-            Finds a nominal value in `target_year` with the same real
-            value as `val`, a nominal value in `this_year`. Optional.
-            If not provided, all values are assumed to be in real terms,
-            so no inflation adjustment is performed.
-        contribution_room (Money): The amount of contribution room
-            available in the first year. Optional.
-        contributor (Person): The contributor to the RRSP. Optional.
-            If not provided, the contributor is assumed to be the same
-            as the annuitant (i.e. the owner.)
-    """
-    def __init__(self, owner, balance=0, rate=None,
-                 transactions={}, nper=1, inputs={}, initial_year=None,
-                 contribution_room=None, contributor=None,
-                 inflation_adjust=None, **kwargs):
-        """ Initializes a RegisteredAccount object. """
-        super().__init__(
-            owner, balance=balance, rate=rate, transactions=transactions,
-            nper=nper, inputs=inputs, initial_year=initial_year, **kwargs)
-
-        # If no contributor was provided, assume it's the owner.
-        if contributor is None:
-            self.contributor = self.owner
-        else:
-            self.contributor = contributor
-
-        self.inflation_adjust = build_inflation_adjust(inflation_adjust)
-
-        # Set up a _contribution_token that's the same for all instances
-        # of a subclass but differs between subclasses.
-        self._contribution_token = type(self).__name__
-
-        # Prepare this account for having its contribution room tracked
-        self.contributor.register_shared_contribution_account(self)
-        # Contribution room is stored with the contributor and shared
-        # between accounts. Accordingly, only set contribution room if
-        # it's explicitly provided, to avoid overwriting previously-
-        # determined contribution room data with a default value.
-        if contribution_room is not None:
-            self.contribution_room = contribution_room
-
-    @property
-    def contributor(self):
-        """ The contributor to the account. """
-        return self._contributor
-
-    @contributor.setter
-    def contributor(self, val):
-        """ Sets the contributor to the account. """
-        if not isinstance(val, Person):
-            raise TypeError(
-                'RegisteredAccount: person must be of type Person.'
-            )
-        else:
-            self._contributor = val
-
-    @property
-    def contribution_group(self):
-        """ The accounts that share contribution room with this one. """
-        return self.contributor.contribution_group(self)
-
-    @property
-    def contribution_room(self):
-        """ Contribution room available for the current year. """
-        return self.contributor.contribution_room(self)[self.this_year]
-
-    @contribution_room.setter
-    def contribution_room(self, val):
-        """ Updates contribution room for RRSPs """
-        self.contributor.contribution_room(self)[self.this_year] = Money(val)
-
-    @property
-    def contribution_room_history(self):
-        """ A dict of {year: contribution_room} pairs. """
-        return self.contributor.contribution_room(self)
-
-    def next_year(self):
-        """ Confirms that the year is within the range of our data. """
-        # Calculate contribution room accrued based on this year's
-        # transaction/etc. information
-        contribution_room = self.next_contribution_room()
-        # NOTE: Invoking super().next_year will increment self.this_year
-        super().next_year()
-
-        # Ensure that the contributor has advanced to this year.
-        while self.contributor.this_year < self.this_year:
-            self.contributor.next_year()
-
-        # The contribution room we accrued last year becomes available
-        # in the next year, so assign after calling `next_year`:
-        self.contribution_room = contribution_room
-
-    def next_contribution_room(self, year=None, *args, **kwargs):
-        raise NotImplementedError(
-            'RegisteredAccount: next_contribution_room is not implemented. ' +
-            'Use RRSP or TFSA instead.'
-        )
-
-    def max_inflow(self, when='end'):
-        """ Limits outflows based on available contribution room. """
-        return self.contribution_room_history[self.this_year]
+from forecaster.ledger import Money, recorded_property, \
+    recorded_property_cached
+from forecaster.accounts import Account, RegisteredAccount
+from forecaster.canada.constants import Constants
+from forecaster.utility import build_inflation_adjust, \
+    extend_inflation_adjusted
 
 
 class RRSP(RegisteredAccount):
@@ -124,13 +13,23 @@ class RRSP(RegisteredAccount):
 
     # Explicitly repeat superclass args for the sake of intellisense.
     def __init__(self, owner, balance=0, rate=None,
-                 transactions={}, nper=1, inputs={}, initial_year=None,
+                 transactions=None, nper=1, inputs=None, initial_year=None,
                  contribution_room=None, contributor=None,
                  inflation_adjust=None, **kwargs):
-        """ Initializes an RRSP object. """
+        """ Initializes an RRSP object.
+
+        Args:
+            inflation_adjust: A method with the following form:
+                `inflation_adjust(val, this_year, target_year)`.
+                Returns a Money object (assuming Money-typed `val`
+                input). Finds a nominal value in `target_year` with the
+                same real value as `val`, a nominal value in
+                `this_year`. Optional.
+                If not provided, all values are assumed to be in real
+                terms, so no inflation adjustment is performed.
+        """
         super().__init__(
-            owner, inflation_adjust=inflation_adjust,
-            balance=balance, rate=rate, transactions=transactions,
+            owner, balance=balance, rate=rate, transactions=transactions,
             nper=nper, inputs=inputs, initial_year=initial_year,
             contribution_room=contribution_room, contributor=contributor,
             **kwargs)
@@ -142,6 +41,8 @@ class RRSP(RegisteredAccount):
         # We could use the below convert-at-71 logic if None is passed.
         # TODO: Automatically trigger RRIF conversion when an outflow
         # is detected? (Perhaps control this behaviour with an arg?)
+
+        self.inflation_adjust = build_inflation_adjust(inflation_adjust)
 
         # The law requires that RRSPs be converted to RRIFs by a certain
         # age (currently 71). We can calculate that here:
@@ -178,6 +79,9 @@ class RRSP(RegisteredAccount):
                 `Money` object.
         """
         # Return the sum of all withdrawals from the account.
+        # pylint: disable=invalid-unary-operand-type
+        # Pylint thinks this doesn't support negation via `-`, but it's
+        # wrong - `outflows` returns `Money`, which supports `-`:
         return -self.outflows
 
     @recorded_property
@@ -293,16 +197,28 @@ class TFSA(RegisteredAccount):
     """ A Tax-Free Savings Account (Canada). """
 
     def __init__(self, owner, balance=0, rate=None,
-                 transactions={}, nper=1, inputs={}, initial_year=None,
+                 transactions=None, nper=1, inputs=None, initial_year=None,
                  contribution_room=None, contributor=None,
                  inflation_adjust=None, **kwargs):
-        """ Initializes a TFSA object. """
+        """ Initializes a TFSA object.
+
+        Args:
+            inflation_adjust: A method with the following form:
+                `inflation_adjust(val, this_year, target_year)`.
+                Returns a Money object (assuming Money-typed `val`
+                input). Finds a nominal value in `target_year` with the
+                same real value as `val`, a nominal value in
+                `this_year`. Optional.
+                If not provided, all values are assumed to be in real
+                terms, so no inflation adjustment is performed.
+        """
         super().__init__(
-            owner, inflation_adjust=inflation_adjust,
-            balance=balance, rate=rate, transactions=transactions, nper=nper,
-            inputs=inputs, initial_year=initial_year,
+            owner, balance=balance, rate=rate, transactions=transactions,
+            nper=nper, inputs=inputs, initial_year=initial_year,
             contribution_room=contribution_room, contributor=contributor,
             **kwargs)
+
+        self.inflation_adjust = build_inflation_adjust(inflation_adjust)
 
         # This is our baseline for estimating contribution room
         # (By law, inflation-adjustments are relative to 2009, the
@@ -387,6 +303,10 @@ class TFSA(RegisteredAccount):
         # room, plus any withdrawals (less contributions) from last year
         if year in self.contribution_room_history:
             rollover = self.contribution_room_history[year] - (
+                # pylint: disable=no-member
+                # Pylint gets confused by attributes added by metaclass.
+                # recorded_property members always have a corresponding
+                # *_history member:
                 self.outflows_history[year] + self.inflows_history[year]
             )
         else:
@@ -425,8 +345,8 @@ class TaxableAccount(Account):
     # (But we might want to also model rental income as well...)
 
     def __init__(
-        self, owner, balance=0, rate=None, transactions={},
-        nper=1, inputs={}, initial_year=None, acb=None, **kwargs
+        self, owner, balance=0, rate=None, transactions=None,
+        nper=1, inputs=None, initial_year=None, acb=None, **kwargs
     ):
         """ Constructor for `TaxableAccount`. """
         super().__init__(
@@ -437,11 +357,17 @@ class TaxableAccount(Account):
         # gains or losses, so acb = balance.
         self.acb = Money(acb if acb is not None else self.balance)
 
+    # pylint: disable=method-hidden
+    # The `self.acb` assignment in `__init__ doesn't actually overwrite
+    # this member; it assigns to it via a setter.
     @recorded_property_cached
     def acb(self):
         """ The adjusted cost base of assets in the account this year. """
         # This is set in advance in the previous year when capital_gains
         # is determined.
+        # pylint: disable=no-member
+        # Pylint gets confused by attributes added via metaclass.
+        # they always have a corresponding *_history member:
         return self._acb_history[self.this_year]
 
     @recorded_property_cached
@@ -459,7 +385,13 @@ class TaxableAccount(Account):
 
         # ACB is sensitive to transaction order, so be sure to iterate
         # over transactions from first to last.
+        # pylint: disable=no-member
+        # Pylint gets confused by attributes added via metaclass.
+        # `transactions` returns a dict, so it has a `keys` member:
         for when in sorted(transactions.keys()):
+            # pylint: disable=unsubscriptable-object
+            # Pylint gets confused by attributes added via metaclass.
+            # `transactions` returns a dict, so it is subscriptable:
             value = transactions[when]
             # There are different acb formulae for inflows and outflows
             if value >= 0:  # inflow
@@ -479,6 +411,9 @@ class TaxableAccount(Account):
         super().add_transaction(value, when)
         # Invalidate the cache for acb and capital gains, since
         # transactions will affect it.
+        # pylint: disable=no-member
+        # Pylint gets confused by attributes added via metaclass.
+        # All `_*_history` members are dicts added automatically:
         self._capital_gain_history.pop(self.this_year, None)
         self._acb_history.pop(self.this_year + 1, None)
 
