@@ -5,9 +5,13 @@ package lives. It applies Scenario, Strategy, and Tax information to
 determine how account balances will grow or shrink year-over-year.
 '''
 
-from utility import Money
+from forecaster.ledger import Money
 
 
+# pylint: disable=too-many-instance-attributes
+# This object has a complex state. We could store the records for each
+# year in some sort of pandas-style frame or table, but for now each
+# data column is its own named attribute.
 class Forecast(object):
     ''' A financial forecast spanning multiple years.
 
@@ -142,9 +146,12 @@ class Forecast(object):
             spending, net of taxes, contributions, debt payments, etc.
     '''
 
+    # pylint: disable=too-many-arguments
+    # NOTE: Consider combining the various strategy objects into a dict
+    # or something (although it's not clear how this benefits the code.)
     def __init__(self, people, assets, debts, scenario, contribution_strategy,
-                 withdrawal_strategy, contribution_transaction_strategy,
-                 withdrawal_transaction_strategy,
+                 withdrawal_strategy, contribution_trans_strategy,
+                 withdrawal_trans_strategy,
                  debt_payment_strategy, tax_treatment):
         ''' Constructs an instance of class Forecast.
 
@@ -225,9 +232,8 @@ class Forecast(object):
         self.scenario = scenario
         self.contribution_strategy = contribution_strategy
         self.withdrawal_strategy = withdrawal_strategy
-        self.contribution_transaction_strategy = \
-            contribution_transaction_strategy
-        self.withdrawal_transaction_strategy = withdrawal_transaction_strategy
+        self.contribution_trans_strategy = contribution_trans_strategy
+        self.withdrawal_trans_strategy = withdrawal_trans_strategy
         self.debt_payment_strategy = debt_payment_strategy
         self.tax_treatment = tax_treatment
 
@@ -256,8 +262,8 @@ class Forecast(object):
         self.net_return = {}
 
         # Withdrawals
-        self.withdrawals_from_retirement_accounts = {}
-        self.withdrawals_from_other_accounts = {}
+        self.withdrawals_for_retirement = {}
+        self.withdrawals_for_other = {}
         self.gross_withdrawals = {}
         self.tax_withheld_on_withdrawals = {}
         self.net_withdrawals = {}
@@ -376,14 +382,14 @@ class Forecast(object):
 
         # Add inflow transactions to debts and accounts based on our
         # net contributions and debt payments:
-        contributions = self.contribution_transaction_strategy(
+        contributions = self.contribution_trans_strategy(
             self.net_contributions[year],
             self.assets
         )
         for account in contributions:
             account.add_transaction(
                 contributions[account],
-                self.contribution_transaction_strategy.timing
+                self.contribution_trans_strategy.timing
             )
 
     def record_principal(self, year):
@@ -413,7 +419,7 @@ class Forecast(object):
         """ TODO """
         retirement_year = self.retirement_year()
 
-        self.withdrawals_from_retirement_accounts[year] = \
+        self.withdrawals_for_retirement[year] = \
             self.withdrawal_strategy(
                 benefits=Money(0),
                 net_income=self.net_income[year],
@@ -422,10 +428,10 @@ class Forecast(object):
                 retirement_year=retirement_year,
                 year=year
             )
-        self.withdrawals_from_other_accounts[year] = Money(0)  # TODO
+        self.withdrawals_for_other[year] = Money(0)  # TODO
         self.gross_withdrawals[year] = (
-            self.withdrawals_from_retirement_accounts[year] +
-            self.withdrawals_from_other_accounts[year]
+            self.withdrawals_for_retirement[year] +
+            self.withdrawals_for_other[year]
         )
         self.tax_withheld_on_withdrawals[year] = sum(
             (account.tax_withheld for account in self.assets),

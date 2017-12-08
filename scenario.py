@@ -1,7 +1,7 @@
 """ Basic economic classes, such as `Scenario` and `Money`. """
 import collections
 from decimal import Decimal
-from utility import *
+from forecaster.utility import *
 
 
 class Scenario(object):
@@ -66,6 +66,8 @@ class Scenario(object):
         # Set the years that the Scenario spans:
         self.initial_year = int(initial_year)
         self.num_years = int(num_years)
+        if num_years < 1:
+            raise ValueError('Scenario: num_years must be positive.')
 
         # Now build dicts from the inputs
         self.inflation = self._build_dict(inflation, self.initial_year)
@@ -111,7 +113,11 @@ class Scenario(object):
         if default is not None and not callable(default):
             _default = Decimal(default)
 
+            # pylint: disable=function-redefined
+            # This function redefinition is intentional; it's equivalent
+            # to default = lambda: _default
             def default():
+                """ Wraps default value in a default factory. """
                 return _default
 
         if isinstance(input, collections.defaultdict):
@@ -228,6 +234,8 @@ class Scenario(object):
 
     def __len__(self):
         """ The number of years modelled by the Scenario. """
+        # pylint: disable=invalid-length-returned
+        # This returns a positive integer (see type/value-check in init)
         return self.num_years
 
     def __iter__(self):

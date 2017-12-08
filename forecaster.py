@@ -1,14 +1,24 @@
 ''' This module provides classes for creating and managing Forecasts. '''
 
-from copy import copy, deepcopy
-from forecast import Forecast
-from ledger import Person, Account, Debt
-from tax import Tax
-from strategy import ContributionStrategy, WithdrawalStrategy, \
+from copy import deepcopy
+from forecaster.forecast import Forecast
+from forecaster.person import Person
+from forecaster.accounts import Account, Debt
+from forecaster.tax import Tax
+from forecaster.strategy import ContributionStrategy, WithdrawalStrategy, \
     TransactionStrategy, AllocationStrategy, DebtPaymentStrategy
-from scenario import Scenario
-from settings import Settings
-from utility import *
+from forecaster.scenario import Scenario
+from forecaster.settings import Settings
+
+
+# Forecaster wraps Forecast. It replicates much of that complexity
+# by necessity, but it isn't necessary for client code to interact
+# with it - that's the whole point of this class. Its arguments are
+# optional and its attributes are unavoidable, so suppress Pylint's
+# concerns about numbers of arguments/attributes/variables
+# pylint: disable=too-many-arguments
+# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-locals
 
 
 class Forecaster(object):
@@ -26,7 +36,7 @@ class Forecaster(object):
     afterward via an `add_*` method. Each `add_*` method takes the
     parameters of the corresponding object being built; e.g.
     `add_person` takes the same parameters as `Person.__init__` (plus
-    a `PersonType` parameter -- see documentation for `add_person`).
+    a `cls` parameter -- see documentation for `add_person`).
 
     This behaviour can be particularly useful for `Ledger` objects like
     `Person` or `Account`, which may have per-object historical
@@ -65,11 +75,6 @@ class Forecaster(object):
                 are not given.
             initial_year (int): The initial year for the forecast.
         """
-        # TODO: Determine function signature.
-        # We need to be able to build several accounts, perhaps several
-        # of the same type (e.g. an RRSP for each Person) without having
-        # an instantiated account passed as an arg.
-
         # NOTE: Settings defines two named persons, so store them via
         # their own named attributes (as well as in the `people` dict).
         # TODO: Make person* properties that update `people` when set
@@ -165,20 +170,6 @@ class Forecaster(object):
 
         return Forecast(**forecast_kwargs)
 
-    def replace_scenario(self, obj, scenario):
-        """ TODO """
-        # We only replace attributes which have been set to a non-None
-        # value, since a None value means that there's no Scenario to
-        # replace (and can mean that the object is intentionally not
-        # inflation-adjusted/etc.)
-        if hasattr(obj, 'scenario') and obj.scenario is not None:
-            obj.inflation_adjust = scenario
-        if (
-            hasattr(obj, 'inflation_adjust') and
-            obj.inflation_adjust is not None
-        ):
-            obj.inflation_adjust = scenario.inflation_adjust
-
     @staticmethod
     def set_kwarg(kwargs, arg, val, default) -> None:
         """ Adds a keyword arg to a dict based on an input hierarchy.
@@ -216,7 +207,7 @@ class Forecaster(object):
         self, name, birth_date,
         retirement_date=None, gross_income=None, raise_rate=None,
         spouse=None, tax_treatment=None, allocation_strategy=None,
-        inputs=None, initial_year=None, PersonType=Person, **kwargs
+        inputs=None, initial_year=None, cls=Person, **kwargs
     ) -> Person:
         """ Adds a Person to the forecast.
 
@@ -226,8 +217,8 @@ class Forecaster(object):
         arguments!)
 
         Subclasses of Forecaster that build subclasses of Person can
-        make use of this method by passing in a suitable `PersonType`
-        argument along with any `kwargs` specific to that `PersonType`.
+        make use of this method by passing in a suitable `cls`
+        argument along with any `kwargs` specific to that `cls`.
 
         See `Person` for documentation on additional args.
 
@@ -236,17 +227,17 @@ class Forecaster(object):
                 pairs, where `arg` is the name of a @recorded_property
                 of `Person` and `val` is the value of that property for
                 `year`.
-            PersonType (type): The class of `Person` being built by the
+            cls (type): The class of `Person` being built by the
                 method. This class's `__init__` method must accept all
                 of the args of `Person`.
 
         Returns:
-            `Person`: An object of type `PersonType` constructed with
+            `Person`: An object of type `cls` constructed with
             the relevant args, inputs, settings, and default values.
         """
         # NOTE: We don't actually need to list Person's various args
         # in the call signature here; we could just use `inputs`,
-        # `PersonType` and `**kwargs`. Doing it that way would be less
+        # `cls` and `**kwargs`. Doing it that way would be less
         # brittle, but not as convenient for Intellisense or for future
         # folks looking to extend the code to incorporate additional
         # settings defaults.
@@ -269,7 +260,7 @@ class Forecaster(object):
         self.set_kwarg(kwargs, 'initial_year', initial_year, self.initial_year)
 
         # Construct a person with the keyword arguments we've assembled:
-        person = PersonType(**kwargs)
+        person = cls(**kwargs)
         self.people.add(person)
         # Return the Person so that subclass methods can do
         # post-processing (if they need to)
@@ -279,7 +270,7 @@ class Forecaster(object):
         self, name=None, birth_date=None,
         retirement_date=None, gross_income=None, raise_rate=None,
         spouse=None, tax_treatment=None, allocation_strategy=None,
-        inputs=None, initial_year=None, PersonType=Person, **kwargs
+        inputs=None, initial_year=None, cls=Person, **kwargs
     ):
         """ Adds a person to the forecast based on person1's settings.
 
@@ -313,14 +304,14 @@ class Forecaster(object):
         self.set_kwarg(kwargs, 'inputs', inputs, None)
         self.set_kwarg(kwargs, 'initial_year', initial_year, self.initial_year)
 
-        self.person1 = self.add_person(PersonType=PersonType, **kwargs)
+        self.person1 = self.add_person(cls=cls, **kwargs)
         return self.person1
 
     def set_person2(
         self, name=None, birth_date=None,
         retirement_date=None, gross_income=None, raise_rate=None,
         spouse=None, tax_treatment=None, allocation_strategy=None,
-        inputs=None, initial_year=None, PersonType=Person, **kwargs
+        inputs=None, initial_year=None, cls=Person, **kwargs
     ):
         """ Adds a person to the forecast based on person2's settings.
 
@@ -355,17 +346,17 @@ class Forecaster(object):
         self.set_kwarg(kwargs, 'inputs', inputs, None)
         self.set_kwarg(kwargs, 'initial_year', initial_year, self.initial_year)
 
-        self.person2 = self.add_person(PersonType=PersonType, **kwargs)
+        self.person2 = self.add_person(cls=cls, **kwargs)
         return self.person2
 
     def _add_account(
         self, owner=None, balance=None, rate=None, transactions=None,
         nper=None, default_inflow_timing=None, default_outflow_timing=None,
-        inputs=None, initial_year=None, AccountType=Account, **kwargs
+        inputs=None, initial_year=None, cls=Account, **kwargs
     ):
         # NOTE: We don't actually need to list Account's various args
         # in the call signature here; we could just use `inputs`,
-        # `AccountType` and `**kwargs`. Doing it that way would be less
+        # `cls` and `**kwargs`. Doing it that way would be less
         # brittle, but not as convenient for Intellisense.
 
         self.set_kwarg(kwargs, 'owner', owner, self.person1)
@@ -380,13 +371,13 @@ class Forecaster(object):
         self.set_kwarg(kwargs, 'inputs', inputs, None)
         self.set_kwarg(kwargs, 'initial_year', initial_year, self.initial_year)
 
-        account = AccountType(**kwargs)
+        account = cls(**kwargs)
         return account
 
     def add_asset(
         self, owner=None, balance=None, rate=None, transactions=None,
         nper=None, default_inflow_timing=None, default_outflow_timing=None,
-        inputs=None, initial_year=None, AccountType=Account, **kwargs
+        inputs=None, initial_year=None, cls=Account, **kwargs
     ):
         """ Adds an asset to the forecast and to the `assets` set.
 
@@ -398,19 +389,19 @@ class Forecaster(object):
         See `_add_account` for additional documentation.
 
         Args:
-            AccountType (type): The class of `Account` being built by
+            cls (type): The class of `Account` being built by
                 the method. This class's `__init__` method must accept
                 all of the args of `Account`.
 
         Returns:
-            `Account`: An object of type `AccountType` constructed with
+            `Account`: An object of type `cls` constructed with
             the relevant args, inputs, settings, and default values.
         """
         account = self._add_account(
             owner=owner, balance=balance, rate=rate, transactions=transactions,
             nper=nper, default_inflow_timing=default_inflow_timing,
             default_outflow_timing=default_outflow_timing, inputs=inputs,
-            initial_year=initial_year, AccountType=AccountType, **kwargs
+            initial_year=initial_year, cls=cls, **kwargs
         )
         self.assets.add(account)
         return account
@@ -419,8 +410,7 @@ class Forecaster(object):
         self, owner=None, balance=None, rate=None, transactions=None,
         nper=None, default_inflow_timing=None, default_outflow_timing=None,
         inputs=None, initial_year=None, minimum_payment=None,
-        reduction_rate=None, accelerate_payment=None, AccountType=Debt,
-        **kwargs
+        reduction_rate=None, accelerate_payment=None, cls=Debt, **kwargs
     ):
         """ Adds a Debt to the forecast.
 
@@ -432,12 +422,12 @@ class Forecaster(object):
         See `_add_account` for additional documentation.
 
         Args:
-            AccountType (type): The class of `Debt` being built by
+            cls (type): The class of `Debt` being built by
                 the method. This class's `__init__` method must accept
                 all of the args of `Debt`.
 
         Returns:
-            `Debt`: An object of type `AccountType` constructed with
+            `Debt`: An object of type `cls` constructed with
             the relevant args, inputs, settings, and default values.
         """
         self.set_kwarg(kwargs, 'minimum_payment', minimum_payment, None)
@@ -450,7 +440,7 @@ class Forecaster(object):
             owner=owner, balance=balance, rate=rate, transactions=transactions,
             nper=nper, default_inflow_timing=default_inflow_timing,
             default_outflow_timing=default_outflow_timing, inputs=inputs,
-            initial_year=initial_year, AccountType=AccountType, **kwargs)
+            initial_year=initial_year, cls=cls, **kwargs)
 
         self.debts.add(account)
         return account
@@ -458,7 +448,7 @@ class Forecaster(object):
     def set_scenario(
         self, inflation=None, stock_return=None, bond_return=None,
         other_return=None, management_fees=None, initial_year=None,
-        num_years=None, ScenarioType=Scenario, **kwargs
+        num_years=None, cls=Scenario, **kwargs
     ):
         """ TODO """
         self.set_kwarg(kwargs, 'inflation', inflation, self.settings.inflation)
@@ -473,12 +463,12 @@ class Forecaster(object):
         self.set_kwarg(kwargs, 'initial_year', initial_year, self.initial_year)
         self.set_kwarg(kwargs, 'num_years', num_years, self.settings.num_years)
 
-        self.scenario = ScenarioType(**kwargs)
+        self.scenario = cls(**kwargs)
 
     def set_contribution_strategy(
         self, strategy=None, base_amount=None, rate=None,
         refund_reinvestment_rate=None, inflation_adjust=None,
-        StrategyType=ContributionStrategy, **kwargs
+        cls=ContributionStrategy, **kwargs
     ):
         """ TODO """
         self.set_kwarg(kwargs, 'strategy', strategy,
@@ -493,13 +483,13 @@ class Forecaster(object):
         self.set_kwarg(kwargs, 'inflation_adjust', inflation_adjust,
                        self.scenario.inflation_adjust)
 
-        self.contribution_strategy = StrategyType(**kwargs)
+        self.contribution_strategy = cls(**kwargs)
         return self.contribution_strategy
 
     def set_withdrawal_strategy(
         self, strategy=None, base_amount=None, rate=None, timing=None,
         income_adjusted=None, inflation_adjust=None,
-        StrategyType=WithdrawalStrategy, **kwargs
+        cls=WithdrawalStrategy, **kwargs
     ):
         """ TODO """
         self.set_kwarg(kwargs, 'strategy', strategy,
@@ -515,12 +505,12 @@ class Forecaster(object):
         self.set_kwarg(kwargs, 'inflation_adjust', inflation_adjust,
                        self.scenario.inflation_adjust)
 
-        self.withdrawal_strategy = StrategyType(**kwargs)
+        self.withdrawal_strategy = cls(**kwargs)
         return self.contribution_strategy
 
     def set_transaction_in_strategy(
         self, strategy=None, weights=None, timing=None,
-        StrategyType=TransactionStrategy, **kwargs
+        cls=TransactionStrategy, **kwargs
     ):
         """ TODO """
         self.set_kwarg(kwargs, 'strategy', strategy,
@@ -530,12 +520,12 @@ class Forecaster(object):
         self.set_kwarg(kwargs, 'timing', timing,
                        self.settings.transaction_in_timing)
 
-        self.transaction_in_strategy = StrategyType(**kwargs)
+        self.transaction_in_strategy = cls(**kwargs)
         return self.transaction_in_strategy
 
     def set_transaction_out_strategy(
         self, strategy=None, weights=None, timing=None,
-        StrategyType=TransactionStrategy, **kwargs
+        cls=TransactionStrategy, **kwargs
     ):
         """ TODO """
         self.set_kwarg(kwargs, 'strategy', strategy,
@@ -545,14 +535,14 @@ class Forecaster(object):
         self.set_kwarg(kwargs, 'timing', timing,
                        self.settings.transaction_out_timing)
 
-        self.transaction_out_strategy = StrategyType(**kwargs)
+        self.transaction_out_strategy = cls(**kwargs)
         return self.transaction_out_strategy
 
     def set_allocation_strategy(
         self, strategy=None, min_equity=None, max_equity=None, target=None,
         standard_retirement_age=None, risk_transition_period=None,
         adjust_for_retirement_plan=None, scenario=None,
-        StrategyType=AllocationStrategy, **kwargs
+        cls=AllocationStrategy, **kwargs
     ):
         """ TODO """
         self.set_kwarg(kwargs, 'strategy', strategy,
@@ -594,12 +584,12 @@ class Forecaster(object):
                        self.settings.allocation_adjust_for_retirement_plan)
         self.set_kwarg(kwargs, 'scenario', scenario, self.scenario)
 
-        self.allocation_strategy = StrategyType(**kwargs)
+        self.allocation_strategy = cls(**kwargs)
         return self.allocation_strategy
 
     def set_debt_payment_strategy(
         self, strategy=None, timing=None,
-        StrategyType=DebtPaymentStrategy, **kwargs
+        cls=DebtPaymentStrategy, **kwargs
     ):
         """ TODO """
         self.set_kwarg(kwargs, 'strategy', strategy,
@@ -607,12 +597,12 @@ class Forecaster(object):
         self.set_kwarg(kwargs, 'timing', timing,
                        self.settings.debt_payment_timing)
 
-        self.debt_payment_strategy = StrategyType(**kwargs)
+        self.debt_payment_strategy = cls(**kwargs)
         return self.debt_payment_strategy
 
     def set_tax_treatment(
         self, tax_brackets=None, personal_deduction=None, credit_rate=None,
-        inflation_adjust=None, TaxType=Tax, **kwargs
+        inflation_adjust=None, cls=Tax, **kwargs
     ):
         """ TODO """
         # By default, set a single 0% bracket starting at $0:
@@ -628,5 +618,5 @@ class Forecaster(object):
             else None
         )
 
-        self.tax_treatment = TaxType(**kwargs)
+        self.tax_treatment = cls(**kwargs)
         return self.tax_treatment

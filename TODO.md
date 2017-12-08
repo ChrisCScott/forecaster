@@ -81,6 +81,9 @@ constant based on the portfolio on the retirement date.
 `__call__` to simplify the logic of each strategy.
 * `AllocationStrategy`: Add strategy that rebalances based on current
 withdrawal rate and portfolio balance.
+    * Add list (dict?) arguments to `AllocationStrategy.__call__` with
+    historical data (e.g. withdrawals and principal) to allow for
+    behaviour-aware rebalancing.
 * `Person`: Make `asset_allocation` a @recorded_property, so that
 several accounts can access an allocation for a given year without
 forcing recalculation?
