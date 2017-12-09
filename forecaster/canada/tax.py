@@ -4,9 +4,8 @@ from forecaster.tax import Tax
 from forecaster.person import Person
 from forecaster.ledger import Money
 from forecaster.canada.accounts import RRSP
-from forecaster.canada.constants import Constants
-# pylint: disable=unused-import,unused-wildcard-import
-from forecaster.utility import *
+from forecaster.canada import constants
+from forecaster.utility import extend_inflation_adjusted
 
 
 class TaxCanadaJurisdiction(Tax):
@@ -14,17 +13,17 @@ class TaxCanadaJurisdiction(Tax):
 
     def __init__(self, inflation_adjustments, jurisdiction='Federal'):
         super().__init__(
-            tax_brackets=Constants.TaxBrackets[jurisdiction],
-            personal_deduction=Constants.TaxBasicPersonalDeduction[
+            tax_brackets=constants.TAX_BRACKETS[jurisdiction],
+            personal_deduction=constants.TAX_PERSONAL_DEDUCTION[
                 jurisdiction
             ],
-            credit_rate=Constants.TaxCreditRate[jurisdiction],
+            credit_rate=constants.TAX_CREDIT_RATE[jurisdiction],
             inflation_adjust=inflation_adjustments)
 
         self.jurisdiction = jurisdiction
 
-    def tax_deductions(self, people, year):
-        """ Finds tax deductions available for each taxpayer.
+    def tax_deduction(self, people, year):
+        """ Finds tax deduction available for each taxpayer.
 
         Args:
             people (set[Person]): A dict of `{taxpayer: sources}` pairs, where
@@ -38,14 +37,17 @@ class TaxCanadaJurisdiction(Tax):
             pairs, where `*_deduction` is of type Money.
             These are bundled into a FedProvTuple for convenience.
         """
-        deductions = {person: Money(0) for person in people}
-        # NOTE: Presenty, no deductions are modelled. We could extend
+        # NOTE: Presenty, no deduction are modelled. We could extend
         # this in a future update to include, e.g. the family tax cut
         # or the childcare deduction.
-        return deductions
+        # Since we want to preserve this call signature for subclassing or
+        # future expansions, let's disable Pylint's complaints:
+        # pylint: disable=unused-argument,no-self-use
+        deduction = {person: Money(0) for person in people}
+        return deduction
 
-    def tax_credits(self, people, year):
-        """ Finds tax credits available for each taxpayer.
+    def tax_credit(self, people, year):
+        """ Finds tax credit available for each taxpayer.
 
         Args:
             people (set[Person]): One or more `Person` objects, each
@@ -54,14 +56,14 @@ class TaxCanadaJurisdiction(Tax):
                 inflation adjustment)
 
         Returns:
-            dict[Person, Money]: The tax credits available in this
+            dict[Person, Money]: The tax credit available in this
             jurisdiction for each person.
         """
-        credits = {person: Money(0) for person in people}
+        credit = {person: Money(0) for person in people}
         for person in people:
             # Apply the pension income tax credit for each person:
-            credits[person] += self._pension_income_credit(person, year)
-        return credits
+            credit[person] += self._pension_income_credit(person, year)
+        return credit
 
     def _pension_income_credit(self, person, year):
         """ Determines the pension income credit claimable by `person`.
@@ -85,7 +87,7 @@ class TaxCanadaJurisdiction(Tax):
         # pension credit, so determine that (inflation-adjusted
         # amount) here:
         deduction_max = Money(extend_inflation_adjusted(
-            Constants.TaxPensionCredit[self.jurisdiction],
+            constants.TAX_PENSION_CREDIT[self.jurisdiction],
             self.inflation_adjust,
             year
         ))
@@ -93,7 +95,7 @@ class TaxCanadaJurisdiction(Tax):
         return pension_income * self.credit_rate(year)
 
     def __call__(self, income, year,
-                 other_deductions=None, other_credits=None):
+                 other_deduction=None, other_credit=None):
         """ Determines taxes owing on one or more income sources.
 
         Args:
@@ -103,52 +105,52 @@ class TaxCanadaJurisdiction(Tax):
                 Person objects.
             year (int): The taxation year. This determines which tax
                 rules and inflation-adjusted brackets are used.
-            other_deductions (Money, dict[Person, Money]):
+            other_deduction (Money, dict[Person, Money]):
                 Deductions to be applied against the jurisdiction's
                 taxes. See documentation for `Tax` for more.
-            other_credits (Money, dict[Person, Money]):
+            other_credit (Money, dict[Person, Money]):
                 Credits to be applied against the jurisdiction's taxes.
                 See documentation for `Tax` for more.
 
         Returns:
             Money: The total amount of tax owing for the year.
         """
-        # Process deductions and credits, which take different forms
+        # Process deduction and credit, which take different forms
         # depending on the form of `income`:
         # For Money `income`, there's no method to call to determine
-        # deductions/credits; either apply what was passed, or set to $0
+        # deduction/credit; either apply what was passed, or set to $0
         if isinstance(income, Money):
-            deductions = other_deductions if other_deductions is not None \
+            deduction = other_deduction if other_deduction is not None \
                 else Money(0)
-            credits = other_credits if other_credits is not None \
+            credit = other_credit if other_credit is not None \
                 else Money(0)
         # If there's just one person, we expect other_* to be Money
         # objects, not dicts, so handle them appropriately:
         elif isinstance(income, Person):
             # NOTE: These methods require iterable `income` args:
-            deductions = self.tax_deductions({income}, year)[income]
-            credits = self.tax_credits({income}, year)[income]
-            if other_deductions is not None:
-                deductions += other_deductions
-            if other_credits is not None:
-                credits += other_credits
+            deduction = self.tax_deduction({income}, year)[income]
+            credit = self.tax_credit({income}, year)[income]
+            if other_deduction is not None:
+                deduction += other_deduction
+            if other_credit is not None:
+                credit += other_credit
         # If there are multiple people passed, expect a form of
         # dict[Person, Money] for other_* params:
         else:
-            deductions = self.tax_deductions(income, year)
-            credits = self.tax_credits(income, year)
-            if other_deductions is not None:
-                for person in deductions:
-                    if person in other_deductions:
-                        deductions[person] += other_deductions[person]
-            if other_credits is not None:
-                for person in deductions:
-                    if person in other_credits:
-                        credits[person] += other_credits[person]
+            deduction = self.tax_deduction(income, year)
+            credit = self.tax_credit(income, year)
+            if other_deduction is not None:
+                for person in deduction:
+                    if person in other_deduction:
+                        deduction[person] += other_deduction[person]
+            if other_credit is not None:
+                for person in deduction:
+                    if person in other_credit:
+                        credit[person] += other_credit[person]
 
         # Determine taxes owing in the usual way, applying the
-        # jurisdiction-specific credits and deductions:
-        return super().__call__(income, year, deductions, credits)
+        # jurisdiction-specific credit and deduction:
+        return super().__call__(income, year, deduction, credit)
 
 
 class TaxCanada(object):
@@ -182,19 +184,21 @@ class TaxCanada(object):
 
     def marginal_bracket(self, taxable_income, year):
         """ The top tax bracket that taxable_income falls into. """
-        return max(self.federal_tax.marginal_bracket(year),
-                   self.provincial_tax.marginal_bracket(year))
+        return max(
+            self.federal_tax.marginal_bracket(taxable_income, year),
+            self.provincial_tax.marginal_bracket(taxable_income, year)
+        )
 
     def marginal_rate(self, taxable_income, year):
         """ The marginal rate for the given income. """
         return self.federal_tax.marginal_rate(taxable_income, year) + \
             self.provincial_tax.marginal_rate(taxable_income, year)
 
-    def __call__(self, income, year,
-                 other_federal_deductions=None,
-                 other_federal_credits=None,
-                 other_provincial_deductions=None,
-                 other_provincial_credits=None):
+    def __call__(
+        self, income, year,
+        other_federal_deduction=None, other_federal_credit=None,
+        other_provincial_deduction=None, other_provincial_credit=None
+    ):
         """ Determines Canadian taxes owing on given income sources.
 
         This includes provincial and federal taxes.
@@ -206,28 +210,33 @@ class TaxCanada(object):
                 Person objects.
             year (int): The taxation year. This determines which tax
                 rules and inflation-adjusted brackets are used.
-            other_federal_deductions (Money, dict[Person, Money]):
+            other_federal_deduction (Money, dict[Person, Money]):
                 Deductions to be applied against federal taxes.
                 See documentation for `Tax` for more.
-            other_federal_credits (Money, dict[Person, Money]):
+            other_federal_credit (Money, dict[Person, Money]):
                 Credits to be applied against federal taxes.
                 See documentation for `Tax` for more.
-            other_provincial_deductions (Money, dict[Person, Money]):
+            other_provincial_deduction (Money, dict[Person, Money]):
                 Deductions to be applied against provincial taxes.
                 See documentation for `Tax` for more.
-            other_provincial_credits (Money, dict[Person, Money]):
+            other_provincial_credit (Money, dict[Person, Money]):
                 Credits to be applied against provincial taxes.
                 See documentation for `Tax` for more.
 
         Returns:
             Money: The total amount of tax owing for the year.
         """
+        # This method has a lot of (optional) arguments, but this is
+        # much cleaner than bundling federal and provincial amounts into
+        # a collection to be passed in. (We tried it; it was ugly.)
+        # pylint: disable=too-many-arguments
+
         # Total tax is simply the sum of federal and prov. taxes.
         return (
             self.federal_tax(
                 income, year,
-                other_federal_deductions, other_federal_credits) +
+                other_federal_deduction, other_federal_credit) +
             self.provincial_tax(
                 income, year,
-                other_provincial_deductions, other_provincial_credits)
-            )
+                other_provincial_deduction, other_provincial_credit)
+        )

@@ -419,7 +419,7 @@ class Forecast(object):
         """ TODO """
         retirement_year = self.retirement_year()
 
-        self.withdrawals_for_retirement[year] = \
+        self.withdrawals_for_retirement[year] = (
             self.withdrawal_strategy(
                 benefits=Money(0),
                 net_income=self.net_income[year],
@@ -428,6 +428,7 @@ class Forecast(object):
                 retirement_year=retirement_year,
                 year=year
             )
+        )
         self.withdrawals_for_other[year] = Money(0)  # TODO
         self.gross_withdrawals[year] = (
             self.withdrawals_for_retirement[year] +

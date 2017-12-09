@@ -144,8 +144,8 @@ class Forecaster(object):
             'debts': self.debts,
             'contribution_strategy': self.contribution_strategy,
             'withdrawal_strategy': self.withdrawal_strategy,
-            'contribution_transaction_strategy': self.transaction_in_strategy,
-            'withdrawal_transaction_strategy': self.transaction_out_strategy,
+            'contribution_trans_strategy': self.transaction_in_strategy,
+            'withdrawal_trans_strategy': self.transaction_out_strategy,
             'debt_payment_strategy': self.debt_payment_strategy,
             'tax_treatment': self.tax_treatment
         }
@@ -206,8 +206,8 @@ class Forecaster(object):
     def add_person(
         self, name, birth_date,
         retirement_date=None, gross_income=None, raise_rate=None,
-        spouse=None, tax_treatment=None, allocation_strategy=None,
-        inputs=None, initial_year=None, cls=Person, **kwargs
+        spouse=None, tax_treatment=None, inputs=None, initial_year=None,
+        cls=Person, **kwargs
     ) -> Person:
         """ Adds a Person to the forecast.
 
@@ -254,8 +254,6 @@ class Forecaster(object):
         self.set_kwarg(kwargs, 'spouse', spouse, None)
         self.set_kwarg(kwargs, 'tax_treatment', tax_treatment,
                        self.tax_treatment)
-        self.set_kwarg(kwargs, 'allocation_strategy', allocation_strategy,
-                       self.allocation_strategy)
         self.set_kwarg(kwargs, 'inputs', inputs, None)
         self.set_kwarg(kwargs, 'initial_year', initial_year, self.initial_year)
 
@@ -269,8 +267,8 @@ class Forecaster(object):
     def set_person1(
         self, name=None, birth_date=None,
         retirement_date=None, gross_income=None, raise_rate=None,
-        spouse=None, tax_treatment=None, allocation_strategy=None,
-        inputs=None, initial_year=None, cls=Person, **kwargs
+        spouse=None, tax_treatment=None, inputs=None, initial_year=None,
+        cls=Person, **kwargs
     ):
         """ Adds a person to the forecast based on person1's settings.
 
@@ -299,8 +297,6 @@ class Forecaster(object):
         self.set_kwarg(kwargs, 'spouse', spouse, self.person2)
         self.set_kwarg(kwargs, 'tax_treatment', tax_treatment,
                        self.tax_treatment)
-        self.set_kwarg(kwargs, 'allocation_strategy', allocation_strategy,
-                       None)
         self.set_kwarg(kwargs, 'inputs', inputs, None)
         self.set_kwarg(kwargs, 'initial_year', initial_year, self.initial_year)
 
@@ -310,8 +306,8 @@ class Forecaster(object):
     def set_person2(
         self, name=None, birth_date=None,
         retirement_date=None, gross_income=None, raise_rate=None,
-        spouse=None, tax_treatment=None, allocation_strategy=None,
-        inputs=None, initial_year=None, cls=Person, **kwargs
+        spouse=None, tax_treatment=None, inputs=None, initial_year=None,
+        cls=Person, **kwargs
     ):
         """ Adds a person to the forecast based on person2's settings.
 
@@ -341,8 +337,6 @@ class Forecaster(object):
         self.set_kwarg(kwargs, 'spouse', spouse, self.person1)
         self.set_kwarg(kwargs, 'tax_treatment', tax_treatment,
                        self.tax_treatment)
-        self.set_kwarg(kwargs, 'allocation_strategy', allocation_strategy,
-                       None)
         self.set_kwarg(kwargs, 'inputs', inputs, None)
         self.set_kwarg(kwargs, 'initial_year', initial_year, self.initial_year)
 
@@ -361,7 +355,11 @@ class Forecaster(object):
 
         self.set_kwarg(kwargs, 'owner', owner, self.person1)
         self.set_kwarg(kwargs, 'balance', balance, None)
-        self.set_kwarg(kwargs, 'rate', rate, None)
+        self.set_kwarg(
+            kwargs, 'rate', rate,
+            self.allocation_strategy.rate_function(
+                kwargs['owner'], self.scenario)
+        )
         self.set_kwarg(kwargs, 'transactions', transactions, None)
         self.set_kwarg(kwargs, 'nper', nper, None)
         self.set_kwarg(kwargs, 'default_inflow_timing',
@@ -479,7 +477,7 @@ class Forecaster(object):
                        self.settings.contribution_rate)
         self.set_kwarg(kwargs, 'refund_reinvestment_rate',
                        refund_reinvestment_rate,
-                       self.settings.contribution_refund_reinvestment_rate)
+                       self.settings.contribution_reinvestment_rate)
         self.set_kwarg(kwargs, 'inflation_adjust', inflation_adjust,
                        self.scenario.inflation_adjust)
 
@@ -541,7 +539,7 @@ class Forecaster(object):
     def set_allocation_strategy(
         self, strategy=None, min_equity=None, max_equity=None, target=None,
         standard_retirement_age=None, risk_transition_period=None,
-        adjust_for_retirement_plan=None, scenario=None,
+        adjust_for_retirement_plan=None,
         cls=AllocationStrategy, **kwargs
     ):
         """ TODO """
@@ -559,30 +557,27 @@ class Forecaster(object):
             kwargs['strategy'] ==
             AllocationStrategy.strategy_n_minus_age.strategy_key
         ):
-            target_default = \
-                self.settings.allocation_constant_strategy_target
+            target_default = self.settings.allocation_const_target
         elif (
             # pylint: disable=no-member
             # Pylint thinks there's no strategy_key member. It's wrong
             kwargs['strategy'] ==
             AllocationStrategy.strategy_transition_to_const.strategy_key
         ):
-            target_default = \
-                self.settings.allocation_transition_strategy_target
+            target_default = self.settings.allocation_trans_target
         else:
             target_default = None
 
         self.set_kwarg(kwargs, 'target', target, target_default)
         self.set_kwarg(kwargs, 'standard_retirement_age',
                        standard_retirement_age,
-                       self.settings.allocation_standard_retirement_age)
+                       self.settings.allocation_std_retirement_age)
         self.set_kwarg(kwargs, 'risk_transition_period',
                        risk_transition_period,
-                       self.settings.allocation_risk_transition_period)
+                       self.settings.allocation_risk_trans_period)
         self.set_kwarg(kwargs, 'adjust_for_retirement_plan',
                        adjust_for_retirement_plan,
-                       self.settings.allocation_adjust_for_retirement_plan)
-        self.set_kwarg(kwargs, 'scenario', scenario, self.scenario)
+                       self.settings.allocation_adjust_retirement)
 
         self.allocation_strategy = cls(**kwargs)
         return self.allocation_strategy

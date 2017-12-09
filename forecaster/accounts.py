@@ -81,7 +81,7 @@ class Account(TaxSource):
 
     def __init__(
         self, owner,
-        balance=0, rate=None, transactions=None, nper=1,
+        balance=0, rate=0, transactions=None, nper=1,
         default_inflow_timing='end', default_outflow_timing='end',
         inputs=None, initial_year=None
     ):
@@ -107,10 +107,13 @@ class Account(TaxSource):
                 for outflow transactions (when a timing is not
                 explicitly provided).
         """
-
         # This class does have a lot of arguments, but it's not
         # practical to split this class up more.
         # pylint: disable=too-many-arguments
+
+        # Avoid using mutable {} as default parameter:
+        if transactions is None:
+            transactions = {}
 
         # Use the explicitly-provided initial year if available,
         # otherwise default to the owner's initial year:
@@ -131,18 +134,7 @@ class Account(TaxSource):
         # Set the various property values based on inputs:
         self.owner = owner
         self.balance = Money(balance)
-        # If rate is not provided, infer from owner's asset allocation
-        # or set to 0 if no asset allocation is defined:
-        if rate is None:
-            if self.owner.allocation_strategy is not None:
-                rate = self.rate_from_asset_allocation
-            else:
-                rate = 0
         self.rate_function = rate
-        if transactions is None:
-            self.transactions = {}
-        else:
-            self.transactions = transactions
         self.nper = self._conv_nper(nper)
         self._inflow_timing = when_conv(default_inflow_timing)
         self._outflow_timing = when_conv(default_outflow_timing)
@@ -167,7 +159,7 @@ class Account(TaxSource):
         'Q': 4,
         'SA': 2,
         'A': 1
-        }
+    }
 
     @property
     def owner(self) -> Person:
@@ -279,7 +271,7 @@ class Account(TaxSource):
                 self._transactions[when] *
                 (self.accumulation_function(
                     1 - when, self.rate, self.nper
-                    ) - 1)
+                ) - 1)
             )
 
         return returns
@@ -478,6 +470,8 @@ class Account(TaxSource):
 
         # Add in the future value of each transaction (except that that
         # happen after `time`).
+        # Pylint is confused; `transactions` is a dict
+        # pylint: disable=unsubscriptable-object,not-an-iterable
         for when in [w for w in self.transactions if w <= time]:
             balance += self.value_at_time(
                 self.transactions[when], when, time
@@ -577,7 +571,7 @@ class RegisteredAccount(Account):
     """
 
     def __init__(
-        self, owner, balance=0, rate=None, transactions=None, nper=1,
+        self, owner, balance=0, rate=0, transactions=None, nper=1,
         inputs=None, initial_year=None, contribution_room=None,
         contributor=None, **kwargs
     ):
@@ -603,7 +597,7 @@ class RegisteredAccount(Account):
         self.contribution_token = type(self).__name__
 
         # Prepare this account for having its contribution room tracked
-        self.contributor.register_shared_contribution_account(self)
+        self.contributor.register_shared_contribution(self)
         # Contribution room is stored with the contributor and shared
         # between accounts. Accordingly, only set contribution room if
         # it's explicitly provided, to avoid overwriting previously-
@@ -709,7 +703,7 @@ class Debt(Account):
 
     def __init__(
         self, owner,
-        balance=0, rate=None, transactions=None, nper=1,
+        balance=0, rate=0, transactions=None, nper=1,
         inputs=None, initial_year=None, minimum_payment=Money(0),
         reduction_rate=1, accelerate_payment=False, **kwargs
     ):

@@ -7,7 +7,8 @@ import collections
 from decimal import Decimal
 from forecaster.ledger import Money
 from forecaster.person import Person
-from forecaster.utility import *
+from forecaster.utility import build_inflation_adjust, nearest_year, \
+    extend_inflation_adjusted
 
 # NOTE: Consider making this a ledger-like object that stores values
 # year-over-year. These values might include:
@@ -15,19 +16,19 @@ from forecaster.utility import *
 #   tax_withheld (sum of sources' withholdings, *plus* additional
 #       mandatory tax instalment payments for when withholdings at
 #       source fall below the CRA's thresholds)
-#   tax_credits (sum of sources' tax credits, plus any additional
-#       credits arising from the overall context)
-#   tax_deductions (sum of sources' tax deductions, plus any additional
-#           deductions arising from the overall context)
+#   tax_credit (sum of sources' tax credit, plus any additional
+#       credit arising from the overall context)
+#   tax_deduction (sum of sources' tax deduction, plus any additional
+#           deduction arising from the overall context)
 #   tax_refund_or_owing (total refund paid to persons or amount owing to
 #       tax authority; refunds are positive and owing is negative)
 # One of the challenges with this approach is that tax objects may be
 # invoked several times in a given year. It may be better to leave it
 # to Forecast to track that information. Or perhaps just store the last-
 # generated return value of a Tax call.
-# NOTE: Federal and provincial deductions and credits are separate;
+# NOTE: Federal and provincial deduction and credit are separate;
 # you can't just combine them by summation. Consider whether to use two
-# separate dicts for tax_credits and tax_deductions, or to use a tuple
+# separate dicts for tax_credit and tax_deduction, or to use a tuple
 # (such as FedProvTuple).
 
 
@@ -36,12 +37,12 @@ class Tax(object):
 
     When called with a Money-type first argument (i.e. as
     `tax(taxable_income, year)`), this object returns the amount of tax
-    payable on taxable income without any source-specific deductions or
-    credits. This should correspond to how employment withholding taxes
+    payable on taxable income without any source-specific deduction or
+    credit. This should correspond to how employment withholding taxes
     are calculated, so `gross_income - tax(gross_income, year)`
     will return a person's net income.
 
-    For a more sophisticated assessment of credits/etc., provide an
+    For a more sophisticated assessment of credit/etc., provide an
     iterable of sources as the first argument. Each source must provide
     the following methods:
         taxable_income(self [, year])
@@ -51,7 +52,7 @@ class Tax(object):
 
     Thus, calling `tax({person, account1, ... accountn}, year)` will
     return the total tax liability for the year, after applying any
-    credits/etc. and including `person`'s employment income and any
+    credit/etc. and including `person`'s employment income and any
     account earnings.
 
     Attributes:
@@ -90,27 +91,52 @@ class Tax(object):
             Person/Account objects).
         year (int): The taxation year. This determines which tax rules
             and inflation-adjusted brackets are used.
-        other_deductions (Money): Any other deductions which can be
+        deduction (Money): Any other deduction which can be
             applied and which aren't evident from the income sources
-            themselves. These will generally be itemized deductions.
+            themselves. These will generally be itemized deduction.
             It's a good idea to be familiar with the Tax implementation
             you're working with before passing any of these, otherwise
             you risk double-counting.
             Optional.
-        other_credits (Money): Any other tax credits which can be
+        credit (Money): Any other tax credit which can be
             applied and which aren't evident from the income sources
-            themselves. These will generally be boutique tax credits.
+            themselves. These will generally be boutique tax credit.
             Optional.
     """
     def __init__(
         self, tax_brackets, personal_deduction=None, credit_rate=None,
         inflation_adjust=None
     ):
-        """ TODO """
-        # TODO: Add an initial_year arg. If it's provided, interpret any
-        # scalar args (or, for tax_brackets, non-year-indexed dict) as
-        # {initial_year: arg} dicts (i.e. single-value dicts). This will
-        # make building a Tax object much less confusing.
+        """ Initializes the Tax object.
+
+        Args:
+            tax_brackets (dict[int, dict[Money, Decimal]]):
+                `{year: brackets}` pairs, where `brackets` is itself a
+                dict of `{bracket: rate}` pairs. Any income above
+                `bracket` is taxed at `rate`. (It's thus usually a good
+                idea to have at least a {0: rate} element!)
+            personal_deduction (dict[int, Money]): `{year: deduction}`
+                pairs. This deduction is applied to the income of each
+                person when determining tax liability.
+            credit_rate (dict[int, Money]): `{year: rate}` pairs.
+                This rate is applied to any tax credits the person is
+                eligible for when determining tax liability.
+            inflation_adjust: A method with the following form:
+                `inflation_adjust(val, this_year, target_year)`.
+                Returns a Decimal object which is the inflation-
+                adjustment factor from base_year to target_year.
+                Optional.
+                If not provided, all values are assumed to be in real
+                terms, so no inflation adjustment is performed.
+        """
+        # NOTE: Consider allowing users to pass in non-year-indexed
+        # values (e.g. so that `tax_brackets` can be a dict of
+        # {Money: Decimal} pairs instead of {int: {Money: Decimal}}
+        # pairs, and `personal_deduction` could be Money instead of
+        # {int: Money}).
+        # This would likely require adding an initial_year arg.
+        # If it's provided, we would interpret any non-year-indexed args
+        # as values for the key `initial_year`.
 
         # Don't set these args to {} in the call signature, or else
         # the mutated dicts will be shared between instances.
@@ -156,8 +182,6 @@ class Tax(object):
         # but this will cause problems if you want to reuse the
         # Tax object for other Scenarios. If we keep this behaviour,
         # then Tax objects should be treated as mutable/disposable.
-        # TODO: Confirm that this is desired behaviour once the
-        # application is in a state where we can run efficiency metrics.
         if year not in self._tax_brackets:
             # Get the inflation-adjusted tax brackets for this year:
             base_year = nearest_year(self._tax_brackets, year)
@@ -169,8 +193,7 @@ class Tax(object):
             self.add_brackets(brackets, year)
         if bracket is None:
             return self._tax_brackets[year]
-        else:
-            return self._tax_brackets[year][bracket]
+        return self._tax_brackets[year][bracket]
 
     def accum(self, year, bracket=None):
         """ The accumulated tax payable for a given tax bracket. """
@@ -183,8 +206,7 @@ class Tax(object):
             self.add_brackets(brackets, year)
         if bracket is None:
             return self._accum[year]
-        else:
-            return self._accum[year][bracket]
+        return self._accum[year][bracket]
 
     def personal_deduction(self, year):
         """ The inflation-adjusted personal deduction. """
@@ -241,23 +263,36 @@ class Tax(object):
                 (bracket - prev) * brackets[prev] + self._accum[year][prev]
             prev = bracket  # Keep track of next-lowest bracket
 
-    def tax_money(self, taxable_income, year,
-                  other_deductions=Money(0), other_credits=Money(0)):
-        """ Returns taxes owing without source-specific deductions/etc. """
-        # TODO: Flesh out docstring.
+    def tax_money(
+        self, taxable_income, year, deduction=Money(0), credit=Money(0)
+    ):
+        """ Returns taxes owing without source-specific deduction/etc.
 
-        # Some calling methods might pass None, so deal with the here:
-        if other_deductions is None:
-            other_deductions = Money(0)
-        if other_credits is None:
-            other_credits = Money(0)
+        Args:
+            taxable_income (Money): The amount of income to be taxed,
+                assuming it's taxable in the hands of a single person
+                with no other income and no deduction or credit other
+                than those provided explicitly to this method.
+            year (int): The year for which tax treatment is applied.
+            deduction (Money): Any deduction from taxable income to be
+                applied before determining total tax liability.
+                Optional.
+            credit (Money): Any tax credit to be applied against tax
+                liability; these are applied at the tax credit rate for
+                `year`. Optional.
 
-        # Apply the personal deduction and any other deductions before
+        Returns:
+            Money: Total tax liability arising from `taxable_income` in
+                `year`, after applying `deduction` and `credit`.
+        """
+        # Apply the personal deduction and any other deduction before
         # determining brackets.
         taxable_income = max(
-            Money(taxable_income) - (self.personal_deduction(year) +
-                                     other_deductions),
-            Money(0))
+            Money(taxable_income) - (
+                self.personal_deduction(year) + deduction
+            ),
+            Money(0)
+        )
         # Get the inflation-adjusted tax brackets for this year:
         brackets = self.tax_brackets(year)
         bracket = self.marginal_bracket(taxable_income, year)
@@ -265,42 +300,70 @@ class Tax(object):
         # the marginal rate on any income over the bracket threshold
         marginal_rate = brackets[bracket]
         accum = self.accum(year, bracket)
-        # NOTE: The following assumes that tax credits are nonrefundable
+        # NOTE: The following assumes that tax credit are nonrefundable
         return max(
             accum + (taxable_income - bracket) * marginal_rate -
-            other_credits * self.credit_rate(year),
+            credit * self.credit_rate(year),
             Money(0))
 
-    def tax_person(self, person, year,
-                   other_deductions=Money(0), other_credits=Money(0)):
-        """ Returns tax treatment for an individual person. """
-        # TODO: Flesh out docstring.
+    def tax_person(self, person, year, deduction=Money(0), credit=Money(0)):
+        """ Returns tax treatment for an individual person.
 
-        # Some calling methods might pass None, so deal with the here:
-        if other_deductions is None:
-            other_deductions = Money(0)
-        if other_credits is None:
-            other_credits = Money(0)
+        Args:
+            person (Person): A person for whom tax liability will be
+                determined.
+            year (int): The year for which tax treatment is needed.
+            deduction (Money): A deduction to be applied against the
+                person's income, on top of whatever other deductions
+                they are eligible for, including the personal deduction
+                for the year and any specific `tax_deduction` attribute
+                values of the person and their accounts.
+            credit (Money): A credit to be applied against the person's
+                tax liability, on top of whatever other credits they are
+                eligible for (provided via the `tax_deduction` member of
+                `person` and any of their accounts).
+
+        Returns:
+            Money: The tax liability of the person.
+        """
         # Accumulate the relevant tax information for the person:
         taxable_income = person.taxable_income_history[year] + \
             sum((x.taxable_income_history[year] for x in person.accounts))
-        tax_credits = person.tax_credit_history[year] + \
+        tax_credit = person.tax_credit_history[year] + \
             sum((x.tax_credit_history[year] for x in person.accounts))
-        tax_deductions = person.tax_deduction_history[year] + \
+        tax_deduction = person.tax_deduction_history[year] + \
             sum((x.tax_deduction_history[year] for x in person.accounts))
-        # Apply deductions to income, find taxes payable based on that,
-        # and then apply tax credits.
+        # Apply deduction to income, find taxes payable based on that,
+        # and then apply tax credit.
         return self.tax_money(
-            taxable_income - (tax_deductions + other_deductions), year
-        ) - (tax_credits + other_credits) * self.credit_rate(year)
+            taxable_income - (tax_deduction + deduction), year
+        ) - (tax_credit + credit) * self.credit_rate(year)
 
-    def tax_people(self, people, year, other_deductions={},
-                   other_credits={}):
-        """ Applies available deductions/etc. based on income sources. """
-        # TODO: Flesh out docstring.
+    def tax_people(self, people, year, deduction=None, credit=None):
+        """ Total tax liability for a group of people.
+
+        The people do not necessarily need to be spouses or related in
+        any way. If a pair of spouses is in `people`, they will be
+        passed to `tax_spouses` to be processed together.
+
+        Args:
+            people (iterable[Person]): Any number of people.
+            year (int): The year for which tax treatment is needed.
+            deduction (dict[Person, Money]): A dict of
+                `{person: deduction}` pairs. Optional.
+            credit (dict[Person, Money]): A dict of `{person: credit}`
+                pairs. Optional.
+
+        Returns:
+            Money: The total tax liability of the people.
+        """
+        if deduction is None:
+            deduction = {}
+        if credit is None:
+            credit = {}
 
         # Base case: If {} is passed, return $0.
-        if len(people) == 0:
+        if not people:
             return Money(0)
 
         # Otherwise, grab someone at random and determine their taxes.
@@ -308,55 +371,82 @@ class Tax(object):
 
         # Treat spouses in a special way; send them to a different
         # method for processing and recurse on the remaining folks.
-        if person.spouse is not None:
-            # Prepare to pass the deductions and credits for each
-            # person to tax_spouses individually, without overriding
-            # tax_spouses default values.
-            kwargs = {}
-            if person in other_deductions:
-                kwargs['person1_deductions'] = other_deductions[person]
-            if person in other_credits:
-                kwargs['person1_credits'] = other_credits[person]
-            if person.spouse in other_deductions:
-                kwargs['person2_deductions'] = \
-                    other_deductions[person.spouse]
-            if person.spouse in other_credits:
-                kwargs['person2_credits'] = other_credits[person.spouse]
+        # NOTE: This logic (and the logic of Person.spouse) needs to be
+        # overridden in subclasses implementing plural marriage.
+        if person.spouse is not None and person.spouse in people:
             # Process taxes for the couple and recurse on the remaining
             # people.
-            return self.tax_spouses(person, person.spouse, year, **kwargs) + \
-                self.tax_people(people - {person, person.spouse}, year,
-                                other_deductions, other_credits)
+            return self.tax_spouses(
+                {person, person.spouse}, year, deduction, credit
+            ) + self.tax_people(
+                people - {person, person.spouse}, year, deduction, credit
+            )
         # Otherwise, process this person as a single individual and
         # recurse on the remaining folks:
         else:
             # We don't want to override default values for tax_person,
             # so fill a kwargs dict with only explicitly-passed
-            # deductions and credits for this person.
+            # deduction and credit for this person.
             kwargs = {}
-            if person in other_deductions:
-                kwargs['other_deductions'] = other_deductions[person]
-            if person in other_credits:
-                kwargs['other_credits'] = other_credits[person]
+            if person in deduction:
+                kwargs['deduction'] = deduction[person]
+            if person in credit:
+                kwargs['credit'] = credit[person]
 
             # Determine tax owing for this person and then recurse.
             return self.tax_person(person, year, **kwargs) + \
                 self.tax_people(people - {person}, year,
-                                other_deductions, other_credits)
+                                deduction, credit)
 
-    def tax_spouses(self, person1, person2, year,
-                    person1_deductions=Money(0), person1_credits=Money(0),
-                    person2_deductions=Money(0), person2_credits=Money(0)):
-        """ Tax treatment for a pair of spouses. """
-        # TODO: Flesh out docstring
-        return self.tax_person(
-            person1, year, person1_deductions, person1_credits
-        ) + self.tax_person(
-            person2, year, person2_deductions, person2_credits
-        )
+    def tax_spouses(self, people, year, deduction=None, credit=None):
+        """ Tax treatment for a pair of spouses.
+
+        This method doesn't provide any special tax treatment to the
+        spouses, but it allows subclasses to override its functionality
+        to apply special tax treatments.
+
+        This method is also not restricted to two-element inputs,
+        although in countries like Canada (which only recognizes two-
+        person marriages for tax purposes) this method should only ever
+        receive a two-element `people` input. By allowing for arbitrary-
+        size inputs, subclasses can extend this functionality to deal
+        with countries where plural marriage is recognized by the tax
+        system.
+
+        Args:
+            people (iterable): Persons with mutual spousal
+                relationships. In countries requiring monogamous
+                marriages, this input should have exactly two elements.
+            year (int): The year for which tax treatment is needed.
+            deduction (dict[Person, Money]): A dict of
+                `{person: deduction}` pairs. Optional.
+            credit (dict[Person, Money]): A dict of `{person: credit}`
+                pairs. Optional.
+
+        Returns:
+            Money: The tax liability of the spouses.
+        """
+        # Avoid using {} as a default value in the call signature:
+        if deduction is None:
+            deduction = {}
+        if credit is None:
+            credit = {}
+
+        # Add together the tax treatment for each spouse, without doing
+        # anything special (this is essentially the same logic as
+        # tax_person, but without the check for spouses or recursion)
+        tax = Money(0)
+        for person in people:
+            kwargs = {}
+            if person in deduction:
+                kwargs['deduction'] = deduction[person]
+            if person in credit:
+                kwargs['credit'] = credit[person]
+            tax += self.tax_people(person, year, **kwargs)
+        return tax
 
     def __call__(self, income, year,
-                 other_deductions=None, other_credits=None):
+                 deduction=None, credit=None):
         """ Determines taxes owing on one or more income sources.
 
         Each `Person` object passed as input may have a number of tax
@@ -371,21 +461,21 @@ class Tax(object):
                 Person objects.
             year (int): The taxation year. This determines which tax
                 rules and inflation-adjusted brackets are used.
-            other_deductions (Money, dict[Person, Money]):
-                Any other deductions which can be applied and which
+            deduction (Money, dict[Person, Money]):
+                Any other deduction which can be applied and which
                 aren't modelled by the income sources themselves.
-                These will generally be itemized deductions.
+                These will generally be itemized deduction.
                 If `income` is passed as an iterable, this should also
                 be an iterable; otherwise it should be a Money object.
                 It's a good idea to be familiar with the Tax
                 implementation you're working with before passing any of
                 these, otherwise you risk double-counting.
                 Optional.
-            other_credits (Money, dict[Person, Money]):
-                Any other tax credits which can be applied and which
+            credit (Money, dict[Person, Money]):
+                Any other tax credit which can be applied and which
                 aren't modelled by the income sources themselves.
-                These are usually boutique tax credits.
-                See `other_deductions` for further comments.
+                These are usually boutique tax credit.
+                See `deduction` for further comments.
                 Optional.
 
             Returns:
@@ -395,10 +485,10 @@ class Tax(object):
         # The different tax_* methods have different defaults for
         # optional arguments, so build a kwargs dict:
         kwargs = {}
-        if other_deductions is not None:
-            kwargs['other_deductions'] = other_deductions
-        if other_credits is not None:
-            kwargs['other_credits'] = other_credits
+        if deduction is not None:
+            kwargs['deduction'] = deduction
+        if credit is not None:
+            kwargs['credit'] = credit
 
         # If taxpayers are non-scalar, interpret it as a group of people
         if isinstance(income, collections.Iterable):
@@ -408,5 +498,4 @@ class Tax(object):
             return self.tax_person(income, year, **kwargs)
         # Otherwise, this is the easy case: interpret taxable_income as
         # Money (or Money-convertible)
-        else:
-            return self.tax_money(income, year, **kwargs)
+        return self.tax_money(income, year, **kwargs)

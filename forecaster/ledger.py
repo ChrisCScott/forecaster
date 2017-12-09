@@ -105,7 +105,8 @@ class recorded_property(property):
             history_dict = getattr(obj, self.history_dict_name)
             if obj.this_year in history_dict:
                 return history_dict[obj.this_year]
-            return fget(obj)
+            else:
+                return fget(obj)
 
         def setter(obj, val):
             """ Adds value to cache, without overwriting user input. """
@@ -266,9 +267,9 @@ class Ledger(object, metaclass=LedgerType):
         # Pylint gets confused by attributes added by metaclass.
         for prop in self._recorded_properties:
             # Use input values if available for this property:
-            if prop.__name__ in inputs:
+            if prop.__name__ in self.inputs:
                 setattr(self, prop.history_dict_name,
-                        dict(inputs[prop.__name__]))
+                        dict(self.inputs[prop.__name__]))
             # Otherwise, use an empty dict and leave it to __init__ and
             # next_year to fill it programmatically.
             else:
@@ -296,6 +297,10 @@ class Ledger(object, metaclass=LedgerType):
     # TODO: implement __deepcopy__ member for Ledger that shallow-
     # copies `inputs` (and other non-mutable attributes) but does
     # deep-copy *_history dicts.
+    # It should probably implement a special deepcopy of functions:
+    # https://stackoverflow.com/questions/6527633/how-can-i-make-a-deepcopy-of-a-function-in-python
+    # (we need to ensure that we swap out any memo'd objects in the
+    # function's context, too!)
 
 
 class TaxSource(Ledger):

@@ -4,12 +4,13 @@ import unittest
 import math
 import decimal
 from decimal import Decimal
+import context  # pylint: disable=unused-import
 from forecaster.person import Person
 from forecaster.accounts import Account, Debt, RegisteredAccount, when_conv
 from forecaster.strategy import AllocationStrategy
 from forecaster.scenario import Scenario
 from forecaster.ledger import Money
-from forecaster.tests.test_helper import type_check
+from tests.test_helper import type_check
 
 
 class TestAccountMethods(unittest.TestCase):
@@ -40,7 +41,7 @@ class TestAccountMethods(unittest.TestCase):
         # objects, so store it here:
         cls.initial_year = 2000
         # Every init requires an owner, so store that here:
-        scenario = Scenario(
+        cls.scenario = Scenario(
             inflation=0,
             stock_return=1,
             bond_return=0.5,
@@ -55,17 +56,14 @@ class TestAccountMethods(unittest.TestCase):
             target=Decimal(0.5),
             standard_retirement_age=65,
             risk_transition_period=20,
-            adjust_for_retirement_plan=False,
-            scenario=scenario)
+            adjust_for_retirement_plan=False)
         cls.owner = Person(
             cls.initial_year, "test", 2000,
             raise_rate={year: 1 for year in range(2000, 2066)},
-            retirement_date=2065,
-            allocation_strategy=cls.allocation_strategy)
+            retirement_date=2065)
 
-    def test_init(self, *args, **kwargs):
+    def test_init_basic(self, *args, **kwargs):
         """ Tests Account.__init__ """
-
         # Basic test: All correct values, check for equality and type
         owner = self.owner
         balance = Money(0)
@@ -98,8 +96,8 @@ class TestAccountMethods(unittest.TestCase):
         self.assertIsInstance(account.balance, Money)
         self.assertTrue(type_check(account.rate_history, {int: Decimal}))
         self.assertIsInstance(account.rate, Decimal)
-        self.assertTrue(type_check(account.transactions_history,
-                                   {int: {Decimal: Money}}))
+        self.assertTrue(type_check(
+            account.transactions_history, {int: {Decimal: Money}}))
         self.assertTrue(type_check(account.transactions, {Decimal: Money}))
         self.assertIsInstance(account.nper, int)
         self.assertIsInstance(account.initial_year, int)
@@ -110,32 +108,32 @@ class TestAccountMethods(unittest.TestCase):
         account = self.AccountType(
             self.owner, *args, balance=balance, rate=0, **kwargs)
         self.assertEqual(account.balance_history, {
-            self.initial_year: balance
-            })
+            self.initial_year: balance})
         self.assertEqual(account.rate_history, {self.initial_year: 0})
-        self.assertEqual(account.transactions_history, {
-            self.initial_year: {}
-            })
+        self.assertEqual(
+            account.transactions_history, {
+                self.initial_year: {}})
         self.assertEqual(account.balance, balance)
         self.assertEqual(account.rate, 0)
         self.assertEqual(account.transactions, {})
         self.assertEqual(account.nper, 1)
         self.assertEqual(account.initial_year, self.initial_year)
 
-        # Try again, but this time don't set rate explicitly; instead
-        # use default behaviour and infer its rate from its owner's
-        # asset allocation (which is 50% stocks, 50% bonds, with 75%
-        # return overall)
+    def test_init_rate_function(self, *args, **kwargs):
+        """ Tests using a function as an input for arg `rate`. """
+        # Infer the rate from the account owner's asset allocation
+        # (which is 50% stocks, 50% bonds, with 75% return overall)
         # pylint: disable=no-member
         # Pylint is confused by members added by metaclass
+        balance = 0
+        rate = self.allocation_strategy.rate_function(
+            self.owner, self.scenario)
         account = self.AccountType(
-            self.owner, *args, balance=balance, **kwargs)
+            self.owner, *args, balance=balance, rate=rate, **kwargs)
         self.assertEqual(account.balance_history, {
-            self.initial_year: balance
-            })
+            self.initial_year: balance})
         self.assertEqual(account.transactions_history, {
-            self.initial_year: {}
-            })
+            self.initial_year: {}})
         self.assertEqual(account.balance, balance)
         self.assertEqual(account.rate, Decimal(0.75))
         self.assertEqual(account.rate_history,
@@ -143,10 +141,10 @@ class TestAccountMethods(unittest.TestCase):
         self.assertEqual(account.transactions, {})
         self.assertEqual(account.nper, 1)
         self.assertEqual(account.initial_year, self.initial_year)
-        self.assertEqual(account.rate_function,
-                         account.rate_from_asset_allocation)
+        self.assertEqual(account.rate_function, rate)
 
-        # Test with (Decimal-convertible) strings as input
+    def test_init_type_conversion(self, *args, **kwargs):
+        """ Tests using (Decimal-convertible) strings as input. """
         balance = "0"
         rate = "1.0"
         transactions = {'start': "1", 'end': "-1"}
@@ -177,9 +175,12 @@ class TestAccountMethods(unittest.TestCase):
         self.assertIsInstance(account.nper, int)
         self.assertIsInstance(account.initial_year, int)
 
-        # Test 'when' values inside and outside of the range [0,1]
+    def test_init_when(self, *args, **kwargs):
+        """ Test 'when' values inside and outside of the range [0,1] """
         # pylint: disable=no-member,unsubscriptable-object
         # Pylint is confused by members added by metaclass
+        balance = 0
+
         account = self.AccountType(
             self.owner, *args,
             balance=balance, transactions={0: 1}, **kwargs)
@@ -204,10 +205,13 @@ class TestAccountMethods(unittest.TestCase):
                 self.owner, *args,
                 balance=balance, transactions={2: 1}, **kwargs)
 
+    def test_init_decimal_conversions(self, *args, **kwargs):
+        """ Test account.__init__'s Decimal-conversion behaviour. """
         # Let's test invalid Decimal conversions next.
         # (BasicContext causes most Decimal-conversion errors to raise
         # exceptions. Invalid input will raise InvalidOperation)
         decimal.setcontext(decimal.BasicContext)
+        balance = 0
 
         # Test with values not convertible to Decimal
         with self.assertRaises(decimal.InvalidOperation):
@@ -362,7 +366,7 @@ class TestAccountMethods(unittest.TestCase):
             self.owner, *args, balance=1, rate=1,
             transactions={}, nper='M', **kwargs)
         account.next_year()
-        self.assertAlmostEqual(account.balance, Money((1+1/12) ** 12), 3)
+        self.assertAlmostEqual(account.balance, Money((1 + 1 / 12) ** 12), 3)
 
         # Repeat above with a $2 contribution halfway through the year
 
@@ -401,7 +405,7 @@ class TestAccountMethods(unittest.TestCase):
         account = self.AccountType(
             self.owner, *args, balance=1, rate=1,
             transactions={0.5: Money(2)}, nper='M', **kwargs)  # monthly
-        next_val = Money((1 + 1/12) ** (12) + 2 * (1 + 1/12) ** (12 * 0.5))
+        next_val = Money((1 + 1 / 12) ** (12) + 2 * (1 + 1 / 12) ** (12 * 0.5))
         account.next_year()
         self.assertAlmostEqual(account.balance, next_val, 5)
 
@@ -417,8 +421,7 @@ class TestAccountMethods(unittest.TestCase):
         account = self.AccountType(
             self.owner, *args, **kwargs)
         self.assertEqual(account.transactions_history, {
-            initial_year: {}
-            })
+            initial_year: {}})
         account.add_transaction(Money(1), 'end')
         self.assertEqual(account.transactions_history, {
             initial_year: {
@@ -433,8 +436,7 @@ class TestAccountMethods(unittest.TestCase):
         account.add_transaction(Money(1), 'start')
         account.add_transaction(Money(2), 1)
         self.assertEqual(account.transactions_history, {
-            initial_year: {0: Money(1), 1: Money(2)}
-            })
+            initial_year: {0: Money(1), 1: Money(2)}})
         self.assertEqual(account.inflows, Money(3))
         self.assertEqual(account.outflows, 0)
 
@@ -444,8 +446,7 @@ class TestAccountMethods(unittest.TestCase):
         account.add_transaction(Money(1), 'start')
         account.add_transaction(Money(1), 0)
         self.assertEqual(account.transactions_history, {
-            initial_year: {0: Money(2)}
-            })
+            initial_year: {0: Money(2)}})
         self.assertEqual(account.inflows, Money(2))
         self.assertEqual(account.outflows, Money(0))
 
@@ -455,8 +456,7 @@ class TestAccountMethods(unittest.TestCase):
         account.add_transaction(Money(1), 'start')
         account.add_transaction(Money(-2), 'end')
         self.assertEqual(account.transactions_history, {
-            initial_year: {0: Money(1), 1: Money(-2)}
-            })
+            initial_year: {0: Money(1), 1: Money(-2)}})
         self.assertEqual(account.inflows, Money(1))
         self.assertEqual(account.outflows, Money(-2))
 
@@ -468,8 +468,7 @@ class TestAccountMethods(unittest.TestCase):
         account.add_transaction(Money(1), 'start')
         account.add_transaction(Money(-2), 'start')
         self.assertEqual(account.transactions_history, {
-            initial_year: {0: Money(-1)}
-            })
+            initial_year: {0: Money(-1)}})
         self.assertEqual(account.inflows, 0)
         self.assertEqual(account.outflows, Money(-1))
 
@@ -477,7 +476,7 @@ class TestAccountMethods(unittest.TestCase):
         # (do this recursively?)
 
     def test_max_outflow(self, *args, **kwargs):
-
+        """ Test Account.max_outflow """
         # Simple scenario: $100 in a no-growth account with no
         # transactions. Should return $100 for any point in time.
         account = self.AccountType(
@@ -564,6 +563,7 @@ class TestAccountMethods(unittest.TestCase):
                                       100 * math.e ** 0.5), 5)
 
     def test_max_inflow(self, *args, **kwargs):
+        """ Test Account.max_inflow """
         # This method should always return Money('Infinity')
         account = self.AccountType(
             self.owner, *args, balance=100, **kwargs)
@@ -574,6 +574,7 @@ class TestAccountMethods(unittest.TestCase):
         self.assertEqual(account.max_inflow(), Money('Infinity'))
 
     def test_min_outflow(self, *args, **kwargs):
+        """ Test Account.min_outflow """
         # This method should always return $0
         account = self.AccountType(
             self.owner, *args, balance=100, **kwargs)
@@ -584,6 +585,7 @@ class TestAccountMethods(unittest.TestCase):
         self.assertEqual(account.min_outflow(), Money(0))
 
     def test_min_inflow(self, *args, **kwargs):
+        """ Test Account.min_inflow """
         # This method should always return $0
         account = self.AccountType(
             self.owner, *args, balance=100, **kwargs)
@@ -594,6 +596,7 @@ class TestAccountMethods(unittest.TestCase):
         self.assertEqual(account.min_inflow(), Money(0))
 
     def test_taxable_income(self, *args, **kwargs):
+        """ Test Account.taxable_income """
         # This method should return the growth in the account.
         account = self.AccountType(
             self.owner, *args, balance=100, rate=1.0,
@@ -607,6 +610,7 @@ class TestAccountMethods(unittest.TestCase):
         self.assertEqual(account.taxable_income, Money(0))
 
     def test_tax_withheld(self, *args, **kwargs):
+        """ Test Account.tax_withheld """
         # This method should always return $0
         account = self.AccountType(
             self.owner, *args, balance=100, rate=1.0,
@@ -619,6 +623,7 @@ class TestAccountMethods(unittest.TestCase):
         self.assertEqual(account.tax_withheld, Money(0))
 
     def test_tax_credit(self, *args, **kwargs):
+        """ Test Account.tax_credit """
         # This method should always return $0, regardless of balance,
         # inflows, or outflows
         account = self.AccountType(
@@ -633,6 +638,7 @@ class TestAccountMethods(unittest.TestCase):
         self.assertEqual(account.tax_credit, Money(0))
 
     def test_tax_deduction(self, *args, **kwargs):
+        """ Test Account.tax_deduction """
         # This method should always return $0, regardless of balance,
         # inflows, or outflows
         account = self.AccountType(
@@ -658,8 +664,9 @@ class TestRegisteredAccountMethods(TestAccountMethods):
         cls.AccountType = RegisteredAccount
         cls.contribution_room = 0
 
-    def test_init(self, *args, **kwargs):
-        super().test_init(
+    def test_init_basic(self, *args, **kwargs):
+        """ Test RegisteredAccount.__init__ """
+        super().test_init_basic(
             *args, contribution_room=self.contribution_room, **kwargs)
 
         # Basic init using pre-built RegisteredAccount-specific args
@@ -691,6 +698,7 @@ class TestRegisteredAccountMethods(TestAccountMethods):
                 contribution_room='invalid', **kwargs)
 
     def test_properties(self, *args, **kwargs):
+        """ Test RegisteredAccount properties """
         # Basic check: properties return scalars (current year's values)
         account = self.AccountType(
             self.owner, *args,
@@ -703,10 +711,6 @@ class TestRegisteredAccountMethods(TestAccountMethods):
         # already dealt with by test_next, so check that properties are
         # pointing to the current year's values after calling next_year
         # in text_next.
-
-    def test_add_transaction(self, *args, **kwargs):
-        # Add mandatory argument for building RegisteredAccount objects
-        super().test_add_transaction(*args, **kwargs)
 
     def test_next_year(self, *args, **kwargs):
         # next_contribution_room is not implemented for
@@ -746,6 +750,7 @@ class TestDebtMethods(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        """ Sets up class attributes for convenience. """
         super().setUpClass()
         cls.AccountType = Debt
 
@@ -765,6 +770,7 @@ class TestDebtMethods(unittest.TestCase):
         cls.accelerate_payment = True
 
     def test_init(self, *args, **kwargs):
+        """ Test Debt.__init__ """
         # Don't call the superclass init, since it's based on positive
         # balances.
         # super().test_init(*args, **kwargs)
@@ -811,6 +817,7 @@ class TestDebtMethods(unittest.TestCase):
                 reduction_rate='invalid', **kwargs)
 
     def test_max_inflow(self, *args, **kwargs):
+        """ Test Debt.max_inflow """
         # Test when balance is greater than minimum payment
         account = self.AccountType(
             self.owner, *args,
@@ -836,6 +843,7 @@ class TestDebtMethods(unittest.TestCase):
         self.assertEqual(account.max_inflow(), Money(0))
 
     def test_min_inflow(self, *args, **kwargs):
+        """ Test Debt.min_inflow """
         # Test when balance is greater than minimum payment
         account = self.AccountType(
             self.owner, *args,
@@ -863,28 +871,28 @@ class TestDebtMethods(unittest.TestCase):
 
 class TestFreeMethods(unittest.TestCase):
     """ Tests free methods in forecaster.person module. """
-    
+
     def test_when_conv(self):
         """ Tests `when_conv` """
 
         # Test a simple, single-valued input
-        w = when_conv(1)
-        self.assertEqual(w, Decimal(1))
+        when = when_conv(1)
+        self.assertEqual(when, Decimal(1))
 
         # Test a magic input
-        w = when_conv('start')
-        self.assertEqual(w, Decimal(0))
+        when = when_conv('start')
+        self.assertEqual(when, Decimal(0))
 
         # Test a magic input
-        w = when_conv('end')
-        self.assertEqual(w, Decimal(1))
+        when = when_conv('end')
+        self.assertEqual(when, Decimal(1))
 
         # Test non-magic str input
-        w = when_conv('1')
-        self.assertEqual(w, Decimal(1))
+        when = when_conv('1')
+        self.assertEqual(when, Decimal(1))
 
         with self.assertRaises(decimal.InvalidOperation):
-            w = when_conv('invalid input')
+            when = when_conv('invalid input')
 
 
 if __name__ == '__main__':

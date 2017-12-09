@@ -2,15 +2,16 @@
 
 import unittest
 from decimal import Decimal
+import context  # pylint: disable=unused-import
 from forecaster.person import Person
 from forecaster.canada.tax import TaxCanada
 from forecaster.canada.accounts import RRSP, TaxableAccount, Money
-from forecaster.canada.constants import Constants
+from forecaster.canada import constants
 # pylint: disable=wildcard-import,unused-wildcard-import
-from test_helper import *
+from tests.test_helper import *
 
 
-class TestCanadianResidentTax(unittest.TestCase):
+class TestTaxCanada(unittest.TestCase):
     """ Tests CanadianResidentTax """
 
     def setUp(self):
@@ -59,50 +60,59 @@ class TestCanadianResidentTax(unittest.TestCase):
         # There's some type-conversion going on, so test the Decimal-
         # valued `amount` of the Tax's tax bracket's keys against the
         # Decimal key object of the Constants tax brackets.
-        self.assertEqual(
-            tax.federal_tax._tax_brackets,
-            {year: {
-                Money(bracket): value
-                for bracket, value in
-                Constants.TaxBrackets['Federal'][year].items()
-            } for year in Constants.TaxBrackets['Federal']}
-        )
+        for year in constants.TAX_BRACKETS['Federal']:
+            self.assertEqual(
+                tax.federal_tax.tax_brackets(year),
+                {
+                    Money(bracket): value
+                    for bracket, value in
+                    constants.TAX_BRACKETS['Federal'][year].items()
+                }
+            )
+            self.assertEqual(
+                tax.federal_tax.personal_deduction(year),
+                constants.TAX_PERSONAL_DEDUCTION['Federal'][year])
+            self.assertEqual(
+                tax.federal_tax.credit_rate(year),
+                constants.TAX_CREDIT_RATE['Federal'])
         self.assertTrue(callable(tax.federal_tax.inflation_adjust))
-        self.assertEqual(tax.federal_tax._personal_deduction,
-                         Constants.TaxBasicPersonalDeduction['Federal'])
-        self.assertEqual(tax.federal_tax._credit_rate,
-                         Constants.TaxCreditRate['Federal'])
-        # Test provincial tax:
-        self.assertEqual(
-            tax.provincial_tax._tax_brackets,
-            {year: {
-                Money(bracket): value
-                for bracket, value in
-                Constants.TaxBrackets['BC'][year].items()
-            } for year in Constants.TaxBrackets['BC']}
-        )
-        self.assertTrue(callable(tax.provincial_tax.inflation_adjust))
-        self.assertEqual(tax.provincial_tax._personal_deduction,
-                         Constants.TaxBasicPersonalDeduction['BC'])
-        self.assertEqual(tax.provincial_tax._credit_rate,
-                         Constants.TaxCreditRate['BC'])
 
-        # Omit optional argument:
-        tax = TaxCanada(self.inflation_adjustments)
-        self.assertEqual(tax.province, 'BC')
-        self.assertEqual(
-            tax.provincial_tax._tax_brackets,
-            {year: {
-                Money(bracket): value
-                for bracket, value in
-                Constants.TaxBrackets['BC'][year].items()
-            } for year in Constants.TaxBrackets['BC']}
-        )
+        # Test provincial tax:
+        for year in constants.TAX_BRACKETS['BC']:
+            self.assertEqual(
+                tax.provincial_tax.tax_brackets(year),
+                {
+                    Money(bracket): value
+                    for bracket, value in
+                    constants.TAX_BRACKETS['BC'][year].items()
+                }
+            )
+            self.assertEqual(
+                tax.provincial_tax.personal_deduction(year),
+                constants.TAX_PERSONAL_DEDUCTION['BC'][year])
+            self.assertEqual(
+                tax.provincial_tax.credit_rate(year),
+                constants.TAX_CREDIT_RATE['BC'][year])
         self.assertTrue(callable(tax.provincial_tax.inflation_adjust))
-        self.assertEqual(tax.provincial_tax._personal_deduction,
-                         Constants.TaxBasicPersonalDeduction['BC'])
-        self.assertEqual(tax.provincial_tax._credit_rate,
-                         Constants.TaxCreditRate['BC'])
+
+        # Omit optional argument and try again:
+        tax = TaxCanada(self.inflation_adjustments)
+        for year in constants.TAX_BRACKETS['BC']:
+            self.assertEqual(
+                tax.provincial_tax.tax_brackets(year),
+                {
+                    Money(bracket): value
+                    for bracket, value in
+                    constants.TAX_BRACKETS['BC'][year].items()
+                }
+            )
+            self.assertEqual(
+                tax.provincial_tax.personal_deduction(year),
+                constants.TAX_PERSONAL_DEDUCTION['BC'][year])
+            self.assertEqual(
+                tax.provincial_tax.credit_rate(year),
+                constants.TAX_CREDIT_RATE['BC'][year])
+        self.assertTrue(callable(tax.provincial_tax.inflation_adjust))
 
     def test_call(self):
         """ Test TaxCanada.__call__ """
@@ -119,7 +129,7 @@ class TestCanadianResidentTax(unittest.TestCase):
         person1 = Person(
             self.initial_year, "Tester 1", self.initial_year - 20,
             retirement_date=self.initial_year + 45, gross_income=100000)
-        account1 = TaxableAccount(
+        _ = TaxableAccount(
             owner=person1,
             acb=0, balance=Money(1000000), rate=Decimal('0.05'),
             transactions={'start': -Money(1000000)}, nper=1)
@@ -127,7 +137,7 @@ class TestCanadianResidentTax(unittest.TestCase):
         # be applied by TaxCanadaJurisdiction. Be aware of this if you
         # want to test this output against a generic Tax object with
         # Canadian brackets.
-        account2 = RRSP(
+        _ = RRSP(
             person1,
             inflation_adjust=self.inflation_adjustments,
             contribution_room=0,
@@ -149,7 +159,7 @@ class TestCanadianResidentTax(unittest.TestCase):
         person2 = Person(
             self.initial_year, "Tester 2", self.initial_year - 18,
             retirement_date=self.initial_year + 47, gross_income=50000)
-        account3 = TaxableAccount(
+        _ = TaxableAccount(
             owner=person2,
             acb=0, balance=Money(10000), rate=Decimal('0.05'),
             transactions={'start': -Money(10000)}, nper=1)

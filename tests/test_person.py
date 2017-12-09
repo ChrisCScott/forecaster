@@ -5,6 +5,7 @@ import decimal
 from decimal import Decimal
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+import context  # pylint: disable=unused-import
 from forecaster.person import Person
 from forecaster.accounts import Account
 from forecaster.tax import Tax
@@ -33,26 +34,9 @@ class TestPersonMethods(unittest.TestCase):
             inflation_adjust={
                 year: Decimal(1 + (year - self.initial_year) / 16)
                 for year in range(self.initial_year, self.initial_year + 100)
-             },
+            },
             personal_deduction={self.initial_year: Money(100)},
             credit_rate={self.initial_year: Decimal('0.15')})
-        scenario = Scenario(
-            inflation=0,
-            stock_return=1,
-            bond_return=0.5,
-            other_return=0,
-            management_fees=0.03125,
-            initial_year=self.initial_year,
-            num_years=100)
-        self.allocation_strategy = AllocationStrategy(
-            strategy=AllocationStrategy.strategy_n_minus_age,
-            min_equity=Decimal(0.5),
-            max_equity=Decimal(0.5),
-            target=Decimal(0.5),
-            standard_retirement_age=65,
-            risk_transition_period=20,
-            adjust_for_retirement_plan=False,
-            scenario=scenario)
         self.spouse = Person(
             initial_year=self.initial_year,
             name="Spouse",
@@ -61,8 +45,7 @@ class TestPersonMethods(unittest.TestCase):
             gross_income=Money(50000),
             raise_rate=self.raise_rate,
             spouse=None,
-            tax_treatment=self.tax_treatment,
-            allocation_strategy=self.allocation_strategy)
+            tax_treatment=self.tax_treatment)
         self.owner = Person(
             initial_year=self.initial_year,
             name=self.name,
@@ -71,8 +54,7 @@ class TestPersonMethods(unittest.TestCase):
             gross_income=self.gross_income,
             raise_rate=self.raise_rate,
             spouse=self.spouse,
-            tax_treatment=self.tax_treatment,
-            allocation_strategy=self.allocation_strategy)
+            tax_treatment=self.tax_treatment)
 
     def test_init(self):
         """ Tests Person.__init__ """
@@ -88,7 +70,6 @@ class TestPersonMethods(unittest.TestCase):
         self.assertIsInstance(person.birth_date, datetime)
         self.assertIsInstance(person.retirement_date, datetime)
         self.assertIsNone(person.spouse)
-        self.assertIsNone(person.allocation_strategy)
         self.assertIsNone(person.tax_treatment)
 
         # Should work with strings instead of dates
@@ -161,14 +142,13 @@ class TestPersonMethods(unittest.TestCase):
         self.assertEqual(person.retirement_date.day, retirement_date.day)
 
         # Now confirm that we can pass gross_income, spouse,
-        # tax_treatment, allocation_strategy, and initial_year
+        # tax_treatment, and initial_year
         gross_income = Money(100000)
         person1 = Person(
             self.initial_year, self.name, birth_date,
             retirement_date=retirement_date,
             gross_income=gross_income,
-            spouse=None, tax_treatment=self.tax_treatment,
-            allocation_strategy=self.allocation_strategy)
+            spouse=None, tax_treatment=self.tax_treatment)
         self.assertEqual(person1.gross_income, gross_income)
         self.assertEqual(
             # pylint: disable=no-member
@@ -179,7 +159,6 @@ class TestPersonMethods(unittest.TestCase):
         self.assertEqual(person1.tax_treatment, self.tax_treatment)
         self.assertEqual(person1.initial_year, self.initial_year)
         self.assertIsNone(person1.spouse)
-        self.assertEqual(person1.allocation_strategy, self.allocation_strategy)
         self.assertEqual(person1.accounts, set())
 
         # Add a spouse and confirm that both Person objects are updated
@@ -358,7 +337,7 @@ class TestPersonMethods(unittest.TestCase):
         initial_year = 2017
         gross_income = 500
         inputs = {'gross_income': {
-            initial_year: Money(1000), initial_year+2: Money(0)
+            initial_year: Money(1000), initial_year + 2: Money(0)
             }
         }
         person = Person(

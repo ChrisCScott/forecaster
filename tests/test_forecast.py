@@ -2,6 +2,7 @@
 
 import unittest
 from decimal import Decimal
+import context  # pylint: disable=unused-import
 from forecaster.ledger import Money
 from forecaster.person import Person
 from forecaster.accounts import Account, Debt
@@ -11,7 +12,7 @@ from forecaster.strategy import ContributionStrategy, WithdrawalStrategy, \
 from forecaster.tax import Tax
 from forecaster.forecast import Forecast
 from forecaster.forecaster import Forecaster  # Import for convenience
-from forecaster.tests.test_helper import type_check
+from tests.test_helper import type_check
 
 
 class TestForecast(unittest.TestCase):
@@ -29,8 +30,8 @@ class TestForecast(unittest.TestCase):
             initial_year=initial_year,
             num_years=4,
             inflation=Decimal(0),  # No inflation
-            stock_return=Decimal(1),  # 100% growth in stocks
-            bond_return=Decimal(0.5),  # 50% growth in bonds
+            stock_return=Decimal(2),  # 200% growth in stocks
+            bond_return=Decimal(0),  # 0% growth in bonds
             other_return=0,  # No growth in other assets
             management_fees=Decimal(0),  # TODO: Refactor this attribute
         )
@@ -47,20 +48,6 @@ class TestForecast(unittest.TestCase):
             credit_rate={initial_year: 0.5},
             inflation_adjust=scenario.inflation_adjust
         )
-        person = Person(
-            initial_year, 'Test', 1980,
-            retirement_date=2002,
-            gross_income=Money(100000),
-            raise_rate=Decimal(0.5),
-            tax_treatment=tax
-        )
-        account = Account(
-            person, balance=1000, rate=1, nper=1
-        )
-        debt = Debt(
-            person, balance=-1000, rate=1, minimum_payment=Money(100),
-            reduction_rate=1, accelerate_payment=True
-        )
         contribution_strategy = ContributionStrategy(
             strategy=ContributionStrategy.strategy_const_contribution,
             base_amount=Money('50000'),
@@ -75,17 +62,18 @@ class TestForecast(unittest.TestCase):
             income_adjusted=False,
             inflation_adjust=scenario.inflation_adjust
         )
-        contribution_transaction_strategy = TransactionStrategy(
+        contribution_trans_strategy = TransactionStrategy(
             strategy=TransactionStrategy.strategy_ordered,
             weights={'Account': 1},
             timing='end'
         )
-        withdrawal_transaction_strategy = TransactionStrategy(
+        withdrawal_trans_strategy = TransactionStrategy(
             strategy=TransactionStrategy.strategy_ordered,
             weights={'Account': 1},
             timing='end'
         )
-        # Constant 50-50 split between stocks and bonds:
+        # Constant 50-50 split between stocks and bonds
+        # (100% growth of 50-50 portfolio):
         allocation_strategy = AllocationStrategy(
             strategy=AllocationStrategy.strategy_n_minus_age,
             min_equity=Decimal(0.5),
@@ -99,11 +87,34 @@ class TestForecast(unittest.TestCase):
             strategy=DebtPaymentStrategy.strategy_avalanche,
             timing='end'
         )
+        person = Person(
+            initial_year, 'Test', 1980,
+            retirement_date=2002,
+            gross_income=Money(100000),
+            raise_rate=Decimal(0.5),
+            tax_treatment=tax
+        )
+        account = Account(
+            person,
+            balance=1000,
+            # 100% growth rate (50-50 portfolio with 200% growth of
+            # stocks and 0% growth of bonds)
+            rate=allocation_strategy.rate_function(person, scenario),
+            nper=1
+        )
+        debt = Debt(
+            person,
+            balance=-1000,
+            rate=1,  # 100% interest rate
+            minimum_payment=Money(100),
+            reduction_rate=1,
+            accelerate_payment=True
+        )
 
         forecast = Forecast(
             {person}, {account}, {debt}, scenario, contribution_strategy,
-            withdrawal_strategy, contribution_transaction_strategy,
-            withdrawal_transaction_strategy,
+            withdrawal_strategy, contribution_trans_strategy,
+            withdrawal_trans_strategy,
             debt_payment_strategy, tax
         )
 

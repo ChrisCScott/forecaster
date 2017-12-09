@@ -2,6 +2,7 @@
 
 import unittest
 from decimal import Decimal
+import context  # pylint: disable=unused-import
 from forecaster.utility import nearest_year, extend_inflation_adjusted
 
 

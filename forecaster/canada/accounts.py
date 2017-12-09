@@ -3,7 +3,7 @@
 from forecaster.ledger import Money, recorded_property, \
     recorded_property_cached
 from forecaster.accounts import Account, RegisteredAccount
-from forecaster.canada.constants import Constants
+from forecaster.canada import constants
 from forecaster.utility import build_inflation_adjust, \
     extend_inflation_adjusted
 
@@ -12,22 +12,28 @@ class RRSP(RegisteredAccount):
     """ A Registered Retirement Savings Plan (Canada). """
 
     # Explicitly repeat superclass args for the sake of intellisense.
-    def __init__(self, owner, balance=0, rate=None,
+    def __init__(self, owner, balance=0, rate=0,
                  transactions=None, nper=1, inputs=None, initial_year=None,
                  contribution_room=None, contributor=None,
                  inflation_adjust=None, **kwargs):
         """ Initializes an RRSP object.
 
+        See documentation for `Account` and `RegisteredAccount` for
+        information on any args not listed below.
+
         Args:
             inflation_adjust: A method with the following form:
                 `inflation_adjust(val, this_year, target_year)`.
-                Returns a Money object (assuming Money-typed `val`
-                input). Finds a nominal value in `target_year` with the
-                same real value as `val`, a nominal value in
-                `this_year`. Optional.
+                Returns a Decimal object which is the inflation-
+                adjustment factor from base_year to target_year.
+                Optional.
                 If not provided, all values are assumed to be in real
                 terms, so no inflation adjustment is performed.
         """
+        # This method does have a lot of arguments, but they're mostly
+        # inherited from a superclass. We're stuck with them here.
+        # pylint: disable=too-many-arguments
+
         super().__init__(
             owner, balance=balance, rate=rate, transactions=transactions,
             nper=nper, inputs=inputs, initial_year=initial_year,
@@ -46,13 +52,13 @@ class RRSP(RegisteredAccount):
 
         # The law requires that RRSPs be converted to RRIFs by a certain
         # age (currently 71). We can calculate that here:
-        self.RRIF_conversion_year = self.initial_year + \
-            Constants.RRSPRRIFConversionAge - \
+        self.rrif_conversion_year = self.initial_year + \
+            constants.RRSP_RRIF_CONVERSION_AGE - \
             self.owner.age(self.initial_year)
 
         # Determine the max contribution room accrual in initial_year:
         self._initial_accrual = extend_inflation_adjusted(
-            Constants.RRSPContributionRoomAccrualMax,
+            constants.RRSP_ACCRUAL_MAX,
             self.inflation_adjust,
             self.initial_year
         )
@@ -65,10 +71,10 @@ class RRSP(RegisteredAccount):
         ):
             self.contribution_room = Money(0)
 
-    def convert_to_RRIF(self, year=None):
+    def convert_to_rrif(self, year=None):
         """ Converts the RRSP to an RRIF. """
         year = self.this_year if year is None else year
-        self.RRIF_conversion_year = year
+        self.rrif_conversion_year = year
 
     @recorded_property
     def taxable_income(self):
@@ -94,7 +100,7 @@ class RRSP(RegisteredAccount):
         # smaller one-off withdrawals, but in general multiple
         # withdrawals will be treated as a lump sum for the purpose of
         # determining the tax rate, so we pretend it's a lump sum.
-        if self.RRIF_conversion_year > self.this_year:
+        if self.rrif_conversion_year > self.this_year:
             taxable_income = self.taxable_income
         else:
             # Only withdrawals in excess of the minimum RRIF withdrawal
@@ -108,8 +114,8 @@ class RRSP(RegisteredAccount):
         # {year: {amount: rate}}?)
         # TODO: Pass a Tax object for RRSP tax treatment?
         tax_rate = max(
-            (Constants.RRSPWithholdingTaxRate[x]
-             for x in Constants.RRSPWithholdingTaxRate
+            (constants.RRSP_WITHHOLDING_TAX_RATE[x]
+             for x in constants.RRSP_WITHHOLDING_TAX_RATE
              if x < taxable_income.amount),
             default=0)
         return taxable_income * tax_rate
@@ -136,7 +142,7 @@ class RRSP(RegisteredAccount):
         """
         year = self.this_year
 
-        if self.contributor.age(year + 1) > Constants.RRSPRRIFConversionAge:
+        if self.contributor.age(year + 1) > constants.RRSP_RRIF_CONVERSION_AGE:
             # If past the mandatory RRIF conversion age, no
             # contributions are allowed.
             return Money(0)
@@ -149,11 +155,11 @@ class RRSP(RegisteredAccount):
 
             # First, determine how much more contribution room will
             # accrue due to this year's income:
-            accrual = income * Constants.RRSPContributionRoomAccrualRate
+            accrual = income * constants.RRSP_ACCRUAL_RATE
             # Second, compare to the (inflation-adjusted) max accrual
             # for next year:
             max_accrual = extend_inflation_adjusted(
-                Constants.RRSPContributionRoomAccrualMax,
+                constants.RRSP_ACCRUAL_MAX,
                 self.inflation_adjust,
                 year + 1
             )
@@ -165,13 +171,13 @@ class RRSP(RegisteredAccount):
         """ Minimum RRSP withdrawal """
         # Minimum withdrawals are required the year after converting to
         # an RRIF. How it is calculated depends on the person's age.
-        if self.RRIF_conversion_year < self.this_year:
+        if self.rrif_conversion_year < self.this_year:
             age = self.contributor.age(self.this_year)
-            if age in Constants.RRSPRRIFMinWithdrawal:
-                return Constants.RRSPRRIFMinWithdrawal[age] * self.balance
-            elif age > max(Constants.RRSPRRIFMinWithdrawal):
+            if age in constants.RRSP_RRIF_WITHDRAWAL_MIN:
+                return constants.RRSP_RRIF_WITHDRAWAL_MIN[age] * self.balance
+            elif age > max(constants.RRSP_RRIF_WITHDRAWAL_MIN):
                 return self.balance * \
-                    max(Constants.RRSPRRIFMinWithdrawal.values())
+                    max(constants.RRSP_RRIF_WITHDRAWAL_MIN.values())
             else:
                 return self.balance / (90 - age)
         else:
@@ -196,7 +202,7 @@ class RRSP(RegisteredAccount):
 class TFSA(RegisteredAccount):
     """ A Tax-Free Savings Account (Canada). """
 
-    def __init__(self, owner, balance=0, rate=None,
+    def __init__(self, owner, balance=0, rate=0,
                  transactions=None, nper=1, inputs=None, initial_year=None,
                  contribution_room=None, contributor=None,
                  inflation_adjust=None, **kwargs):
@@ -205,13 +211,16 @@ class TFSA(RegisteredAccount):
         Args:
             inflation_adjust: A method with the following form:
                 `inflation_adjust(val, this_year, target_year)`.
-                Returns a Money object (assuming Money-typed `val`
-                input). Finds a nominal value in `target_year` with the
-                same real value as `val`, a nominal value in
-                `this_year`. Optional.
+                Returns a Decimal object which is the inflation-
+                adjustment factor from base_year to target_year.
+                Optional.
                 If not provided, all values are assumed to be in real
                 terms, so no inflation adjustment is performed.
         """
+        # This method does have a lot of arguments, but they're mostly
+        # inherited from a superclass. We're stuck with them here.
+        # pylint: disable=too-many-arguments
+
         super().__init__(
             owner, balance=balance, rate=rate, transactions=transactions,
             nper=nper, inputs=inputs, initial_year=initial_year,
@@ -224,13 +233,13 @@ class TFSA(RegisteredAccount):
         # (By law, inflation-adjustments are relative to 2009, the
         # first year that TFSAs were available, and rounded to the
         # nearest $500)
-        self._base_accrual_year = min(Constants.TFSAAnnualAccrual.keys())
+        self._base_accrual_year = min(constants.TFSA_ANNUAL_ACCRUAL.keys())
         self._base_accrual = round(extend_inflation_adjusted(
-            Constants.TFSAAnnualAccrual,
+            constants.TFSA_ANNUAL_ACCRUAL,
             self.inflation_adjust,
             self._base_accrual_year
-        ) / Constants.TFSAInflationRoundingFactor) * \
-            Constants.TFSAInflationRoundingFactor
+        ) / constants.TFSA_ACCRUAL_ROUNDING_FACTOR) * \
+            constants.TFSA_ACCRUAL_ROUNDING_FACTOR
 
         # If contribution_room is not provided (and it's already known
         # based on other TFSA accounts), infer it based on age.
@@ -241,7 +250,7 @@ class TFSA(RegisteredAccount):
             # We might already have set contribution room for years
             # before this initial_year, in which case we should start
             # extrapolate from the following year onwards:
-            if len(self.contribution_room_history) > 0:
+            if self.contribution_room_history:
                 start_year = max(
                     year for year in self.contribution_room_history
                     if year < self.initial_year
@@ -256,8 +265,8 @@ class TFSA(RegisteredAccount):
                 start_year = max(
                     self.initial_year -
                     self.contributor.age(self.initial_year) +
-                    Constants.TFSAAccrualEligibilityAge,
-                    min(Constants.TFSAAnnualAccrual.keys())
+                    constants.TFSA_ELIGIBILITY_AGE,
+                    min(constants.TFSA_ANNUAL_ACCRUAL.keys())
                 )
                 contribution_room = 0
             # Accumulate contribution room over applicable years
@@ -272,12 +281,12 @@ class TFSA(RegisteredAccount):
         This excludes any rollovers - it's just the statutory accrual.
         """
         # No accrual if the owner is too young to qualify:
-        if self.owner.age(year + 1) < Constants.TFSAAccrualEligibilityAge:
+        if self.owner.age(year + 1) < constants.TFSA_ELIGIBILITY_AGE:
             return Money(0)
 
         # If we already have an accrual rate set for this year, use that
-        if year in Constants.TFSAAnnualAccrual:
-            return Money(Constants.TFSAAnnualAccrual[year])
+        if year in constants.TFSA_ANNUAL_ACCRUAL:
+            return Money(constants.TFSA_ANNUAL_ACCRUAL[year])
         # Otherwise, infer the accrual rate by inflation-adjusting the
         # base rate and rounding.
         else:
@@ -285,8 +294,8 @@ class TFSA(RegisteredAccount):
                 round(
                     self._base_accrual * self.inflation_adjust(
                         self._base_accrual_year, year) /
-                    Constants.TFSAInflationRoundingFactor) *
-                Constants.TFSAInflationRoundingFactor
+                    constants.TFSA_ACCRUAL_ROUNDING_FACTOR) *
+                constants.TFSA_ACCRUAL_ROUNDING_FACTOR
             )
 
     def next_contribution_room(self):
@@ -329,7 +338,9 @@ class TaxableAccount(Account):
     Attributes:
         acb (Money): The adjusted cost base of the assets in the account
             at the start of the year.
-        capital_gain
+        capital_gain (Money): The total capital gains for the year.
+            This is evaluated lazily, so it may return different values
+            if you add or remove transactions.
         See Account for other attributes.
     """
     # TODO (v2): Reimplement TaxableAccount based on Asset objects
@@ -345,10 +356,22 @@ class TaxableAccount(Account):
     # (But we might want to also model rental income as well...)
 
     def __init__(
-        self, owner, balance=0, rate=None, transactions=None,
+        self, owner, balance=0, rate=0, transactions=None,
         nper=1, inputs=None, initial_year=None, acb=None, **kwargs
     ):
-        """ Constructor for `TaxableAccount`. """
+        """ Constructor for `TaxableAccount`.
+
+        See documentation for `Account` for information on args not
+        listed below.
+
+        Args:
+            acb (Money): The adjusted cost base of the assets in the
+                account at the start of `initial_year`.
+        """
+        # This method does have a lot of arguments, but they're mostly
+        # inherited from a superclass. We're stuck with them here.
+        # pylint: disable=too-many-arguments
+
         super().__init__(
             owner=owner, balance=balance, rate=rate, transactions=transactions,
             nper=nper, inputs=inputs, initial_year=initial_year, **kwargs)

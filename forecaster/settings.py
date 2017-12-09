@@ -1,6 +1,9 @@
 """ This module provides user-modifiable settings for the application.
+
 It provides the `Settings` class, which contains various `*Defaults`
-classes. They provide default values for aspects of the application. """
+classes. They provide default values for aspects of the application.
+"""
+
 import datetime
 from decimal import Decimal
 
@@ -14,6 +17,15 @@ class Settings:
     one might equivalently call Settings (the class) or Settings()
     (an object).
     """
+
+    # We use triple-quoted strings as comments to group sets of related
+    # settings. It's nice to have a format for heading-style comments
+    # that's distinct from #-prefixed comments (which we also use.)
+    # pylint: disable=pointless-string-statement
+    # Settings is really just a data container right now, but the plan
+    # is to encapsulate some file-reading logic.
+    # pylint: disable=too-few-public-methods
+
     # TODO: Read defaults from a file, fall back to the below values
     # where the .ini doesn't provide a value. (This sounds like a good
     # role for an __init__ function...)
@@ -47,7 +59,7 @@ class Settings:
     contribution_strategy = 'Percentage of net income'
     contribution_base_amount = Decimal('20000')
     contribution_rate = Decimal('0.2')
-    contribution_refund_reinvestment_rate = 1
+    contribution_reinvestment_rate = 1
     contribution_inflation_adjusted = True
 
     ''' TransactionStrategy defaults for inflows/contributions '''
@@ -71,11 +83,11 @@ class Settings:
     allocation_strategy = 'n-age'
     allocation_min_equity = Decimal('0.3')
     allocation_max_equity = Decimal('0.3')
-    allocation_standard_retirement_age = 65
-    allocation_constant_strategy_target = 65
-    allocation_transition_strategy_target = Decimal('0.5')
-    allocation_risk_transition_period = 20
-    allocation_adjust_for_retirement_plan = True
+    allocation_std_retirement_age = 65
+    allocation_const_target = 65
+    allocation_trans_target = Decimal('0.5')
+    allocation_risk_trans_period = 20
+    allocation_adjust_retirement = True
 
     ''' DebtPaymentStrategy defaults '''
     debt_payment_strategy = 'Avalanche'

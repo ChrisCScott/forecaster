@@ -3,6 +3,7 @@
 import unittest
 import collections
 from copy import copy, deepcopy
+import context  # pylint: disable=unused-import
 from forecaster.settings import Settings
 from forecaster.tax import Tax
 from forecaster.person import Person
@@ -33,7 +34,7 @@ class TestForecaster(unittest.TestCase):
             strategy=Settings.contribution_strategy,
             base_amount=Settings.contribution_base_amount,
             rate=Settings.contribution_rate,
-            refund_reinvestment_rate=Settings.contribution_refund_reinvestment_rate,  # noqa
+            refund_reinvestment_rate=Settings.contribution_reinvestment_rate,
             inflation_adjust=self.scenario.inflation_adjust
         )
         self.withdrawal_strategy = WithdrawalStrategy(
@@ -61,22 +62,21 @@ class TestForecaster(unittest.TestCase):
             Settings.allocation_strategy ==
             AllocationStrategy.strategy_n_minus_age.strategy_key
         ):
-            target = Settings.allocation_constant_strategy_target
+            target = Settings.allocation_const_target
         elif (
             # pylint: disable=E1101
             Settings.allocation_strategy ==
             AllocationStrategy.strategy_transition_to_const.strategy_key
         ):
-            target = Settings.allocation_transition_strategy_target
+            target = Settings.allocation_trans_target
         self.allocation_strategy = AllocationStrategy(
             strategy=Settings.allocation_strategy,
             min_equity=Settings.allocation_min_equity,
             max_equity=Settings.allocation_max_equity,
             target=target,
-            standard_retirement_age=Settings.allocation_standard_retirement_age,  # noqa
-            risk_transition_period=Settings.allocation_risk_transition_period,
-            adjust_for_retirement_plan=Settings.allocation_adjust_for_retirement_plan,  # noqa
-            scenario=self.scenario
+            standard_retirement_age=Settings.allocation_std_retirement_age,
+            risk_transition_period=Settings.allocation_risk_trans_period,
+            adjust_for_retirement_plan=Settings.allocation_adjust_retirement
         )
         self.debt_payment_strategy = DebtPaymentStrategy(
             strategy=Settings.debt_payment_strategy,
@@ -96,7 +96,6 @@ class TestForecaster(unittest.TestCase):
             raise_rate=Settings.person1_raise_rate,
             spouse=None,
             tax_treatment=self.tax_treatment,
-            allocation_strategy=self.allocation_strategy,
             initial_year=self.initial_year
         )
         if Settings.person2_name is None:
@@ -110,7 +109,6 @@ class TestForecaster(unittest.TestCase):
                 raise_rate=Settings.person2_raise_rate,
                 spouse=self.person1,
                 tax_treatment=None,
-                allocation_strategy=self.allocation_strategy,
                 initial_year=self.initial_year
             )
 
@@ -156,11 +154,12 @@ class TestForecaster(unittest.TestCase):
         elif isinstance(first, dict):
             # For dicts, confirm that they represent the same keys and
             # then recurse onto each of the values:
-            return first.keys() == second.keys() and \
-                all(
+            return (
+                first.keys() == second.keys() and all(
                     TestForecaster.complex_equal(first[key], second[key], memo)
                     for key in first
                 )
+            )
         elif hasattr(first, '__dict__'):
             # For complicated objects, recurse onto the attributes dict:
             return TestForecaster.complex_equal(
@@ -198,7 +197,7 @@ class TestForecaster(unittest.TestCase):
         """ Overloaded to test non-equality of complex objects. """
         self.assertFalse(TestForecaster.complex_equal(first, second), msg)
 
-    def test_assertEqual(self):
+    def test_assertEqual(self):  # pylint: disable=invalid-name
         """ Tests overloaded TestForecaster.assertEqual. """
         # Compare an object to itself
         person1 = self.person1
@@ -208,12 +207,7 @@ class TestForecaster(unittest.TestCase):
         self.assertEqual(person1, person2)
         # Compare two instances of an object that differ only in a
         # complicated attribute. (Simple case: set it to None)
-        allocation_strategy = person2.allocation_strategy
-        person2.allocation_strategy = None
-        self.assertNotEqual(person1, person2)
-        # Try again, but this time the difference is in a sub-attribute
-        allocation_strategy.scenario.inflation = {2000: 1, 2001: 1.5}
-        person2.allocation_strategy = allocation_strategy
+        person2.tax_treatment = None
         self.assertNotEqual(person1, person2)
 
     def test_init(self):
@@ -256,7 +250,6 @@ class TestForecaster(unittest.TestCase):
             raise_rate=settings.person1_raise_rate,
             spouse=None,
             tax_treatment=self.tax_treatment,
-            allocation_strategy=self.allocation_strategy,
             initial_year=settings.initial_year
         )
         forecaster = Forecaster(settings=settings)
@@ -327,8 +320,7 @@ class TestForecaster(unittest.TestCase):
         self.assertEqual(person, Person(
             self.initial_year, 'Test', 2000,
             retirement_date=2065,
-            tax_treatment=forecaster.tax_treatment,
-            allocation_strategy=forecaster.allocation_strategy
+            tax_treatment=forecaster.tax_treatment
         ))
         self.assertEqual(forecaster.people - people, {person})
 
@@ -340,7 +332,7 @@ class TestForecaster(unittest.TestCase):
         self.assertEqual(asset, Account(
             owner=forecaster.person1,
             balance=Money(0),
-            rate=None,
+            rate=0,
             transactions={},
             nper=1,
             default_inflow_timing=Settings.transaction_in_timing,
@@ -358,7 +350,7 @@ class TestForecaster(unittest.TestCase):
         self.assertEqual(debt, Debt(
             owner=forecaster.person1,
             balance=Money(0),
-            rate=None,
+            rate=0,
             transactions={},
             nper=1,
             default_inflow_timing=Settings.debt_payment_timing,
@@ -376,8 +368,8 @@ class TestForecaster(unittest.TestCase):
         # Run a simple forecast with $0 income and $0 balances:
         forecaster = Forecaster()
         forecaster.set_person1(gross_income=Money(0))
-        forecaster.add_asset(owner=forecaster.person1, AccountType=Account)
-        forecaster.add_debt(owner=forecaster.person1, AccountType=Debt)
+        forecaster.add_asset(owner=forecaster.person1, cls=Account)
+        forecaster.add_debt(owner=forecaster.person1, cls=Debt)
         forecaster.set_person2(name=None)  # Remove person2, if present
         forecast = forecaster.forecast()
         # Test that it starts and ends in the right place and that

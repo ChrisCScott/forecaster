@@ -1,7 +1,7 @@
 """ Basic economic classes, such as `Scenario` and `Money`. """
+
 import collections
 from decimal import Decimal
-from forecaster.utility import *
 
 
 class Scenario(object):
@@ -33,7 +33,7 @@ class Scenario(object):
     def __init__(
         self, initial_year, num_years,
         inflation=0, stock_return=0, bond_return=0, other_return=0,
-        management_fees=0, **kwargs
+        management_fees=0
     ):
         """ Constructor for `Scenario`.
 
@@ -63,6 +63,13 @@ class Scenario(object):
             TypeError: Input with unexpected type.
             ValueError: Input lists not of matching lengths.
         """
+        # This object needs to model several economic indicators over
+        # the course of several years. We could accept these implicitly
+        # via kwargs (or group them into a more complex container), but
+        # the present call signature is preferred because it's more
+        # explicit and assists Intellisense.
+        # pylint: disable=too-many-arguments
+
         # Set the years that the Scenario spans:
         self.initial_year = int(initial_year)
         self.num_years = int(num_years)
@@ -78,15 +85,15 @@ class Scenario(object):
                                                 self.initial_year)
 
     @staticmethod
-    def _build_dict(input=None, initial_year=None, default=None):
+    def _build_dict(in_val=None, initial_year=None, default=None):
         """ Helper function that turns `input` into a dict.
 
-        The resulting dict has {year, value} pairs. If the input is a
+        The resulting dict has {year, value} pairs. If the in_val is a
         list, the dict starts with `initial_year` and builds
         sequentially from there.
 
         Args:
-            input (*, list, dict): A object that may be a list (or other
+            in_val (*, list, dict): A object that may be a list (or other
                 Sequence), dict, or non-list non-dict scalar value.
                 Optional. If not provided, uses default value.
             initial_year (int): The initial year, used when `input` is
@@ -101,11 +108,11 @@ class Scenario(object):
             ValueError: default cannot be set for scalar input.
             ValueError: input and default cannot both be None.
         """
-        # If no input is provided, use default as input.
-        if input is None:
+        # If no in_val is provided, use default as in_val.
+        if in_val is None:
             if default is None:
                 raise ValueError(
-                    'Scenario: input and default cannot both be None.')
+                    'Scenario: in_val and default cannot both be None.')
             return Scenario._build_dict(default, initial_year)
 
         # Convert a non-callable `default` to a Decimal-returning
@@ -120,47 +127,49 @@ class Scenario(object):
                 """ Wraps default value in a default factory. """
                 return _default
 
-        if isinstance(input, collections.defaultdict):
-            # Update input's default factory if `default` was provided:
+        if isinstance(in_val, collections.defaultdict):
+            # Update in_val's default factory if `default` was provided:
             if default is not None:
-                input.default_factory = default
+                in_val.default_factory = default
             # Convert elements to {int: Decimal} pairs
-            return collections.defaultdict(input.default_factory, {
-                int(key): Decimal(input[key]) for key in input
+            return collections.defaultdict(in_val.default_factory, {
+                int(key): Decimal(in_val[key]) for key in in_val
             })
 
-        # IF input was a dict, cast to default dict (if default was
+        # IF in_val was a dict, cast to default dict (if default was
         # provided) and type-cast all entries to {int: Decimal} pairs.
-        # NOTE: Consider whether we should wrap input in a defaultdict
+        # NOTE: Consider whether we should wrap in_val in a defaultdict
         # to avoid stripping away the properties of custom dict-derived
         # objects that the user decides to pass in.
-        if isinstance(input, dict):
+        if isinstance(in_val, dict):
             if default is not None:
-                return collections.defaultdict(default, input)
+                out_val = collections.defaultdict(default, in_val)
             else:
-                return {int(key): Decimal(input[key]) for key in input}
+                out_val = {int(key): Decimal(in_val[key]) for key in in_val}
+            return out_val
 
         # If it's not a dict, but it is iterable then convert it into a
         # [default]dict
-        if isinstance(input, collections.Iterable):
+        if isinstance(in_val, collections.Iterable):
             if initial_year is None:
                 raise ValueError(
                     'Scenario: initial_year is required if input is a list.')
             if default is not None:
-                return collections.defaultdict(default, {
-                    key: Decimal(input[key - initial_year])
-                    for key in range(initial_year, initial_year + len(input))
+                out_val = collections.defaultdict(default, {
+                    key: Decimal(in_val[key - initial_year])
+                    for key in range(initial_year, initial_year + len(in_val))
                 })
             else:
-                return {
-                    key: Decimal(input[key - initial_year])
-                    for key in range(initial_year, initial_year + len(input))
+                out_val = {
+                    key: Decimal(in_val[key - initial_year])
+                    for key in range(initial_year, initial_year + len(in_val))
                 }
+            return out_val
 
         # Otherwise, turn a scalar value into a defaultdict:
         # NOTE: default is ignored in this case
-        input = Decimal(input)
-        return collections.defaultdict(lambda: input)
+        in_val = Decimal(in_val)
+        return collections.defaultdict(lambda: in_val)
 
     def discount_rate(self, year):
         """ Returns the discount rate for `year`.
@@ -175,12 +184,12 @@ class Scenario(object):
         if year1 <= year2:
             # Find the product of all intervening years' discount rates
             for year in range(year1, year2):
-                accum = accum*(1+self.discount_rate(year))
+                accum = accum * (1 + self.discount_rate(year))
             return accum
         else:  # Same as above, except invert the result ()
             for year in range(year2, year1):
-                accum = accum*(1+self.discount_rate(year))
-            return 1/accum
+                accum = accum * (1 + self.discount_rate(year))
+            return 1 / accum
 
     def inflation_adjustments(self, base_year):
         """ Annual inflation adjustment factors relative to base_year.

@@ -43,6 +43,15 @@ class Person(TaxSource):
             object; see documentation for `Tax` for more information.
     """
 
+    # This class has a lot of members in large part because every
+    # recorded_property turns into three members (prop, history_prop,
+    # and _history_prop). It has 8 primary members (initial_year,
+    # name, birth_date, retirement_date, gross_income, net_income,
+    # raise_rate, spouse, and tax_treatment), and it seems proper that
+    # all of these members live together rather than being refactored
+    # into several sub-objects.
+    # pylint: disable=too-many-instance-attributes,too-many-arguments
+
     # TODO: Add life expectancy?
     # TODO: Add estimated_retirement_date(...) method? Perhaps add an
     # arg for a generator function that takes certain arguments (total
@@ -55,9 +64,11 @@ class Person(TaxSource):
     # to provide the spousal tax credit, and replace the `tax_treatment`
     # arg with a `province` (str) arg?
 
-    def __init__(self, initial_year, name, birth_date, retirement_date=None,
-                 gross_income=0, raise_rate=0, spouse=None,
-                 tax_treatment=None, allocation_strategy=None, inputs=None):
+    def __init__(
+        self, initial_year, name, birth_date, retirement_date=None,
+        gross_income=0, raise_rate=0, spouse=None, tax_treatment=None,
+        inputs=None
+    ):
         """ Constructor for `Person`.
 
         Attributes:
@@ -92,9 +103,6 @@ class Person(TaxSource):
                 `tax_treatment(taxable_income, year)` and returns a
                 Money object (which corresponds to total taxes payable
                 on `taxable_income`).
-            allocation_strategy (AllocationStrategy): The person's
-                asset allocation strategy for accounts they own. This
-                can be used by accounts to determine their raise_rate.
             inputs (dict[str, dict[int, *]]): `{attr: {year: val}}`
                 pairs, where `attr` is any one of `Person`'s recorded
                 propertes, namely:
@@ -124,7 +132,6 @@ class Person(TaxSource):
         self._retirement_date = None
         self._raise_rate_function = None
         self._spouse = None
-        self._allocation_strategy = None
         self._tax_treatment = None
         self._contribution_room = {}
         self._contribution_groups = {}
@@ -133,7 +140,6 @@ class Person(TaxSource):
         self.retirement_date = retirement_date
         self.raise_rate_function = raise_rate
         self.spouse = spouse
-        self.allocation_strategy = allocation_strategy
         # Set up tax treatment before calling tax_withheld()
         self.tax_treatment = tax_treatment
 
@@ -232,6 +238,10 @@ class Person(TaxSource):
     @raise_rate_function.setter
     def raise_rate_function(self, val) -> None:
         """ Sets raise_rate_function. """
+        # Treat setting the method to None as reverting to the default
+        # rate parameter, which is Money(0).
+        if val is None:
+            self.raise_rate_function = Money(0)
         # Is raise_rate isn't callable, convert it to a suitable method:
         if not callable(val):  # Make callable if dict or scalar
             if isinstance(val, dict):
@@ -289,24 +299,11 @@ class Person(TaxSource):
     def tax_treatment(self, val) -> None:
         """ Sets the Person's tax treatment. """
         if val is None:
-            self._tax_treatment = lambda *args, **kwargs: Money(0)
+            self._tax_treatment = None
         elif callable(val):
             self._tax_treatment = val
         else:
             raise TypeError('Person: tax_treatment must be callable or None.')
-
-    @property
-    def allocation_strategy(self):
-        """ The asset allocation strategy of the Person. """
-        return self._allocation_strategy
-
-    @allocation_strategy.setter
-    def allocation_strategy(self, val) -> None:
-        """ Sets the Person's asset allocation strategy. """
-        # Due to import dependencies, we can't type-check against
-        # Strategy here; leave it to calling code to fail if it provides
-        # an object of the wrong type.
-        self._allocation_strategy = val
 
     # pylint: disable=method-hidden
     # Pylint gets confused by attributes added by metaclass.
@@ -359,7 +356,7 @@ class Person(TaxSource):
         else:
             return None
 
-    def register_shared_contribution_account(self, account):
+    def register_shared_contribution(self, account):
         """ Prepares a Person to store contribution room for an account.
 
         This method starts tracking contribution room for the account if
@@ -379,8 +376,8 @@ class Person(TaxSource):
         # Store the contribution group for later recall. This also
         # includes updating the stored contribution groups of other
         # accounts in the group.
-        for account in contribution_group:
-            self._contribution_groups[account] = contribution_group
+        for account_in_group in contribution_group:
+            self._contribution_groups[account_in_group] = contribution_group
 
     def age(self, date) -> int:
         """ The age of the `Person` as of `date`.

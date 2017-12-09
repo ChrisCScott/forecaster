@@ -16,3 +16,4 @@ __pycache__/*
 .idea/*
 
 .pylintrc
+setup.cfg

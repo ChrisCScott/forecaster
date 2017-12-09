@@ -3,6 +3,7 @@
 import unittest
 from decimal import Decimal
 from random import Random
+import context  # pylint: disable=unused-import
 from forecaster.scenario import Scenario
 
 

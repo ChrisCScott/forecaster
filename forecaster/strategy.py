@@ -81,8 +81,9 @@ class Strategy(object, metaclass=StrategyType):
         # default value in __init__ of each subclass is recommended.
 
         # If the method itself was passed, translate that into the key
-        if (not isinstance(strategy, str)) \
-          and hasattr(strategy, 'strategy_key'):
+        if (
+            not isinstance(strategy, str) and hasattr(strategy, 'strategy_key')
+        ):
             strategy = strategy.strategy_key
         self.strategy = strategy
 
@@ -700,8 +701,6 @@ class AllocationStrategy(Strategy):
             be adjusted to increase risk for later retirement or
             decrease risk for later retirement. If False, the standard
             retirement age will be used.
-        scenario (Scenario): Optional. Must be provided in order to call
-            rate_of_return.
 
     Args:
         age (int): The current age of the plannee.
@@ -718,7 +717,7 @@ class AllocationStrategy(Strategy):
     def __init__(
         self, strategy, target, min_equity=0, max_equity=1,
         standard_retirement_age=65, risk_transition_period=20,
-        adjust_for_retirement_plan=True, scenario=None
+        adjust_for_retirement_plan=True
     ):
         """ Constructor for AllocationStrategy. """
         super().__init__(strategy)
@@ -729,7 +728,6 @@ class AllocationStrategy(Strategy):
         self.target = Decimal(target)
         self.risk_transition_period = int(risk_transition_period)
         self.adjust_for_retirement_plan = bool(adjust_for_retirement_plan)
-        self.scenario = scenario
 
         # All of the above are type-converted; no need to check types!
 
@@ -758,7 +756,7 @@ class AllocationStrategy(Strategy):
         # Ensure that we don't move past our min/max equities
         target = min(max(target, self.min_equity), self.max_equity)
         # Bonds is simply whatever isn't in equities
-        return {'stocks': target, 'bonds': 1-target}
+        return {'stocks': target, 'bonds': 1 - target}
 
     @strategy_method('Transition to constant')
     # pylint: disable=W0613
@@ -777,50 +775,85 @@ class AllocationStrategy(Strategy):
         # If retirement is outside our risk transition window (e.g. if
         # it's more than 20 years away), maximize stock holdings.
         if age <= retirement_age - self.risk_transition_period:
-            return {'stocks': self.max_equity, 'bonds': 1-self.max_equity}
+            return {'stocks': self.max_equity, 'bonds': 1 - self.max_equity}
         # If we've hit retirement, keep equity allocation constant at
         # our target
         elif age >= retirement_age:
             min_equity = max(self.min_equity, self.target)
-            return {'stocks': min_equity, 'bonds': 1-min_equity}
+            return {'stocks': min_equity, 'bonds': 1 - min_equity}
         # Otherwise, smoothly move from max_equity to target over
         # the risk_transition_period
         target = self.target + \
             (self.max_equity - self.target) * \
             (retirement_age - age) / self.risk_transition_period
-        return {'stocks': target, 'bonds': 1-target}
+        return {'stocks': target, 'bonds': 1 - target}
 
-    def rate_of_return(self, year, age, retirement_age=None):
-        """ Rate of return for `year` accounting for asset allocation.
-
-        This method requires that the AllocationStrategy object have a
-        `scenario` attribute, which provides rates of return for
-        individual asset classes.
+    def rate_function(self, person, scenario):
+        """ A rate function usable by Person or Account objects.
 
         Args:
-            year (int): The year for which the rate of return will be
-                determined.
-            age (int): The age of the person.
-            retirement_age (int): The (estimated) retirement age of the
-                person.
+            person (Person): A person. The method builds a portfolio for
+                the person based on this object's allocation strategy
+                (in particular, based on the person's age and/or
+                projected retirement date).
+            scenario (Scenario): A scenario providing information on
+                returns on investment for stocks, bonds, etc.
 
         Returns:
-            Decimal: The rate of return. For example, `Decimal('0.05')`
-            means a 5% return.
+            A rate function of the form `rate_function(year) -> Decimal`
+            that provides a rate of return for a given year based on
+            the person's age and the investment returns for various
+            asset classes provided by `scenario`.
         """
-        allocation = self(age=age, retirement_age=retirement_age)
-        default_return = Decimal(0)
-        return self.scenario.rate_of_return(
-            year=year,
-            stocks=allocation.setdefault('stocks', default_return),
-            bonds=allocation.setdefault('bonds', default_return),
-            other=allocation.setdefault('other', default_return))
+        # Prepare a rate_function to be returned. We prefer def to
+        # lambda statements for introspection/comparison purposes.
+        def rate_function(year) -> Decimal:
+            """ Rate of return for `year` based on asset allocation.
 
-    # pylint: disable=W0235
+            Args:
+                year (int): The year for which the rate of return will be
+                    determined.
+
+            Returns:
+                Decimal: The rate of return. For example, `Decimal('0.05')`
+                means a 5% return.
+            """
+            allocation = self(
+                age=person.age(year), retirement_age=person.retirement_age
+            )
+            # Extract stocks/bonds/other returns:
+            if 'stocks' in allocation:
+                stocks = allocation['stocks']
+            else:
+                stocks = Decimal(0)
+            if 'bonds' in allocation:
+                bonds = allocation['bonds']
+            else:
+                bonds = Decimal(0)
+            if 'other' in allocation:
+                other = allocation['other']
+            else:
+                other = Decimal(0)
+
+            # Weight the returns of the various asset classes by each
+            # class's allocation:
+            return (
+                (
+                    stocks * scenario.stock_return[year]
+                    + bonds * scenario.bond_return[year]
+                    + other * scenario.other_return[year]
+                ) / (stocks + bonds + other)
+            )
+
+        return rate_function
+
     def __call__(self, age, retirement_age=None, *args, **kwargs):
         """ Returns a dict of {account, Money} pairs. """
         # TODO: Move min_equity and max_equity logic here to simplify
         # the logic of each strategy.
+        # In the meantime, suppress Pylint's complaints about how this
+        # method is useless:
+        # pylint: disable=useless-super-delegation
         return super().__call__(age, retirement_age, *args, **kwargs)
 
 

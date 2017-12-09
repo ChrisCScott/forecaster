@@ -6,10 +6,11 @@ import unittest
 import decimal
 from decimal import Decimal
 from random import Random
+import context  # pylint: disable=unused-import
 from forecaster.person import Person
 from forecaster.accounts import Debt, Money
 from forecaster.canada.accounts import RRSP, TFSA, TaxableAccount
-from forecaster.canada.constants import Constants
+from forecaster.canada import constants
 from forecaster.strategy import Strategy, ContributionStrategy, \
     WithdrawalStrategy, TransactionStrategy, AllocationStrategy, \
     DebtPaymentStrategy, strategy_method
@@ -670,7 +671,7 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         cls.inflation_adjustments = {
             cls.initial_year: Decimal(1),
             cls.initial_year + 1: Decimal(1.25),
-            min(Constants.RRSPContributionRoomAccrualMax): Decimal(1)}
+            min(constants.RRSP_ACCRUAL_MAX): Decimal(1)}
 
         # Set up some accounts for the tests.
         cls.rrsp = RRSP(
