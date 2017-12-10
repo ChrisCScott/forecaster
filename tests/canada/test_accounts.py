@@ -21,6 +21,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
 
     @classmethod
     def setUpClass(cls):
+        """ Sets up variables for testing RRSP. """
         super().setUpClass()
 
         cls.AccountType = RRSP
@@ -79,8 +80,9 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
             )
             i += 1
 
-    def test_init(self, *args, **kwargs):
-        super().test_init(*args, **kwargs)
+    def test_init_basic(self, *args, **kwargs):
+        """ Basic init tests for RRSP. """
+        super().test_init_basic(*args, **kwargs)
 
         # The only thing that RRSP.__init__ does is set inflation_adjust
         # and rrif_conversion_year, so test those:
@@ -91,6 +93,10 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         self.assertEqual(self.owner.age(account.rrif_conversion_year),
                          constants.RRSP_RRIF_CONVERSION_AGE)
         self.assertEqual(account.inflation_adjust, self.inflation_adjust)
+
+    def test_init_type_conversion(self, *args, **kwargs):
+        """ Test type conversion of RRSP.__init__ inputs. """
+        super().test_init_type_conversion(*args, **kwargs)
 
         # Try type conversion for inflation_adjustments
         inflation_adjustments = {
@@ -122,6 +128,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
                 contribution_room=self.contribution_room, **kwargs)
 
     def test_taxable_income(self, *args, **kwargs):
+        """ Test RRSP.taxable_income. """
         # Create an RRSP with a $1,000,000 balance and no withdrawals:
         account = self.AccountType(
             self.owner, *args,
@@ -141,6 +148,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         self.assertEqual(account.taxable_income, Money(100))
 
     def test_tax_withheld(self, *args, **kwargs):
+        """ Test RRSP.tax_withheld. """
         # First, test RRSP (not RRIF) behaviour:
         # Test RRSP with no withdrawals -> no tax withheld
         account = self.AccountType(
@@ -168,6 +176,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         # implement inflation-adjustment and then test for it here?
 
     def test_tax_deduction(self, *args, **kwargs):
+        """ Test RRSP.tax_deduction. """
         # Create an RRSP with a $1,000,000 balance and no contributions:
         account = self.AccountType(
             self.owner, *args,
@@ -187,6 +196,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         self.assertEqual(account.tax_deduction, Money(100))
 
     def test_next_year(self, *args, **kwargs):
+        """ Test RRSP.next_year(). """
         super().test_next_year(*args, **kwargs)
 
         initial_year = min(constants.RRSP_ACCRUAL_MAX)
@@ -314,6 +324,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
                                Money(max_accrual), 3)
 
     def test_min_outflow(self, *args, **kwargs):
+        """ Test RRSP.min_outflow. """
         # Have a static RRSP (no inflows/outflows/change in balance)
         balance = 1000000
         initial_year = min(self.inflation_adjustments)
@@ -378,6 +389,7 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
 
     @classmethod
     def setUpClass(cls):
+        """ Sets up variables for testing TFSAs. """
         super().setUpClass()
         cls.AccountType = TFSA
 
@@ -430,8 +442,9 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
             )
             i += 1
 
-    def test_init(self, *args, **kwargs):
-        super().test_init(*args, **kwargs)
+    def test_init_basic(self, *args, **kwargs):
+        """ Basic init tests for TFSA. """
+        super().test_init_basic(*args, **kwargs)
 
         # Basic test: manually set contribution_room
         account = self.AccountType(
@@ -465,6 +478,10 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
                 )
             )
         self.assertEqual(account.inflation_adjust, self.inflation_adjust)
+
+    def test_init_type_conversion(self, *args, **kwargs):
+        """ Test type conversion of TFSA.__init__ inputs. """
+        super().test_init_type_conversion(*args, **kwargs)
 
         # Try type conversion for inflation_adjustments
         inflation_adjustments = {
@@ -507,6 +524,7 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
                 self.owner, *args, inflation_adjust='invalid', **kwargs)
 
     def test_next_year(self, *args, **kwargs):
+        """ Test TFSA.next_year. """
         super().test_next_year(*args, **kwargs)
 
         # Set up variables for testing.
@@ -575,6 +593,7 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
         return accruals
 
     def test_taxable_income(self, *args, **kwargs):
+        """ Test TFSA.taxable_income. """
         # This method should always return $0
         account = self.AccountType(
             self.owner, *args,
@@ -594,8 +613,9 @@ class TestTaxableAccountMethods(TestAccountMethods):
         super().setUpClass()
         cls.AccountType = TaxableAccount
 
-    def test_init(self, *args, **kwargs):
-        super().test_init(*args, **kwargs)
+    def test_init_basic(self, *args, **kwargs):
+        """ Basic init tests for TaxableAccount. """
+        super().test_init_basic(*args, **kwargs)
 
         # Default init
         account = self.AccountType(
@@ -645,6 +665,7 @@ class TestTaxableAccountMethods(TestAccountMethods):
         self.assertEqual(account.capital_gain, Money(125))
 
     def test_next_year(self, *args, **kwargs):
+        """ Test TaxableAccount.next_year(). """
         super().test_next_year(*args, **kwargs)
 
         # Init account with $50 acb.
@@ -677,6 +698,7 @@ class TestTaxableAccountMethods(TestAccountMethods):
         self.assertEqual(account.capital_gain, Money(100))
 
     def test_taxable_income(self, *args, **kwargs):
+        """ Test TaxableAccount.taxable_income. """
         # Init account with $50 acb.
         # Balance is $100, of which $50 is capital gains.
         account = self.AccountType(
@@ -711,6 +733,7 @@ class TestPrincipleResidenceMethods(TestAccountMethods):
         cls.AccountType = PrincipleResidence
 
     def test_taxable_income(self, *args, **kwargs):
+        """ Test PrincipleResidence.taxable_income. """
         account = self.AccountType(
             self.owner, *args, balance=1000, rate=1, nper=1)
         self.assertEqual(account.taxable_income, Money(0))

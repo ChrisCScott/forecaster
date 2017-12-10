@@ -11,7 +11,7 @@ from forecaster.canada import constants
 from tests.test_helper import *
 
 
-class TestTaxCanada(unittest.TestCase):
+class TestTax(unittest.TestCase):
     """ Tests CanadianResidentTax """
 
     def setUp(self):
@@ -74,7 +74,7 @@ class TestTaxCanada(unittest.TestCase):
                 constants.TAX_PERSONAL_DEDUCTION['Federal'][year])
             self.assertEqual(
                 tax.federal_tax.credit_rate(year),
-                constants.TAX_CREDIT_RATE['Federal'])
+                constants.TAX_CREDIT_RATE['Federal'][year])
         self.assertTrue(callable(tax.federal_tax.inflation_adjust))
 
         # Test provincial tax:
