@@ -100,9 +100,18 @@ class Forecaster(object):
         self.settings = settings
 
         # Build any not-provided attributes based on Settings:
+
         # Everything takes `initial_year`, so set that first.
-        self.initial_year = initial_year if initial_year is not None \
-            else self.settings.initial_year
+        # If a `scenario` has been provided, use that rather than
+        # Settings, since `scenario` defines initial_year as well.
+        if initial_year is not None:
+            self.initial_year = initial_year
+        else:
+            if scenario is not None:
+                self.initial_year = scenario.initial_year
+            else:
+                self.initial_year = settings.initial_year
+
         # Scenario has no dependencies on other classes, so build it
         # first:
         if self.scenario is None:
