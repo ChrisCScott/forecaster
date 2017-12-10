@@ -134,19 +134,29 @@ def build_inflation_adjust(inflation_adjust=None):
         # Assume real values if no inflation-adjustment method is
         # given - i.e. always return val without adjustment.
         # pylint: disable=W0613,E0102
-        def inflation_adjust(target_year=None, base_year=None):
+        def inflation_adjust_func(target_year=None, base_year=None):
             """ No inflation adjustment; returns 1 every year. """
             return Decimal(1)
     elif isinstance(inflation_adjust, dict):
         # If a dict of {year: Decimal} values has been passed in,
-        # convert that to a suitable method:
-        # NOTE: This will raise an error if there are no keys in the
-        # dict.
-        default_base = min(inflation_adjust.keys())
-        inflation_dict = inflation_adjust
+        # convert that to a suitable method.
+        # If inflation_adjust has a default value, preserve it:
+        if isinstance(inflation_adjust, collections.defaultdict):
+            inflation_dict = collections.defaultdict(
+                inflation_adjust.default_factory)
+        else:
+            inflation_dict = {}
+        # Then type-convert all the elements of inflation_adjust:
+        inflation_dict.update({
+            int(key): Decimal(inflation_adjust[key])
+            for key in inflation_adjust
+        })
 
-        # pylint: disable=E0102
-        def inflation_adjust(target_year, base_year=None):
+        # It's slightly more efficient to find the smallest key in
+        # inflation_adjust outside of the function.
+        default_base = min(inflation_dict.keys())
+
+        def inflation_adjust_func(target_year, base_year=None):
             """ Inflation adjustment from """
             if base_year is None:
                 base_year = default_base
@@ -159,5 +169,8 @@ def build_inflation_adjust(inflation_adjust=None):
         # what to do with it. Raise an error.
         raise TypeError('RegisteredAccount: inflation_adjust must be ' +
                         'callable.')
+    else:
+        # inflation_adjust is callable, so just use that!
+        inflation_adjust_func = inflation_adjust
 
-    return inflation_adjust
+    return inflation_adjust_func
