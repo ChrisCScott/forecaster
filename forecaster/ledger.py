@@ -1,6 +1,8 @@
 """ Defines basic recordkeeping classes, like `Person` and `Account`. """
 
 import inspect
+import types
+from copy import copy, deepcopy
 from decimal import Decimal
 from moneyed import Money as PyMoney
 
@@ -301,6 +303,48 @@ class Ledger(object, metaclass=LedgerType):
     # https://stackoverflow.com/questions/6527633/how-can-i-make-a-deepcopy-of-a-function-in-python
     # (we need to ensure that we swap out any memo'd objects in the
     # function's context, too!)
+
+    def __deepcopy__(self, memo=None, _nil=[]):
+        """ Extends deepcopy to replace bound methods. """
+        # The [] default parameter is set by __deepcopy__; we're just
+        # replicating the call signature here.
+        # pylint: disable=dangerous-default-value
+
+        if memo is None:
+            memo = {}
+
+        # If this object is memo'd (i.e. if it's been copied before)
+        # then return the memo'd instance.
+        if id(self) in memo:
+            return memo[id(self)]
+
+        # Do a shallow copy. (We can't call deepcopy, since it'll just
+        # recurse to this method).
+        self_copy = copy(self)
+        # Deepcopy needs us to update memo in order to work properly:
+        memo[id(self)] = self_copy
+
+        # Make deep copies of each attribute:
+        for name, attr in self_copy.__dict__.items():
+            if (
+                isinstance(attr, types.MethodType) and
+                hasattr(attr, '__self__')
+            ):
+                # Bound method attributes require some work. If we've
+                # memo'd the object it's bound to, we need to look up
+                # the instance of this method for the memo'd object.
+                key = id(attr.__self__)
+                if key in memo:
+                    self_copy.__dict__[name] = getattr(
+                        memo[key], attr.__name__)
+            elif name in {'inputs'}:
+                # Some elements can be shared, so there's no need to
+                # deepcopy.
+                self_copy.__dict__[name] = attr
+            else:
+                # For all other elements, recurse using the usual
+                # deepcopy operation.
+                self_copy.__dict__[name] = deepcopy(attr)
 
 
 class TaxSource(Ledger):
