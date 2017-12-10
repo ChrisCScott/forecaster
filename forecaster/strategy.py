@@ -662,6 +662,56 @@ class TransactionStrategy(Strategy):
         return transactions
 
 
+class RateFunction(object):
+    """ A callable object with accessible state attributes. """
+
+    def __init__(self, scenario, person, allocation_strategy):
+        """ Inits the RateFunction object. """
+        self.scenario = scenario
+        self.person = person
+        self.allocation_strategy = allocation_strategy
+
+    def __call__(self, year) -> Decimal:
+        """ Rate of return for `year` based on asset allocation.
+
+        Args:
+            year (int): The year for which the rate of return will be
+                determined.
+
+        Returns:
+            Decimal: The rate of return. For example, `Decimal('0.05')`
+            means a 5% return.
+        """
+        allocation = self.allocation_strategy(
+            age=self.person.age(year),
+            retirement_age=self.person.retirement_age
+        )
+        # Extract stocks/bonds/other returns:
+        if 'stocks' in allocation:
+            stocks = allocation['stocks']
+        else:
+            stocks = Decimal(0)
+        if 'bonds' in allocation:
+            bonds = allocation['bonds']
+        else:
+            bonds = Decimal(0)
+        if 'other' in allocation:
+            other = allocation['other']
+        else:
+            other = Decimal(0)
+
+        # Weight the returns of the various asset classes by each
+        # class's allocation:
+        return (
+            (
+                stocks * self.scenario.stock_return[year]
+                + bonds * self.scenario.bond_return[year]
+                + other * self.scenario.other_return[year]
+            ) / (stocks + bonds + other)
+        )
+
+
+
 class AllocationStrategy(Strategy):
     """ Generates an asset allocation for a point in time. Callable.
 
@@ -800,52 +850,16 @@ class AllocationStrategy(Strategy):
                 returns on investment for stocks, bonds, etc.
 
         Returns:
-            A rate function of the form `rate_function(year) -> Decimal`
-            that provides a rate of return for a given year based on
-            the person's age and the investment returns for various
-            asset classes provided by `scenario`.
+            An object callable with the form
+            `rate_function(year) -> Decimal` that provides a rate of
+            return for a given year based on the person's age and the
+            investment returns for various asset classes provided by
+            `scenario`.
         """
-        # Prepare a rate_function to be returned. We prefer def to
-        # lambda statements for introspection/comparison purposes.
-        def rate_function(year) -> Decimal:
-            """ Rate of return for `year` based on asset allocation.
-
-            Args:
-                year (int): The year for which the rate of return will be
-                    determined.
-
-            Returns:
-                Decimal: The rate of return. For example, `Decimal('0.05')`
-                means a 5% return.
-            """
-            allocation = self(
-                age=person.age(year), retirement_age=person.retirement_age
-            )
-            # Extract stocks/bonds/other returns:
-            if 'stocks' in allocation:
-                stocks = allocation['stocks']
-            else:
-                stocks = Decimal(0)
-            if 'bonds' in allocation:
-                bonds = allocation['bonds']
-            else:
-                bonds = Decimal(0)
-            if 'other' in allocation:
-                other = allocation['other']
-            else:
-                other = Decimal(0)
-
-            # Weight the returns of the various asset classes by each
-            # class's allocation:
-            return (
-                (
-                    stocks * scenario.stock_return[year]
-                    + bonds * scenario.bond_return[year]
-                    + other * scenario.other_return[year]
-                ) / (stocks + bonds + other)
-            )
-
-        return rate_function
+        # We need to return an object rather than a function or lambda
+        # because we need Forecaster to be able to swap out any of those
+        # attributes when running a forecast.
+        return RateFunction(scenario, person, self)
 
     def __call__(self, age, retirement_age=None, *args, **kwargs):
         """ Returns a dict of {account, Money} pairs. """
