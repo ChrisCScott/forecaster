@@ -214,8 +214,6 @@ class TestForecaster(unittest.TestCase):
         """ Tests Forecaster.__init__ """
         # Test default init:
         forecaster = Forecaster()
-        # TODO: Test attributes of Scenario, Strategy, etc. directly.
-        # (Yes, this will be lengthy and tedious.)
         self.assertEqual(forecaster.person1, self.person1)
         self.assertEqual(forecaster.person2, self.person2)
         if self.person2 is not None:
@@ -383,10 +381,52 @@ class TestForecaster(unittest.TestCase):
         for gross_income in forecast.gross_income.values():
             self.assertEqual(gross_income, Money(0))
 
-        # Run the simple forecast again, but this time with a different
-        # scenario. All inflation_adjust and scenario attributes should
-        # be updated too.
-        # TODO
+    def test_forecast_substitution(self):
+        """ Test Forecaster.forecast with one or more explict args. """
+        # Build two scenarios, init Forecaster with one, and then run
+        # `forecast` with the other.
+        scenario1 = Scenario(
+            initial_year=2000,
+            num_years=2,
+            inflation=0,
+            stock_return=0,
+            bond_return=0,
+            other_return=0,
+            management_fees=0
+        )
+        scenario2 = Scenario(
+            initial_year=2000,
+            num_years=2,
+            inflation=0,
+            stock_return=1,  # 100% growth in stocks.
+            bond_return=0,
+            other_return=0,
+            management_fees=0
+        )
+        forecaster = Forecaster(scenario=scenario1)
+        forecaster.set_person1(gross_income=Money(0))
+        # Add an account with a $1 balance and 100% invested in stocks:
+        allocation_strategy = AllocationStrategy(
+            strategy=AllocationStrategy.strategy_transition_to_const,
+            # 100% invested in stocks every year:
+            target=1,
+            min_equity=1,
+            max_equity=1
+        )
+        forecaster.add_asset(
+            owner=forecaster.person1,
+            balance=Money(1),
+            # Explicitly require that we follow the above allocation:
+            rate=allocation_strategy.rate_function(
+                forecaster.person1, scenario1),
+            cls=Account)
+        forecaster.set_person2(name=None)  # Remove person2, if present
+
+        # Run the forecast with scenario2 (which has 100% stock growth):
+        forecast = forecaster.forecast(scenario=scenario2)
+        # Under scenario1, the balance in 2001 should be unchanged at
+        # $1. Under scenario2, the balance in 2001 should double to $2.
+        self.assertEqual(forecast.principal[2001], Money(2))
 
 if __name__ == '__main__':
     unittest.main()
