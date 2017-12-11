@@ -665,6 +665,11 @@ class TransactionStrategy(Strategy):
 class RateFunction(object):
     """ A callable object with accessible state attributes. """
 
+    # We do provide public methods, but they're overrides of magic
+    # methods (init and call). Anyways, the purpose of this class is
+    # to expose its state (which a method/function/lambda does not do).
+    # pylint: disable=too-few-public-methods
+
     def __init__(self, scenario, person, allocation_strategy):
         """ Inits the RateFunction object. """
         self.scenario = scenario
@@ -709,7 +714,6 @@ class RateFunction(object):
                 + other * self.scenario.other_return[year]
             ) / (stocks + bonds + other)
         )
-
 
 
 class AllocationStrategy(Strategy):

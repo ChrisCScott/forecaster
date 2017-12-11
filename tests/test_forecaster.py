@@ -18,6 +18,10 @@ from forecaster.forecaster import Forecaster
 class TestForecaster(unittest.TestCase):
     """ Tests Forecaster. """
 
+    # We need a lot of instance attributes because forecasts require
+    # a lot of instance attributes.
+    # pylint: disable=too-many-instance-attributes
+
     def setUp(self):
         """ Builds default strategies, persons, etc. """
         # These tests take a long time if we're building 100-year
@@ -115,6 +119,18 @@ class TestForecaster(unittest.TestCase):
                 tax_treatment=None,
                 initial_year=self.initial_year
             )
+        # For testing convenience, set up a custom version of Person1
+        # that changes the name but keeps the rest of the data the same.
+        self.custom_person = Person(
+            name='Test Name',
+            birth_date=Settings.person1_birth_date,
+            retirement_date=Settings.person1_retirement_date,
+            gross_income=Settings.person1_gross_income,
+            raise_rate=Settings.person1_raise_rate,
+            spouse=None,
+            tax_treatment=self.tax_treatment,
+            initial_year=Settings.initial_year
+        )
 
     def assertEqual_dict(self, first, second, msg=None, memo=None):
         """ Extends equality testing for dicts with complex members. """
@@ -274,9 +290,8 @@ class TestForecaster(unittest.TestCase):
         person2.tax_treatment = None
         self.assertNotEqual(person1, person2)
 
-    def test_init(self):
-        """ Tests Forecaster.__init__ """
-        # Test default init:
+    def test_init_default(self):
+        """ Tests Forecaster.__init__ with default parameters. """
         forecaster = Forecaster()
         self.assertEqual(forecaster.person1, self.person1)
         self.assertEqual(forecaster.person2, self.person2)
@@ -301,21 +316,12 @@ class TestForecaster(unittest.TestCase):
         self.assertEqual(forecaster.settings, Settings)
         self.assertEqual(forecaster.initial_year, Settings.initial_year)
 
-        # Test init with custom settings:
+    def test_init_custom_settings(self):
+        """ Tests Forecaster.__init__ with custom settings. """
         settings = Settings()
-        settings.person1_name = 'Test Name'
-        person1 = Person(
-            name='Test Name',
-            birth_date=settings.person1_birth_date,
-            retirement_date=settings.person1_retirement_date,
-            gross_income=settings.person1_gross_income,
-            raise_rate=settings.person1_raise_rate,
-            spouse=None,
-            tax_treatment=self.tax_treatment,
-            initial_year=settings.initial_year
-        )
+        settings.person1_name = self.custom_person.name
         forecaster = Forecaster(settings=settings)
-        self.assertEqual(forecaster.person1, person1)  # custom person1
+        self.assertEqual(forecaster.person1, self.custom_person)
         self.assertEqual(forecaster.person2, self.person2)
         if self.person2 is not None:
             self.assertEqual(forecaster.people,
@@ -339,14 +345,16 @@ class TestForecaster(unittest.TestCase):
         self.assertEqual(forecaster.settings, settings)
         self.assertEqual(forecaster.initial_year, settings.initial_year)
 
-        # Test init with custom inputs (persons, strategies, etc.):
-        forecaster = Forecaster(person1=person1)
-        self.assertEqual(forecaster.person1, person1)  # custom person1
+    def test_init_custom_inputs(self):
+        """ Tests Forecaster.__init__ with custom inputs. """
+        forecaster = Forecaster(person1=self.custom_person)
+        self.assertEqual(forecaster.person1, self.custom_person)
         self.assertEqual(forecaster.person2, self.person2)
         if self.person2 is not None:
-            self.assertEqual(forecaster.people, {person1, self.person2})
+            self.assertEqual(
+                forecaster.people, {self.custom_person, self.person2})
         else:  # We don't add `None` to the `people` set.
-            self.assertEqual(forecaster.people, {person1})
+            self.assertEqual(forecaster.people, {self.custom_person})
         self.assertEqual(forecaster.assets, set())
         self.assertEqual(forecaster.debts, set())
         self.assertEqual(
@@ -398,8 +406,6 @@ class TestForecaster(unittest.TestCase):
                 forecaster.person1, forecaster.scenario),
             transactions={},
             nper=1,
-            default_inflow_timing=Settings.transaction_in_timing,
-            default_outflow_timing=Settings.transaction_out_timing,
             inputs={},
             initial_year=forecaster.person1.initial_year
         ))
@@ -417,8 +423,6 @@ class TestForecaster(unittest.TestCase):
                 forecaster.person1, forecaster.scenario),
             transactions={},
             nper=1,
-            default_inflow_timing=Settings.debt_payment_timing,
-            default_outflow_timing=Settings.transaction_out_timing,
             inputs={},
             initial_year=forecaster.person1.initial_year,
             minimum_payment=Money(0),

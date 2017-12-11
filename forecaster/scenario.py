@@ -241,6 +241,11 @@ class Scenario(object):
 class InflationAdjust(object):
     """ Callable inflation_adjust object with mutable state. """
 
+    # We do provide public methods, but they're overrides of magic
+    # methods (init and call). Anyways, the purpose of this class is
+    # to expose its state (which a method/function/lambda does not do).
+    # pylint: disable=too-few-public-methods
+
     def __init__(self, scenario):
         """ Inits InflationAdjust. """
         self.scenario = scenario

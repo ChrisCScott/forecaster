@@ -94,6 +94,10 @@ class Account(TaxSource):
             nper (int): The number of compounding periods per year.
             initial_year (int): The first year (e.g. 2000)
         """
+        # This object requires a fair amount of state, and its arguments
+        # are closely related. It doesn't make sense to break up the
+        # class any further.
+        # pylint: disable=too-many-arguments
 
         # Avoid using mutable {} as default parameter:
         if transactions is None:

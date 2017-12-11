@@ -1,8 +1,6 @@
 """ Defines basic recordkeeping classes, like `Person` and `Account`. """
 
 import inspect
-import types
-from copy import copy, deepcopy
 from decimal import Decimal
 from moneyed import Money as PyMoney
 

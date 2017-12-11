@@ -75,6 +75,11 @@ class Forecaster(object):
                 are not given.
             initial_year (int): The initial year for the forecast.
         """
+        # This method has very simple branches - just testing for None
+        # followed by a single statement. There's not much to be gained
+        # by splitting this method up more.
+        # pylint: disable=too-many-branches
+
         # NOTE: Settings defines two named persons, so store them via
         # their own named attributes (as well as in the `people` dict).
         # TODO: Make person* properties that update `people` when set
