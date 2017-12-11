@@ -20,6 +20,10 @@ class TestForecaster(unittest.TestCase):
 
     def setUp(self):
         """ Builds default strategies, persons, etc. """
+        # These tests take a long time if we're building 100-year
+        # forecasts in each one. Use short forecasts as a default:
+        Settings.num_years = 3
+
         self.initial_year = Settings.initial_year
         self.scenario = Scenario(
             inflation=Settings.inflation,
@@ -112,8 +116,82 @@ class TestForecaster(unittest.TestCase):
                 initial_year=self.initial_year
             )
 
-    @staticmethod
-    def complex_equal(first, second, memo=None):
+    def assertEqual_dict(self, first, second, msg=None, memo=None):
+        """ Extends equality testing for dicts with complex members. """
+        # We're mimicking the name of assertEqual, so we can live with
+        # the unusual method name.
+        # pylint: disable=invalid-name
+
+        # For dicts, first confirm they represent the same keys:
+        # (The superclass can handle this)
+        if first.keys() != second.keys():
+            super().assertEqual(first, second)
+        # Then recursively check each pair of values:
+        for key in first:
+            self.assertEqual(first[key], second[key], msg=msg, memo=memo)
+
+    def assertEqual_list(self, first, second, msg=None, memo=None):
+        """ Extends equality testing for lists with complex members. """
+        # We're mimicking the name of assertEqual, so we can live with
+        # the unusual method name.
+        # pylint: disable=invalid-name
+
+        # First confirm that they have the same length.
+        if len(first) != len(second):
+            super().assertEqual(first, second)
+        # Then iterate over the elements in sequence:
+        for i in range(0, len(first)):
+            self.assertEqual(first[i], second[i], msg=msg, memo=memo)
+
+    def assertEqual_set(self, first, second, msg=None, memo=None):
+        """ Extends equality testing for sets with complex members. """
+        # We're mimicking the name of assertEqual, so we can live with
+        # the unusual method name.
+        # pylint: disable=invalid-name
+
+        # First confirm that they have the same length.
+        if len(first) != len(second):
+            super().assertEqual(first, second, msg=msg)
+        # For sets or other unordered iterables, we can't rely on
+        # `in` (because complex objects might not have equality or
+        # hashing implemented beyond the standard id()
+        # implementation), so we want to test each element in one
+        # set against every element in the other set.
+        for val1 in first:
+            match = False
+            for val2 in second:
+                try:
+                    # Each pair of compared objects is automatically
+                    # added to the memo, so make a copy (which will
+                    # be discarded if the objects are not equal).
+                    memo_copy = copy(memo)
+                    self.assertEqual(val1, val2, msg=msg, memo=memo_copy)
+                except AssertionError:
+                    # If we didn't find a match, advance to the next
+                    # value in second and try that.
+                    continue
+                # If we did find a match, record that fact and
+                # advance to the next value in second.
+                match = True
+                memo.update(memo_copy)
+                break
+            if not match:
+                # If we couldn't find a match, the sets are not
+                # equal; the entire test should fail.
+                raise AssertionError(
+                    str(first) + ' != ' + str(second))
+
+    def assertEqual_complex(self, first, second, msg=None, memo=None):
+        """ Extends equality testing for complex objects. """
+        # We're mimicking the name of assertEqual, so we can live with
+        # the unusual method name.
+        # pylint: disable=invalid-name
+
+        # For complicated objects, recurse onto the attributes dict:
+        self.assertEqual(
+            first.__dict__, second.__dict__, msg=msg, memo=memo)
+
+    def assertEqual(self, first, second, msg=None, memo=None):
         """ Tests complicated class instances for equality.
 
         This method is used (instead of __eq__) because equality
@@ -121,6 +199,10 @@ class TestForecaster(unittest.TestCase):
         things like set membership, require extensive (and inefficient)
         comparisons, and/or can result in infinite recursion.
         """
+        # We add a memo argument to avoid recursion. We don't pass it
+        # to the superclass, so pylint's objection isn't helpful.
+        # pylint: disable=arguments-differ
+
         # The memo dict maps each object to the set of objects that it's
         # been compared to. If they've been compared, that means that we
         # don't need to re-evaluate their equality - if they're unequal,
@@ -128,74 +210,56 @@ class TestForecaster(unittest.TestCase):
         if memo is None:
             memo = collections.defaultdict(set)
         if id(second) in memo[id(first)]:
-            return True
+            # We've previously compared these objects and found them to
+            # be equal, so return without failing.
+            return
         else:
             memo[id(first)].add(id(second))
             memo[id(second)].add(id(first))
 
-        # There are a few cases to deal with:
-        # 1) These are dicts, in which case we need to compare keys and
-        #    values.
-        # 2) These are complicated objects, in which case we need to
-        #    recurse onto their attributes dict (i.e. obj.__dict__)
-        # 3) These are non-dict iterables, in which case we can try
-        #    to recurse onto their elements in sequence.
-        #    (NOTE: This is tricky for unordered iterables like set,
-        #    since two sets with equal objects might iterate in
-        #    different orders if member ids are different.)
-        # 4) These are non-iterable, uncomplicated objects, in which
-        #    case we can use the == operator.
+        try:
+            # If these are equal under ordinary comparison, accept that
+            # and don't so any further special testing.
+            super().assertEqual(first, second, msg=msg)
+            return
+        except AssertionError as error:
+            # If the superclass assertEqual doesn't find equality, run
+            # a few additional equality tests based on object type:
+            # 1) Dicts; keys and values both need to be checked.
+            # 2) Ordered iterables; values need to be checked in order.
+            # 3) Unordered iterables; check values for membership.
+            # 4) Complex objects; compare attributes via __dict__.
 
-        if (  # Objects of unrelated types can be assumed to be nonequal
-                not isinstance(first, type(second)) and
-                not isinstance(second, type(first))
-        ):
-            return False
-        elif isinstance(first, dict):
-            # For dicts, confirm that they represent the same keys and
-            # then recurse onto each of the values:
-            return (
-                first.keys() == second.keys() and all(
-                    TestForecaster.complex_equal(first[key], second[key], memo)
-                    for key in first
-                )
-            )
-        elif hasattr(first, '__dict__'):
-            # For complicated objects, recurse onto the attributes dict:
-            return TestForecaster.complex_equal(
-                first.__dict__, second.__dict__, memo)
-        elif isinstance(first, list):
-            # For lists, iterate over the elements in sequence:
-            return len(first) == len(second) and all(
-                TestForecaster.complex_equal(first[i], second[i], memo)
-                for i in range(0, len(first))
-            )
-        elif isinstance(first, set):
-            # For sets, we can't rely on `in`, so we want to test each
-            # element in one set against every element in the other set.
-            # This will involve comparing objects which are not equal,
-            # so we need to copy the dict before recursing.
-            # NOTE: Ideally we would update memo for each successful
-            # comparison, but this would complicate the logic below.
-            # This refinement only adds efficiency (i.e. the code is
-            # correct as-is), so we've left it in its simpler form.
-            return len(first) == len(second) and all(
-                any(
-                    TestForecaster.complex_equal(val1, val2, copy(memo))
-                    for val2 in second
-                ) for val1 in first
-            )
-        else:
-            # For simple objects, use the standard == operator
-            return first == second
-
-    def assertEqual(self, first, second, msg=None):
-        """ Overloaded to test equality of complex objects. """
-        self.assertTrue(TestForecaster.complex_equal(first, second), msg)
+            # Most of these tests won't work if the objects are
+            # different types, and we don't deal with the case anyways.
+            # In that case, accept the error and raise it on up.
+            if (
+                    not isinstance(first, type(second)) and
+                    not isinstance(second, type(first))
+            ):
+                raise error
+            elif isinstance(first, dict):
+                self.assertEqual_dict(first, second, msg=msg, memo=memo)
+            elif isinstance(first, collections.Sequence):
+                self.assertEqual_list(first, second, msg=msg, memo=memo)
+            elif isinstance(first, collections.Iterable):
+                self.assertEqual_set(first, second, msg=msg, memo=memo)
+            elif hasattr(first, '__dict__'):
+                self.assertEqual_complex(first, second, msg=msg, memo=memo)
+            else:
+                # If none of our special tests apply, accept the error.
+                raise error
 
     def assertNotEqual(self, first, second, msg=None):
         """ Overloaded to test non-equality of complex objects. """
-        self.assertFalse(TestForecaster.complex_equal(first, second), msg)
+        try:
+            self.assertEqual(first, second, msg=msg)
+        except AssertionError:
+            # We want assertEqual to throw an error (since we're
+            # expecting non-equality)
+            return
+        # Raise a suitable error if the equality test didn't fail:
+        raise AssertionError(str(first) + ' == ' + str(second))
 
     def test_assertEqual(self):  # pylint: disable=invalid-name
         """ Tests overloaded TestForecaster.assertEqual. """
@@ -330,7 +394,8 @@ class TestForecaster(unittest.TestCase):
         self.assertEqual(asset, Account(
             owner=forecaster.person1,
             balance=Money(0),
-            rate=0,
+            rate=forecaster.allocation_strategy.rate_function(
+                forecaster.person1, forecaster.scenario),
             transactions={},
             nper=1,
             default_inflow_timing=Settings.transaction_in_timing,
@@ -348,7 +413,8 @@ class TestForecaster(unittest.TestCase):
         self.assertEqual(debt, Debt(
             owner=forecaster.person1,
             balance=Money(0),
-            rate=0,
+            rate=forecaster.allocation_strategy.rate_function(
+                forecaster.person1, forecaster.scenario),
             transactions={},
             nper=1,
             default_inflow_timing=Settings.debt_payment_timing,
