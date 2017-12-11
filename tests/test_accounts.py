@@ -141,7 +141,7 @@ class TestAccountMethods(unittest.TestCase):
         self.assertEqual(account.transactions, {})
         self.assertEqual(account.nper, 1)
         self.assertEqual(account.initial_year, self.initial_year)
-        self.assertEqual(account.rate_function, rate)
+        self.assertEqual(account.rate_callable, rate)
 
     def test_init_type_conversion(self, *args, **kwargs):
         """ Tests using (Decimal-convertible) strings as input. """

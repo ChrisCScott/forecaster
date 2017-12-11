@@ -203,7 +203,49 @@ class Scenario(object):
         return {year: Decimal(self.accumulation_function(year, base_year))
                 for year in self}
 
-    def inflation_adjust(self, target_year, base_year=None):
+    @property
+    def inflation_adjust(self):
+        """ Inflation-adjustment factor from base_year to target_year.
+
+        Args:
+            target_year (int): The year for which an
+                inflation-adjustment factor is desired.
+            base_year (int): The year in which inflation-adjusted
+                figures are expressed.
+                The inflation adjustment for this year is 1.
+
+        Returns:
+            Decimal: The inflation-adjustment factor from base_year to
+            target_year. This is the product of inflation-adjustments
+            for each year (or its inverse, if target_year precedes
+            base_year).
+        """
+        return InflationAdjust(self)
+
+    def __len__(self):
+        """ The number of years modelled by the Scenario. """
+        # pylint: disable=invalid-length-returned
+        # This returns a positive integer (see type/value-check in init)
+        return self.num_years
+
+    def __iter__(self):
+        """ Iterates over years modelled by the Scenario.
+
+        Yields:
+            int: Each year modelled by the Scenario, in ascending order.
+        """
+        for year in range(self.initial_year, self.initial_year + len(self)):
+            yield year
+
+
+class InflationAdjust(object):
+    """ Callable inflation_adjust object with mutable state. """
+
+    def __init__(self, scenario):
+        """ Inits InflationAdjust. """
+        self.scenario = scenario
+
+    def __call__(self, target_year, base_year=None):
         """ Inflation-adjustment factor from base_year to target_year.
 
         Args:
@@ -220,38 +262,6 @@ class Scenario(object):
             base_year).
         """
         if base_year is None:
-            base_year = self.initial_year
+            base_year = self.scenario.initial_year
         # TODO: Cache inflation adjustments (memoize accumulation_function?)
-        return self.accumulation_function(base_year, target_year)
-
-    def rate_of_return(self, year, stocks, bonds, other):
-        """ The rate of return on a portfolio for a given year.
-
-        Args:
-            year (int): The year.
-            stocks (Decimal): The proportion of stocks in the portfolio.
-            fixed_income (Decimal): The proportion of bonds assets in
-                the portfolio.
-
-        Returns:
-            Decimal: The rate of return, as a pecentage. For example, a
-            5% rate of return would be `Decimal('0.05')`.
-        """
-        return (stocks * self.stock_return[year] +
-                bonds * self.bond_return[year] +
-                other * self.other_return[year]) / (stocks + bonds + other)
-
-    def __len__(self):
-        """ The number of years modelled by the Scenario. """
-        # pylint: disable=invalid-length-returned
-        # This returns a positive integer (see type/value-check in init)
-        return self.num_years
-
-    def __iter__(self):
-        """ Iterates over years modelled by the Scenario.
-
-        Yields:
-            int: Each year modelled by the Scenario, in ascending order.
-        """
-        for year in range(self.initial_year, self.initial_year + len(self)):
-            yield year
+        return self.scenario.accumulation_function(base_year, target_year)

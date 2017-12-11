@@ -64,14 +64,8 @@ class Account(TaxSource):
                 Q: Quarterly (every 3 months)
                 SA: Semi-annually (twice a year)
                 A: Annually
-            Note that `nper` is not a list; it's assumed that the
-            compounding frequency (unlike the rate)
         initial_year (int): The first year for which account data is
             recorded.
-        contribution_room (Money): The maximum amount of inflows that
-            the account can receive this year.
-        contribution_token (str): A token that is shared between
-            accounts which share contribution room.
     """
 
     # Most of these instance attributes are hidden, and several support
@@ -82,7 +76,6 @@ class Account(TaxSource):
     def __init__(
         self, owner,
         balance=0, rate=0, transactions=None, nper=1,
-        default_inflow_timing='end', default_outflow_timing='end',
         inputs=None, initial_year=None
     ):
         """ Constructor for `Account`.
@@ -100,16 +93,7 @@ class Account(TaxSource):
                 transaction (positive to inflow, negative for outflow).
             nper (int): The number of compounding periods per year.
             initial_year (int): The first year (e.g. 2000)
-            default_inflow_timing (Decimal): The default timing used for
-                inflow transactions (when a timing is not explicitly
-                provided).
-            default_outflow_timing (Decimal): The default timing used
-                for outflow transactions (when a timing is not
-                explicitly provided).
         """
-        # This class does have a lot of arguments, but it's not
-        # practical to split this class up more.
-        # pylint: disable=too-many-arguments
 
         # Avoid using mutable {} as default parameter:
         if transactions is None:
@@ -129,15 +113,13 @@ class Account(TaxSource):
         # be set in advance:
         self._owner = None
         self._transactions = {}
-        self._rate_function = None
+        self._rate_callable = None
 
         # Set the various property values based on inputs:
         self.owner = owner
         self.balance = Money(balance)
-        self.rate_function = rate
+        self.rate_callable = rate
         self.nper = self._conv_nper(nper)
-        self._inflow_timing = when_conv(default_inflow_timing)
-        self._outflow_timing = when_conv(default_outflow_timing)
         # NOTE: returns is calculated lazily
 
         # Add each transaction manually to populate the transactions
@@ -205,16 +187,16 @@ class Account(TaxSource):
         return balance
 
     @property
-    def rate_function(self):
+    def rate_callable(self):
         """ A function that generates a rate for a given year.
 
         The function is callable with one (potentially optional)
         argument: year.
         """
-        return self._rate_function
+        return self._rate_callable
 
-    @rate_function.setter
-    def rate_function(self, val):
+    @rate_callable.setter
+    def rate_callable(self, val):
         """ Sets the rate function """
         # If input isn't callable, convert it to a suitable method:
         if not callable(val):
@@ -230,17 +212,17 @@ class Account(TaxSource):
                 def func(_):
                     """ Wraps value in a function. """
                     return val
-            self._rate_function = func
+            self._rate_callable = func
         else:
             # If the input is callable, use it without modification.
-            self._rate_function = val
+            self._rate_callable = val
 
     @recorded_property_cached
     def rate(self):
         """ The rate of the account for the current year (Decimal). """
         # pylint: disable=not-callable
         # rate_function's setter ensures that this is callable.
-        return self.rate_function(self.this_year)
+        return self.rate_callable(self.this_year)
 
     @recorded_property
     def transactions(self):
@@ -333,12 +315,7 @@ class Account(TaxSource):
                 Decimal
             ValueError: `when` must be in [0,1]
         """
-        # Convert `when` to a Decimal value.
-        # Even if already a Decimal, this checks `when` for value/type
-        if when is None:
-            when = self._inflow_timing if value >= 0 else self._outflow_timing
-        else:
-            when = when_conv(when)
+        when = when_conv(when)
 
         # Try to cast non-Money objects to type Money
         if not isinstance(value, Money):
