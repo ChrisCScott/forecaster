@@ -1,6 +1,6 @@
 """ A module providing Canada-specific tax treatment. """
 
-from forecaster.tax import Tax
+from forecaster.tax import Tax as SuperTax
 from forecaster.person import Person
 from forecaster.ledger import Money
 from forecaster.canada.accounts import RRSP
@@ -8,7 +8,7 @@ from forecaster.canada import constants
 from forecaster.utility import extend_inflation_adjusted
 
 
-class TaxCanadaJurisdiction(Tax):
+class TaxJurisdiction(SuperTax):
     """ Federal or provincial tax treatment (Canada). """
 
     def __init__(self, inflation_adjustments, jurisdiction='Federal'):
@@ -153,7 +153,7 @@ class TaxCanadaJurisdiction(Tax):
         return super().__call__(income, year, deduction, credit)
 
 
-class TaxCanada(object):
+class Tax(object):
     """ Federal and provincial tax treatment for a Canadian resident.
 
     Attributes:
@@ -174,8 +174,8 @@ class TaxCanada(object):
                 See documentation for `Tax` for more information.
             province (str): The province in which income tax is paid.
         """
-        self.federal_tax = TaxCanadaJurisdiction(inflation_adjust)
-        self.provincial_tax = TaxCanadaJurisdiction(
+        self.federal_tax = TaxJurisdiction(inflation_adjust)
+        self.provincial_tax = TaxJurisdiction(
             inflation_adjust, province)
         self.province = province
 

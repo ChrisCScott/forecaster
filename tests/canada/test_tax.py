@@ -4,7 +4,7 @@ import unittest
 from decimal import Decimal
 import context  # pylint: disable=unused-import
 from forecaster.person import Person
-from forecaster.canada.tax import TaxCanada
+from forecaster.canada.tax import Tax
 from forecaster.canada.accounts import RRSP, TaxableAccount, Money
 from forecaster.canada import constants
 # pylint: disable=wildcard-import,unused-wildcard-import
@@ -55,7 +55,7 @@ class TestTax(unittest.TestCase):
 
     def test_init(self):
         """ Test TaxCanada.__init__ """
-        tax = TaxCanada(self.inflation_adjustments, province='BC')
+        tax = Tax(self.inflation_adjustments, province='BC')
         # Test federal tax:
         # There's some type-conversion going on, so test the Decimal-
         # valued `amount` of the Tax's tax bracket's keys against the
@@ -96,7 +96,7 @@ class TestTax(unittest.TestCase):
         self.assertTrue(callable(tax.provincial_tax.inflation_adjust))
 
         # Omit optional argument and try again:
-        tax = TaxCanada(self.inflation_adjustments)
+        tax = Tax(self.inflation_adjustments)
         for year in constants.TAX_BRACKETS['BC']:
             self.assertEqual(
                 tax.provincial_tax.tax_brackets(year),
@@ -116,7 +116,7 @@ class TestTax(unittest.TestCase):
 
     def test_call(self):
         """ Test TaxCanada.__call__ """
-        tax = TaxCanada(self.inflation_adjustments)
+        tax = Tax(self.inflation_adjustments)
         # Test a call on Money:
         taxable_income = Money(100000)
         self.assertEqual(
