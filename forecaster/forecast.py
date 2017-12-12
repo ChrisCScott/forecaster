@@ -240,7 +240,7 @@ class Forecast(object):
         # Prepare output dicts:
         # Income
         self.gross_income = {}
-        self.taxes_withheld_on_income = {}
+        self.tax_withheld_on_income = {}
         self.net_income = {}
 
         # Gross contribution
@@ -294,7 +294,13 @@ class Forecast(object):
                 account.next_year()
 
     def retirement_year(self):
-        """ TODO """
+        """ Determines the retirement year for the plannees.
+
+        TODO: This approach forces `Forecast` to assume that all
+        plannees retire at the same time, which is often inaccurate.
+        We should use per-retiree retirement dates, meaning that this
+        method should be removed and the calling code refactored.
+        """
         return max(
             (
                 person.retirement_date for person in self.people
@@ -304,12 +310,12 @@ class Forecast(object):
         ).year
 
     def record_income(self, year):
-        """ TODO """
+        """ Records gross and net income, as well as taxes withheld. """
         # Determine gross/net income for the family:
         self.gross_income[year] = sum(
             (person.gross_income for person in self.people),
             Money(0))
-        self.taxes_withheld_on_income[year] = sum(
+        self.tax_withheld_on_income[year] = sum(
             (person.tax_withheld for person in self.people),
             Money(0))
         self.net_income[year] = sum(
@@ -317,7 +323,7 @@ class Forecast(object):
             Money(0))
 
     def record_gross_contribution(self, year):
-        """ TODO """
+        """ Records gross contributions for the year. """
         # TODO: Determine refunds and other contributions
         # Determine gross contributions:
         self.refund[year] = Money(0)  # TODO: refund amounts
@@ -335,7 +341,11 @@ class Forecast(object):
         )
 
     def record_contribution_reductions(self, year):
-        """ TODO """
+        """ Records contribution reductions for the year.
+
+        This method determines total debt payments and applies per-debt
+        payments to debt accounts.
+        """
         # Determine contribution reductions:
         # TODO: Include reduced contributions to pay for last year's
         # outstanding taxes?
@@ -370,7 +380,11 @@ class Forecast(object):
             )
 
     def record_net_contributions(self, year):
-        """ TODO """
+        """ Records net contributions.
+
+        This method determines total net (i.e. actual) contributions and
+        adds inflows to the appropriate accounts.
+        """
         # Reductions can potentially exceed gross_contributions (e.g.
         # due to minimum debt payments or childcare expenses).
         # Ensure the net_contributions is not negative:
@@ -393,13 +407,13 @@ class Forecast(object):
             )
 
     def record_principal(self, year):
-        """ TODO """
+        """ Records principal balance for the year. """
         self.principal[year] = sum(
             (account.balance for account in self.assets),
             Money(0))
 
     def record_returns(self, year):
-        """ TODO """
+        """ Records gross and net returns, as well as tax withheld. """
         self.gross_return[year] = sum(
             (a.returns for a in self.assets),
             Money(0))
@@ -416,7 +430,12 @@ class Forecast(object):
         )
 
     def record_withdrawals(self, year):
-        """ TODO """
+        """ Records withdrawals for the year.
+
+        Withdrawals are divided into retirement and other withdrawals.
+        Taxes on withdrawals are determined to produce a figure for
+        net withdrawals.
+        """
         retirement_year = self.retirement_year()
 
         self.withdrawals_for_retirement[year] = (
@@ -438,6 +457,9 @@ class Forecast(object):
             (account.tax_withheld for account in self.assets),
             Money(0)
         )
+        # TODO: Lumping net withdrawals together doesn't seem very
+        # useful. Consider splitting apart tax withholdings by
+        # withdrawal type and finding net withdrawals independently.
         self.net_withdrawals[year] = (
             self.gross_withdrawals[year] -
             self.tax_withheld_on_withdrawals[year]
@@ -446,7 +468,7 @@ class Forecast(object):
     def record_total_tax(self, year):
         """ TODO """
         self.total_tax_withheld[year] = (
-            self.taxes_withheld_on_income[year] +
+            self.tax_withheld_on_income[year] +
             self.tax_withheld_on_return[year] +
             self.tax_withheld_on_withdrawals[year]
         )
