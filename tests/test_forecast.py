@@ -12,13 +12,24 @@ from forecaster.strategy import ContributionStrategy, WithdrawalStrategy, \
 from forecaster.tax import Tax
 from forecaster.forecast import Forecast
 from forecaster.forecaster import Forecaster  # Import for convenience
+from forecaster.settings import Settings
 from tests.test_helper import type_check
 
 
 class TestForecast(unittest.TestCase):
     """ Tests Forecast. """
 
-    def test_basic(self):
+    def setUp(self):
+        """ TODO """
+        # Set up a forecaster for 2-year forecasts with 100% inflation.
+        # This is just for convenience, since building a forecast
+        # manually is quite laborious.
+        self.settings = Settings()
+        self.settings.num_years = 2
+        self.settings.inflation = 1
+        self.forecaster = Forecaster(settings=self.settings)
+
+    def test_manual_forecast(self):
         """ Test with one account, one debt, and constant Scenario.
 
         For simplicity, this Scenario extends over 4 years: an initial
@@ -268,7 +279,7 @@ class TestForecast(unittest.TestCase):
         self.assertTrue(
             type_check(forecast.tax_withheld_on_withdrawals, {int: Money}))
         self.assertTrue(
-            type_check(forecast.taxes_withheld_on_income, {int: Money}))
+            type_check(forecast.tax_withheld_on_income, {int: Money}))
         self.assertTrue(
             type_check(forecast.total_tax_owing, {int: Money}))
         self.assertTrue(
@@ -278,6 +289,220 @@ class TestForecast(unittest.TestCase):
         self.assertTrue(
             type_check(
                 forecast.withdrawals_for_retirement, {int: Money}))
+
+    def test_record_income(self):
+        """ Test gross and net income. """
+        # Set up tax so $150,000 gross results in $100,000 net
+        self.forecaster.set_tax_treatment(
+            tax_brackets={
+                self.settings.initial_year: {0: 0, 50000: Decimal(0.5)}
+            }
+        )
+        self.forecaster.set_person1(gross_income=Money(150000), raise_rate=1)
+        forecast = self.forecaster.forecast()
+        # Test the first year:
+        self.assertEqual(
+            forecast.gross_income[self.settings.initial_year],
+            Money(150000)
+        )
+        self.assertEqual(
+            forecast.tax_withheld_on_income[self.settings.initial_year],
+            Money(50000)
+        )
+        self.assertEqual(
+            forecast.net_income[self.settings.initial_year],
+            Money(100000)
+        )
+        # Test the second year, taking into account the 100% inflation
+        # and 100% raise:
+        self.assertEqual(
+            forecast.gross_income[self.settings.initial_year + 1],
+            Money(300000)
+        )
+        self.assertEqual(
+            forecast.tax_withheld_on_income[self.settings.initial_year + 1],
+            Money(100000)
+        )
+        self.assertEqual(
+            forecast.net_income[self.settings.initial_year + 1],
+            Money(200000)
+        )
+
+    def test_record_gross_contribution(self):
+        """ Test gross contributions. """
+        # Simple contribution strategy:
+        self.forecaster.set_contribution_strategy(
+            strategy='Constant contribution', base_amount=Money(50000)
+        )
+        # No tax, to make this easy:
+        self.forecaster.set_tax_treatment(
+            tax_brackets={self.settings.initial_year: {0: 0}})
+        self.forecaster.set_person1(gross_income=Money(100000))
+        forecast = self.forecaster.forecast()
+        # Test the first year:
+        # TODO: refund, carryover, and asset_sale are not implemented;
+        # we'll need to update these tests when they are.
+        self.assertEqual(
+            forecast.refund[self.settings.initial_year], Money(0))
+        self.assertEqual(
+            forecast.carryover[self.settings.initial_year], Money(0))
+        self.assertEqual(
+            forecast.asset_sale[self.settings.initial_year], Money(0))
+        self.assertEqual(
+            forecast.gross_contributions[self.settings.initial_year],
+            Money(50000)
+        )
+        # Test the second year, keeping in mind the 100% inflation:
+        self.assertEqual(
+            forecast.refund[self.settings.initial_year + 1], Money(0))
+        self.assertEqual(
+            forecast.carryover[self.settings.initial_year + 1], Money(0))
+        self.assertEqual(
+            forecast.asset_sale[self.settings.initial_year + 1], Money(0))
+        self.assertEqual(
+            forecast.gross_contributions[self.settings.initial_year + 1],
+            Money(100000)
+        )
+
+    def test_record_contribution_reduc(self):
+        """ Test contribution reductions. """
+        # Ensure there's enough money available to repay debts in full:
+        self.forecaster.set_person1(gross_income=Money(100000))
+        self.forecaster.set_contribution_strategy(
+            strategy="Constant contribution", base_amount=Money(10000)
+        )
+        # $200 to pay off this debt:
+        self.forecaster.add_debt(
+            balance=Money(100), rate=1, reduction_rate=1,
+            accelerate_payment=True)
+        # $100 payment in each year, $50 of which is drawn from savings.
+        self.forecaster.add_debt(
+            balance=Money(200), rate=0, reduction_rate=0.5,
+            accelerate_payment=False, minimum_payment=Money(100))
+        forecast = self.forecaster.forecast()
+        # Test the first year
+        # TODO: reduction_from_other isn't implemented; update this test
+        # once behaviour has been defined.
+        self.assertEqual(
+            forecast.reduction_from_other[self.settings.initial_year],
+            Money(0))
+        self.assertEqual(
+            forecast.reduction_from_debt[self.settings.initial_year],
+            Money(250))
+        self.assertEqual(
+            forecast.contribution_reductions[self.settings.initial_year],
+            Money(250))
+        # Check that one debt got $200 in inflows and the other debt got
+        # $100 in inflows:
+        self.assertTrue(
+            any(
+                debt.inflows_history[self.settings.initial_year] == Money(200)
+                for debt in forecast.debts
+            )
+        )
+        self.assertTrue(
+            any(
+                debt.inflows_history[self.settings.initial_year] == Money(100)
+                for debt in forecast.debts
+            )
+        )
+        # Test the second year
+        # TODO: reduction_from_other isn't implemented; update this test
+        # once behaviour has been defined.
+        self.assertEqual(
+            forecast.reduction_from_other[self.settings.initial_year + 1],
+            Money(0))
+        self.assertEqual(
+            forecast.reduction_from_debt[self.settings.initial_year + 1],
+            Money(50))
+        self.assertEqual(
+            forecast.contribution_reductions[self.settings.initial_year + 1],
+            Money(50))
+        # Check that one debt got no inflows and the other debt got $100
+        # in inflows:
+        self.assertTrue(
+            any(
+                debt.inflows_history[self.settings.initial_year] == Money(0)
+                for debt in forecast.debts
+            )
+        )
+        self.assertTrue(
+            any(
+                debt.inflows_history[self.settings.initial_year] == Money(100)
+                for debt in forecast.debts
+            )
+        )
+
+    def test_record_net_contributions(self):
+        """ Test net contributions. """
+        # Set up $1000 in gross contributions:
+        self.forecaster.set_person1(gross_income=Money(100000))
+        self.forecaster.set_contribution_strategy(
+            strategy="Constant contribution", base_amount=Money(1000)
+        )
+        # $200 to pay off this debt (total net contributions of $800):
+        self.forecaster.add_debt(
+            balance=Money(100), rate=1, reduction_rate=1,
+            accelerate_payment=True)
+        # Here's an account to toss transactions into:
+        self.forecaster.add_asset(
+            balance=Money(0)
+        )
+        forecast = self.forecaster.forecast()
+        account = next(iter(forecast.assets))
+        # Test the first year
+        self.assertEqual(
+            forecast.net_contributions[self.settings.initial_year],
+            Money(800))
+        self.assertEqual(
+            account.inflows_history[self.settings.initial_year],
+            Money(800)
+        )
+        # Test the second year, keeping in mind 100% inflation.
+        # (The contribution is inflation-adjusted, so it doubles here.)
+        self.assertEqual(
+            forecast.net_contributions[self.settings.initial_year + 1],
+            Money(2000))
+        self.assertEqual(
+            account.inflows_history[self.settings.initial_year + 1],
+            Money(2000)
+        )
+
+    def test_record_principal(self):
+        """ Tests principal. """
+        self.forecaster.set_person1(gross_income=Money(100000), raise_rate=0)
+        self.forecaster.set_contribution_strategy(
+            strategy="Constant contribution", base_amount=Money(1000)
+        )
+        self.forecaster.add_asset(balance=Money(100), rate=1)
+        forecast = self.forecaster.forecast()
+        # Test the first year (balance before returns/inflows: $100):
+        self.assertEqual(
+            forecast.principal[self.settings.initial_year],
+            Money(100))
+        # Test the second year ($100 balance grew to $200 last year,
+        # plus $1000 in contributions):
+        self.assertEqual(
+            forecast.principal[self.settings.initial_year + 1],
+            Money(1200)
+        )
+
+    def test_record_withdrawals(self):
+        """ Tests withdrawals. """
+        pass
+
+    def test_record_returns(self):
+        """ TODO """
+        pass
+
+    def test_record_total_tax(self):
+        """ TODO """
+        pass
+
+    def test_record_living_standard(self):
+        """ TODO """
+        pass
+
 
 if __name__ == '__main__':
     unittest.main()
