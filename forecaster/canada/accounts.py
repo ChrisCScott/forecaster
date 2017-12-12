@@ -12,10 +12,11 @@ class RRSP(RegisteredAccount):
     """ A Registered Retirement Savings Plan (Canada). """
 
     # Explicitly repeat superclass args for the sake of intellisense.
-    def __init__(self, owner, balance=0, rate=0,
-                 transactions=None, nper=1, inputs=None, initial_year=None,
-                 contribution_room=None, contributor=None,
-                 inflation_adjust=None, **kwargs):
+    def __init__(
+        self, owner, balance=0, rate=0, transactions=None, nper=1, inputs=None,
+        initial_year=None, contribution_room=None, contributor=None,
+        inflation_adjust=None, **kwargs
+    ):
         """ Initializes an RRSP object.
 
         See documentation for `Account` and `RegisteredAccount` for

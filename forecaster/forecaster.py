@@ -3,7 +3,7 @@
 from copy import deepcopy
 from forecaster.forecast import Forecast
 from forecaster.person import Person
-from forecaster.accounts import Account, Debt
+from forecaster.accounts import Account, RegisteredAccount, Debt
 from forecaster.tax import Tax
 from forecaster.strategy import ContributionStrategy, WithdrawalStrategy, \
     TransactionStrategy, AllocationStrategy, DebtPaymentStrategy
@@ -357,11 +357,11 @@ class Forecaster(object):
         self.person2 = self.add_person(cls=cls, **kwargs)
         return self.person2
 
-    def _add_account(
+    def add_account(
         self, owner=None, balance=None, rate=None, transactions=None,
-        nper=None, default_inflow_timing=None, default_outflow_timing=None,
-        inputs=None, initial_year=None, cls=Account, **kwargs
+        nper=None, inputs=None, initial_year=None, cls=Account, **kwargs
     ):
+        """ Adds an account (asset, debt, etc.) to the forecast. """
         # NOTE: We don't actually need to list Account's various args
         # in the call signature here; we could just use `inputs`,
         # `cls` and `**kwargs`. Doing it that way would be less
@@ -376,10 +376,6 @@ class Forecaster(object):
         )
         self.set_kwarg(kwargs, 'transactions', transactions, None)
         self.set_kwarg(kwargs, 'nper', nper, None)
-        self.set_kwarg(kwargs, 'default_inflow_timing',
-                       default_inflow_timing, None)
-        self.set_kwarg(kwargs, 'default_outflow_timing',
-                       default_outflow_timing, None)
         self.set_kwarg(kwargs, 'inputs', inputs, None)
         self.set_kwarg(kwargs, 'initial_year', initial_year, self.initial_year)
 
@@ -388,17 +384,16 @@ class Forecaster(object):
 
     def add_asset(
         self, owner=None, balance=None, rate=None, transactions=None,
-        nper=None, default_inflow_timing=None, default_outflow_timing=None,
-        inputs=None, initial_year=None, cls=Account, **kwargs
+        nper=None, inputs=None, initial_year=None, cls=Account, **kwargs
     ):
         """ Adds an asset to the forecast and to the `assets` set.
 
-        This method should be used instead of the hidden method
-        `_add_account` because, in addition to building an object of the
+        This method should be used instead of the generic method
+        `add_account` because, in addition to building an object of the
         appropriate type, it also manages object membership in the
         `assets` set.
 
-        See `_add_account` for additional documentation.
+        See `add_account` for additional documentation.
 
         Args:
             cls (type): The class of `Account` being built by
@@ -409,25 +404,56 @@ class Forecaster(object):
             `Account`: An object of type `cls` constructed with
             the relevant args, inputs, settings, and default values.
         """
-        account = self._add_account(
+        account = self.add_account(
             owner=owner, balance=balance, rate=rate, transactions=transactions,
-            nper=nper, default_inflow_timing=default_inflow_timing,
-            default_outflow_timing=default_outflow_timing, inputs=inputs,
-            initial_year=initial_year, cls=cls, **kwargs
+            nper=nper, inputs=inputs, initial_year=initial_year, cls=cls,
+            **kwargs
         )
         self.assets.add(account)
         return account
 
+    def add_registered_account(
+        self, contribution_room=None, contributor=None, cls=RegisteredAccount,
+        **kwargs
+    ):
+        """ Adds an asset to the forecast and to the `assets` set.
+
+        This method should be used instead of the generic method
+        `add_account` because, in addition to building an object of the
+        appropriate type, it also manages object membership in the
+        `assets` set.
+
+        See `add_account` for additional documentation.
+
+        Args:
+            cls (type): The class of `RegisteredAccount` being built by
+                the method. This class's `__init__` method must accept
+                all of the args of `RegisteredAccount`.
+
+        Returns:
+            RegisteredAccount: An object of type `cls` constructed with
+            the relevant args, inputs, settings, and default values.
+        """
+        self.set_kwarg(kwargs, 'contribution_room', contribution_room, None)
+        if 'owner' in kwargs:
+            contributor_default = kwargs['owner']
+        else:
+            contributor_default = self.person1
+        self.set_kwarg(kwargs, 'contributor', contributor, contributor_default)
+        account = self.add_asset(
+            cls=cls, **kwargs
+        )
+        return account
+
     def add_debt(
         self, owner=None, balance=None, rate=None, transactions=None,
-        nper=None, default_inflow_timing=None, default_outflow_timing=None,
-        inputs=None, initial_year=None, minimum_payment=None,
+        nper=None, inputs=None, initial_year=None, minimum_payment=None,
         reduction_rate=None, accelerate_payment=None, cls=Debt, **kwargs
     ):
         """ Adds a Debt to the forecast.
 
-        This method should be used instead of the hidden method
-        `_add_account` because, in addition to building an object of the
+        This method should be used instead of the generic method
+        `add_account` because, in addition to building an object of the
         appropriate type, it also manages object membership in the
         `assets` set.
 
@@ -448,11 +474,10 @@ class Forecaster(object):
         self.set_kwarg(kwargs, 'accelerate_payment', accelerate_payment,
                        self.settings.debt_accelerate_payment)
 
-        account = self._add_account(
+        account = self.add_account(
             owner=owner, balance=balance, rate=rate, transactions=transactions,
-            nper=nper, default_inflow_timing=default_inflow_timing,
-            default_outflow_timing=default_outflow_timing, inputs=inputs,
-            initial_year=initial_year, cls=cls, **kwargs)
+            nper=nper, inputs=inputs, initial_year=initial_year, cls=cls,
+            **kwargs)
 
         self.debts.add(account)
         return account
