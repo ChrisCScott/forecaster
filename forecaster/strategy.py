@@ -932,8 +932,15 @@ class DebtPaymentStrategy(Strategy):
         if available <= 0:
             return transactions
 
-        # Iterate over debts from smallest balance to largest:
-        for debt in sorted(debts, key=lambda x: abs(x.balance), reverse=False):
+        accelerated_debts = {debt for debt in debts if debt.accelerate_payment}
+        # Now we increase contributions to any accelerated debts
+        # (non-accelerated debts can just have minimum payments made,
+        # handled above). Here, increase contributions of the smallest
+        # debt first, then the next, and so on until there's no money
+        # left to allocate to debt repayment:
+        for debt in sorted(
+            accelerated_debts, key=lambda x: abs(x.balance), reverse=False
+        ):
             # Debts that don't reduce savings can be ignored - assume
             # they're fully repaid in the first year.
             if debt.reduction_rate == 0:
@@ -968,8 +975,15 @@ class DebtPaymentStrategy(Strategy):
         if available <= 0:
             return transactions
 
-        # Iterate over debts from largest rate to smallest:
-        for debt in sorted(debts, key=lambda x: x.rate, reverse=True):
+        accelerated_debts = {debt for debt in debts if debt.accelerate_payment}
+        # Now we increase contributions to any accelerated debts
+        # (non-accelerated debts can just have minimum payments made,
+        # handled above). Here, increase contributions of the largest
+        # rate first, then the next, and so on until there's no money
+        # left to allocate to debt repayment:
+        for debt in sorted(
+            accelerated_debts, key=lambda x: x.rate, reverse=True
+        ):
             # Debts that don't reduce savings can be ignored - assume
             # they're fully repaid in the first year.
             if debt.reduction_rate == 0:
