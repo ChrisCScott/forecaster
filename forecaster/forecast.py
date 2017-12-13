@@ -466,7 +466,16 @@ class Forecast(object):
         )
 
     def record_total_tax(self, year):
-        """ TODO """
+        """ Records total tax withheld and payable in the year.
+
+        TODO: Deal with tax owing but not withheld - arrange to pay this
+        in the following year? Apply against investment balances? Draw
+        a portion from income (i.e. as a living expense)?
+        Note that in Canada, if more than $3000 or so of tax is owing
+        but not withheld, the CRA will put you on an instalments plan,
+        so you can't really defer your total tax liability into the next
+        year.
+        """
         self.total_tax_withheld[year] = (
             self.tax_withheld_on_income[year] +
             self.tax_withheld_on_return[year] +
@@ -475,7 +484,12 @@ class Forecast(object):
         self.total_tax_owing[year] = self.tax_treatment(self.people, year)
 
     def record_living_standard(self, year):
-        """ TODO """
+        """ Records the living standard for each year.
+
+        The living standard is the money available to spend after all
+        taxes, debt repayments (other than debts included in living
+        expenses), and savings are deducted.
+        """
         # TODO: Check Excel spreadsheet for calculation of this.
         # As currently shown, this deducts all taxes owing from the
         # living standard - even if some of those taxes are attributable
