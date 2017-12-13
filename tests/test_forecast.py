@@ -20,10 +20,11 @@ class TestForecast(unittest.TestCase):
     """ Tests Forecast. """
 
     def setUp(self):
-        """ TODO """
-        # Set up a forecaster for 2-year forecasts with 100% inflation.
-        # This is just for convenience, since building a forecast
-        # manually is quite laborious.
+        """ Build a forecaster for 2-year forecasts with 100% inflation.
+
+        This is just for convenience, since building a forecast manually
+        is quite laborious.
+        """
         self.settings = Settings()
         self.settings.num_years = 2
         self.settings.inflation = 1
@@ -422,13 +423,15 @@ class TestForecast(unittest.TestCase):
         # in inflows:
         self.assertTrue(
             any(
-                debt.inflows_history[self.settings.initial_year] == Money(0)
+                debt.inflows_history[self.settings.initial_year + 1]
+                == Money(0)
                 for debt in forecast.debts
             )
         )
         self.assertTrue(
             any(
-                debt.inflows_history[self.settings.initial_year] == Money(100)
+                debt.inflows_history[self.settings.initial_year + 1]
+                == Money(100)
                 for debt in forecast.debts
             )
         )
@@ -469,7 +472,7 @@ class TestForecast(unittest.TestCase):
         )
 
     def test_record_principal(self):
-        """ Tests principal. """
+        """ Test principal. """
         self.forecaster.set_person1(gross_income=Money(100000), raise_rate=0)
         self.forecaster.set_contribution_strategy(
             strategy="Constant contribution", base_amount=Money(1000)
@@ -488,19 +491,139 @@ class TestForecast(unittest.TestCase):
         )
 
     def test_record_withdrawals(self):
-        """ Tests withdrawals. """
-        pass
+        """ Test withdrawals. """
+        # Set up a situation where we retire in the first year with
+        # $1,000,000 in savings and $50,000 in (inflation-adjusted)
+        # annual withdrawals.
+        self.forecaster.set_withdrawal_strategy(
+            strategy="Constant withdrawal", base_amount=Money(50000))
+        self.forecaster.set_person1(
+            gross_income=100000, raise_rate=0,
+            retirement_date=self.settings.initial_year)
+        self.forecaster.add_asset(balance=1000000, rate=0)
+        forecast = self.forecaster.forecast()
+        # Test the initial year; there should be no withdrawals, since
+        # retirement is modelled at the end of the year.
+        self.assertEqual(
+            forecast.withdrawals_for_retirement[self.settings.initial_year],
+            Money(0))
+        self.assertEqual(
+            forecast.withdrawals_for_other[self.settings.initial_year],
+            Money(0))  # TODO: Update when we implement this feature
+        self.assertEqual(
+            forecast.gross_withdrawals[self.settings.initial_year],
+            Money(0))
+        # TODO: Update these tests when we implement the below features:
+        # self.assertEqual(
+        #     forecast.tax_withheld_on_withdrawals[self.settings.initial_year],
+        #     Money(0))  # TODO
+        # self.assertEqual(
+        #     forecast.net_withdrawals[self.settings.initial_year],
+        #     Money(0))  # TODO
+
+        # Test second year withdrawals. Don't forget the 100% inflation!
+        self.assertEqual(
+            forecast.withdrawals_for_retirement[
+                self.settings.initial_year + 1],
+            Money(100000))
+        self.assertEqual(
+            forecast.withdrawals_for_other[self.settings.initial_year + 1],
+            Money(0))  # TODO: Update when we implement this feature
+        self.assertEqual(
+            forecast.gross_withdrawals[self.settings.initial_year + 1],
+            Money(100000))
+        # TODO: Update these tests when we implement the below features:
+        # self.assertEqual(
+        #     forecast.tax_withheld_on_withdrawals[self.settings.initial_year],
+        #     Money(0))  # TODO
+        # self.assertEqual(
+        #     forecast.net_withdrawals[self.settings.initial_year],
+        #     Money(0))  # TODO
 
     def test_record_returns(self):
-        """ TODO """
-        pass
+        """ Test gross and net returns, plus tax on returns. """
+        # Set up income and tax treatment so that net income is $100,000
+        self.forecaster.set_tax_treatment(
+            tax_brackets={self.settings.initial_year: {0: 0, 50000: 0.5}})
+        self.forecaster.set_contribution_strategy(
+            strategy="Constant contribution", base_amount=50000)
+        self.forecaster.set_transaction_in_strategy(timing='end')
+        self.forecaster.set_person1(gross_income=Money(150000), raise_rate=0)
+        # $100,000 portfolio with 100% annual return.
+        self.forecaster.add_asset(balance=Money(100000), rate=1)
+        forecast = self.forecaster.forecast()
+        # Test the first year:
+        self.assertEqual(
+            forecast.gross_return[self.settings.initial_year],
+            Money(100000))
+        self.assertEqual(
+            forecast.tax_withheld_on_return[self.settings.initial_year],
+            Money(0))  # TODO: Update this when implemented.
+        self.assertEqual(
+            forecast.net_return[self.settings.initial_year],
+            forecast.gross_return[self.settings.initial_year]
+            - forecast.tax_withheld_on_return[self.settings.initial_year])
+
+        # Test the second year. Don't forget the 100% inflation!
+        # We grew $100,000 to $200,000 (less taxes) and contributed
+        # $50,000 at year-end, for a new balance of $250,000 less taxes:
+        balance = (
+            Money(250000)
+            - forecast.tax_withheld_on_return[self.settings.initial_year])
+        self.assertEqual(
+            forecast.gross_return[self.settings.initial_year + 1],
+            balance)
+        self.assertEqual(
+            forecast.tax_withheld_on_return[self.settings.initial_year + 1],
+            Money(0))  # TODO: Update this when implemented.
+        self.assertEqual(
+            forecast.net_return[self.settings.initial_year + 1],
+            forecast.gross_return[self.settings.initial_year + 1]
+            - forecast.tax_withheld_on_return[self.settings.initial_year + 1])
 
     def test_record_total_tax(self):
-        """ TODO """
-        pass
+        """ Test total tax. """
+        # Set up several income streams, some with and some without
+        # withholding taxes (e.g. income [withheld] and returns [not
+        # withheld])
+        self.forecaster.set_tax_treatment(
+            tax_brackets={self.settings.initial_year: {0: 0, 100000: 0.5}})
+        self.forecaster.set_contribution_strategy(
+            strategy="Constant contribution", base_amount=Money(0))
+        self.forecaster.set_person1(gross_income=Money(100000), raise_rate=2)
+        # $100,000 portfolio with 100% annual return.
+        self.forecaster.add_asset(balance=Money(100000), rate=1)
+        forecast = self.forecaster.forecast()
+        # Test the first year:
+        # $100,000 taxable income from returns, $100,000 from employment
+        # for $200,000 in total taxable income, $100,000 of which is
+        # taxed at 50%, for total tax liability of $50,000.
+        # None with withheld from income in this year.
+        self.assertEqual(
+            forecast.total_tax_owing[self.settings.initial_year],
+            Money(50000))
+        self.assertEqual(
+            forecast.total_tax_withheld[self.settings.initial_year],
+            Money(0))
+
+        # Test the second year. Don't forget 100% inflation!
+        # $200,000 taxable income from returns, $300,000 from employment
+        # for $500,000 in total taxable income, $300,000 of which is
+        # taxed at 50%, for total tax liability of $150,000.
+        # $50,000 is withheld in this year:
+        # TODO: Update this to take into account reduced balance (and
+        # thus returns) after taxes are paid for in year 1.
+        self.assertEqual(
+            forecast.total_tax_owing[self.settings.initial_year + 1],
+            Money(150000))
+        self.assertEqual(
+            forecast.total_tax_withheld[self.settings.initial_year + 1],
+            Money(50000))
 
     def test_record_living_standard(self):
-        """ TODO """
+        """ Test living standard. """
+        # TODO: Write this test once an implementation of the living
+        # standard calculation has been decided on.
         pass
 
 
