@@ -5,6 +5,17 @@ import inspect
 from decimal import Decimal
 from forecaster import Money
 
+# This module is only a few lines over the 1000 line limit. We could
+# reorganize this into 3-5 separate files, but for now these classes
+# are closely-related enough that we might as well keep them together.
+# If this family grows much more then we'll need to look at splitting
+# them up - perhaps into strategy_base (for metaclass/decorator),
+# strategy_transaction (for ContributionStrategy, WithdrawalStrategy,
+# and TransactionStrategy), strategy_allocation (for
+# AllocationStrategy), and strategy_debt_payment (for
+# DebtPaymentStrategy).
+# pylint: disable=too-many-lines
+
 
 def strategy_method(key):
     """ A decorator for strategy methods, used by Strategy subclasses

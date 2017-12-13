@@ -11,6 +11,10 @@ from forecaster import Person, Account, Tax, Money
 class TestPersonMethods(unittest.TestCase):
     """ A test suite for the `Person` class. """
 
+    # This class has instance attributes corresponding to those of
+    # Person, so we're sort of stuck with this number of attributes.
+    # pylint: disable=too-many-instance-attributes
+
     def setUp(self):
         """ Sets up default vaules for testing """
         self.initial_year = 2020
@@ -50,10 +54,8 @@ class TestPersonMethods(unittest.TestCase):
             spouse=self.spouse,
             tax_treatment=self.tax_treatment)
 
-    def test_init(self):
-        """ Tests Person.__init__ """
-
-        # Should work when all required arguments are passed correctly
+    def test_init_basic(self):
+        """ Tests Person.__init__ with properly-types mandatory args. """
         person = Person(
             self.initial_year, self.name, self.birth_date,
             retirement_date=self.retirement_date)
@@ -66,6 +68,8 @@ class TestPersonMethods(unittest.TestCase):
         self.assertIsNone(person.spouse)
         self.assertIsNone(person.tax_treatment)
 
+    def test_input_type_conv(self):
+        """ Test Person.__init__ with args that need type conversion. """
         # Should work with strings instead of dates
         birth_date_str = "1 January 2000"
         birth_date = datetime(2000, 1, 1)
@@ -74,22 +78,6 @@ class TestPersonMethods(unittest.TestCase):
             retirement_date=self.retirement_date)
         self.assertEqual(person.birth_date, birth_date)
         self.assertIsInstance(person.birth_date, datetime)
-
-        # Should fail if retirement_date precedes birth_date
-        with self.assertRaises(ValueError):
-            person = Person(
-                self.initial_year, self.name, self.birth_date,
-                retirement_date=self.birth_date - relativedelta(days=1))
-
-        # Should fail if a string is not parseable to a date
-        with self.assertRaises(ValueError):
-            person = Person(
-                self.initial_year, self.name, 'invalid',
-                retirement_date=self.retirement_date)
-        with self.assertRaises(ValueError):
-            person = Person(
-                self.initial_year, self.name, self.birth_date,
-                retirement_date='invalid')
 
         # Should work with non-str/non-datetime values as well
         birth_date = 2000
@@ -135,12 +123,32 @@ class TestPersonMethods(unittest.TestCase):
         self.assertEqual(person.birth_date.day, birth_date.day)
         self.assertEqual(person.retirement_date.day, retirement_date.day)
 
+    def test_init_invalid(self):
+        """ Test Person.__init__ with invalid args. """
+        # Should fail if retirement_date precedes birth_date
+        with self.assertRaises(ValueError):
+            Person(
+                self.initial_year, self.name, self.birth_date,
+                retirement_date=self.birth_date - relativedelta(days=1))
+
+        # Should fail if a string is not parseable to a date
+        with self.assertRaises(ValueError):
+            Person(
+                self.initial_year, self.name, 'invalid',
+                retirement_date=self.retirement_date)
+        with self.assertRaises(ValueError):
+            Person(
+                self.initial_year, self.name, self.birth_date,
+                retirement_date='invalid')
+
+    def test_init_optional(self):
+        """ Tests Person.__init__ with optional args. """
         # Now confirm that we can pass gross_income, spouse,
         # tax_treatment, and initial_year
         gross_income = Money(100000)
         person1 = Person(
-            self.initial_year, self.name, birth_date,
-            retirement_date=retirement_date,
+            self.initial_year, self.name, self.birth_date,
+            retirement_date=self.retirement_date,
             gross_income=gross_income,
             spouse=None, tax_treatment=self.tax_treatment)
         self.assertEqual(person1.gross_income, gross_income)
@@ -155,15 +163,26 @@ class TestPersonMethods(unittest.TestCase):
         self.assertIsNone(person1.spouse)
         self.assertEqual(person1.accounts, set())
 
+    def test_init_spouse(self):
+        """ Test Person.__init__ with a spouse parameter. """
         # Add a spouse and confirm that both Person objects are updated
+        person1 = self.owner
         person2 = Person(
             self.initial_year, "Spouse", self.initial_year - 20,
-            retirement_date=retirement_date,
+            retirement_date=self.retirement_date,
             gross_income=Money(50000),
             spouse=person1, tax_treatment=self.tax_treatment)
         self.assertEqual(person1.spouse, person2)
         self.assertEqual(person2.spouse, person1)
 
+    def test_add_account(self):
+        """ Test Person after being added as an Account owner. """
+        person1 = self.owner
+        person2 = Person(
+            self.initial_year, "Spouse", self.initial_year - 20,
+            retirement_date=self.retirement_date,
+            gross_income=Money(50000),
+            spouse=person1, tax_treatment=self.tax_treatment)
         # Add an account and confirm that the Person passed as owner is
         # updated.
         account1 = Account(owner=person1)
@@ -282,6 +301,7 @@ class TestPersonMethods(unittest.TestCase):
         self.assertEqual(person.this_year, initial_year + 1)
 
     def test_taxable_income(self):
+        """ Test Person.taxable_income. """
         initial_year = 2017
         gross_income = 100
         tax = Tax({initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
@@ -292,7 +312,8 @@ class TestPersonMethods(unittest.TestCase):
             gross_income=gross_income, tax_treatment=tax)
         self.assertEqual(person.taxable_income, gross_income)
 
-    def test_taxwithheld(self):
+    def test_tax_withheld(self):
+        """ Test Person.tax_withheld. """
         initial_year = 2017
         gross_income = 300
         tax = Tax(
@@ -306,6 +327,7 @@ class TestPersonMethods(unittest.TestCase):
         self.assertEqual(person.tax_withheld, Money(50))
 
     def test_tax_credit(self):
+        """ Test Person.tax_credit. """
         initial_year = 2017
         gross_income = 300
         tax = Tax({initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
@@ -317,6 +339,7 @@ class TestPersonMethods(unittest.TestCase):
         self.assertEqual(person.tax_credit, Money(0))
 
     def test_tax_deduction(self):
+        """ Test Person.tax_deduction. """
         initial_year = 2017
         gross_income = 300
         tax = Tax({initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
@@ -327,7 +350,8 @@ class TestPersonMethods(unittest.TestCase):
             tax_treatment=tax)
         self.assertEqual(person.tax_deduction, Money(0))
 
-    def test_inputs(self):
+    def test_init_inputs(self):
+        """ Test Person.__init__ with inputs arg. """
         initial_year = 2017
         gross_income = 500
         inputs = {

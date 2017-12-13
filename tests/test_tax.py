@@ -50,33 +50,35 @@ class TestTax(unittest.TestCase):
             self.initial_year: Decimal('0.1')
         }
 
-    def test_init(self):
+    def test_init_optional(self):
+        """ Test Tax.__init__ with all arguments, including optional. """
         tax = Tax(
             self.tax_brackets,
             inflation_adjust=self.inflation_adjustments,
             personal_deduction=self.personal_deduction,
             credit_rate=self.credit_rate)
-        self.assertEqual(tax._tax_brackets, self.tax_brackets)
-        self.assertEqual(tax._accum, self.accum)
+        for year in self.tax_brackets:
+            self.assertEqual(tax.tax_brackets(year), self.tax_brackets[year])
+            self.assertEqual(tax.accum(year), self.accum[year])
+            self.assertEqual(
+                tax.personal_deduction(year), self.personal_deduction[year])
+            self.assertEqual(tax.credit_rate(year), self.credit_rate[year])
         self.assertTrue(callable(tax.inflation_adjust))
-        self.assertEqual(tax._personal_deduction, self.personal_deduction)
-        self.assertEqual(tax._credit_rate, self.credit_rate)
 
-        # Omit optional arguments
+    def test_init_basic(self):
+        """ Test Tax.__init__ with only mandatory arguments. """
         tax = Tax(
             self.tax_brackets,
             inflation_adjust=self.inflation_adjustments)
-        self.assertEqual(tax._tax_brackets, self.tax_brackets)
-        self.assertEqual(tax._accum, self.accum)
+        for year in self.tax_brackets:
+            self.assertEqual(tax.tax_brackets(year), self.tax_brackets[year])
+            self.assertEqual(tax.accum(year), self.accum[year])
         self.assertTrue(callable(tax.inflation_adjust))
-        self.assertEqual(tax._personal_deduction, {
-            self.initial_year: Decimal(0)
-        })
-        self.assertEqual(tax._credit_rate, {
-            self.initial_year: Decimal(1)
-        })
+        self.assertEqual(tax.personal_deduction(self.initial_year), Decimal(0))
+        self.assertEqual(tax.credit_rate(self.initial_year), Decimal(1))
 
-        # Test type-checking/conversion.
+    def test_init_type_conv(self):
+        """ Tests Tax.__init__ with args requiring type-conversion. """
         # Use an all-str dict and confirm that the output is correctly
         # typed
         tax_brackets = {
@@ -90,12 +92,16 @@ class TestTax(unittest.TestCase):
             for year in self.inflation_adjustments
         }
         tax = Tax(tax_brackets, inflation_adjust=inflation_adjustments)
-        self.assertEqual(tax._tax_brackets, self.tax_brackets)
+        for year in self.tax_brackets:
+            self.assertEqual(tax.tax_brackets(year), self.tax_brackets[year])
+            self.assertTrue(type_check(
+                tax.tax_brackets(year), {Money: Decimal}))
         self.assertTrue(callable(tax.inflation_adjust))
-        # Check types on the outputs
-        self.assertTrue(type_check(tax._tax_brackets, {int: {Money: Decimal}}))
 
     def test_call(self):
+        """ Test Tax.__call__. """
+        # TODO: Split this into several independent tests.
+
         # Set up variables, including some convenience variables.
         tax = Tax(
             self.tax_brackets,
@@ -105,8 +111,9 @@ class TestTax(unittest.TestCase):
         year = self.initial_year
         deduction = self.personal_deduction[year]
         # Type-convert
-        brackets = sorted({Money(key): self.tax_brackets[year][key]
-                           for key in self.tax_brackets[year].keys()})
+        brackets = sorted({
+            Money(key): self.tax_brackets[year][key]
+            for key in self.tax_brackets[year].keys()})
 
         # First batch: Money first arg (as opposed to iterable arg)
 
@@ -168,12 +175,12 @@ class TestTax(unittest.TestCase):
         # Half of the taxable account withdrawal is taxable and 100% of
         # the RRSP withdrawal is taxable.
         balance1 = Money(1000000)
-        account1 = TaxableAccount(
+        TaxableAccount(
             owner=person1,
             acb=0, balance=balance1, rate=Decimal('0.05'),
             transactions={'start': -balance1}, nper=1)
         balance2 = Money(500000)
-        account2 = RRSP(
+        RRSP(
             owner=person1,
             inflation_adjust=self.inflation_adjustments,
             contribution_room=0, balance=balance2, rate=Decimal('0.05'),
@@ -188,7 +195,7 @@ class TestTax(unittest.TestCase):
             self.initial_year, "Tester 2", self.initial_year - 18,
             retirement_date=self.initial_year + 47, gross_income=50000)
         balance3 = Money(10000)
-        account3 = TaxableAccount(
+        TaxableAccount(
             owner=person2,
             acb=0, balance=balance3, rate=Decimal('0.05'),
             transactions={'start': -balance3}, nper=1)
