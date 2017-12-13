@@ -3,7 +3,6 @@ This list sets out various changes or additions that are planned for the
 next release version.
 
 ## High Priority
-* `Forecast`: Implement basic tests for each unit of functionality.
 * `Forecast`: Determine refunds and other contributions
 * `Forecast`: Revise tax treatment to deal with insufficient tax
 withheld (include a contribution reduction in the following year to pay
