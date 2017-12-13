@@ -1,11 +1,11 @@
 """ A module for Canada-specific ledger subclasses. """
 
-from forecaster.ledger import Money, recorded_property, \
-    recorded_property_cached
-from forecaster.accounts import Account, RegisteredAccount
+from forecaster import Money, Account, RegisteredAccount
+from forecaster.ledger import (
+    recorded_property, recorded_property_cached)
+from forecaster.utility import (
+    build_inflation_adjust, extend_inflation_adjusted)
 from forecaster.canada import constants
-from forecaster.utility import build_inflation_adjust, \
-    extend_inflation_adjusted
 
 
 class RRSP(RegisteredAccount):

@@ -4,16 +4,11 @@ import unittest
 import decimal
 from decimal import Decimal
 from random import Random
-import context  # pylint: disable=unused-import
-from forecaster.person import Person
-from forecaster.ledger import Money
-from forecaster.canada.accounts import RRSP, TFSA, TaxableAccount, \
-    PrincipleResidence
-from forecaster.canada import constants
-from tests.test_accounts import TestAccountMethods, \
-    TestRegisteredAccountMethods
-# pylint: disable=wildcard-import,unused-wildcard-import
-from tests.test_helper import *
+from forecaster import Person, Money
+from forecaster.canada import (
+    RRSP, TFSA, TaxableAccount, PrincipleResidence, constants)
+from tests.test_accounts import (
+    TestAccountMethods, TestRegisteredAccountMethods)
 
 
 class TestRRSPMethods(TestRegisteredAccountMethods):

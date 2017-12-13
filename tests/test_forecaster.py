@@ -3,16 +3,10 @@
 import unittest
 import collections
 from copy import copy, deepcopy
-import context  # pylint: disable=unused-import
-from forecaster.settings import Settings
-from forecaster.tax import Tax
-from forecaster.person import Person
-from forecaster.ledger import Money
-from forecaster.accounts import Account, Debt
-from forecaster.scenario import Scenario
-from forecaster.strategy import ContributionStrategy, WithdrawalStrategy, \
-    TransactionStrategy, AllocationStrategy, DebtPaymentStrategy
-from forecaster.forecaster import Forecaster
+from forecaster import (
+    Settings, Tax, Person, Money, Account, Debt, Scenario,
+    ContributionStrategy, WithdrawalStrategy, TransactionStrategy,
+    AllocationStrategy, DebtPaymentStrategy, Forecaster)
 
 
 class TestForecaster(unittest.TestCase):

@@ -5,13 +5,7 @@ import decimal
 from decimal import Decimal
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-import context  # pylint: disable=unused-import
-from forecaster.person import Person
-from forecaster.accounts import Account
-from forecaster.tax import Tax
-from forecaster.strategy import AllocationStrategy
-from forecaster.scenario import Scenario
-from forecaster.ledger import Money
+from forecaster import Person, Account, Tax, Money
 
 
 class TestPersonMethods(unittest.TestCase):
@@ -336,8 +330,9 @@ class TestPersonMethods(unittest.TestCase):
     def test_inputs(self):
         initial_year = 2017
         gross_income = 500
-        inputs = {'gross_income': {
-            initial_year: Money(1000), initial_year + 2: Money(0)
+        inputs = {
+            'gross_income': {
+                initial_year: Money(1000), initial_year + 2: Money(0)
             }
         }
         person = Person(

@@ -2,7 +2,6 @@
 
 import unittest
 from decimal import Decimal
-import context  # pylint: disable=unused-import
 from forecaster.utility import nearest_year, extend_inflation_adjusted
 
 
@@ -37,6 +36,7 @@ class TestFreeMethods(unittest.TestCase):
         vals = {1999: 2, 2001: 4, 2003: 8}
 
         def inflation_adjust(target_year, base_year):
+            """ Inflation from base_year to target_year. """
             return inf[target_year] / inf[base_year]
 
         # Test each year from 1997 to 2004:

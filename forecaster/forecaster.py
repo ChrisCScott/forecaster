@@ -1,14 +1,10 @@
 ''' This module provides classes for creating and managing Forecasts. '''
 
 from copy import deepcopy
-from forecaster.forecast import Forecast
-from forecaster.person import Person
-from forecaster.accounts import Account, RegisteredAccount, Debt
-from forecaster.tax import Tax
-from forecaster.strategy import ContributionStrategy, WithdrawalStrategy, \
-    TransactionStrategy, AllocationStrategy, DebtPaymentStrategy
-from forecaster.scenario import Scenario
-from forecaster.settings import Settings
+from forecaster import (
+    Forecast, Person, Account, RegisteredAccount, Debt, Tax,
+    ContributionStrategy, WithdrawalStrategy, TransactionStrategy,
+    AllocationStrategy, DebtPaymentStrategy, Scenario, Settings)
 
 
 # Forecaster wraps Forecast. It replicates much of that complexity

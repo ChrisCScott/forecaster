@@ -2,12 +2,9 @@
 
 import unittest
 from decimal import Decimal
-import context  # pylint: disable=unused-import
-from forecaster.tax import Tax
-from forecaster.ledger import Money
-from forecaster.person import Person
+from forecaster import Tax, Money, Person
 # Include extra accounts to test handling of different tax* behaviour:
-from forecaster.canada.accounts import RRSP, TaxableAccount
+from forecaster.canada import RRSP, TaxableAccount
 from tests.test_helper import type_check
 
 

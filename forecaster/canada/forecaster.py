@@ -1,15 +1,14 @@
 """ Provides a Canada-specific implementation of Forecaster. """
 
-from forecaster.forecaster import Forecaster as SuperForecaster
-from forecaster.canada.accounts import RRSP, TFSA, TaxableAccount
-from forecaster.canada.tax import Tax
-from forecaster.canada.settings import Settings
+from forecaster import Forecaster
+from forecaster.canada import (
+    RRSP, TFSA, TaxableAccount, TaxCanada, SettingsCanada)
 
 
-class Forecaster(SuperForecaster):
+class ForecasterCanada(Forecaster):
     """ Tests Forecaster (Canada). """
 
-    def __init__(self, settings=Settings, **kwargs):
+    def __init__(self, settings=SettingsCanada, **kwargs):
         """ Inits Forecaster with Canada-specific settings.
 
         In addition to using a Canada-specific Settings object by
@@ -44,7 +43,7 @@ class Forecaster(SuperForecaster):
         return self.add_asset(cls=cls, **kwargs)
 
     def set_tax_treatment(
-        self, inflation_adjust=None, province=None, cls=Tax, **kwargs
+        self, inflation_adjust=None, province=None, cls=TaxCanada, **kwargs
     ):
         """ Sets tax treatment for the forecast.
 

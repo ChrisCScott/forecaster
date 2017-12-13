@@ -2,7 +2,8 @@
 define contribution and withdrawal strategies and associated flags. """
 
 import inspect
-from forecaster.ledger import Money, Decimal
+from decimal import Decimal
+from forecaster import Money
 
 
 def strategy_method(key):

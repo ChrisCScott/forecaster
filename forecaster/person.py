@@ -4,8 +4,9 @@ from decimal import Decimal
 from datetime import datetime
 from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
-from forecaster.ledger import TaxSource, Money, \
-    recorded_property, recorded_property_cached
+from forecaster import Money
+from forecaster.ledger import (
+    TaxSource, recorded_property, recorded_property_cached)
 
 
 class Person(TaxSource):

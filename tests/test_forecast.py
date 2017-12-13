@@ -2,17 +2,10 @@
 
 import unittest
 from decimal import Decimal
-import context  # pylint: disable=unused-import
-from forecaster.ledger import Money
-from forecaster.person import Person
-from forecaster.accounts import Account, Debt
-from forecaster.scenario import Scenario
-from forecaster.strategy import ContributionStrategy, WithdrawalStrategy, \
-    TransactionStrategy, AllocationStrategy, DebtPaymentStrategy
-from forecaster.tax import Tax
-from forecaster.forecast import Forecast
-from forecaster.forecaster import Forecaster  # Import for convenience
-from forecaster.settings import Settings
+from forecaster import (
+    Money, Person, Account, Debt, Scenario, ContributionStrategy,
+    WithdrawalStrategy, TransactionStrategy, AllocationStrategy,
+    DebtPaymentStrategy, Tax, Forecast, Forecaster, Settings)
 from tests.test_helper import type_check
 
 

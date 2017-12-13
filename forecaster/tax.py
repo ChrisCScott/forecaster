@@ -5,10 +5,9 @@ These classes are callable with the form `tax(taxable_income, year)`
 
 import collections
 from decimal import Decimal
-from forecaster.ledger import Money
-from forecaster.person import Person
-from forecaster.utility import build_inflation_adjust, nearest_year, \
-    extend_inflation_adjusted
+from forecaster import Money, Person
+from forecaster.utility import (
+    build_inflation_adjust, nearest_year, extend_inflation_adjusted)
 
 # NOTE: Consider making this a ledger-like object that stores values
 # year-over-year. These values might include:

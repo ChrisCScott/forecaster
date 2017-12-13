@@ -6,14 +6,11 @@ import unittest
 import decimal
 from decimal import Decimal
 from random import Random
-import context  # pylint: disable=unused-import
-from forecaster.person import Person
-from forecaster.accounts import Debt, Money
-from forecaster.canada.accounts import RRSP, TFSA, TaxableAccount
-from forecaster.canada import constants
-from forecaster.strategy import Strategy, ContributionStrategy, \
-    WithdrawalStrategy, TransactionStrategy, AllocationStrategy, \
-    DebtPaymentStrategy, strategy_method
+from forecaster import (
+    Person, Debt, Money, ContributionStrategy, WithdrawalStrategy,
+    TransactionStrategy, AllocationStrategy, DebtPaymentStrategy)
+from forecaster.strategy import Strategy, strategy_method
+from forecaster.canada import RRSP, TFSA, TaxableAccount, constants
 
 
 class TestStrategyMethods(unittest.TestCase):
@@ -132,7 +129,7 @@ class TestContributionStrategyMethods(unittest.TestCase):
             2000: Decimal(0.5),
             2001: Decimal(1),
             2002: Decimal(2)
-            }
+        }
 
         @staticmethod
         def variable_inflation(year, base_year=None):
@@ -230,15 +227,15 @@ class TestContributionStrategyMethods(unittest.TestCase):
             strategy=method, inflation_adjust=self.variable_inflation)
         self.assertEqual(
             strategy(year=2000),
-            Money(strategy.base_amount)*self.variable_inflation(2000)
+            Money(strategy.base_amount) * self.variable_inflation(2000)
         )
         self.assertEqual(
             strategy(year=2001),
-            Money(strategy.base_amount)*self.variable_inflation(2001)
+            Money(strategy.base_amount) * self.variable_inflation(2001)
         )
         self.assertEqual(
             strategy(year=2002),
-            Money(strategy.base_amount)*self.variable_inflation(2002)
+            Money(strategy.base_amount) * self.variable_inflation(2002)
         )
 
         # Customize some inputs
@@ -252,8 +249,9 @@ class TestContributionStrategyMethods(unittest.TestCase):
         self.assertEqual(strategy(), base_amount)
         # Test that changing net_income, gross_income have no effect on
         # a constant contribution:
-        self.assertEqual(strategy(
-            net_income=Money(100000), gross_income=Money(200000)
+        self.assertEqual(
+            strategy(
+                net_income=Money(100000), gross_income=Money(200000)
             ),
             base_amount)
 
@@ -493,7 +491,7 @@ class TestWithdrawalStrategyMethods(unittest.TestCase):
         retirement_year = min(self.inflation_adjustment.keys())
         for year in self.inflation_adjustment:
             # Randomly generate values in [$0, $1000000.00]
-            principal[year] = Money(rand.randint(0, 100000000)/100)
+            principal[year] = Money(rand.randint(0, 100000000) / 100)
 
         strategy = WithdrawalStrategy(strategy=method, rate=0.5)
         # Test results for the simple, no-inflation/no-benefits case:
@@ -539,7 +537,7 @@ class TestWithdrawalStrategyMethods(unittest.TestCase):
         retirement_year = min(self.inflation_adjustment.keys())
         for year in self.inflation_adjustment:
             # Randomly generate values in [$0, $1000000.00]
-            net_income[year] = Money(rand.randint(0, 100000000)/100)
+            net_income[year] = Money(rand.randint(0, 100000000) / 100)
 
         strategy = WithdrawalStrategy(strategy=method, rate=0.5, base_amount=0)
         # Test results for the simple, no-inflation/no-benefits case:
@@ -585,7 +583,7 @@ class TestWithdrawalStrategyMethods(unittest.TestCase):
         retirement_year = min(self.inflation_adjustment.keys())
         for year in self.inflation_adjustment:
             # Randomly generate values in [$0, $1000000.00]
-            gross_income[year] = Money(rand.randint(0, 100000000)/100)
+            gross_income[year] = Money(rand.randint(0, 100000000) / 100)
 
         strategy = WithdrawalStrategy(method, rate=0.5, base_amount=0)
         # Test results for the simple, no-inflation/no-benefits case:
@@ -732,10 +730,11 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         """ Test TransactionStrategy.strategy_ordered. """
         # Run each test on inflows and outflows
         method = TransactionStrategy.strategy_ordered
-        strategy = TransactionStrategy(method, {
-            'RRSP': 1,
-            'TFSA': 2,
-            'TaxableAccount': 3
+        strategy = TransactionStrategy(
+            method, {
+                'RRSP': 1,
+                'TFSA': 2,
+                'TaxableAccount': 3
             })
 
         # Try a simple scenario: The amount being contributed is less
@@ -794,10 +793,11 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         rrsp_weight = Decimal('0.4')
         tfsa_weight = Decimal('0.3')
         taxable_account_weight = Decimal('0.3')
-        strategy = TransactionStrategy(method, {
-            'RRSP': rrsp_weight,
-            'TFSA': tfsa_weight,
-            'TaxableAccount': taxable_account_weight
+        strategy = TransactionStrategy(
+            method, {
+                'RRSP': rrsp_weight,
+                'TFSA': tfsa_weight,
+                'TaxableAccount': taxable_account_weight
             })
 
         # Basic test. Amount withdrawn is less than the balance of each
@@ -864,10 +864,11 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         rrsp_weight = Decimal('0.4')
         tfsa_weight = Decimal('0.3')
         taxable_account_weight = Decimal('0.3')
-        strategy = TransactionStrategy(method, {
-            'RRSP': rrsp_weight,
-            'TFSA': tfsa_weight,
-            'TaxableAccount': taxable_account_weight
+        strategy = TransactionStrategy(
+            method, {
+                'RRSP': rrsp_weight,
+                'TFSA': tfsa_weight,
+                'TaxableAccount': taxable_account_weight
             })
 
         # Try a simple scenario: The amount being contributed is less
@@ -1040,9 +1041,9 @@ class TestAllocationStrategyMethods(unittest.TestCase):
 
         for age in range(0, target):
             self.assertAlmostEqual(
-                strategy(age)['stocks'], Decimal((target - age)/100))
+                strategy(age)['stocks'], Decimal((target - age) / 100))
             self.assertAlmostEqual(
-                strategy(age)['bonds'], Decimal(1 - (target - age)/100))
+                strategy(age)['bonds'], Decimal(1 - (target - age) / 100))
         for age in range(target, target + 100):
             self.assertEqual(strategy(age)['stocks'], strategy.min_equity)
             self.assertEqual(strategy(age)['bonds'], 1 - strategy.min_equity)
@@ -1062,9 +1063,9 @@ class TestAllocationStrategyMethods(unittest.TestCase):
 
         for age in range(0, target + diff):
             self.assertAlmostEqual(strategy(age, retirement_age)['stocks'],
-                                   Decimal((target + diff - age)/100))
+                                   Decimal((target + diff - age) / 100))
             self.assertAlmostEqual(strategy(age, retirement_age)['bonds'],
-                                   Decimal(1 - (target + diff - age)/100))
+                                   Decimal(1 - (target + diff - age) / 100))
         for age in range(target + diff, target + diff + 100):
             self.assertEqual(strategy(age, retirement_age)['stocks'],
                              strategy.min_equity)
@@ -1087,10 +1088,10 @@ class TestAllocationStrategyMethods(unittest.TestCase):
         for age in range(20, target):
             self.assertAlmostEqual(
                 strategy(age, retirement_age)['stocks'],
-                Decimal((target - age)/100))
+                Decimal((target - age) / 100))
             self.assertAlmostEqual(
                 strategy(age, retirement_age)['bonds'],
-                Decimal(1 - (target - age)/100))
+                Decimal(1 - (target - age) / 100))
         for age in range(target, target + 100):
             self.assertEqual(
                 strategy(age, retirement_age)['stocks'],
@@ -1116,10 +1117,10 @@ class TestAllocationStrategyMethods(unittest.TestCase):
         for age in range(55, 65):
             self.assertAlmostEqual(
                 strategy(age)['stocks'],
-                Decimal(1*(65-age)/10 + 0.5*(age-55)/10))
+                Decimal(1 * (65 - age) / 10 + 0.5 * (age - 55) / 10))
             self.assertAlmostEqual(
                 strategy(age)['bonds'],
-                Decimal(1-(1*(65-age)/10 + 0.5*(age-55)/10)))
+                Decimal(1 - (1 * (65 - age) / 10 + 0.5 * (age - 55) / 10)))
         for age in range(66, 100):
             self.assertEqual(strategy(age)['stocks'], Decimal(0.5))
             self.assertEqual(strategy(age)['bonds'], Decimal(0.5))
@@ -1267,15 +1268,15 @@ class TestDebtPaymentStrategyMethods(unittest.TestCase):
         self.assertEqual(
             results[self.debt_small_low_interest],
             self.debt_small_low_interest.max_inflow(strategy.timing)
-            )
+        )
         self.assertEqual(
             results[self.debt_medium],
             self.debt_medium.minimum_payment + excess
-            )
+        )
         self.assertEqual(
             results[self.debt_big_high_interest],
             self.debt_big_high_interest.minimum_payment
-            )
+        )
 
         # Now pay more than the first and second-paid debts will
         # accomodate. The excess should go to the next-paid debt.
@@ -1289,15 +1290,15 @@ class TestDebtPaymentStrategyMethods(unittest.TestCase):
         self.assertEqual(
             results[self.debt_small_low_interest],
             self.debt_small_low_interest.max_inflow(strategy.timing)
-            )
+        )
         self.assertEqual(
             results[self.debt_medium],
             self.debt_medium.max_inflow(strategy.timing)
-            )
+        )
         self.assertEqual(
             results[self.debt_big_high_interest],
             self.debt_big_high_interest.minimum_payment + excess
-            )
+        )
 
         # Now contribute more than the total max.
         payment = self.max_payment(self.debts, strategy.timing) + excess
@@ -1356,15 +1357,15 @@ class TestDebtPaymentStrategyMethods(unittest.TestCase):
         self.assertEqual(
             results[self.debt_big_high_interest],
             self.debt_big_high_interest.max_inflow(strategy.timing)
-            )
+        )
         self.assertEqual(
             results[self.debt_medium],
             self.debt_medium.minimum_payment + excess
-            )
+        )
         self.assertEqual(
             results[self.debt_small_low_interest],
             self.debt_small_low_interest.minimum_payment
-            )
+        )
 
         # Now pay more than the first and second-paid debts will
         # accomodate. The excess should go to the next-paid debt.
@@ -1378,15 +1379,15 @@ class TestDebtPaymentStrategyMethods(unittest.TestCase):
         self.assertEqual(
             results[self.debt_big_high_interest],
             self.debt_big_high_interest.max_inflow(strategy.timing)
-            )
+        )
         self.assertEqual(
             results[self.debt_medium],
             self.debt_medium.max_inflow(strategy.timing)
-            )
+        )
         self.assertEqual(
             results[self.debt_small_low_interest],
             self.debt_small_low_interest.minimum_payment + excess
-            )
+        )
 
         # Now contribute more than the total max.
         payment = self.max_payment(self.debts, strategy.timing) + excess

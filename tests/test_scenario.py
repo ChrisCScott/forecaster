@@ -3,8 +3,7 @@
 import unittest
 from decimal import Decimal
 from random import Random
-import context  # pylint: disable=unused-import
-from forecaster.scenario import Scenario
+from forecaster import Scenario
 
 
 class TestScenarioMethods(unittest.TestCase):
@@ -75,10 +74,10 @@ class TestScenarioMethods(unittest.TestCase):
         cls.varying_other_return = [0]
         cls.varying_management_fees = [0]
         # Values will jump around, but will generally increase in magnitude
-        for i in range(cls.varying_num_years-1):
+        for i in range(cls.varying_num_years - 1):
             cls.varying_inflation.append(0.0025 * i)
             cls.varying_stock_return.append(pow(-1, i) * 0.01 * i)
-            cls.varying_bond_return.append(pow(-1, i+1) * 0.005 * i)
+            cls.varying_bond_return.append(pow(-1, i + 1) * 0.005 * i)
             cls.varying_other_return.append(pow(-1, i) * 0.001 * i)
             cls.varying_management_fees.append(0.0002 * i)
         cls.varying_scenario = Scenario(

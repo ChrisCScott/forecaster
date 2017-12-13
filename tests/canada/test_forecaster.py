@@ -2,32 +2,30 @@
 
 import unittest
 from copy import copy
-import context  # pylint: disable=unused-import
-from forecaster.canada.forecaster import Forecaster
-from forecaster.canada.accounts import RRSP, TFSA, TaxableAccount, Money
-from forecaster.canada.tax import Tax
-from forecaster.canada.settings import Settings
-from forecaster.canada import constants
-from tests.test_forecaster import TestForecaster as TestSuperForecaster
+from forecaster import Money
+from forecaster.canada import (
+    ForecasterCanada, RRSP, TFSA, TaxableAccount, TaxCanada, SettingsCanada,
+    constants)
+from tests.test_forecaster import TestForecaster
 
 
-class TestForecaster(TestSuperForecaster):
+class TestForecasterCanada(TestForecaster):
     """ Test forecaster.canada.Forecaster """
 
     def setUp(self):
         """ Sets up class to use Canadian default values. """
         if not hasattr(self, 'settings'):
-            self.settings = Settings
+            self.settings = SettingsCanada
         super().setUp()
 
     def test_init_default(self):
         """ Test Forecaster (Canada) init. """
-        forecaster = Forecaster()
-        self.assertEqual(forecaster.settings, Settings)
+        forecaster = ForecasterCanada()
+        self.assertEqual(forecaster.settings, SettingsCanada)
 
     def test_add_rrsp(self):
         """ Test adding an RRSP with Forecaster (Canada). """
-        forecaster = Forecaster(settings=self.settings)
+        forecaster = ForecasterCanada(settings=self.settings)
         assets = copy(forecaster.assets)
         asset = forecaster.add_rrsp()
         self.assertEqual(asset, RRSP(
@@ -51,7 +49,7 @@ class TestForecaster(TestSuperForecaster):
             constants.TFSA_ANNUAL_ACCRUAL[year]
             for year in constants.TFSA_ANNUAL_ACCRUAL
             if year <= self.settings.initial_year))
-        forecaster = Forecaster(settings=self.settings)
+        forecaster = ForecasterCanada(settings=self.settings)
         assets = copy(forecaster.assets)
         asset = forecaster.add_tfsa()
         self.assertEqual(asset, TFSA(
@@ -71,7 +69,7 @@ class TestForecaster(TestSuperForecaster):
 
     def test_add_taxable_account(self):
         """ Test adding a TaxableAccount with Forecaster (Canada). """
-        forecaster = Forecaster(settings=self.settings)
+        forecaster = ForecasterCanada(settings=self.settings)
         assets = copy(forecaster.assets)
         asset = forecaster.add_taxable_account()
         self.assertEqual(asset, TaxableAccount(
@@ -89,8 +87,8 @@ class TestForecaster(TestSuperForecaster):
 
     def test_set_tax_treatment(self):
         """ Test setting tax treatment with Forecaster (Canada). """
-        forecaster = Forecaster(settings=self.settings)
-        self.assertEqual(forecaster.tax_treatment, Tax(
+        forecaster = ForecasterCanada(settings=self.settings)
+        self.assertEqual(forecaster.tax_treatment, TaxCanada(
             inflation_adjust=self.scenario.inflation_adjust,
             province='BC'
         ))

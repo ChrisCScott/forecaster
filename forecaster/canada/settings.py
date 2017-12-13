@@ -1,9 +1,9 @@
 """ A module providing Canada-specific default values. """
 
-from forecaster.settings import Settings as SuperSettings
+from forecaster import Settings
 
 
-class Settings(SuperSettings):
+class SettingsCanada(Settings):
     """ Container for Canada-specific variables. """
 
     # We use triple-quoted strings as comments to group sets of related
