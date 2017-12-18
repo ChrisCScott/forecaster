@@ -1,0 +1,495 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>forecaster.canada.accounts module &#8212; forecaster 0.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="forecaster.canada.constants module" href="forecaster.canada.constants.html" />
+    <link rel="prev" title="forecaster.canada package" href="forecaster.canada.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-forecaster.canada.accounts">
+<span id="forecaster-canada-accounts-module"></span><h1>forecaster.canada.accounts module<a class="headerlink" href="#module-forecaster.canada.accounts" title="Permalink to this headline">¶</a></h1>
+<p>A module for Canada-specific ledger subclasses.</p>
+<dl class="class">
+<dt id="forecaster.canada.accounts.PrincipleResidence">
+<em class="property">class </em><code class="descclassname">forecaster.canada.accounts.</code><code class="descname">PrincipleResidence</code><span class="sig-paren">(</span><em>owner</em>, <em>balance=0</em>, <em>rate=0</em>, <em>transactions=None</em>, <em>nper=1</em>, <em>inputs=None</em>, <em>initial_year=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts.html#PrincipleResidence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.PrincipleResidence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.Account" title="forecaster.accounts.Account"><code class="xref py py-class docutils literal"><span class="pre">forecaster.accounts.Account</span></code></a></p>
+<p>A Canadian principle residence. Gains in value are not taxable.</p>
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.PrincipleResidence.balance_history">
+<code class="descname">balance_history</code><a class="headerlink" href="#forecaster.canada.accounts.PrincipleResidence.balance_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of balance over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.PrincipleResidence.inflows_history">
+<code class="descname">inflows_history</code><a class="headerlink" href="#forecaster.canada.accounts.PrincipleResidence.inflows_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of inflows over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.PrincipleResidence.outflows_history">
+<code class="descname">outflows_history</code><a class="headerlink" href="#forecaster.canada.accounts.PrincipleResidence.outflows_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of outflows over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.PrincipleResidence.rate_history">
+<code class="descname">rate_history</code><a class="headerlink" href="#forecaster.canada.accounts.PrincipleResidence.rate_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of rate over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.PrincipleResidence.returns_history">
+<code class="descname">returns_history</code><a class="headerlink" href="#forecaster.canada.accounts.PrincipleResidence.returns_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of returns over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.PrincipleResidence.tax_credit_history">
+<code class="descname">tax_credit_history</code><a class="headerlink" href="#forecaster.canada.accounts.PrincipleResidence.tax_credit_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of tax_credit over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.PrincipleResidence.tax_deduction_history">
+<code class="descname">tax_deduction_history</code><a class="headerlink" href="#forecaster.canada.accounts.PrincipleResidence.tax_deduction_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of tax_deduction over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.PrincipleResidence.tax_withheld_history">
+<code class="descname">tax_withheld_history</code><a class="headerlink" href="#forecaster.canada.accounts.PrincipleResidence.tax_withheld_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of tax_withheld over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.PrincipleResidence.taxable_income">
+<code class="descname">taxable_income</code><a class="headerlink" href="#forecaster.canada.accounts.PrincipleResidence.taxable_income" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns cached value in <a href="#id1"><span class="problematic" id="id2">*</span></a>_history dict if available.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.PrincipleResidence.taxable_income_history">
+<code class="descname">taxable_income_history</code><a class="headerlink" href="#forecaster.canada.accounts.PrincipleResidence.taxable_income_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of taxable_income over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.PrincipleResidence.transactions_history">
+<code class="descname">transactions_history</code><a class="headerlink" href="#forecaster.canada.accounts.PrincipleResidence.transactions_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of transactions over all past years.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="forecaster.canada.accounts.RRSP">
+<em class="property">class </em><code class="descclassname">forecaster.canada.accounts.</code><code class="descname">RRSP</code><span class="sig-paren">(</span><em>owner</em>, <em>balance=0</em>, <em>rate=0</em>, <em>transactions=None</em>, <em>nper=1</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>contribution_room=None</em>, <em>contributor=None</em>, <em>inflation_adjust=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts.html#RRSP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.RRSP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.RegisteredAccount" title="forecaster.accounts.RegisteredAccount"><code class="xref py py-class docutils literal"><span class="pre">forecaster.accounts.RegisteredAccount</span></code></a></p>
+<p>A Registered Retirement Savings Plan (Canada).</p>
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.RRSP.balance_history">
+<code class="descname">balance_history</code><a class="headerlink" href="#forecaster.canada.accounts.RRSP.balance_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of balance over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.canada.accounts.RRSP.convert_to_rrif">
+<code class="descname">convert_to_rrif</code><span class="sig-paren">(</span><em>year=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts.html#RRSP.convert_to_rrif"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.RRSP.convert_to_rrif" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts the RRSP to an RRIF.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.RRSP.inflows_history">
+<code class="descname">inflows_history</code><a class="headerlink" href="#forecaster.canada.accounts.RRSP.inflows_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of inflows over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.canada.accounts.RRSP.min_outflow">
+<code class="descname">min_outflow</code><span class="sig-paren">(</span><em>when='end'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts.html#RRSP.min_outflow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.RRSP.min_outflow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Minimum RRSP withdrawal</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.canada.accounts.RRSP.next_contribution_room">
+<code class="descname">next_contribution_room</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts.html#RRSP.next_contribution_room"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.RRSP.next_contribution_room" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines the amount of contribution room for next year.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>income</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a>) – The amount of taxable income for this year
+used to calculate RRSP contribution room.</li>
+<li><strong>year</strong> (<em>int</em>) – The year in which the income is received.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The contribution room for the RRSP for the year <em>after</em>
+<cite>year</cite>.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.RRSP.outflows_history">
+<code class="descname">outflows_history</code><a class="headerlink" href="#forecaster.canada.accounts.RRSP.outflows_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of outflows over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.RRSP.rate_history">
+<code class="descname">rate_history</code><a class="headerlink" href="#forecaster.canada.accounts.RRSP.rate_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of rate over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.RRSP.returns_history">
+<code class="descname">returns_history</code><a class="headerlink" href="#forecaster.canada.accounts.RRSP.returns_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of returns over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.RRSP.tax_credit_history">
+<code class="descname">tax_credit_history</code><a class="headerlink" href="#forecaster.canada.accounts.RRSP.tax_credit_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of tax_credit over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.RRSP.tax_deduction">
+<code class="descname">tax_deduction</code><a class="headerlink" href="#forecaster.canada.accounts.RRSP.tax_deduction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns cached value in <a href="#id3"><span class="problematic" id="id4">*</span></a>_history dict if available.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.RRSP.tax_deduction_history">
+<code class="descname">tax_deduction_history</code><a class="headerlink" href="#forecaster.canada.accounts.RRSP.tax_deduction_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of tax_deduction over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.RRSP.tax_withheld">
+<code class="descname">tax_withheld</code><a class="headerlink" href="#forecaster.canada.accounts.RRSP.tax_withheld" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns cached value in <a href="#id5"><span class="problematic" id="id6">*</span></a>_history dict if available.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.RRSP.tax_withheld_history">
+<code class="descname">tax_withheld_history</code><a class="headerlink" href="#forecaster.canada.accounts.RRSP.tax_withheld_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of tax_withheld over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.RRSP.taxable_income">
+<code class="descname">taxable_income</code><a class="headerlink" href="#forecaster.canada.accounts.RRSP.taxable_income" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns cached value in <a href="#id7"><span class="problematic" id="id8">*</span></a>_history dict if available.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.RRSP.taxable_income_history">
+<code class="descname">taxable_income_history</code><a class="headerlink" href="#forecaster.canada.accounts.RRSP.taxable_income_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of taxable_income over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.RRSP.transactions_history">
+<code class="descname">transactions_history</code><a class="headerlink" href="#forecaster.canada.accounts.RRSP.transactions_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of transactions over all past years.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="forecaster.canada.accounts.TFSA">
+<em class="property">class </em><code class="descclassname">forecaster.canada.accounts.</code><code class="descname">TFSA</code><span class="sig-paren">(</span><em>owner</em>, <em>balance=0</em>, <em>rate=0</em>, <em>transactions=None</em>, <em>nper=1</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>contribution_room=None</em>, <em>contributor=None</em>, <em>inflation_adjust=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts.html#TFSA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.TFSA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.RegisteredAccount" title="forecaster.accounts.RegisteredAccount"><code class="xref py py-class docutils literal"><span class="pre">forecaster.accounts.RegisteredAccount</span></code></a></p>
+<p>A Tax-Free Savings Account (Canada).</p>
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.TFSA.balance_history">
+<code class="descname">balance_history</code><a class="headerlink" href="#forecaster.canada.accounts.TFSA.balance_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of balance over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.TFSA.inflows_history">
+<code class="descname">inflows_history</code><a class="headerlink" href="#forecaster.canada.accounts.TFSA.inflows_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of inflows over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.canada.accounts.TFSA.next_contribution_room">
+<code class="descname">next_contribution_room</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts.html#TFSA.next_contribution_room"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.TFSA.next_contribution_room" title="Permalink to this definition">¶</a></dt>
+<dd><p>The amount of contribution room for next year.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.TFSA.outflows_history">
+<code class="descname">outflows_history</code><a class="headerlink" href="#forecaster.canada.accounts.TFSA.outflows_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of outflows over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.TFSA.rate_history">
+<code class="descname">rate_history</code><a class="headerlink" href="#forecaster.canada.accounts.TFSA.rate_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of rate over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.TFSA.returns_history">
+<code class="descname">returns_history</code><a class="headerlink" href="#forecaster.canada.accounts.TFSA.returns_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of returns over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.TFSA.tax_credit_history">
+<code class="descname">tax_credit_history</code><a class="headerlink" href="#forecaster.canada.accounts.TFSA.tax_credit_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of tax_credit over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.TFSA.tax_deduction_history">
+<code class="descname">tax_deduction_history</code><a class="headerlink" href="#forecaster.canada.accounts.TFSA.tax_deduction_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of tax_deduction over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.TFSA.tax_withheld_history">
+<code class="descname">tax_withheld_history</code><a class="headerlink" href="#forecaster.canada.accounts.TFSA.tax_withheld_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of tax_withheld over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.TFSA.taxable_income">
+<code class="descname">taxable_income</code><a class="headerlink" href="#forecaster.canada.accounts.TFSA.taxable_income" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns cached value in <a href="#id9"><span class="problematic" id="id10">*</span></a>_history dict if available.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.TFSA.taxable_income_history">
+<code class="descname">taxable_income_history</code><a class="headerlink" href="#forecaster.canada.accounts.TFSA.taxable_income_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of taxable_income over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.TFSA.transactions_history">
+<code class="descname">transactions_history</code><a class="headerlink" href="#forecaster.canada.accounts.TFSA.transactions_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of transactions over all past years.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="forecaster.canada.accounts.TaxableAccount">
+<em class="property">class </em><code class="descclassname">forecaster.canada.accounts.</code><code class="descname">TaxableAccount</code><span class="sig-paren">(</span><em>owner</em>, <em>balance=0</em>, <em>rate=0</em>, <em>transactions=None</em>, <em>nper=1</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>acb=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts.html#TaxableAccount"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.TaxableAccount" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.Account" title="forecaster.accounts.Account"><code class="xref py py-class docutils literal"><span class="pre">forecaster.accounts.Account</span></code></a></p>
+<p>A taxable account, non-registered account.</p>
+<p>This account uses Canadian rules for determining taxable income from
+capital assets. That involves tracking the adjusted cost base (acb)
+of the assets.</p>
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.TaxableAccount.acb">
+<code class="descname">acb</code><a class="headerlink" href="#forecaster.canada.accounts.TaxableAccount.acb" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>Money</em> – The adjusted cost base of the assets in the account
+at the start of the year.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.TaxableAccount.capital_gain">
+<code class="descname">capital_gain</code><a class="headerlink" href="#forecaster.canada.accounts.TaxableAccount.capital_gain" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>Money</em> – The total capital gains for the year.
+This is evaluated lazily, so it may return different values
+if you add or remove transactions.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">See Account for other attributes.</code></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">acb</code></dt>
+<dd><p>Returns cached value in <a href="#id11"><span class="problematic" id="id12">*</span></a>_history dict if available.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.TaxableAccount.acb_history">
+<code class="descname">acb_history</code><a class="headerlink" href="#forecaster.canada.accounts.TaxableAccount.acb_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of acb over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.canada.accounts.TaxableAccount.add_transaction">
+<code class="descname">add_transaction</code><span class="sig-paren">(</span><em>value</em>, <em>when='end'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts.html#TaxableAccount.add_transaction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.TaxableAccount.add_transaction" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.TaxableAccount.balance_history">
+<code class="descname">balance_history</code><a class="headerlink" href="#forecaster.canada.accounts.TaxableAccount.balance_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of balance over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">capital_gain</code></dt>
+<dd><p>Returns cached value in <a href="#id13"><span class="problematic" id="id14">*</span></a>_history dict if available.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.TaxableAccount.capital_gain_history">
+<code class="descname">capital_gain_history</code><a class="headerlink" href="#forecaster.canada.accounts.TaxableAccount.capital_gain_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of capital_gain over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.TaxableAccount.inflows_history">
+<code class="descname">inflows_history</code><a class="headerlink" href="#forecaster.canada.accounts.TaxableAccount.inflows_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of inflows over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.TaxableAccount.outflows_history">
+<code class="descname">outflows_history</code><a class="headerlink" href="#forecaster.canada.accounts.TaxableAccount.outflows_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of outflows over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.TaxableAccount.rate_history">
+<code class="descname">rate_history</code><a class="headerlink" href="#forecaster.canada.accounts.TaxableAccount.rate_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of rate over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.TaxableAccount.returns_history">
+<code class="descname">returns_history</code><a class="headerlink" href="#forecaster.canada.accounts.TaxableAccount.returns_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of returns over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.TaxableAccount.tax_credit_history">
+<code class="descname">tax_credit_history</code><a class="headerlink" href="#forecaster.canada.accounts.TaxableAccount.tax_credit_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of tax_credit over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.TaxableAccount.tax_deduction_history">
+<code class="descname">tax_deduction_history</code><a class="headerlink" href="#forecaster.canada.accounts.TaxableAccount.tax_deduction_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of tax_deduction over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.TaxableAccount.tax_withheld_history">
+<code class="descname">tax_withheld_history</code><a class="headerlink" href="#forecaster.canada.accounts.TaxableAccount.tax_withheld_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of tax_withheld over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.TaxableAccount.taxable_income">
+<code class="descname">taxable_income</code><a class="headerlink" href="#forecaster.canada.accounts.TaxableAccount.taxable_income" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns cached value in <a href="#id15"><span class="problematic" id="id16">*</span></a>_history dict if available.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.TaxableAccount.taxable_income_history">
+<code class="descname">taxable_income_history</code><a class="headerlink" href="#forecaster.canada.accounts.TaxableAccount.taxable_income_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of taxable_income over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.accounts.TaxableAccount.transactions_history">
+<code class="descname">transactions_history</code><a class="headerlink" href="#forecaster.canada.accounts.TaxableAccount.transactions_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of transactions over all past years.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">forecaster</a><ul>
+  <li><a href="forecaster.html">forecaster package</a><ul>
+  <li><a href="forecaster.canada.html">forecaster.canada package</a><ul>
+      <li>Previous: <a href="forecaster.canada.html" title="previous chapter">forecaster.canada package</a></li>
+      <li>Next: <a href="forecaster.canada.constants.html" title="next chapter">forecaster.canada.constants module</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Christopher Scott.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/forecaster.canada.accounts.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

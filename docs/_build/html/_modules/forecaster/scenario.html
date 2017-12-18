@@ -1,0 +1,356 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>forecaster.scenario &#8212; forecaster 0.0.1 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for forecaster.scenario</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; Basic economic classes, such as `Scenario` and `Money`. &quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">from</span> <span class="nn">decimal</span> <span class="k">import</span> <span class="n">Decimal</span>
+
+
+<div class="viewcode-block" id="Scenario"><a class="viewcode-back" href="../../forecaster.scenario.html#forecaster.scenario.Scenario">[docs]</a><span class="k">class</span> <span class="nc">Scenario</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Describes an economic scenario over the course of the simulation.</span>
+
+<span class="sd">    For example, provides inflation rates and rates of return for each</span>
+<span class="sd">    year of the simulation. This is the foil to `Strategy`; all</span>
+<span class="sd">    `Scenario` information is reflective of broader economic trends and</span>
+<span class="sd">    is independent of any user action.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        inflation (dict): A dict of {year, inflation} pairs where the</span>
+<span class="sd">            year is an int and inflation is a Decimal.</span>
+<span class="sd">        stock_return (dict): A dict of {int, Decimal} pairs where the</span>
+<span class="sd">            key is the year and the Decimal is the rate of return for</span>
+<span class="sd">            stocks.</span>
+<span class="sd">        bond_return (dict): A dict of {int, Decimal} pairs where the</span>
+<span class="sd">            key is the year and the Decimal is the rate of return for</span>
+<span class="sd">            bonds.</span>
+<span class="sd">        other_return (dict): A dict of {int, Decimal} pairs where the</span>
+<span class="sd">            key is the year and the Decimal is the rate of return for</span>
+<span class="sd">            stocks. Optional.</span>
+<span class="sd">        management_fees (dict): A dict of {int, Decimal} pairs where the</span>
+<span class="sd">            key is the year and the Decimal is the management fees on</span>
+<span class="sd">            investments. Optional.</span>
+<span class="sd">        initial_year (int): The first year of the simulation. Optional.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">,</span> <span class="n">num_years</span><span class="p">,</span>
+        <span class="n">inflation</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">stock_return</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">bond_return</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">other_return</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">management_fees</span><span class="o">=</span><span class="mi">0</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Constructor for `Scenario`.</span>
+
+<span class="sd">        Arguments may be dicts (of {year, value} pairs), lists (or</span>
+<span class="sd">        similar `Sequence`) or scalar values.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            inflation (Decimal, list, dict): The rate of inflation.</span>
+<span class="sd">            stock_return (dict[int, Decimal]): `{year: return}` pairs</span>
+<span class="sd">                for stocks.</span>
+<span class="sd">            bond_return (dict[int, Decimal]): `{year: return}` pairs</span>
+<span class="sd">                for bonds.</span>
+<span class="sd">            other_return (dict[int, Decimal]): `{year: return}` pairs</span>
+<span class="sd">                for other assets (not stocks/bonds), e.g. real estate.</span>
+<span class="sd">            management_fees (Decimal, list, dict): The management fees</span>
+<span class="sd">                charged on investments.</span>
+<span class="sd">            person1_raise_rate (Decimal, list, dict): The amount that is</span>
+<span class="sd">                expected for a raise for person1 this year, expressed as</span>
+<span class="sd">                a percentage (e.g. 0.05 for a 5% raise).</span>
+<span class="sd">            person2_raise_rate (Decimal, list, dict): The amount that is</span>
+<span class="sd">                expected for a raise for person2 this year, expressed as</span>
+<span class="sd">                a percentage (e.g. 0.05 for a 5% raise).</span>
+<span class="sd">            initial_year (int): The first year of the projection.</span>
+<span class="sd">            num_years (int): The number of years in the projection.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            TypeError: Input with unexpected type.</span>
+<span class="sd">            ValueError: Input lists not of matching lengths.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># This object needs to model several economic indicators over</span>
+        <span class="c1"># the course of several years. We could accept these implicitly</span>
+        <span class="c1"># via kwargs (or group them into a more complex container), but</span>
+        <span class="c1"># the present call signature is preferred because it&#39;s more</span>
+        <span class="c1"># explicit and assists Intellisense.</span>
+        <span class="c1"># pylint: disable=too-many-arguments</span>
+
+        <span class="c1"># Set the years that the Scenario spans:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">initial_year</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_years</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">num_years</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">num_years</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Scenario: num_years must be positive.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Now build dicts from the inputs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inflation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_dict</span><span class="p">(</span><span class="n">inflation</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stock_return</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_dict</span><span class="p">(</span><span class="n">stock_return</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bond_return</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_dict</span><span class="p">(</span><span class="n">bond_return</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">other_return</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_dict</span><span class="p">(</span><span class="n">other_return</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">management_fees</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_dict</span><span class="p">(</span><span class="n">management_fees</span><span class="p">,</span>
+                                                <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_build_dict</span><span class="p">(</span><span class="n">in_val</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Helper function that turns `input` into a dict.</span>
+
+<span class="sd">        The resulting dict has {year, value} pairs. If the in_val is a</span>
+<span class="sd">        list, the dict starts with `initial_year` and builds</span>
+<span class="sd">        sequentially from there.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            in_val (*, list, dict): A object that may be a list (or other</span>
+<span class="sd">                Sequence), dict, or non-list non-dict scalar value.</span>
+<span class="sd">                Optional. If not provided, uses default value.</span>
+<span class="sd">            initial_year (int): The initial year, used when `input` is</span>
+<span class="sd">                a list. The first element in the list corresponds to</span>
+<span class="sd">                this year.</span>
+<span class="sd">            default (*): If provided, builds a defaultdict with this</span>
+<span class="sd">                value as the default factory. Must be convertible to</span>
+<span class="sd">                Decimal.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: initial_year is required if input is a list.</span>
+<span class="sd">            ValueError: default cannot be set for scalar input.</span>
+<span class="sd">            ValueError: input and default cannot both be None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># If no in_val is provided, use default as in_val.</span>
+        <span class="k">if</span> <span class="n">in_val</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">default</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s1">&#39;Scenario: in_val and default cannot both be None.&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">Scenario</span><span class="o">.</span><span class="n">_build_dict</span><span class="p">(</span><span class="n">default</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">)</span>
+
+        <span class="c1"># Convert a non-callable `default` to a Decimal-returning</span>
+        <span class="c1"># default factory:</span>
+        <span class="k">if</span> <span class="n">default</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="n">default</span><span class="p">):</span>
+            <span class="n">_default</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="n">default</span><span class="p">)</span>
+
+            <span class="c1"># pylint: disable=function-redefined</span>
+            <span class="c1"># This function redefinition is intentional; it&#39;s equivalent</span>
+            <span class="c1"># to default = lambda: _default</span>
+            <span class="k">def</span> <span class="nf">default</span><span class="p">():</span>
+                <span class="sd">&quot;&quot;&quot; Wraps default value in a default factory. &quot;&quot;&quot;</span>
+                <span class="k">return</span> <span class="n">_default</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">in_val</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">):</span>
+            <span class="c1"># Update in_val&#39;s default factory if `default` was provided:</span>
+            <span class="k">if</span> <span class="n">default</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">in_val</span><span class="o">.</span><span class="n">default_factory</span> <span class="o">=</span> <span class="n">default</span>
+            <span class="c1"># Convert elements to {int: Decimal} pairs</span>
+            <span class="k">return</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="n">in_val</span><span class="o">.</span><span class="n">default_factory</span><span class="p">,</span> <span class="p">{</span>
+                <span class="nb">int</span><span class="p">(</span><span class="n">key</span><span class="p">):</span> <span class="n">Decimal</span><span class="p">(</span><span class="n">in_val</span><span class="p">[</span><span class="n">key</span><span class="p">])</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">in_val</span>
+            <span class="p">})</span>
+
+        <span class="c1"># IF in_val was a dict, cast to default dict (if default was</span>
+        <span class="c1"># provided) and type-cast all entries to {int: Decimal} pairs.</span>
+        <span class="c1"># NOTE: Consider whether we should wrap in_val in a defaultdict</span>
+        <span class="c1"># to avoid stripping away the properties of custom dict-derived</span>
+        <span class="c1"># objects that the user decides to pass in.</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">in_val</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">default</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">out_val</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="n">default</span><span class="p">,</span> <span class="n">in_val</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">out_val</span> <span class="o">=</span> <span class="p">{</span><span class="nb">int</span><span class="p">(</span><span class="n">key</span><span class="p">):</span> <span class="n">Decimal</span><span class="p">(</span><span class="n">in_val</span><span class="p">[</span><span class="n">key</span><span class="p">])</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">in_val</span><span class="p">}</span>
+            <span class="k">return</span> <span class="n">out_val</span>
+
+        <span class="c1"># If it&#39;s not a dict, but it is iterable then convert it into a</span>
+        <span class="c1"># [default]dict</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">in_val</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">Iterable</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">initial_year</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s1">&#39;Scenario: initial_year is required if input is a list.&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">default</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">out_val</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="n">default</span><span class="p">,</span> <span class="p">{</span>
+                    <span class="n">key</span><span class="p">:</span> <span class="n">Decimal</span><span class="p">(</span><span class="n">in_val</span><span class="p">[</span><span class="n">key</span> <span class="o">-</span> <span class="n">initial_year</span><span class="p">])</span>
+                    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">initial_year</span><span class="p">,</span> <span class="n">initial_year</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">in_val</span><span class="p">))</span>
+                <span class="p">})</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">out_val</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="n">key</span><span class="p">:</span> <span class="n">Decimal</span><span class="p">(</span><span class="n">in_val</span><span class="p">[</span><span class="n">key</span> <span class="o">-</span> <span class="n">initial_year</span><span class="p">])</span>
+                    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">initial_year</span><span class="p">,</span> <span class="n">initial_year</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">in_val</span><span class="p">))</span>
+                <span class="p">}</span>
+            <span class="k">return</span> <span class="n">out_val</span>
+
+        <span class="c1"># Otherwise, turn a scalar value into a defaultdict:</span>
+        <span class="c1"># NOTE: default is ignored in this case</span>
+        <span class="n">in_val</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="n">in_val</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">in_val</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Scenario.discount_rate"><a class="viewcode-back" href="../../forecaster.scenario.html#forecaster.scenario.Scenario.discount_rate">[docs]</a>    <span class="k">def</span> <span class="nf">discount_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Returns the discount rate for `year`.</span>
+<span class="sd">        This is the same as calling `inflation(year)` &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflation</span><span class="p">[</span><span class="n">year</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Scenario.accumulation_function"><a class="viewcode-back" href="../../forecaster.scenario.html#forecaster.scenario.Scenario.accumulation_function">[docs]</a>    <span class="k">def</span> <span class="nf">accumulation_function</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year1</span><span class="p">,</span> <span class="n">year2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Returns the discount to be applied over the period from</span>
+<span class="sd">        `year1` to `year2`. If `year1 &gt; year2` then the discount rate is</span>
+<span class="sd">        inverted. &quot;&quot;&quot;</span>
+        <span class="n">accum</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">year1</span> <span class="o">&lt;=</span> <span class="n">year2</span><span class="p">:</span>
+            <span class="c1"># Find the product of all intervening years&#39; discount rates</span>
+            <span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">year1</span><span class="p">,</span> <span class="n">year2</span><span class="p">):</span>
+                <span class="n">accum</span> <span class="o">=</span> <span class="n">accum</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">discount_rate</span><span class="p">(</span><span class="n">year</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">accum</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># Same as above, except invert the result ()</span>
+            <span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">year2</span><span class="p">,</span> <span class="n">year1</span><span class="p">):</span>
+                <span class="n">accum</span> <span class="o">=</span> <span class="n">accum</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">discount_rate</span><span class="p">(</span><span class="n">year</span><span class="p">))</span>
+            <span class="k">return</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">accum</span></div>
+
+<div class="viewcode-block" id="Scenario.inflation_adjustments"><a class="viewcode-back" href="../../forecaster.scenario.html#forecaster.scenario.Scenario.inflation_adjustments">[docs]</a>    <span class="k">def</span> <span class="nf">inflation_adjustments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_year</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Annual inflation adjustment factors relative to base_year.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[int, Decimal]: `{year: adjustment}` pairs.</span>
+<span class="sd">            `adjustment` is the cumulative inflation since `base_year`</span>
+<span class="sd">            (or, for years prior to `base_year`, it is the present value</span>
+<span class="sd">            of $1 in base_year)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">year</span><span class="p">:</span> <span class="n">Decimal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">accumulation_function</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">base_year</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">}</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">inflation_adjust</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Inflation-adjustment factor from base_year to target_year.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            target_year (int): The year for which an</span>
+<span class="sd">                inflation-adjustment factor is desired.</span>
+<span class="sd">            base_year (int): The year in which inflation-adjusted</span>
+<span class="sd">                figures are expressed.</span>
+<span class="sd">                The inflation adjustment for this year is 1.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Decimal: The inflation-adjustment factor from base_year to</span>
+<span class="sd">            target_year. This is the product of inflation-adjustments</span>
+<span class="sd">            for each year (or its inverse, if target_year precedes</span>
+<span class="sd">            base_year).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">InflationAdjust</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Scenario.__len__"><a class="viewcode-back" href="../../forecaster.scenario.html#forecaster.scenario.Scenario.__len__">[docs]</a>    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The number of years modelled by the Scenario. &quot;&quot;&quot;</span>
+        <span class="c1"># pylint: disable=invalid-length-returned</span>
+        <span class="c1"># This returns a positive integer (see type/value-check in init)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_years</span></div>
+
+<div class="viewcode-block" id="Scenario.__iter__"><a class="viewcode-back" href="../../forecaster.scenario.html#forecaster.scenario.Scenario.__iter__">[docs]</a>    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Iterates over years modelled by the Scenario.</span>
+
+<span class="sd">        Yields:</span>
+<span class="sd">            int: Each year modelled by the Scenario, in ascending order.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)):</span>
+            <span class="k">yield</span> <span class="n">year</span></div></div>
+
+
+<div class="viewcode-block" id="InflationAdjust"><a class="viewcode-back" href="../../forecaster.scenario.html#forecaster.scenario.InflationAdjust">[docs]</a><span class="k">class</span> <span class="nc">InflationAdjust</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Callable inflation_adjust object with mutable state. &quot;&quot;&quot;</span>
+
+    <span class="c1"># We do provide public methods, but they&#39;re overrides of magic</span>
+    <span class="c1"># methods (init and call). Anyways, the purpose of this class is</span>
+    <span class="c1"># to expose its state (which a method/function/lambda does not do).</span>
+    <span class="c1"># pylint: disable=too-few-public-methods</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Inits InflationAdjust. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span> <span class="o">=</span> <span class="n">scenario</span>
+
+<div class="viewcode-block" id="InflationAdjust.__call__"><a class="viewcode-back" href="../../forecaster.scenario.html#forecaster.scenario.InflationAdjust.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_year</span><span class="p">,</span> <span class="n">base_year</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Inflation-adjustment factor from base_year to target_year.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            target_year (int): The year for which an</span>
+<span class="sd">                inflation-adjustment factor is desired.</span>
+<span class="sd">            base_year (int): The year in which inflation-adjusted</span>
+<span class="sd">                figures are expressed.</span>
+<span class="sd">                The inflation adjustment for this year is 1.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Decimal: The inflation-adjustment factor from base_year to</span>
+<span class="sd">            target_year. This is the product of inflation-adjustments</span>
+<span class="sd">            for each year (or its inverse, if target_year precedes</span>
+<span class="sd">            base_year).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">base_year</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">base_year</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span><span class="o">.</span><span class="n">initial_year</span>
+        <span class="c1"># TODO: Cache inflation adjustments (memoize accumulation_function?)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span><span class="o">.</span><span class="n">accumulation_function</span><span class="p">(</span><span class="n">base_year</span><span class="p">,</span> <span class="n">target_year</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Christopher Scott.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

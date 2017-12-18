@@ -1,0 +1,636 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>forecaster.forecast &#8212; forecaster 0.0.1 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for forecaster.forecast</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; This module provides a Forecast class for use in forecasts.</span>
+
+<span class="sd">This is where most of the financial forecasting logic of the Forecaster</span>
+<span class="sd">package lives. It applies Scenario, Strategy, and Tax information to</span>
+<span class="sd">determine how account balances will grow or shrink year-over-year.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">forecaster</span> <span class="k">import</span> <span class="n">Money</span>
+
+
+<span class="c1"># pylint: disable=too-many-instance-attributes</span>
+<span class="c1"># This object has a complex state. We could store the records for each</span>
+<span class="c1"># year in some sort of pandas-style frame or table, but for now each</span>
+<span class="c1"># data column is its own named attribute.</span>
+<div class="viewcode-block" id="Forecast"><a class="viewcode-back" href="../../forecaster.forecast.html#forecaster.forecast.Forecast">[docs]</a><span class="k">class</span> <span class="nc">Forecast</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; A financial forecast spanning multiple years.</span>
+
+<span class="sd">    A `Forecast` contains various `Account`s with balances that grow</span>
+<span class="sd">    (or shrink) from year to year. The `Forecast` object also contains</span>
+<span class="sd">    `Person` objects describing the plannees, `Scenario` information</span>
+<span class="sd">    describing economic conditions over the course of the forecast, and</span>
+<span class="sd">    `Strategy` objects to describe the plannee&#39;s behaviour.</span>
+
+<span class="sd">    The `Forecast` manages inflows to and outflows from (or between)</span>
+<span class="sd">    accounts based on `Strategy` and `Scenario` information.</span>
+
+<span class="sd">    The `Forecast` is built around either a single person or a spousal</span>
+<span class="sd">    couple (since spouses have specific tax treatment).</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        people (Iterable[Person]): The people for whom the financial</span>
+<span class="sd">            forecast is being generated. Typically a single person or a</span>
+<span class="sd">            person and their spouse.</span>
+<span class="sd">            Note that all `Person` objects must have the same</span>
+<span class="sd">            `this_year` attribute, as must their various accounts.</span>
+<span class="sd">        assets (Iterable[Account]): Assets of the `people`.</span>
+<span class="sd">        debts (Iterable[Debt]): Debts of the `people`.</span>
+
+<span class="sd">        scenario (Scenario): Economic information for the forecast</span>
+<span class="sd">            (e.g. inflation and stock market returns for each year)</span>
+
+<span class="sd">        contribution_strategy (ContributionStrategy): A callable</span>
+<span class="sd">            object that determines the gross contribution for a</span>
+<span class="sd">            year. See the documentation for `ContributionStrategy` for</span>
+<span class="sd">            acceptable args when calling this object.</span>
+<span class="sd">        withdrawal_strategy (WithdrawalStrategy): A callable</span>
+<span class="sd">            object that determines the amount to withdraw for a</span>
+<span class="sd">            year. See the documentation for `WithdrawalStrategy` for</span>
+<span class="sd">            acceptable args when calling this object.</span>
+<span class="sd">        contribution_transaction_strategy (TransactionStrategy): A</span>
+<span class="sd">            callable object that determines the schedule of</span>
+<span class="sd">            transactions for any contributions during the year.</span>
+<span class="sd">            See the documentation for `TransactionStrategy` for</span>
+<span class="sd">            acceptable args when calling this object.</span>
+<span class="sd">        withdrawal_transaction_strategy</span>
+<span class="sd">            (WithdrawalTransactionStrategy):</span>
+<span class="sd">            A callable object that determines the schedule of</span>
+<span class="sd">            transactions for any contributions during the year.</span>
+<span class="sd">            See the documentation for `TransactionStrategy` for</span>
+<span class="sd">            acceptable args when calling this object.</span>
+<span class="sd">        debt_payment_strategy (DebtPaymentStrategy): A callable object</span>
+<span class="sd">            that determines the schedule of debt payments, including</span>
+<span class="sd">            accelerated debt payments drawn from gross contributions.</span>
+<span class="sd">            See the documentation for `DebtPaymentStrategy` for</span>
+<span class="sd">            acceptable args when calling this object.</span>
+
+<span class="sd">        tax_treatment (Tax): A callable object that determines the total</span>
+<span class="sd">            amount of tax owing in a year. See the documentation for</span>
+<span class="sd">            `Tax` for acceptable args when calling this object.</span>
+
+<span class="sd">        gross_income (dict[int, Money]): The gross income for the</span>
+<span class="sd">            family.</span>
+<span class="sd">        tax_withheld_on_income (dict[int, Money]): Taxes deducted at</span>
+<span class="sd">            source (or paid by installment during the year) on</span>
+<span class="sd">            employment income.</span>
+<span class="sd">        net_income (dict[int, Money]): The net income for the family.</span>
+
+<span class="sd">        tax_carryover (dict[int, Money]): The amount of any refund or</span>
+<span class="sd">            outstanding tax payable, based on the previous year&#39;s</span>
+<span class="sd">            tax withholdings.</span>
+<span class="sd">        other_carryover (dict[int, Money]): The amount of inter-year</span>
+<span class="sd">            carryover (other than tax refunds), such as excess</span>
+<span class="sd">            withdrawals being recontributed.</span>
+<span class="sd">        contributions_from_income (dict[int, Money]): The amount to be</span>
+<span class="sd">            contributed to savings from employment income in each year.</span>
+<span class="sd">        contributions_from_carryover (dict[int, Money]): The amount to</span>
+<span class="sd">            be contributed to savings from tax_carryover and</span>
+<span class="sd">            other_carryover.</span>
+<span class="sd">        contributions_from_asset_sales (dict[int, Money]): The amount to</span>
+<span class="sd">            be contributed to savings from asset sales in each year.</span>
+<span class="sd">        gross_contributions (dict[int, Money]): The amount available to</span>
+<span class="sd">            contribute to savings, before any reductions. This is the</span>
+<span class="sd">            sum of net income and various contributions_from_* values.</span>
+<span class="sd">        reduction_from_debt (dict[int, Money]): The amount to be</span>
+<span class="sd">            diverted from contributions to debt repayment in each year.</span>
+<span class="sd">        reduction_from_other (dict[int, Money]): The amount to be</span>
+<span class="sd">            diverted from contributions for other spending purposes in</span>
+<span class="sd">            each year.</span>
+<span class="sd">        contribution_reductions (dict[int, Money]): Amounts diverted</span>
+<span class="sd">            from savings, such as certain debt repayments or childcare.</span>
+<span class="sd">        net_contributions (dict[int, Money]): The total amount</span>
+<span class="sd">            contributed to savings accounts.</span>
+
+<span class="sd">        principal (dict[int, Money]): The total value of all savings</span>
+<span class="sd">            accounts (but not other property) at the start of each year.</span>
+<span class="sd">        gross_return (dict[int, Money]): The total return on principal</span>
+<span class="sd">            (only for the amounts included in `principal`) by the end of</span>
+<span class="sd">            the year.</span>
+<span class="sd">        tax_withheld_on_return (dict[int, Money]): Taxes deducted at</span>
+<span class="sd">            source on the returns on investments.</span>
+<span class="sd">        net_return (dict[int, Money]): The total return on principal</span>
+<span class="sd">            (only for the amounts included in `principal`) by the end of</span>
+<span class="sd">            the year, net of withholding taxes.</span>
+
+<span class="sd">        withdrawals_from_retirement_accounts (dict[int, Money]): The</span>
+<span class="sd">            total value of all withdrawals from retirement savings</span>
+<span class="sd">            accounts over the year.</span>
+<span class="sd">        withdrawals_from_other_accounts (dict[int, Money]): The total</span>
+<span class="sd">            value of all withdrawals from other savings accounts (e.g.</span>
+<span class="sd">            education or health accounts, if provided) over the year.</span>
+<span class="sd">        gross_withdrawals (dict[int, Money]): The total amount withdrawn</span>
+<span class="sd">            from all accounts.</span>
+<span class="sd">        tax_withheld_on_withdrawals (dict[int, Money]): Taxes deducted</span>
+<span class="sd">            at source on withdrawals from savings.</span>
+<span class="sd">        net_withdrawals (dict[int, Money]): The total amount withdrawn</span>
+<span class="sd">            from all accounts, net of withholding taxes.</span>
+
+<span class="sd">        total_tax_withheld (dict[int, Money]): The total amount of tax</span>
+<span class="sd">            owing for this year which was paid during this year (as</span>
+<span class="sd">            opposed to being paid in the following year the next year).</span>
+<span class="sd">            Note that this is not necessarily the same as the sum of</span>
+<span class="sd">            other `tax_withheld_on_*` attributes, since the tax</span>
+<span class="sd">            authority may require additional withholding taxes (or</span>
+<span class="sd">            payment by installments) based on the person&#39;s overall</span>
+<span class="sd">            circumstances.</span>
+<span class="sd">        total_tax_owing (dict[int, Money]): The total amount of tax</span>
+<span class="sd">            owing for this year (some of which may be paid in the</span>
+<span class="sd">            following year). Does not include outstanding amounts which</span>
+<span class="sd">            became owing but were not paid in the previous year.</span>
+
+<span class="sd">        living_standard (dict[int, Money]): The total amount of money</span>
+<span class="sd">            available for spending, net of taxes, contributions, debt</span>
+<span class="sd">            payments, etc.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># pylint: disable=too-many-arguments</span>
+    <span class="c1"># NOTE: Consider combining the various strategy objects into a dict</span>
+    <span class="c1"># or something (although it&#39;s not clear how this benefits the code.)</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="n">assets</span><span class="p">,</span> <span class="n">debts</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">contribution_strategy</span><span class="p">,</span>
+        <span class="n">withdrawal_strategy</span><span class="p">,</span> <span class="n">contribution_trans_strategy</span><span class="p">,</span>
+        <span class="n">withdrawal_trans_strategy</span><span class="p">,</span> <span class="n">debt_payment_strategy</span><span class="p">,</span> <span class="n">tax_treatment</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Constructs an instance of class Forecast.</span>
+
+<span class="sd">        Iteratively advances `people` and various accounts to the next</span>
+<span class="sd">        year until all years of the `scenario` have been modelled.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            people (Iterable[Person]): The people for whom a forecast</span>
+<span class="sd">                is being generated.</span>
+<span class="sd">            assets (Iterable[Account]): The assets of the people.</span>
+<span class="sd">            debts (Iterable[Account]): The debts of the people.</span>
+<span class="sd">            scenario (Scenario): Economic information for the forecast</span>
+<span class="sd">                (e.g. inflation and stock market returns for each year)</span>
+<span class="sd">            contribution_strategy (ContributionStrategy): A callable</span>
+<span class="sd">                object that determines the gross contribution for a</span>
+<span class="sd">                year. See the documentation for ContributionStrategy for</span>
+<span class="sd">                acceptable args when calling this object.</span>
+<span class="sd">            withdrawal_strategy (WithdrawalStrategy): A callable</span>
+<span class="sd">                object that determines the amount to withdraw for a</span>
+<span class="sd">                year. See the documentation for WithdrawalStrategy for</span>
+<span class="sd">                acceptable args when calling this object.</span>
+<span class="sd">            contribution_transaction_strategy (TransactionStrategy): A</span>
+<span class="sd">                callable object that determines the schedule of</span>
+<span class="sd">                transactions for any contributions during the year.</span>
+<span class="sd">                See the documentation for TransactionStrategy for</span>
+<span class="sd">                acceptable args when calling this object.</span>
+<span class="sd">            withdrawal_transaction_strategy</span>
+<span class="sd">                (WithdrawalTransactionStrategy):</span>
+<span class="sd">                A callable object that determines the schedule of</span>
+<span class="sd">                transactions for any contributions during the year.</span>
+<span class="sd">                See the documentation for TransactionStrategy for</span>
+<span class="sd">                acceptable args when calling this object.</span>
+<span class="sd">            debt_payment_strategy (DebtPaymentStrategy): A callable</span>
+<span class="sd">                object that determines the schedule of debt payments,</span>
+<span class="sd">                including accelerated debt payments drawn from gross</span>
+<span class="sd">                contributions. See the documentation for</span>
+<span class="sd">                `DebtPaymentStrategy` for acceptable args when calling</span>
+<span class="sd">                this object.</span>
+<span class="sd">            tax_treatment (Tax): A callable object that determines the</span>
+<span class="sd">                total amount of tax owing in a year. See documentation</span>
+<span class="sd">                for `Tax` for acceptable args when calling this object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Store input values</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">people</span> <span class="o">=</span> <span class="n">people</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assets</span> <span class="o">=</span> <span class="n">assets</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">debts</span> <span class="o">=</span> <span class="n">debts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span> <span class="o">=</span> <span class="n">scenario</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">contribution_strategy</span> <span class="o">=</span> <span class="n">contribution_strategy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">withdrawal_strategy</span> <span class="o">=</span> <span class="n">withdrawal_strategy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">contribution_trans_strategy</span> <span class="o">=</span> <span class="n">contribution_trans_strategy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">withdrawal_trans_strategy</span> <span class="o">=</span> <span class="n">withdrawal_trans_strategy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">debt_payment_strategy</span> <span class="o">=</span> <span class="n">debt_payment_strategy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tax_treatment</span> <span class="o">=</span> <span class="n">tax_treatment</span>
+
+        <span class="c1"># Prepare output dicts:</span>
+        <span class="c1"># Income</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gross_income</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tax_withheld_on_income</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">net_income</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Gross contribution</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tax_carryover</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">other_carryover</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">asset_sale</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gross_contributions</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Contribution reductions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reduction_from_debt</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reduction_from_tax</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reduction_from_other</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">contribution_reductions</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">net_contributions</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Principal (and return on principal)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">principal</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gross_return</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tax_withheld_on_return</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">net_return</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Withdrawals</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">withdrawals_for_retirement</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">withdrawals_for_tax</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">withdrawals_for_other</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gross_withdrawals</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tax_withheld_on_withdrawals</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">net_withdrawals</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Total tax</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_tax_withheld</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_tax_owing</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Living standard</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">living_standard</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">last_year</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scenario</span><span class="p">)</span>
+        <span class="c1"># Build the forecast year-by-year:</span>
+        <span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">record_year</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
+            <span class="c1"># Don&#39;t advance to the next year if this is the last one:</span>
+            <span class="k">if</span> <span class="n">year</span> <span class="o">&lt;</span> <span class="n">last_year</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">next_year</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Forecast.next_year"><a class="viewcode-back" href="../../forecaster.forecast.html#forecaster.forecast.Forecast.next_year">[docs]</a>    <span class="k">def</span> <span class="nf">next_year</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Adds a year to the forecast. &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">person</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">people</span><span class="p">:</span>
+            <span class="k">while</span> <span class="n">person</span><span class="o">.</span><span class="n">this_year</span> <span class="o">&lt;=</span> <span class="n">year</span><span class="p">:</span>
+                <span class="n">person</span><span class="o">.</span><span class="n">next_year</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">assets</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">debts</span><span class="p">):</span>
+            <span class="k">while</span> <span class="n">account</span><span class="o">.</span><span class="n">this_year</span> <span class="o">&lt;=</span> <span class="n">year</span><span class="p">:</span>
+                <span class="n">account</span><span class="o">.</span><span class="n">next_year</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Forecast.retirement_year"><a class="viewcode-back" href="../../forecaster.forecast.html#forecaster.forecast.Forecast.retirement_year">[docs]</a>    <span class="k">def</span> <span class="nf">retirement_year</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Determines the retirement year for the plannees.</span>
+
+<span class="sd">        TODO: This approach forces `Forecast` to assume that all</span>
+<span class="sd">        plannees retire at the same time, which is often inaccurate.</span>
+<span class="sd">        We should use per-retiree retirement dates, meaning that this</span>
+<span class="sd">        method should be removed and the calling code refactored.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="n">person</span><span class="o">.</span><span class="n">retirement_date</span> <span class="k">for</span> <span class="n">person</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">people</span>
+                <span class="k">if</span> <span class="n">person</span><span class="o">.</span><span class="n">retirement_date</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="p">),</span>
+            <span class="n">default</span><span class="o">=</span><span class="kc">None</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">year</span></div>
+
+<div class="viewcode-block" id="Forecast.record_income"><a class="viewcode-back" href="../../forecaster.forecast.html#forecaster.forecast.Forecast.record_income">[docs]</a>    <span class="k">def</span> <span class="nf">record_income</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Records gross and net income, as well as taxes withheld. &quot;&quot;&quot;</span>
+        <span class="c1"># Determine gross/net income for the family:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gross_income</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">person</span><span class="o">.</span><span class="n">gross_income</span> <span class="k">for</span> <span class="n">person</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">people</span><span class="p">),</span>
+            <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tax_withheld_on_income</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">person</span><span class="o">.</span><span class="n">tax_withheld</span> <span class="k">for</span> <span class="n">person</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">people</span><span class="p">),</span>
+            <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">net_income</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">person</span><span class="o">.</span><span class="n">net_income</span> <span class="k">for</span> <span class="n">person</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">people</span><span class="p">),</span>
+            <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Forecast.record_gross_contribution"><a class="viewcode-back" href="../../forecaster.forecast.html#forecaster.forecast.Forecast.record_gross_contribution">[docs]</a>    <span class="k">def</span> <span class="nf">record_gross_contribution</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Records gross contributions for the year. &quot;&quot;&quot;</span>
+        <span class="c1"># Determine gross contributions:</span>
+        <span class="k">if</span> <span class="n">year</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span><span class="o">.</span><span class="n">initial_year</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tax_carryover</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">other_carryover</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># If more was withheld than was owed, we have a refund</span>
+            <span class="c1"># (positive), otherwise we have an amount owing (negative)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tax_carryover</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">total_tax_withheld</span><span class="p">[</span><span class="n">year</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+                <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_tax_owing</span><span class="p">[</span><span class="n">year</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">other_carryover</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># TODO #30</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">asset_sale</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># TODO #32</span>
+
+        <span class="c1"># Prepare arguments for ContributionStrategy __call__ method:</span>
+        <span class="n">retirement_year</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">retirement_year</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_carryover</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">refund</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_carryover</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">refund</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">other_contributions</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">other_carryover</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">asset_sale</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gross_contributions</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_strategy</span><span class="p">(</span>
+            <span class="n">year</span><span class="o">=</span><span class="n">year</span><span class="p">,</span>
+            <span class="n">refund</span><span class="o">=</span><span class="n">refund</span><span class="p">,</span>
+            <span class="n">other_contributions</span><span class="o">=</span><span class="n">other_contributions</span><span class="p">,</span>
+            <span class="n">net_income</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">net_income</span><span class="p">[</span><span class="n">year</span><span class="p">],</span>
+            <span class="n">gross_income</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">gross_income</span><span class="p">[</span><span class="n">year</span><span class="p">],</span>
+            <span class="n">retirement_year</span><span class="o">=</span><span class="n">retirement_year</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="Forecast.record_contribution_reductions"><a class="viewcode-back" href="../../forecaster.forecast.html#forecaster.forecast.Forecast.record_contribution_reductions">[docs]</a>    <span class="k">def</span> <span class="nf">record_contribution_reductions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Records contribution reductions for the year.</span>
+
+<span class="sd">        This method determines total debt payments and applies per-debt</span>
+<span class="sd">        payments to debt accounts.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Determine contribution reductions:</span>
+        <span class="c1"># TODO: Include reduced contributions to pay for last year&#39;s</span>
+        <span class="c1"># outstanding taxes?</span>
+        <span class="c1"># NOTE: We&#39;ll add another reduction dict for childcare expenses</span>
+        <span class="c1"># in a future version.</span>
+        <span class="c1"># First determine miscellaneous other reductions (these take</span>
+        <span class="c1"># priority because they&#39;re generally user-input):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reduction_from_other</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># TODO</span>
+        <span class="c1"># Then determine reductions due to debt payments:</span>
+        <span class="n">debt_payments</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">debt_payment_strategy</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gross_contributions</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">reduction_from_other</span><span class="p">[</span><span class="n">year</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">debts</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reduction_from_debt</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="n">debt_payments</span><span class="p">[</span><span class="n">debt</span><span class="p">]</span> <span class="o">*</span> <span class="n">debt</span><span class="o">.</span><span class="n">reduction_rate</span>
+                <span class="k">for</span> <span class="n">debt</span> <span class="ow">in</span> <span class="n">debt_payments</span>
+            <span class="p">),</span>
+            <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="c1"># Now determine the total reductions across all reduction dicts:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">contribution_reductions</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reduction_from_debt</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">+</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reduction_from_other</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="c1"># If there&#39;s contribution room left, use it to pay for any taxes</span>
+        <span class="c1"># outstanding:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_carryover</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">available</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">gross_contributions</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
+                <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_reductions</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="n">reduction</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">tax_carryover</span><span class="p">[</span><span class="n">year</span><span class="p">],</span> <span class="n">available</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reduction_from_tax</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">reduction</span><span class="p">,</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+            <span class="c1"># Update contribution reductions:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">contribution_reductions</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reduction_from_tax</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reduction_from_tax</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># Apply debt payment transactions</span>
+        <span class="k">for</span> <span class="n">debt</span> <span class="ow">in</span> <span class="n">debt_payments</span><span class="p">:</span>
+            <span class="n">debt</span><span class="o">.</span><span class="n">add_transaction</span><span class="p">(</span>
+                <span class="n">debt_payments</span><span class="p">[</span><span class="n">debt</span><span class="p">],</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">debt_payment_strategy</span><span class="o">.</span><span class="n">timing</span>
+            <span class="p">)</span></div>
+
+<div class="viewcode-block" id="Forecast.record_net_contributions"><a class="viewcode-back" href="../../forecaster.forecast.html#forecaster.forecast.Forecast.record_net_contributions">[docs]</a>    <span class="k">def</span> <span class="nf">record_net_contributions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Records net contributions.</span>
+
+<span class="sd">        This method determines total net (i.e. actual) contributions and</span>
+<span class="sd">        adds inflows to the appropriate accounts.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Reductions can potentially exceed gross_contributions (e.g.</span>
+        <span class="c1"># due to minimum debt payments or childcare expenses).</span>
+        <span class="c1"># Ensure the net_contributions is not negative:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">net_contributions</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gross_contributions</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">-</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">contribution_reductions</span><span class="p">[</span><span class="n">year</span><span class="p">],</span>
+            <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Add inflow transactions to debts and accounts based on our</span>
+        <span class="c1"># net contributions and debt payments:</span>
+        <span class="n">contributions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_trans_strategy</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">net_contributions</span><span class="p">[</span><span class="n">year</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assets</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">contributions</span><span class="p">:</span>
+            <span class="n">account</span><span class="o">.</span><span class="n">add_transaction</span><span class="p">(</span>
+                <span class="n">contributions</span><span class="p">[</span><span class="n">account</span><span class="p">],</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">contribution_trans_strategy</span><span class="o">.</span><span class="n">timing</span>
+            <span class="p">)</span></div>
+
+<div class="viewcode-block" id="Forecast.record_principal"><a class="viewcode-back" href="../../forecaster.forecast.html#forecaster.forecast.Forecast.record_principal">[docs]</a>    <span class="k">def</span> <span class="nf">record_principal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Records principal balance for the year. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">principal</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">account</span><span class="o">.</span><span class="n">balance</span> <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">assets</span><span class="p">),</span>
+            <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Forecast.record_returns"><a class="viewcode-back" href="../../forecaster.forecast.html#forecaster.forecast.Forecast.record_returns">[docs]</a>    <span class="k">def</span> <span class="nf">record_returns</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Records gross and net returns, as well as tax withheld. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gross_return</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">returns</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">assets</span><span class="p">),</span>
+            <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+        <span class="c1"># TODO: Figure out what to do with tax_withheld_on_return.</span>
+        <span class="c1"># Right now there&#39;s no way to distinguish between tax withheld</span>
+        <span class="c1"># in an account due to returns vs. due to withdrawals.</span>
+        <span class="c1"># IDEA: Eliminate disctinction between tax withheld on returns</span>
+        <span class="c1"># vs. withdrawals and only consider tax withheld on accounts?</span>
+        <span class="c1"># This will generally be paid from the accounts themselves, so</span>
+        <span class="c1"># it probably makes sense to consider it all together.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tax_withheld_on_return</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># TODO</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">net_return</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gross_return</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_withheld_on_return</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="Forecast.record_withdrawals"><a class="viewcode-back" href="../../forecaster.forecast.html#forecaster.forecast.Forecast.record_withdrawals">[docs]</a>    <span class="k">def</span> <span class="nf">record_withdrawals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Records withdrawals for the year.</span>
+
+<span class="sd">        Withdrawals are divided into retirement and other withdrawals.</span>
+<span class="sd">        Taxes on withdrawals are determined to produce a figure for</span>
+<span class="sd">        net withdrawals.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">retirement_year</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">retirement_year</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">withdrawals_for_retirement</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">withdrawal_strategy</span><span class="p">(</span>
+                <span class="n">benefits</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+                <span class="n">net_income</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">net_income</span><span class="p">[</span><span class="n">year</span><span class="p">],</span>
+                <span class="n">gross_income</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">gross_income</span><span class="p">[</span><span class="n">year</span><span class="p">],</span>
+                <span class="n">principal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">principal</span><span class="p">[</span><span class="n">year</span><span class="p">],</span>
+                <span class="n">retirement_year</span><span class="o">=</span><span class="n">retirement_year</span><span class="p">,</span>
+                <span class="n">year</span><span class="o">=</span><span class="n">year</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="c1"># If we have a tax balance to pay off, add that here.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_carryover</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">withdrawals_for_tax</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">reduction_from_tax</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_carryover</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">withdrawals_for_tax</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">withdrawals_for_other</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># TODO</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gross_withdrawals</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">withdrawals_for_retirement</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
+            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">withdrawals_for_tax</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
+            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">withdrawals_for_other</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">tax_withheld_on_withdrawals</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">account</span><span class="o">.</span><span class="n">tax_withheld</span> <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">assets</span><span class="p">),</span>
+            <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="c1"># TODO: Lumping net withdrawals together doesn&#39;t seem very</span>
+        <span class="c1"># useful. Consider splitting apart tax withholdings by</span>
+        <span class="c1"># withdrawal type and finding net withdrawals independently.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">net_withdrawals</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gross_withdrawals</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">-</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tax_withheld_on_withdrawals</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="Forecast.record_total_tax"><a class="viewcode-back" href="../../forecaster.forecast.html#forecaster.forecast.Forecast.record_total_tax">[docs]</a>    <span class="k">def</span> <span class="nf">record_total_tax</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Records total tax withheld and payable in the year.</span>
+
+<span class="sd">        TODO: Deal with tax owing but not withheld - arrange to pay this</span>
+<span class="sd">        in the following year? Apply against investment balances? Draw</span>
+<span class="sd">        a portion from income (i.e. as a living expense)?</span>
+<span class="sd">        Note that in Canada, if more than $3000 or so of tax is owing</span>
+<span class="sd">        but not withheld, the CRA will put you on an instalments plan,</span>
+<span class="sd">        so you can&#39;t really defer your total tax liability into the next</span>
+<span class="sd">        year.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_tax_withheld</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tax_withheld_on_income</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">+</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tax_withheld_on_return</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">+</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tax_withheld_on_withdrawals</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_tax_owing</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_treatment</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">people</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Forecast.record_living_standard"><a class="viewcode-back" href="../../forecaster.forecast.html#forecaster.forecast.Forecast.record_living_standard">[docs]</a>    <span class="k">def</span> <span class="nf">record_living_standard</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Records the living standard for each year.</span>
+
+<span class="sd">        The living standard is the money available to spend after all</span>
+<span class="sd">        taxes, debt repayments (other than debts included in living</span>
+<span class="sd">        expenses), and savings are deducted.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TODO: Check Excel spreadsheet for calculation of this.</span>
+        <span class="c1"># As currently shown, this deducts all taxes owing from the</span>
+        <span class="c1"># living standard - even if some of those taxes are attributable</span>
+        <span class="c1"># to activity within a savings account (and not withdrawal/etc.</span>
+        <span class="c1"># activity that funds the living standard)</span>
+
+        <span class="c1"># Determine whether we are adding a tax refund to our living</span>
+        <span class="c1"># standard or deducting a tax liability.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_carryover</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">tax_refund</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">tax_carryover</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">*</span>
+                <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_strategy</span><span class="o">.</span><span class="n">refund_reinvestment_rate</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">tax_bill</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tax_refund</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">tax_bill</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">tax_carryover</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">reduction_from_tax</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
+            <span class="p">)</span>
+        <span class="c1"># Living standard is all inflows to personal (non-investment)</span>
+        <span class="c1"># accounts (from employment, withdrawals, tax refunds, benefits,</span>
+        <span class="c1"># etc.) minus any outflows for non-living-expense liabilities</span>
+        <span class="c1"># (from savings, tax withholding or amounts payable, and other</span>
+        <span class="c1"># non-living-expense items deducted from our savings rate).</span>
+        <span class="c1"># NOTE: contribution_reductions can exceed gross_contributions,</span>
+        <span class="c1"># in which case living_expenses will take a hit.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">living_standard</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>  <span class="c1"># inflows</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gross_income</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
+            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">gross_withdrawals</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
+            <span class="o">+</span> <span class="n">tax_refund</span>
+        <span class="p">)</span> <span class="o">-</span> <span class="p">(</span>  <span class="c1"># outflows</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">total_tax_withheld</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
+            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">net_contributions</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
+            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_reductions</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
+            <span class="o">+</span> <span class="n">tax_bill</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="Forecast.record_year"><a class="viewcode-back" href="../../forecaster.forecast.html#forecaster.forecast.Forecast.record_year">[docs]</a>    <span class="k">def</span> <span class="nf">record_year</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Stores high-level values across accounts for this year.&quot;&quot;&quot;</span>
+        <span class="c1"># NOTE: Order is important here. This method is only split into</span>
+        <span class="c1"># its various sub-methods for readability - it really is just</span>
+        <span class="c1"># one long chain of procedural logic.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">record_income</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">record_gross_contribution</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">record_contribution_reductions</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">record_net_contributions</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">record_principal</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">record_withdrawals</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">record_returns</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">record_total_tax</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">record_living_standard</span><span class="p">(</span><span class="n">year</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Christopher Scott.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

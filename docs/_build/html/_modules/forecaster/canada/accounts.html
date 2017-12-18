@@ -1,0 +1,559 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>forecaster.canada.accounts &#8212; forecaster 0.0.1 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for forecaster.canada.accounts</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; A module for Canada-specific ledger subclasses. &quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">forecaster</span> <span class="k">import</span> <span class="n">Money</span><span class="p">,</span> <span class="n">Account</span><span class="p">,</span> <span class="n">RegisteredAccount</span>
+<span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="p">(</span>
+    <span class="n">recorded_property</span><span class="p">,</span> <span class="n">recorded_property_cached</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">forecaster.utility</span> <span class="k">import</span> <span class="p">(</span>
+    <span class="n">build_inflation_adjust</span><span class="p">,</span> <span class="n">extend_inflation_adjusted</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">forecaster.canada</span> <span class="k">import</span> <span class="n">constants</span>
+
+
+<div class="viewcode-block" id="RRSP"><a class="viewcode-back" href="../../../forecaster.canada.accounts.html#forecaster.canada.accounts.RRSP">[docs]</a><span class="k">class</span> <span class="nc">RRSP</span><span class="p">(</span><span class="n">RegisteredAccount</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; A Registered Retirement Savings Plan (Canada). &quot;&quot;&quot;</span>
+
+    <span class="c1"># Explicitly repeat superclass args for the sake of intellisense.</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">contribution_room</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">contributor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Initializes an RRSP object.</span>
+
+<span class="sd">        See documentation for `Account` and `RegisteredAccount` for</span>
+<span class="sd">        information on any args not listed below.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            inflation_adjust: A method with the following form:</span>
+<span class="sd">                `inflation_adjust(val, this_year, target_year)`.</span>
+<span class="sd">                Returns a Decimal object which is the inflation-</span>
+<span class="sd">                adjustment factor from base_year to target_year.</span>
+<span class="sd">                Optional.</span>
+<span class="sd">                If not provided, all values are assumed to be in real</span>
+<span class="sd">                terms, so no inflation adjustment is performed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># This method does have a lot of arguments, but they&#39;re mostly</span>
+        <span class="c1"># inherited from a superclass. We&#39;re stuck with them here.</span>
+        <span class="c1"># pylint: disable=too-many-arguments</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">owner</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="n">balance</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="n">rate</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="n">transactions</span><span class="p">,</span>
+            <span class="n">nper</span><span class="o">=</span><span class="n">nper</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="n">inputs</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="n">initial_year</span><span class="p">,</span>
+            <span class="n">contribution_room</span><span class="o">=</span><span class="n">contribution_room</span><span class="p">,</span> <span class="n">contributor</span><span class="o">=</span><span class="n">contributor</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># Although `person` might provide a retirement_age, the RRSP</span>
+        <span class="c1"># won&#39;t necessarily be turned into an RRIF at the retirement</span>
+        <span class="c1"># date (depending on withdrawal strategy).</span>
+        <span class="c1"># TODO: Allow RRIF_conversion_year to be passed as an argument?</span>
+        <span class="c1"># We could use the below convert-at-71 logic if None is passed.</span>
+        <span class="c1"># TODO: Automatically trigger RRIF conversion when an outflow</span>
+        <span class="c1"># is detected? (Perhaps control this behaviour with an arg?)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span> <span class="o">=</span> <span class="n">build_inflation_adjust</span><span class="p">(</span><span class="n">inflation_adjust</span><span class="p">)</span>
+
+        <span class="c1"># The law requires that RRSPs be converted to RRIFs by a certain</span>
+        <span class="c1"># age (currently 71). We can calculate that here:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rrif_conversion_year</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span> <span class="o">+</span> \
+            <span class="n">constants</span><span class="o">.</span><span class="n">RRSP_RRIF_CONVERSION_AGE</span> <span class="o">-</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">owner</span><span class="o">.</span><span class="n">age</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span><span class="p">)</span>
+
+        <span class="c1"># Determine the max contribution room accrual in initial_year:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_initial_accrual</span> <span class="o">=</span> <span class="n">extend_inflation_adjusted</span><span class="p">(</span>
+            <span class="n">constants</span><span class="o">.</span><span class="n">RRSP_ACCRUAL_MAX</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span>
+        <span class="p">)</span>
+
+        <span class="c1"># If no contribution room is provided and none is already known,</span>
+        <span class="c1"># set contribution_room to 0.</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">contribution_room</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room_history</span>
+        <span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+<div class="viewcode-block" id="RRSP.convert_to_rrif"><a class="viewcode-back" href="../../../forecaster.canada.accounts.html#forecaster.canada.accounts.RRSP.convert_to_rrif">[docs]</a>    <span class="k">def</span> <span class="nf">convert_to_rrif</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Converts the RRSP to an RRIF. &quot;&quot;&quot;</span>
+        <span class="n">year</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span> <span class="k">if</span> <span class="n">year</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">year</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rrif_conversion_year</span> <span class="o">=</span> <span class="n">year</span></div>
+
+    <span class="nd">@recorded_property</span>
+    <span class="k">def</span> <span class="nf">taxable_income</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The total tax owing on withdrawals from the account.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The taxable income owing on withdrawals the account as a</span>
+<span class="sd">                `Money` object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Return the sum of all withdrawals from the account.</span>
+        <span class="c1"># pylint: disable=invalid-unary-operand-type</span>
+        <span class="c1"># Pylint thinks this doesn&#39;t support negation via `-`, but it&#39;s</span>
+        <span class="c1"># wrong - `outflows` returns `Money`, which supports `-`:</span>
+        <span class="k">return</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">outflows</span>
+
+    <span class="nd">@recorded_property</span>
+    <span class="k">def</span> <span class="nf">tax_withheld</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The total tax withheld from the account for the year.</span>
+
+<span class="sd">        For RRSPs, this is calculated according to a CRA formula.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># NOTE: It&#39;s possible to attract a lower tax rate by making</span>
+        <span class="c1"># smaller one-off withdrawals, but in general multiple</span>
+        <span class="c1"># withdrawals will be treated as a lump sum for the purpose of</span>
+        <span class="c1"># determining the tax rate, so we pretend it&#39;s a lump sum.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">rrif_conversion_year</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span><span class="p">:</span>
+            <span class="n">taxable_income</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">taxable_income</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Only withdrawals in excess of the minimum RRIF withdrawal</span>
+            <span class="c1"># are hit by the withholding tax.</span>
+            <span class="n">taxable_income</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">taxable_income</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_outflow</span>
+
+        <span class="c1"># TODO: inflation-adjust `x` to match the inflation-adjustment</span>
+        <span class="c1"># year of taxable_income? (this would likely require identifying</span>
+        <span class="c1"># a year for which `x` is expressed in nominal dollars, probably</span>
+        <span class="c1"># in Constants; maybe make RRSPWithholdingTaxRate a dict of</span>
+        <span class="c1"># {year: {amount: rate}}?)</span>
+        <span class="c1"># TODO: Pass a Tax object for RRSP tax treatment?</span>
+        <span class="n">tax_rate</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">constants</span><span class="o">.</span><span class="n">RRSP_WITHHOLDING_TAX_RATE</span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
+             <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">constants</span><span class="o">.</span><span class="n">RRSP_WITHHOLDING_TAX_RATE</span>
+             <span class="k">if</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="n">taxable_income</span><span class="o">.</span><span class="n">amount</span><span class="p">),</span>
+            <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">taxable_income</span> <span class="o">*</span> <span class="n">tax_rate</span>
+
+    <span class="nd">@recorded_property</span>
+    <span class="k">def</span> <span class="nf">tax_deduction</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The total sum of tax deductions available for the year.</span>
+
+<span class="sd">        For RRSPs, this the amount contributed in the year.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflows</span>
+
+<div class="viewcode-block" id="RRSP.next_contribution_room"><a class="viewcode-back" href="../../../forecaster.canada.accounts.html#forecaster.canada.accounts.RRSP.next_contribution_room">[docs]</a>    <span class="k">def</span> <span class="nf">next_contribution_room</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Determines the amount of contribution room for next year.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            income (Money): The amount of taxable income for this year</span>
+<span class="sd">                used to calculate RRSP contribution room.</span>
+<span class="sd">            year (int): The year in which the income is received.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The contribution room for the RRSP for the year *after*</span>
+<span class="sd">            `year`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">year</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">contributor</span><span class="o">.</span><span class="n">age</span><span class="p">(</span><span class="n">year</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">constants</span><span class="o">.</span><span class="n">RRSP_RRIF_CONVERSION_AGE</span><span class="p">:</span>
+            <span class="c1"># If past the mandatory RRIF conversion age, no</span>
+            <span class="c1"># contributions are allowed.</span>
+            <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># TODO: Add pension adjustment?</span>
+
+            <span class="c1"># Contribution room is determined based on the contributor&#39;s</span>
+            <span class="c1"># gross income for the previous year.</span>
+            <span class="n">income</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">contributor</span><span class="o">.</span><span class="n">gross_income</span>
+
+            <span class="c1"># First, determine how much more contribution room will</span>
+            <span class="c1"># accrue due to this year&#39;s income:</span>
+            <span class="n">accrual</span> <span class="o">=</span> <span class="n">income</span> <span class="o">*</span> <span class="n">constants</span><span class="o">.</span><span class="n">RRSP_ACCRUAL_RATE</span>
+            <span class="c1"># Second, compare to the (inflation-adjusted) max accrual</span>
+            <span class="c1"># for next year:</span>
+            <span class="n">max_accrual</span> <span class="o">=</span> <span class="n">extend_inflation_adjusted</span><span class="p">(</span>
+                <span class="n">constants</span><span class="o">.</span><span class="n">RRSP_ACCRUAL_MAX</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">,</span>
+                <span class="n">year</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="p">)</span>
+            <span class="c1"># Don&#39;t forget to add in any rollovers:</span>
+            <span class="n">rollover</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflows</span>
+            <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="n">accrual</span><span class="p">,</span> <span class="n">Money</span><span class="p">(</span><span class="n">max_accrual</span><span class="p">))</span> <span class="o">+</span> <span class="n">rollover</span></div>
+
+<div class="viewcode-block" id="RRSP.min_outflow"><a class="viewcode-back" href="../../../forecaster.canada.accounts.html#forecaster.canada.accounts.RRSP.min_outflow">[docs]</a>    <span class="k">def</span> <span class="nf">min_outflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Minimum RRSP withdrawal &quot;&quot;&quot;</span>
+        <span class="c1"># Minimum withdrawals are required the year after converting to</span>
+        <span class="c1"># an RRIF. How it is calculated depends on the person&#39;s age.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">rrif_conversion_year</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span><span class="p">:</span>
+            <span class="n">age</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">contributor</span><span class="o">.</span><span class="n">age</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">this_year</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">age</span> <span class="ow">in</span> <span class="n">constants</span><span class="o">.</span><span class="n">RRSP_RRIF_WITHDRAWAL_MIN</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">constants</span><span class="o">.</span><span class="n">RRSP_RRIF_WITHDRAWAL_MIN</span><span class="p">[</span><span class="n">age</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">balance</span>
+            <span class="k">elif</span> <span class="n">age</span> <span class="o">&gt;</span> <span class="nb">max</span><span class="p">(</span><span class="n">constants</span><span class="o">.</span><span class="n">RRSP_RRIF_WITHDRAWAL_MIN</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">balance</span> <span class="o">*</span> \
+                    <span class="nb">max</span><span class="p">(</span><span class="n">constants</span><span class="o">.</span><span class="n">RRSP_RRIF_WITHDRAWAL_MIN</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">balance</span> <span class="o">/</span> <span class="p">(</span><span class="mi">90</span> <span class="o">-</span> <span class="n">age</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div></div>
+
+    <span class="c1"># TODO: Determine whether there are any RRSP tax credits to</span>
+    <span class="c1"># implement in an overloaded _tax_credit method</span>
+    <span class="c1"># (e.g. pension tax credit?)</span>
+
+
+<span class="c1"># TODO: Implement SpousalRRSP? (It may be that RRSP provides all of the</span>
+<span class="c1"># logic necessary, but consider that we need a way to know who receives</span>
+<span class="c1"># the deduction - this can be done by type-checking an account in the</span>
+<span class="c1"># Tax class, or perhaps we should add a method</span>
+<span class="c1"># [tax_deduction_eligibility?] that identifies one or more people who</span>
+<span class="c1"># may claim the deduction).</span>
+<span class="c1"># NOTE: This can get complicated quickly. It&#39;s probably best to</span>
+<span class="c1"># implement a test in the Tax object rather than go for totally generic</span>
+<span class="c1"># code at this point.</span>
+
+
+<div class="viewcode-block" id="TFSA"><a class="viewcode-back" href="../../../forecaster.canada.accounts.html#forecaster.canada.accounts.TFSA">[docs]</a><span class="k">class</span> <span class="nc">TFSA</span><span class="p">(</span><span class="n">RegisteredAccount</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; A Tax-Free Savings Account (Canada). &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                 <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">contribution_room</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">contributor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Initializes a TFSA object.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            inflation_adjust: A method with the following form:</span>
+<span class="sd">                `inflation_adjust(val, this_year, target_year)`.</span>
+<span class="sd">                Returns a Decimal object which is the inflation-</span>
+<span class="sd">                adjustment factor from base_year to target_year.</span>
+<span class="sd">                Optional.</span>
+<span class="sd">                If not provided, all values are assumed to be in real</span>
+<span class="sd">                terms, so no inflation adjustment is performed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># This method does have a lot of arguments, but they&#39;re mostly</span>
+        <span class="c1"># inherited from a superclass. We&#39;re stuck with them here.</span>
+        <span class="c1"># pylint: disable=too-many-arguments</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">owner</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="n">balance</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="n">rate</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="n">transactions</span><span class="p">,</span>
+            <span class="n">nper</span><span class="o">=</span><span class="n">nper</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="n">inputs</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="n">initial_year</span><span class="p">,</span>
+            <span class="n">contribution_room</span><span class="o">=</span><span class="n">contribution_room</span><span class="p">,</span> <span class="n">contributor</span><span class="o">=</span><span class="n">contributor</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span> <span class="o">=</span> <span class="n">build_inflation_adjust</span><span class="p">(</span><span class="n">inflation_adjust</span><span class="p">)</span>
+
+        <span class="c1"># This is our baseline for estimating contribution room</span>
+        <span class="c1"># (By law, inflation-adjustments are relative to 2009, the</span>
+        <span class="c1"># first year that TFSAs were available, and rounded to the</span>
+        <span class="c1"># nearest $500)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_base_accrual_year</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">constants</span><span class="o">.</span><span class="n">TFSA_ANNUAL_ACCRUAL</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_base_accrual</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">extend_inflation_adjusted</span><span class="p">(</span>
+            <span class="n">constants</span><span class="o">.</span><span class="n">TFSA_ANNUAL_ACCRUAL</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_base_accrual_year</span>
+        <span class="p">)</span> <span class="o">/</span> <span class="n">constants</span><span class="o">.</span><span class="n">TFSA_ACCRUAL_ROUNDING_FACTOR</span><span class="p">)</span> <span class="o">*</span> \
+            <span class="n">constants</span><span class="o">.</span><span class="n">TFSA_ACCRUAL_ROUNDING_FACTOR</span>
+
+        <span class="c1"># If contribution_room is not provided (and it&#39;s already known</span>
+        <span class="c1"># based on other TFSA accounts), infer it based on age.</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">contribution_room</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room_history</span>
+        <span class="p">):</span>
+            <span class="c1"># We might already have set contribution room for years</span>
+            <span class="c1"># before this initial_year, in which case we should start</span>
+            <span class="c1"># extrapolate from the following year onwards:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room_history</span><span class="p">:</span>
+                <span class="n">start_year</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+                    <span class="n">year</span> <span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room_history</span>
+                    <span class="k">if</span> <span class="n">year</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span>
+                <span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="n">contribution_room</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room_history</span><span class="p">[</span>
+                    <span class="n">start_year</span> <span class="o">-</span> <span class="mi">1</span>
+                <span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># If there&#39;s no known contribution room, simply sum up</span>
+                <span class="c1"># all of the default accruals from the first year the</span>
+                <span class="c1"># owner was eligible:</span>
+                <span class="n">start_year</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span> <span class="o">-</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">contributor</span><span class="o">.</span><span class="n">age</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span><span class="p">)</span> <span class="o">+</span>
+                    <span class="n">constants</span><span class="o">.</span><span class="n">TFSA_ELIGIBILITY_AGE</span><span class="p">,</span>
+                    <span class="nb">min</span><span class="p">(</span><span class="n">constants</span><span class="o">.</span><span class="n">TFSA_ANNUAL_ACCRUAL</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+                <span class="p">)</span>
+                <span class="n">contribution_room</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="c1"># Accumulate contribution room over applicable years</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room</span> <span class="o">=</span> <span class="n">contribution_room</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_contribution_room_accrual</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">start_year</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_contribution_room_accrual</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The amount of contribution room accrued in a given year.</span>
+
+<span class="sd">        This excludes any rollovers - it&#39;s just the statutory accrual.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># No accrual if the owner is too young to qualify:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">owner</span><span class="o">.</span><span class="n">age</span><span class="p">(</span><span class="n">year</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">constants</span><span class="o">.</span><span class="n">TFSA_ELIGIBILITY_AGE</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># If we already have an accrual rate set for this year, use that</span>
+        <span class="k">if</span> <span class="n">year</span> <span class="ow">in</span> <span class="n">constants</span><span class="o">.</span><span class="n">TFSA_ANNUAL_ACCRUAL</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="n">constants</span><span class="o">.</span><span class="n">TFSA_ANNUAL_ACCRUAL</span><span class="p">[</span><span class="n">year</span><span class="p">])</span>
+        <span class="c1"># Otherwise, infer the accrual rate by inflation-adjusting the</span>
+        <span class="c1"># base rate and rounding.</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Money</span><span class="p">(</span>
+                <span class="nb">round</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_base_accrual</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_base_accrual_year</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span> <span class="o">/</span>
+                    <span class="n">constants</span><span class="o">.</span><span class="n">TFSA_ACCRUAL_ROUNDING_FACTOR</span><span class="p">)</span> <span class="o">*</span>
+                <span class="n">constants</span><span class="o">.</span><span class="n">TFSA_ACCRUAL_ROUNDING_FACTOR</span>
+            <span class="p">)</span>
+
+<div class="viewcode-block" id="TFSA.next_contribution_room"><a class="viewcode-back" href="../../../forecaster.canada.accounts.html#forecaster.canada.accounts.TFSA.next_contribution_room">[docs]</a>    <span class="k">def</span> <span class="nf">next_contribution_room</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The amount of contribution room for next year. &quot;&quot;&quot;</span>
+        <span class="n">year</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span>
+
+        <span class="c1"># If the contribution room for next year is already known, use</span>
+        <span class="c1"># that:</span>
+        <span class="k">if</span> <span class="n">year</span> <span class="o">+</span> <span class="mi">1</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room_history</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room_history</span><span class="p">[</span><span class="n">year</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">contribution_room</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contribution_room_accrual</span><span class="p">(</span><span class="n">year</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># On top of this year&#39;s accrual, roll over unused contribution</span>
+        <span class="c1"># room, plus any withdrawals (less contributions) from last year</span>
+        <span class="k">if</span> <span class="n">year</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room_history</span><span class="p">:</span>
+            <span class="n">rollover</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room_history</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span>
+                <span class="c1"># pylint: disable=no-member</span>
+                <span class="c1"># Pylint gets confused by attributes added by metaclass.</span>
+                <span class="c1"># recorded_property members always have a corresponding</span>
+                <span class="c1"># *_history member:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">outflows_history</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflows_history</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rollover</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="n">contribution_room</span> <span class="o">+</span> <span class="n">rollover</span></div>
+
+    <span class="nd">@recorded_property</span>
+    <span class="k">def</span> <span class="nf">taxable_income</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Returns $0 (TFSAs are not taxable.) &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TaxableAccount"><a class="viewcode-back" href="../../../forecaster.canada.accounts.html#forecaster.canada.accounts.TaxableAccount">[docs]</a><span class="k">class</span> <span class="nc">TaxableAccount</span><span class="p">(</span><span class="n">Account</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; A taxable account, non-registered account.</span>
+
+<span class="sd">    This account uses Canadian rules for determining taxable income from</span>
+<span class="sd">    capital assets. That involves tracking the adjusted cost base (acb)</span>
+<span class="sd">    of the assets.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        acb (Money): The adjusted cost base of the assets in the account</span>
+<span class="sd">            at the start of the year.</span>
+<span class="sd">        capital_gain (Money): The total capital gains for the year.</span>
+<span class="sd">            This is evaluated lazily, so it may return different values</span>
+<span class="sd">            if you add or remove transactions.</span>
+<span class="sd">        See Account for other attributes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># TODO (v2): Reimplement TaxableAccount based on Asset objects</span>
+    <span class="c1"># (subclassed from Money), which independently track acb and possess</span>
+    <span class="c1"># an asset class (or perhaps `distribution` dict defining the</span>
+    <span class="c1"># relative proportions of sources of taxable income?)</span>
+    <span class="c1"># Perhaps also implement a tax_credit and/or tax_deduction method</span>
+    <span class="c1"># (e.g. to account for Canadian dividends)</span>
+    <span class="c1"># TODO: Define a proportion of growth attributable to capital gains?</span>
+    <span class="c1"># Potentially subclass this method into a CapitalAsset class where</span>
+    <span class="c1"># all growth is capital gains - this would allow for modelling</span>
+    <span class="c1"># non-principle-residence real estate holdings.</span>
+    <span class="c1"># (But we might want to also model rental income as well...)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">nper</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">acb</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Constructor for `TaxableAccount`.</span>
+
+<span class="sd">        See documentation for `Account` for information on args not</span>
+<span class="sd">        listed below.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            acb (Money): The adjusted cost base of the assets in the</span>
+<span class="sd">                account at the start of `initial_year`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># This method does have a lot of arguments, but they&#39;re mostly</span>
+        <span class="c1"># inherited from a superclass. We&#39;re stuck with them here.</span>
+        <span class="c1"># pylint: disable=too-many-arguments</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">owner</span><span class="o">=</span><span class="n">owner</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="n">balance</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="n">rate</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="n">transactions</span><span class="p">,</span>
+            <span class="n">nper</span><span class="o">=</span><span class="n">nper</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="n">inputs</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="n">initial_year</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># If acb wasn&#39;t provided, assume there have been no capital</span>
+        <span class="c1"># gains or losses, so acb = balance.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">acb</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="n">acb</span> <span class="k">if</span> <span class="n">acb</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">balance</span><span class="p">)</span>
+
+    <span class="c1"># pylint: disable=method-hidden</span>
+    <span class="c1"># The `self.acb` assignment in `__init__ doesn&#39;t actually overwrite</span>
+    <span class="c1"># this member; it assigns to it via a setter.</span>
+    <span class="nd">@recorded_property_cached</span>
+    <span class="k">def</span> <span class="nf">acb</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The adjusted cost base of assets in the account this year. &quot;&quot;&quot;</span>
+        <span class="c1"># This is set in advance in the previous year when capital_gains</span>
+        <span class="c1"># is determined.</span>
+        <span class="c1"># pylint: disable=no-member</span>
+        <span class="c1"># Pylint gets confused by attributes added via metaclass.</span>
+        <span class="c1"># they always have a corresponding *_history member:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_acb_history</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">this_year</span><span class="p">]</span>
+
+    <span class="nd">@recorded_property_cached</span>
+    <span class="k">def</span> <span class="nf">capital_gain</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The capital gains (or losses) for this year.</span>
+
+<span class="sd">        Note that, unlike other Account attributes, capital_gain is</span>
+<span class="sd">        given as of the *end* of the year, and is based on transaction</span>
+<span class="sd">        activity. Therefore, changing any transactions will affect</span>
+<span class="sd">        capital_gain.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">acb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">acb</span>
+        <span class="n">capital_gain</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">transactions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transactions</span>
+
+        <span class="c1"># ACB is sensitive to transaction order, so be sure to iterate</span>
+        <span class="c1"># over transactions from first to last.</span>
+        <span class="c1"># pylint: disable=no-member</span>
+        <span class="c1"># Pylint gets confused by attributes added via metaclass.</span>
+        <span class="c1"># `transactions` returns a dict, so it has a `keys` member:</span>
+        <span class="k">for</span> <span class="n">when</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">transactions</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="c1"># pylint: disable=unsubscriptable-object</span>
+            <span class="c1"># Pylint gets confused by attributes added via metaclass.</span>
+            <span class="c1"># `transactions` returns a dict, so it is subscriptable:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">transactions</span><span class="p">[</span><span class="n">when</span><span class="p">]</span>
+            <span class="c1"># There are different acb formulae for inflows and outflows</span>
+            <span class="k">if</span> <span class="n">value</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># inflow</span>
+                <span class="n">acb</span> <span class="o">+=</span> <span class="n">value</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># outflow</span>
+                <span class="c1"># Capital gains are calculated based on the acb and</span>
+                <span class="c1"># balance before the transaction occurred.</span>
+                <span class="n">balance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">balance_at_time</span><span class="p">(</span><span class="n">when</span><span class="p">)</span> <span class="o">-</span> <span class="n">value</span>
+                <span class="n">capital_gain</span> <span class="o">+=</span> <span class="o">-</span><span class="n">value</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="n">acb</span> <span class="o">/</span> <span class="n">balance</span><span class="p">))</span>
+                <span class="n">acb</span> <span class="o">*=</span> <span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="o">-</span><span class="n">value</span> <span class="o">/</span> <span class="n">balance</span><span class="p">)</span>
+
+        <span class="c1"># We&#39;ve generated the ACB for the next year, so store it now.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_acb_history</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">this_year</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">acb</span>
+        <span class="k">return</span> <span class="n">capital_gain</span>
+
+<div class="viewcode-block" id="TaxableAccount.add_transaction"><a class="viewcode-back" href="../../../forecaster.canada.accounts.html#forecaster.canada.accounts.TaxableAccount.add_transaction">[docs]</a>    <span class="k">def</span> <span class="nf">add_transaction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">add_transaction</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">when</span><span class="p">)</span>
+        <span class="c1"># Invalidate the cache for acb and capital gains, since</span>
+        <span class="c1"># transactions will affect it.</span>
+        <span class="c1"># pylint: disable=no-member</span>
+        <span class="c1"># Pylint gets confused by attributes added via metaclass.</span>
+        <span class="c1"># All `_*_history` members are dicts added automatically:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_capital_gain_history</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">this_year</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_acb_history</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">this_year</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
+
+    <span class="nd">@recorded_property</span>
+    <span class="k">def</span> <span class="nf">taxable_income</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The total tax owing based on activity in the account.</span>
+
+<span class="sd">        Tax can arise from realizing capital gains, receiving dividends</span>
+<span class="sd">        (Canadian or foreign), or receiving interest. Optionally,</span>
+<span class="sd">        `sources` may define the relative weightings of each of these</span>
+<span class="sd">        sources of income. See the following link for more information:</span>
+<span class="sd">        http://www.moneysense.ca/invest/asset-ocation-everything-in-its-place/</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Taxable income for the year from this account as a `Money`</span>
+<span class="sd">                object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Only 50% of capital gains are included in taxable income</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">capital_gain</span> <span class="o">/</span> <span class="mi">2</span></div>
+
+        <span class="c1"># TODO: Track asset allocation and apportion growth in the</span>
+        <span class="c1"># account between capital gains, dividends, etc.</span>
+
+    <span class="c1"># TODO: Implement tax_withheld and tax_credit.</span>
+    <span class="c1"># tax_withheld: foreign withholding taxes.</span>
+    <span class="c1"># tax_credit: Canadian dividend credit</span>
+
+
+<div class="viewcode-block" id="PrincipleResidence"><a class="viewcode-back" href="../../../forecaster.canada.accounts.html#forecaster.canada.accounts.PrincipleResidence">[docs]</a><span class="k">class</span> <span class="nc">PrincipleResidence</span><span class="p">(</span><span class="n">Account</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; A Canadian principle residence. Gains in value are not taxable. &quot;&quot;&quot;</span>
+
+    <span class="nd">@recorded_property</span>
+    <span class="k">def</span> <span class="nf">taxable_income</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The taxable income generated by the account for the year. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Christopher Scott.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

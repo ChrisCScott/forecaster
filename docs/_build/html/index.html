@@ -1,0 +1,179 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Welcome to forecaster’s documentation! &#8212; forecaster 0.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="forecaster" href="modules.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="welcome-to-forecaster-s-documentation">
+<h1>Welcome to forecaster’s documentation!<a class="headerlink" href="#welcome-to-forecaster-s-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">forecaster</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.html">forecaster package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.canada.html">forecaster.canada package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#submodules">Submodules</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.accounts.html">forecaster.accounts module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.forecast.html">forecaster.forecast module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.forecaster.html">forecaster.forecaster module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.ledger.html">forecaster.ledger module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.person.html">forecaster.person module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.scenario.html">forecaster.scenario module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.settings.html">forecaster.settings module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.strategy.html">forecaster.strategy module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.tax.html">forecaster.tax module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.utility.html">forecaster.utility module</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="forecaster.forecaster.html#forecaster.forecaster.Forecaster" title="forecaster.forecaster.Forecaster"><code class="xref py py-obj docutils literal"><span class="pre">forecaster.forecaster.Forecaster</span></code></a>([person1,&nbsp;…])</td>
+<td>A convenience class for building Forecasts based on settings.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="forecaster.forecast.html#forecaster.forecast.Forecast" title="forecaster.forecast.Forecast"><code class="xref py py-obj docutils literal"><span class="pre">forecaster.forecast.Forecast</span></code></a>(people,&nbsp;assets,&nbsp;…)</td>
+<td>A financial forecast spanning multiple years.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.Account" title="forecaster.accounts.Account"><code class="xref py py-obj docutils literal"><span class="pre">forecaster.accounts.Account</span></code></a>(owner[,&nbsp;…])</td>
+<td>An account storing a <cite>Money</cite> balance.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.RegisteredAccount" title="forecaster.accounts.RegisteredAccount"><code class="xref py py-obj docutils literal"><span class="pre">forecaster.accounts.RegisteredAccount</span></code></a>(owner)</td>
+<td>An account with a contribution room limit.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.Debt" title="forecaster.accounts.Debt"><code class="xref py py-obj docutils literal"><span class="pre">forecaster.accounts.Debt</span></code></a>(owner[,&nbsp;balance,&nbsp;…])</td>
+<td>A debt with a balance and an interest rate.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><code class="xref py py-obj docutils literal"><span class="pre">forecaster.person.Person</span></code></a>(initial_year,&nbsp;name,&nbsp;…)</td>
+<td>Represents a person’s basic information: age and retirement age.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><code class="xref py py-obj docutils literal"><span class="pre">forecaster.ledger.Money</span></code></a>([amount,&nbsp;currency])</td>
+<td>Extends py-moneyed to support Decimal-like functions.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="forecaster.scenario.html#forecaster.scenario.Scenario" title="forecaster.scenario.Scenario"><code class="xref py py-obj docutils literal"><span class="pre">forecaster.scenario.Scenario</span></code></a>(initial_year,&nbsp;…)</td>
+<td>Describes an economic scenario over the course of the simulation.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="forecaster.strategy.html#forecaster.strategy.ContributionStrategy" title="forecaster.strategy.ContributionStrategy"><code class="xref py py-obj docutils literal"><span class="pre">forecaster.strategy.ContributionStrategy</span></code></a>(…)</td>
+<td>Determines an annual gross contribution, before reductions.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="forecaster.strategy.html#forecaster.strategy.WithdrawalStrategy" title="forecaster.strategy.WithdrawalStrategy"><code class="xref py py-obj docutils literal"><span class="pre">forecaster.strategy.WithdrawalStrategy</span></code></a>(strategy)</td>
+<td>Determines an annual gross withdrawal.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="forecaster.strategy.html#forecaster.strategy.TransactionStrategy" title="forecaster.strategy.TransactionStrategy"><code class="xref py py-obj docutils literal"><span class="pre">forecaster.strategy.TransactionStrategy</span></code></a>(…)</td>
+<td>Determines account-specific transactions.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="forecaster.strategy.html#forecaster.strategy.AllocationStrategy" title="forecaster.strategy.AllocationStrategy"><code class="xref py py-obj docutils literal"><span class="pre">forecaster.strategy.AllocationStrategy</span></code></a>(…)</td>
+<td>Generates an asset allocation for a point in time.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="forecaster.strategy.html#forecaster.strategy.DebtPaymentStrategy" title="forecaster.strategy.DebtPaymentStrategy"><code class="xref py py-obj docutils literal"><span class="pre">forecaster.strategy.DebtPaymentStrategy</span></code></a>(strategy)</td>
+<td>Determines payments for a group of debts.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="forecaster.tax.html#forecaster.tax.Tax" title="forecaster.tax.Tax"><code class="xref py py-obj docutils literal"><span class="pre">forecaster.tax.Tax</span></code></a>(tax_brackets[,&nbsp;…])</td>
+<td>Determines taxes payable on taxable income.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="forecaster.settings.html#forecaster.settings.Settings" title="forecaster.settings.Settings"><code class="xref py py-obj docutils literal"><span class="pre">forecaster.settings.Settings</span></code></a></td>
+<td>Container for variables used to control application settings.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></li>
+<li><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></li>
+<li><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+      <li>Next: <a href="modules.html" title="next chapter">forecaster</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Christopher Scott.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

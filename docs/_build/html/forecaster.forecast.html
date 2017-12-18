@@ -1,0 +1,486 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>forecaster.forecast module &#8212; forecaster 0.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="forecaster.forecaster module" href="forecaster.forecaster.html" />
+    <link rel="prev" title="forecaster.accounts module" href="forecaster.accounts.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-forecaster.forecast">
+<span id="forecaster-forecast-module"></span><h1>forecaster.forecast module<a class="headerlink" href="#module-forecaster.forecast" title="Permalink to this headline">¶</a></h1>
+<p>This module provides a Forecast class for use in forecasts.</p>
+<p>This is where most of the financial forecasting logic of the Forecaster
+package lives. It applies Scenario, Strategy, and Tax information to
+determine how account balances will grow or shrink year-over-year.</p>
+<dl class="class">
+<dt id="forecaster.forecast.Forecast">
+<em class="property">class </em><code class="descclassname">forecaster.forecast.</code><code class="descname">Forecast</code><span class="sig-paren">(</span><em>people</em>, <em>assets</em>, <em>debts</em>, <em>scenario</em>, <em>contribution_strategy</em>, <em>withdrawal_strategy</em>, <em>contribution_trans_strategy</em>, <em>withdrawal_trans_strategy</em>, <em>debt_payment_strategy</em>, <em>tax_treatment</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast.html#Forecast"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.Forecast" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>A financial forecast spanning multiple years.</p>
+<p>A <cite>Forecast</cite> contains various <cite>Account`s with balances that grow
+(or shrink) from year to year. The `Forecast</cite> object also contains
+<cite>Person</cite> objects describing the plannees, <cite>Scenario</cite> information
+describing economic conditions over the course of the forecast, and
+<cite>Strategy</cite> objects to describe the plannee’s behaviour.</p>
+<p>The <cite>Forecast</cite> manages inflows to and outflows from (or between)
+accounts based on <cite>Strategy</cite> and <cite>Scenario</cite> information.</p>
+<p>The <cite>Forecast</cite> is built around either a single person or a spousal
+couple (since spouses have specific tax treatment).</p>
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.people">
+<code class="descname">people</code><a class="headerlink" href="#forecaster.forecast.Forecast.people" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>Iterable[Person]</em> – The people for whom the financial
+forecast is being generated. Typically a single person or a
+person and their spouse.
+Note that all <cite>Person</cite> objects must have the same
+<cite>this_year</cite> attribute, as must their various accounts.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.assets">
+<code class="descname">assets</code><a class="headerlink" href="#forecaster.forecast.Forecast.assets" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>Iterable[Account]</em> – Assets of the <cite>people</cite>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.debts">
+<code class="descname">debts</code><a class="headerlink" href="#forecaster.forecast.Forecast.debts" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>Iterable[Debt]</em> – Debts of the <cite>people</cite>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.scenario">
+<code class="descname">scenario</code><a class="headerlink" href="#forecaster.forecast.Forecast.scenario" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>Scenario</em> – Economic information for the forecast
+(e.g. inflation and stock market returns for each year)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.contribution_strategy">
+<code class="descname">contribution_strategy</code><a class="headerlink" href="#forecaster.forecast.Forecast.contribution_strategy" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>ContributionStrategy</em> – A callable
+object that determines the gross contribution for a
+year. See the documentation for <cite>ContributionStrategy</cite> for
+acceptable args when calling this object.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.withdrawal_strategy">
+<code class="descname">withdrawal_strategy</code><a class="headerlink" href="#forecaster.forecast.Forecast.withdrawal_strategy" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>WithdrawalStrategy</em> – A callable
+object that determines the amount to withdraw for a
+year. See the documentation for <cite>WithdrawalStrategy</cite> for
+acceptable args when calling this object.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.contribution_transaction_strategy">
+<code class="descname">contribution_transaction_strategy</code><a class="headerlink" href="#forecaster.forecast.Forecast.contribution_transaction_strategy" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>TransactionStrategy</em> – A
+callable object that determines the schedule of
+transactions for any contributions during the year.
+See the documentation for <cite>TransactionStrategy</cite> for
+acceptable args when calling this object.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.withdrawal_transaction_strategy">
+<code class="descname">withdrawal_transaction_strategy</code><a class="headerlink" href="#forecaster.forecast.Forecast.withdrawal_transaction_strategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>(WithdrawalTransactionStrategy):
+A callable object that determines the schedule of
+transactions for any contributions during the year.
+See the documentation for <cite>TransactionStrategy</cite> for
+acceptable args when calling this object.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.debt_payment_strategy">
+<code class="descname">debt_payment_strategy</code><a class="headerlink" href="#forecaster.forecast.Forecast.debt_payment_strategy" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>DebtPaymentStrategy</em> – A callable object
+that determines the schedule of debt payments, including
+accelerated debt payments drawn from gross contributions.
+See the documentation for <cite>DebtPaymentStrategy</cite> for
+acceptable args when calling this object.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.tax_treatment">
+<code class="descname">tax_treatment</code><a class="headerlink" href="#forecaster.forecast.Forecast.tax_treatment" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>Tax</em> – A callable object that determines the total
+amount of tax owing in a year. See the documentation for
+<cite>Tax</cite> for acceptable args when calling this object.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.gross_income">
+<code class="descname">gross_income</code><a class="headerlink" href="#forecaster.forecast.Forecast.gross_income" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict[int, Money]</em> – The gross income for the
+family.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.tax_withheld_on_income">
+<code class="descname">tax_withheld_on_income</code><a class="headerlink" href="#forecaster.forecast.Forecast.tax_withheld_on_income" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict[int, Money]</em> – Taxes deducted at
+source (or paid by installment during the year) on
+employment income.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.net_income">
+<code class="descname">net_income</code><a class="headerlink" href="#forecaster.forecast.Forecast.net_income" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict[int, Money]</em> – The net income for the family.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.tax_carryover">
+<code class="descname">tax_carryover</code><a class="headerlink" href="#forecaster.forecast.Forecast.tax_carryover" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict[int, Money]</em> – The amount of any refund or
+outstanding tax payable, based on the previous year’s
+tax withholdings.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.other_carryover">
+<code class="descname">other_carryover</code><a class="headerlink" href="#forecaster.forecast.Forecast.other_carryover" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict[int, Money]</em> – The amount of inter-year
+carryover (other than tax refunds), such as excess
+withdrawals being recontributed.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.contributions_from_income">
+<code class="descname">contributions_from_income</code><a class="headerlink" href="#forecaster.forecast.Forecast.contributions_from_income" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict[int, Money]</em> – The amount to be
+contributed to savings from employment income in each year.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.contributions_from_carryover">
+<code class="descname">contributions_from_carryover</code><a class="headerlink" href="#forecaster.forecast.Forecast.contributions_from_carryover" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict[int, Money]</em> – The amount to
+be contributed to savings from tax_carryover and
+other_carryover.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.contributions_from_asset_sales">
+<code class="descname">contributions_from_asset_sales</code><a class="headerlink" href="#forecaster.forecast.Forecast.contributions_from_asset_sales" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict[int, Money]</em> – The amount to
+be contributed to savings from asset sales in each year.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.gross_contributions">
+<code class="descname">gross_contributions</code><a class="headerlink" href="#forecaster.forecast.Forecast.gross_contributions" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict[int, Money]</em> – The amount available to
+contribute to savings, before any reductions. This is the
+sum of net income and various contributions_from_* values.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.reduction_from_debt">
+<code class="descname">reduction_from_debt</code><a class="headerlink" href="#forecaster.forecast.Forecast.reduction_from_debt" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict[int, Money]</em> – The amount to be
+diverted from contributions to debt repayment in each year.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.reduction_from_other">
+<code class="descname">reduction_from_other</code><a class="headerlink" href="#forecaster.forecast.Forecast.reduction_from_other" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict[int, Money]</em> – The amount to be
+diverted from contributions for other spending purposes in
+each year.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.contribution_reductions">
+<code class="descname">contribution_reductions</code><a class="headerlink" href="#forecaster.forecast.Forecast.contribution_reductions" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict[int, Money]</em> – Amounts diverted
+from savings, such as certain debt repayments or childcare.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.net_contributions">
+<code class="descname">net_contributions</code><a class="headerlink" href="#forecaster.forecast.Forecast.net_contributions" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict[int, Money]</em> – The total amount
+contributed to savings accounts.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.principal">
+<code class="descname">principal</code><a class="headerlink" href="#forecaster.forecast.Forecast.principal" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict[int, Money]</em> – The total value of all savings
+accounts (but not other property) at the start of each year.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.gross_return">
+<code class="descname">gross_return</code><a class="headerlink" href="#forecaster.forecast.Forecast.gross_return" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict[int, Money]</em> – The total return on principal
+(only for the amounts included in <cite>principal</cite>) by the end of
+the year.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.tax_withheld_on_return">
+<code class="descname">tax_withheld_on_return</code><a class="headerlink" href="#forecaster.forecast.Forecast.tax_withheld_on_return" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict[int, Money]</em> – Taxes deducted at
+source on the returns on investments.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.net_return">
+<code class="descname">net_return</code><a class="headerlink" href="#forecaster.forecast.Forecast.net_return" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict[int, Money]</em> – The total return on principal
+(only for the amounts included in <cite>principal</cite>) by the end of
+the year, net of withholding taxes.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.withdrawals_from_retirement_accounts">
+<code class="descname">withdrawals_from_retirement_accounts</code><a class="headerlink" href="#forecaster.forecast.Forecast.withdrawals_from_retirement_accounts" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict[int, Money]</em> – The
+total value of all withdrawals from retirement savings
+accounts over the year.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.withdrawals_from_other_accounts">
+<code class="descname">withdrawals_from_other_accounts</code><a class="headerlink" href="#forecaster.forecast.Forecast.withdrawals_from_other_accounts" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict[int, Money]</em> – The total
+value of all withdrawals from other savings accounts (e.g.
+education or health accounts, if provided) over the year.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.gross_withdrawals">
+<code class="descname">gross_withdrawals</code><a class="headerlink" href="#forecaster.forecast.Forecast.gross_withdrawals" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict[int, Money]</em> – The total amount withdrawn
+from all accounts.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.tax_withheld_on_withdrawals">
+<code class="descname">tax_withheld_on_withdrawals</code><a class="headerlink" href="#forecaster.forecast.Forecast.tax_withheld_on_withdrawals" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict[int, Money]</em> – Taxes deducted
+at source on withdrawals from savings.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.net_withdrawals">
+<code class="descname">net_withdrawals</code><a class="headerlink" href="#forecaster.forecast.Forecast.net_withdrawals" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict[int, Money]</em> – The total amount withdrawn
+from all accounts, net of withholding taxes.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.total_tax_withheld">
+<code class="descname">total_tax_withheld</code><a class="headerlink" href="#forecaster.forecast.Forecast.total_tax_withheld" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict[int, Money]</em> – The total amount of tax
+owing for this year which was paid during this year (as
+opposed to being paid in the following year the next year).
+Note that this is not necessarily the same as the sum of
+other <cite>tax_withheld_on_*</cite> attributes, since the tax
+authority may require additional withholding taxes (or
+payment by installments) based on the person’s overall
+circumstances.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.total_tax_owing">
+<code class="descname">total_tax_owing</code><a class="headerlink" href="#forecaster.forecast.Forecast.total_tax_owing" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict[int, Money]</em> – The total amount of tax
+owing for this year (some of which may be paid in the
+following year). Does not include outstanding amounts which
+became owing but were not paid in the previous year.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.Forecast.living_standard">
+<code class="descname">living_standard</code><a class="headerlink" href="#forecaster.forecast.Forecast.living_standard" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict[int, Money]</em> – The total amount of money
+available for spending, net of taxes, contributions, debt
+payments, etc.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.Forecast.next_year">
+<code class="descname">next_year</code><span class="sig-paren">(</span><em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast.html#Forecast.next_year"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.Forecast.next_year" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a year to the forecast.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.Forecast.record_contribution_reductions">
+<code class="descname">record_contribution_reductions</code><span class="sig-paren">(</span><em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast.html#Forecast.record_contribution_reductions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.Forecast.record_contribution_reductions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records contribution reductions for the year.</p>
+<p>This method determines total debt payments and applies per-debt
+payments to debt accounts.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.Forecast.record_gross_contribution">
+<code class="descname">record_gross_contribution</code><span class="sig-paren">(</span><em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast.html#Forecast.record_gross_contribution"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.Forecast.record_gross_contribution" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records gross contributions for the year.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.Forecast.record_income">
+<code class="descname">record_income</code><span class="sig-paren">(</span><em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast.html#Forecast.record_income"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.Forecast.record_income" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records gross and net income, as well as taxes withheld.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.Forecast.record_living_standard">
+<code class="descname">record_living_standard</code><span class="sig-paren">(</span><em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast.html#Forecast.record_living_standard"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.Forecast.record_living_standard" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records the living standard for each year.</p>
+<p>The living standard is the money available to spend after all
+taxes, debt repayments (other than debts included in living
+expenses), and savings are deducted.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.Forecast.record_net_contributions">
+<code class="descname">record_net_contributions</code><span class="sig-paren">(</span><em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast.html#Forecast.record_net_contributions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.Forecast.record_net_contributions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records net contributions.</p>
+<p>This method determines total net (i.e. actual) contributions and
+adds inflows to the appropriate accounts.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.Forecast.record_principal">
+<code class="descname">record_principal</code><span class="sig-paren">(</span><em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast.html#Forecast.record_principal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.Forecast.record_principal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records principal balance for the year.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.Forecast.record_returns">
+<code class="descname">record_returns</code><span class="sig-paren">(</span><em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast.html#Forecast.record_returns"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.Forecast.record_returns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records gross and net returns, as well as tax withheld.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.Forecast.record_total_tax">
+<code class="descname">record_total_tax</code><span class="sig-paren">(</span><em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast.html#Forecast.record_total_tax"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.Forecast.record_total_tax" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records total tax withheld and payable in the year.</p>
+<p>TODO: Deal with tax owing but not withheld - arrange to pay this
+in the following year? Apply against investment balances? Draw
+a portion from income (i.e. as a living expense)?
+Note that in Canada, if more than $3000 or so of tax is owing
+but not withheld, the CRA will put you on an instalments plan,
+so you can’t really defer your total tax liability into the next
+year.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.Forecast.record_withdrawals">
+<code class="descname">record_withdrawals</code><span class="sig-paren">(</span><em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast.html#Forecast.record_withdrawals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.Forecast.record_withdrawals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records withdrawals for the year.</p>
+<p>Withdrawals are divided into retirement and other withdrawals.
+Taxes on withdrawals are determined to produce a figure for
+net withdrawals.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.Forecast.record_year">
+<code class="descname">record_year</code><span class="sig-paren">(</span><em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast.html#Forecast.record_year"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.Forecast.record_year" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stores high-level values across accounts for this year.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.Forecast.retirement_year">
+<code class="descname">retirement_year</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast.html#Forecast.retirement_year"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.Forecast.retirement_year" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines the retirement year for the plannees.</p>
+<p>TODO: This approach forces <cite>Forecast</cite> to assume that all
+plannees retire at the same time, which is often inaccurate.
+We should use per-retiree retirement dates, meaning that this
+method should be removed and the calling code refactored.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">forecaster</a><ul>
+  <li><a href="forecaster.html">forecaster package</a><ul>
+      <li>Previous: <a href="forecaster.accounts.html" title="previous chapter">forecaster.accounts module</a></li>
+      <li>Next: <a href="forecaster.forecaster.html" title="next chapter">forecaster.forecaster module</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Christopher Scott.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/forecaster.forecast.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

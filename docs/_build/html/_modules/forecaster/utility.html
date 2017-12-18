@@ -1,0 +1,260 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>forecaster.utility &#8212; forecaster 0.0.1 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for forecaster.utility</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; A module with free methods and extensions to third-party classes.</span>
+
+<span class="sd">Used throughout the application, without any dependency on any other</span>
+<span class="sd">modules.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">from</span> <span class="nn">decimal</span> <span class="k">import</span> <span class="n">Decimal</span>
+
+
+<div class="viewcode-block" id="nearest_year"><a class="viewcode-back" href="../../forecaster.utility.html#forecaster.utility.nearest_year">[docs]</a><span class="k">def</span> <span class="nf">nearest_year</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Finds the nearest (past) year to `year` in `vals`.</span>
+
+<span class="sd">    This is a companion method to `inflation_adjust()`. It&#39;s meant to be</span>
+<span class="sd">    used when you want to pull a value out of an incomplete dict without</span>
+<span class="sd">    inflation-adjusting it (e.g. when you want to grab the most recent</span>
+<span class="sd">    percentage rate from a dict of `{year: Decimal}` pairs.)</span>
+
+<span class="sd">    If `year` is in `vals`, then this method returns `year`.</span>
+<span class="sd">    If not, then this method tries to find the last year</span>
+<span class="sd">    before `year` that is in `vals`. If that doesn&#39;t work, then this</span>
+<span class="sd">    method tries to find the first year in `vals` following `year`.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A year in `vals` is near to `year`, preferring</span>
+<span class="sd">        the nearest preceding year (if it exists) over the nearest</span>
+<span class="sd">        following year. Returns `None` if `vals` is empty.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">vals</span> <span class="o">==</span> <span class="p">{}:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="c1"># If the year is explicitly represented, no need to inflation-adjust</span>
+    <span class="k">if</span> <span class="n">year</span> <span class="ow">in</span> <span class="n">vals</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">year</span>
+
+    <span class="c1"># Look for the most recent year prior to `year` that&#39;s in vals</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="nb">max</span><span class="p">((</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">vals</span> <span class="k">if</span> <span class="n">k</span> <span class="o">&lt;</span> <span class="n">year</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="c1"># If that didn&#39;t work, look for the closest following year.</span>
+    <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="nb">min</span><span class="p">((</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">vals</span> <span class="k">if</span> <span class="n">k</span> <span class="o">&gt;</span> <span class="n">year</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">key</span></div>
+
+
+<div class="viewcode-block" id="extend_inflation_adjusted"><a class="viewcode-back" href="../../forecaster.utility.html#forecaster.utility.extend_inflation_adjusted">[docs]</a><span class="k">def</span> <span class="nf">extend_inflation_adjusted</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="p">,</span> <span class="n">target_year</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Fills in partial time-series with inflation-adjusted values.</span>
+
+<span class="sd">    This method is targeted at inflation-adjusting input data (e.g.</span>
+<span class="sd">    as found in the Constants module), which tends to be incomplete</span>
+<span class="sd">    and can represent non-sequential years. New years are often entered</span>
+<span class="sd">    when something changes (i.e. when values change in real terms), so</span>
+<span class="sd">    this method prefers to infer inflation-adjusted values based on the</span>
+<span class="sd">    most recent *past* years when possible (since future years might</span>
+<span class="sd">    not be comparable).</span>
+
+<span class="sd">    If `target_year` is in `vals`, then this method returns the value</span>
+<span class="sd">    for `target_year` in `vals` without further inflation-adjusting</span>
+<span class="sd">    (as that value is already in nominal terms).</span>
+
+<span class="sd">    If `target_year` is not in `vals`, then this method attempts to</span>
+<span class="sd">    interpolate an inflation-adjusted value based on the last year in</span>
+<span class="sd">    `vals` before `target_year` or, if no such year exists, based on the</span>
+<span class="sd">    first year in `vals` after `target_year`.</span>
+
+<span class="sd">    If the values of `vals` are dicts or other iterable, this method</span>
+<span class="sd">    returns a dict or other iterable with values that have each been</span>
+<span class="sd">    inflation-adjusted.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        vals (dict): A dict of `{year: val}` pairs, where `val` is a</span>
+<span class="sd">            scalar, list, or dict. This dict may be incomplete, in the</span>
+<span class="sd">            sense that some years may not be represented.</span>
+<span class="sd">            If `val` is non-scalar, an object of the same type is</span>
+<span class="sd">            returned with each of its values inflation-adjusted.</span>
+<span class="sd">        inflation_adjust: A method of the form</span>
+<span class="sd">            `inflation_adjust(val, this_year, target_year)` that finds a</span>
+<span class="sd">            nominal value in `target_year` with the same real value as</span>
+<span class="sd">            nominal value `val` in `this_year`.</span>
+<span class="sd">        year (int): The year for which an adjusted value is to be</span>
+<span class="sd">            generated.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># If the year is explicitly represented, no need to inflation-adjust</span>
+    <span class="k">if</span> <span class="n">target_year</span> <span class="ow">in</span> <span class="n">vals</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">vals</span><span class="p">[</span><span class="n">target_year</span><span class="p">]</span>
+
+    <span class="c1"># Look for the most recent year prior to `year`</span>
+    <span class="n">base_year</span> <span class="o">=</span> <span class="n">nearest_year</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="n">target_year</span><span class="p">)</span>
+
+    <span class="c1"># If one of the above searches worked, return an inflation-adjusted</span>
+    <span class="c1"># value (or dict/list of values, depending on what the values of</span>
+    <span class="c1"># `vals` are)</span>
+    <span class="k">if</span> <span class="n">base_year</span> <span class="o">!=</span> <span class="n">target_year</span><span class="p">:</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="n">vals</span><span class="p">[</span><span class="n">base_year</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="n">k</span><span class="p">:</span> <span class="n">val</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">*</span> <span class="n">inflation_adjust</span><span class="p">(</span><span class="n">target_year</span><span class="p">,</span> <span class="n">base_year</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">val</span>
+            <span class="p">}</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">Iterable</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="n">val</span><span class="p">)(</span>
+                <span class="n">v</span> <span class="o">*</span> <span class="n">inflation_adjust</span><span class="p">(</span><span class="n">target_year</span><span class="p">,</span> <span class="n">base_year</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">val</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">val</span> <span class="o">*</span> <span class="n">inflation_adjust</span><span class="p">(</span><span class="n">target_year</span><span class="p">,</span> <span class="n">base_year</span><span class="p">)</span>
+    <span class="c1"># If none of the above searches for a year worked, raise an error.</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;inflation_adjust: No year is in both vals and &#39;</span> <span class="o">+</span>
+                         <span class="s1">&#39;inflation_adjustment&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="build_inflation_adjust"><a class="viewcode-back" href="../../forecaster.utility.html#forecaster.utility.build_inflation_adjust">[docs]</a><span class="k">def</span> <span class="nf">build_inflation_adjust</span><span class="p">(</span><span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Generates an inflation_adjust method.</span>
+
+<span class="sd">    If inflation_adjust is not provided, all values are assumed to be in</span>
+<span class="sd">    real terms, the returned method will return its argument `val`</span>
+<span class="sd">    without inflation adjustment.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        inflation_adjust: May be a dict of {year: inflation_adjustment}</span>
+<span class="sd">            pairs, where `inflation_adjustment` is a Decimal that</span>
+<span class="sd">            indicates a cumulative year-over-year inflation factor.</span>
+<span class="sd">            Or may be a method (returned as-is). Optional.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A method with the following form:</span>
+<span class="sd">        `inflation_adjust(val, this_year, target_year)`. The method</span>
+<span class="sd">        returns a Money object (assuming Money-typed `val` input).</span>
+<span class="sd">        Finds a nominal value in `target_year` with the same real</span>
+<span class="sd">        value as `val`, a nominal value in `this_year`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Use a default value</span>
+    <span class="k">if</span> <span class="n">inflation_adjust</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Assume real values if no inflation-adjustment method is</span>
+        <span class="c1"># given - i.e. always return val without adjustment.</span>
+        <span class="c1"># pylint: disable=W0613,E0102</span>
+        <span class="k">def</span> <span class="nf">inflation_adjust_func</span><span class="p">(</span><span class="n">target_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">base_year</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot; No inflation adjustment; returns 1 every year. &quot;&quot;&quot;</span>
+            <span class="k">return</span> <span class="n">Decimal</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inflation_adjust</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="c1"># If a dict of {year: Decimal} values has been passed in,</span>
+        <span class="c1"># convert that to a suitable method.</span>
+        <span class="c1"># If inflation_adjust has a default value, preserve it:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inflation_adjust</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">):</span>
+            <span class="n">inflation_dict</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span>
+                <span class="n">inflation_adjust</span><span class="o">.</span><span class="n">default_factory</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">inflation_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c1"># Then type-convert all the elements of inflation_adjust:</span>
+        <span class="n">inflation_dict</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+            <span class="nb">int</span><span class="p">(</span><span class="n">key</span><span class="p">):</span> <span class="n">Decimal</span><span class="p">(</span><span class="n">inflation_adjust</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">inflation_adjust</span>
+        <span class="p">})</span>
+
+        <span class="c1"># It&#39;s slightly more efficient to find the smallest key in</span>
+        <span class="c1"># inflation_adjust outside of the function.</span>
+        <span class="n">default_base</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">inflation_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+        <span class="k">def</span> <span class="nf">inflation_adjust_func</span><span class="p">(</span><span class="n">target_year</span><span class="p">,</span> <span class="n">base_year</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot; Inflation adjustment from &quot;&quot;&quot;</span>
+            <span class="k">if</span> <span class="n">base_year</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">base_year</span> <span class="o">=</span> <span class="n">default_base</span>
+            <span class="k">return</span> <span class="n">Decimal</span><span class="p">(</span>
+                <span class="n">inflation_dict</span><span class="p">[</span><span class="n">target_year</span><span class="p">]</span> <span class="o">/</span>
+                <span class="n">inflation_dict</span><span class="p">[</span><span class="n">base_year</span><span class="p">]</span>
+            <span class="p">)</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="n">inflation_adjust</span><span class="p">):</span>
+        <span class="c1"># If it&#39;s not a dict and not callable, then we don&#39;t know</span>
+        <span class="c1"># what to do with it. Raise an error.</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;RegisteredAccount: inflation_adjust must be &#39;</span> <span class="o">+</span>
+                        <span class="s1">&#39;callable.&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># inflation_adjust is callable, so just use that!</span>
+        <span class="n">inflation_adjust_func</span> <span class="o">=</span> <span class="n">inflation_adjust</span>
+
+    <span class="k">return</span> <span class="n">inflation_adjust_func</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Christopher Scott.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

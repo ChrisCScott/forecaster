@@ -1,0 +1,584 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>forecaster.tax &#8212; forecaster 0.0.1 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for forecaster.tax</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; This module provides a Tax class and subclasses.</span>
+
+<span class="sd">These classes are callable with the form `tax(taxable_income, year)`</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">from</span> <span class="nn">decimal</span> <span class="k">import</span> <span class="n">Decimal</span>
+<span class="kn">from</span> <span class="nn">forecaster</span> <span class="k">import</span> <span class="n">Money</span><span class="p">,</span> <span class="n">Person</span>
+<span class="kn">from</span> <span class="nn">forecaster.utility</span> <span class="k">import</span> <span class="p">(</span>
+    <span class="n">build_inflation_adjust</span><span class="p">,</span> <span class="n">nearest_year</span><span class="p">,</span> <span class="n">extend_inflation_adjusted</span><span class="p">)</span>
+
+<span class="c1"># NOTE: Consider making this a ledger-like object that stores values</span>
+<span class="c1"># year-over-year. These values might include:</span>
+<span class="c1">#   taxable_income (sum of sources&#39; taxable income),</span>
+<span class="c1">#   tax_withheld (sum of sources&#39; withholdings, *plus* additional</span>
+<span class="c1">#       mandatory tax instalment payments for when withholdings at</span>
+<span class="c1">#       source fall below the CRA&#39;s thresholds)</span>
+<span class="c1">#   tax_credit (sum of sources&#39; tax credit, plus any additional</span>
+<span class="c1">#       credit arising from the overall context)</span>
+<span class="c1">#   tax_deduction (sum of sources&#39; tax deduction, plus any additional</span>
+<span class="c1">#           deduction arising from the overall context)</span>
+<span class="c1">#   tax_refund_or_owing (total refund paid to persons or amount owing to</span>
+<span class="c1">#       tax authority; refunds are positive and owing is negative)</span>
+<span class="c1"># One of the challenges with this approach is that tax objects may be</span>
+<span class="c1"># invoked several times in a given year. It may be better to leave it</span>
+<span class="c1"># to Forecast to track that information. Or perhaps just store the last-</span>
+<span class="c1"># generated return value of a Tax call.</span>
+<span class="c1"># NOTE: Federal and provincial deduction and credit are separate;</span>
+<span class="c1"># you can&#39;t just combine them by summation. Consider whether to use two</span>
+<span class="c1"># separate dicts for tax_credit and tax_deduction, or to use a tuple</span>
+<span class="c1"># (such as FedProvTuple).</span>
+
+
+<div class="viewcode-block" id="Tax"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax">[docs]</a><span class="k">class</span> <span class="nc">Tax</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Determines taxes payable on taxable income.</span>
+
+<span class="sd">    When called with a Money-type first argument (i.e. as</span>
+<span class="sd">    `tax(taxable_income, year)`), this object returns the amount of tax</span>
+<span class="sd">    payable on taxable income without any source-specific deduction or</span>
+<span class="sd">    credit. This should correspond to how employment withholding taxes</span>
+<span class="sd">    are calculated, so `gross_income - tax(gross_income, year)`</span>
+<span class="sd">    will return a person&#39;s net income.</span>
+
+<span class="sd">    For a more sophisticated assessment of credit/etc., provide an</span>
+<span class="sd">    iterable of sources as the first argument. Each source must provide</span>
+<span class="sd">    the following methods:</span>
+<span class="sd">        taxable_income(self [, year])</span>
+<span class="sd">        tax_withheld(self [, year])</span>
+<span class="sd">        tax_credit(self [, year])</span>
+<span class="sd">        tax_deduction(self [, year])</span>
+
+<span class="sd">    Thus, calling `tax({person, account1, ... accountn}, year)` will</span>
+<span class="sd">    return the total tax liability for the year, after applying any</span>
+<span class="sd">    credit/etc. and including `person`&#39;s employment income and any</span>
+<span class="sd">    account earnings.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        tax_brackets (dict): A dict of `{year: brackets}` pairs, where</span>
+<span class="sd">            `brackets` is a dict of `{bracket: rate}` pairs. `bracket`</span>
+<span class="sd">            must be convertible to Money and `rate` must be convertible</span>
+<span class="sd">            to Decimal. `rate` will be interpreted as a percentage (e.g.</span>
+<span class="sd">            Decimal(&#39;0.03&#39;) is interpreted as 3%)</span>
+<span class="sd">        personal_deduction (dict): A dict of `{year: deduction}` pairs,</span>
+<span class="sd">            where `deduction` is convertible to Money.</span>
+<span class="sd">            The personal deduction for a given year is deducted from</span>
+<span class="sd">            income when determining income tax in that year.</span>
+<span class="sd">        credit_rate (dict): A dict of `{year: rate}` pairs, where `rate`</span>
+<span class="sd">            is convertible to Decimal.</span>
+<span class="sd">            The credit rate is used to determine how much each tax</span>
+<span class="sd">            credit reduced total tax liability.</span>
+<span class="sd">        accum (dict): A dict of `{year: {bracket: accum}}` pairs, where</span>
+<span class="sd">            each `bracket` corresponds to a key in `tax_brackets` and</span>
+<span class="sd">            `accum` is the sum of tax payable on the income falling into</span>
+<span class="sd">            all lower brackets. For example, if there are $10, $100, and</span>
+<span class="sd">            $1000 tax brackets, then `accum[year][$1000]` is equal to</span>
+<span class="sd">            `tax_brackets[year][$10] * $10 + tax_brackets[year][$100] *</span>
+<span class="sd">            $100`.</span>
+<span class="sd">        inflation_adjust: A method with the following form:</span>
+<span class="sd">            `inflation_adjust(target_year, base_year)`.</span>
+<span class="sd">            Returns a Decimal scaling factor. Multiplying this by a</span>
+<span class="sd">            nominal value in base_year will yield a nominal value in</span>
+<span class="sd">            target_year with the same real value. Optional.</span>
+<span class="sd">            If not provided, all values are assumed to be in real terms,</span>
+<span class="sd">            so no inflation adjustment is performed.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        taxable_income (Money, iterable): Taxable income for the year,</span>
+<span class="sd">            either as a single scalar Money object or as an iterable</span>
+<span class="sd">            (list, set, etc.) of sources of taxable income (i.e.</span>
+<span class="sd">            Person/Account objects).</span>
+<span class="sd">        year (int): The taxation year. This determines which tax rules</span>
+<span class="sd">            and inflation-adjusted brackets are used.</span>
+<span class="sd">        deduction (Money): Any other deduction which can be</span>
+<span class="sd">            applied and which aren&#39;t evident from the income sources</span>
+<span class="sd">            themselves. These will generally be itemized deduction.</span>
+<span class="sd">            It&#39;s a good idea to be familiar with the Tax implementation</span>
+<span class="sd">            you&#39;re working with before passing any of these, otherwise</span>
+<span class="sd">            you risk double-counting.</span>
+<span class="sd">            Optional.</span>
+<span class="sd">        credit (Money): Any other tax credit which can be</span>
+<span class="sd">            applied and which aren&#39;t evident from the income sources</span>
+<span class="sd">            themselves. These will generally be boutique tax credit.</span>
+<span class="sd">            Optional.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">tax_brackets</span><span class="p">,</span> <span class="n">personal_deduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">credit_rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Initializes the Tax object.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            tax_brackets (dict[int, dict[Money, Decimal]]):</span>
+<span class="sd">                `{year: brackets}` pairs, where `brackets` is itself a</span>
+<span class="sd">                dict of `{bracket: rate}` pairs. Any income above</span>
+<span class="sd">                `bracket` is taxed at `rate`. (It&#39;s thus usually a good</span>
+<span class="sd">                idea to have at least a {0: rate} element!)</span>
+<span class="sd">            personal_deduction (dict[int, Money]): `{year: deduction}`</span>
+<span class="sd">                pairs. This deduction is applied to the income of each</span>
+<span class="sd">                person when determining tax liability.</span>
+<span class="sd">            credit_rate (dict[int, Money]): `{year: rate}` pairs.</span>
+<span class="sd">                This rate is applied to any tax credits the person is</span>
+<span class="sd">                eligible for when determining tax liability.</span>
+<span class="sd">            inflation_adjust: A method with the following form:</span>
+<span class="sd">                `inflation_adjust(val, this_year, target_year)`.</span>
+<span class="sd">                Returns a Decimal object which is the inflation-</span>
+<span class="sd">                adjustment factor from base_year to target_year.</span>
+<span class="sd">                Optional.</span>
+<span class="sd">                If not provided, all values are assumed to be in real</span>
+<span class="sd">                terms, so no inflation adjustment is performed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># NOTE: Consider allowing users to pass in non-year-indexed</span>
+        <span class="c1"># values (e.g. so that `tax_brackets` can be a dict of</span>
+        <span class="c1"># {Money: Decimal} pairs instead of {int: {Money: Decimal}}</span>
+        <span class="c1"># pairs, and `personal_deduction` could be Money instead of</span>
+        <span class="c1"># {int: Money}).</span>
+        <span class="c1"># This would likely require adding an initial_year arg.</span>
+        <span class="c1"># If it&#39;s provided, we would interpret any non-year-indexed args</span>
+        <span class="c1"># as values for the key `initial_year`.</span>
+
+        <span class="c1"># Don&#39;t set these args to {} in the call signature, or else</span>
+        <span class="c1"># the mutated dicts will be shared between instances.</span>
+        <span class="k">if</span> <span class="n">personal_deduction</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">personal_deduction</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">credit_rate</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">credit_rate</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Enforce {int: {Money: Decimal}} types for tax_brackets and</span>
+        <span class="c1"># generate an entry in `accum` for each new bracket:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_accum</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tax_brackets</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="n">tax_brackets</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_brackets</span><span class="p">(</span><span class="n">tax_brackets</span><span class="p">[</span><span class="n">year</span><span class="p">],</span> <span class="n">year</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span> <span class="o">=</span> <span class="n">build_inflation_adjust</span><span class="p">(</span><span class="n">inflation_adjust</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">personal_deduction</span> <span class="o">!=</span> <span class="p">{}:</span>
+            <span class="c1"># Enforce {int: Money} types for personal_deduction:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_personal_deduction</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="nb">int</span><span class="p">(</span><span class="n">year</span><span class="p">):</span> <span class="n">Money</span><span class="p">(</span><span class="n">personal_deduction</span><span class="p">[</span><span class="n">year</span><span class="p">])</span>
+                <span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="n">personal_deduction</span>
+            <span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># If this arg wasn&#39;t passed, assume there&#39;s no deduction</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_personal_deduction</span> <span class="o">=</span> <span class="p">{</span><span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tax_brackets</span><span class="p">):</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)}</span>
+
+        <span class="k">if</span> <span class="n">credit_rate</span> <span class="o">!=</span> <span class="p">{}:</span>
+            <span class="c1"># Enforce {int: Decimal} types for credit_rate:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_credit_rate</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="nb">int</span><span class="p">(</span><span class="n">year</span><span class="p">):</span> <span class="n">Decimal</span><span class="p">(</span><span class="n">credit_rate</span><span class="p">[</span><span class="n">year</span><span class="p">])</span>
+                <span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="n">credit_rate</span>
+            <span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># If this argument wasn&#39;t passed, default to behaviour where</span>
+            <span class="c1"># all tax credits are fully refundable (i.e. credits reduce</span>
+            <span class="c1"># tax liability at a 100% rate)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_credit_rate</span> <span class="o">=</span> <span class="p">{</span><span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tax_brackets</span><span class="p">):</span> <span class="n">Decimal</span><span class="p">(</span><span class="mi">1</span><span class="p">)}</span>
+
+<div class="viewcode-block" id="Tax.tax_brackets"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.tax_brackets">[docs]</a>    <span class="k">def</span> <span class="nf">tax_brackets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">bracket</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Retrieve tax brackets for year. &quot;&quot;&quot;</span>
+        <span class="c1"># NOTE: We cache the inflation-adjusted tax brackets here,</span>
+        <span class="c1"># but this will cause problems if you want to reuse the</span>
+        <span class="c1"># Tax object for other Scenarios. If we keep this behaviour,</span>
+        <span class="c1"># then Tax objects should be treated as mutable/disposable.</span>
+        <span class="k">if</span> <span class="n">year</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tax_brackets</span><span class="p">:</span>
+            <span class="c1"># Get the inflation-adjusted tax brackets for this year:</span>
+            <span class="n">base_year</span> <span class="o">=</span> <span class="n">nearest_year</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tax_brackets</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span>
+            <span class="n">brackets</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">key</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">base_year</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_tax_brackets</span><span class="p">[</span><span class="n">base_year</span><span class="p">][</span><span class="n">key</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tax_brackets</span><span class="p">[</span><span class="n">base_year</span><span class="p">]</span>
+            <span class="p">}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_brackets</span><span class="p">(</span><span class="n">brackets</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">bracket</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tax_brackets</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tax_brackets</span><span class="p">[</span><span class="n">year</span><span class="p">][</span><span class="n">bracket</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Tax.accum"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.accum">[docs]</a>    <span class="k">def</span> <span class="nf">accum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">bracket</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The accumulated tax payable for a given tax bracket. &quot;&quot;&quot;</span>
+        <span class="c1"># If we don&#39;t have this accum, we&#39;ll need to generate it.</span>
+        <span class="c1"># add_brackets() does this for us.</span>
+        <span class="k">if</span> <span class="n">year</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_accum</span><span class="p">:</span>
+            <span class="c1"># Get the inflation-adjusted tax brackets for this year:</span>
+            <span class="n">brackets</span> <span class="o">=</span> <span class="n">extend_inflation_adjusted</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_tax_brackets</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_brackets</span><span class="p">(</span><span class="n">brackets</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">bracket</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_accum</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_accum</span><span class="p">[</span><span class="n">year</span><span class="p">][</span><span class="n">bracket</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Tax.personal_deduction"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.personal_deduction">[docs]</a>    <span class="k">def</span> <span class="nf">personal_deduction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The inflation-adjusted personal deduction. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">extend_inflation_adjusted</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_personal_deduction</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Tax.credit_rate"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.credit_rate">[docs]</a>    <span class="k">def</span> <span class="nf">credit_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The credit rate for the given year. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_credit_rate</span><span class="p">[</span><span class="n">nearest_year</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_credit_rate</span><span class="p">,</span> <span class="n">year</span><span class="p">)]</span></div>
+
+<div class="viewcode-block" id="Tax.marginal_bracket"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.marginal_bracket">[docs]</a>    <span class="k">def</span> <span class="nf">marginal_bracket</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">taxable_income</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The top tax bracket that taxable_income falls into. &quot;&quot;&quot;</span>
+        <span class="n">brackets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_brackets</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">bracket</span> <span class="k">for</span> <span class="n">bracket</span> <span class="ow">in</span> <span class="n">brackets</span>
+             <span class="k">if</span> <span class="n">bracket</span> <span class="o">&lt;</span> <span class="n">taxable_income</span><span class="p">),</span>
+            <span class="n">default</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="n">brackets</span><span class="p">)</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="Tax.marginal_rate"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.marginal_rate">[docs]</a>    <span class="k">def</span> <span class="nf">marginal_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">taxable_income</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The marginal rate for the given income. &quot;&quot;&quot;</span>
+        <span class="n">brackets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_brackets</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">brackets</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">marginal_bracket</span><span class="p">(</span><span class="n">taxable_income</span><span class="p">,</span> <span class="n">year</span><span class="p">)]</span></div>
+
+<div class="viewcode-block" id="Tax.add_brackets"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.add_brackets">[docs]</a>    <span class="k">def</span> <span class="nf">add_brackets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">brackets</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Adds a year of tax brackets to attribute self.tax_brackets.</span>
+
+<span class="sd">        Also generates an `accum` dict based on the tax brackets.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">year</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
+        <span class="c1"># Enforce types for the new brackets (We&#39;ll reuse this short</span>
+        <span class="c1"># name later when building the accum dict for convenience)</span>
+        <span class="n">brackets</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">Money</span><span class="p">(</span><span class="n">key</span><span class="p">):</span> <span class="n">Decimal</span><span class="p">(</span><span class="n">brackets</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">brackets</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tax_brackets</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="n">brackets</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_accum</span><span class="p">(</span><span class="n">brackets</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Tax.add_accum"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.add_accum">[docs]</a>    <span class="k">def</span> <span class="nf">add_accum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">brackets</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Generates an accum dict for the given brackets and year. &quot;&quot;&quot;</span>
+        <span class="c1"># For each bracket, the new accumulation is whatever the accum</span>
+        <span class="c1"># is for the next-lowest bracket (which itself is the</span>
+        <span class="c1"># accumulation of all lower brackets&#39; tax owing), plus the</span>
+        <span class="c1"># marginal rate of that bracket applied to the full taxable</span>
+        <span class="c1"># income within its range.</span>
+        <span class="n">prev</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">brackets</span><span class="p">)</span>  <span class="c1"># We need to look at 2 brackets at a time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_accum</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">prev</span><span class="p">:</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)}</span>  <span class="c1"># Accum for lowest bracket</span>
+        <span class="n">iterator</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">brackets</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>  <span class="c1"># Look at brackets in order</span>
+        <span class="n">iterator</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">prev</span><span class="p">)</span>  <span class="c1"># Lowest bracket is already accounted for.</span>
+        <span class="k">for</span> <span class="n">bracket</span> <span class="ow">in</span> <span class="n">iterator</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_accum</span><span class="p">[</span><span class="n">year</span><span class="p">][</span><span class="n">bracket</span><span class="p">]</span> <span class="o">=</span> \
+                <span class="p">(</span><span class="n">bracket</span> <span class="o">-</span> <span class="n">prev</span><span class="p">)</span> <span class="o">*</span> <span class="n">brackets</span><span class="p">[</span><span class="n">prev</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_accum</span><span class="p">[</span><span class="n">year</span><span class="p">][</span><span class="n">prev</span><span class="p">]</span>
+            <span class="n">prev</span> <span class="o">=</span> <span class="n">bracket</span>  <span class="c1"># Keep track of next-lowest bracket</span></div>
+
+<div class="viewcode-block" id="Tax.tax_money"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.tax_money">[docs]</a>    <span class="k">def</span> <span class="nf">tax_money</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">taxable_income</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">deduction</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">credit</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Returns taxes owing without source-specific deduction/etc.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            taxable_income (Money): The amount of income to be taxed,</span>
+<span class="sd">                assuming it&#39;s taxable in the hands of a single person</span>
+<span class="sd">                with no other income and no deduction or credit other</span>
+<span class="sd">                than those provided explicitly to this method.</span>
+<span class="sd">            year (int): The year for which tax treatment is applied.</span>
+<span class="sd">            deduction (Money): Any deduction from taxable income to be</span>
+<span class="sd">                applied before determining total tax liability.</span>
+<span class="sd">                Optional.</span>
+<span class="sd">            credit (Money): Any tax credit to be applied against tax</span>
+<span class="sd">                liability; these are applied at the tax credit rate for</span>
+<span class="sd">                `year`. Optional.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Money: Total tax liability arising from `taxable_income` in</span>
+<span class="sd">                `year`, after applying `deduction` and `credit`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Apply the personal deduction and any other deduction before</span>
+        <span class="c1"># determining brackets.</span>
+        <span class="n">taxable_income</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+            <span class="n">Money</span><span class="p">(</span><span class="n">taxable_income</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">personal_deduction</span><span class="p">(</span><span class="n">year</span><span class="p">)</span> <span class="o">+</span> <span class="n">deduction</span>
+            <span class="p">),</span>
+            <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="c1"># Get the inflation-adjusted tax brackets for this year:</span>
+        <span class="n">brackets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_brackets</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
+        <span class="n">bracket</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">marginal_bracket</span><span class="p">(</span><span class="n">taxable_income</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span>
+        <span class="c1"># By using accum, we only have to think about the effect of</span>
+        <span class="c1"># the marginal rate on any income over the bracket threshold</span>
+        <span class="n">marginal_rate</span> <span class="o">=</span> <span class="n">brackets</span><span class="p">[</span><span class="n">bracket</span><span class="p">]</span>
+        <span class="n">accum</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">accum</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">bracket</span><span class="p">)</span>
+        <span class="c1"># NOTE: The following assumes that tax credit are nonrefundable</span>
+        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span>
+            <span class="n">accum</span> <span class="o">+</span> <span class="p">(</span><span class="n">taxable_income</span> <span class="o">-</span> <span class="n">bracket</span><span class="p">)</span> <span class="o">*</span> <span class="n">marginal_rate</span> <span class="o">-</span>
+            <span class="n">credit</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">credit_rate</span><span class="p">(</span><span class="n">year</span><span class="p">),</span>
+            <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Tax.tax_person"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.tax_person">[docs]</a>    <span class="k">def</span> <span class="nf">tax_person</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">deduction</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">credit</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)):</span>
+        <span class="sd">&quot;&quot;&quot; Returns tax treatment for an individual person.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            person (Person): A person for whom tax liability will be</span>
+<span class="sd">                determined.</span>
+<span class="sd">            year (int): The year for which tax treatment is needed.</span>
+<span class="sd">            deduction (Money): A deduction to be applied against the</span>
+<span class="sd">                person&#39;s income, on top of whatever other deductions</span>
+<span class="sd">                they are eligible for, including the personal deduction</span>
+<span class="sd">                for the year and any specific `tax_deduction` attribute</span>
+<span class="sd">                values of the person and their accounts.</span>
+<span class="sd">            credit (Money): A credit to be applied against the person&#39;s</span>
+<span class="sd">                tax liability, on top of whatever other credits they are</span>
+<span class="sd">                eligible for (provided via the `tax_deduction` member of</span>
+<span class="sd">                `person` and any of their accounts).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Money: The tax liability of the person.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Accumulate the relevant tax information for the person:</span>
+        <span class="n">taxable_income</span> <span class="o">=</span> <span class="n">person</span><span class="o">.</span><span class="n">taxable_income_history</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">+</span> \
+            <span class="nb">sum</span><span class="p">((</span><span class="n">x</span><span class="o">.</span><span class="n">taxable_income_history</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">person</span><span class="o">.</span><span class="n">accounts</span><span class="p">))</span>
+        <span class="n">tax_credit</span> <span class="o">=</span> <span class="n">person</span><span class="o">.</span><span class="n">tax_credit_history</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">+</span> \
+            <span class="nb">sum</span><span class="p">((</span><span class="n">x</span><span class="o">.</span><span class="n">tax_credit_history</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">person</span><span class="o">.</span><span class="n">accounts</span><span class="p">))</span>
+        <span class="n">tax_deduction</span> <span class="o">=</span> <span class="n">person</span><span class="o">.</span><span class="n">tax_deduction_history</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">+</span> \
+            <span class="nb">sum</span><span class="p">((</span><span class="n">x</span><span class="o">.</span><span class="n">tax_deduction_history</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">person</span><span class="o">.</span><span class="n">accounts</span><span class="p">))</span>
+        <span class="c1"># Apply deduction to income, find taxes payable based on that,</span>
+        <span class="c1"># and then apply tax credit.</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_money</span><span class="p">(</span>
+            <span class="n">taxable_income</span> <span class="o">-</span> <span class="p">(</span><span class="n">tax_deduction</span> <span class="o">+</span> <span class="n">deduction</span><span class="p">),</span> <span class="n">year</span>
+        <span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">tax_credit</span> <span class="o">+</span> <span class="n">credit</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">credit_rate</span><span class="p">(</span><span class="n">year</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Tax.tax_people"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.tax_people">[docs]</a>    <span class="k">def</span> <span class="nf">tax_people</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">deduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">credit</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Total tax liability for a group of people.</span>
+
+<span class="sd">        The people do not necessarily need to be spouses or related in</span>
+<span class="sd">        any way. If a pair of spouses is in `people`, they will be</span>
+<span class="sd">        passed to `tax_spouses` to be processed together.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            people (iterable[Person]): Any number of people.</span>
+<span class="sd">            year (int): The year for which tax treatment is needed.</span>
+<span class="sd">            deduction (dict[Person, Money]): A dict of</span>
+<span class="sd">                `{person: deduction}` pairs. Optional.</span>
+<span class="sd">            credit (dict[Person, Money]): A dict of `{person: credit}`</span>
+<span class="sd">                pairs. Optional.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Money: The total tax liability of the people.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">deduction</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">deduction</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">credit</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">credit</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Base case: If {} is passed, return $0.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">people</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># Otherwise, grab someone at random and determine their taxes.</span>
+        <span class="n">person</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">people</span><span class="p">))</span>
+
+        <span class="c1"># Treat spouses in a special way; send them to a different</span>
+        <span class="c1"># method for processing and recurse on the remaining folks.</span>
+        <span class="c1"># NOTE: This logic (and the logic of Person.spouse) needs to be</span>
+        <span class="c1"># overridden in subclasses implementing plural marriage.</span>
+        <span class="k">if</span> <span class="n">person</span><span class="o">.</span><span class="n">spouse</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">person</span><span class="o">.</span><span class="n">spouse</span> <span class="ow">in</span> <span class="n">people</span><span class="p">:</span>
+            <span class="c1"># Process taxes for the couple and recurse on the remaining</span>
+            <span class="c1"># people.</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_spouses</span><span class="p">(</span>
+                <span class="p">{</span><span class="n">person</span><span class="p">,</span> <span class="n">person</span><span class="o">.</span><span class="n">spouse</span><span class="p">},</span> <span class="n">year</span><span class="p">,</span> <span class="n">deduction</span><span class="p">,</span> <span class="n">credit</span>
+            <span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_people</span><span class="p">(</span>
+                <span class="n">people</span> <span class="o">-</span> <span class="p">{</span><span class="n">person</span><span class="p">,</span> <span class="n">person</span><span class="o">.</span><span class="n">spouse</span><span class="p">},</span> <span class="n">year</span><span class="p">,</span> <span class="n">deduction</span><span class="p">,</span> <span class="n">credit</span>
+            <span class="p">)</span>
+        <span class="c1"># Otherwise, process this person as a single individual and</span>
+        <span class="c1"># recurse on the remaining folks:</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># We don&#39;t want to override default values for tax_person,</span>
+            <span class="c1"># so fill a kwargs dict with only explicitly-passed</span>
+            <span class="c1"># deduction and credit for this person.</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">if</span> <span class="n">person</span> <span class="ow">in</span> <span class="n">deduction</span><span class="p">:</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;deduction&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">deduction</span><span class="p">[</span><span class="n">person</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">person</span> <span class="ow">in</span> <span class="n">credit</span><span class="p">:</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;credit&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">credit</span><span class="p">[</span><span class="n">person</span><span class="p">]</span>
+
+            <span class="c1"># Determine tax owing for this person and then recurse.</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_person</span><span class="p">(</span><span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">+</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">tax_people</span><span class="p">(</span><span class="n">people</span> <span class="o">-</span> <span class="p">{</span><span class="n">person</span><span class="p">},</span> <span class="n">year</span><span class="p">,</span>
+                                <span class="n">deduction</span><span class="p">,</span> <span class="n">credit</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Tax.tax_spouses"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.tax_spouses">[docs]</a>    <span class="k">def</span> <span class="nf">tax_spouses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">deduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">credit</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Tax treatment for a pair of spouses.</span>
+
+<span class="sd">        This method doesn&#39;t provide any special tax treatment to the</span>
+<span class="sd">        spouses, but it allows subclasses to override its functionality</span>
+<span class="sd">        to apply special tax treatments.</span>
+
+<span class="sd">        This method is also not restricted to two-element inputs,</span>
+<span class="sd">        although in countries like Canada (which only recognizes two-</span>
+<span class="sd">        person marriages for tax purposes) this method should only ever</span>
+<span class="sd">        receive a two-element `people` input. By allowing for arbitrary-</span>
+<span class="sd">        size inputs, subclasses can extend this functionality to deal</span>
+<span class="sd">        with countries where plural marriage is recognized by the tax</span>
+<span class="sd">        system.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            people (iterable): Persons with mutual spousal</span>
+<span class="sd">                relationships. In countries requiring monogamous</span>
+<span class="sd">                marriages, this input should have exactly two elements.</span>
+<span class="sd">            year (int): The year for which tax treatment is needed.</span>
+<span class="sd">            deduction (dict[Person, Money]): A dict of</span>
+<span class="sd">                `{person: deduction}` pairs. Optional.</span>
+<span class="sd">            credit (dict[Person, Money]): A dict of `{person: credit}`</span>
+<span class="sd">                pairs. Optional.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Money: The tax liability of the spouses.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Avoid using {} as a default value in the call signature:</span>
+        <span class="k">if</span> <span class="n">deduction</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">deduction</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">credit</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">credit</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Add together the tax treatment for each spouse, without doing</span>
+        <span class="c1"># anything special (this is essentially the same logic as</span>
+        <span class="c1"># tax_person, but without the check for spouses or recursion)</span>
+        <span class="n">tax</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">person</span> <span class="ow">in</span> <span class="n">people</span><span class="p">:</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">if</span> <span class="n">person</span> <span class="ow">in</span> <span class="n">deduction</span><span class="p">:</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;deduction&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">deduction</span><span class="p">[</span><span class="n">person</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">person</span> <span class="ow">in</span> <span class="n">credit</span><span class="p">:</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;credit&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">credit</span><span class="p">[</span><span class="n">person</span><span class="p">]</span>
+            <span class="n">tax</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_people</span><span class="p">(</span><span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">tax</span></div>
+
+<div class="viewcode-block" id="Tax.__call__"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">income</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span>
+                 <span class="n">deduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">credit</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Determines taxes owing on one or more income sources.</span>
+
+<span class="sd">        Each `Person` object passed as input may have a number of tax</span>
+<span class="sd">        sources (e.g. `Account`s, `Benefit`s) associated with them,</span>
+<span class="sd">        which `Tax` will take into account when calculating taxes.</span>
+<span class="sd">        They don&#39;t need to be passed explicitly.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            income (Money, Person, iterable): Taxable income for the</span>
+<span class="sd">                year, either as a single scalar Money object, a single</span>
+<span class="sd">                Person object, or as an iterable (list, set, etc.) of</span>
+<span class="sd">                Person objects.</span>
+<span class="sd">            year (int): The taxation year. This determines which tax</span>
+<span class="sd">                rules and inflation-adjusted brackets are used.</span>
+<span class="sd">            deduction (Money, dict[Person, Money]):</span>
+<span class="sd">                Any other deduction which can be applied and which</span>
+<span class="sd">                aren&#39;t modelled by the income sources themselves.</span>
+<span class="sd">                These will generally be itemized deduction.</span>
+<span class="sd">                If `income` is passed as an iterable, this should also</span>
+<span class="sd">                be an iterable; otherwise it should be a Money object.</span>
+<span class="sd">                It&#39;s a good idea to be familiar with the Tax</span>
+<span class="sd">                implementation you&#39;re working with before passing any of</span>
+<span class="sd">                these, otherwise you risk double-counting.</span>
+<span class="sd">                Optional.</span>
+<span class="sd">            credit (Money, dict[Person, Money]):</span>
+<span class="sd">                Any other tax credit which can be applied and which</span>
+<span class="sd">                aren&#39;t modelled by the income sources themselves.</span>
+<span class="sd">                These are usually boutique tax credit.</span>
+<span class="sd">                See `deduction` for further comments.</span>
+<span class="sd">                Optional.</span>
+
+<span class="sd">            Returns:</span>
+<span class="sd">                Money: The total amount of tax owing for the year.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">year</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
+        <span class="c1"># The different tax_* methods have different defaults for</span>
+        <span class="c1"># optional arguments, so build a kwargs dict:</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">deduction</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;deduction&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">deduction</span>
+        <span class="k">if</span> <span class="n">credit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;credit&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">credit</span>
+
+        <span class="c1"># If taxpayers are non-scalar, interpret it as a group of people</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">income</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">Iterable</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_people</span><span class="p">(</span><span class="n">income</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="c1"># If it&#39;s just one taxpayer, use the appropriate method:</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">income</span><span class="p">,</span> <span class="n">Person</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_person</span><span class="p">(</span><span class="n">income</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="c1"># Otherwise, this is the easy case: interpret taxable_income as</span>
+        <span class="c1"># Money (or Money-convertible)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_money</span><span class="p">(</span><span class="n">income</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Christopher Scott.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,521 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>forecaster.person &#8212; forecaster 0.0.1 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for forecaster.person</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; A module providing a Person class. &quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">decimal</span> <span class="k">import</span> <span class="n">Decimal</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">dateutil.parser</span> <span class="k">import</span> <span class="n">parse</span>
+<span class="kn">from</span> <span class="nn">dateutil.relativedelta</span> <span class="k">import</span> <span class="n">relativedelta</span>
+<span class="kn">from</span> <span class="nn">forecaster</span> <span class="k">import</span> <span class="n">Money</span>
+<span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="p">(</span>
+    <span class="n">TaxSource</span><span class="p">,</span> <span class="n">recorded_property</span><span class="p">,</span> <span class="n">recorded_property_cached</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Person"><a class="viewcode-back" href="../../forecaster.person.html#forecaster.person.Person">[docs]</a><span class="k">class</span> <span class="nc">Person</span><span class="p">(</span><span class="n">TaxSource</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Represents a person&#39;s basic information: age and retirement age.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        name (str): The person&#39;s name. No specific form is required;</span>
+<span class="sd">            this is only used for display, not any computations.</span>
+<span class="sd">        birth_date (datetime): The person&#39;s birth date.</span>
+<span class="sd">            May be passed as an int (interpreted as the birth year) or</span>
+<span class="sd">            as a datetime-convertible value (e.g. a string in a</span>
+<span class="sd">            suitable format)</span>
+<span class="sd">        retirement_date (datetime): The person&#39;s retirement date.</span>
+<span class="sd">            Optional.</span>
+<span class="sd">            May be passed as an int (interpreted as the birth year) or</span>
+<span class="sd">            as a datetime-convertible value (e.g. a string in a</span>
+<span class="sd">            suitable format)</span>
+<span class="sd">        gross_income (Money): Annual gross income for the current year.</span>
+<span class="sd">        gross_income_history (dict[int, Money]): Gross income for all</span>
+<span class="sd">            years on record.</span>
+<span class="sd">        net_income (Money): Annual net income for the current year.</span>
+<span class="sd">        net_income_history (dict[int, Money]): Net income for all</span>
+<span class="sd">            years on record.</span>
+<span class="sd">        raise_rate_function (callable): A function for determining the</span>
+<span class="sd">            Person&#39;s raise rate for a given year. A callable object with</span>
+<span class="sd">            the form `raise_rate_function(year) -&gt; Decimal`.</span>
+<span class="sd">        raise_rate (Decimal): The person&#39;s raise in gross income this</span>
+<span class="sd">            year relative to last year.</span>
+<span class="sd">        raise_rate_history (dict[int, Decimal]): Raises for all years</span>
+<span class="sd">            on record.</span>
+<span class="sd">        spouse (Person): The person&#39;s spouse. This linkage is</span>
+<span class="sd">            one-to-one; the spouse&#39;s `spouse` attribute points back to</span>
+<span class="sd">            this Person.</span>
+<span class="sd">        tax_treatment (Tax): The tax treatment of the person. A callable</span>
+<span class="sd">            object; see documentation for `Tax` for more information.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># This class has a lot of members in large part because every</span>
+    <span class="c1"># recorded_property turns into three members (prop, history_prop,</span>
+    <span class="c1"># and _history_prop). It has 8 primary members (initial_year,</span>
+    <span class="c1"># name, birth_date, retirement_date, gross_income, net_income,</span>
+    <span class="c1"># raise_rate, spouse, and tax_treatment), and it seems proper that</span>
+    <span class="c1"># all of these members live together rather than being refactored</span>
+    <span class="c1"># into several sub-objects.</span>
+    <span class="c1"># pylint: disable=too-many-instance-attributes,too-many-arguments</span>
+
+    <span class="c1"># TODO: Add life expectancy?</span>
+    <span class="c1"># TODO: Add estimated_retirement_date(...) method? Perhaps add an</span>
+    <span class="c1"># arg for a generator function that takes certain arguments (total</span>
+    <span class="c1"># investable savings, target withdrawal, and [optionally] year?) and</span>
+    <span class="c1"># returns an estimated year of retirement?</span>
+    <span class="c1">#   NOTE: This would allow client code to implement Dr. Pfau&#39;s</span>
+    <span class="c1">#   study&#39;s results on safe withdrawal rates, or perhaps to take</span>
+    <span class="c1">#   into account the person&#39;s risk-tolerance.</span>
+    <span class="c1"># TODO: Subclass Person into CanadianResident, override _tax_credit</span>
+    <span class="c1"># to provide the spousal tax credit, and replace the `tax_treatment`</span>
+    <span class="c1"># arg with a `province` (str) arg?</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">birth_date</span><span class="p">,</span> <span class="n">retirement_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">gross_income</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">raise_rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">spouse</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tax_treatment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Constructor for `Person`.</span>
+
+<span class="sd">        Attributes:</span>
+<span class="sd">            accounts (set): All accounts naming this Person as an owner.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            initial_year (int): The first year of recorded data.</span>
+<span class="sd">            name (str): The person&#39;s name.</span>
+<span class="sd">            birth_date (datetime): The person&#39;s date of birth.</span>
+<span class="sd">                May be passed as any value that can be cast to str and</span>
+<span class="sd">                converted to datetime by python-dateutils.parse().</span>
+<span class="sd">            retirement_date (datetime): The person&#39;s retirement date.</span>
+<span class="sd">                May be passed as any value that can be cast to str and</span>
+<span class="sd">                converted to datetime by python-dateutils.parse().</span>
+<span class="sd">                Optional.</span>
+<span class="sd">            gross_income (Money): The person&#39;s gross income in</span>
+<span class="sd">                `initial_year`.</span>
+<span class="sd">            raise_rate (dict[int, Decimal], callable): The person&#39;s</span>
+<span class="sd">                raise for each year, as a callable object with the</span>
+<span class="sd">                signature `raise_rate(year)` or a dict of</span>
+<span class="sd">                `{year: raise}` pairs. The raise is a Decimal</span>
+<span class="sd">                interpreted as a percentage (e.g. `Decimal(&#39;0.03&#39;)`</span>
+<span class="sd">                indicates a 3% raise).</span>
+<span class="sd">            spouse (Person): The person&#39;s spouse. Optional.</span>
+<span class="sd">                In ordinary use, the first person of the couple is</span>
+<span class="sd">                constructed with `spouse=None`, and the second person is</span>
+<span class="sd">                constructed with `spouse=person1`. Both persons will</span>
+<span class="sd">                automatically have their spouse attribute updated to</span>
+<span class="sd">                point at each other.</span>
+<span class="sd">            tax_treatment (Tax): The person&#39;s tax treatment. Optional.</span>
+<span class="sd">                This can be any callable object that accepts the form</span>
+<span class="sd">                `tax_treatment(taxable_income, year)` and returns a</span>
+<span class="sd">                Money object (which corresponds to total taxes payable</span>
+<span class="sd">                on `taxable_income`).</span>
+<span class="sd">            inputs (dict[str, dict[int, *]]): `{attr: {year: val}}`</span>
+<span class="sd">                pairs, where `attr` is any one of `Person`&#39;s recorded</span>
+<span class="sd">                propertes, namely:</span>
+<span class="sd">                    taxable_income</span>
+<span class="sd">                    tax_withheld</span>
+<span class="sd">                    tax_credit</span>
+<span class="sd">                    tax_deduction</span>
+<span class="sd">                    gross_income</span>
+<span class="sd">                    net_income</span>
+<span class="sd">                    raise_rate</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            An instance of class `Person`</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: birth_date or retirement_date are not parseable</span>
+<span class="sd">                as dates.</span>
+<span class="sd">            ValueError: retirement_date precedes birth_date</span>
+<span class="sd">            OverflowError: birth_date or retirement_date are too large</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">initial_year</span><span class="o">=</span><span class="n">initial_year</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="n">inputs</span><span class="p">)</span>
+
+        <span class="c1"># For attributes wrapped by ordinary properties, create hidden</span>
+        <span class="c1"># attributes and assign to them using the properties:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_birth_date</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_retirement_date</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_raise_rate_function</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_spouse</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tax_treatment</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_contribution_room</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_contribution_groups</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">birth_date</span> <span class="o">=</span> <span class="n">birth_date</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">retirement_date</span> <span class="o">=</span> <span class="n">retirement_date</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">raise_rate_function</span> <span class="o">=</span> <span class="n">raise_rate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spouse</span> <span class="o">=</span> <span class="n">spouse</span>
+        <span class="c1"># Set up tax treatment before calling tax_withheld()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tax_treatment</span> <span class="o">=</span> <span class="n">tax_treatment</span>
+
+        <span class="c1"># Now provide initial-year values for recorded properties:</span>
+        <span class="c1"># NOTE: Be sure to do type-checking here.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gross_income</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="n">gross_income</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">net_income</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gross_income</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_withheld</span>
+
+        <span class="c1"># Finally, build an empty set for accounts to add themselves to.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">accounts</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; The name of the Person. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
+
+    <span class="nd">@name</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; Sets the Person&#39;s name. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">birth_date</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; The birth date of the Person. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_birth_date</span>
+
+    <span class="nd">@birth_date</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">birth_date</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; Sets the birth date of the Person. &quot;&quot;&quot;</span>
+        <span class="c1"># If `birth_date` is not a `datetime`, attempt to parse</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">datetime</span><span class="p">):</span>
+            <span class="c1"># Parsing will fail if it can&#39;t generate a year, month, and</span>
+            <span class="c1"># day. Use January 1 of this year as the default. If the</span>
+            <span class="c1"># input is a valid date but lacks a year, month, or day,</span>
+            <span class="c1"># then those will be filled in as needed.</span>
+            <span class="n">default_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">parse</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">val</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="n">default_date</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_birth_date</span> <span class="o">=</span> <span class="n">val</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">retirement_date</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; The retirement date of the Person. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_retirement_date</span>
+
+    <span class="nd">@retirement_date</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">retirement_date</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; Sets both retirement_date and retirement_age. &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_retirement_date</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="c1"># NOTE: Delete this error when floating retirement dates</span>
+            <span class="c1"># are implemented</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s1">&#39;Person: retirement_date must not be None. &#39;</span> <span class="o">+</span>
+                <span class="s1">&#39;Floating retirement dates are not yet implemented.&#39;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># If input is not a `datetime`, attempt to parse. If some values</span>
+        <span class="c1"># (e.g. month/day) aren&#39;t given, use values from birth_date</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">datetime</span><span class="p">):</span>
+            <span class="n">default_date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">birth_date</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">parse</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">val</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="n">default_date</span><span class="p">)</span>
+
+        <span class="c1"># `retirement_date` must follow `birth_date`</span>
+        <span class="k">if</span> <span class="n">val</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">birth_date</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Person: retirement_date precedes birth_date&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_retirement_date</span> <span class="o">=</span> <span class="n">val</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">retirement_age</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; The age of the Person at retirement &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">relativedelta</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">retirement_date</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">birth_date</span><span class="p">)</span><span class="o">.</span><span class="n">years</span>
+
+    <span class="nd">@retirement_age</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">retirement_age</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; Sets retirement_age. &quot;&quot;&quot;</span>
+        <span class="c1"># This method sets values via the retirement_date property.</span>
+        <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">retirement_date</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Set retirement_date.</span>
+            <span class="c1"># Note that relativedelta will scold you if the input is not</span>
+            <span class="c1"># losslessly convertible to an int</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">retirement_date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">birth_date</span> <span class="o">+</span> <span class="n">relativedelta</span><span class="p">(</span><span class="n">years</span><span class="o">=</span><span class="n">val</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">raise_rate_function</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; A function that returns the Person&#39;s raise for a given year.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            callable: A function with signature</span>
+<span class="sd">            `raise_rate(year) -&gt; Decimal`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_raise_rate_function</span>
+
+    <span class="nd">@raise_rate_function</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">raise_rate_function</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; Sets raise_rate_function. &quot;&quot;&quot;</span>
+        <span class="c1"># Treat setting the method to None as reverting to the default</span>
+        <span class="c1"># rate parameter, which is Money(0).</span>
+        <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">raise_rate_function</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="c1"># Is raise_rate isn&#39;t callable, convert it to a suitable method:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="n">val</span><span class="p">):</span>  <span class="c1"># Make callable if dict or scalar</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="c1"># assume dict of {year: raise} pairs</span>
+                <span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">year</span><span class="p">):</span>
+                    <span class="sd">&quot;&quot;&quot; Wraps dict in a function &quot;&quot;&quot;</span>
+                    <span class="k">return</span> <span class="n">val</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># If we can cast this to Decimal, return a constant rate</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+
+                <span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">_</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+                    <span class="sd">&quot;&quot;&quot; Wraps value in a function with an optional arg. &quot;&quot;&quot;</span>
+                    <span class="k">return</span> <span class="n">val</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_raise_rate_function</span> <span class="o">=</span> <span class="n">func</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># If the input is callable, use it without modification.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_raise_rate_function</span> <span class="o">=</span> <span class="n">val</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">spouse</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Person&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; The Person&#39;s spouse. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spouse</span>
+
+    <span class="nd">@spouse</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">spouse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; Sets the Person&#39;s spouse. &quot;&quot;&quot;</span>
+        <span class="c1"># If this Person already has a spouse, unlink them:</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;spouse&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">spouse</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Assign to _spouse to avoid recursing on this method.</span>
+            <span class="c1"># pylint: disable=protected-access</span>
+            <span class="c1"># spouse is a Person, so this isn&#39;t accessing a protected</span>
+            <span class="c1"># member of a client class.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">spouse</span><span class="o">.</span><span class="n">_spouse</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># If we&#39;re adding a new spouse, make sure that it links back:</span>
+        <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">Person</span><span class="p">):</span>  <span class="c1"># Spouse must be a Person</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Person: spouse must be of type Person&#39;</span><span class="p">)</span>
+            <span class="c1"># Assign to _spouse to avoid recursing on this method.</span>
+            <span class="c1"># pylint: disable=protected-access</span>
+            <span class="c1"># spouse is a Person, so this isn&#39;t accessing a protected</span>
+            <span class="c1"># member of a client class.</span>
+            <span class="n">val</span><span class="o">.</span><span class="n">_spouse</span> <span class="o">=</span> <span class="bp">self</span>  <span class="c1"># Use _spouse to avoid recursion</span>
+
+        <span class="c1"># Update the spouse attr whether or not the new value is None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_spouse</span> <span class="o">=</span> <span class="n">val</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">tax_treatment</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The tax treatment of the Person. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tax_treatment</span>
+
+    <span class="nd">@tax_treatment</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">tax_treatment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; Sets the Person&#39;s tax treatment. &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_tax_treatment</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">elif</span> <span class="n">callable</span><span class="p">(</span><span class="n">val</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_tax_treatment</span> <span class="o">=</span> <span class="n">val</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Person: tax_treatment must be callable or None.&#39;</span><span class="p">)</span>
+
+    <span class="c1"># pylint: disable=method-hidden</span>
+    <span class="c1"># Pylint gets confused by attributes added by metaclass.</span>
+    <span class="c1"># This method isn&#39;t hidden in __init__; it&#39;s assigned to (by a</span>
+    <span class="c1"># setter defined via metaclass)</span>
+    <span class="nd">@recorded_property_cached</span>
+    <span class="k">def</span> <span class="nf">gross_income</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The `Person`&#39;s gross income for this year. &quot;&quot;&quot;</span>
+        <span class="c1"># No income if retired, otherwise apply the raise rate to last</span>
+        <span class="c1"># year&#39;s income:</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">retirement_date</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">retirement_date</span><span class="o">.</span><span class="n">year</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="c1"># Pylint gets confused by attributes added by metaclass.</span>
+                <span class="c1"># pylint: disable=no-member</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_gross_income_history</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">this_year</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span>
+                <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">raise_rate</span><span class="p">)</span>
+            <span class="p">)</span>
+
+    <span class="c1"># pylint: disable=method-hidden</span>
+    <span class="c1"># Pylint gets confused by attributes added by metaclass.</span>
+    <span class="c1"># This method isn&#39;t hidden in __init__; it&#39;s assigned to (by a</span>
+    <span class="c1"># setter defined via metaclass)</span>
+    <span class="nd">@recorded_property_cached</span>
+    <span class="k">def</span> <span class="nf">net_income</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The `Person`&#39;s gross income for this year. &quot;&quot;&quot;</span>
+        <span class="n">gross_income</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gross_income</span>
+        <span class="k">return</span> <span class="n">gross_income</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_withheld</span>
+
+    <span class="nd">@recorded_property_cached</span>
+    <span class="k">def</span> <span class="nf">raise_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The `Person`&#39;s raise for the current year. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_raise_rate_function</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">this_year</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Person.contribution_room"><a class="viewcode-back" href="../../forecaster.person.html#forecaster.person.Person.contribution_room">[docs]</a>    <span class="k">def</span> <span class="nf">contribution_room</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">account</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The contribution room for the given account.</span>
+
+<span class="sd">        The account must provide a `contribution_token` attribute.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A dict of {year: contribution_room} pairs for the account if</span>
+<span class="sd">            it has been registered, or None if it is not registered.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">account</span><span class="o">.</span><span class="n">contribution_token</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contribution_room</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contribution_room</span><span class="p">[</span><span class="n">account</span><span class="o">.</span><span class="n">contribution_token</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="Person.register_shared_contribution"><a class="viewcode-back" href="../../forecaster.person.html#forecaster.person.Person.register_shared_contribution">[docs]</a>    <span class="k">def</span> <span class="nf">register_shared_contribution</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">account</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Prepares a Person to store contribution room for an account.</span>
+
+<span class="sd">        This method starts tracking contribution room for the account if</span>
+<span class="sd">        it isn&#39;t already and also keeps track of which accounts have</span>
+<span class="sd">        shared contribution room.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Start tracking contribution room for this account if we aren&#39;t</span>
+        <span class="c1"># already.</span>
+        <span class="k">if</span> <span class="n">account</span><span class="o">.</span><span class="n">contribution_token</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contribution_room</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_contribution_room</span><span class="p">[</span><span class="n">account</span><span class="o">.</span><span class="n">contribution_token</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c1"># Identify all accounts that share contribution room with this</span>
+        <span class="c1"># one</span>
+        <span class="n">contribution_group</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contribution_groups</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;contribution_token&#39;</span><span class="p">)</span> <span class="ow">and</span>
+            <span class="n">x</span><span class="o">.</span><span class="n">contribution_token</span> <span class="o">==</span> <span class="n">account</span><span class="o">.</span><span class="n">contribution_token</span><span class="p">}</span>
+        <span class="c1"># Store the contribution group for later recall. This also</span>
+        <span class="c1"># includes updating the stored contribution groups of other</span>
+        <span class="c1"># accounts in the group.</span>
+        <span class="k">for</span> <span class="n">account_in_group</span> <span class="ow">in</span> <span class="n">contribution_group</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_contribution_groups</span><span class="p">[</span><span class="n">account_in_group</span><span class="p">]</span> <span class="o">=</span> <span class="n">contribution_group</span></div>
+
+<div class="viewcode-block" id="Person.age"><a class="viewcode-back" href="../../forecaster.person.html#forecaster.person.Person.age">[docs]</a>    <span class="k">def</span> <span class="nf">age</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">date</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; The age of the `Person` as of `date`.</span>
+
+<span class="sd">        `date` may be a `datetime` object or a numeric value indicating</span>
+<span class="sd">        a year (e.g. 2001). In the latter case, the age on the person&#39;s</span>
+<span class="sd">        birthday (in that year) is returned.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            date: The date at which to determine the person&#39;s age.</span>
+<span class="sd">                May be passed as a datetime or any other value that can</span>
+<span class="sd">                be cast to str and converted to datetime by</span>
+<span class="sd">                python-dateutils.parse().</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The age of the `Person` as an `int`.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: `date` is not parseable as a datetime.</span>
+<span class="sd">            ValueError: `date` is earlier than `birth_date`.</span>
+<span class="sd">            OverflowError: `date` is too large.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># If `date` is not `datetime`, attempt to parse</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="n">datetime</span><span class="p">):</span>
+            <span class="n">date</span> <span class="o">=</span> <span class="n">parse</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">date</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">birth_date</span><span class="p">)</span>
+
+        <span class="c1"># Remember to check whether the month/day are earlier in `date`</span>
+        <span class="n">age</span> <span class="o">=</span> <span class="n">date</span><span class="o">.</span><span class="n">year</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">birth_date</span><span class="o">.</span><span class="n">year</span>
+        <span class="k">if</span> <span class="n">date</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">birth_date</span><span class="o">.</span><span class="n">year</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">birth_date</span><span class="p">:</span>
+            <span class="n">age</span> <span class="o">-=</span> <span class="mi">1</span>
+
+        <span class="c1"># We allow age to be negative, if that&#39;s what the caller wants.</span>
+        <span class="c1"># if age_ &lt; 0:</span>
+            <span class="c1"># raise ValueError(&quot;Person: date must be after birth_date&quot;)</span>
+
+        <span class="k">return</span> <span class="n">age</span></div>
+
+    <span class="c1"># NOTE: Test overloading of recorded property by subclass</span>
+
+    <span class="nd">@recorded_property</span>
+    <span class="k">def</span> <span class="nf">taxable_income</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">gross_income</span>
+
+    <span class="nd">@recorded_property</span>
+    <span class="k">def</span> <span class="nf">tax_withheld</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_treatment</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># pylint: disable=not-callable</span>
+            <span class="c1"># We test that tax_treatment is callable in its setter.</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_treatment</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gross_income</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Person.__gt__"><a class="viewcode-back" href="../../forecaster.person.html#forecaster.person.Person.__gt__">[docs]</a>    <span class="k">def</span> <span class="nf">__gt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Allows for sorting, max, min, etc. based on gross income. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">gross_income</span> <span class="o">&gt;</span> <span class="n">other</span><span class="o">.</span><span class="n">gross_income</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Christopher Scott.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

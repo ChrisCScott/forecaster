@@ -1,0 +1,263 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>forecaster.canada.tax module &#8212; forecaster 0.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="forecaster.accounts module" href="forecaster.accounts.html" />
+    <link rel="prev" title="forecaster.canada.settings module" href="forecaster.canada.settings.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-forecaster.canada.tax">
+<span id="forecaster-canada-tax-module"></span><h1>forecaster.canada.tax module<a class="headerlink" href="#module-forecaster.canada.tax" title="Permalink to this headline">¶</a></h1>
+<p>A module providing Canada-specific tax treatment.</p>
+<dl class="class">
+<dt id="forecaster.canada.tax.TaxCanada">
+<em class="property">class </em><code class="descclassname">forecaster.canada.tax.</code><code class="descname">TaxCanada</code><span class="sig-paren">(</span><em>inflation_adjust</em>, <em>province='BC'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/tax.html#TaxCanada"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.tax.TaxCanada" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Federal and provincial tax treatment for a Canadian resident.</p>
+<dl class="attribute">
+<dt id="forecaster.canada.tax.TaxCanada.inflation_adjust">
+<code class="descname">inflation_adjust</code><a class="headerlink" href="#forecaster.canada.tax.TaxCanada.inflation_adjust" title="Permalink to this definition">¶</a></dt>
+<dd><p>A method with the following form:
+<cite>inflation_adjust(target_year, base_year) -&gt; Decimal</cite>.
+See documentation for <cite>Tax</cite> for more information.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.canada.tax.TaxCanada.province">
+<code class="descname">province</code><a class="headerlink" href="#forecaster.canada.tax.TaxCanada.province" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – The province in which income tax is paid.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.canada.tax.TaxCanada.__call__">
+<code class="descname">__call__</code><span class="sig-paren">(</span><em>income</em>, <em>year</em>, <em>other_federal_deduction=None</em>, <em>other_federal_credit=None</em>, <em>other_provincial_deduction=None</em>, <em>other_provincial_credit=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/tax.html#TaxCanada.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.tax.TaxCanada.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines Canadian taxes owing on given income sources.</p>
+<p>This includes provincial and federal taxes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>income</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>, </em><a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><em>iterable</em>) – Taxable income for the
+year, either as a single scalar Money object, a single
+Person object, or as an iterable (list, set, etc.) of
+Person objects.</li>
+<li><strong>year</strong> (<em>int</em>) – The taxation year. This determines which tax
+rules and inflation-adjusted brackets are used.</li>
+<li><strong>other_federal_deduction</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>, </em><em>dict</em><em>[</em><a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>]</em>) – Deductions to be applied against federal taxes.
+See documentation for <cite>Tax</cite> for more.</li>
+<li><strong>other_federal_credit</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>, </em><em>dict</em><em>[</em><a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>]</em>) – Credits to be applied against federal taxes.
+See documentation for <cite>Tax</cite> for more.</li>
+<li><strong>other_provincial_deduction</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>, </em><em>dict</em><em>[</em><a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>]</em>) – Deductions to be applied against provincial taxes.
+See documentation for <cite>Tax</cite> for more.</li>
+<li><strong>other_provincial_credit</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>, </em><em>dict</em><em>[</em><a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>]</em>) – Credits to be applied against provincial taxes.
+See documentation for <cite>Tax</cite> for more.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The total amount of tax owing for the year.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money">Money</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.canada.tax.TaxCanada.marginal_bracket">
+<code class="descname">marginal_bracket</code><span class="sig-paren">(</span><em>taxable_income</em>, <em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/tax.html#TaxCanada.marginal_bracket"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.tax.TaxCanada.marginal_bracket" title="Permalink to this definition">¶</a></dt>
+<dd><p>The top tax bracket that taxable_income falls into.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.canada.tax.TaxCanada.marginal_rate">
+<code class="descname">marginal_rate</code><span class="sig-paren">(</span><em>taxable_income</em>, <em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/tax.html#TaxCanada.marginal_rate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.tax.TaxCanada.marginal_rate" title="Permalink to this definition">¶</a></dt>
+<dd><p>The marginal rate for the given income.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="forecaster.canada.tax.TaxCanadaJurisdiction">
+<em class="property">class </em><code class="descclassname">forecaster.canada.tax.</code><code class="descname">TaxCanadaJurisdiction</code><span class="sig-paren">(</span><em>inflation_adjustments</em>, <em>jurisdiction='Federal'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/tax.html#TaxCanadaJurisdiction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.tax.TaxCanadaJurisdiction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="forecaster.tax.html#forecaster.tax.Tax" title="forecaster.tax.Tax"><code class="xref py py-class docutils literal"><span class="pre">forecaster.tax.Tax</span></code></a></p>
+<p>Federal or provincial tax treatment (Canada).</p>
+<dl class="method">
+<dt id="forecaster.canada.tax.TaxCanadaJurisdiction.__call__">
+<code class="descname">__call__</code><span class="sig-paren">(</span><em>income</em>, <em>year</em>, <em>other_deduction=None</em>, <em>other_credit=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/tax.html#TaxCanadaJurisdiction.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.tax.TaxCanadaJurisdiction.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines taxes owing on one or more income sources.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>income</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>, </em><a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><em>iterable</em>) – Taxable income for the
+year, either as a single scalar Money object, a single
+Person object, or as an iterable (list, set, etc.) of
+Person objects.</li>
+<li><strong>year</strong> (<em>int</em>) – The taxation year. This determines which tax
+rules and inflation-adjusted brackets are used.</li>
+<li><strong>other_deduction</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>, </em><em>dict</em><em>[</em><a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>]</em>) – Deductions to be applied against the jurisdiction’s
+taxes. See documentation for <cite>Tax</cite> for more.</li>
+<li><strong>other_credit</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>, </em><em>dict</em><em>[</em><a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>]</em>) – Credits to be applied against the jurisdiction’s taxes.
+See documentation for <cite>Tax</cite> for more.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The total amount of tax owing for the year.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money">Money</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.canada.tax.TaxCanadaJurisdiction.tax_credit">
+<code class="descname">tax_credit</code><span class="sig-paren">(</span><em>people</em>, <em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/tax.html#TaxCanadaJurisdiction.tax_credit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.tax.TaxCanadaJurisdiction.tax_credit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds tax credit available for each taxpayer.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>people</strong> (<em>set</em><em>[</em><a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>]</em>) – One or more <cite>Person</cite> objects, each
+having some number of accounts (or other tax sources).</li>
+<li><strong>year</strong> (<em>int</em>) – The year in which money is expressed (used for
+inflation adjustment)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The tax credit available in this
+jurisdiction for each person.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dict[<a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person">Person</a>, <a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money">Money</a>]</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.canada.tax.TaxCanadaJurisdiction.tax_deduction">
+<code class="descname">tax_deduction</code><span class="sig-paren">(</span><em>people</em>, <em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/tax.html#TaxCanadaJurisdiction.tax_deduction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.tax.TaxCanadaJurisdiction.tax_deduction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds tax deduction available for each taxpayer.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>people</strong> (<em>set</em><em>[</em><a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>]</em>) – A dict of <cite>{taxpayer: sources}</cite> pairs, where
+<cite>taxpayer</cite> is of type <cite>Person</cite> and <cite>sources</cite> is a set of
+income sources (accounts and people).</li>
+<li><strong>year</strong> (<em>int</em>) – The year in which money is expressed (used for
+inflation adjustment)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(fed_deduction, prov_deduction)}`
+pairs, where <cite>*_deduction</cite> is of type Money.
+These are bundled into a FedProvTuple for convenience.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">A dict of <a href="#id1"><span class="problematic" id="id2">`</span></a>{taxpayer</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">forecaster</a><ul>
+  <li><a href="forecaster.html">forecaster package</a><ul>
+  <li><a href="forecaster.canada.html">forecaster.canada package</a><ul>
+      <li>Previous: <a href="forecaster.canada.settings.html" title="previous chapter">forecaster.canada.settings module</a></li>
+      <li>Next: <a href="forecaster.accounts.html" title="next chapter">forecaster.accounts module</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Christopher Scott.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/forecaster.canada.tax.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

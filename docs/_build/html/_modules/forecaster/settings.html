@@ -1,0 +1,182 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>forecaster.settings &#8212; forecaster 0.0.1 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for forecaster.settings</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; This module provides user-modifiable settings for the application.</span>
+
+<span class="sd">It provides the `Settings` class, which contains various `*Defaults`</span>
+<span class="sd">classes. They provide default values for aspects of the application.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">from</span> <span class="nn">decimal</span> <span class="k">import</span> <span class="n">Decimal</span>
+
+
+<div class="viewcode-block" id="Settings"><a class="viewcode-back" href="../../forecaster.settings.html#forecaster.settings.Settings">[docs]</a><span class="k">class</span> <span class="nc">Settings</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot; Container for variables used to control application settings.</span>
+
+<span class="sd">    This class can be instantiated as an object and, where supported,</span>
+<span class="sd">    passed to other objects to provide defaults for initialization.</span>
+<span class="sd">    However, it also provides sensible defaults at the class level, so</span>
+<span class="sd">    one might equivalently call Settings (the class) or Settings()</span>
+<span class="sd">    (an object).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># We use triple-quoted strings as comments to group sets of related</span>
+    <span class="c1"># settings. It&#39;s nice to have a format for heading-style comments</span>
+    <span class="c1"># that&#39;s distinct from #-prefixed comments (which we also use.)</span>
+    <span class="c1"># pylint: disable=pointless-string-statement</span>
+    <span class="c1"># Settings is really just a data container right now, but the plan</span>
+    <span class="c1"># is to encapsulate some file-reading logic.</span>
+    <span class="c1"># pylint: disable=too-few-public-methods</span>
+
+    <span class="c1"># TODO: Read defaults from a file, fall back to the below values</span>
+    <span class="c1"># where the .ini doesn&#39;t provide a value. (This sounds like a good</span>
+    <span class="c1"># role for an __init__ function...)</span>
+    <span class="sd">&quot;&quot;&quot; Application-level and UI defaults &quot;&quot;&quot;</span>
+    <span class="n">initial_year</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">year</span>  <span class="c1"># Model starts with this year</span>
+    <span class="n">display_year</span> <span class="o">=</span> <span class="n">initial_year</span>  <span class="c1"># Base year for displaying real-valued amounts</span>
+    <span class="n">num_children</span> <span class="o">=</span> <span class="mi">3</span>  <span class="c1"># How many children may be represented</span>
+    <span class="n">currency</span> <span class="o">=</span> <span class="s1">&#39;CAD&#39;</span>  <span class="c1"># Use Canadian dollars as the default currency</span>
+
+    <span class="sd">&quot;&quot;&quot; Defaults for `Scenario`  &quot;&quot;&quot;</span>
+    <span class="n">inflation</span> <span class="o">=</span> <span class="mf">0.02</span>
+    <span class="n">stock_return</span> <span class="o">=</span> <span class="mf">0.07</span>
+    <span class="n">bond_return</span> <span class="o">=</span> <span class="mf">0.04</span>
+    <span class="n">other_return</span> <span class="o">=</span> <span class="n">inflation</span> <span class="o">+</span> <span class="mf">0.01</span>
+    <span class="n">management_fees</span> <span class="o">=</span> <span class="mf">0.005</span>
+    <span class="n">num_years</span> <span class="o">=</span> <span class="mi">100</span>  <span class="c1"># Model this number of years from the initial_year</span>
+
+    <span class="sd">&quot;&quot;&quot; Defaults for `Person` instances. &quot;&quot;&quot;</span>
+    <span class="n">person1_name</span> <span class="o">=</span> <span class="s1">&#39;Person 1&#39;</span>
+    <span class="n">person1_birth_date</span> <span class="o">=</span> <span class="s1">&#39;1 January 1980&#39;</span>
+    <span class="n">person1_retirement_date</span> <span class="o">=</span> <span class="s1">&#39;31 December 2045&#39;</span>
+    <span class="n">person1_gross_income</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;50000&#39;</span><span class="p">)</span>
+    <span class="n">person1_raise_rate</span> <span class="o">=</span> <span class="n">inflation</span> <span class="o">+</span> <span class="mf">0.01</span>
+    <span class="n">person2_name</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">person2_birth_date</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">person2_retirement_date</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">person2_gross_income</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">person2_raise_rate</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="sd">&#39;&#39;&#39; ContributionStrategy defaults &#39;&#39;&#39;</span>
+    <span class="n">contribution_strategy</span> <span class="o">=</span> <span class="s1">&#39;Percentage of net income&#39;</span>
+    <span class="n">contribution_base_amount</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;20000&#39;</span><span class="p">)</span>
+    <span class="n">contribution_rate</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;0.2&#39;</span><span class="p">)</span>
+    <span class="n">contribution_reinvestment_rate</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">contribution_inflation_adjusted</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="sd">&#39;&#39;&#39; TransactionStrategy defaults for inflows/contributions &#39;&#39;&#39;</span>
+    <span class="n">transaction_in_strategy</span> <span class="o">=</span> <span class="s1">&#39;Ordered&#39;</span>
+    <span class="n">transaction_in_weights</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Account&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+    <span class="n">transaction_in_timing</span> <span class="o">=</span> <span class="s1">&#39;end&#39;</span>
+
+    <span class="sd">&#39;&#39;&#39; WithdrawalStrategy defaults &#39;&#39;&#39;</span>
+    <span class="n">withdrawal_strategy</span> <span class="o">=</span> <span class="s1">&#39;Constant withdrawal&#39;</span>
+    <span class="n">withdrawal_base_amount</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;100000&#39;</span><span class="p">)</span>
+    <span class="n">withdrawal_rate</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;0.04&#39;</span><span class="p">)</span>
+    <span class="n">withdrawal_income_adjusted</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">withdrawal_inflation_adjusted</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="sd">&#39;&#39;&#39; TransactionStrategy defaults for outflows/withdrawals &#39;&#39;&#39;</span>
+    <span class="n">transaction_out_strategy</span> <span class="o">=</span> <span class="s1">&#39;Ordered&#39;</span>
+    <span class="n">transaction_out_weights</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Account&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+    <span class="n">transaction_out_timing</span> <span class="o">=</span> <span class="s1">&#39;end&#39;</span>
+
+    <span class="sd">&#39;&#39;&#39; AllocationStrategy defaults &#39;&#39;&#39;</span>
+    <span class="n">allocation_strategy</span> <span class="o">=</span> <span class="s1">&#39;n-age&#39;</span>
+    <span class="n">allocation_min_equity</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;0.3&#39;</span><span class="p">)</span>
+    <span class="n">allocation_max_equity</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;0.3&#39;</span><span class="p">)</span>
+    <span class="n">allocation_std_retirement_age</span> <span class="o">=</span> <span class="mi">65</span>
+    <span class="n">allocation_const_target</span> <span class="o">=</span> <span class="mi">65</span>
+    <span class="n">allocation_trans_target</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;0.5&#39;</span><span class="p">)</span>
+    <span class="n">allocation_risk_trans_period</span> <span class="o">=</span> <span class="mi">20</span>
+    <span class="n">allocation_adjust_retirement</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="sd">&#39;&#39;&#39; DebtPaymentStrategy defaults &#39;&#39;&#39;</span>
+    <span class="n">debt_payment_strategy</span> <span class="o">=</span> <span class="s1">&#39;Avalanche&#39;</span>
+    <span class="n">debt_payment_timing</span> <span class="o">=</span> <span class="s1">&#39;end&#39;</span>
+
+    <span class="sd">&#39;&#39;&#39; Debt defaults &#39;&#39;&#39;</span>
+    <span class="n">debt_reduction_rate</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">debt_accelerate_payment</span> <span class="o">=</span> <span class="kc">False</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Christopher Scott.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
