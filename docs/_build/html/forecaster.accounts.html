@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>forecaster.accounts module &#8212; forecaster 0.0.1 documentation</title>
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
@@ -24,16 +24,29 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="forecaster.forecast module" href="forecaster.forecast.html" />
-    <link rel="prev" title="forecaster.canada.tax module" href="forecaster.canada.tax.html" />
-   
-  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
+    <link rel="prev" title="forecaster.canada.tax module" href="forecaster.canada.tax.html" /> 
   </head>
   <body>
-  
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="forecaster.forecast.html" title="forecaster.forecast module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="forecaster.canada.tax.html" title="forecaster.canada.tax module"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" >forecaster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="forecaster.html" accesskey="U">forecaster package</a> &#187;</li> 
+      </ul>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
@@ -58,11 +71,13 @@ do not modify the <cite>balance</cite> directly; rather, they are applied
 to the balance, with any growth, when <cite>next_year()</cite> is called.
 A new <cite>Account</cite> object with an updated balance is generated; the
 calling object’s balance does not change.</p>
-<p class="rubric">Examples</p>
-<p><cite>account1 = Account(100, 0.05)</cite>
-<cite>account2 = account1.next_year()</cite>
-<cite>account1.balance == 100  # True</cite>
-<cite>account2.balance == 105  # True</cite></p>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">account1</span> <span class="o">=</span> <span class="n">Account</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">)</span>
+<span class="n">account2</span> <span class="o">=</span> <span class="n">account1</span><span class="o">.</span><span class="n">next_year</span><span class="p">()</span>
+<span class="n">account1</span><span class="o">.</span><span class="n">balance</span> <span class="o">==</span> <span class="mi">100</span>  <span class="c1"># True</span>
+<span class="n">account2</span><span class="o">.</span><span class="n">balance</span> <span class="o">==</span> <span class="mi">105</span>  <span class="c1"># True</span>
+</pre></div>
+</div>
 <dl class="attribute">
 <dt id="forecaster.accounts.Account.balance">
 <code class="descname">balance</code><a class="headerlink" href="#forecaster.accounts.Account.balance" title="Permalink to this definition">¶</a></dt>
@@ -72,8 +87,8 @@ calling object’s balance does not change.</p>
 <dl class="attribute">
 <dt id="forecaster.accounts.Account.balance_history">
 <code class="descname">balance_history</code><a class="headerlink" href="#forecaster.accounts.Account.balance_history" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict</em> – A dict of {year: balance} pairs covering
-all years in the range <cite>initial_year: this year</cite></p>
+<dd><p><em>dict[int, Money]</em> – <cite>{year: balance}</cite> pairs
+covering all years in the range <cite>initial_year: this_year</cite></p>
 </dd></dl>
 
 <dl class="attribute">
@@ -86,33 +101,40 @@ before compounding.</p>
 <dl class="attribute">
 <dt id="forecaster.accounts.Account.rate_history">
 <code class="descname">rate_history</code><a class="headerlink" href="#forecaster.accounts.Account.rate_history" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict</em> – A dict of {year: rate} pairs covering
-all years in the range <cite>initial_year: this year</cite></p>
+<dd><p><em>dict[int, Decimal]</em> – <cite>{year: rate}</cite> pairs covering
+all years in the range <cite>initial_year: this_year</cite></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.accounts.Account.rate_function">
+<code class="descname">rate_function</code><a class="headerlink" href="#forecaster.accounts.Account.rate_function" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>callable</em> – A callable object that gives the rate
+for each year. Has a signature of the form
+<cite>rate(year) -&gt; Decimal</cite>.</p>
+<p>If this callable object relies on <cite>Scenario</cite> or other
+objects defined in the <cite>forecaster</cite> package, recommend
+passing an object that stores these objects explicitly
+as attributes (as opposed to a method/function where these
+objects are stored in the context), otherwise <cite>Forecaster</cite>’s
+object-substitution logic will not work.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.accounts.Account.transactions">
 <code class="descname">transactions</code><a class="headerlink" href="#forecaster.accounts.Account.transactions" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict</em> – The transactions to/from the account for
-this year. A dict of <cite>{when: value}</cite> pairs, where:</p>
-<blockquote>
-<div><dl class="docutils">
-<dt><cite>when</cite> (float, Decimal, str): Describes the timing of</dt>
-<dd>the transaction in the year. In the range [0, 1].</dd>
-<dt><cite>value</cite> (Money): The inflows and outflows at time <cite>when</cite>.</dt>
-<dd>Positive for inflows and negative for outflows.
-Each element must be a Money object (or convertible
-to one).</dd>
-</dl>
-</div></blockquote>
+<dd><p><em>dict[Decimal, Money]</em> – The transactions to/from
+the account for this year. <cite>{when: value}</cite> pairs, where:</p>
+<p><cite>when</cite> describes the timing of the transaction in the year.
+In the range [0, 1].</p>
+<p><cite>value</cite> is the sum of inflows and outflows at time <cite>when</cite>.
+Positive for inflows and negative for outflows.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.accounts.Account.transactions_history">
 <code class="descname">transactions_history</code><a class="headerlink" href="#forecaster.accounts.Account.transactions_history" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict</em> – A dict of {year: transactions}
-pairs covering all years in the range
-<cite>initial_year: this year</cite></p>
+<dd><p><em>dict[int, dict[Decimal, Money]]</em> – <cite>{year: transactions}</cite> pairs covering all years in the range
+<cite>initial_year: this_year</cite></p>
 </dd></dl>
 
 <dl class="attribute">
@@ -125,8 +147,8 @@ year.</p>
 <dl class="attribute">
 <dt id="forecaster.accounts.Account.returns_history">
 <code class="descname">returns_history</code><a class="headerlink" href="#forecaster.accounts.Account.returns_history" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict</em> – A dict of {year: returns} pairs covering
-all years in the range <cite>initial_year: this year</cite></p>
+<dd><p><em>dict[int, Money]</em> – <cite>{year: returns}</cite> pairs
+covering all years in the range <cite>initial_year: this_year</cite></p>
 </dd></dl>
 
 <dl class="attribute">
@@ -135,17 +157,18 @@ all years in the range <cite>initial_year: this year</cite></p>
 <dd><p><em>int, str</em> – The compounding frequency. May be given as
 a number of periods (an int) or via a code (a str). Codes
 include:</p>
-<blockquote>
-<div>C: Continuous (default)
-D: Daily
-W: Weekly
-BW: Biweekly (every two weeks)
-SM: Semi-monthly (twice a month)
-M: Monthly
-BM: Bimonthly (every two months)
-Q: Quarterly (every 3 months)
-SA: Semi-annually (twice a year)
-A: Annually</div></blockquote>
+<ul class="simple">
+<li>C: Continuous (default)</li>
+<li>D: Daily</li>
+<li>W: Weekly</li>
+<li>BW: Biweekly (every two weeks)</li>
+<li>SM: Semi-monthly (twice a month)</li>
+<li>M: Monthly</li>
+<li>BM: Bimonthly (every two months)</li>
+<li>Q: Quarterly (every 3 months)</li>
+<li>SA: Semi-annually (twice a year)</li>
+<li>A: Annually</li>
+</ul>
 </dd></dl>
 
 <dl class="attribute">
@@ -153,6 +176,43 @@ A: Annually</div></blockquote>
 <code class="descname">initial_year</code><a class="headerlink" href="#forecaster.accounts.Account.initial_year" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>int</em> – The first year for which account data is
 recorded.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.accounts.Account.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>owner</em>, <em>balance=0</em>, <em>rate=0</em>, <em>transactions=None</em>, <em>nper=1</em>, <em>inputs=None</em>, <em>initial_year=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#Account.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.Account.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructor for <cite>Account</cite>.</p>
+<p>This constructor receives only values for the first year.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>owner</strong> (<a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a>) – The owner of the account. Optional.</li>
+<li><strong>balance</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a>) – The balance for the first year</li>
+<li><strong>rate</strong> (<em>Decimal</em><em>, </em><em>callable</em>) – <p>An object that gives the rate for
+each year, either as a constant value (e.g. a Decimal)
+or as a callable object with a signature of the form
+<cite>rate(year) -&gt; Decimal</cite>.</p>
+<p>If this callable object relies on <cite>Scenario</cite> or other
+objects defined in the <cite>forecaster</cite> package, recommend
+passing an object that stores these objects explicitly
+as attributes (as opposed to a method/function where
+these objects are stored in the context), otherwise
+<cite>Forecaster</cite>’s object-substitution logic will not work.</p>
+</li>
+<li><strong>transactions</strong> (<em>dict</em><em>[</em><em>Decimal</em><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>]</em>) – The transactions for
+the first year, as <cite>{when: value}</cite> pairs. <cite>when</cite> is in
+[0,1] (and may be one of the strings accepted by
+<cite>when_conv</cite>). A positive <cite>value</cite> denotes an inflow, and
+a negative <cite>value</cite> denotes an outflow.</li>
+<li><strong>nper</strong> (<em>int</em>) – The number of compounding periods per year.</li>
+<li><strong>initial_year</strong> (<em>int</em>) – The first year (e.g. 2000)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -167,8 +227,8 @@ recorded.</p>
 <dd><p>The accumulation function, A(t), from interest theory.</p>
 <p>A(t) provides the growth (or discount) factor over the period
 [0, t]. If <cite>t</cite> is negative, this method returns the inverse
-(i.e. A(t)^-1).</p>
-<p>This method’s output is not well-defined where t does not align
+(i.e. <cite>A(t)^-1</cite>).</p>
+<p>This method’s output is not well-defined if <cite>t</cite> does not align
 with the start/end of a compounding period. (It will produce
 sensible output, but it might not correspond to how your bank
 calculates interest).</p>
@@ -203,18 +263,15 @@ accumulation will be calculated.</li>
 <li><strong>value</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a>) – The value of the transaction. Positive values
 are inflows and negative values are outflows.</li>
 <li><strong>when</strong> (<em>float</em><em>, </em><em>Decimal</em><em>, </em><em>str</em>) – The timing of the transaction.
-Must be in the range [0,1] or in {‘start’, ‘end’}.
-0 corresponds to ‘end’ and 1 corresponds to ‘start’.
-(It’s a bit counterintuitive, but this is how <cite>numpy</cite>
-defines its <cite>when</cite> argument for financial methods.)
-Defaults to ‘end’.</li>
+Must be in the range [0,1] or be a suitable str input,
+as described in the documentation for <cite>when_conv</cite>.</li>
 </ul>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
 <li><code class="xref py py-exc docutils literal"><span class="pre">decimal.InvalidOperation</span></code> – Transactions must be convertible
 to type Money and <cite>when</cite> must be convertible to type
-Decimal</li>
+Decimal.</li>
 <li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – <cite>when</cite> must be in [0,1]</li>
 </ul>
 </td>
@@ -226,7 +283,7 @@ Decimal</li>
 <dl class="attribute">
 <dt>
 <code class="descname">balance</code></dt>
-<dd><p>Returns cached value in <a href="#id1"><span class="problematic" id="id2">*</span></a>_history dict if available.</p>
+<dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
 <dl class="method">
@@ -252,13 +309,18 @@ Decimal</li>
 <dl class="method">
 <dt id="forecaster.accounts.Account.contribution_group">
 <code class="descname">contribution_group</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#Account.contribution_group"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.Account.contribution_group" title="Permalink to this definition">¶</a></dt>
-<dd><p>The accounts that share contribution room with this one.</p>
+<dd><p>The Accounts that share contribution room with this one.</p>
+<p>For <cite>Account</cite>, this method returns a set containing only itself;
+that is, it does not share contribution room with any other
+<cite>Account`s. However, subclasses (like `RegisteredAccount</cite>) may
+override this behaviour.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A set of accounts that should be considered together when
-allocating contributions between them. Includes this account</td>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A set of <cite>Account`s that should be considered together when
+allocating contributions between them.
+Includes this `Account</cite>.</td>
 </tr>
 </tbody>
 </table>
@@ -267,7 +329,7 @@ allocating contributions between them. Includes this account</td>
 <dl class="attribute">
 <dt id="forecaster.accounts.Account.inflows">
 <code class="descname">inflows</code><a class="headerlink" href="#forecaster.accounts.Account.inflows" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns cached value in <a href="#id3"><span class="problematic" id="id4">*</span></a>_history dict if available.</p>
+<dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -325,7 +387,7 @@ haven’t been advanced to the next year.</p>
 <dl class="attribute">
 <dt id="forecaster.accounts.Account.outflows">
 <code class="descname">outflows</code><a class="headerlink" href="#forecaster.accounts.Account.outflows" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns cached value in <a href="#id5"><span class="problematic" id="id6">*</span></a>_history dict if available.</p>
+<dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -343,33 +405,15 @@ haven’t been advanced to the next year.</p>
 <dl class="attribute">
 <dt>
 <code class="descname">rate</code></dt>
-<dd><p>Returns cached value in <a href="#id7"><span class="problematic" id="id8">*</span></a>_history dict if available.</p>
+<dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.accounts.Account.rate_callable">
 <code class="descname">rate_callable</code><a class="headerlink" href="#forecaster.accounts.Account.rate_callable" title="Permalink to this definition">¶</a></dt>
-<dd><p>A function that generates a rate for a given year.</p>
-<p>The function is callable with one (potentially optional)
-argument: year.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.accounts.Account.rate_from_asset_allocation">
-<code class="descname">rate_from_asset_allocation</code><span class="sig-paren">(</span><em>year=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#Account.rate_from_asset_allocation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.Account.rate_from_asset_allocation" title="Permalink to this definition">¶</a></dt>
-<dd><p>The rate of return for a portfolio with a given composition.</p>
-<p>This determines the portfolio composition based on the owner’s
-asset allocation strategy, and their age and (estimated)
-retirement age.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>year</strong> (<em>int</em>) – The year for which a rate is desired. Optional;
-defaults to the current year.</td>
-</tr>
-</tbody>
-</table>
+<dd><p>A callable object that generates a rate for a given year.</p>
+<p>This object takes the signature <cite>rate(year) -&gt; Money</cite> and must
+accept this <cite>Account</cite>’s <cite>this_year</cite> attribute as input.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -381,7 +425,7 @@ defaults to the current year.</td>
 <dl class="attribute">
 <dt>
 <code class="descname">returns</code></dt>
-<dd><p>Returns cached value in <a href="#id9"><span class="problematic" id="id10">*</span></a>_history dict if available.</p>
+<dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -411,7 +455,7 @@ defaults to the current year.</td>
 <dl class="attribute">
 <dt id="forecaster.accounts.Account.taxable_income">
 <code class="descname">taxable_income</code><a class="headerlink" href="#forecaster.accounts.Account.taxable_income" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns cached value in <a href="#id11"><span class="problematic" id="id12">*</span></a>_history dict if available.</p>
+<dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -423,7 +467,7 @@ defaults to the current year.</td>
 <dl class="attribute">
 <dt>
 <code class="descname">transactions</code></dt>
-<dd><p>Returns cached value in <a href="#id13"><span class="problematic" id="id14">*</span></a>_history dict if available.</p>
+<dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -485,6 +529,12 @@ may be made to pay off the balance earlier. Optional.</li>
 </tr>
 </tbody>
 </table>
+<dl class="method">
+<dt id="forecaster.accounts.Debt.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>owner</em>, <em>balance=0</em>, <em>rate=0</em>, <em>transactions=None</em>, <em>nper=1</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>minimum_payment=&lt;Money: 0 CAD&gt;</em>, <em>reduction_rate=1</em>, <em>accelerate_payment=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#Debt.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.Debt.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructor for <cite>Debt</cite>.</p>
+</dd></dl>
+
 <dl class="attribute">
 <dt id="forecaster.accounts.Debt.balance_history">
 <code class="descname">balance_history</code><a class="headerlink" href="#forecaster.accounts.Debt.balance_history" title="Permalink to this definition">¶</a></dt>
@@ -502,11 +552,13 @@ may be made to pay off the balance earlier. Optional.</li>
 <code class="descname">max_inflow</code><span class="sig-paren">(</span><em>when='end'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#Debt.max_inflow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.Debt.max_inflow" title="Permalink to this definition">¶</a></dt>
 <dd><p>The payment at time <cite>when</cite> that would reduce balance to 0.</p>
 <p>This is in addition to any existing payments in the account.</p>
-<p class="rubric">Example</p>
-<p>debt = Debt(-100)
-debt.maximum_payment(‘start’) == Money(100)  # True
-debt.add_transaction(100, ‘start’)
-debt.maximum_payment(‘start’) == 0  # True</p>
+<p>Example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">debt</span> <span class="o">=</span> <span class="n">Debt</span><span class="p">(</span><span class="o">-</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">debt</span><span class="o">.</span><span class="n">maximum_payment</span><span class="p">(</span><span class="s1">&#39;start&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="n">Money</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>  <span class="c1"># True</span>
+<span class="n">debt</span><span class="o">.</span><span class="n">add_transaction</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">)</span>
+<span class="n">debt</span><span class="o">.</span><span class="n">maximum_payment</span><span class="p">(</span><span class="s1">&#39;start&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>  <span class="c1"># True</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="method">
@@ -594,6 +646,12 @@ as the annuitant (i.e. the owner.)</li>
 </tr>
 </tbody>
 </table>
+<dl class="method">
+<dt id="forecaster.accounts.RegisteredAccount.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>owner</em>, <em>balance=0</em>, <em>rate=0</em>, <em>transactions=None</em>, <em>nper=1</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>contribution_room=None</em>, <em>contributor=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#RegisteredAccount.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.RegisteredAccount.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes a RegisteredAccount object.</p>
+</dd></dl>
+
 <dl class="attribute">
 <dt id="forecaster.accounts.RegisteredAccount.balance_history">
 <code class="descname">balance_history</code><a class="headerlink" href="#forecaster.accounts.RegisteredAccount.balance_history" title="Permalink to this definition">¶</a></dt>
@@ -615,7 +673,7 @@ as the annuitant (i.e. the owner.)</li>
 <dl class="attribute">
 <dt id="forecaster.accounts.RegisteredAccount.contribution_room_history">
 <code class="descname">contribution_room_history</code><a class="headerlink" href="#forecaster.accounts.RegisteredAccount.contribution_room_history" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>A dict of {year</em> – contribution_room} pairs.</p>
+<dd><p>A dict of <cite>{year – contribution_room}</cite> pairs.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -641,7 +699,7 @@ as the annuitant (i.e. the owner.)</li>
 <code class="descname">next_contribution_room</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#RegisteredAccount.next_contribution_room"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.RegisteredAccount.next_contribution_room" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the contribution room for next year.</p>
 <p>This method must be implemented by any subclass of
-RegisteredAccount.</p>
+<cite>RegisteredAccount</cite>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -756,19 +814,13 @@ type Decimal</li>
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper"><div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation overview</a><ul>
-  <li><a href="modules.html">forecaster</a><ul>
-  <li><a href="forecaster.html">forecaster package</a><ul>
-      <li>Previous: <a href="forecaster.canada.tax.html" title="previous chapter">forecaster.canada.tax module</a></li>
-      <li>Next: <a href="forecaster.forecast.html" title="next chapter">forecaster.forecast module</a></li>
-  </ul></li>
-  </ul></li>
-  </ul></li>
-</ul>
-</div>
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="forecaster.canada.tax.html"
+                        title="previous chapter">forecaster.canada.tax module</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="forecaster.forecast.html"
+                        title="next chapter">forecaster.forecast module</a></p>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
@@ -783,20 +835,29 @@ type Decimal</li>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2017, Christopher Scott.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
-      
-      |
-      <a href="_sources/forecaster.accounts.rst.txt"
-          rel="nofollow">Page source</a>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="forecaster.forecast.html" title="forecaster.forecast module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="forecaster.canada.tax.html" title="forecaster.canada.tax module"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" >forecaster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="forecaster.html" >forecaster package</a> &#187;</li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Christopher Scott.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.5.
+    </div>
   </body>
 </html>

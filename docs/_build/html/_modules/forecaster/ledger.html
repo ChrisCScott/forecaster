@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>forecaster.ledger &#8212; forecaster 0.0.1 documentation</title>
-    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
@@ -22,16 +22,22 @@
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
-    <link rel="search" title="Search" href="../../search.html" />
-   
-  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
+    <link rel="search" title="Search" href="../../search.html" /> 
   </head>
   <body>
-  
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
@@ -46,7 +52,7 @@
 <span class="kn">from</span> <span class="nn">moneyed</span> <span class="k">import</span> <span class="n">Money</span> <span class="k">as</span> <span class="n">PyMoney</span>
 
 
-<div class="viewcode-block" id="Money"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.accounts.Money">[docs]</a><span class="k">class</span> <span class="nc">Money</span><span class="p">(</span><span class="n">PyMoney</span><span class="p">):</span>
+<div class="viewcode-block" id="Money"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.ledger.Money">[docs]</a><span class="k">class</span> <span class="nc">Money</span><span class="p">(</span><span class="n">PyMoney</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Extends py-moneyed to support Decimal-like functions. &quot;&quot;&quot;</span>
 
     <span class="c1"># We&#39;ve only extending Money&#39;s magic methods for convenience, not</span>
@@ -55,7 +61,7 @@
 
     <span class="n">default_currency</span> <span class="o">=</span> <span class="s1">&#39;CAD&#39;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">amount</span><span class="o">=</span><span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;0.0&#39;</span><span class="p">),</span> <span class="n">currency</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Money.__init__"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.ledger.Money.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">amount</span><span class="o">=</span><span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;0.0&#39;</span><span class="p">),</span> <span class="n">currency</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Initializes with application-level default currency.</span>
 
 <span class="sd">        Also allows for initializing from another Money object.</span>
@@ -65,18 +71,18 @@
         <span class="k">elif</span> <span class="n">currency</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">amount</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_currency</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">amount</span><span class="p">,</span> <span class="n">currency</span><span class="p">)</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">amount</span><span class="p">,</span> <span class="n">currency</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Money.__round__"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.accounts.Money.__round__">[docs]</a>    <span class="k">def</span> <span class="nf">__round__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ndigits</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Money.__round__"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.ledger.Money.__round__">[docs]</a>    <span class="k">def</span> <span class="nf">__round__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ndigits</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Rounds to ndigits &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">amount</span><span class="p">,</span> <span class="n">ndigits</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">currency</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Money.__hash__"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.accounts.Money.__hash__">[docs]</a>    <span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Money.__hash__"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.ledger.Money.__hash__">[docs]</a>    <span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Allows for use in sets and as dict keys. &quot;&quot;&quot;</span>
         <span class="c1"># Equality of Money objects is based on amount and currency.</span>
         <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">amount</span><span class="p">)</span> <span class="o">+</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">currency</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Money.__eq__"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.accounts.Money.__eq__">[docs]</a>    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<div class="viewcode-block" id="Money.__eq__"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.ledger.Money.__eq__">[docs]</a>    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Extends == operator to allow comparison with Decimal.</span>
 
 <span class="sd">        This allows for comparison to 0 (or other Decimal-convertible</span>
@@ -90,20 +96,20 @@
         <span class="c1"># yielding incorrect behaviour like JPY1 == USD1.</span>
         <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">amount</span> <span class="o">==</span> <span class="n">other</span></div>
 
-<div class="viewcode-block" id="Money.__lt__"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.accounts.Money.__lt__">[docs]</a>    <span class="k">def</span> <span class="nf">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<div class="viewcode-block" id="Money.__lt__"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.ledger.Money.__lt__">[docs]</a>    <span class="k">def</span> <span class="nf">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Extends &lt; operator to allow comparison with 0 &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">other</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">amount</span> <span class="o">&lt;</span> <span class="mi">0</span>
         <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__lt__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Money.__gt__"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.accounts.Money.__gt__">[docs]</a>    <span class="k">def</span> <span class="nf">__gt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<div class="viewcode-block" id="Money.__gt__"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.ledger.Money.__gt__">[docs]</a>    <span class="k">def</span> <span class="nf">__gt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Extends &gt; operator to allow comparison with 0 &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">other</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">amount</span> <span class="o">&gt;</span> <span class="mi">0</span>
         <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__gt__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></div></div>
 
 
-<div class="viewcode-block" id="recorded_property"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.accounts.recorded_property">[docs]</a><span class="k">class</span> <span class="nc">recorded_property</span><span class="p">(</span><span class="nb">property</span><span class="p">):</span>
+<div class="viewcode-block" id="recorded_property"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.ledger.recorded_property">[docs]</a><span class="k">class</span> <span class="nc">recorded_property</span><span class="p">(</span><span class="nb">property</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; A decorator for properties that record their annual amounts.</span>
 
 <span class="sd">    Methods decorated with this decorator (a) are decorated with the</span>
@@ -114,20 +120,22 @@
 <span class="sd">    metaclass to automatically generate have a &lt;name&gt;_history property,</span>
 <span class="sd">    and a _&lt;name&gt; dict attribute to the class.</span>
 
-<span class="sd">    Example:</span>
+<span class="sd">    Example::</span>
+
 <span class="sd">        class ExampleLedger(Ledger):</span>
 <span class="sd">            @recorded_property</span>
 <span class="sd">            def taxable_income(self):</span>
 <span class="sd">                return &lt;formula for taxable_income&gt;</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># This is a decorator, which mimics the naming convention followed by</span>
     <span class="c1"># `property` (i.e. lowercase)</span>
     <span class="c1"># pylint: disable=invalid-name</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fget</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="recorded_property.__init__"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.ledger.recorded_property.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fget</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Init recorded_property.</span>
 
-<span class="sd">        This wraps the getter received via the @recorded_property</span>
+<span class="sd">        This wraps the getter received via the `@recorded_property`</span>
 <span class="sd">        decoration into a method that returns a value from a dict of</span>
 <span class="sd">        recorded values if such a value is present for the key</span>
 <span class="sd">        `self.this_year`. If not, it calls the getter. No setter may be</span>
@@ -142,7 +150,7 @@
         <span class="c1"># a new value (and does not cache it - we only automatically</span>
         <span class="c1"># store a value when next_year() is called)</span>
         <span class="k">def</span> <span class="nf">getter</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
-            <span class="sd">&quot;&quot;&quot; Returns cached value in *_history dict if available. &quot;&quot;&quot;</span>
+            <span class="sd">&quot;&quot;&quot; Returns cached value in \\*_history dict if available. &quot;&quot;&quot;</span>
             <span class="n">history_dict</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">history_dict_name</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">this_year</span> <span class="ow">in</span> <span class="n">history_dict</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">history_dict</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">this_year</span><span class="p">]</span>
@@ -180,10 +188,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">history_property</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span>
             <span class="n">fget</span><span class="o">=</span><span class="n">history</span><span class="p">,</span>
             <span class="n">doc</span><span class="o">=</span><span class="s1">&#39;Record of &#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s1">&#39; over all past years.&#39;</span>
-        <span class="p">)</span></div>
+        <span class="p">)</span></div></div>
 
 
-<div class="viewcode-block" id="recorded_property_cached"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.accounts.recorded_property_cached">[docs]</a><span class="k">class</span> <span class="nc">recorded_property_cached</span><span class="p">(</span><span class="n">recorded_property</span><span class="p">):</span>
+<div class="viewcode-block" id="recorded_property_cached"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.ledger.recorded_property_cached">[docs]</a><span class="k">class</span> <span class="nc">recorded_property_cached</span><span class="p">(</span><span class="n">recorded_property</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; A recorded property that is cached by Ledger classes. &quot;&quot;&quot;</span>
     <span class="c1"># This is a decorator, which mimics the naming convention followed by</span>
     <span class="c1"># `property` (i.e. lowercase)</span>
@@ -196,7 +204,7 @@
     <span class="c1"># with the keyword arg `cached` and then `__call__` with the</span>
     <span class="c1"># decorated method -- which makes `recorded_property` a much more</span>
     <span class="c1"># complicated subclass of `property`.)</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fget</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="recorded_property_cached.__init__"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.ledger.recorded_property_cached.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fget</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Overrides the property getter to cache on first call. &quot;&quot;&quot;</span>
 
         <span class="c1"># Wrap the getter in a method that will cache the property the</span>
@@ -217,7 +225,7 @@
         <span class="c1"># Override history property with different method that adds the</span>
         <span class="c1"># current year&#39;s value to the cache if it isn&#39;t already there:</span>
         <span class="k">def</span> <span class="nf">history</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
-            <span class="sd">&quot;&quot;&quot; Returns *_history dict (and caches this year&#39;s value). &quot;&quot;&quot;</span>
+            <span class="sd">&quot;&quot;&quot; Returns \\*_history dict (and caches this year&#39;s value). &quot;&quot;&quot;</span>
             <span class="n">history_dict</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">history_dict_name</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">this_year</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">history_dict</span><span class="p">:</span>
                 <span class="n">history_dict</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">this_year</span><span class="p">]</span> <span class="o">=</span> <span class="n">fget</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
@@ -229,10 +237,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">history_property</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span>
             <span class="n">fget</span><span class="o">=</span><span class="n">history</span><span class="p">,</span>
             <span class="n">doc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">history_property</span><span class="o">.</span><span class="vm">__doc__</span>
-        <span class="p">)</span></div>
+        <span class="p">)</span></div></div>
 
 
-<div class="viewcode-block" id="LedgerType"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.accounts.LedgerType">[docs]</a><span class="k">class</span> <span class="nc">LedgerType</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+<div class="viewcode-block" id="LedgerType"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.ledger.LedgerType">[docs]</a><span class="k">class</span> <span class="nc">LedgerType</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; A metaclass for Ledger classes.</span>
 
 <span class="sd">    This metaclass inspects the class for any</span>
@@ -265,7 +273,7 @@
             <span class="nb">setattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">prop</span><span class="o">.</span><span class="n">history_prop_name</span><span class="p">,</span> <span class="n">prop</span><span class="o">.</span><span class="n">history_property</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="Ledger"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.accounts.Ledger">[docs]</a><span class="k">class</span> <span class="nc">Ledger</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">LedgerType</span><span class="p">):</span>
+<div class="viewcode-block" id="Ledger"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.ledger.Ledger">[docs]</a><span class="k">class</span> <span class="nc">Ledger</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">LedgerType</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; An object with a next_year() method that tracks the curent year.</span>
 
 <span class="sd">    This object provides the basic infrastructure not only for advancing</span>
@@ -284,7 +292,7 @@
     <span class="c1"># clearly behaviour that requires a class (not just a container).</span>
     <span class="c1"># pylint: disable=too-few-public-methods</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Ledger.__init__"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.ledger.Ledger.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Inits IncrementableByYear.</span>
 
 <span class="sd">        Behaviour when a `year` in `inputs` is equal to `initial_year`</span>
@@ -294,10 +302,10 @@
 
 <span class="sd">        Args:</span>
 <span class="sd">            initial_year (int): The initial year for the object.</span>
-<span class="sd">            inputs (dict[str, dict[int, *]]): `{property: {year: val}}`</span>
-<span class="sd">                pairs. Every `val` is treated as a manual entry that</span>
-<span class="sd">                overrides any programmatic value for that year generated</span>
-<span class="sd">                by `next_year`.</span>
+<span class="sd">            inputs (dict[str, dict[int, Any]]):</span>
+<span class="sd">                `{property: {year: val}}` pairs. Every `val` is treated</span>
+<span class="sd">                as a manual entry that overrides any programmatic value</span>
+<span class="sd">                for that year generated by `next_year`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">initial_year</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span>
@@ -314,9 +322,9 @@
             <span class="c1"># Otherwise, use an empty dict and leave it to __init__ and</span>
             <span class="c1"># next_year to fill it programmatically.</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prop</span><span class="o">.</span><span class="n">history_dict_name</span><span class="p">,</span> <span class="p">{})</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prop</span><span class="o">.</span><span class="n">history_dict_name</span><span class="p">,</span> <span class="p">{})</span></div>
 
-<div class="viewcode-block" id="Ledger.next_year"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.accounts.Ledger.next_year">[docs]</a>    <span class="k">def</span> <span class="nf">next_year</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Ledger.next_year"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.ledger.Ledger.next_year">[docs]</a>    <span class="k">def</span> <span class="nf">next_year</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Advances to the next year. &quot;&quot;&quot;</span>
         <span class="c1"># Record all recorded properties in the moment before advancing</span>
         <span class="c1"># to the next year:</span>
@@ -336,7 +344,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span> <span class="o">+=</span> <span class="mi">1</span></div></div>
 
 
-<div class="viewcode-block" id="TaxSource"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.accounts.TaxSource">[docs]</a><span class="k">class</span> <span class="nc">TaxSource</span><span class="p">(</span><span class="n">Ledger</span><span class="p">):</span>
+<div class="viewcode-block" id="TaxSource"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.ledger.TaxSource">[docs]</a><span class="k">class</span> <span class="nc">TaxSource</span><span class="p">(</span><span class="n">Ledger</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; An object that can be considered when calculating taxes.</span>
 
 <span class="sd">    Provides standard tax-related properties, listed below.</span>
@@ -365,7 +373,7 @@
 <span class="sd">            the object for each year thus far.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="TaxSource.taxable_income"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.accounts.TaxSource.taxable_income">[docs]</a>    <span class="nd">@recorded_property</span>
+<div class="viewcode-block" id="TaxSource.taxable_income"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.ledger.TaxSource.taxable_income">[docs]</a>    <span class="nd">@recorded_property</span>
     <span class="k">def</span> <span class="nf">taxable_income</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Taxable income for the given year.</span>
 
@@ -374,7 +382,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="TaxSource.tax_withheld"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.accounts.TaxSource.tax_withheld">[docs]</a>    <span class="nd">@recorded_property</span>
+<div class="viewcode-block" id="TaxSource.tax_withheld"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.ledger.TaxSource.tax_withheld">[docs]</a>    <span class="nd">@recorded_property</span>
     <span class="k">def</span> <span class="nf">tax_withheld</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Tax withheld for the given year.</span>
 
@@ -383,7 +391,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="TaxSource.tax_credit"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.accounts.TaxSource.tax_credit">[docs]</a>    <span class="nd">@recorded_property</span>
+<div class="viewcode-block" id="TaxSource.tax_credit"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.ledger.TaxSource.tax_credit">[docs]</a>    <span class="nd">@recorded_property</span>
     <span class="k">def</span> <span class="nf">tax_credit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Tax credit for the given year.</span>
 
@@ -392,7 +400,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="TaxSource.tax_deduction"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.accounts.TaxSource.tax_deduction">[docs]</a>    <span class="nd">@recorded_property</span>
+<div class="viewcode-block" id="TaxSource.tax_deduction"><a class="viewcode-back" href="../../forecaster.ledger.html#forecaster.ledger.TaxSource.tax_deduction">[docs]</a>    <span class="nd">@recorded_property</span>
     <span class="k">def</span> <span class="nf">tax_deduction</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Tax deduction for the given year.</span>
 
@@ -406,15 +414,7 @@
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper"><div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="../../index.html">Documentation overview</a><ul>
-  <li><a href="../index.html">Module code</a><ul>
-  </ul></li>
-  </ul></li>
-</ul>
-</div>
+        <div class="sphinxsidebarwrapper">
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="../../search.html" method="get">
@@ -429,17 +429,22 @@
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2017, Christopher Scott.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
-      
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Christopher Scott.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.5.
+    </div>
   </body>
 </html>

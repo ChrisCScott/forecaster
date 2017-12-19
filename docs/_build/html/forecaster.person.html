@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>forecaster.person module &#8212; forecaster 0.0.1 documentation</title>
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
@@ -24,16 +24,29 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="forecaster.scenario module" href="forecaster.scenario.html" />
-    <link rel="prev" title="forecaster.ledger module" href="forecaster.ledger.html" />
-   
-  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
+    <link rel="prev" title="forecaster.ledger module" href="forecaster.ledger.html" /> 
   </head>
   <body>
-  
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="forecaster.scenario.html" title="forecaster.scenario module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="forecaster.ledger.html" title="forecaster.ledger module"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" >forecaster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="forecaster.html" accesskey="U">forecaster package</a> &#187;</li> 
+      </ul>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
@@ -101,8 +114,8 @@ years on record.</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="forecaster.person.Person.raise_rate_function">
-<code class="descname">raise_rate_function</code><a class="headerlink" href="#forecaster.person.Person.raise_rate_function" title="Permalink to this definition">¶</a></dt>
+<dt id="forecaster.person.Person.raise_rate_callable">
+<code class="descname">raise_rate_callable</code><a class="headerlink" href="#forecaster.person.Person.raise_rate_callable" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>callable</em> – A function for determining the
 Person’s raise rate for a given year. A callable object with
 the form <cite>raise_rate_function(year) -&gt; Decimal</cite>.</p>
@@ -141,6 +154,80 @@ object; see documentation for <cite>Tax</cite> for more information.</p>
 <dt id="forecaster.person.Person.__gt__">
 <code class="descname">__gt__</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/person.html#Person.__gt__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.person.Person.__gt__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Allows for sorting, max, min, etc. based on gross income.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.person.Person.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>initial_year</em>, <em>name</em>, <em>birth_date</em>, <em>retirement_date=None</em>, <em>gross_income=0</em>, <em>raise_rate=0</em>, <em>spouse=None</em>, <em>tax_treatment=None</em>, <em>inputs=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/person.html#Person.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.person.Person.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructor for <cite>Person</cite>.</p>
+<dl class="attribute">
+<dt id="forecaster.person.Person.accounts">
+<code class="descname">accounts</code><a class="headerlink" href="#forecaster.person.Person.accounts" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>set</em> – All accounts naming this Person as an owner.</p>
+</dd></dl>
+
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>initial_year</strong> (<em>int</em>) – The first year of recorded data.</li>
+<li><strong>name</strong> (<em>str</em>) – The person’s name.</li>
+<li><strong>birth_date</strong> (<em>datetime</em>) – The person’s date of birth.
+May be passed as any value that can be cast to str and
+converted to datetime by python-dateutils.parse().</li>
+<li><strong>retirement_date</strong> (<em>datetime</em>) – The person’s retirement date.
+May be passed as any value that can be cast to str and
+converted to datetime by python-dateutils.parse().
+Optional.</li>
+<li><strong>gross_income</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a>) – The person’s gross income in
+<cite>initial_year</cite>.</li>
+<li><strong>raise_rate</strong> (<em>dict</em><em>[</em><em>int</em><em>, </em><em>Decimal</em><em>]</em><em>, </em><em>callable</em>) – The person’s
+raise for each year, as a callable object with the
+signature <cite>raise_rate(year)</cite> or a dict of
+<cite>{year: raise}</cite> pairs. The raise is a Decimal
+interpreted as a percentage (e.g. <cite>Decimal(‘0.03’)</cite>
+indicates a 3% raise).</li>
+<li><strong>spouse</strong> (<a class="reference internal" href="#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a>) – The person’s spouse. Optional.
+In ordinary use, the first person of the couple is
+constructed with <cite>spouse=None</cite>, and the second person is
+constructed with <cite>spouse=person1</cite>. Both persons will
+automatically have their spouse attribute updated to
+point at each other.</li>
+<li><strong>tax_treatment</strong> (<a class="reference internal" href="forecaster.tax.html#forecaster.tax.Tax" title="forecaster.tax.Tax"><em>Tax</em></a>) – The person’s tax treatment. Optional.
+This can be any callable object that accepts the form
+<cite>tax_treatment(taxable_income, year)</cite> and returns a
+Money object (which corresponds to total taxes payable
+on <cite>taxable_income</cite>).</li>
+<li><strong>inputs</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>dict</em><em>[</em><em>int</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – <p><cite>{attr: {year: val}}</cite>
+pairs, where <cite>attr</cite> is any one of <cite>Person</cite>’s recorded
+propertes, namely:</p>
+<ul>
+<li>taxable_income</li>
+<li>tax_withheld</li>
+<li>tax_credit</li>
+<li>tax_deduction</li>
+<li>gross_income</li>
+<li>net_income</li>
+<li>raise_rate</li>
+</ul>
+</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">An instance of class <cite>Person</cite></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – birth_date or retirement_date are not parseable
+as dates.</li>
+<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – retirement_date precedes birth_date</li>
+<li><code class="xref py py-exc docutils literal"><span class="pre">OverflowError</span></code> – birth_date or retirement_date are too large.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -201,7 +288,7 @@ it has been registered, or None if it is not registered.</td>
 <dl class="attribute">
 <dt>
 <code class="descname">gross_income</code></dt>
-<dd><p>Returns cached value in <a href="#id1"><span class="problematic" id="id2">*</span></a>_history dict if available.</p>
+<dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -219,7 +306,7 @@ it has been registered, or None if it is not registered.</td>
 <dl class="attribute">
 <dt>
 <code class="descname">net_income</code></dt>
-<dd><p>Returns cached value in <a href="#id3"><span class="problematic" id="id4">*</span></a>_history dict if available.</p>
+<dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -231,13 +318,13 @@ it has been registered, or None if it is not registered.</td>
 <dl class="attribute">
 <dt>
 <code class="descname">raise_rate</code></dt>
-<dd><p>Returns cached value in <a href="#id5"><span class="problematic" id="id6">*</span></a>_history dict if available.</p>
+<dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt>
-<code class="descname">raise_rate_function</code></dt>
-<dd><p>A function that returns the Person’s raise for a given year.</p>
+<code class="descname">raise_rate_callable</code></dt>
+<dd><p>A callable object that generates a raise rate for the year.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -305,7 +392,7 @@ shared contribution room.</p>
 <dl class="attribute">
 <dt id="forecaster.person.Person.tax_withheld">
 <code class="descname">tax_withheld</code><a class="headerlink" href="#forecaster.person.Person.tax_withheld" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns cached value in <a href="#id7"><span class="problematic" id="id8">*</span></a>_history dict if available.</p>
+<dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -317,7 +404,7 @@ shared contribution room.</p>
 <dl class="attribute">
 <dt id="forecaster.person.Person.taxable_income">
 <code class="descname">taxable_income</code><a class="headerlink" href="#forecaster.person.Person.taxable_income" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns cached value in <a href="#id9"><span class="problematic" id="id10">*</span></a>_history dict if available.</p>
+<dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -335,19 +422,13 @@ shared contribution room.</p>
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper"><div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation overview</a><ul>
-  <li><a href="modules.html">forecaster</a><ul>
-  <li><a href="forecaster.html">forecaster package</a><ul>
-      <li>Previous: <a href="forecaster.ledger.html" title="previous chapter">forecaster.ledger module</a></li>
-      <li>Next: <a href="forecaster.scenario.html" title="next chapter">forecaster.scenario module</a></li>
-  </ul></li>
-  </ul></li>
-  </ul></li>
-</ul>
-</div>
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="forecaster.ledger.html"
+                        title="previous chapter">forecaster.ledger module</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="forecaster.scenario.html"
+                        title="next chapter">forecaster.scenario module</a></p>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
@@ -362,20 +443,29 @@ shared contribution room.</p>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2017, Christopher Scott.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
-      
-      |
-      <a href="_sources/forecaster.person.rst.txt"
-          rel="nofollow">Page source</a>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="forecaster.scenario.html" title="forecaster.scenario module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="forecaster.ledger.html" title="forecaster.ledger module"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" >forecaster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="forecaster.html" >forecaster package</a> &#187;</li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Christopher Scott.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.5.
+    </div>
   </body>
 </html>

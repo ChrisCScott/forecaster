@@ -25,11 +25,12 @@ class RRSP(RegisteredAccount):
         Args:
             inflation_adjust: A method with the following form:
                 `inflation_adjust(val, this_year, target_year)`.
+
                 Returns a Decimal object which is the inflation-
                 adjustment factor from base_year to target_year.
-                Optional.
-                If not provided, all values are assumed to be in real
-                terms, so no inflation adjustment is performed.
+
+                Optional. If not provided, all values are assumed to be
+                in real terms, so no inflation adjustment is performed.
         """
         # This method does have a lot of arguments, but they're mostly
         # inherited from a superclass. We're stuck with them here.
@@ -212,11 +213,12 @@ class TFSA(RegisteredAccount):
         Args:
             inflation_adjust: A method with the following form:
                 `inflation_adjust(val, this_year, target_year)`.
+
                 Returns a Decimal object which is the inflation-
                 adjustment factor from base_year to target_year.
-                Optional.
-                If not provided, all values are assumed to be in real
-                terms, so no inflation adjustment is performed.
+
+                Optional. If not provided, all values are assumed to be
+                in real terms, so no inflation adjustment is performed.
         """
         # This method does have a lot of arguments, but they're mostly
         # inherited from a superclass. We're stuck with them here.
@@ -336,13 +338,14 @@ class TaxableAccount(Account):
     capital assets. That involves tracking the adjusted cost base (acb)
     of the assets.
 
+    See Account for other attributes not listed below.
+
     Attributes:
         acb (Money): The adjusted cost base of the assets in the account
             at the start of the year.
         capital_gain (Money): The total capital gains for the year.
             This is evaluated lazily, so it may return different values
             if you add or remove transactions.
-        See Account for other attributes.
     """
     # TODO (v2): Reimplement TaxableAccount based on Asset objects
     # (subclassed from Money), which independently track acb and possess

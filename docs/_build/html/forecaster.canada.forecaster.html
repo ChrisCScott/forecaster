@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>forecaster.canada.forecaster module &#8212; forecaster 0.0.1 documentation</title>
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
@@ -24,16 +24,30 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="forecaster.canada.settings module" href="forecaster.canada.settings.html" />
-    <link rel="prev" title="forecaster.canada.constants module" href="forecaster.canada.constants.html" />
-   
-  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
+    <link rel="prev" title="forecaster.canada.constants module" href="forecaster.canada.constants.html" /> 
   </head>
   <body>
-  
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="forecaster.canada.settings.html" title="forecaster.canada.settings module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="forecaster.canada.constants.html" title="forecaster.canada.constants module"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" >forecaster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="forecaster.html" >forecaster package</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="forecaster.canada.html" accesskey="U">forecaster.canada package</a> &#187;</li> 
+      </ul>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
@@ -48,6 +62,15 @@
 <em class="property">class </em><code class="descclassname">forecaster.canada.forecaster.</code><code class="descname">ForecasterCanada</code><span class="sig-paren">(</span><em>settings=&lt;class 'forecaster.canada.settings.SettingsCanada'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/forecaster.html#ForecasterCanada"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.forecaster.ForecasterCanada" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="forecaster.forecaster.html#forecaster.forecaster.Forecaster" title="forecaster.forecaster.Forecaster"><code class="xref py py-class docutils literal"><span class="pre">forecaster.forecaster.Forecaster</span></code></a></p>
 <p>Tests Forecaster (Canada).</p>
+<dl class="method">
+<dt id="forecaster.canada.forecaster.ForecasterCanada.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>settings=&lt;class 'forecaster.canada.settings.SettingsCanada'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/forecaster.html#ForecasterCanada.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.forecaster.ForecasterCanada.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inits Forecaster with Canada-specific settings.</p>
+<p>In addition to using a Canada-specific Settings object by
+default, this class also provides Canada-specific defaults and
+init logic for RRSPs, TFSAs, TaxableAccounts, and Tax objects.</p>
+</dd></dl>
+
 <dl class="method">
 <dt id="forecaster.canada.forecaster.ForecasterCanada.add_rrsp">
 <code class="descname">add_rrsp</code><span class="sig-paren">(</span><em>inflation_adjust=None</em>, <em>cls=&lt;class 'forecaster.canada.accounts.RRSP'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/forecaster.html#ForecasterCanada.add_rrsp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.forecaster.ForecasterCanada.add_rrsp" title="Permalink to this definition">¶</a></dt>
@@ -83,21 +106,13 @@ list for canada.tax objects.</p>
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper"><div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation overview</a><ul>
-  <li><a href="modules.html">forecaster</a><ul>
-  <li><a href="forecaster.html">forecaster package</a><ul>
-  <li><a href="forecaster.canada.html">forecaster.canada package</a><ul>
-      <li>Previous: <a href="forecaster.canada.constants.html" title="previous chapter">forecaster.canada.constants module</a></li>
-      <li>Next: <a href="forecaster.canada.settings.html" title="next chapter">forecaster.canada.settings module</a></li>
-  </ul></li>
-  </ul></li>
-  </ul></li>
-  </ul></li>
-</ul>
-</div>
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="forecaster.canada.constants.html"
+                        title="previous chapter">forecaster.canada.constants module</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="forecaster.canada.settings.html"
+                        title="next chapter">forecaster.canada.settings module</a></p>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
@@ -112,20 +127,30 @@ list for canada.tax objects.</p>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2017, Christopher Scott.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
-      
-      |
-      <a href="_sources/forecaster.canada.forecaster.rst.txt"
-          rel="nofollow">Page source</a>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="forecaster.canada.settings.html" title="forecaster.canada.settings module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="forecaster.canada.constants.html" title="forecaster.canada.constants module"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" >forecaster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="forecaster.html" >forecaster package</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="forecaster.canada.html" >forecaster.canada package</a> &#187;</li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Christopher Scott.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.5.
+    </div>
   </body>
 </html>

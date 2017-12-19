@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>forecaster.forecast module &#8212; forecaster 0.0.1 documentation</title>
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
@@ -24,16 +24,29 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="forecaster.forecaster module" href="forecaster.forecaster.html" />
-    <link rel="prev" title="forecaster.accounts module" href="forecaster.accounts.html" />
-   
-  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
+    <link rel="prev" title="forecaster.accounts module" href="forecaster.accounts.html" /> 
   </head>
   <body>
-  
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="forecaster.forecaster.html" title="forecaster.forecaster module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="forecaster.accounts.html" title="forecaster.accounts module"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" >forecaster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="forecaster.html" accesskey="U">forecaster package</a> &#187;</li> 
+      </ul>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
@@ -51,22 +64,25 @@ determine how account balances will grow or shrink year-over-year.</p>
 <em class="property">class </em><code class="descclassname">forecaster.forecast.</code><code class="descname">Forecast</code><span class="sig-paren">(</span><em>people</em>, <em>assets</em>, <em>debts</em>, <em>scenario</em>, <em>contribution_strategy</em>, <em>withdrawal_strategy</em>, <em>contribution_trans_strategy</em>, <em>withdrawal_trans_strategy</em>, <em>debt_payment_strategy</em>, <em>tax_treatment</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast.html#Forecast"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.Forecast" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>A financial forecast spanning multiple years.</p>
-<p>A <cite>Forecast</cite> contains various <cite>Account`s with balances that grow
-(or shrink) from year to year. The `Forecast</cite> object also contains
-<cite>Person</cite> objects describing the plannees, <cite>Scenario</cite> information
-describing economic conditions over the course of the forecast, and
-<cite>Strategy</cite> objects to describe the plannee’s behaviour.</p>
+<p>A <cite>Forecast</cite> contains various <cite>Account</cite> objects with balances that
+grow (or shrink) from year to year. The <cite>Forecast</cite> object also
+contains <cite>Person</cite> objects describing the plannees, <cite>Scenario</cite>
+information describing economic conditions over the course of the
+forecast, and <cite>Strategy</cite> objects to describe the plannee’s behaviour.</p>
 <p>The <cite>Forecast</cite> manages inflows to and outflows from (or between)
 accounts based on <cite>Strategy</cite> and <cite>Scenario</cite> information.</p>
-<p>The <cite>Forecast</cite> is built around either a single person or a spousal
-couple (since spouses have specific tax treatment).</p>
+<p>The <cite>Forecast</cite> can be built around any number of people, but is
+ordinarily built around either a single person or a spousal
+couple (since spouses have specific tax treatment). Otherwise, it’s
+better practice to build separate <cite>Forecast</cite> objects for separate
+people.</p>
 <dl class="attribute">
 <dt id="forecaster.forecast.Forecast.people">
 <code class="descname">people</code><a class="headerlink" href="#forecaster.forecast.Forecast.people" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>Iterable[Person]</em> – The people for whom the financial
 forecast is being generated. Typically a single person or a
-person and their spouse.
-Note that all <cite>Person</cite> objects must have the same
+person and their spouse.</p>
+<p>Note that all <cite>Person</cite> objects must have the same
 <cite>this_year</cite> attribute, as must their various accounts.</p>
 </dd></dl>
 
@@ -313,8 +329,8 @@ from all accounts, net of withholding taxes.</p>
 <code class="descname">total_tax_withheld</code><a class="headerlink" href="#forecaster.forecast.Forecast.total_tax_withheld" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>dict[int, Money]</em> – The total amount of tax
 owing for this year which was paid during this year (as
-opposed to being paid in the following year the next year).
-Note that this is not necessarily the same as the sum of
+opposed to being paid in the following year the next year).</p>
+<p>Note that this is not necessarily the same as the sum of
 other <cite>tax_withheld_on_*</cite> attributes, since the tax
 authority may require additional withholding taxes (or
 payment by installments) based on the person’s overall
@@ -336,6 +352,57 @@ became owing but were not paid in the previous year.</p>
 <dd><p><em>dict[int, Money]</em> – The total amount of money
 available for spending, net of taxes, contributions, debt
 payments, etc.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.Forecast.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>people</em>, <em>assets</em>, <em>debts</em>, <em>scenario</em>, <em>contribution_strategy</em>, <em>withdrawal_strategy</em>, <em>contribution_trans_strategy</em>, <em>withdrawal_trans_strategy</em>, <em>debt_payment_strategy</em>, <em>tax_treatment</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast.html#Forecast.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.Forecast.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs an instance of class Forecast.</p>
+<p>Iteratively advances <cite>people</cite> and various accounts to the next
+year until all years of the <cite>scenario</cite> have been modelled.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>people</strong> (<em>Iterable</em><em>[</em><a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>]</em>) – The people for whom a forecast
+is being generated.</li>
+<li><strong>assets</strong> (<em>Iterable</em><em>[</em><a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.Account" title="forecaster.accounts.Account"><em>Account</em></a><em>]</em>) – The assets of the people.</li>
+<li><strong>debts</strong> (<em>Iterable</em><em>[</em><a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.Account" title="forecaster.accounts.Account"><em>Account</em></a><em>]</em>) – The debts of the people.</li>
+<li><strong>scenario</strong> (<a class="reference internal" href="forecaster.scenario.html#forecaster.scenario.Scenario" title="forecaster.scenario.Scenario"><em>Scenario</em></a>) – Economic information for the forecast
+(e.g. inflation and stock market returns for each year)</li>
+<li><strong>contribution_strategy</strong> (<a class="reference internal" href="forecaster.strategy.html#forecaster.strategy.ContributionStrategy" title="forecaster.strategy.ContributionStrategy"><em>ContributionStrategy</em></a>) – A callable
+object that determines the gross contribution for a
+year. See the documentation for ContributionStrategy for
+acceptable args when calling this object.</li>
+<li><strong>withdrawal_strategy</strong> (<a class="reference internal" href="forecaster.strategy.html#forecaster.strategy.WithdrawalStrategy" title="forecaster.strategy.WithdrawalStrategy"><em>WithdrawalStrategy</em></a>) – A callable
+object that determines the amount to withdraw for a
+year. See the documentation for WithdrawalStrategy for
+acceptable args when calling this object.</li>
+<li><strong>contribution_transaction_strategy</strong> (<a class="reference internal" href="forecaster.strategy.html#forecaster.strategy.TransactionStrategy" title="forecaster.strategy.TransactionStrategy"><em>TransactionStrategy</em></a>) – A
+callable object that determines the schedule of
+transactions for any contributions during the year.
+See the documentation for TransactionStrategy for
+acceptable args when calling this object.</li>
+<li><strong>withdrawal_transaction_strategy</strong> – (WithdrawalTransactionStrategy):
+A callable object that determines the schedule of
+transactions for any contributions during the year.
+See the documentation for TransactionStrategy for
+acceptable args when calling this object.</li>
+<li><strong>debt_payment_strategy</strong> (<a class="reference internal" href="forecaster.strategy.html#forecaster.strategy.DebtPaymentStrategy" title="forecaster.strategy.DebtPaymentStrategy"><em>DebtPaymentStrategy</em></a>) – A callable
+object that determines the schedule of debt payments,
+including accelerated debt payments drawn from gross
+contributions. See the documentation for
+<cite>DebtPaymentStrategy</cite> for acceptable args when calling
+this object.</li>
+<li><strong>tax_treatment</strong> (<a class="reference internal" href="forecaster.tax.html#forecaster.tax.Tax" title="forecaster.tax.Tax"><em>Tax</em></a>) – A callable object that determines the
+total amount of tax owing in a year. See documentation
+for <cite>Tax</cite> for acceptable args when calling this object.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -399,8 +466,8 @@ adds inflows to the appropriate accounts.</p>
 <dd><p>Records total tax withheld and payable in the year.</p>
 <p>TODO: Deal with tax owing but not withheld - arrange to pay this
 in the following year? Apply against investment balances? Draw
-a portion from income (i.e. as a living expense)?
-Note that in Canada, if more than $3000 or so of tax is owing
+a portion from income (i.e. as a living expense)?</p>
+<p>Note that in Canada, if more than $3000 or so of tax is owing
 but not withheld, the CRA will put you on an instalments plan,
 so you can’t really defer your total tax liability into the next
 year.</p>
@@ -440,19 +507,13 @@ method should be removed and the calling code refactored.</p>
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper"><div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation overview</a><ul>
-  <li><a href="modules.html">forecaster</a><ul>
-  <li><a href="forecaster.html">forecaster package</a><ul>
-      <li>Previous: <a href="forecaster.accounts.html" title="previous chapter">forecaster.accounts module</a></li>
-      <li>Next: <a href="forecaster.forecaster.html" title="next chapter">forecaster.forecaster module</a></li>
-  </ul></li>
-  </ul></li>
-  </ul></li>
-</ul>
-</div>
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="forecaster.accounts.html"
+                        title="previous chapter">forecaster.accounts module</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="forecaster.forecaster.html"
+                        title="next chapter">forecaster.forecaster module</a></p>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
@@ -467,20 +528,29 @@ method should be removed and the calling code refactored.</p>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2017, Christopher Scott.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
-      
-      |
-      <a href="_sources/forecaster.forecast.rst.txt"
-          rel="nofollow">Page source</a>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="forecaster.forecaster.html" title="forecaster.forecaster module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="forecaster.accounts.html" title="forecaster.accounts module"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" >forecaster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="forecaster.html" >forecaster package</a> &#187;</li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Christopher Scott.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.5.
+    </div>
   </body>
 </html>

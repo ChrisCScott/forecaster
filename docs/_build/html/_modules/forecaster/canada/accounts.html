@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>forecaster.canada.accounts &#8212; forecaster 0.0.1 documentation</title>
-    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
@@ -22,16 +22,22 @@
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
-    <link rel="search" title="Search" href="../../../search.html" />
-   
-  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
+    <link rel="search" title="Search" href="../../../search.html" /> 
   </head>
   <body>
-  
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
@@ -53,7 +59,7 @@
     <span class="sd">&quot;&quot;&quot; A Registered Retirement Savings Plan (Canada). &quot;&quot;&quot;</span>
 
     <span class="c1"># Explicitly repeat superclass args for the sake of intellisense.</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="RRSP.__init__"><a class="viewcode-back" href="../../../forecaster.canada.accounts.html#forecaster.canada.accounts.RRSP.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">contribution_room</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">contributor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
@@ -66,11 +72,12 @@
 <span class="sd">        Args:</span>
 <span class="sd">            inflation_adjust: A method with the following form:</span>
 <span class="sd">                `inflation_adjust(val, this_year, target_year)`.</span>
+
 <span class="sd">                Returns a Decimal object which is the inflation-</span>
 <span class="sd">                adjustment factor from base_year to target_year.</span>
-<span class="sd">                Optional.</span>
-<span class="sd">                If not provided, all values are assumed to be in real</span>
-<span class="sd">                terms, so no inflation adjustment is performed.</span>
+
+<span class="sd">                Optional. If not provided, all values are assumed to be</span>
+<span class="sd">                in real terms, so no inflation adjustment is performed.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># This method does have a lot of arguments, but they&#39;re mostly</span>
         <span class="c1"># inherited from a superclass. We&#39;re stuck with them here.</span>
@@ -111,7 +118,7 @@
             <span class="n">contribution_room</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room_history</span>
         <span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="RRSP.convert_to_rrif"><a class="viewcode-back" href="../../../forecaster.canada.accounts.html#forecaster.canada.accounts.RRSP.convert_to_rrif">[docs]</a>    <span class="k">def</span> <span class="nf">convert_to_rrif</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Converts the RRSP to an RRIF. &quot;&quot;&quot;</span>
@@ -244,7 +251,7 @@
 <div class="viewcode-block" id="TFSA"><a class="viewcode-back" href="../../../forecaster.canada.accounts.html#forecaster.canada.accounts.TFSA">[docs]</a><span class="k">class</span> <span class="nc">TFSA</span><span class="p">(</span><span class="n">RegisteredAccount</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; A Tax-Free Savings Account (Canada). &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+<div class="viewcode-block" id="TFSA.__init__"><a class="viewcode-back" href="../../../forecaster.canada.accounts.html#forecaster.canada.accounts.TFSA.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
                  <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">contribution_room</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">contributor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -253,11 +260,12 @@
 <span class="sd">        Args:</span>
 <span class="sd">            inflation_adjust: A method with the following form:</span>
 <span class="sd">                `inflation_adjust(val, this_year, target_year)`.</span>
+
 <span class="sd">                Returns a Decimal object which is the inflation-</span>
 <span class="sd">                adjustment factor from base_year to target_year.</span>
-<span class="sd">                Optional.</span>
-<span class="sd">                If not provided, all values are assumed to be in real</span>
-<span class="sd">                terms, so no inflation adjustment is performed.</span>
+
+<span class="sd">                Optional. If not provided, all values are assumed to be</span>
+<span class="sd">                in real terms, so no inflation adjustment is performed.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># This method does have a lot of arguments, but they&#39;re mostly</span>
         <span class="c1"># inherited from a superclass. We&#39;re stuck with them here.</span>
@@ -315,7 +323,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room</span> <span class="o">=</span> <span class="n">contribution_room</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_contribution_room_accrual</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
                 <span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">start_year</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-            <span class="p">)</span>
+            <span class="p">)</span></div>
 
     <span class="k">def</span> <span class="nf">_contribution_room_accrual</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The amount of contribution room accrued in a given year.</span>
@@ -377,13 +385,14 @@
 <span class="sd">    capital assets. That involves tracking the adjusted cost base (acb)</span>
 <span class="sd">    of the assets.</span>
 
+<span class="sd">    See Account for other attributes not listed below.</span>
+
 <span class="sd">    Attributes:</span>
 <span class="sd">        acb (Money): The adjusted cost base of the assets in the account</span>
 <span class="sd">            at the start of the year.</span>
 <span class="sd">        capital_gain (Money): The total capital gains for the year.</span>
 <span class="sd">            This is evaluated lazily, so it may return different values</span>
 <span class="sd">            if you add or remove transactions.</span>
-<span class="sd">        See Account for other attributes.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># TODO (v2): Reimplement TaxableAccount based on Asset objects</span>
     <span class="c1"># (subclassed from Money), which independently track acb and possess</span>
@@ -397,7 +406,7 @@
     <span class="c1"># non-principle-residence real estate holdings.</span>
     <span class="c1"># (But we might want to also model rental income as well...)</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="TaxableAccount.__init__"><a class="viewcode-back" href="../../../forecaster.canada.accounts.html#forecaster.canada.accounts.TaxableAccount.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">nper</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">acb</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
@@ -420,7 +429,7 @@
 
         <span class="c1"># If acb wasn&#39;t provided, assume there have been no capital</span>
         <span class="c1"># gains or losses, so acb = balance.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">acb</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="n">acb</span> <span class="k">if</span> <span class="n">acb</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">balance</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">acb</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="n">acb</span> <span class="k">if</span> <span class="n">acb</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">balance</span><span class="p">)</span></div>
 
     <span class="c1"># pylint: disable=method-hidden</span>
     <span class="c1"># The `self.acb` assignment in `__init__ doesn&#39;t actually overwrite</span>
@@ -520,15 +529,7 @@
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper"><div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="../../../index.html">Documentation overview</a><ul>
-  <li><a href="../../index.html">Module code</a><ul>
-  </ul></li>
-  </ul></li>
-</ul>
-</div>
+        <div class="sphinxsidebarwrapper">
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="../../../search.html" method="get">
@@ -543,17 +544,22 @@
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2017, Christopher Scott.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
-      
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Christopher Scott.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.5.
+    </div>
   </body>
 </html>

@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>forecaster.tax &#8212; forecaster 0.0.1 documentation</title>
-    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
@@ -22,16 +22,22 @@
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
-    <link rel="search" title="Search" href="../../search.html" />
-   
-  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
+    <link rel="search" title="Search" href="../../search.html" /> 
   </head>
   <body>
-  
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
@@ -82,18 +88,17 @@
 <span class="sd">    are calculated, so `gross_income - tax(gross_income, year)`</span>
 <span class="sd">    will return a person&#39;s net income.</span>
 
-<span class="sd">    For a more sophisticated assessment of credit/etc., provide an</span>
-<span class="sd">    iterable of sources as the first argument. Each source must provide</span>
-<span class="sd">    the following methods:</span>
-<span class="sd">        taxable_income(self [, year])</span>
-<span class="sd">        tax_withheld(self [, year])</span>
-<span class="sd">        tax_credit(self [, year])</span>
-<span class="sd">        tax_deduction(self [, year])</span>
+<span class="sd">    For a more sophisticated assessment of credit/etc., provide a</span>
+<span class="sd">    `Person` object as input (or an iterable of `Person` objects). This</span>
+<span class="sd">    will assess taxable income, credits, and deductions for the `Person`</span>
+<span class="sd">    and any `Account` objects they own.</span>
 
-<span class="sd">    Thus, calling `tax({person, account1, ... accountn}, year)` will</span>
-<span class="sd">    return the total tax liability for the year, after applying any</span>
-<span class="sd">    credit/etc. and including `person`&#39;s employment income and any</span>
-<span class="sd">    account earnings.</span>
+<span class="sd">    Thus, calling `tax({person1, person2}, year)` will</span>
+<span class="sd">    return the total tax liability for the year for both person1 and</span>
+<span class="sd">    person2, after applying any credit/etc., and including the</span>
+<span class="sd">    employment income and taxable account activity of each `Person`.</span>
+
+<span class="sd">    If spouses are passed in, they are processed together.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        tax_brackets (dict): A dict of `{year: brackets}` pairs, where</span>
@@ -103,26 +108,33 @@
 <span class="sd">            Decimal(&#39;0.03&#39;) is interpreted as 3%)</span>
 <span class="sd">        personal_deduction (dict): A dict of `{year: deduction}` pairs,</span>
 <span class="sd">            where `deduction` is convertible to Money.</span>
+
 <span class="sd">            The personal deduction for a given year is deducted from</span>
 <span class="sd">            income when determining income tax in that year.</span>
 <span class="sd">        credit_rate (dict): A dict of `{year: rate}` pairs, where `rate`</span>
 <span class="sd">            is convertible to Decimal.</span>
+
 <span class="sd">            The credit rate is used to determine how much each tax</span>
 <span class="sd">            credit reduced total tax liability.</span>
 <span class="sd">        accum (dict): A dict of `{year: {bracket: accum}}` pairs, where</span>
 <span class="sd">            each `bracket` corresponds to a key in `tax_brackets` and</span>
 <span class="sd">            `accum` is the sum of tax payable on the income falling into</span>
-<span class="sd">            all lower brackets. For example, if there are $10, $100, and</span>
-<span class="sd">            $1000 tax brackets, then `accum[year][$1000]` is equal to</span>
-<span class="sd">            `tax_brackets[year][$10] * $10 + tax_brackets[year][$100] *</span>
-<span class="sd">            $100`.</span>
+<span class="sd">            all lower brackets.</span>
+
+<span class="sd">            For example, if there are $10, $100, and $1000 tax brackets,</span>
+<span class="sd">            then `accum[year][$1000]` is equal to::</span>
+
+<span class="sd">                tax_brackets[year][10] * 10 + tax_brackets[year][100] * 100</span>
+
 <span class="sd">        inflation_adjust: A method with the following form:</span>
 <span class="sd">            `inflation_adjust(target_year, base_year)`.</span>
+
 <span class="sd">            Returns a Decimal scaling factor. Multiplying this by a</span>
 <span class="sd">            nominal value in base_year will yield a nominal value in</span>
-<span class="sd">            target_year with the same real value. Optional.</span>
-<span class="sd">            If not provided, all values are assumed to be in real terms,</span>
-<span class="sd">            so no inflation adjustment is performed.</span>
+<span class="sd">            target_year with the same real value.</span>
+
+<span class="sd">            Optional. If not provided, all values are assumed to be in</span>
+<span class="sd">            real terms, so no inflation adjustment is performed.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        taxable_income (Money, iterable): Taxable income for the year,</span>
@@ -134,16 +146,19 @@
 <span class="sd">        deduction (Money): Any other deduction which can be</span>
 <span class="sd">            applied and which aren&#39;t evident from the income sources</span>
 <span class="sd">            themselves. These will generally be itemized deduction.</span>
+
 <span class="sd">            It&#39;s a good idea to be familiar with the Tax implementation</span>
 <span class="sd">            you&#39;re working with before passing any of these, otherwise</span>
 <span class="sd">            you risk double-counting.</span>
+
 <span class="sd">            Optional.</span>
 <span class="sd">        credit (Money): Any other tax credit which can be</span>
 <span class="sd">            applied and which aren&#39;t evident from the income sources</span>
 <span class="sd">            themselves. These will generally be boutique tax credit.</span>
+
 <span class="sd">            Optional.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="Tax.__init__"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">tax_brackets</span><span class="p">,</span> <span class="n">personal_deduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">credit_rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span>
     <span class="p">):</span>
@@ -165,9 +180,9 @@
 <span class="sd">                `inflation_adjust(val, this_year, target_year)`.</span>
 <span class="sd">                Returns a Decimal object which is the inflation-</span>
 <span class="sd">                adjustment factor from base_year to target_year.</span>
-<span class="sd">                Optional.</span>
-<span class="sd">                If not provided, all values are assumed to be in real</span>
-<span class="sd">                terms, so no inflation adjustment is performed.</span>
+
+<span class="sd">                Optional. If not provided, all values are assumed to be</span>
+<span class="sd">                in real terms, so no inflation adjustment is performed.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># NOTE: Consider allowing users to pass in non-year-indexed</span>
         <span class="c1"># values (e.g. so that `tax_brackets` can be a dict of</span>
@@ -214,7 +229,7 @@
             <span class="c1"># If this argument wasn&#39;t passed, default to behaviour where</span>
             <span class="c1"># all tax credits are fully refundable (i.e. credits reduce</span>
             <span class="c1"># tax liability at a 100% rate)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_credit_rate</span> <span class="o">=</span> <span class="p">{</span><span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tax_brackets</span><span class="p">):</span> <span class="n">Decimal</span><span class="p">(</span><span class="mi">1</span><span class="p">)}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_credit_rate</span> <span class="o">=</span> <span class="p">{</span><span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tax_brackets</span><span class="p">):</span> <span class="n">Decimal</span><span class="p">(</span><span class="mi">1</span><span class="p">)}</span></div>
 
 <div class="viewcode-block" id="Tax.tax_brackets"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.tax_brackets">[docs]</a>    <span class="k">def</span> <span class="nf">tax_brackets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">bracket</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Retrieve tax brackets for year. &quot;&quot;&quot;</span>
@@ -505,17 +520,27 @@
 <span class="sd">                Any other deduction which can be applied and which</span>
 <span class="sd">                aren&#39;t modelled by the income sources themselves.</span>
 <span class="sd">                These will generally be itemized deduction.</span>
+
 <span class="sd">                If `income` is passed as an iterable, this should also</span>
 <span class="sd">                be an iterable; otherwise it should be a Money object.</span>
-<span class="sd">                It&#39;s a good idea to be familiar with the Tax</span>
-<span class="sd">                implementation you&#39;re working with before passing any of</span>
-<span class="sd">                these, otherwise you risk double-counting.</span>
+
+<span class="sd">                It&#39;s a good idea to be familiar with the `Tax` and</span>
+<span class="sd">                `Person` implementation you&#39;re working with before</span>
+<span class="sd">                passing any of these, otherwise you risk double-counting</span>
+<span class="sd">                if both the `Person` and `Tax` objects implement the</span>
+<span class="sd">                same deduction.</span>
+
 <span class="sd">                Optional.</span>
 <span class="sd">            credit (Money, dict[Person, Money]):</span>
 <span class="sd">                Any other tax credit which can be applied and which</span>
 <span class="sd">                aren&#39;t modelled by the income sources themselves.</span>
-<span class="sd">                These are usually boutique tax credit.</span>
-<span class="sd">                See `deduction` for further comments.</span>
+
+<span class="sd">                These are usually boutique tax credits.</span>
+
+<span class="sd">                See `deduction` for further comments on being familiar</span>
+<span class="sd">                with both `Tax` and `Person` implementations when</span>
+<span class="sd">                passing this.</span>
+
 <span class="sd">                Optional.</span>
 
 <span class="sd">            Returns:</span>
@@ -545,15 +570,7 @@
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper"><div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="../../index.html">Documentation overview</a><ul>
-  <li><a href="../index.html">Module code</a><ul>
-  </ul></li>
-  </ul></li>
-</ul>
-</div>
+        <div class="sphinxsidebarwrapper">
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="../../search.html" method="get">
@@ -568,17 +585,22 @@
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2017, Christopher Scott.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
-      
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Christopher Scott.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.5.
+    </div>
   </body>
 </html>

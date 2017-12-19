@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>forecaster.canada.accounts module &#8212; forecaster 0.0.1 documentation</title>
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
@@ -24,16 +24,30 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="forecaster.canada.constants module" href="forecaster.canada.constants.html" />
-    <link rel="prev" title="forecaster.canada package" href="forecaster.canada.html" />
-   
-  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
+    <link rel="prev" title="forecaster.canada package" href="forecaster.canada.html" /> 
   </head>
   <body>
-  
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="forecaster.canada.constants.html" title="forecaster.canada.constants module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="forecaster.canada.html" title="forecaster.canada package"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" >forecaster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="forecaster.html" >forecaster package</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="forecaster.canada.html" accesskey="U">forecaster.canada package</a> &#187;</li> 
+      </ul>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
@@ -99,7 +113,7 @@
 <dl class="attribute">
 <dt id="forecaster.canada.accounts.PrincipleResidence.taxable_income">
 <code class="descname">taxable_income</code><a class="headerlink" href="#forecaster.canada.accounts.PrincipleResidence.taxable_income" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns cached value in <a href="#id1"><span class="problematic" id="id2">*</span></a>_history dict if available.</p>
+<dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -121,6 +135,28 @@
 <em class="property">class </em><code class="descclassname">forecaster.canada.accounts.</code><code class="descname">RRSP</code><span class="sig-paren">(</span><em>owner</em>, <em>balance=0</em>, <em>rate=0</em>, <em>transactions=None</em>, <em>nper=1</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>contribution_room=None</em>, <em>contributor=None</em>, <em>inflation_adjust=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts.html#RRSP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.RRSP" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.RegisteredAccount" title="forecaster.accounts.RegisteredAccount"><code class="xref py py-class docutils literal"><span class="pre">forecaster.accounts.RegisteredAccount</span></code></a></p>
 <p>A Registered Retirement Savings Plan (Canada).</p>
+<dl class="method">
+<dt id="forecaster.canada.accounts.RRSP.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>owner</em>, <em>balance=0</em>, <em>rate=0</em>, <em>transactions=None</em>, <em>nper=1</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>contribution_room=None</em>, <em>contributor=None</em>, <em>inflation_adjust=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts.html#RRSP.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.RRSP.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes an RRSP object.</p>
+<p>See documentation for <cite>Account</cite> and <cite>RegisteredAccount</cite> for
+information on any args not listed below.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>inflation_adjust</strong> – <p>A method with the following form:
+<cite>inflation_adjust(val, this_year, target_year)</cite>.</p>
+<p>Returns a Decimal object which is the inflation-
+adjustment factor from base_year to target_year.</p>
+<p>Optional. If not provided, all values are assumed to be
+in real terms, so no inflation adjustment is performed.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 <dl class="attribute">
 <dt id="forecaster.canada.accounts.RRSP.balance_history">
 <code class="descname">balance_history</code><a class="headerlink" href="#forecaster.canada.accounts.RRSP.balance_history" title="Permalink to this definition">¶</a></dt>
@@ -195,7 +231,7 @@ used to calculate RRSP contribution room.</li>
 <dl class="attribute">
 <dt id="forecaster.canada.accounts.RRSP.tax_deduction">
 <code class="descname">tax_deduction</code><a class="headerlink" href="#forecaster.canada.accounts.RRSP.tax_deduction" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns cached value in <a href="#id3"><span class="problematic" id="id4">*</span></a>_history dict if available.</p>
+<dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -207,7 +243,7 @@ used to calculate RRSP contribution room.</li>
 <dl class="attribute">
 <dt id="forecaster.canada.accounts.RRSP.tax_withheld">
 <code class="descname">tax_withheld</code><a class="headerlink" href="#forecaster.canada.accounts.RRSP.tax_withheld" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns cached value in <a href="#id5"><span class="problematic" id="id6">*</span></a>_history dict if available.</p>
+<dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -219,7 +255,7 @@ used to calculate RRSP contribution room.</li>
 <dl class="attribute">
 <dt id="forecaster.canada.accounts.RRSP.taxable_income">
 <code class="descname">taxable_income</code><a class="headerlink" href="#forecaster.canada.accounts.RRSP.taxable_income" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns cached value in <a href="#id7"><span class="problematic" id="id8">*</span></a>_history dict if available.</p>
+<dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -241,6 +277,26 @@ used to calculate RRSP contribution room.</li>
 <em class="property">class </em><code class="descclassname">forecaster.canada.accounts.</code><code class="descname">TFSA</code><span class="sig-paren">(</span><em>owner</em>, <em>balance=0</em>, <em>rate=0</em>, <em>transactions=None</em>, <em>nper=1</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>contribution_room=None</em>, <em>contributor=None</em>, <em>inflation_adjust=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts.html#TFSA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.TFSA" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.RegisteredAccount" title="forecaster.accounts.RegisteredAccount"><code class="xref py py-class docutils literal"><span class="pre">forecaster.accounts.RegisteredAccount</span></code></a></p>
 <p>A Tax-Free Savings Account (Canada).</p>
+<dl class="method">
+<dt id="forecaster.canada.accounts.TFSA.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>owner</em>, <em>balance=0</em>, <em>rate=0</em>, <em>transactions=None</em>, <em>nper=1</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>contribution_room=None</em>, <em>contributor=None</em>, <em>inflation_adjust=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts.html#TFSA.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.TFSA.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes a TFSA object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>inflation_adjust</strong> – <p>A method with the following form:
+<cite>inflation_adjust(val, this_year, target_year)</cite>.</p>
+<p>Returns a Decimal object which is the inflation-
+adjustment factor from base_year to target_year.</p>
+<p>Optional. If not provided, all values are assumed to be
+in real terms, so no inflation adjustment is performed.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 <dl class="attribute">
 <dt id="forecaster.canada.accounts.TFSA.balance_history">
 <code class="descname">balance_history</code><a class="headerlink" href="#forecaster.canada.accounts.TFSA.balance_history" title="Permalink to this definition">¶</a></dt>
@@ -298,7 +354,7 @@ used to calculate RRSP contribution room.</li>
 <dl class="attribute">
 <dt id="forecaster.canada.accounts.TFSA.taxable_income">
 <code class="descname">taxable_income</code><a class="headerlink" href="#forecaster.canada.accounts.TFSA.taxable_income" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns cached value in <a href="#id9"><span class="problematic" id="id10">*</span></a>_history dict if available.</p>
+<dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -323,6 +379,7 @@ used to calculate RRSP contribution room.</li>
 <p>This account uses Canadian rules for determining taxable income from
 capital assets. That involves tracking the adjusted cost base (acb)
 of the assets.</p>
+<p>See Account for other attributes not listed below.</p>
 <dl class="attribute">
 <dt id="forecaster.canada.accounts.TaxableAccount.acb">
 <code class="descname">acb</code><a class="headerlink" href="#forecaster.canada.accounts.TaxableAccount.acb" title="Permalink to this definition">¶</a></dt>
@@ -338,15 +395,27 @@ This is evaluated lazily, so it may return different values
 if you add or remove transactions.</p>
 </dd></dl>
 
-<dl class="attribute">
-<dt>
-<code class="descname">See Account for other attributes.</code></dt>
-<dd></dd></dl>
+<dl class="method">
+<dt id="forecaster.canada.accounts.TaxableAccount.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>owner</em>, <em>balance=0</em>, <em>rate=0</em>, <em>transactions=None</em>, <em>nper=1</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>acb=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts.html#TaxableAccount.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.TaxableAccount.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructor for <cite>TaxableAccount</cite>.</p>
+<p>See documentation for <cite>Account</cite> for information on args not
+listed below.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>acb</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a>) – The adjusted cost base of the assets in the
+account at the start of <cite>initial_year</cite>.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="attribute">
 <dt>
 <code class="descname">acb</code></dt>
-<dd><p>Returns cached value in <a href="#id11"><span class="problematic" id="id12">*</span></a>_history dict if available.</p>
+<dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -369,7 +438,7 @@ if you add or remove transactions.</p>
 <dl class="attribute">
 <dt>
 <code class="descname">capital_gain</code></dt>
-<dd><p>Returns cached value in <a href="#id13"><span class="problematic" id="id14">*</span></a>_history dict if available.</p>
+<dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -423,7 +492,7 @@ if you add or remove transactions.</p>
 <dl class="attribute">
 <dt id="forecaster.canada.accounts.TaxableAccount.taxable_income">
 <code class="descname">taxable_income</code><a class="headerlink" href="#forecaster.canada.accounts.TaxableAccount.taxable_income" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns cached value in <a href="#id15"><span class="problematic" id="id16">*</span></a>_history dict if available.</p>
+<dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -447,21 +516,13 @@ if you add or remove transactions.</p>
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper"><div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation overview</a><ul>
-  <li><a href="modules.html">forecaster</a><ul>
-  <li><a href="forecaster.html">forecaster package</a><ul>
-  <li><a href="forecaster.canada.html">forecaster.canada package</a><ul>
-      <li>Previous: <a href="forecaster.canada.html" title="previous chapter">forecaster.canada package</a></li>
-      <li>Next: <a href="forecaster.canada.constants.html" title="next chapter">forecaster.canada.constants module</a></li>
-  </ul></li>
-  </ul></li>
-  </ul></li>
-  </ul></li>
-</ul>
-</div>
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="forecaster.canada.html"
+                        title="previous chapter">forecaster.canada package</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="forecaster.canada.constants.html"
+                        title="next chapter">forecaster.canada.constants module</a></p>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
@@ -476,20 +537,30 @@ if you add or remove transactions.</p>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2017, Christopher Scott.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
-      
-      |
-      <a href="_sources/forecaster.canada.accounts.rst.txt"
-          rel="nofollow">Page source</a>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="forecaster.canada.constants.html" title="forecaster.canada.constants module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="forecaster.canada.html" title="forecaster.canada package"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" >forecaster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="forecaster.html" >forecaster package</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="forecaster.canada.html" >forecaster.canada package</a> &#187;</li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Christopher Scott.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.5.
+    </div>
   </body>
 </html>

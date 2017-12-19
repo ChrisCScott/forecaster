@@ -22,14 +22,15 @@ class Forecaster(object):
 
     `Forecaster` takes in information for building a `Forecast`
     (explicitly, via a `Settings` object, or via a combination of the
-    two) and builds one or more `Forecast`s from that information.
+    two) and builds one or more `Forecast` objects from that
+    information.
 
-    One of the purposes of this class is to enable building Forecast
+    One of the purposes of this class is to enable building `Forecast`
     objects solely from a `Settings` object and a set of `inputs` dicts.
     Objects of this class can be initialized with any of the parameters
     that can be provided to `Forecast` (as well as a `Settings` object).
     Any parameters that are not provided at init time can be built
-    afterward via an `add_*` method. Each `add_*` method takes the
+    afterward via an `add_\\*` method. Each `add_\\*` method takes the
     parameters of the corresponding object being built; e.g.
     `add_person` takes the same parameters as `Person.__init__` (plus
     a `cls` parameter -- see documentation for `add_person`).
@@ -39,10 +40,11 @@ class Forecaster(object):
     data that can't be inferred from a Settings object (represented by
     an `inputs` dict for each such object).
 
-    `Forecasts` may be generated based on varying `Scenario`s (while
-    retaining the same `Strategy`s, `Person`s, and `Account`s) to allow
-    for comparison of an overarching strategy between various future
-    economic performance scenarios (e.g. as in Monte Carlo analysis).
+    `Forecasts` may be generated based on varying `Scenario` object
+    (while retaining the same `Strategy`, `Person`, and `Account`
+    objects) to allow for comparison of an overarching strategy between
+    various future economic performance scenarios (e.g. as in Monte
+    Carlo analysis).
     """
 
     def __init__(
@@ -62,13 +64,13 @@ class Forecaster(object):
         This method automatically builds `Scenario` and `Strategy`
         objects from `Settings`, but not any `Ledger` (i.e. `Person`,
         `Debt`, or `Account`) or `Tax` objects, which must be added by
-        the corresponding `add_*` method individually.
+        the corresponding `add_\\*` method individually.
 
         Args:
             settings (Settings): An object with settings values for the
                 `Forecaster` to pass to various `Account`, `Person`,
-                `Strategy`, and `Scenario` objects when explicit arguments
-                are not given.
+                `Strategy`, and `Scenario` objects when explicit
+                arguments are not given.
             initial_year (int): The initial year for the forecast.
         """
         # This method has very simple branches - just testing for None
@@ -194,12 +196,13 @@ class Forecaster(object):
         overriding args set by subclasses.
 
         Args:
-            kwargs (dict[str, *]): A dict of keyword args to be passed
+            kwargs (dict[str, Any]): A dict of keyword args to be passed
                 to an `__init__` method when initializing a Person,
                 Account, or other Forecast input object.
             arg (str): The keyword arg being added to `kwargs`.
-            val (*): An explicitly-passed value for `arg`. May be None.
-            default (*): A value from a Settings object
+            val (Any): An explicitly-passed value for `arg`.
+                May be None.
+            default (Any): A value from a Settings object
                 corresponding to `arg`. May be None.
         """
         # If the arg is already in kwargs, don't do anything:
@@ -233,7 +236,7 @@ class Forecaster(object):
         See `Person` for documentation on additional args.
 
         Args:
-            inputs (dict[str, dict[int, *]]): `{arg: {year: val}}`
+            inputs (dict[str, dict[int, Any]]): `{arg: {year: val}}`
                 pairs, where `arg` is the name of a @recorded_property
                 of `Person` and `val` is the value of that property for
                 `year`.

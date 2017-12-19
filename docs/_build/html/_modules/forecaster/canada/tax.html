@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>forecaster.canada.tax &#8212; forecaster 0.0.1 documentation</title>
-    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
@@ -22,16 +22,22 @@
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
-    <link rel="search" title="Search" href="../../../search.html" />
-   
-  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
+    <link rel="search" title="Search" href="../../../search.html" /> 
   </head>
   <body>
-  
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
@@ -64,16 +70,14 @@
         <span class="sd">&quot;&quot;&quot; Finds tax deduction available for each taxpayer.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            people (set[Person]): A dict of `{taxpayer: sources}` pairs, where</span>
-<span class="sd">                `taxpayer` is of type `Person` and `sources` is a set of</span>
-<span class="sd">                income sources (accounts and people).</span>
+<span class="sd">            people (set[Person]): One or more `Person` objects, each</span>
+<span class="sd">                having some number of accounts (or other tax sources).</span>
 <span class="sd">            year (int): The year in which money is expressed (used for</span>
 <span class="sd">                inflation adjustment)</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            A dict of `{taxpayer: (fed_deduction, prov_deduction)}`</span>
-<span class="sd">            pairs, where `*_deduction` is of type Money.</span>
-<span class="sd">            These are bundled into a FedProvTuple for convenience.</span>
+<span class="sd">            dict[Person, Money]: The tax deduction available in this</span>
+<span class="sd">            jurisdiction for each person.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># NOTE: Presenty, no deduction are modelled. We could extend</span>
         <span class="c1"># this in a future update to include, e.g. the family tax cut</span>
@@ -145,9 +149,12 @@
 <span class="sd">                rules and inflation-adjusted brackets are used.</span>
 <span class="sd">            other_deduction (Money, dict[Person, Money]):</span>
 <span class="sd">                Deductions to be applied against the jurisdiction&#39;s</span>
-<span class="sd">                taxes. See documentation for `Tax` for more.</span>
+<span class="sd">                taxes.</span>
+
+<span class="sd">                See documentation for `Tax` for more.</span>
 <span class="sd">            other_credit (Money, dict[Person, Money]):</span>
 <span class="sd">                Credits to be applied against the jurisdiction&#39;s taxes.</span>
+
 <span class="sd">                See documentation for `Tax` for more.</span>
 
 <span class="sd">        Returns:</span>
@@ -201,21 +208,23 @@
 <span class="sd">        province (str): The province in which income tax is paid.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="p">,</span> <span class="n">province</span><span class="o">=</span><span class="s1">&#39;BC&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="TaxCanada.__init__"><a class="viewcode-back" href="../../../forecaster.canada.tax.html#forecaster.canada.tax.TaxCanada.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="p">,</span> <span class="n">province</span><span class="o">=</span><span class="s1">&#39;BC&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Initializes TaxCanada.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            inflation_adjust: A method with the following form:</span>
 <span class="sd">                `inflation_adjust(target_year, base_year) -&gt; Decimal`.</span>
+
 <span class="sd">                Can be passed as dict or Decimal-convertible scalar,</span>
 <span class="sd">                which will be converted to a callable object.</span>
+
 <span class="sd">                See documentation for `Tax` for more information.</span>
 <span class="sd">            province (str): The province in which income tax is paid.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">federal_tax</span> <span class="o">=</span> <span class="n">TaxCanadaJurisdiction</span><span class="p">(</span><span class="n">inflation_adjust</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">provincial_tax</span> <span class="o">=</span> <span class="n">TaxCanadaJurisdiction</span><span class="p">(</span>
             <span class="n">inflation_adjust</span><span class="p">,</span> <span class="n">province</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">province</span> <span class="o">=</span> <span class="n">province</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">province</span> <span class="o">=</span> <span class="n">province</span></div>
 
     <span class="c1"># Marginal rate information is helpful for client code, so implement</span>
     <span class="c1"># it here based on fed. and prov. tax brackets:</span>
@@ -284,15 +293,7 @@
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper"><div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="../../../index.html">Documentation overview</a><ul>
-  <li><a href="../../index.html">Module code</a><ul>
-  </ul></li>
-  </ul></li>
-</ul>
-</div>
+        <div class="sphinxsidebarwrapper">
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="../../../search.html" method="get">
@@ -307,17 +308,22 @@
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2017, Christopher Scott.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
-      
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Christopher Scott.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.5.
+    </div>
   </body>
 </html>

@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>forecaster.accounts &#8212; forecaster 0.0.1 documentation</title>
-    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
@@ -22,16 +22,22 @@
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
-    <link rel="search" title="Search" href="../../search.html" />
-   
-  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
+    <link rel="search" title="Search" href="../../search.html" /> 
   </head>
   <body>
-  
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
@@ -63,48 +69,61 @@
 <span class="sd">    A new `Account` object with an updated balance is generated; the</span>
 <span class="sd">    calling object&#39;s balance does not change.</span>
 
-<span class="sd">    Examples:</span>
-<span class="sd">        `account1 = Account(100, 0.05)`</span>
-<span class="sd">        `account2 = account1.next_year()`</span>
-<span class="sd">        `account1.balance == 100  # True`</span>
-<span class="sd">        `account2.balance == 105  # True`</span>
+<span class="sd">    Examples::</span>
+
+<span class="sd">        account1 = Account(100, 0.05)</span>
+<span class="sd">        account2 = account1.next_year()</span>
+<span class="sd">        account1.balance == 100  # True</span>
+<span class="sd">        account2.balance == 105  # True</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        balance (Money): The opening account balance for this year.</span>
-<span class="sd">        balance_history (dict): A dict of {year: balance} pairs covering</span>
-<span class="sd">            all years in the range `initial_year: this year`</span>
+<span class="sd">        balance_history (dict[int, Money]): `{year: balance}` pairs</span>
+<span class="sd">            covering all years in the range `initial_year: this_year`</span>
 <span class="sd">        rate (Decimal): The rate of return (or interest) for this year,</span>
 <span class="sd">            before compounding.</span>
-<span class="sd">        rate_history (dict): A dict of {year: rate} pairs covering</span>
-<span class="sd">            all years in the range `initial_year: this year`</span>
-<span class="sd">        transactions (dict): The transactions to/from the account for</span>
-<span class="sd">            this year. A dict of `{when: value}` pairs, where:</span>
-<span class="sd">                `when` (float, Decimal, str): Describes the timing of</span>
-<span class="sd">                    the transaction in the year. In the range [0, 1].</span>
-<span class="sd">                `value` (Money): The inflows and outflows at time `when`.</span>
-<span class="sd">                    Positive for inflows and negative for outflows.</span>
-<span class="sd">                    Each element must be a Money object (or convertible</span>
-<span class="sd">                    to one).</span>
-<span class="sd">        transactions_history (dict): A dict of {year: transactions}</span>
-<span class="sd">            pairs covering all years in the range</span>
-<span class="sd">            `initial_year: this year`</span>
+<span class="sd">        rate_history (dict[int, Decimal]): `{year: rate}` pairs covering</span>
+<span class="sd">            all years in the range `initial_year: this_year`</span>
+<span class="sd">        rate_function (callable): A callable object that gives the rate</span>
+<span class="sd">            for each year. Has a signature of the form</span>
+<span class="sd">            `rate(year) -&gt; Decimal`.</span>
+
+<span class="sd">            If this callable object relies on `Scenario` or other</span>
+<span class="sd">            objects defined in the `forecaster` package, recommend</span>
+<span class="sd">            passing an object that stores these objects explicitly</span>
+<span class="sd">            as attributes (as opposed to a method/function where these</span>
+<span class="sd">            objects are stored in the context), otherwise `Forecaster`&#39;s</span>
+<span class="sd">            object-substitution logic will not work.</span>
+<span class="sd">        transactions (dict[Decimal, Money]): The transactions to/from</span>
+<span class="sd">            the account for this year. `{when: value}` pairs, where:</span>
+
+<span class="sd">            `when` describes the timing of the transaction in the year.</span>
+<span class="sd">            In the range [0, 1].</span>
+
+<span class="sd">            `value` is the sum of inflows and outflows at time `when`.</span>
+<span class="sd">            Positive for inflows and negative for outflows.</span>
+<span class="sd">        transactions_history (dict[int, dict[Decimal, Money]]):</span>
+<span class="sd">            `{year: transactions}` pairs covering all years in the range</span>
+<span class="sd">            `initial_year: this_year`</span>
 <span class="sd">        returns (Money): The returns (losses) of the account for the</span>
 <span class="sd">            year.</span>
-<span class="sd">        returns_history (dict): A dict of {year: returns} pairs covering</span>
-<span class="sd">            all years in the range `initial_year: this year`</span>
+<span class="sd">        returns_history (dict[int, Money]): `{year: returns}` pairs</span>
+<span class="sd">            covering all years in the range `initial_year: this_year`</span>
 <span class="sd">        nper (int, str): The compounding frequency. May be given as</span>
 <span class="sd">            a number of periods (an int) or via a code (a str). Codes</span>
 <span class="sd">            include:</span>
-<span class="sd">                C: Continuous (default)</span>
-<span class="sd">                D: Daily</span>
-<span class="sd">                W: Weekly</span>
-<span class="sd">                BW: Biweekly (every two weeks)</span>
-<span class="sd">                SM: Semi-monthly (twice a month)</span>
-<span class="sd">                M: Monthly</span>
-<span class="sd">                BM: Bimonthly (every two months)</span>
-<span class="sd">                Q: Quarterly (every 3 months)</span>
-<span class="sd">                SA: Semi-annually (twice a year)</span>
-<span class="sd">                A: Annually</span>
+
+<span class="sd">            * C: Continuous (default)</span>
+<span class="sd">            * D: Daily</span>
+<span class="sd">            * W: Weekly</span>
+<span class="sd">            * BW: Biweekly (every two weeks)</span>
+<span class="sd">            * SM: Semi-monthly (twice a month)</span>
+<span class="sd">            * M: Monthly</span>
+<span class="sd">            * BM: Bimonthly (every two months)</span>
+<span class="sd">            * Q: Quarterly (every 3 months)</span>
+<span class="sd">            * SA: Semi-annually (twice a year)</span>
+<span class="sd">            * A: Annually</span>
+
 <span class="sd">        initial_year (int): The first year for which account data is</span>
 <span class="sd">            recorded.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -114,7 +133,7 @@
     <span class="c1"># they get counted twice.</span>
     <span class="c1"># pylint: disable=too-many-instance-attributes</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="Account.__init__"><a class="viewcode-back" href="../../forecaster.accounts.html#forecaster.accounts.Account.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span>
         <span class="n">balance</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span>
@@ -126,12 +145,22 @@
 <span class="sd">        Args:</span>
 <span class="sd">            owner (Person): The owner of the account. Optional.</span>
 <span class="sd">            balance (Money): The balance for the first year</span>
-<span class="sd">            rate (float, Decimal): The rate for the first year.</span>
-<span class="sd">            transactions (dict): The transactions for the first year,</span>
-<span class="sd">                as {Decimal: Money} pairs, where Decimal denotes timing</span>
-<span class="sd">                of the transaction and is in [0,1] as described in the</span>
-<span class="sd">                `When` class and Money denotes the values of the</span>
-<span class="sd">                transaction (positive to inflow, negative for outflow).</span>
+<span class="sd">            rate (Decimal, callable): An object that gives the rate for</span>
+<span class="sd">                each year, either as a constant value (e.g. a Decimal)</span>
+<span class="sd">                or as a callable object with a signature of the form</span>
+<span class="sd">                `rate(year) -&gt; Decimal`.</span>
+
+<span class="sd">                If this callable object relies on `Scenario` or other</span>
+<span class="sd">                objects defined in the `forecaster` package, recommend</span>
+<span class="sd">                passing an object that stores these objects explicitly</span>
+<span class="sd">                as attributes (as opposed to a method/function where</span>
+<span class="sd">                these objects are stored in the context), otherwise</span>
+<span class="sd">                `Forecaster`&#39;s object-substitution logic will not work.</span>
+<span class="sd">            transactions (dict[Decimal, Money]): The transactions for</span>
+<span class="sd">                the first year, as `{when: value}` pairs. `when` is in</span>
+<span class="sd">                [0,1] (and may be one of the strings accepted by</span>
+<span class="sd">                `when_conv`). A positive `value` denotes an inflow, and</span>
+<span class="sd">                a negative `value` denotes an outflow.</span>
 <span class="sd">            nper (int): The number of compounding periods per year.</span>
 <span class="sd">            initial_year (int): The first year (e.g. 2000)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -171,7 +200,7 @@
         <span class="c1"># dict; this will do the necessary type-checking and conversions</span>
         <span class="c1"># on each element:</span>
         <span class="k">for</span> <span class="n">when</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">transactions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">add_transaction</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">when</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_transaction</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">when</span><span class="p">)</span></div>
 
     <span class="c1"># String codes describing compounding periods (keys) and ints</span>
     <span class="c1"># describing the number of such periods in a year (values):</span>
@@ -233,16 +262,21 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">rate_callable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; A function that generates a rate for a given year.</span>
+        <span class="sd">&quot;&quot;&quot; A callable object that generates a rate for a given year.</span>
 
-<span class="sd">        The function is callable with one (potentially optional)</span>
-<span class="sd">        argument: year.</span>
+<span class="sd">        This object takes the signature `rate(year) -&gt; Money` and must</span>
+<span class="sd">        accept this `Account`&#39;s `this_year` attribute as input.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rate_callable</span>
 
     <span class="nd">@rate_callable</span><span class="o">.</span><span class="n">setter</span>
     <span class="k">def</span> <span class="nf">rate_callable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Sets the rate function &quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot; Sets rate_callable.</span>
+
+<span class="sd">        Attempts to convert non-callable objects to callable objects</span>
+<span class="sd">        by returning `val[year]` if the object is a dict or simply</span>
+<span class="sd">        returning `val` otherwise.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># If input isn&#39;t callable, convert it to a suitable method:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="n">val</span><span class="p">):</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
@@ -314,6 +348,11 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            An int indicating the number of compounding periods in a</span>
 <span class="sd">                year or None if compounding is continuous.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: str nper must have a known value.</span>
+<span class="sd">            ValueError: nper must be greater than 0.</span>
+<span class="sd">            TypeError: nper cannot be losslessly converted to int.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># nper can be None, so return gracefully.</span>
         <span class="k">if</span> <span class="n">nper</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -333,11 +372,17 @@
             <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">nper</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Account.contribution_group"><a class="viewcode-back" href="../../forecaster.accounts.html#forecaster.accounts.Account.contribution_group">[docs]</a>    <span class="k">def</span> <span class="nf">contribution_group</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; The accounts that share contribution room with this one.</span>
+        <span class="sd">&quot;&quot;&quot; The Accounts that share contribution room with this one.</span>
+
+<span class="sd">        For `Account`, this method returns a set containing only itself;</span>
+<span class="sd">        that is, it does not share contribution room with any other</span>
+<span class="sd">        `Account`s. However, subclasses (like `RegisteredAccount`) may</span>
+<span class="sd">        override this behaviour.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            A set of accounts that should be considered together when</span>
-<span class="sd">            allocating contributions between them. Includes this account</span>
+<span class="sd">            A set of `Account`s that should be considered together when</span>
+<span class="sd">            allocating contributions between them.</span>
+<span class="sd">            Includes this `Account`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">{</span><span class="bp">self</span><span class="p">}</span></div>
 
@@ -348,16 +393,13 @@
 <span class="sd">            value (Money): The value of the transaction. Positive values</span>
 <span class="sd">                are inflows and negative values are outflows.</span>
 <span class="sd">            when (float, Decimal, str): The timing of the transaction.</span>
-<span class="sd">                Must be in the range [0,1] or in {&#39;start&#39;, &#39;end&#39;}.</span>
-<span class="sd">                0 corresponds to &#39;end&#39; and 1 corresponds to &#39;start&#39;.</span>
-<span class="sd">                (It&#39;s a bit counterintuitive, but this is how `numpy`</span>
-<span class="sd">                defines its `when` argument for financial methods.)</span>
-<span class="sd">                Defaults to &#39;end&#39;.</span>
+<span class="sd">                Must be in the range [0,1] or be a suitable str input,</span>
+<span class="sd">                as described in the documentation for `when_conv`.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            decimal.InvalidOperation: Transactions must be convertible</span>
 <span class="sd">                to type Money and `when` must be convertible to type</span>
-<span class="sd">                Decimal</span>
+<span class="sd">                Decimal.</span>
 <span class="sd">            ValueError: `when` must be in [0,1]</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">when</span> <span class="o">=</span> <span class="n">when_conv</span><span class="p">(</span><span class="n">when</span><span class="p">)</span>
@@ -402,34 +444,15 @@
         <span class="sd">&quot;&quot;&quot; The number of years of transaction data in the account. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span> <span class="o">+</span> <span class="mi">1</span></div>
 
-<div class="viewcode-block" id="Account.rate_from_asset_allocation"><a class="viewcode-back" href="../../forecaster.accounts.html#forecaster.accounts.Account.rate_from_asset_allocation">[docs]</a>    <span class="k">def</span> <span class="nf">rate_from_asset_allocation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; The rate of return for a portfolio with a given composition.</span>
-
-<span class="sd">        This determines the portfolio composition based on the owner&#39;s</span>
-<span class="sd">        asset allocation strategy, and their age and (estimated)</span>
-<span class="sd">        retirement age.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            year (int): The year for which a rate is desired. Optional;</span>
-<span class="sd">                defaults to the current year.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">year</span> <span class="o">=</span> <span class="n">year</span> <span class="k">if</span> <span class="n">year</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">owner</span><span class="o">.</span><span class="n">allocation_strategy</span><span class="o">.</span><span class="n">rate_of_return</span><span class="p">(</span>
-            <span class="n">year</span><span class="o">=</span><span class="n">year</span><span class="p">,</span>
-            <span class="n">age</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">owner</span><span class="o">.</span><span class="n">age</span><span class="p">(</span><span class="n">year</span><span class="p">),</span>
-            <span class="n">retirement_age</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">owner</span><span class="o">.</span><span class="n">retirement_age</span><span class="p">)</span></div>
-
-    <span class="c1"># pylint: disable=invalid-name</span>
-    <span class="c1"># `t` is the usual name for the input to A(t) in interest theory.</span>
 <div class="viewcode-block" id="Account.accumulation_function"><a class="viewcode-back" href="../../forecaster.accounts.html#forecaster.accounts.Account.accumulation_function">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">accumulation_function</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The accumulation function, A(t), from interest theory.</span>
 
 <span class="sd">        A(t) provides the growth (or discount) factor over the period</span>
 <span class="sd">        [0, t]. If `t` is negative, this method returns the inverse</span>
-<span class="sd">        (i.e. A(t)^-1).</span>
+<span class="sd">        (i.e. `A(t)^-1`).</span>
 
-<span class="sd">        This method&#39;s output is not well-defined where t does not align</span>
+<span class="sd">        This method&#39;s output is not well-defined if `t` does not align</span>
 <span class="sd">        with the start/end of a compounding period. (It will produce</span>
 <span class="sd">        sensible output, but it might not correspond to how your bank</span>
 <span class="sd">        calculates interest).</span>
@@ -443,6 +466,9 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            The accumulation A(t), as a Decimal.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># pylint: disable=invalid-name</span>
+        <span class="c1"># `t` is the usual name for the input to A(t) in interest theory.</span>
+
         <span class="c1"># Convert t and rate to Decimal</span>
         <span class="n">t</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
         <span class="n">rate</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="n">rate</span><span class="p">)</span>
@@ -592,7 +618,7 @@
 <span class="sd">            as the annuitant (i.e. the owner.)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="RegisteredAccount.__init__"><a class="viewcode-back" href="../../forecaster.accounts.html#forecaster.accounts.RegisteredAccount.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">contribution_room</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">contributor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
@@ -625,7 +651,7 @@
         <span class="c1"># it&#39;s explicitly provided, to avoid overwriting previously-</span>
         <span class="c1"># determined contribution room data with a default value.</span>
         <span class="k">if</span> <span class="n">contribution_room</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room</span> <span class="o">=</span> <span class="n">contribution_room</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room</span> <span class="o">=</span> <span class="n">contribution_room</span></div>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">contributor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -634,7 +660,11 @@
 
     <span class="nd">@contributor</span><span class="o">.</span><span class="n">setter</span>
     <span class="k">def</span> <span class="nf">contributor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Sets the contributor to the account. &quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot; Sets the contributor to the account.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            TypeError: `person` must be of type `Person`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">Person</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
                 <span class="s1">&#39;RegisteredAccount: person must be of type Person.&#39;</span>
@@ -659,7 +689,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">contribution_room_history</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; A dict of {year: contribution_room} pairs. &quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot; A dict of `{year: contribution_room}` pairs. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">contributor</span><span class="o">.</span><span class="n">contribution_room</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
 <div class="viewcode-block" id="RegisteredAccount.next_year"><a class="viewcode-back" href="../../forecaster.accounts.html#forecaster.accounts.RegisteredAccount.next_year">[docs]</a>    <span class="k">def</span> <span class="nf">next_year</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -682,7 +712,7 @@
         <span class="sd">&quot;&quot;&quot; Returns the contribution room for next year.</span>
 
 <span class="sd">        This method must be implemented by any subclass of</span>
-<span class="sd">        RegisteredAccount.</span>
+<span class="sd">        `RegisteredAccount`.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Money: The contribution room for next year.</span>
@@ -692,9 +722,8 @@
 <span class="sd">            by a subclass.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-            <span class="s1">&#39;RegisteredAccount: next_contribution_room is not implemented. &#39;</span> <span class="o">+</span>
-            <span class="s1">&#39;Use RRSP or TFSA instead.&#39;</span>
-        <span class="p">)</span></div>
+            <span class="s1">&#39;RegisteredAccount: next_contribution_room is not implemented. &#39;</span>
+            <span class="o">+</span> <span class="s1">&#39;Subclasses must override this method.&#39;</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="RegisteredAccount.max_inflow"><a class="viewcode-back" href="../../forecaster.accounts.html#forecaster.accounts.RegisteredAccount.max_inflow">[docs]</a>    <span class="k">def</span> <span class="nf">max_inflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Limits outflows based on available contribution room. &quot;&quot;&quot;</span>
@@ -719,11 +748,14 @@
 <span class="sd">            may be made to pay off the balance earlier. Optional.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="c1"># TODO: Add a max_accelerate arg (or perhaps change</span>
+    <span class="c1"># TODO #36: Revise the implementation and/or the documentation of</span>
+    <span class="c1"># reduction_rate to match each other. (Right now they don&#39;t</span>
+    <span class="c1"># correspond at all.)</span>
+    <span class="c1"># TODO #8: Add a max_accelerate arg (or perhaps change</span>
     <span class="c1"># accelerate_payment to Money type and test for &gt;0?) to set a cap on</span>
     <span class="c1"># how much to accelerate payments by.</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="Debt.__init__"><a class="viewcode-back" href="../../forecaster.accounts.html#forecaster.accounts.Debt.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span>
         <span class="n">balance</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">minimum_payment</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
@@ -745,7 +777,7 @@
 
         <span class="c1"># Debt must have a negative balance</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">balance</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">balance</span> <span class="o">=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">balance</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">balance</span> <span class="o">=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">balance</span></div>
 
 <div class="viewcode-block" id="Debt.min_inflow"><a class="viewcode-back" href="../../forecaster.accounts.html#forecaster.accounts.Debt.min_inflow">[docs]</a>    <span class="k">def</span> <span class="nf">min_inflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The minimum payment on the debt. &quot;&quot;&quot;</span>
@@ -756,11 +788,13 @@
 
 <span class="sd">        This is in addition to any existing payments in the account.</span>
 
-<span class="sd">        Example:</span>
-<span class="sd">            debt = Debt(-100)</span>
-<span class="sd">            debt.maximum_payment(&#39;start&#39;) == Money(100)  # True</span>
-<span class="sd">            debt.add_transaction(100, &#39;start&#39;)</span>
-<span class="sd">            debt.maximum_payment(&#39;start&#39;) == 0  # True</span>
+<span class="sd">        Example::</span>
+
+<span class="sd">                debt = Debt(-100)</span>
+<span class="sd">                debt.maximum_payment(&#39;start&#39;) == Money(100)  # True</span>
+<span class="sd">                debt.add_transaction(100, &#39;start&#39;)</span>
+<span class="sd">                debt.maximum_payment(&#39;start&#39;) == 0  # True</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">balance_at_time</span><span class="p">(</span><span class="n">when</span><span class="p">)</span></div></div>
 
@@ -809,15 +843,7 @@
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper"><div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="../../index.html">Documentation overview</a><ul>
-  <li><a href="../index.html">Module code</a><ul>
-  </ul></li>
-  </ul></li>
-</ul>
-</div>
+        <div class="sphinxsidebarwrapper">
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="../../search.html" method="get">
@@ -832,17 +858,22 @@
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2017, Christopher Scott.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
-      
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Christopher Scott.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.5.
+    </div>
   </body>
 </html>

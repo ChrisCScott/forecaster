@@ -41,18 +41,17 @@ class Tax(object):
     are calculated, so `gross_income - tax(gross_income, year)`
     will return a person's net income.
 
-    For a more sophisticated assessment of credit/etc., provide an
-    iterable of sources as the first argument. Each source must provide
-    the following methods:
-        taxable_income(self [, year])
-        tax_withheld(self [, year])
-        tax_credit(self [, year])
-        tax_deduction(self [, year])
+    For a more sophisticated assessment of credit/etc., provide a
+    `Person` object as input (or an iterable of `Person` objects). This
+    will assess taxable income, credits, and deductions for the `Person`
+    and any `Account` objects they own.
 
-    Thus, calling `tax({person, account1, ... accountn}, year)` will
-    return the total tax liability for the year, after applying any
-    credit/etc. and including `person`'s employment income and any
-    account earnings.
+    Thus, calling `tax({person1, person2}, year)` will
+    return the total tax liability for the year for both person1 and
+    person2, after applying any credit/etc., and including the
+    employment income and taxable account activity of each `Person`.
+
+    If spouses are passed in, they are processed together.
 
     Attributes:
         tax_brackets (dict): A dict of `{year: brackets}` pairs, where
@@ -62,26 +61,33 @@ class Tax(object):
             Decimal('0.03') is interpreted as 3%)
         personal_deduction (dict): A dict of `{year: deduction}` pairs,
             where `deduction` is convertible to Money.
+
             The personal deduction for a given year is deducted from
             income when determining income tax in that year.
         credit_rate (dict): A dict of `{year: rate}` pairs, where `rate`
             is convertible to Decimal.
+
             The credit rate is used to determine how much each tax
             credit reduced total tax liability.
         accum (dict): A dict of `{year: {bracket: accum}}` pairs, where
             each `bracket` corresponds to a key in `tax_brackets` and
             `accum` is the sum of tax payable on the income falling into
-            all lower brackets. For example, if there are $10, $100, and
-            $1000 tax brackets, then `accum[year][$1000]` is equal to
-            `tax_brackets[year][$10] * $10 + tax_brackets[year][$100] *
-            $100`.
+            all lower brackets.
+
+            For example, if there are $10, $100, and $1000 tax brackets,
+            then `accum[year][$1000]` is equal to::
+
+                tax_brackets[year][10] * 10 + tax_brackets[year][100] * 100
+
         inflation_adjust: A method with the following form:
             `inflation_adjust(target_year, base_year)`.
+
             Returns a Decimal scaling factor. Multiplying this by a
             nominal value in base_year will yield a nominal value in
-            target_year with the same real value. Optional.
-            If not provided, all values are assumed to be in real terms,
-            so no inflation adjustment is performed.
+            target_year with the same real value.
+
+            Optional. If not provided, all values are assumed to be in
+            real terms, so no inflation adjustment is performed.
 
     Args:
         taxable_income (Money, iterable): Taxable income for the year,
@@ -93,13 +99,16 @@ class Tax(object):
         deduction (Money): Any other deduction which can be
             applied and which aren't evident from the income sources
             themselves. These will generally be itemized deduction.
+
             It's a good idea to be familiar with the Tax implementation
             you're working with before passing any of these, otherwise
             you risk double-counting.
+
             Optional.
         credit (Money): Any other tax credit which can be
             applied and which aren't evident from the income sources
             themselves. These will generally be boutique tax credit.
+
             Optional.
     """
     def __init__(
@@ -124,9 +133,9 @@ class Tax(object):
                 `inflation_adjust(val, this_year, target_year)`.
                 Returns a Decimal object which is the inflation-
                 adjustment factor from base_year to target_year.
-                Optional.
-                If not provided, all values are assumed to be in real
-                terms, so no inflation adjustment is performed.
+
+                Optional. If not provided, all values are assumed to be
+                in real terms, so no inflation adjustment is performed.
         """
         # NOTE: Consider allowing users to pass in non-year-indexed
         # values (e.g. so that `tax_brackets` can be a dict of
@@ -464,17 +473,27 @@ class Tax(object):
                 Any other deduction which can be applied and which
                 aren't modelled by the income sources themselves.
                 These will generally be itemized deduction.
+
                 If `income` is passed as an iterable, this should also
                 be an iterable; otherwise it should be a Money object.
-                It's a good idea to be familiar with the Tax
-                implementation you're working with before passing any of
-                these, otherwise you risk double-counting.
+
+                It's a good idea to be familiar with the `Tax` and
+                `Person` implementation you're working with before
+                passing any of these, otherwise you risk double-counting
+                if both the `Person` and `Tax` objects implement the
+                same deduction.
+
                 Optional.
             credit (Money, dict[Person, Money]):
                 Any other tax credit which can be applied and which
                 aren't modelled by the income sources themselves.
-                These are usually boutique tax credit.
-                See `deduction` for further comments.
+
+                These are usually boutique tax credits.
+
+                See `deduction` for further comments on being familiar
+                with both `Tax` and `Person` implementations when
+                passing this.
+
                 Optional.
 
             Returns:

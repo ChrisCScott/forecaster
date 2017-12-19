@@ -30,7 +30,7 @@ class Person(TaxSource):
         net_income (Money): Annual net income for the current year.
         net_income_history (dict[int, Money]): Net income for all
             years on record.
-        raise_rate_function (callable): A function for determining the
+        raise_rate_callable (callable): A function for determining the
             Person's raise rate for a given year. A callable object with
             the form `raise_rate_function(year) -> Decimal`.
         raise_rate (Decimal): The person's raise in gross income this
@@ -104,16 +104,17 @@ class Person(TaxSource):
                 `tax_treatment(taxable_income, year)` and returns a
                 Money object (which corresponds to total taxes payable
                 on `taxable_income`).
-            inputs (dict[str, dict[int, *]]): `{attr: {year: val}}`
+            inputs (dict[str, dict[int, Any]]): `{attr: {year: val}}`
                 pairs, where `attr` is any one of `Person`'s recorded
                 propertes, namely:
-                    taxable_income
-                    tax_withheld
-                    tax_credit
-                    tax_deduction
-                    gross_income
-                    net_income
-                    raise_rate
+
+                * taxable_income
+                * tax_withheld
+                * tax_credit
+                * tax_deduction
+                * gross_income
+                * net_income
+                * raise_rate
 
         Returns:
             An instance of class `Person`
@@ -122,7 +123,8 @@ class Person(TaxSource):
             ValueError: birth_date or retirement_date are not parseable
                 as dates.
             ValueError: retirement_date precedes birth_date
-            OverflowError: birth_date or retirement_date are too large
+            OverflowError: birth_date or retirement_date are too large.
+
         """
         super().__init__(initial_year=initial_year, inputs=inputs)
 
@@ -139,7 +141,7 @@ class Person(TaxSource):
         self.name = name
         self.birth_date = birth_date
         self.retirement_date = retirement_date
-        self.raise_rate_function = raise_rate
+        self.raise_rate_callable = raise_rate
         self.spouse = spouse
         # Set up tax treatment before calling tax_withheld()
         self.tax_treatment = tax_treatment
@@ -187,7 +189,13 @@ class Person(TaxSource):
 
     @retirement_date.setter
     def retirement_date(self, val) -> None:
-        """ Sets both retirement_date and retirement_age. """
+        """ Sets both retirement_date and retirement_age.
+
+        Raises:
+            ValueError: retirement_date precedes birth_date.
+            NotImplementedError: retirement_date must not be None.
+                Floating retirement dates are not yet implemented.
+        """
         if val is None:
             self._retirement_date = None
             # NOTE: Delete this error when floating retirement dates
@@ -227,8 +235,8 @@ class Person(TaxSource):
             self.retirement_date = self.birth_date + relativedelta(years=val)
 
     @property
-    def raise_rate_function(self):
-        """ A function that returns the Person's raise for a given year.
+    def raise_rate_callable(self):
+        """ A callable object that generates a raise rate for the year.
 
         Returns:
             callable: A function with signature
@@ -236,13 +244,13 @@ class Person(TaxSource):
         """
         return self._raise_rate_function
 
-    @raise_rate_function.setter
-    def raise_rate_function(self, val) -> None:
+    @raise_rate_callable.setter
+    def raise_rate_callable(self, val) -> None:
         """ Sets raise_rate_function. """
         # Treat setting the method to None as reverting to the default
         # rate parameter, which is Money(0).
         if val is None:
-            self.raise_rate_function = Money(0)
+            self.raise_rate_callable = Money(0)
         # Is raise_rate isn't callable, convert it to a suitable method:
         if not callable(val):  # Make callable if dict or scalar
             if isinstance(val, dict):

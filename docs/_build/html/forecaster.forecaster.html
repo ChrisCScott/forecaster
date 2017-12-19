@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>forecaster.forecaster module &#8212; forecaster 0.0.1 documentation</title>
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
@@ -24,16 +24,29 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="forecaster.ledger module" href="forecaster.ledger.html" />
-    <link rel="prev" title="forecaster.forecast module" href="forecaster.forecast.html" />
-   
-  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
+    <link rel="prev" title="forecaster.forecast module" href="forecaster.forecast.html" /> 
   </head>
   <body>
-  
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="forecaster.ledger.html" title="forecaster.ledger module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="forecaster.forecast.html" title="forecaster.forecast module"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" >forecaster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="forecaster.html" accesskey="U">forecaster package</a> &#187;</li> 
+      </ul>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
@@ -50,8 +63,9 @@
 <p>A convenience class for building Forecasts based on settings.</p>
 <p><cite>Forecaster</cite> takes in information for building a <cite>Forecast</cite>
 (explicitly, via a <cite>Settings</cite> object, or via a combination of the
-two) and builds one or more <a href="#id1"><span class="problematic" id="id2">`</span></a>Forecast`s from that information.</p>
-<p>One of the purposes of this class is to enable building Forecast
+two) and builds one or more <cite>Forecast</cite> objects from that
+information.</p>
+<p>One of the purposes of this class is to enable building <cite>Forecast</cite>
 objects solely from a <cite>Settings</cite> object and a set of <cite>inputs</cite> dicts.
 Objects of this class can be initialized with any of the parameters
 that can be provided to <cite>Forecast</cite> (as well as a <cite>Settings</cite> object).
@@ -64,10 +78,39 @@ a <cite>cls</cite> parameter – see documentation for <cite>add_person</cite>).
 <cite>Person</cite> or <cite>Account</cite>, which may have per-object historical
 data that can’t be inferred from a Settings object (represented by
 an <cite>inputs</cite> dict for each such object).</p>
-<p><cite>Forecasts</cite> may be generated based on varying <a href="#id3"><span class="problematic" id="id4">`</span></a>Scenario`s (while
-retaining the same <a href="#id5"><span class="problematic" id="id6">`</span></a>Strategy`s, <a href="#id7"><span class="problematic" id="id8">`</span></a>Person`s, and <a href="#id9"><span class="problematic" id="id10">`</span></a>Account`s) to allow
-for comparison of an overarching strategy between various future
-economic performance scenarios (e.g. as in Monte Carlo analysis).</p>
+<p><cite>Forecasts</cite> may be generated based on varying <cite>Scenario</cite> object
+(while retaining the same <cite>Strategy</cite>, <cite>Person</cite>, and <cite>Account</cite>
+objects) to allow for comparison of an overarching strategy between
+various future economic performance scenarios (e.g. as in Monte
+Carlo analysis).</p>
+<dl class="method">
+<dt id="forecaster.forecaster.Forecaster.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>person1=None</em>, <em>person2=None</em>, <em>people=None</em>, <em>assets=None</em>, <em>debts=None</em>, <em>scenario=None</em>, <em>contribution_strategy=None</em>, <em>withdrawal_strategy=None</em>, <em>contribution_transaction_strategy=None</em>, <em>withdrawal_transaction_strategy=None</em>, <em>allocation_strategy=None</em>, <em>debt_payment_strategy=None</em>, <em>tax_treatment=None</em>, <em>initial_year=None</em>, <em>settings=&lt;class 'forecaster.settings.Settings'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inits an instance of <cite>Forecaster</cite>.</p>
+<p>This method can receive any of the parameters that can be
+provided to <cite>Forecast</cite>. Any parameters that are not provided at
+init time can be provided afterward via an <cite>add_*</cite> method.</p>
+<p>This method automatically builds <cite>Scenario</cite> and <cite>Strategy</cite>
+objects from <cite>Settings</cite>, but not any <cite>Ledger</cite> (i.e. <cite>Person</cite>,
+<cite>Debt</cite>, or <cite>Account</cite>) or <cite>Tax</cite> objects, which must be added by
+the corresponding <cite>add_*</cite> method individually.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>settings</strong> (<a class="reference internal" href="forecaster.settings.html#forecaster.settings.Settings" title="forecaster.settings.Settings"><em>Settings</em></a>) – An object with settings values for the
+<cite>Forecaster</cite> to pass to various <cite>Account</cite>, <cite>Person</cite>,
+<cite>Strategy</cite>, and <cite>Scenario</cite> objects when explicit
+arguments are not given.</li>
+<li><strong>initial_year</strong> (<em>int</em>) – The initial year for the forecast.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 <dl class="method">
 <dt id="forecaster.forecaster.Forecaster.add_account">
 <code class="descname">add_account</code><span class="sig-paren">(</span><em>owner=None</em>, <em>balance=None</em>, <em>rate=None</em>, <em>transactions=None</em>, <em>nper=None</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>cls=&lt;class 'forecaster.accounts.Account'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.add_account"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.add_account" title="Permalink to this definition">¶</a></dt>
@@ -143,7 +186,7 @@ argument along with any <cite>kwargs</cite> specific to that <cite>cls</cite>.</
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>inputs</strong> (dict[str, dict[int, <a href="#id11"><span class="problematic" id="id12">*</span></a>]]) – <cite>{arg: {year: val}}</cite>
+<li><strong>inputs</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>dict</em><em>[</em><em>int</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – <cite>{arg: {year: val}}</cite>
 pairs, where <cite>arg</cite> is the name of a &#64;recorded_property
 of <cite>Person</cite> and <cite>val</cite> is the value of that property for
 <cite>year</cite>.</li>
@@ -230,12 +273,13 @@ overriding args set by subclasses.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>kwargs</strong> (dict[str, <a href="#id13"><span class="problematic" id="id14">*</span></a>]) – A dict of keyword args to be passed
+<li><strong>kwargs</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>) – A dict of keyword args to be passed
 to an <cite>__init__</cite> method when initializing a Person,
 Account, or other Forecast input object.</li>
 <li><strong>arg</strong> (<em>str</em>) – The keyword arg being added to <cite>kwargs</cite>.</li>
-<li><strong>val</strong> – An explicitly-passed value for <cite>arg</cite>. May be None.</li>
-<li><strong>default</strong> – A value from a Settings object
+<li><strong>val</strong> (<em>Any</em>) – An explicitly-passed value for <cite>arg</cite>.
+May be None.</li>
+<li><strong>default</strong> (<em>Any</em>) – A value from a Settings object
 corresponding to <cite>arg</cite>. May be None.</li>
 </ul>
 </td>
@@ -299,19 +343,13 @@ of this method.</p>
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper"><div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation overview</a><ul>
-  <li><a href="modules.html">forecaster</a><ul>
-  <li><a href="forecaster.html">forecaster package</a><ul>
-      <li>Previous: <a href="forecaster.forecast.html" title="previous chapter">forecaster.forecast module</a></li>
-      <li>Next: <a href="forecaster.ledger.html" title="next chapter">forecaster.ledger module</a></li>
-  </ul></li>
-  </ul></li>
-  </ul></li>
-</ul>
-</div>
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="forecaster.forecast.html"
+                        title="previous chapter">forecaster.forecast module</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="forecaster.ledger.html"
+                        title="next chapter">forecaster.ledger module</a></p>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
@@ -326,20 +364,29 @@ of this method.</p>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2017, Christopher Scott.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
-      
-      |
-      <a href="_sources/forecaster.forecaster.rst.txt"
-          rel="nofollow">Page source</a>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="forecaster.ledger.html" title="forecaster.ledger module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="forecaster.forecast.html" title="forecaster.forecast module"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" >forecaster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="forecaster.html" >forecaster package</a> &#187;</li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Christopher Scott.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.5.
+    </div>
   </body>
 </html>

@@ -15,22 +15,26 @@ from forecaster import Money
 class Forecast(object):
     """ A financial forecast spanning multiple years.
 
-    A `Forecast` contains various `Account`s with balances that grow
-    (or shrink) from year to year. The `Forecast` object also contains
-    `Person` objects describing the plannees, `Scenario` information
-    describing economic conditions over the course of the forecast, and
-    `Strategy` objects to describe the plannee's behaviour.
+    A `Forecast` contains various `Account` objects with balances that
+    grow (or shrink) from year to year. The `Forecast` object also
+    contains `Person` objects describing the plannees, `Scenario`
+    information describing economic conditions over the course of the
+    forecast, and `Strategy` objects to describe the plannee's behaviour.
 
     The `Forecast` manages inflows to and outflows from (or between)
     accounts based on `Strategy` and `Scenario` information.
 
-    The `Forecast` is built around either a single person or a spousal
-    couple (since spouses have specific tax treatment).
+    The `Forecast` can be built around any number of people, but is
+    ordinarily built around either a single person or a spousal
+    couple (since spouses have specific tax treatment). Otherwise, it's
+    better practice to build separate `Forecast` objects for separate
+    people.
 
     Attributes:
         people (Iterable[Person]): The people for whom the financial
             forecast is being generated. Typically a single person or a
             person and their spouse.
+
             Note that all `Person` objects must have the same
             `this_year` attribute, as must their various accounts.
         assets (Iterable[Account]): Assets of the `people`.
@@ -128,8 +132,9 @@ class Forecast(object):
         total_tax_withheld (dict[int, Money]): The total amount of tax
             owing for this year which was paid during this year (as
             opposed to being paid in the following year the next year).
+
             Note that this is not necessarily the same as the sum of
-            other `tax_withheld_on_*` attributes, since the tax
+            other `tax_withheld_on_\\*` attributes, since the tax
             authority may require additional withholding taxes (or
             payment by installments) based on the person's overall
             circumstances.
@@ -480,6 +485,7 @@ class Forecast(object):
         TODO: Deal with tax owing but not withheld - arrange to pay this
         in the following year? Apply against investment balances? Draw
         a portion from income (i.e. as a living expense)?
+
         Note that in Canada, if more than $3000 or so of tax is owing
         but not withheld, the CRA will put you on an instalments plan,
         so you can't really defer your total tax liability into the next

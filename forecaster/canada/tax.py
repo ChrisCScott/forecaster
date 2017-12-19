@@ -23,16 +23,14 @@ class TaxCanadaJurisdiction(Tax):
         """ Finds tax deduction available for each taxpayer.
 
         Args:
-            people (set[Person]): A dict of `{taxpayer: sources}` pairs, where
-                `taxpayer` is of type `Person` and `sources` is a set of
-                income sources (accounts and people).
+            people (set[Person]): One or more `Person` objects, each
+                having some number of accounts (or other tax sources).
             year (int): The year in which money is expressed (used for
                 inflation adjustment)
 
         Returns:
-            A dict of `{taxpayer: (fed_deduction, prov_deduction)}`
-            pairs, where `*_deduction` is of type Money.
-            These are bundled into a FedProvTuple for convenience.
+            dict[Person, Money]: The tax deduction available in this
+            jurisdiction for each person.
         """
         # NOTE: Presenty, no deduction are modelled. We could extend
         # this in a future update to include, e.g. the family tax cut
@@ -104,9 +102,12 @@ class TaxCanadaJurisdiction(Tax):
                 rules and inflation-adjusted brackets are used.
             other_deduction (Money, dict[Person, Money]):
                 Deductions to be applied against the jurisdiction's
-                taxes. See documentation for `Tax` for more.
+                taxes.
+
+                See documentation for `Tax` for more.
             other_credit (Money, dict[Person, Money]):
                 Credits to be applied against the jurisdiction's taxes.
+
                 See documentation for `Tax` for more.
 
         Returns:
@@ -166,8 +167,10 @@ class TaxCanada(object):
         Args:
             inflation_adjust: A method with the following form:
                 `inflation_adjust(target_year, base_year) -> Decimal`.
+
                 Can be passed as dict or Decimal-convertible scalar,
                 which will be converted to a callable object.
+
                 See documentation for `Tax` for more information.
             province (str): The province in which income tax is paid.
         """

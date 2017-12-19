@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>forecaster.strategy &#8212; forecaster 0.0.1 documentation</title>
-    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
@@ -22,16 +22,22 @@
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
-    <link rel="search" title="Search" href="../../search.html" />
-   
-  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
+    <link rel="search" title="Search" href="../../search.html" /> 
   </head>
   <body>
-  
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
@@ -66,7 +72,8 @@
 <span class="sd">    This happens at class definition time; you need to manually register</span>
 <span class="sd">    strategy methods that are added dynamically.</span>
 
-<span class="sd">    Example:</span>
+<span class="sd">    Example::</span>
+
 <span class="sd">        class ExampleStrategy(Strategy):</span>
 <span class="sd">            @strategy_method(&#39;method key&#39;)</span>
 <span class="sd">            def _strategy_method(self):</span>
@@ -74,6 +81,7 @@
 
 <span class="sd">        ExampleStrategy.strategies[&#39;method key&#39;] == \</span>
 <span class="sd">            ExampleStrategy._strategy_method</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">decorator</span><span class="p">(</span><span class="n">function</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Decorator returned by strategy_method.</span>
@@ -88,7 +96,7 @@
 <div class="viewcode-block" id="StrategyType"><a class="viewcode-back" href="../../forecaster.strategy.html#forecaster.strategy.StrategyType">[docs]</a><span class="k">class</span> <span class="nc">StrategyType</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; A metaclass for Strategy classes.</span>
 
-<span class="sd">    This metaclass inspects the class for any @strategy(key)-decorated</span>
+<span class="sd">    This metaclass inspects the class for any `@strategy(key)`-decorated</span>
 <span class="sd">    methods and generates a `strategies` dict of {key, func} pairs. This</span>
 <span class="sd">    `strategies` dict is then accessible from the class interface.</span>
 
@@ -125,6 +133,7 @@
 <span class="sd">            function. All functions have the same call signature and</span>
 <span class="sd">            return value; this is the call signature of the Strategy</span>
 <span class="sd">            object.</span>
+
 <span class="sd">            See each subclass&#39;s documentation for more information on</span>
 <span class="sd">            the call signature for the subclass.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -168,10 +177,13 @@
 <div class="viewcode-block" id="ContributionStrategy"><a class="viewcode-back" href="../../forecaster.strategy.html#forecaster.strategy.ContributionStrategy">[docs]</a><span class="k">class</span> <span class="nc">ContributionStrategy</span><span class="p">(</span><span class="n">Strategy</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Determines an annual gross contribution, before reductions.</span>
 
-<span class="sd">    This class is callable. Its call signature has this form:</span>
-<span class="sd">    `obj(year, refund, other_contribution, net_income, gross_income)`.</span>
+<span class="sd">    This class is callable. Its call signature has this form::</span>
+
+<span class="sd">        obj(year, refund, other_contribution, net_income, gross_income)</span>
+
 <span class="sd">    Arguments may be omitted if the selected strategy does not require</span>
-<span class="sd">    it; otherwise, an error is raised.</span>
+<span class="sd">    it; otherwise, an error is raised. All arguments are keyword</span>
+<span class="sd">    arguments.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        strategy (str): A string corresponding to a particular</span>
@@ -180,11 +192,14 @@
 <span class="sd">            a strategy (in human-readable text) and each value is a</span>
 <span class="sd">            function with the same arguments and return value as</span>
 <span class="sd">            gross_contribution(). See its documentation for more info.</span>
+
 <span class="sd">            Acceptable keys include:</span>
-<span class="sd">                &quot;Constant contribution&quot;</span>
-<span class="sd">                &quot;Constant living expenses&quot;</span>
-<span class="sd">                &quot;Percentage of gross income&quot;</span>
-<span class="sd">                &quot;Percentage of net income&quot;</span>
+
+<span class="sd">            * &quot;Constant contribution&quot;</span>
+<span class="sd">            * &quot;Constant living expenses&quot;</span>
+<span class="sd">            * &quot;Percentage of gross income&quot;</span>
+<span class="sd">            * &quot;Percentage of net income&quot;</span>
+
 <span class="sd">        base_amount (Money): A user-supplied amount of money, used in</span>
 <span class="sd">            some strategies as a baseline for contributions.</span>
 <span class="sd">        rate (Decimal): A user-supplied contribution rate. Must be a</span>
@@ -193,10 +208,13 @@
 <span class="sd">            refund that is reinvested in the year it&#39;s received.</span>
 <span class="sd">        inflation_adjust (callable): If provided, `base_amount` is</span>
 <span class="sd">            interpreted as a real (i.e. inflation-adjusted) currency</span>
-<span class="sd">            value. This callable object will be called as</span>
+<span class="sd">            value.</span>
+
+<span class="sd">            This callable object will be called as</span>
 <span class="sd">            `inflation_adjust(year[, base_year])` to receive the</span>
 <span class="sd">            inflation-adjustment factor between real and nominal values</span>
 <span class="sd">            for that year (relative to base_year, if provided).</span>
+
 <span class="sd">            Optional. If not provided, `base_amount` is not</span>
 <span class="sd">            inflation_adjusted.</span>
 
@@ -224,7 +242,7 @@
     <span class="c1"># We need to pass the strategy&#39;s state variables at init time. There</span>
     <span class="c1"># are 6 of them (including self). Refactoring to use a dict or</span>
     <span class="c1"># similar would hurt readability.</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="ContributionStrategy.__init__"><a class="viewcode-back" href="../../forecaster.strategy.html#forecaster.strategy.ContributionStrategy.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="p">,</span> <span class="n">base_amount</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">refund_reinvestment_rate</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span>
     <span class="p">):</span>
@@ -240,7 +258,7 @@
         <span class="k">if</span> <span class="n">inflation_adjust</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span> <span class="o">=</span> <span class="n">inflation_adjust</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span> <span class="o">=</span> <span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span> <span class="o">=</span> <span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="mi">1</span></div>
 
         <span class="c1"># Types are enforced by explicit conversion; no need to check.</span>
 
@@ -307,12 +325,16 @@
 <div class="viewcode-block" id="WithdrawalStrategy"><a class="viewcode-back" href="../../forecaster.strategy.html#forecaster.strategy.WithdrawalStrategy">[docs]</a><span class="k">class</span> <span class="nc">WithdrawalStrategy</span><span class="p">(</span><span class="n">Strategy</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Determines an annual gross withdrawal.</span>
 
-<span class="sd">    This class is callable. Its call signature has this form:</span>
-<span class="sd">    `obj(year, benefits, net_income, gross_income, principal,</span>
-<span class="sd">    retirement_year)`.</span>
+<span class="sd">    This class is callable. Its call signature has this form::</span>
+
+<span class="sd">        obj(</span>
+<span class="sd">            year, benefits, net_income, gross_income, principal,</span>
+<span class="sd">            retirement_year</span>
+<span class="sd">        )</span>
 
 <span class="sd">    Arguments may be omitted if the selected strategy does not require</span>
-<span class="sd">    it; otherwise, an error is raised.</span>
+<span class="sd">    it; otherwise, an error is raised. All arguments are keyword</span>
+<span class="sd">    arguments.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        strategy (str, func): Either a string corresponding to a</span>
@@ -322,11 +344,14 @@
 <span class="sd">            a strategy (in human-readable text) and each value is a</span>
 <span class="sd">            function with the same arguments and return value as</span>
 <span class="sd">            gross_contribution(). See its documentation for more info.</span>
+
 <span class="sd">            Acceptable keys include:</span>
-<span class="sd">                &quot;Constant withdrawal&quot;</span>
-<span class="sd">                &quot;Percentage of principal&quot;</span>
-<span class="sd">                &quot;Percentage of gross income&quot;</span>
-<span class="sd">                &quot;Percentage of net income&quot;</span>
+
+<span class="sd">            * &quot;Constant withdrawal&quot;</span>
+<span class="sd">            * &quot;Percentage of principal&quot;</span>
+<span class="sd">            * &quot;Percentage of gross income&quot;</span>
+<span class="sd">            * &quot;Percentage of net income&quot;</span>
+
 <span class="sd">        base_amount (Money): A user-supplied amount of money, used in</span>
 <span class="sd">            some strategies as a baseline for withdrawals.</span>
 <span class="sd">        rate (Decimal): A user-supplied withdrawal rate. Must be a</span>
@@ -335,14 +360,18 @@
 <span class="sd">            which takes place at this time. If you&#39;re using a</span>
 <span class="sd">            TransactionStrategy to determine per-account withdrawals,</span>
 <span class="sd">            it&#39;s recommended that it use the same timing.</span>
+
 <span class="sd">            This is expressed according to the `when` convention</span>
 <span class="sd">            described in `ledger.Account`.</span>
 <span class="sd">        inflation_adjust (callable): If provided, `base_amount` is</span>
 <span class="sd">            interpreted as a real (i.e. inflation-adjusted) currency</span>
-<span class="sd">            value. This callable object will be called as</span>
+<span class="sd">            value.</span>
+
+<span class="sd">            This callable object will be called as</span>
 <span class="sd">            `inflation_adjust(year[, base_year])` to receive the</span>
 <span class="sd">            inflation-adjustment factor between real and nominal values</span>
 <span class="sd">            for that year (relative to base_year, if provided).</span>
+
 <span class="sd">            Optional. If not provided, `base_amount` is not</span>
 <span class="sd">            inflation_adjusted.</span>
 <span class="sd">        income_adjusted (bool): If True, withdrawals are reduced to</span>
@@ -374,7 +403,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># pylint: disable=too-many-arguments</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="WithdrawalStrategy.__init__"><a class="viewcode-back" href="../../forecaster.strategy.html#forecaster.strategy.WithdrawalStrategy.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="p">,</span> <span class="n">base_amount</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">,</span>
         <span class="n">income_adjusted</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span>
     <span class="p">):</span>
@@ -399,7 +428,7 @@
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timing</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timing</span> <span class="o">==</span> <span class="s1">&#39;start&#39;</span> <span class="ow">or</span>
                                                    <span class="bp">self</span><span class="o">.</span><span class="n">timing</span> <span class="o">==</span> <span class="s1">&#39;end&#39;</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;WithdrawalStrategy: timing must be </span><span class="se">\&#39;</span><span class="s1">start</span><span class="se">\&#39;</span><span class="s1"> &#39;</span> <span class="o">+</span>
-                             <span class="s1">&#39;or </span><span class="se">\&#39;</span><span class="s1">end</span><span class="se">\&#39;</span><span class="s1"> if of type str&#39;</span><span class="p">)</span>
+                             <span class="s1">&#39;or </span><span class="se">\&#39;</span><span class="s1">end</span><span class="se">\&#39;</span><span class="s1"> if of type str&#39;</span><span class="p">)</span></div>
 
     <span class="c1"># Begin defining subclass-specific strategies</span>
     <span class="c1"># pylint: disable=W0613</span>
@@ -487,15 +516,19 @@
 <span class="sd">            a strategy (in human-readable text) and each value is a</span>
 <span class="sd">            function with the same arguments and return value as</span>
 <span class="sd">            transactions(). See its documentation for more info.</span>
+
 <span class="sd">            Acceptable keys include:</span>
-<span class="sd">                &quot;Ordered&quot;</span>
-<span class="sd">                &quot;Weighted&quot;</span>
+
+<span class="sd">            * &quot;Ordered&quot;</span>
+<span class="sd">            * &quot;Weighted&quot;</span>
+
 <span class="sd">        weights (dict): {str, weight} pairs, where keys identify account</span>
 <span class="sd">            types (as class names, e.g. &#39;RRSP&#39;, &#39;SavingsAccount&#39;) and</span>
 <span class="sd">            weight values indicate how much to prioritize the</span>
 <span class="sd">            corresponding account.</span>
 <span class="sd">        timing (str, Decimal): Transactions are modelled as lump sums</span>
 <span class="sd">            which take place at this time.</span>
+
 <span class="sd">            This is expressed according to the `when` convention</span>
 <span class="sd">            described in `ledger.Account`.</span>
 
@@ -510,7 +543,7 @@
 <span class="sd">        is one of the input accounts and each Money object is a</span>
 <span class="sd">        transaction for that account.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="TransactionStrategy.__init__"><a class="viewcode-back" href="../../forecaster.strategy.html#forecaster.strategy.TransactionStrategy.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Constructor for TransactionStrategy. &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span>
 
@@ -527,7 +560,7 @@
             <span class="p">)</span>
         <span class="c1"># NOTE: We leave it to calling code to interpret str-valued</span>
         <span class="c1"># timing. (We could convert to `When` here - consider it.)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_param_check</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timing</span><span class="p">,</span> <span class="s1">&#39;timing&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">Decimal</span><span class="p">,</span> <span class="nb">str</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_param_check</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timing</span><span class="p">,</span> <span class="s1">&#39;timing&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">Decimal</span><span class="p">,</span> <span class="nb">str</span><span class="p">))</span></div>
 
     <span class="c1"># pylint: disable=W0613</span>
 <div class="viewcode-block" id="TransactionStrategy.strategy_ordered"><a class="viewcode-back" href="../../forecaster.strategy.html#forecaster.strategy.TransactionStrategy.strategy_ordered">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;Ordered&#39;</span><span class="p">)</span>
@@ -723,11 +756,11 @@
     <span class="c1"># to expose its state (which a method/function/lambda does not do).</span>
     <span class="c1"># pylint: disable=too-few-public-methods</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="n">allocation_strategy</span><span class="p">):</span>
+<div class="viewcode-block" id="RateFunction.__init__"><a class="viewcode-back" href="../../forecaster.strategy.html#forecaster.strategy.RateFunction.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="n">allocation_strategy</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Inits the RateFunction object. &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span> <span class="o">=</span> <span class="n">scenario</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">person</span> <span class="o">=</span> <span class="n">person</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">allocation_strategy</span> <span class="o">=</span> <span class="n">allocation_strategy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">allocation_strategy</span> <span class="o">=</span> <span class="n">allocation_strategy</span></div>
 
 <div class="viewcode-block" id="RateFunction.__call__"><a class="viewcode-back" href="../../forecaster.strategy.html#forecaster.strategy.RateFunction.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Decimal</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot; Rate of return for `year` based on asset allocation.</span>
@@ -780,9 +813,12 @@
 <span class="sd">            a strategy (in human-readable text) and each value is a</span>
 <span class="sd">            function with the same arguments and return value as</span>
 <span class="sd">            transactions(). See its documentation for more info.</span>
+
 <span class="sd">            Acceptable keys include:</span>
-<span class="sd">                &quot;n-age&quot;</span>
-<span class="sd">                &quot;Transition to constant&quot;</span>
+
+<span class="sd">            * &quot;n-age&quot;</span>
+<span class="sd">            * &quot;Transition to constant&quot;</span>
+
 <span class="sd">        min_equity (Decimal): The minimum percentage of a portfolio that</span>
 <span class="sd">            may be invested in equities. (All non-equity investments</span>
 <span class="sd">            are included in `fixed_income`)</span>
@@ -790,20 +826,25 @@
 <span class="sd">            may be invested in equities.</span>
 <span class="sd">        target (Decimal): A target value used by strategies to affect</span>
 <span class="sd">            their behaviour.</span>
+
 <span class="sd">            For example, for the `n-age` strategy, this is the value `n`</span>
 <span class="sd">            (e.g. `target=100` -&gt; `100-age`).</span>
+
 <span class="sd">            For the `Transition to constant` strategy, this is the</span>
 <span class="sd">            percentage of equities to transition to (e.g. for</span>
 <span class="sd">            `Transition to 50-50`, use `Decimal(&#39;0.5&#39;)`)</span>
 <span class="sd">        standard_retirement_age (int): The typical retirement age used</span>
-<span class="sd">            in retirement planning. This is used if</span>
-<span class="sd">            adjust_for_retirement_plan is False, otherwise the actual</span>
-<span class="sd">            (estimated) retirement age for the person is used.</span>
+<span class="sd">            in retirement planning.</span>
+
+<span class="sd">            This is used if `adjust_for_retirement_plan` is False,</span>
+<span class="sd">            otherwise the actual (or estimated) retirement age for the</span>
+<span class="sd">            person is used.</span>
 <span class="sd">        risk_transition_period (int): The period of time over which the</span>
-<span class="sd">            `Transition to constant` strategy transitions. For example,</span>
-<span class="sd">            if set to 20, the strategy will transition from max_equity</span>
-<span class="sd">            to transition_strategy_target over 20 years, ending on the</span>
-<span class="sd">            retirement date.</span>
+<span class="sd">            `Transition to constant` strategy transitions.</span>
+
+<span class="sd">            For example, if set to 20, the strategy will transition</span>
+<span class="sd">            from `max_equity` to `transition_strategy_target` over 20</span>
+<span class="sd">            years, ending on the retirement date.</span>
 <span class="sd">        adjust_for_retirement_plan (bool): If True, the allocation will</span>
 <span class="sd">            be adjusted to increase risk for later retirement or</span>
 <span class="sd">            decrease risk for later retirement. If False, the standard</span>
@@ -818,10 +859,11 @@
 <span class="sd">        dict[str, Decimal]: `{asset: allocation}` pairs, where `asset`</span>
 <span class="sd">        is a string in `{&#39;stocks&#39;, &#39;bonds&#39;}` and `allocation` is the</span>
 <span class="sd">        percentage of a portfolio that is made up of that asset class.</span>
+
 <span class="sd">        Allocations sum to 1 (e.g. `Decimal(0.03` means 3%).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># pylint: disable=too-many-arguments</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="AllocationStrategy.__init__"><a class="viewcode-back" href="../../forecaster.strategy.html#forecaster.strategy.AllocationStrategy.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">min_equity</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_equity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="n">standard_retirement_age</span><span class="o">=</span><span class="mi">65</span><span class="p">,</span> <span class="n">risk_transition_period</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
         <span class="n">adjust_for_retirement_plan</span><span class="o">=</span><span class="kc">True</span>
@@ -840,7 +882,7 @@
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_equity</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_equity</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;AllocationStrategy: min_equity must not be &#39;</span> <span class="o">+</span>
-                             <span class="s1">&#39;greater than max_equity.&#39;</span><span class="p">)</span>
+                             <span class="s1">&#39;greater than max_equity.&#39;</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="AllocationStrategy.strategy_n_minus_age"><a class="viewcode-back" href="../../forecaster.strategy.html#forecaster.strategy.AllocationStrategy.strategy_n_minus_age">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;n-age&#39;</span><span class="p">)</span>
     <span class="c1"># pylint: disable=W0613</span>
@@ -903,7 +945,7 @@
 <span class="sd">                the person based on this object&#39;s allocation strategy</span>
 <span class="sd">                (in particular, based on the person&#39;s age and/or</span>
 <span class="sd">                projected retirement date).</span>
-<span class="sd">            scenario (Scenario): A scenario providing information on</span>
+<span class="sd">            scenario (Scenario): A `Scenario` providing information on</span>
 <span class="sd">                returns on investment for stocks, bonds, etc.</span>
 
 <span class="sd">        Returns:</span>
@@ -939,11 +981,15 @@
 <span class="sd">            a strategy (in human-readable text) and each value is a</span>
 <span class="sd">            function with the same arguments and return value as</span>
 <span class="sd">            transactions(). See its documentation for more info.</span>
+
 <span class="sd">            Acceptable keys include:</span>
-<span class="sd">                &quot;Snowball&quot;</span>
-<span class="sd">                &quot;Avalanche&quot;</span>
+
+<span class="sd">            * &quot;Snowball&quot;</span>
+<span class="sd">            * &quot;Avalanche&quot;</span>
+
 <span class="sd">        timing (str, Decimal): Transactions are modelled as lump sums</span>
 <span class="sd">            which take place at this time.</span>
+
 <span class="sd">            This is expressed according to the `when` convention</span>
 <span class="sd">            described in `ledger.Account`.</span>
 
@@ -958,7 +1004,7 @@
 <span class="sd">        transaction for that account.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="DebtPaymentStrategy.__init__"><a class="viewcode-back" href="../../forecaster.strategy.html#forecaster.strategy.DebtPaymentStrategy.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Constructor for DebtPaymentStrategy. &quot;&quot;&quot;</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span>
@@ -967,7 +1013,7 @@
 
         <span class="c1"># NOTE: We leave it to calling code to interpret str-valued</span>
         <span class="c1"># timing. (We could convert to `When` here - consider it.)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_param_check</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timing</span><span class="p">,</span> <span class="s1">&#39;timing&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">Decimal</span><span class="p">,</span> <span class="nb">str</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_param_check</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timing</span><span class="p">,</span> <span class="s1">&#39;timing&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">Decimal</span><span class="p">,</span> <span class="nb">str</span><span class="p">))</span></div>
 
     <span class="c1"># pylint: disable=W0613</span>
 <div class="viewcode-block" id="DebtPaymentStrategy.strategy_snowball"><a class="viewcode-back" href="../../forecaster.strategy.html#forecaster.strategy.DebtPaymentStrategy.strategy_snowball">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;Snowball&#39;</span><span class="p">)</span>
@@ -1067,15 +1113,7 @@
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper"><div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="../../index.html">Documentation overview</a><ul>
-  <li><a href="../index.html">Module code</a><ul>
-  </ul></li>
-  </ul></li>
-</ul>
-</div>
+        <div class="sphinxsidebarwrapper">
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="../../search.html" method="get">
@@ -1090,17 +1128,22 @@
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2017, Christopher Scott.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
-      
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Christopher Scott.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.5.
+    </div>
   </body>
 </html>

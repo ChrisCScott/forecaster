@@ -24,7 +24,9 @@ def nearest_year(vals, year):
     Returns:
         A year in `vals` is near to `year`, preferring
         the nearest preceding year (if it exists) over the nearest
-        following year. Returns `None` if `vals` is empty.
+        following year.
+
+        Returns `None` if `vals` is empty.
     """
     if vals == {}:
         return None
@@ -71,6 +73,7 @@ def extend_inflation_adjusted(vals, inflation_adjust, target_year):
         vals (dict): A dict of `{year: val}` pairs, where `val` is a
             scalar, list, or dict. This dict may be incomplete, in the
             sense that some years may not be represented.
+
             If `val` is non-scalar, an object of the same type is
             returned with each of its values inflation-adjusted.
         inflation_adjust: A method of the form
@@ -124,8 +127,11 @@ def build_inflation_adjust(inflation_adjust=None):
 
     Returns:
         A method with the following form:
-        `inflation_adjust(val, this_year, target_year)`. The method
-        returns a Money object (assuming Money-typed `val` input).
+        `inflation_adjust(val, this_year, target_year)`.
+
+        The method returns a Money object (assuming Money-typed `val`
+        input).
+
         Finds a nominal value in `target_year` with the same real
         value as `val`, a nominal value in `this_year`.
     """

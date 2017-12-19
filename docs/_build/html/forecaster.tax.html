@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>forecaster.tax module &#8212; forecaster 0.0.1 documentation</title>
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
@@ -24,16 +24,29 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="forecaster.utility module" href="forecaster.utility.html" />
-    <link rel="prev" title="forecaster.strategy module" href="forecaster.strategy.html" />
-   
-  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
+    <link rel="prev" title="forecaster.strategy module" href="forecaster.strategy.html" /> 
   </head>
   <body>
-  
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="forecaster.utility.html" title="forecaster.utility module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="forecaster.strategy.html" title="forecaster.strategy module"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" >forecaster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="forecaster.html" accesskey="U">forecaster package</a> &#187;</li> 
+      </ul>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
@@ -55,18 +68,15 @@ payable on taxable income without any source-specific deduction or
 credit. This should correspond to how employment withholding taxes
 are calculated, so <cite>gross_income - tax(gross_income, year)</cite>
 will return a person’s net income.</p>
-<p>For a more sophisticated assessment of credit/etc., provide an
-iterable of sources as the first argument. Each source must provide
-the following methods:</p>
-<blockquote>
-<div>taxable_income(self [, year])
-tax_withheld(self [, year])
-tax_credit(self [, year])
-tax_deduction(self [, year])</div></blockquote>
-<p>Thus, calling <cite>tax({person, account1, … accountn}, year)</cite> will
-return the total tax liability for the year, after applying any
-credit/etc. and including <cite>person</cite>’s employment income and any
-account earnings.</p>
+<p>For a more sophisticated assessment of credit/etc., provide a
+<cite>Person</cite> object as input (or an iterable of <cite>Person</cite> objects). This
+will assess taxable income, credits, and deductions for the <cite>Person</cite>
+and any <cite>Account</cite> objects they own.</p>
+<p>Thus, calling <cite>tax({person1, person2}, year)</cite> will
+return the total tax liability for the year for both person1 and
+person2, after applying any credit/etc., and including the
+employment income and taxable account activity of each <cite>Person</cite>.</p>
+<p>If spouses are passed in, they are processed together.</p>
 <dl class="attribute">
 <dt id="forecaster.tax.Tax.tax_brackets">
 <code class="descname">tax_brackets</code><a class="reference internal" href="_modules/forecaster/tax.html#Tax.tax_brackets"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.tax.Tax.tax_brackets" title="Permalink to this definition">¶</a></dt>
@@ -81,8 +91,8 @@ Decimal(‘0.03’) is interpreted as 3%)</p>
 <dt id="forecaster.tax.Tax.personal_deduction">
 <code class="descname">personal_deduction</code><a class="reference internal" href="_modules/forecaster/tax.html#Tax.personal_deduction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.tax.Tax.personal_deduction" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>dict</em> – A dict of <cite>{year: deduction}</cite> pairs,
-where <cite>deduction</cite> is convertible to Money.
-The personal deduction for a given year is deducted from
+where <cite>deduction</cite> is convertible to Money.</p>
+<p>The personal deduction for a given year is deducted from
 income when determining income tax in that year.</p>
 </dd></dl>
 
@@ -90,8 +100,8 @@ income when determining income tax in that year.</p>
 <dt id="forecaster.tax.Tax.credit_rate">
 <code class="descname">credit_rate</code><a class="reference internal" href="_modules/forecaster/tax.html#Tax.credit_rate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.tax.Tax.credit_rate" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>dict</em> – A dict of <cite>{year: rate}</cite> pairs, where <cite>rate</cite>
-is convertible to Decimal.
-The credit rate is used to determine how much each tax
+is convertible to Decimal.</p>
+<p>The credit rate is used to determine how much each tax
 credit reduced total tax liability.</p>
 </dd></dl>
 
@@ -101,22 +111,24 @@ credit reduced total tax liability.</p>
 <dd><p><em>dict</em> – A dict of <cite>{year: {bracket: accum}}</cite> pairs, where
 each <cite>bracket</cite> corresponds to a key in <cite>tax_brackets</cite> and
 <cite>accum</cite> is the sum of tax payable on the income falling into
-all lower brackets. For example, if there are $10, $100, and
-$1000 tax brackets, then <cite>accum[year][$1000]</cite> is equal to
-<cite>tax_brackets[year][$10] * $10 + tax_brackets[year][$100] *
-$100</cite>.</p>
+all lower brackets.</p>
+<p>For example, if there are $10, $100, and $1000 tax brackets,
+then <cite>accum[year][$1000]</cite> is equal to:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">tax_brackets</span><span class="p">[</span><span class="n">year</span><span class="p">][</span><span class="mi">10</span><span class="p">]</span> <span class="o">*</span> <span class="mi">10</span> <span class="o">+</span> <span class="n">tax_brackets</span><span class="p">[</span><span class="n">year</span><span class="p">][</span><span class="mi">100</span><span class="p">]</span> <span class="o">*</span> <span class="mi">100</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.tax.Tax.inflation_adjust">
 <code class="descname">inflation_adjust</code><a class="headerlink" href="#forecaster.tax.Tax.inflation_adjust" title="Permalink to this definition">¶</a></dt>
 <dd><p>A method with the following form:
-<cite>inflation_adjust(target_year, base_year)</cite>.
-Returns a Decimal scaling factor. Multiplying this by a
+<cite>inflation_adjust(target_year, base_year)</cite>.</p>
+<p>Returns a Decimal scaling factor. Multiplying this by a
 nominal value in base_year will yield a nominal value in
-target_year with the same real value. Optional.
-If not provided, all values are assumed to be in real terms,
-so no inflation adjustment is performed.</p>
+target_year with the same real value.</p>
+<p>Optional. If not provided, all values are assumed to be in
+real terms, so no inflation adjustment is performed.</p>
 </dd></dl>
 
 <table class="docutils field-list" frame="void" rules="none">
@@ -130,17 +142,19 @@ either as a single scalar Money object or as an iterable
 Person/Account objects).</li>
 <li><strong>year</strong> (<em>int</em>) – The taxation year. This determines which tax rules
 and inflation-adjusted brackets are used.</li>
-<li><strong>deduction</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a>) – Any other deduction which can be
+<li><strong>deduction</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a>) – <p>Any other deduction which can be
 applied and which aren’t evident from the income sources
-themselves. These will generally be itemized deduction.
-It’s a good idea to be familiar with the Tax implementation
+themselves. These will generally be itemized deduction.</p>
+<p>It’s a good idea to be familiar with the Tax implementation
 you’re working with before passing any of these, otherwise
-you risk double-counting.
-Optional.</li>
-<li><strong>credit</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a>) – Any other tax credit which can be
+you risk double-counting.</p>
+<p>Optional.</p>
+</li>
+<li><strong>credit</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a>) – <p>Any other tax credit which can be
 applied and which aren’t evident from the income sources
-themselves. These will generally be boutique tax credit.
-Optional.</li>
+themselves. These will generally be boutique tax credit.</p>
+<p>Optional.</p>
+</li>
 </ul>
 </td>
 </tr>
@@ -165,21 +179,60 @@ Person object, or as an iterable (list, set, etc.) of
 Person objects.</li>
 <li><strong>year</strong> (<em>int</em>) – The taxation year. This determines which tax
 rules and inflation-adjusted brackets are used.</li>
-<li><strong>deduction</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>, </em><em>dict</em><em>[</em><a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>]</em>) – Any other deduction which can be applied and which
+<li><strong>deduction</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>, </em><em>dict</em><em>[</em><a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>]</em>) – <p>Any other deduction which can be applied and which
 aren’t modelled by the income sources themselves.
-These will generally be itemized deduction.
-If <cite>income</cite> is passed as an iterable, this should also
-be an iterable; otherwise it should be a Money object.
-It’s a good idea to be familiar with the Tax
-implementation you’re working with before passing any of
-these, otherwise you risk double-counting.
-Optional.</li>
-<li><strong>credit</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>, </em><em>dict</em><em>[</em><a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>]</em>) – Any other tax credit which can be applied and which
-aren’t modelled by the income sources themselves.
-These are usually boutique tax credit.
-See <cite>deduction</cite> for further comments.
-Optional.</li>
+These will generally be itemized deduction.</p>
+<p>If <cite>income</cite> is passed as an iterable, this should also
+be an iterable; otherwise it should be a Money object.</p>
+<p>It’s a good idea to be familiar with the <cite>Tax</cite> and
+<cite>Person</cite> implementation you’re working with before
+passing any of these, otherwise you risk double-counting
+if both the <cite>Person</cite> and <cite>Tax</cite> objects implement the
+same deduction.</p>
+<p>Optional.</p>
+</li>
+<li><strong>credit</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>, </em><em>dict</em><em>[</em><a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>]</em>) – <p>Any other tax credit which can be applied and which
+aren’t modelled by the income sources themselves.</p>
+<p>These are usually boutique tax credits.</p>
+<p>See <cite>deduction</cite> for further comments on being familiar
+with both <cite>Tax</cite> and <cite>Person</cite> implementations when
+passing this.</p>
+<p>Optional.</p>
+</li>
 <li><strong>Returns</strong> – Money: The total amount of tax owing for the year.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.tax.Tax.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>tax_brackets</em>, <em>personal_deduction=None</em>, <em>credit_rate=None</em>, <em>inflation_adjust=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/tax.html#Tax.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.tax.Tax.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes the Tax object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>tax_brackets</strong> (<em>dict</em><em>[</em><em>int</em><em>, </em><em>dict</em><em>[</em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>, </em><em>Decimal</em><em>]</em><em>]</em>) – <cite>{year: brackets}</cite> pairs, where <cite>brackets</cite> is itself a
+dict of <cite>{bracket: rate}</cite> pairs. Any income above
+<cite>bracket</cite> is taxed at <cite>rate</cite>. (It’s thus usually a good
+idea to have at least a {0: rate} element!)</li>
+<li><strong>personal_deduction</strong> (<em>dict</em><em>[</em><em>int</em><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>]</em>) – <cite>{year: deduction}</cite>
+pairs. This deduction is applied to the income of each
+person when determining tax liability.</li>
+<li><strong>credit_rate</strong> (<em>dict</em><em>[</em><em>int</em><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>]</em>) – <cite>{year: rate}</cite> pairs.
+This rate is applied to any tax credits the person is
+eligible for when determining tax liability.</li>
+<li><strong>inflation_adjust</strong> – <p>A method with the following form:
+<cite>inflation_adjust(val, this_year, target_year)</cite>.
+Returns a Decimal object which is the inflation-
+adjustment factor from base_year to target_year.</p>
+<p>Optional. If not provided, all values are assumed to be
+in real terms, so no inflation adjustment is performed.</p>
+</li>
 </ul>
 </td>
 </tr>
@@ -388,19 +441,13 @@ pairs. Optional.</li>
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper"><div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation overview</a><ul>
-  <li><a href="modules.html">forecaster</a><ul>
-  <li><a href="forecaster.html">forecaster package</a><ul>
-      <li>Previous: <a href="forecaster.strategy.html" title="previous chapter">forecaster.strategy module</a></li>
-      <li>Next: <a href="forecaster.utility.html" title="next chapter">forecaster.utility module</a></li>
-  </ul></li>
-  </ul></li>
-  </ul></li>
-</ul>
-</div>
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="forecaster.strategy.html"
+                        title="previous chapter">forecaster.strategy module</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="forecaster.utility.html"
+                        title="next chapter">forecaster.utility module</a></p>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
@@ -415,20 +462,29 @@ pairs. Optional.</li>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2017, Christopher Scott.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
-      
-      |
-      <a href="_sources/forecaster.tax.rst.txt"
-          rel="nofollow">Page source</a>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="forecaster.utility.html" title="forecaster.utility module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="forecaster.strategy.html" title="forecaster.strategy module"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" >forecaster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="forecaster.html" >forecaster package</a> &#187;</li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Christopher Scott.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.5.
+    </div>
   </body>
 </html>

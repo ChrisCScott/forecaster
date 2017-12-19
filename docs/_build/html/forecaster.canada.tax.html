@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>forecaster.canada.tax module &#8212; forecaster 0.0.1 documentation</title>
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
@@ -24,16 +24,30 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="forecaster.accounts module" href="forecaster.accounts.html" />
-    <link rel="prev" title="forecaster.canada.settings module" href="forecaster.canada.settings.html" />
-   
-  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
+    <link rel="prev" title="forecaster.canada.settings module" href="forecaster.canada.settings.html" /> 
   </head>
   <body>
-  
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="forecaster.accounts.html" title="forecaster.accounts module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="forecaster.canada.settings.html" title="forecaster.canada.settings module"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" >forecaster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="forecaster.html" >forecaster package</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="forecaster.canada.html" accesskey="U">forecaster.canada package</a> &#187;</li> 
+      </ul>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
@@ -100,6 +114,29 @@ See documentation for <cite>Tax</cite> for more.</li>
 </dd></dl>
 
 <dl class="method">
+<dt id="forecaster.canada.tax.TaxCanada.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>inflation_adjust</em>, <em>province='BC'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/tax.html#TaxCanada.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.tax.TaxCanada.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes TaxCanada.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>inflation_adjust</strong> – <p>A method with the following form:
+<cite>inflation_adjust(target_year, base_year) -&gt; Decimal</cite>.</p>
+<p>Can be passed as dict or Decimal-convertible scalar,
+which will be converted to a callable object.</p>
+<p>See documentation for <cite>Tax</cite> for more information.</p>
+</li>
+<li><strong>province</strong> (<em>str</em>) – The province in which income tax is paid.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="forecaster.canada.tax.TaxCanada.marginal_bracket">
 <code class="descname">marginal_bracket</code><span class="sig-paren">(</span><em>taxable_income</em>, <em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/tax.html#TaxCanada.marginal_bracket"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.tax.TaxCanada.marginal_bracket" title="Permalink to this definition">¶</a></dt>
 <dd><p>The top tax bracket that taxable_income falls into.</p>
@@ -133,10 +170,13 @@ Person object, or as an iterable (list, set, etc.) of
 Person objects.</li>
 <li><strong>year</strong> (<em>int</em>) – The taxation year. This determines which tax
 rules and inflation-adjusted brackets are used.</li>
-<li><strong>other_deduction</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>, </em><em>dict</em><em>[</em><a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>]</em>) – Deductions to be applied against the jurisdiction’s
-taxes. See documentation for <cite>Tax</cite> for more.</li>
-<li><strong>other_credit</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>, </em><em>dict</em><em>[</em><a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>]</em>) – Credits to be applied against the jurisdiction’s taxes.
-See documentation for <cite>Tax</cite> for more.</li>
+<li><strong>other_deduction</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>, </em><em>dict</em><em>[</em><a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>]</em>) – <p>Deductions to be applied against the jurisdiction’s
+taxes.</p>
+<p>See documentation for <cite>Tax</cite> for more.</p>
+</li>
+<li><strong>other_credit</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>, </em><em>dict</em><em>[</em><a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>]</em>) – <p>Credits to be applied against the jurisdiction’s taxes.</p>
+<p>See documentation for <cite>Tax</cite> for more.</p>
+</li>
 </ul>
 </td>
 </tr>
@@ -186,20 +226,18 @@ jurisdiction for each person.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>people</strong> (<em>set</em><em>[</em><a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>]</em>) – A dict of <cite>{taxpayer: sources}</cite> pairs, where
-<cite>taxpayer</cite> is of type <cite>Person</cite> and <cite>sources</cite> is a set of
-income sources (accounts and people).</li>
+<li><strong>people</strong> (<em>set</em><em>[</em><a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>]</em>) – One or more <cite>Person</cite> objects, each
+having some number of accounts (or other tax sources).</li>
 <li><strong>year</strong> (<em>int</em>) – The year in which money is expressed (used for
 inflation adjustment)</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(fed_deduction, prov_deduction)}`
-pairs, where <cite>*_deduction</cite> is of type Money.
-These are bundled into a FedProvTuple for convenience.</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The tax deduction available in this
+jurisdiction for each person.</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">A dict of <a href="#id1"><span class="problematic" id="id2">`</span></a>{taxpayer</p>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dict[<a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person">Person</a>, <a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money">Money</a>]</p>
 </td>
 </tr>
 </tbody>
@@ -215,21 +253,13 @@ These are bundled into a FedProvTuple for convenience.</p>
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper"><div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation overview</a><ul>
-  <li><a href="modules.html">forecaster</a><ul>
-  <li><a href="forecaster.html">forecaster package</a><ul>
-  <li><a href="forecaster.canada.html">forecaster.canada package</a><ul>
-      <li>Previous: <a href="forecaster.canada.settings.html" title="previous chapter">forecaster.canada.settings module</a></li>
-      <li>Next: <a href="forecaster.accounts.html" title="next chapter">forecaster.accounts module</a></li>
-  </ul></li>
-  </ul></li>
-  </ul></li>
-  </ul></li>
-</ul>
-</div>
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="forecaster.canada.settings.html"
+                        title="previous chapter">forecaster.canada.settings module</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="forecaster.accounts.html"
+                        title="next chapter">forecaster.accounts module</a></p>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
@@ -244,20 +274,30 @@ These are bundled into a FedProvTuple for convenience.</p>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2017, Christopher Scott.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
-      
-      |
-      <a href="_sources/forecaster.canada.tax.rst.txt"
-          rel="nofollow">Page source</a>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="forecaster.accounts.html" title="forecaster.accounts module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="forecaster.canada.settings.html" title="forecaster.canada.settings module"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" >forecaster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="forecaster.html" >forecaster package</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="forecaster.canada.html" >forecaster.canada package</a> &#187;</li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Christopher Scott.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.5.
+    </div>
   </body>
 </html>

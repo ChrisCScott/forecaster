@@ -5,29 +5,31 @@ from decimal import Decimal
 
 
 class Scenario(object):
-    """ Describes an economic scenario over the course of the simulation.
+    """ Describes an economic scenario over the course of a simulation.
 
     For example, provides inflation rates and rates of return for each
-    year of the simulation. This is the foil to `Strategy`; all
-    `Scenario` information is reflective of broader economic trends and
-    is independent of any user action.
+    year of the simulation.
+
+    This is the foil to `Strategy`; all `Scenario` information is
+    reflective of broader economic trends and is independent of any user
+    action.
 
     Attributes:
-        inflation (dict): A dict of {year, inflation} pairs where the
-            year is an int and inflation is a Decimal.
-        stock_return (dict): A dict of {int, Decimal} pairs where the
-            key is the year and the Decimal is the rate of return for
-            stocks.
-        bond_return (dict): A dict of {int, Decimal} pairs where the
-            key is the year and the Decimal is the rate of return for
-            bonds.
-        other_return (dict): A dict of {int, Decimal} pairs where the
-            key is the year and the Decimal is the rate of return for
-            stocks. Optional.
-        management_fees (dict): A dict of {int, Decimal} pairs where the
-            key is the year and the Decimal is the management fees on
-            investments. Optional.
-        initial_year (int): The first year of the simulation. Optional.
+        initial_year (int): The first year of the simulation.
+        num_years (int): The number of years in the simulation.
+        inflation (dict[int, Decimal]): `{year, inflation}` pairs, where
+            `inflation` is a percentage rate (e.g. `Decimal(0.5)` is
+            50%).
+        stock_return (dict[int, Decimal]): `{year, return}` pairs where
+            `return` is the rate of return for stocks in the given year.
+        bond_return (dict[int, Decimal]): `{year, return}` pairs where
+            `return` is the rate of return for bonds in the given year.
+        other_return (dict[int, Decimal]): `{year, return}` pairs where
+            `return` is the rate of return for other property (e.g.
+            real estate) in the given year. Optional.
+        management_fees (dict[int, Decimal]): `{year, fees}` pairs
+            where `fees` is the rate at which management fees are
+            charged in invested assets in the given year. Optional.
     """
 
     def __init__(
@@ -60,8 +62,8 @@ class Scenario(object):
             num_years (int): The number of years in the projection.
 
         Raises:
-            TypeError: Input with unexpected type.
-            ValueError: Input lists not of matching lengths.
+            ValueError: num_years must be positive.
+            ValueError: input object cannot be processed by _build_dict.
         """
         # This object needs to model several economic indicators over
         # the course of several years. We could accept these implicitly
@@ -93,20 +95,24 @@ class Scenario(object):
         sequentially from there.
 
         Args:
-            in_val (*, list, dict): A object that may be a list (or other
-                Sequence), dict, or non-list non-dict scalar value.
+            in_val (Any, list, dict): A object that may be a list (or
+                other Sequence), dict, or non-list non-dict scalar
+                value.
+
                 Optional. If not provided, uses default value.
-            initial_year (int): The initial year, used when `input` is
+            initial_year (int): The initial year, used when `in_val` is
                 a list. The first element in the list corresponds to
                 this year.
+
+                Optional. Only required where `in_val` is a list.
             default (*): If provided, builds a defaultdict with this
                 value as the default factory. Must be convertible to
-                Decimal.
+                Decimal. Optional.
 
         Raises:
             ValueError: initial_year is required if input is a list.
             ValueError: default cannot be set for scalar input.
-            ValueError: input and default cannot both be None.
+            ValueError: in_val and default cannot both be None.
         """
         # If no in_val is provided, use default as in_val.
         if in_val is None:
@@ -173,13 +179,16 @@ class Scenario(object):
 
     def discount_rate(self, year):
         """ Returns the discount rate for `year`.
-        This is the same as calling `inflation(year)` """
+
+        This is the same as calling `inflation[year]`.
+        """
         return self.inflation[year]
 
     def accumulation_function(self, year1, year2):
-        """ Returns the discount to be applied over the period from
-        `year1` to `year2`. If `year1 > year2` then the discount rate is
-        inverted. """
+        """ The discount applied in the period from year1 to year2.
+
+        If year2 precedes year1 then the discount rate is inverted.
+        """
         accum = 1
         if year1 <= year2:
             # Find the product of all intervening years' discount rates
@@ -196,6 +205,7 @@ class Scenario(object):
 
         Returns:
             dict[int, Decimal]: `{year: adjustment}` pairs.
+
             `adjustment` is the cumulative inflation since `base_year`
             (or, for years prior to `base_year`, it is the present value
             of $1 in base_year)
@@ -212,11 +222,14 @@ class Scenario(object):
                 inflation-adjustment factor is desired.
             base_year (int): The year in which inflation-adjusted
                 figures are expressed.
-                The inflation adjustment for this year is 1.
+
+                The inflation adjustment for this year is 1 and the
+                inflation adjustment for target_year is defined relative
+                to this year.
 
         Returns:
-            Decimal: The inflation-adjustment factor from base_year to
-            target_year. This is the product of inflation-adjustments
+            Decimal: The inflation-adjustment factor from `base_year` to
+            `target_year`. This is the product of inflation-adjustments
             for each year (or its inverse, if target_year precedes
             base_year).
         """
@@ -239,7 +252,12 @@ class Scenario(object):
 
 
 class InflationAdjust(object):
-    """ Callable inflation_adjust object with mutable state. """
+    """ Callable inflation_adjust object with mutable state.
+
+    Attributes:
+        scenario (Scenario): A `Scenario` defining an
+            `accumulation_function` for inflation over several years.
+    """
 
     # We do provide public methods, but they're overrides of magic
     # methods (init and call). Anyways, the purpose of this class is
@@ -258,7 +276,13 @@ class InflationAdjust(object):
                 inflation-adjustment factor is desired.
             base_year (int): The year in which inflation-adjusted
                 figures are expressed.
-                The inflation adjustment for this year is 1.
+
+                The inflation adjustment for this year is 1 and the
+                inflation adjustment for target_year is defined relative
+                to this year.
+
+                Optional. Defaults to the initial year of the object's
+                `scenario` attribute.
 
         Returns:
             Decimal: The inflation-adjustment factor from base_year to

@@ -22,48 +22,61 @@ class Account(TaxSource):
     A new `Account` object with an updated balance is generated; the
     calling object's balance does not change.
 
-    Examples:
-        `account1 = Account(100, 0.05)`
-        `account2 = account1.next_year()`
-        `account1.balance == 100  # True`
-        `account2.balance == 105  # True`
+    Examples::
+
+        account1 = Account(100, 0.05)
+        account2 = account1.next_year()
+        account1.balance == 100  # True
+        account2.balance == 105  # True
 
     Attributes:
         balance (Money): The opening account balance for this year.
-        balance_history (dict): A dict of {year: balance} pairs covering
-            all years in the range `initial_year: this year`
+        balance_history (dict[int, Money]): `{year: balance}` pairs
+            covering all years in the range `initial_year: this_year`
         rate (Decimal): The rate of return (or interest) for this year,
             before compounding.
-        rate_history (dict): A dict of {year: rate} pairs covering
-            all years in the range `initial_year: this year`
-        transactions (dict): The transactions to/from the account for
-            this year. A dict of `{when: value}` pairs, where:
-                `when` (float, Decimal, str): Describes the timing of
-                    the transaction in the year. In the range [0, 1].
-                `value` (Money): The inflows and outflows at time `when`.
-                    Positive for inflows and negative for outflows.
-                    Each element must be a Money object (or convertible
-                    to one).
-        transactions_history (dict): A dict of {year: transactions}
-            pairs covering all years in the range
-            `initial_year: this year`
+        rate_history (dict[int, Decimal]): `{year: rate}` pairs covering
+            all years in the range `initial_year: this_year`
+        rate_function (callable): A callable object that gives the rate
+            for each year. Has a signature of the form
+            `rate(year) -> Decimal`.
+
+            If this callable object relies on `Scenario` or other
+            objects defined in the `forecaster` package, recommend
+            passing an object that stores these objects explicitly
+            as attributes (as opposed to a method/function where these
+            objects are stored in the context), otherwise `Forecaster`'s
+            object-substitution logic will not work.
+        transactions (dict[Decimal, Money]): The transactions to/from
+            the account for this year. `{when: value}` pairs, where:
+
+            `when` describes the timing of the transaction in the year.
+            In the range [0, 1].
+
+            `value` is the sum of inflows and outflows at time `when`.
+            Positive for inflows and negative for outflows.
+        transactions_history (dict[int, dict[Decimal, Money]]):
+            `{year: transactions}` pairs covering all years in the range
+            `initial_year: this_year`
         returns (Money): The returns (losses) of the account for the
             year.
-        returns_history (dict): A dict of {year: returns} pairs covering
-            all years in the range `initial_year: this year`
+        returns_history (dict[int, Money]): `{year: returns}` pairs
+            covering all years in the range `initial_year: this_year`
         nper (int, str): The compounding frequency. May be given as
             a number of periods (an int) or via a code (a str). Codes
             include:
-                C: Continuous (default)
-                D: Daily
-                W: Weekly
-                BW: Biweekly (every two weeks)
-                SM: Semi-monthly (twice a month)
-                M: Monthly
-                BM: Bimonthly (every two months)
-                Q: Quarterly (every 3 months)
-                SA: Semi-annually (twice a year)
-                A: Annually
+
+            * C: Continuous (default)
+            * D: Daily
+            * W: Weekly
+            * BW: Biweekly (every two weeks)
+            * SM: Semi-monthly (twice a month)
+            * M: Monthly
+            * BM: Bimonthly (every two months)
+            * Q: Quarterly (every 3 months)
+            * SA: Semi-annually (twice a year)
+            * A: Annually
+
         initial_year (int): The first year for which account data is
             recorded.
     """
@@ -85,12 +98,22 @@ class Account(TaxSource):
         Args:
             owner (Person): The owner of the account. Optional.
             balance (Money): The balance for the first year
-            rate (float, Decimal): The rate for the first year.
-            transactions (dict): The transactions for the first year,
-                as {Decimal: Money} pairs, where Decimal denotes timing
-                of the transaction and is in [0,1] as described in the
-                `When` class and Money denotes the values of the
-                transaction (positive to inflow, negative for outflow).
+            rate (Decimal, callable): An object that gives the rate for
+                each year, either as a constant value (e.g. a Decimal)
+                or as a callable object with a signature of the form
+                `rate(year) -> Decimal`.
+
+                If this callable object relies on `Scenario` or other
+                objects defined in the `forecaster` package, recommend
+                passing an object that stores these objects explicitly
+                as attributes (as opposed to a method/function where
+                these objects are stored in the context), otherwise
+                `Forecaster`'s object-substitution logic will not work.
+            transactions (dict[Decimal, Money]): The transactions for
+                the first year, as `{when: value}` pairs. `when` is in
+                [0,1] (and may be one of the strings accepted by
+                `when_conv`). A positive `value` denotes an inflow, and
+                a negative `value` denotes an outflow.
             nper (int): The number of compounding periods per year.
             initial_year (int): The first year (e.g. 2000)
         """
@@ -192,16 +215,21 @@ class Account(TaxSource):
 
     @property
     def rate_callable(self):
-        """ A function that generates a rate for a given year.
+        """ A callable object that generates a rate for a given year.
 
-        The function is callable with one (potentially optional)
-        argument: year.
+        This object takes the signature `rate(year) -> Money` and must
+        accept this `Account`'s `this_year` attribute as input.
         """
         return self._rate_callable
 
     @rate_callable.setter
     def rate_callable(self, val):
-        """ Sets the rate function """
+        """ Sets rate_callable.
+
+        Attempts to convert non-callable objects to callable objects
+        by returning `val[year]` if the object is a dict or simply
+        returning `val` otherwise.
+        """
         # If input isn't callable, convert it to a suitable method:
         if not callable(val):
             if isinstance(val, dict):
@@ -273,6 +301,11 @@ class Account(TaxSource):
         Returns:
             An int indicating the number of compounding periods in a
                 year or None if compounding is continuous.
+
+        Raises:
+            ValueError: str nper must have a known value.
+            ValueError: nper must be greater than 0.
+            TypeError: nper cannot be losslessly converted to int.
         """
         # nper can be None, so return gracefully.
         if nper is None:
@@ -292,11 +325,17 @@ class Account(TaxSource):
             return int(nper)
 
     def contribution_group(self):
-        """ The accounts that share contribution room with this one.
+        """ The Accounts that share contribution room with this one.
+
+        For `Account`, this method returns a set containing only itself;
+        that is, it does not share contribution room with any other
+        `Account`s. However, subclasses (like `RegisteredAccount`) may
+        override this behaviour.
 
         Returns:
-            A set of accounts that should be considered together when
-            allocating contributions between them. Includes this account
+            A set of `Account`s that should be considered together when
+            allocating contributions between them.
+            Includes this `Account`.
         """
         return {self}
 
@@ -307,16 +346,13 @@ class Account(TaxSource):
             value (Money): The value of the transaction. Positive values
                 are inflows and negative values are outflows.
             when (float, Decimal, str): The timing of the transaction.
-                Must be in the range [0,1] or in {'start', 'end'}.
-                0 corresponds to 'end' and 1 corresponds to 'start'.
-                (It's a bit counterintuitive, but this is how `numpy`
-                defines its `when` argument for financial methods.)
-                Defaults to 'end'.
+                Must be in the range [0,1] or be a suitable str input,
+                as described in the documentation for `when_conv`.
 
         Raises:
             decimal.InvalidOperation: Transactions must be convertible
                 to type Money and `when` must be convertible to type
-                Decimal
+                Decimal.
             ValueError: `when` must be in [0,1]
         """
         when = when_conv(when)
@@ -361,34 +397,15 @@ class Account(TaxSource):
         """ The number of years of transaction data in the account. """
         return self.this_year - self.initial_year + 1
 
-    def rate_from_asset_allocation(self, year=None):
-        """ The rate of return for a portfolio with a given composition.
-
-        This determines the portfolio composition based on the owner's
-        asset allocation strategy, and their age and (estimated)
-        retirement age.
-
-        Args:
-            year (int): The year for which a rate is desired. Optional;
-                defaults to the current year.
-        """
-        year = year if year is not None else self.this_year
-        return self.owner.allocation_strategy.rate_of_return(
-            year=year,
-            age=self.owner.age(year),
-            retirement_age=self.owner.retirement_age)
-
-    # pylint: disable=invalid-name
-    # `t` is the usual name for the input to A(t) in interest theory.
     @staticmethod
     def accumulation_function(t, rate, nper=1):
         """ The accumulation function, A(t), from interest theory.
 
         A(t) provides the growth (or discount) factor over the period
         [0, t]. If `t` is negative, this method returns the inverse
-        (i.e. A(t)^-1).
+        (i.e. `A(t)^-1`).
 
-        This method's output is not well-defined where t does not align
+        This method's output is not well-defined if `t` does not align
         with the start/end of a compounding period. (It will produce
         sensible output, but it might not correspond to how your bank
         calculates interest).
@@ -402,6 +419,9 @@ class Account(TaxSource):
         Returns:
             The accumulation A(t), as a Decimal.
         """
+        # pylint: disable=invalid-name
+        # `t` is the usual name for the input to A(t) in interest theory.
+
         # Convert t and rate to Decimal
         t = Decimal(t)
         rate = Decimal(rate)
@@ -593,7 +613,11 @@ class RegisteredAccount(Account):
 
     @contributor.setter
     def contributor(self, val):
-        """ Sets the contributor to the account. """
+        """ Sets the contributor to the account.
+
+        Raises:
+            TypeError: `person` must be of type `Person`.
+        """
         if not isinstance(val, Person):
             raise TypeError(
                 'RegisteredAccount: person must be of type Person.'
@@ -618,7 +642,7 @@ class RegisteredAccount(Account):
 
     @property
     def contribution_room_history(self):
-        """ A dict of {year: contribution_room} pairs. """
+        """ A dict of `{year: contribution_room}` pairs. """
         return self.contributor.contribution_room(self)
 
     def next_year(self):
@@ -641,7 +665,7 @@ class RegisteredAccount(Account):
         """ Returns the contribution room for next year.
 
         This method must be implemented by any subclass of
-        RegisteredAccount.
+        `RegisteredAccount`.
 
         Returns:
             Money: The contribution room for next year.
@@ -651,9 +675,8 @@ class RegisteredAccount(Account):
             by a subclass.
         """
         raise NotImplementedError(
-            'RegisteredAccount: next_contribution_room is not implemented. ' +
-            'Use RRSP or TFSA instead.'
-        )
+            'RegisteredAccount: next_contribution_room is not implemented. '
+            + 'Subclasses must override this method.')
 
     def max_inflow(self, when='end'):
         """ Limits outflows based on available contribution room. """
@@ -678,7 +701,10 @@ class Debt(Account):
             may be made to pay off the balance earlier. Optional.
     """
 
-    # TODO: Add a max_accelerate arg (or perhaps change
+    # TODO #36: Revise the implementation and/or the documentation of
+    # reduction_rate to match each other. (Right now they don't
+    # correspond at all.)
+    # TODO #8: Add a max_accelerate arg (or perhaps change
     # accelerate_payment to Money type and test for >0?) to set a cap on
     # how much to accelerate payments by.
 
@@ -715,11 +741,13 @@ class Debt(Account):
 
         This is in addition to any existing payments in the account.
 
-        Example:
-            debt = Debt(-100)
-            debt.maximum_payment('start') == Money(100)  # True
-            debt.add_transaction(100, 'start')
-            debt.maximum_payment('start') == 0  # True
+        Example::
+
+                debt = Debt(-100)
+                debt.maximum_payment('start') == Money(100)  # True
+                debt.add_transaction(100, 'start')
+                debt.maximum_payment('start') == 0  # True
+
         """
         return -self.balance_at_time(when)
 

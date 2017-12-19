@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>forecaster.scenario module &#8212; forecaster 0.0.1 documentation</title>
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
@@ -24,16 +24,29 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="forecaster.settings module" href="forecaster.settings.html" />
-    <link rel="prev" title="forecaster.person module" href="forecaster.person.html" />
-   
-  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
+    <link rel="prev" title="forecaster.person module" href="forecaster.person.html" /> 
   </head>
   <body>
-  
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="forecaster.settings.html" title="forecaster.settings module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="forecaster.person.html" title="forecaster.person module"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" >forecaster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="forecaster.html" accesskey="U">forecaster package</a> &#187;</li> 
+      </ul>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
@@ -48,6 +61,13 @@
 <em class="property">class </em><code class="descclassname">forecaster.scenario.</code><code class="descname">InflationAdjust</code><span class="sig-paren">(</span><em>scenario</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/scenario.html#InflationAdjust"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.scenario.InflationAdjust" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>Callable inflation_adjust object with mutable state.</p>
+<dl class="attribute">
+<dt id="forecaster.scenario.InflationAdjust.scenario">
+<code class="descname">scenario</code><a class="headerlink" href="#forecaster.scenario.InflationAdjust.scenario" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>Scenario</em> – A <cite>Scenario</cite> defining an
+<cite>accumulation_function</cite> for inflation over several years.</p>
+</dd></dl>
+
 <dl class="method">
 <dt id="forecaster.scenario.InflationAdjust.__call__">
 <code class="descname">__call__</code><span class="sig-paren">(</span><em>target_year</em>, <em>base_year=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/scenario.html#InflationAdjust.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.scenario.InflationAdjust.__call__" title="Permalink to this definition">¶</a></dt>
@@ -59,9 +79,14 @@
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>target_year</strong> (<em>int</em>) – The year for which an
 inflation-adjustment factor is desired.</li>
-<li><strong>base_year</strong> (<em>int</em>) – The year in which inflation-adjusted
-figures are expressed.
-The inflation adjustment for this year is 1.</li>
+<li><strong>base_year</strong> (<em>int</em>) – <p>The year in which inflation-adjusted
+figures are expressed.</p>
+<p>The inflation adjustment for this year is 1 and the
+inflation adjustment for target_year is defined relative
+to this year.</p>
+<p>Optional. Defaults to the initial year of the object’s
+<cite>scenario</cite> attribute.</p>
+</li>
 </ul>
 </td>
 </tr>
@@ -78,60 +103,113 @@ base_year).</p>
 </table>
 </dd></dl>
 
+<dl class="method">
+<dt id="forecaster.scenario.InflationAdjust.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>scenario</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/scenario.html#InflationAdjust.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.scenario.InflationAdjust.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inits InflationAdjust.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="forecaster.scenario.Scenario">
 <em class="property">class </em><code class="descclassname">forecaster.scenario.</code><code class="descname">Scenario</code><span class="sig-paren">(</span><em>initial_year</em>, <em>num_years</em>, <em>inflation=0</em>, <em>stock_return=0</em>, <em>bond_return=0</em>, <em>other_return=0</em>, <em>management_fees=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/scenario.html#Scenario"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.scenario.Scenario" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
-<p>Describes an economic scenario over the course of the simulation.</p>
+<p>Describes an economic scenario over the course of a simulation.</p>
 <p>For example, provides inflation rates and rates of return for each
-year of the simulation. This is the foil to <cite>Strategy</cite>; all
-<cite>Scenario</cite> information is reflective of broader economic trends and
-is independent of any user action.</p>
+year of the simulation.</p>
+<p>This is the foil to <cite>Strategy</cite>; all <cite>Scenario</cite> information is
+reflective of broader economic trends and is independent of any user
+action.</p>
+<dl class="attribute">
+<dt id="forecaster.scenario.Scenario.initial_year">
+<code class="descname">initial_year</code><a class="headerlink" href="#forecaster.scenario.Scenario.initial_year" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – The first year of the simulation.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.scenario.Scenario.num_years">
+<code class="descname">num_years</code><a class="headerlink" href="#forecaster.scenario.Scenario.num_years" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – The number of years in the simulation.</p>
+</dd></dl>
+
 <dl class="attribute">
 <dt id="forecaster.scenario.Scenario.inflation">
 <code class="descname">inflation</code><a class="headerlink" href="#forecaster.scenario.Scenario.inflation" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict</em> – A dict of {year, inflation} pairs where the
-year is an int and inflation is a Decimal.</p>
+<dd><p><em>dict[int, Decimal]</em> – <cite>{year, inflation}</cite> pairs, where
+<cite>inflation</cite> is a percentage rate (e.g. <cite>Decimal(0.5)</cite> is
+50%).</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.scenario.Scenario.stock_return">
 <code class="descname">stock_return</code><a class="headerlink" href="#forecaster.scenario.Scenario.stock_return" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict</em> – A dict of {int, Decimal} pairs where the
-key is the year and the Decimal is the rate of return for
-stocks.</p>
+<dd><p><em>dict[int, Decimal]</em> – <cite>{year, return}</cite> pairs where
+<cite>return</cite> is the rate of return for stocks in the given year.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.scenario.Scenario.bond_return">
 <code class="descname">bond_return</code><a class="headerlink" href="#forecaster.scenario.Scenario.bond_return" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict</em> – A dict of {int, Decimal} pairs where the
-key is the year and the Decimal is the rate of return for
-bonds.</p>
+<dd><p><em>dict[int, Decimal]</em> – <cite>{year, return}</cite> pairs where
+<cite>return</cite> is the rate of return for bonds in the given year.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.scenario.Scenario.other_return">
 <code class="descname">other_return</code><a class="headerlink" href="#forecaster.scenario.Scenario.other_return" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict</em> – A dict of {int, Decimal} pairs where the
-key is the year and the Decimal is the rate of return for
-stocks. Optional.</p>
+<dd><p><em>dict[int, Decimal]</em> – <cite>{year, return}</cite> pairs where
+<cite>return</cite> is the rate of return for other property (e.g.
+real estate) in the given year. Optional.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.scenario.Scenario.management_fees">
 <code class="descname">management_fees</code><a class="headerlink" href="#forecaster.scenario.Scenario.management_fees" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict</em> – A dict of {int, Decimal} pairs where the
-key is the year and the Decimal is the management fees on
-investments. Optional.</p>
+<dd><p><em>dict[int, Decimal]</em> – <cite>{year, fees}</cite> pairs
+where <cite>fees</cite> is the rate at which management fees are
+charged in invested assets in the given year. Optional.</p>
 </dd></dl>
 
-<dl class="attribute">
-<dt id="forecaster.scenario.Scenario.initial_year">
-<code class="descname">initial_year</code><a class="headerlink" href="#forecaster.scenario.Scenario.initial_year" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>int</em> – The first year of the simulation. Optional.</p>
+<dl class="method">
+<dt id="forecaster.scenario.Scenario.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>initial_year</em>, <em>num_years</em>, <em>inflation=0</em>, <em>stock_return=0</em>, <em>bond_return=0</em>, <em>other_return=0</em>, <em>management_fees=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/scenario.html#Scenario.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.scenario.Scenario.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructor for <cite>Scenario</cite>.</p>
+<p>Arguments may be dicts (of {year, value} pairs), lists (or
+similar <cite>Sequence</cite>) or scalar values.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>inflation</strong> (<em>Decimal</em><em>, </em><em>list</em><em>, </em><em>dict</em>) – The rate of inflation.</li>
+<li><strong>stock_return</strong> (<em>dict</em><em>[</em><em>int</em><em>, </em><em>Decimal</em><em>]</em>) – <cite>{year: return}</cite> pairs
+for stocks.</li>
+<li><strong>bond_return</strong> (<em>dict</em><em>[</em><em>int</em><em>, </em><em>Decimal</em><em>]</em>) – <cite>{year: return}</cite> pairs
+for bonds.</li>
+<li><strong>other_return</strong> (<em>dict</em><em>[</em><em>int</em><em>, </em><em>Decimal</em><em>]</em>) – <cite>{year: return}</cite> pairs
+for other assets (not stocks/bonds), e.g. real estate.</li>
+<li><strong>management_fees</strong> (<em>Decimal</em><em>, </em><em>list</em><em>, </em><em>dict</em>) – The management fees
+charged on investments.</li>
+<li><strong>person1_raise_rate</strong> (<em>Decimal</em><em>, </em><em>list</em><em>, </em><em>dict</em>) – The amount that is
+expected for a raise for person1 this year, expressed as
+a percentage (e.g. 0.05 for a 5% raise).</li>
+<li><strong>person2_raise_rate</strong> (<em>Decimal</em><em>, </em><em>list</em><em>, </em><em>dict</em>) – The amount that is
+expected for a raise for person2 this year, expressed as
+a percentage (e.g. 0.05 for a 5% raise).</li>
+<li><strong>initial_year</strong> (<em>int</em>) – The first year of the projection.</li>
+<li><strong>num_years</strong> (<em>int</em>) – The number of years in the projection.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – num_years must be positive.</li>
+<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – input object cannot be processed by _build_dict.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -157,16 +235,15 @@ investments. Optional.</p>
 <dl class="method">
 <dt id="forecaster.scenario.Scenario.accumulation_function">
 <code class="descname">accumulation_function</code><span class="sig-paren">(</span><em>year1</em>, <em>year2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/scenario.html#Scenario.accumulation_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.scenario.Scenario.accumulation_function" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the discount to be applied over the period from
-<cite>year1</cite> to <cite>year2</cite>. If <cite>year1 &gt; year2</cite> then the discount rate is
-inverted.</p>
+<dd><p>The discount applied in the period from year1 to year2.</p>
+<p>If year2 precedes year1 then the discount rate is inverted.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.scenario.Scenario.discount_rate">
 <code class="descname">discount_rate</code><span class="sig-paren">(</span><em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/scenario.html#Scenario.discount_rate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.scenario.Scenario.discount_rate" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the discount rate for <cite>year</cite>.
-This is the same as calling <cite>inflation(year)</cite></p>
+<dd><p>Returns the discount rate for <cite>year</cite>.</p>
+<p>This is the same as calling <cite>inflation[year]</cite>.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -180,14 +257,17 @@ This is the same as calling <cite>inflation(year)</cite></p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>target_year</strong> (<em>int</em>) – The year for which an
 inflation-adjustment factor is desired.</li>
-<li><strong>base_year</strong> (<em>int</em>) – The year in which inflation-adjusted
-figures are expressed.
-The inflation adjustment for this year is 1.</li>
+<li><strong>base_year</strong> (<em>int</em>) – <p>The year in which inflation-adjusted
+figures are expressed.</p>
+<p>The inflation adjustment for this year is 1 and the
+inflation adjustment for target_year is defined relative
+to this year.</p>
+</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The inflation-adjustment factor from base_year to
-target_year. This is the product of inflation-adjustments
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The inflation-adjustment factor from <cite>base_year</cite> to
+<cite>target_year</cite>. This is the product of inflation-adjustments
 for each year (or its inverse, if target_year precedes
 base_year).</p>
 </td>
@@ -207,10 +287,10 @@ base_year).</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><cite>{year: adjustment}</cite> pairs.
-<cite>adjustment</cite> is the cumulative inflation since <cite>base_year</cite>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><cite>{year: adjustment}</cite> pairs.<p><cite>adjustment</cite> is the cumulative inflation since <cite>base_year</cite>
 (or, for years prior to <cite>base_year</cite>, it is the present value
-of $1 in base_year)</td>
+of $1 in base_year)</p>
+</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">dict[int, Decimal]</td>
 </tr>
@@ -227,19 +307,13 @@ of $1 in base_year)</td>
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper"><div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation overview</a><ul>
-  <li><a href="modules.html">forecaster</a><ul>
-  <li><a href="forecaster.html">forecaster package</a><ul>
-      <li>Previous: <a href="forecaster.person.html" title="previous chapter">forecaster.person module</a></li>
-      <li>Next: <a href="forecaster.settings.html" title="next chapter">forecaster.settings module</a></li>
-  </ul></li>
-  </ul></li>
-  </ul></li>
-</ul>
-</div>
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="forecaster.person.html"
+                        title="previous chapter">forecaster.person module</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="forecaster.settings.html"
+                        title="next chapter">forecaster.settings module</a></p>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
@@ -254,20 +328,29 @@ of $1 in base_year)</td>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2017, Christopher Scott.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.5</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
-      
-      |
-      <a href="_sources/forecaster.scenario.rst.txt"
-          rel="nofollow">Page source</a>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="forecaster.settings.html" title="forecaster.settings module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="forecaster.person.html" title="forecaster.person module"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">forecaster 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="modules.html" >forecaster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="forecaster.html" >forecaster package</a> &#187;</li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Christopher Scott.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.5.
+    </div>
   </body>
 </html>

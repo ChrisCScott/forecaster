@@ -25,7 +25,8 @@ def strategy_method(key):
     This happens at class definition time; you need to manually register
     strategy methods that are added dynamically.
 
-    Example:
+    Example::
+
         class ExampleStrategy(Strategy):
             @strategy_method('method key')
             def _strategy_method(self):
@@ -33,6 +34,7 @@ def strategy_method(key):
 
         ExampleStrategy.strategies['method key'] == \
             ExampleStrategy._strategy_method
+
     """
     def decorator(function):
         """ Decorator returned by strategy_method.
@@ -47,7 +49,7 @@ def strategy_method(key):
 class StrategyType(type):
     """ A metaclass for Strategy classes.
 
-    This metaclass inspects the class for any @strategy(key)-decorated
+    This metaclass inspects the class for any `@strategy(key)`-decorated
     methods and generates a `strategies` dict of {key, func} pairs. This
     `strategies` dict is then accessible from the class interface.
 
@@ -84,6 +86,7 @@ class Strategy(object, metaclass=StrategyType):
             function. All functions have the same call signature and
             return value; this is the call signature of the Strategy
             object.
+
             See each subclass's documentation for more information on
             the call signature for the subclass.
     """
@@ -127,10 +130,13 @@ class Strategy(object, metaclass=StrategyType):
 class ContributionStrategy(Strategy):
     """ Determines an annual gross contribution, before reductions.
 
-    This class is callable. Its call signature has this form:
-    `obj(year, refund, other_contribution, net_income, gross_income)`.
+    This class is callable. Its call signature has this form::
+
+        obj(year, refund, other_contribution, net_income, gross_income)
+
     Arguments may be omitted if the selected strategy does not require
-    it; otherwise, an error is raised.
+    it; otherwise, an error is raised. All arguments are keyword
+    arguments.
 
     Attributes:
         strategy (str): A string corresponding to a particular
@@ -139,11 +145,14 @@ class ContributionStrategy(Strategy):
             a strategy (in human-readable text) and each value is a
             function with the same arguments and return value as
             gross_contribution(). See its documentation for more info.
+
             Acceptable keys include:
-                "Constant contribution"
-                "Constant living expenses"
-                "Percentage of gross income"
-                "Percentage of net income"
+
+            * "Constant contribution"
+            * "Constant living expenses"
+            * "Percentage of gross income"
+            * "Percentage of net income"
+
         base_amount (Money): A user-supplied amount of money, used in
             some strategies as a baseline for contributions.
         rate (Decimal): A user-supplied contribution rate. Must be a
@@ -152,10 +161,13 @@ class ContributionStrategy(Strategy):
             refund that is reinvested in the year it's received.
         inflation_adjust (callable): If provided, `base_amount` is
             interpreted as a real (i.e. inflation-adjusted) currency
-            value. This callable object will be called as
+            value.
+
+            This callable object will be called as
             `inflation_adjust(year[, base_year])` to receive the
             inflation-adjustment factor between real and nominal values
             for that year (relative to base_year, if provided).
+
             Optional. If not provided, `base_amount` is not
             inflation_adjusted.
 
@@ -266,12 +278,16 @@ class ContributionStrategy(Strategy):
 class WithdrawalStrategy(Strategy):
     """ Determines an annual gross withdrawal.
 
-    This class is callable. Its call signature has this form:
-    `obj(year, benefits, net_income, gross_income, principal,
-    retirement_year)`.
+    This class is callable. Its call signature has this form::
+
+        obj(
+            year, benefits, net_income, gross_income, principal,
+            retirement_year
+        )
 
     Arguments may be omitted if the selected strategy does not require
-    it; otherwise, an error is raised.
+    it; otherwise, an error is raised. All arguments are keyword
+    arguments.
 
     Attributes:
         strategy (str, func): Either a string corresponding to a
@@ -281,11 +297,14 @@ class WithdrawalStrategy(Strategy):
             a strategy (in human-readable text) and each value is a
             function with the same arguments and return value as
             gross_contribution(). See its documentation for more info.
+
             Acceptable keys include:
-                "Constant withdrawal"
-                "Percentage of principal"
-                "Percentage of gross income"
-                "Percentage of net income"
+
+            * "Constant withdrawal"
+            * "Percentage of principal"
+            * "Percentage of gross income"
+            * "Percentage of net income"
+
         base_amount (Money): A user-supplied amount of money, used in
             some strategies as a baseline for withdrawals.
         rate (Decimal): A user-supplied withdrawal rate. Must be a
@@ -294,14 +313,18 @@ class WithdrawalStrategy(Strategy):
             which takes place at this time. If you're using a
             TransactionStrategy to determine per-account withdrawals,
             it's recommended that it use the same timing.
+
             This is expressed according to the `when` convention
             described in `ledger.Account`.
         inflation_adjust (callable): If provided, `base_amount` is
             interpreted as a real (i.e. inflation-adjusted) currency
-            value. This callable object will be called as
+            value.
+
+            This callable object will be called as
             `inflation_adjust(year[, base_year])` to receive the
             inflation-adjustment factor between real and nominal values
             for that year (relative to base_year, if provided).
+
             Optional. If not provided, `base_amount` is not
             inflation_adjusted.
         income_adjusted (bool): If True, withdrawals are reduced to
@@ -446,15 +469,19 @@ class TransactionStrategy(Strategy):
             a strategy (in human-readable text) and each value is a
             function with the same arguments and return value as
             transactions(). See its documentation for more info.
+
             Acceptable keys include:
-                "Ordered"
-                "Weighted"
+
+            * "Ordered"
+            * "Weighted"
+
         weights (dict): {str, weight} pairs, where keys identify account
             types (as class names, e.g. 'RRSP', 'SavingsAccount') and
             weight values indicate how much to prioritize the
             corresponding account.
         timing (str, Decimal): Transactions are modelled as lump sums
             which take place at this time.
+
             This is expressed according to the `when` convention
             described in `ledger.Account`.
 
@@ -739,9 +766,12 @@ class AllocationStrategy(Strategy):
             a strategy (in human-readable text) and each value is a
             function with the same arguments and return value as
             transactions(). See its documentation for more info.
+
             Acceptable keys include:
-                "n-age"
-                "Transition to constant"
+
+            * "n-age"
+            * "Transition to constant"
+
         min_equity (Decimal): The minimum percentage of a portfolio that
             may be invested in equities. (All non-equity investments
             are included in `fixed_income`)
@@ -749,20 +779,25 @@ class AllocationStrategy(Strategy):
             may be invested in equities.
         target (Decimal): A target value used by strategies to affect
             their behaviour.
+
             For example, for the `n-age` strategy, this is the value `n`
             (e.g. `target=100` -> `100-age`).
+
             For the `Transition to constant` strategy, this is the
             percentage of equities to transition to (e.g. for
             `Transition to 50-50`, use `Decimal('0.5')`)
         standard_retirement_age (int): The typical retirement age used
-            in retirement planning. This is used if
-            adjust_for_retirement_plan is False, otherwise the actual
-            (estimated) retirement age for the person is used.
+            in retirement planning.
+
+            This is used if `adjust_for_retirement_plan` is False,
+            otherwise the actual (or estimated) retirement age for the
+            person is used.
         risk_transition_period (int): The period of time over which the
-            `Transition to constant` strategy transitions. For example,
-            if set to 20, the strategy will transition from max_equity
-            to transition_strategy_target over 20 years, ending on the
-            retirement date.
+            `Transition to constant` strategy transitions.
+
+            For example, if set to 20, the strategy will transition
+            from `max_equity` to `transition_strategy_target` over 20
+            years, ending on the retirement date.
         adjust_for_retirement_plan (bool): If True, the allocation will
             be adjusted to increase risk for later retirement or
             decrease risk for later retirement. If False, the standard
@@ -777,6 +812,7 @@ class AllocationStrategy(Strategy):
         dict[str, Decimal]: `{asset: allocation}` pairs, where `asset`
         is a string in `{'stocks', 'bonds'}` and `allocation` is the
         percentage of a portfolio that is made up of that asset class.
+
         Allocations sum to 1 (e.g. `Decimal(0.03` means 3%).
     """
     # pylint: disable=too-many-arguments
@@ -862,7 +898,7 @@ class AllocationStrategy(Strategy):
                 the person based on this object's allocation strategy
                 (in particular, based on the person's age and/or
                 projected retirement date).
-            scenario (Scenario): A scenario providing information on
+            scenario (Scenario): A `Scenario` providing information on
                 returns on investment for stocks, bonds, etc.
 
         Returns:
@@ -898,11 +934,15 @@ class DebtPaymentStrategy(Strategy):
             a strategy (in human-readable text) and each value is a
             function with the same arguments and return value as
             transactions(). See its documentation for more info.
+
             Acceptable keys include:
-                "Snowball"
-                "Avalanche"
+
+            * "Snowball"
+            * "Avalanche"
+
         timing (str, Decimal): Transactions are modelled as lump sums
             which take place at this time.
+
             This is expressed according to the `when` convention
             described in `ledger.Account`.
 
