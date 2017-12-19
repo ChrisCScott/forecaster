@@ -176,5 +176,20 @@ texinfo_documents = [
 
 # -- Options for Napoleon -------------------------------------------------
 
+# Use Google style, not Numpy.
+napoleon_google_docstring = True
+napoleon_numpy_docstring = False
 # Include special methods (e.g. __call__, __init__) in documentation.
+napoleon_include_init_with_doc = True
 napoleon_include_special_with_doc = True
+napoleon_include_private_with_doc = False
+# Call out examples and notes with special formatting:
+napoleon_use_admonition_for_examples = True
+napoleon_use_admonition_for_notes = True
+napoleon_use_admonition_for_references = False
+napoleon_use_ivar = False
+# Make the documatation for parameters, return values, and keyword
+# arguments a bit more verbose:
+napoleon_use_param = True
+napoleon_use_rtype = True
+napoleon_use_keyword = True
