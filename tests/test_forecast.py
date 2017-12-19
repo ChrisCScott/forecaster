@@ -23,14 +23,9 @@ class TestForecast(unittest.TestCase):
         self.settings.inflation = 1
         self.forecaster = Forecaster(settings=self.settings)
 
-    def test_manual_forecast(self):
-        """ Test with one account, one debt, and constant Scenario.
-
-        For simplicity, this Scenario extends over 4 years: an initial
-        year, a second year, a retirement year, and a final year.
-        There is no inflation in this example.
-        """
-        initial_year = 2000
+    @staticmethod
+    def build_manual_forecast(initial_year):
+        """ Builds a forecast for test_manual_forecast. """
         scenario = Scenario(
             initial_year=initial_year,
             num_years=4,
@@ -122,6 +117,17 @@ class TestForecast(unittest.TestCase):
             withdrawal_trans_strategy,
             debt_payment_strategy, tax
         )
+        return forecast
+
+    def test_manual_forecast(self):
+        """ Test with one account, one debt, and constant Scenario.
+
+        For simplicity, this Scenario extends over 4 years: an initial
+        year, a second year, a retirement year, and a final year.
+        There is no inflation in this example.
+        """
+        initial_year = 2000
+        forecast = self.build_manual_forecast(initial_year)
 
         # Calculate the expected results for the values of principal
         # importance in each year and test them here.
