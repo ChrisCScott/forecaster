@@ -2,9 +2,9 @@
 
 import math
 from decimal import Decimal
-from forecaster import Money, Person
+from forecaster.person import Person
 from forecaster.ledger import (
-    TaxSource, recorded_property, recorded_property_cached)
+    Money, TaxSource, recorded_property, recorded_property_cached)
 
 
 class Account(TaxSource):

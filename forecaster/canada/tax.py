@@ -1,7 +1,10 @@
 """ A module providing Canada-specific tax treatment. """
 
-from forecaster import Tax, Person, Money
-from forecaster.canada import RRSP, constants
+from forecaster.ledger import Money
+from forecaster.person import Person
+from forecaster.tax import Tax
+from forecaster.canada.accounts import RRSP
+from forecaster.canada import constants
 from forecaster.utility import extend_inflation_adjusted
 
 

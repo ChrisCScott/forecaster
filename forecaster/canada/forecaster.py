@@ -1,8 +1,9 @@
 """ Provides a Canada-specific implementation of Forecaster. """
 
-from forecaster import Forecaster
-from forecaster.canada import (
-    RRSP, TFSA, TaxableAccount, TaxCanada, SettingsCanada)
+from forecaster.forecaster import Forecaster
+from forecaster.canada.accounts import RRSP, TFSA, TaxableAccount
+from forecaster.canada.tax import TaxCanada
+from forecaster.canada.settings import SettingsCanada
 
 
 class ForecasterCanada(Forecaster):

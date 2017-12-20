@@ -5,7 +5,7 @@ package lives. It applies Scenario, Strategy, and Tax information to
 determine how account balances will grow or shrink year-over-year.
 """
 
-from forecaster import Money
+from forecaster.ledger import Money
 
 
 # pylint: disable=too-many-instance-attributes

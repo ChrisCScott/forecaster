@@ -1,6 +1,6 @@
 """ A module providing Canada-specific default values. """
 
-from forecaster import Settings
+from forecaster.settings import Settings
 
 
 class SettingsCanada(Settings):
