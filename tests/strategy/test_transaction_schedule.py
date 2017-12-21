@@ -11,7 +11,7 @@ class TestTransactionStrategyMethods(unittest.TestCase):
     """ A test case for the TransactionStrategy class """
 
     @classmethod
-    def setUpClass(cls):
+    def setUp(cls):
         cls.initial_year = 2000
         cls.person = Person(
             cls.initial_year, 'Testy McTesterson', 1980, retirement_date=2045)
@@ -31,7 +31,7 @@ class TestTransactionStrategyMethods(unittest.TestCase):
             balance=Money(100), rate=0, contribution_room=Money(100))
         cls.taxable_account = TaxableAccount(
             cls.person, balance=Money(1000), rate=0)
-        cls.accounts = [cls.rrsp, cls.tfsa, cls.taxable_account]
+        cls.accounts = {cls.rrsp, cls.tfsa, cls.taxable_account}
 
     def test_init(self):
         """ Test TransactionStrategy.__init__ """
@@ -75,9 +75,8 @@ class TestTransactionStrategyMethods(unittest.TestCase):
             strategy = TransactionStrategy(
                 strategy=method, weights={}, timing={})
 
-    def test_strategy_ordered(self):
-        """ Test TransactionStrategy.strategy_ordered. """
-        # Run each test on inflows and outflows
+    def test_strategy_ordered_in(self):
+        """ Test TransactionStrategy.strategy_ordered with inflows. """
         method = TransactionStrategy.strategy_ordered
         strategy = TransactionStrategy(
             method, {
@@ -93,11 +92,6 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         self.assertEqual(results[self.rrsp], Money(100))
         self.assertEqual(results[self.tfsa], Money(0))
         self.assertEqual(results[self.taxable_account], Money(0))
-        # Try again with outflows.
-        results = strategy(-Money(100), self.accounts)
-        self.assertEqual(results[self.rrsp], Money(-100))
-        self.assertEqual(results[self.tfsa], Money(0))
-        self.assertEqual(results[self.taxable_account], Money(0))
 
         # Now contribute (withdraw) more than the rrsp will accomodate.
         # The extra $50 should go to the tfsa, which is next in line.
@@ -105,24 +99,55 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         self.assertEqual(results[self.rrsp], Money(200))
         self.assertEqual(results[self.tfsa], Money(50))
         self.assertEqual(results[self.taxable_account], Money(0))
+
+        # Now contribute a lot of money - the rrsp and tfsa will get
+        # filled and the remainder will go to the taxable account.
+        results = strategy(Money(1000), self.accounts)
+        self.assertEqual(results[self.rrsp], Money(200))
+        self.assertEqual(results[self.tfsa], Money(100))
+        self.assertEqual(results[self.taxable_account], Money(700))
+
+        # Now change the order and confirm that it still works
+        strategy.weights['RRSP'] = 2
+        strategy.weights['TFSA'] = 1
+        results = strategy(Money(100), self.accounts)
+        self.assertEqual(results[self.rrsp], Money(0))
+        self.assertEqual(results[self.tfsa], Money(100))
+        self.assertEqual(results[self.taxable_account], Money(0))
+
+    def test_strategy_ordered_out(self):
+        """ Test TransactionStrategy.strategy_ordered with outflows. """
+        # Run each test on inflows and outflows
+        method = TransactionStrategy.strategy_ordered
+        strategy = TransactionStrategy(
+            method, {
+                'RRSP': 1,
+                'TFSA': 2,
+                'TaxableAccount': 3
+            })
+
+        # Try a simple scenario: The amount being withdrawn is less
+        # than the max outflow in the top-weighted account type.
+        results = strategy(-Money(100), self.accounts)
+        self.assertEqual(results[self.rrsp], Money(-100))
+        self.assertEqual(results[self.tfsa], Money(0))
+        self.assertEqual(results[self.taxable_account], Money(0))
+
+        # Now withdraw more than the rrsp will accomodate. The extra $50
+        # should come from the tfsa, which is next in line.
         results = strategy(-Money(250), self.accounts)
         self.assertEqual(results[self.rrsp], Money(-200))
         self.assertEqual(results[self.tfsa], Money(-50))
         self.assertEqual(results[self.taxable_account], Money(0))
 
-        # Now contribute (withdraw) a lot of money - the rrsp and tfsa
-        # will get filled (emptied) and the remainder will go to the
-        # taxable account.
-        results = strategy(Money(1000), self.accounts)
-        self.assertEqual(results[self.rrsp], Money(200))
-        self.assertEqual(results[self.tfsa], Money(100))
-        self.assertEqual(results[self.taxable_account], Money(700))
+        # Now withdraw a lot of money - the rrsp and tfsa will get
+        # emptied and the remainder will go to the taxable account.
         results = strategy(-Money(1000), self.accounts)
         self.assertEqual(results[self.rrsp], Money(-200))
         self.assertEqual(results[self.tfsa], Money(-100))
         self.assertEqual(results[self.taxable_account], Money(-700))
 
-        # For outflows only, try withdrawing more than the accounts have
+        # Try withdrawing more than all of the accounts have:
         results = strategy(-Money(10000), self.accounts)
         self.assertEqual(results[self.rrsp], Money(-200))
         self.assertEqual(results[self.tfsa], Money(-100))
@@ -131,9 +156,9 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         # Now change the order and confirm that it still works
         strategy.weights['RRSP'] = 2
         strategy.weights['TFSA'] = 1
-        results = strategy(Money(100), self.accounts)
+        results = strategy(Money(-100), self.accounts)
         self.assertEqual(results[self.rrsp], Money(0))
-        self.assertEqual(results[self.tfsa], Money(100))
+        self.assertEqual(results[self.tfsa], Money(-100))
         self.assertEqual(results[self.taxable_account], Money(0))
 
     def test_strategy_weighted_out(self):
@@ -208,7 +233,6 @@ class TestTransactionStrategyMethods(unittest.TestCase):
 
     def test_strategy_weighted_in(self):
         """ Test TransactionStrategy.strategy_weighted on inflows. """
-        # Run each test on inflows and outflows
         method = TransactionStrategy.strategy_weighted
         rrsp_weight = Decimal('0.4')
         tfsa_weight = Decimal('0.3')
@@ -282,6 +306,43 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         self.assertEqual(results[self.tfsa], self.tfsa.max_inflow())
         self.assertEqual(results[self.taxable_account], val -
                          (self.rrsp.max_inflow() + self.tfsa.max_inflow()))
+
+    def test_strategy_ordered_multiple_out(self):
+        """ Test strategy_ordered with multiple accounts of same type. """
+        method = TransactionStrategy.strategy_ordered
+        strategy = TransactionStrategy(
+            method, {
+                'RRSP': 1,
+                'TFSA': 2,
+                'TaxableAccount': 3
+            })
+
+        # An RRSP with $100 in it (recall that self.rrsp has $200):
+        rrsp2 = RRSP(
+            self.person,
+            inflation_adjust=self.inflation_adjustments,
+            balance=Money(100), rate=0
+        )
+        self.accounts.add(rrsp2)
+
+        results = strategy(total=Money(-150), accounts=self.accounts)
+        self.assertEqual(sum(results.values()), Money(-150))
+        self.assertEqual(results[self.rrsp] + results[rrsp2], Money(-150))
+
+        results = strategy(total=Money(-400), accounts=self.accounts)
+        self.assertEqual(sum(results.values()), Money(-400))
+        self.assertEqual(results[self.rrsp], Money(-200))
+        self.assertEqual(results[rrsp2], Money(-100))
+        self.assertEqual(results[self.tfsa], Money(-100))
+
+        results = strategy(total=Money(-1000000), accounts=self.accounts)
+        self.assertEqual(sum(results.values()), -sum(
+            account.balance for account in self.accounts))
+        self.assertEqual(results[self.rrsp], -self.rrsp.balance)
+        self.assertEqual(results[rrsp2], -rrsp2.balance)
+        self.assertEqual(results[self.tfsa], -self.tfsa.balance)
+        self.assertEqual(
+            results[self.taxable_account], -self.taxable_account.balance)
 
 
 class TestDebtPaymentStrategyMethods(unittest.TestCase):
