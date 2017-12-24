@@ -1,3 +1,5 @@
+""" A package for providing user-definable behaviour ("strategies"). """
+
 # See forecaster.__init__.py for version, author, and licensing info.
 
 __all__ = [
