@@ -171,12 +171,12 @@ class Account(TaxSource):
     }
 
     @property
-    def owner(self) -> Person:
+    def owner(self):
         """ The account's owner. """
         return self._owner
 
     @owner.setter
-    def owner(self, val) -> None:
+    def owner(self, val):
         """ Sets the account's owner. """
         # Type-check the input
         if not isinstance(val, Person):

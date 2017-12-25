@@ -154,22 +154,22 @@ class Person(TaxSource):
         self.accounts = set()
 
     @property
-    def name(self) -> str:
+    def name(self):
         """ The name of the Person. """
         return self._name
 
     @name.setter
-    def name(self, val) -> None:
+    def name(self, val):
         """ Sets the Person's name. """
         self._name = str(val)
 
     @property
-    def birth_date(self) -> datetime:
+    def birth_date(self):
         """ The birth date of the Person. """
         return self._birth_date
 
     @birth_date.setter
-    def birth_date(self, val) -> None:
+    def birth_date(self, val):
         """ Sets the birth date of the Person. """
         # If `birth_date` is not a `datetime`, attempt to parse
         if not isinstance(val, datetime):
@@ -182,12 +182,12 @@ class Person(TaxSource):
         self._birth_date = val
 
     @property
-    def retirement_date(self) -> datetime:
+    def retirement_date(self):
         """ The retirement date of the Person. """
         return self._retirement_date
 
     @retirement_date.setter
-    def retirement_date(self, val) -> None:
+    def retirement_date(self, val):
         """ Sets both retirement_date and retirement_age.
 
         Raises:
@@ -217,12 +217,12 @@ class Person(TaxSource):
         self._retirement_date = val
 
     @property
-    def retirement_age(self) -> int:
+    def retirement_age(self):
         """ The age of the Person at retirement """
         return relativedelta(self.retirement_date, self.birth_date).years
 
     @retirement_age.setter
-    def retirement_age(self, val) -> None:
+    def retirement_age(self, val):
         """ Sets retirement_age. """
         # This method sets values via the retirement_date property.
         if val is None:
@@ -244,7 +244,7 @@ class Person(TaxSource):
         return self._raise_rate_function
 
     @raise_rate_callable.setter
-    def raise_rate_callable(self, val) -> None:
+    def raise_rate_callable(self, val):
         """ Sets raise_rate_function. """
         # Treat setting the method to None as reverting to the default
         # rate parameter, which is Money(0).
@@ -270,12 +270,12 @@ class Person(TaxSource):
             self._raise_rate_function = val
 
     @property
-    def spouse(self) -> 'Person':
+    def spouse(self):
         """ The Person's spouse. """
         return self._spouse
 
     @spouse.setter
-    def spouse(self, val) -> None:
+    def spouse(self, val):
         """ Sets the Person's spouse. """
         # If this Person already has a spouse, unlink them:
         if hasattr(self, 'spouse') and self.spouse is not None:
@@ -304,7 +304,7 @@ class Person(TaxSource):
         return self._tax_treatment
 
     @tax_treatment.setter
-    def tax_treatment(self, val) -> None:
+    def tax_treatment(self, val):
         """ Sets the Person's tax treatment. """
         if val is None:
             self._tax_treatment = None
@@ -407,7 +407,7 @@ class Person(TaxSource):
         for account_in_group in contribution_group:
             self._contribution_groups[account_in_group] = contribution_group
 
-    def age(self, date) -> int:
+    def age(self, date):
         """ The age of the `Person` as of `date`.
 
         `date` may be a `datetime` object or a numeric value indicating
@@ -421,7 +421,7 @@ class Person(TaxSource):
                 python-dateutils.parse().
 
         Returns:
-            The age of the `Person` as an `int`.
+            int: The age of the `Person`.
 
         Raises:
             ValueError: `date` is not parseable as a datetime.

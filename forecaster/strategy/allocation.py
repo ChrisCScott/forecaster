@@ -18,7 +18,7 @@ class RateFunction(object):
         self.person = person
         self.allocation_strategy = allocation_strategy
 
-    def __call__(self, year) -> Decimal:
+    def __call__(self, year):
         """ Rate of return for `year` based on asset allocation.
 
         Args:

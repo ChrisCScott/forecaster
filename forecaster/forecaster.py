@@ -188,7 +188,7 @@ class Forecaster(object):
         return Forecast(**forecast_kwargs)
 
     @staticmethod
-    def set_kwarg(kwargs, arg, val, default) -> None:
+    def set_kwarg(kwargs, arg, val, default):
         """ Adds a keyword arg to a dict based on an input hierarchy.
 
         Adds `arg` to the dict `kwargs` with value `val` (usually an
@@ -226,7 +226,7 @@ class Forecaster(object):
         retirement_date=None, gross_income=None, raise_rate=None,
         spouse=None, tax_treatment=None, inputs=None, initial_year=None,
         cls=Person, **kwargs
-    ) -> Person:
+    ):
         """ Adds a Person to the forecast.
 
         If `name` matches `person1_name` or `person2_name` in `settings`
