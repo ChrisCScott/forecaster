@@ -356,11 +356,31 @@ class Person(TaxSource):
         The account must provide a `contribution_token` attribute.
 
         Returns:
-            A dict of {year: contribution_room} pairs for the account if
-            it has been registered, or None if it is not registered.
+            Union[dict[int, Money], None]: {year: contribution_room}
+                pairs for the account if it has been registered.
+
+                Returns None if `account` is not registered.
         """
         if account.contribution_token in self._contribution_room:
             return self._contribution_room[account.contribution_token]
+        else:
+            return None
+
+    def contribution_groups(self, account):
+        """ The accounts sharing contribution room with `account`.
+
+        This method returns only accounts registered via
+        `register_shared_contribution`.
+
+        Returns:
+            Union[set[Account], None]: The `Account` objects sharing
+                contribution room with `account`. Includes this
+                `Account`.
+
+                Returns None if `account` is not registered.
+        """
+        if account in self._contribution_groups:
+            return self._contribution_groups[account]
         else:
             return None
 
@@ -378,7 +398,7 @@ class Person(TaxSource):
         # Identify all accounts that share contribution room with this
         # one
         contribution_group = {
-            x for x in self._contribution_groups
+            x for x in self.accounts
             if hasattr(x, 'contribution_token') and
             x.contribution_token == account.contribution_token}
         # Store the contribution group for later recall. This also

@@ -15,12 +15,12 @@ class TestAccountMethods(unittest.TestCase):
     """ A test suite for the `Account` class.
 
     For each Account subclass, create a test case that subclasses from
-    this (or an intervening subclass). Then, in the setUpClass method,
+    this (or an intervening subclass). Then, in the setUp method,
     assign to class attributes `args`, and/or `kwargs` to
     determine which arguments will be prepended, postpended, or added
     via keyword when an instance of the subclass is initialized.
     Don't forget to also assign the subclass your're testing to
-    `cls.AccountType`, and to run `super().setUpClass()` at the top!
+    `self.AccountType`, and to run `super().setUp()` at the top!
 
     This way, the methods of this class will still be called even for
     subclasses with mandatory positional arguments. You should still
@@ -30,24 +30,26 @@ class TestAccountMethods(unittest.TestCase):
     `test_rate`)
     """
 
-    @classmethod
-    def setUpClass(cls):
+    def setUp(self):
         """ Sets up some class-specific variables for calling methods. """
-        cls.AccountType = Account
+        # We use caps because this is a type.
+        # pylint: disable=invalid-name
+        self.AccountType = Account
+        # pylint: enable=invalid-name
 
         # It's important to synchronize the initial years of related
         # objects, so store it here:
-        cls.initial_year = 2000
+        self.initial_year = 2000
         # Every init requires an owner, so store that here:
-        cls.scenario = Scenario(
+        self.scenario = Scenario(
             inflation=0,
             stock_return=1,
             bond_return=0.5,
             other_return=0,
             management_fees=0.03125,
-            initial_year=cls.initial_year,
+            initial_year=self.initial_year,
             num_years=100)
-        cls.allocation_strategy = AllocationStrategy(
+        self.allocation_strategy = AllocationStrategy(
             strategy=AllocationStrategy.strategy_n_minus_age,
             min_equity=Decimal(0.5),
             max_equity=Decimal(0.5),
@@ -55,8 +57,8 @@ class TestAccountMethods(unittest.TestCase):
             standard_retirement_age=65,
             risk_transition_period=20,
             adjust_for_retirement_plan=False)
-        cls.owner = Person(
-            cls.initial_year, "test", 2000,
+        self.owner = Person(
+            self.initial_year, "test", 2000,
             raise_rate={year: 1 for year in range(2000, 2066)},
             retirement_date=2065)
 
@@ -203,8 +205,8 @@ class TestAccountMethods(unittest.TestCase):
                 self.owner, *args,
                 balance=balance, transactions={2: 1}, **kwargs)
 
-    def test_init_decimal_conversions(self, *args, **kwargs):
-        """ Test account.__init__'s Decimal-conversion behaviour. """
+    def test_init_invalid(self, *args, **kwargs):
+        """ Test Account.__init__ with invalid inputs. """
         # Let's test invalid Decimal conversions next.
         # (BasicContext causes most Decimal-conversion errors to raise
         # exceptions. Invalid input will raise InvalidOperation)
@@ -654,13 +656,12 @@ class TestAccountMethods(unittest.TestCase):
 class TestRegisteredAccountMethods(TestAccountMethods):
     """ Tests RegisteredAccount. """
 
-    @classmethod
-    def setUpClass(cls):
+    def setUp(self):
         """ Sets up variables for testing RegisteredAccount """
-        super().setUpClass()
+        super().setUp()
 
-        cls.AccountType = RegisteredAccount
-        cls.contribution_room = 0
+        self.AccountType = RegisteredAccount
+        self.contribution_room = 0
 
     def test_init_basic(self, *args, **kwargs):
         """ Test RegisteredAccount.__init__ """
@@ -675,23 +676,41 @@ class TestRegisteredAccountMethods(TestAccountMethods):
         self.assertEqual(account.contributor, self.owner)
         self.assertEqual(account.contribution_room, self.contribution_room)
 
-        # Try again with default contribution_room
+    def test_init_contributor_implicit(self, *args, **kwargs):
+        """ Test implicit initialization of contributor parameter. """
         account = self.AccountType(
             self.owner, *args, **kwargs)
         self.assertEqual(account.contributor, self.owner)
-        # Different subclasses have different default contribution room
-        # values, so don't test subclasses
-        if self.AccountType == RegisteredAccount:
-            self.assertEqual(account.contribution_room, 0)
+
+    def test_init_contributor_explicit(self, *args, **kwargs):
+        """ Test explicit initialization of contributor parameter. """
+        contributor = Person(
+            self.initial_year, "Name", "1 January 2000",
+            retirement_date="1 January 2020")
+        account = self.AccountType(
+            self.owner, *args, contributor=contributor, **kwargs)
+        self.assertEqual(account.contributor, contributor)
+
+    def test_contribution_room(self, *args, **kwargs):
+        """ Test explicit initialization of contribution_room. """
+        account = self.AccountType(
+            self.owner, *args, contribution_room=Money(100), **kwargs)
+        self.assertEqual(account.contribution_room, Money(100))
+
+    def test_init_invalid(self, *args, **kwargs):
+        """ Test RegisteredAccount.__init__ with invalid inputs. """
+        super().test_init_invalid(
+            *args, contribution_room=self.contribution_room, **kwargs)
 
         # Test invalid `person` input
         with self.assertRaises(TypeError):
-            account = self.AccountType(
-                self.initial_year, 'invalid person', *args, **kwargs)
+            self.AccountType(
+                self.owner, contributor='invalid person',
+                *args, **kwargs)
 
         # Finally, test a non-Money-convertible contribution_room:
         with self.assertRaises(decimal.InvalidOperation):
-            account = self.AccountType(
+            self.AccountType(
                 self.owner, *args,
                 contribution_room='invalid', **kwargs)
 
@@ -711,6 +730,7 @@ class TestRegisteredAccountMethods(TestAccountMethods):
         # in text_next.
 
     def test_next_year(self, *args, **kwargs):
+        """ Test RegisteredAccount.next_year. """
         # next_contribution_room is not implemented for
         # RegisteredAccount, and it's required for next_year, so confirm
         # that trying to call next_year() throws an appropriate error.
@@ -724,6 +744,7 @@ class TestRegisteredAccountMethods(TestAccountMethods):
                 *args, **kwargs)
 
     def test_returns(self, *args, **kwargs):
+        """ Test RegisteredAccount.returns. """
         # super().test_returns calls next_year(), which calls
         # next_contribution_room(), which is not implemented for
         # RegisteredAccount. Don't test returns for this class,
@@ -732,40 +753,85 @@ class TestRegisteredAccountMethods(TestAccountMethods):
             super().test_returns(*args, **kwargs)
 
     def test_max_inflow(self, *args, **kwargs):
+        """ Test RegisteredAccount.max_inflow. """
+        # Init an account with standard parameters, confirm that
+        # max_inflow corresponds to contribution_room.
         account = self.AccountType(
             self.owner, *args,
             contribution_room=self.contribution_room, **kwargs)
         self.assertEqual(account.max_inflow(), self.contribution_room)
 
+    def test_contribution_room_basic(self, *args, **kwargs):
+        """ Test sharing of contribution room between accounts. """
+        account1 = self.AccountType(
+            self.owner, *args,
+            contribution_room=Money(100), **kwargs)
+        self.assertEqual(account1.contribution_room, Money(100))
+
+        # Don't set contribution_room explicitly for account2; it should
+        # automatically match account1's contribution_room amount.
+        account2 = self.AccountType(
+            self.owner, *args, **kwargs)
+        self.assertEqual(account2.contribution_room, Money(100))
+
+    def test_contribution_room_update(self, *args, **kwargs):
+        """ Test updating contribution room via second account's init. """
+        account1 = self.AccountType(
+            self.owner, *args,
+            contribution_room=Money(100), **kwargs)
+        self.assertEqual(account1.contribution_room, Money(100))
+
+        # Set contribution_room explicitly for account2; it should
+        # override account1's contribution_room amount.
+        account2 = self.AccountType(
+            self.owner, *args,
+            contribution_room=Money(200), **kwargs)
+        self.assertEqual(account1.contribution_room, Money(200))
+        self.assertEqual(account2.contribution_room, Money(200))
+
+    def test_contribution_group_basic(self, *args, **kwargs):
+        """ Test that contribution_group is set properly for 1 account. """
         account = self.AccountType(
             self.owner, *args,
-            contribution_room=1000000, **kwargs)
-        self.assertEqual(account.max_inflow(), Money(1000000))
+            contribution_room=Money(100), **kwargs)
+        self.assertEqual(account.contribution_group, {account})
+
+    def test_contribution_group_mult(self, *args, **kwargs):
+        """ Test that contribution_group is set properly for 2 accounts. """
+        account1 = self.AccountType(
+            self.owner, *args,
+            contribution_room=Money(100), **kwargs)
+        account2 = self.AccountType(
+            self.owner, *args, **kwargs)
+        self.assertEqual(account1.contribution_group, {account1, account2})
+        self.assertEqual(account2.contribution_group, {account1, account2})
 
 
 class TestDebtMethods(unittest.TestCase):
     """ Test Debt. """
 
-    @classmethod
-    def setUpClass(cls):
+    def setUp(self):
         """ Sets up class attributes for convenience. """
-        super().setUpClass()
-        cls.AccountType = Debt
+        super().setUp()
+        # We use caps because this is a type.
+        # pylint: disable=invalid-name
+        self.AccountType = Debt
+        # pylint: enable=invalid-name
 
         # It's important to synchronize the initial years of related
         # objects, so store it here:
-        cls.initial_year = 2000
+        self.initial_year = 2000
         # Every init requires an owner, so store that here:
-        cls.owner = Person(
-            cls.initial_year, "test", 2000,
+        self.owner = Person(
+            self.initial_year, "test", 2000,
             raise_rate={year: 1 for year in range(2000, 2066)},
             retirement_date=2065)
 
         # Debt takes three args: reduction_rate (Decimal),
         # minimum_payment (Money), and accelerate_payment (bool)
-        cls.minimum_payment = Money(10)
-        cls.reduction_rate = Decimal(1)
-        cls.accelerate_payment = True
+        self.minimum_payment = Money(10)
+        self.reduction_rate = Decimal(1)
+        self.accelerate_payment = True
 
     def test_init(self, *args, **kwargs):
         """ Test Debt.__init__ """

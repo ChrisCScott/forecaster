@@ -14,63 +14,57 @@ from tests.test_accounts import (
 class TestRRSPMethods(TestRegisteredAccountMethods):
     """ Test RRSP """
 
-    @classmethod
-    def setUpClass(cls):
+    def setUp(self):
         """ Sets up variables for testing RRSP. """
-        super().setUpClass()
+        super().setUp()
 
-        cls.AccountType = RRSP
+        self.AccountType = RRSP
 
         # Randomly generate inflation adjustments based on inflation
         # rates of 1%-20%. Add a few extra years on to the end for
         # testing purposes.
-        cls.inflation_adjustments = {cls.initial_year: Decimal(1)}
+        self.inflation_adjustments = {self.initial_year: Decimal(1)}
 
-        # HACK: Assigning directly to cls.inflation_adjust creates a
-        # bound method, so we need to create a static method and then
-        # assign to a class attribute:
-        @staticmethod
         def inflation_adjust(target_year, base_year):
             """ Inflation from base_year to target_year """
             return (
-                cls.inflation_adjustments[target_year] /
-                cls.inflation_adjustments[base_year]
+                self.inflation_adjustments[target_year] /
+                self.inflation_adjustments[base_year]
             )
-        cls.inflation_adjust = inflation_adjust
+        self.inflation_adjust = inflation_adjust
 
         # Ensure that inflation_adjustments covers the entire range of
         # constants.RRSPContributionAccrualMax and the years where
         # self.owner is 71-95 (plus a few extra for testing)
         min_year = min(min(constants.RRSP_ACCRUAL_MAX),
-                       cls.owner.birth_date.year +
+                       self.owner.birth_date.year +
                        min(constants.RRSP_RRIF_WITHDRAWAL_MIN))
         max_year = max(max(constants.RRSP_ACCRUAL_MAX),
-                       cls.owner.birth_date.year +
+                       self.owner.birth_date.year +
                        max(constants.RRSP_RRIF_WITHDRAWAL_MIN)) + 2
-        cls.extend_inflation_adjustments(min_year, max_year)
+        self.extend_inflation_adjustments(min_year, max_year)
 
-    @classmethod
-    def extend_inflation_adjustments(cls, min_year, max_year):
+    def extend_inflation_adjustments(self, min_year, max_year):
         """ Convenience method.
 
-        Ensures cls.inflation_adjustment spans min_year and max_year.
+        Ensures self.inflation_adjustment spans min_year and max_year.
         """
         rand = Random()
 
         # Extend inflation_adjustments backwards, assuming 1-20% inflation
-        i = min(cls.inflation_adjustments)
+        i = min(self.inflation_adjustments)
         while i > min_year:
-            cls.inflation_adjustments[i - 1] = (
-                cls.inflation_adjustments[i] /
+            self.inflation_adjustments[i - 1] = (
+                self.inflation_adjustments[i] /
                 Decimal(1 + rand.randint(1, 20) / 100)
             )
             i -= 1
 
         # Extend inflation_adjustments forwards, assuming 1-20% inflation
-        i = max(cls.inflation_adjustments)
+        i = max(self.inflation_adjustments)
         while i < max_year:
-            cls.inflation_adjustments[i + 1] = (
-                cls.inflation_adjustments[i] *
+            self.inflation_adjustments[i + 1] = (
+                self.inflation_adjustments[i] *
                 Decimal(1 + rand.randint(1, 20) / 100)
             )
             i += 1
@@ -382,57 +376,51 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
 class TestTFSAMethods(TestRegisteredAccountMethods):
     """ Test TFSA """
 
-    @classmethod
-    def setUpClass(cls):
+    def setUp(self):
         """ Sets up variables for testing TFSAs. """
-        super().setUpClass()
-        cls.AccountType = TFSA
+        super().setUp()
+        self.AccountType = TFSA
 
         # Randomly generate inflation adjustments based on inflation
         # rates of 1%-20%. Add a few extra years on to the end for
         # testing purposes.
-        cls.inflation_adjustments = {cls.initial_year: Decimal(1)}
+        self.inflation_adjustments = {self.initial_year: Decimal(1)}
 
-        # HACK: Assigning directly to cls.inflation_adjust creates a
-        # bound method, so we need to create a static method and then
-        # assign to a class attribute:
-        @staticmethod
         def inflation_adjust(target_year, base_year):
             """ Inflation from base_year to target_year. """
             return (
-                cls.inflation_adjustments[target_year] /
-                cls.inflation_adjustments[base_year]
+                self.inflation_adjustments[target_year] /
+                self.inflation_adjustments[base_year]
             )
-        cls.inflation_adjust = inflation_adjust
+        self.inflation_adjust = inflation_adjust
 
         # Ensure that inflation_adjustments covers the entire range of
         # constants.TFSAAnnualAccrual
         min_year = min(constants.TFSA_ANNUAL_ACCRUAL)
         max_year = max(constants.TFSA_ANNUAL_ACCRUAL) + 10
-        cls.extend_inflation_adjustments(min_year, max_year)
+        self.extend_inflation_adjustments(min_year, max_year)
 
-    @classmethod
-    def extend_inflation_adjustments(cls, min_year, max_year):
+    def extend_inflation_adjustments(self, min_year, max_year):
         """ Convenience method.
 
-        Ensures cls.inflation_adjustment spans min_year and max_year.
+        Ensures self.inflation_adjustment spans min_year and max_year.
         """
         rand = Random()
 
         # Extend inflation_adjustments backwards, assuming 1-20% inflation
-        i = min(cls.inflation_adjustments)
+        i = min(self.inflation_adjustments)
         while i > min_year:
-            cls.inflation_adjustments[i - 1] = (
-                cls.inflation_adjustments[i] /
+            self.inflation_adjustments[i - 1] = (
+                self.inflation_adjustments[i] /
                 Decimal(1 + rand.randint(1, 20) / 100)
             )
             i -= 1
 
         # Extend inflation_adjustments forwards, assuming 1-20% inflation
-        i = max(cls.inflation_adjustments)
+        i = max(self.inflation_adjustments)
         while i < max_year:
-            cls.inflation_adjustments[i + 1] = (
-                cls.inflation_adjustments[i] *
+            self.inflation_adjustments[i + 1] = (
+                self.inflation_adjustments[i] *
                 Decimal(1 + rand.randint(1, 20) / 100)
             )
             i += 1
@@ -603,10 +591,9 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
 class TestTaxableAccountMethods(TestAccountMethods):
     """ Test TaxableAccount """
 
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.AccountType = TaxableAccount
+    def setUp(self):
+        super().setUp()
+        self.AccountType = TaxableAccount
 
     def test_init_basic(self, *args, **kwargs):
         """ Basic init tests for TaxableAccount. """
@@ -722,10 +709,9 @@ class TestTaxableAccountMethods(TestAccountMethods):
 class TestPrincipleResidenceMethods(TestAccountMethods):
     """ Test PrincipleResidence. """
 
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.AccountType = PrincipleResidence
+    def setUp(self):
+        super().setUp()
+        self.AccountType = PrincipleResidence
 
     def test_taxable_income(self, *args, **kwargs):
         """ Test PrincipleResidence.taxable_income. """

@@ -324,6 +324,7 @@ class Account(TaxSource):
                 raise ValueError('Account: nper must be greater than 0')
             return int(nper)
 
+    @property
     def contribution_group(self):
         """ The Accounts that share contribution room with this one.
 
@@ -333,8 +334,10 @@ class Account(TaxSource):
         override this behaviour.
 
         Returns:
-            A set of `Account`s that should be considered together when
-            allocating contributions between them.
+            set[Account]: The `Account` objects that should be considered
+            together with this `Account` when allocating contributions
+            between them.
+
             Includes this `Account`.
         """
         return {self}
@@ -557,7 +560,8 @@ class RegisteredAccount(Account):
 
     If contribution room is defined per-account, assign a unique
     contribution_token to the account (e.g. `id(self)`). By default,
-    all objects of the same subclass share a contribution_token.
+    all objects of the same subclass share a contribution_token. This
+    should be set by the subclass before invoking super().__init__.
 
     This is an abstract base class. Any subclass must implement the
     method `next_contribution_room`, which returns the contribution
@@ -566,7 +570,7 @@ class RegisteredAccount(Account):
     Args:
         contribution_room (Money): The amount of contribution room
             available in the first year. Optional.
-        contributor (Person): The contributor to the RRSP. Optional.
+        contributor (Person): The contributor to the account. Optional.
             If not provided, the contributor is assumed to be the same
             as the annuitant (i.e. the owner.)
     """
@@ -595,7 +599,16 @@ class RegisteredAccount(Account):
 
         # By default, set up a contribution_token that's the same for
         # all instances of a subclass but differs between subclasses.
-        self.contribution_token = type(self).__name__
+
+        # We test for whether the member has been set before
+        # accessing it, so this pylint error is not appropriate here.
+        # pylint: disable=access-member-before-definition
+        if (
+            not hasattr(self, 'contribution_token')
+            or self.contribution_token is not None
+        ):
+            self.contribution_token = type(self).__name__
+        # pylint: enable=access-member-before-definition
 
         # Prepare this account for having its contribution room tracked
         self.contributor.register_shared_contribution(self)
@@ -628,16 +641,20 @@ class RegisteredAccount(Account):
     @property
     def contribution_group(self):
         """ The accounts that share contribution room with this one. """
-        return self.contributor.contribution_group(self)
+        return self.contributor.contribution_groups(self)
 
     @property
     def contribution_room(self):
         """ Contribution room available for the current year. """
-        return self.contributor.contribution_room(self)[self.this_year]
+        contribution_room_history = self.contributor.contribution_room(self)
+        if self.this_year in contribution_room_history:
+            return contribution_room_history[self.this_year]
+        else:
+            return None
 
     @contribution_room.setter
     def contribution_room(self, val):
-        """ Updates contribution room for RRSPs """
+        """ Updates contribution room for the current year. """
         self.contributor.contribution_room(self)[self.this_year] = Money(val)
 
     @property
