@@ -12,25 +12,6 @@ Welcome to forecaster's documentation!
 
    modules
 
-.. autosummary::
-
-    forecaster.forecaster.Forecaster
-    forecaster.forecast.Forecast
-    forecaster.accounts.Account
-    forecaster.accounts.RegisteredAccount
-    forecaster.accounts.Debt
-    forecaster.person.Person
-    forecaster.ledger.Money
-    forecaster.scenario.Scenario
-    forecaster.strategy.ContributionStrategy
-    forecaster.strategy.WithdrawalStrategy
-    forecaster.strategy.TransactionStrategy
-    forecaster.strategy.AllocationStrategy
-    forecaster.strategy.DebtPaymentStrategy
-    forecaster.tax.Tax
-    forecaster.settings.Settings
-
-
 Indices and tables
 ==================
 
