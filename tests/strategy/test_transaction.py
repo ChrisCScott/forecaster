@@ -324,8 +324,8 @@ class TestTransactionStrategyWeighted(unittest.TestCase):
         self.assertEqual(
             results[self.tfsa],
             self.tfsa.max_outflow(self.strategy_weighted.timing))
-        self.assertEqual(sum(results.values()), val)
-        self.assertEqual(
+        self.assertAlmostEqual(sum(results.values()), val, places=5)
+        self.assertAlmostEqual(
             results[self.rrsp],
             results[self.taxable_account]
             * self.weights['RRSP'] / self.weights['TaxableAccount'])
@@ -392,8 +392,8 @@ class TestTransactionStrategyWeighted(unittest.TestCase):
         val = Money(threshold + Money(50))
         results = self.strategy_weighted(val, self.accounts)
         self.assertEqual(results[self.tfsa], self.tfsa.max_inflow())
-        self.assertEqual(sum(results.values()), val)
-        self.assertEqual(
+        self.assertAlmostEqual(sum(results.values()), val, places=5)
+        self.assertAlmostEqual(
             results[self.rrsp],
             results[self.taxable_account]
             * self.weights['RRSP'] / self.weights['TaxableAccount']
@@ -482,7 +482,7 @@ class TestTransactionStrategyWeightedMult(unittest.TestCase):
             / self.weights['TFSA'])
         val = Money(threshold - Money(50))
         results = self.strategy(val, self.accounts)
-        self.assertEqual(sum(results.values()), val)
+        self.assertAlmostEqual(sum(results.values()), val, places=5)
         self.assertEqual(
             results[self.tfsa],
             self.tfsa.max_outflow(self.strategy.timing))
@@ -490,7 +490,7 @@ class TestTransactionStrategyWeightedMult(unittest.TestCase):
         # contributed to the TFSA but can't due to contribution room
         # limits) should also be split between RRSPs and the TFSA
         # proportionately to their relative weights.
-        self.assertEqual(
+        self.assertAlmostEqual(
             results[self.rrsp] + results[self.rrsp2],
             results[self.taxable_account]
             * self.weights['RRSP'] / self.weights['TaxableAccount'])
