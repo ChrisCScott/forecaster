@@ -241,19 +241,19 @@ the relevant args, inputs, settings, and default values.</td>
 
 <dl class="method">
 <dt id="forecaster.forecaster.Forecaster.set_allocation_strategy">
-<code class="descname">set_allocation_strategy</code><span class="sig-paren">(</span><em>strategy=None</em>, <em>min_equity=None</em>, <em>max_equity=None</em>, <em>target=None</em>, <em>standard_retirement_age=None</em>, <em>risk_transition_period=None</em>, <em>adjust_for_retirement_plan=None</em>, <em>cls=&lt;class 'forecaster.strategy.AllocationStrategy'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_allocation_strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_allocation_strategy" title="Permalink to this definition">¶</a></dt>
+<code class="descname">set_allocation_strategy</code><span class="sig-paren">(</span><em>strategy=None</em>, <em>min_equity=None</em>, <em>max_equity=None</em>, <em>target=None</em>, <em>standard_retirement_age=None</em>, <em>risk_transition_period=None</em>, <em>adjust_for_retirement_plan=None</em>, <em>cls=&lt;class 'forecaster.strategy.allocation.AllocationStrategy'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_allocation_strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_allocation_strategy" title="Permalink to this definition">¶</a></dt>
 <dd><p>TODO</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.forecaster.Forecaster.set_contribution_strategy">
-<code class="descname">set_contribution_strategy</code><span class="sig-paren">(</span><em>strategy=None</em>, <em>base_amount=None</em>, <em>rate=None</em>, <em>refund_reinvestment_rate=None</em>, <em>inflation_adjust=None</em>, <em>cls=&lt;class 'forecaster.strategy.ContributionStrategy'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_contribution_strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_contribution_strategy" title="Permalink to this definition">¶</a></dt>
+<code class="descname">set_contribution_strategy</code><span class="sig-paren">(</span><em>strategy=None</em>, <em>base_amount=None</em>, <em>rate=None</em>, <em>refund_reinvestment_rate=None</em>, <em>inflation_adjust=None</em>, <em>cls=&lt;class 'forecaster.strategy.gross_transaction.ContributionStrategy'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_contribution_strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_contribution_strategy" title="Permalink to this definition">¶</a></dt>
 <dd><p>TODO</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.forecaster.Forecaster.set_debt_payment_strategy">
-<code class="descname">set_debt_payment_strategy</code><span class="sig-paren">(</span><em>strategy=None</em>, <em>timing=None</em>, <em>cls=&lt;class 'forecaster.strategy.DebtPaymentStrategy'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_debt_payment_strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_debt_payment_strategy" title="Permalink to this definition">¶</a></dt>
+<code class="descname">set_debt_payment_strategy</code><span class="sig-paren">(</span><em>strategy=None</em>, <em>timing=None</em>, <em>cls=&lt;class 'forecaster.strategy.debt_payment.DebtPaymentStrategy'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_debt_payment_strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_debt_payment_strategy" title="Permalink to this definition">¶</a></dt>
 <dd><p>TODO</p>
 </dd></dl>
 
@@ -318,19 +318,19 @@ of this method.</p>
 
 <dl class="method">
 <dt id="forecaster.forecaster.Forecaster.set_transaction_in_strategy">
-<code class="descname">set_transaction_in_strategy</code><span class="sig-paren">(</span><em>strategy=None</em>, <em>weights=None</em>, <em>timing=None</em>, <em>cls=&lt;class 'forecaster.strategy.TransactionStrategy'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_transaction_in_strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_transaction_in_strategy" title="Permalink to this definition">¶</a></dt>
+<code class="descname">set_transaction_in_strategy</code><span class="sig-paren">(</span><em>strategy=None</em>, <em>weights=None</em>, <em>timing=None</em>, <em>cls=&lt;class 'forecaster.strategy.transaction.TransactionStrategy'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_transaction_in_strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_transaction_in_strategy" title="Permalink to this definition">¶</a></dt>
 <dd><p>TODO</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.forecaster.Forecaster.set_transaction_out_strategy">
-<code class="descname">set_transaction_out_strategy</code><span class="sig-paren">(</span><em>strategy=None</em>, <em>weights=None</em>, <em>timing=None</em>, <em>cls=&lt;class 'forecaster.strategy.TransactionStrategy'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_transaction_out_strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_transaction_out_strategy" title="Permalink to this definition">¶</a></dt>
+<code class="descname">set_transaction_out_strategy</code><span class="sig-paren">(</span><em>strategy=None</em>, <em>weights=None</em>, <em>timing=None</em>, <em>cls=&lt;class 'forecaster.strategy.transaction.TransactionStrategy'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_transaction_out_strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_transaction_out_strategy" title="Permalink to this definition">¶</a></dt>
 <dd><p>TODO</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.forecaster.Forecaster.set_withdrawal_strategy">
-<code class="descname">set_withdrawal_strategy</code><span class="sig-paren">(</span><em>strategy=None</em>, <em>base_amount=None</em>, <em>rate=None</em>, <em>timing=None</em>, <em>income_adjusted=None</em>, <em>inflation_adjust=None</em>, <em>cls=&lt;class 'forecaster.strategy.WithdrawalStrategy'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_withdrawal_strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_withdrawal_strategy" title="Permalink to this definition">¶</a></dt>
+<code class="descname">set_withdrawal_strategy</code><span class="sig-paren">(</span><em>strategy=None</em>, <em>base_amount=None</em>, <em>rate=None</em>, <em>timing=None</em>, <em>income_adjusted=None</em>, <em>inflation_adjust=None</em>, <em>cls=&lt;class 'forecaster.strategy.gross_transaction.WithdrawalStrategy'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_withdrawal_strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_withdrawal_strategy" title="Permalink to this definition">¶</a></dt>
 <dd><p>TODO</p>
 </dd></dl>
 

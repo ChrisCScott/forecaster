@@ -49,9 +49,9 @@
 
 <span class="kn">import</span> <span class="nn">math</span>
 <span class="kn">from</span> <span class="nn">decimal</span> <span class="k">import</span> <span class="n">Decimal</span>
-<span class="kn">from</span> <span class="nn">forecaster</span> <span class="k">import</span> <span class="n">Money</span><span class="p">,</span> <span class="n">Person</span>
+<span class="kn">from</span> <span class="nn">forecaster.person</span> <span class="k">import</span> <span class="n">Person</span>
 <span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="p">(</span>
-    <span class="n">TaxSource</span><span class="p">,</span> <span class="n">recorded_property</span><span class="p">,</span> <span class="n">recorded_property_cached</span><span class="p">)</span>
+    <span class="n">Money</span><span class="p">,</span> <span class="n">TaxSource</span><span class="p">,</span> <span class="n">recorded_property</span><span class="p">,</span> <span class="n">recorded_property_cached</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="Account"><a class="viewcode-back" href="../../forecaster.accounts.html#forecaster.accounts.Account">[docs]</a><span class="k">class</span> <span class="nc">Account</span><span class="p">(</span><span class="n">TaxSource</span><span class="p">):</span>
@@ -371,7 +371,8 @@
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Account: nper must be greater than 0&#39;</span><span class="p">)</span>
             <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">nper</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Account.contribution_group"><a class="viewcode-back" href="../../forecaster.accounts.html#forecaster.accounts.Account.contribution_group">[docs]</a>    <span class="k">def</span> <span class="nf">contribution_group</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">contribution_group</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The Accounts that share contribution room with this one.</span>
 
 <span class="sd">        For `Account`, this method returns a set containing only itself;</span>
@@ -380,11 +381,13 @@
 <span class="sd">        override this behaviour.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            A set of `Account`s that should be considered together when</span>
-<span class="sd">            allocating contributions between them.</span>
+<span class="sd">            set[Account]: The `Account` objects that should be considered</span>
+<span class="sd">            together with this `Account` when allocating contributions</span>
+<span class="sd">            between them.</span>
+
 <span class="sd">            Includes this `Account`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">{</span><span class="bp">self</span><span class="p">}</span></div>
+        <span class="k">return</span> <span class="p">{</span><span class="bp">self</span><span class="p">}</span>
 
 <div class="viewcode-block" id="Account.add_transaction"><a class="viewcode-back" href="../../forecaster.accounts.html#forecaster.accounts.Account.add_transaction">[docs]</a>    <span class="k">def</span> <span class="nf">add_transaction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Adds a transaction to the account.</span>
@@ -604,7 +607,8 @@
 
 <span class="sd">    If contribution room is defined per-account, assign a unique</span>
 <span class="sd">    contribution_token to the account (e.g. `id(self)`). By default,</span>
-<span class="sd">    all objects of the same subclass share a contribution_token.</span>
+<span class="sd">    all objects of the same subclass share a contribution_token. This</span>
+<span class="sd">    should be set by the subclass before invoking super().__init__.</span>
 
 <span class="sd">    This is an abstract base class. Any subclass must implement the</span>
 <span class="sd">    method `next_contribution_room`, which returns the contribution</span>
@@ -613,7 +617,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        contribution_room (Money): The amount of contribution room</span>
 <span class="sd">            available in the first year. Optional.</span>
-<span class="sd">        contributor (Person): The contributor to the RRSP. Optional.</span>
+<span class="sd">        contributor (Person): The contributor to the account. Optional.</span>
 <span class="sd">            If not provided, the contributor is assumed to be the same</span>
 <span class="sd">            as the annuitant (i.e. the owner.)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -642,7 +646,16 @@
 
         <span class="c1"># By default, set up a contribution_token that&#39;s the same for</span>
         <span class="c1"># all instances of a subclass but differs between subclasses.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">contribution_token</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
+
+        <span class="c1"># We test for whether the member has been set before</span>
+        <span class="c1"># accessing it, so this pylint error is not appropriate here.</span>
+        <span class="c1"># pylint: disable=access-member-before-definition</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;contribution_token&#39;</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_token</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">contribution_token</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="c1"># pylint: enable=access-member-before-definition</span>
 
         <span class="c1"># Prepare this account for having its contribution room tracked</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">contributor</span><span class="o">.</span><span class="n">register_shared_contribution</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
@@ -675,16 +688,20 @@
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">contribution_group</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The accounts that share contribution room with this one. &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">contributor</span><span class="o">.</span><span class="n">contribution_group</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">contributor</span><span class="o">.</span><span class="n">contribution_groups</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">contribution_room</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Contribution room available for the current year. &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">contributor</span><span class="o">.</span><span class="n">contribution_room</span><span class="p">(</span><span class="bp">self</span><span class="p">)[</span><span class="bp">self</span><span class="o">.</span><span class="n">this_year</span><span class="p">]</span>
+        <span class="n">contribution_room_history</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">contributor</span><span class="o">.</span><span class="n">contribution_room</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span> <span class="ow">in</span> <span class="n">contribution_room_history</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">contribution_room_history</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">this_year</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
 
     <span class="nd">@contribution_room</span><span class="o">.</span><span class="n">setter</span>
     <span class="k">def</span> <span class="nf">contribution_room</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Updates contribution room for RRSPs &quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot; Updates contribution room for the current year. &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">contributor</span><span class="o">.</span><span class="n">contribution_room</span><span class="p">(</span><span class="bp">self</span><span class="p">)[</span><span class="bp">self</span><span class="o">.</span><span class="n">this_year</span><span class="p">]</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
 
     <span class="nd">@property</span>

@@ -47,8 +47,11 @@
   <h1>Source code for forecaster.canada.tax</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot; A module providing Canada-specific tax treatment. &quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">forecaster</span> <span class="k">import</span> <span class="n">Tax</span><span class="p">,</span> <span class="n">Person</span><span class="p">,</span> <span class="n">Money</span>
-<span class="kn">from</span> <span class="nn">forecaster.canada</span> <span class="k">import</span> <span class="n">RRSP</span><span class="p">,</span> <span class="n">constants</span>
+<span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="n">Money</span>
+<span class="kn">from</span> <span class="nn">forecaster.person</span> <span class="k">import</span> <span class="n">Person</span>
+<span class="kn">from</span> <span class="nn">forecaster.tax</span> <span class="k">import</span> <span class="n">Tax</span>
+<span class="kn">from</span> <span class="nn">forecaster.canada.accounts</span> <span class="k">import</span> <span class="n">RRSP</span>
+<span class="kn">from</span> <span class="nn">forecaster.canada</span> <span class="k">import</span> <span class="n">constants</span>
 <span class="kn">from</span> <span class="nn">forecaster.utility</span> <span class="k">import</span> <span class="n">extend_inflation_adjusted</span>
 
 

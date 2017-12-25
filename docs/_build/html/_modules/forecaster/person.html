@@ -51,9 +51,8 @@
 <span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
 <span class="kn">from</span> <span class="nn">dateutil.parser</span> <span class="k">import</span> <span class="n">parse</span>
 <span class="kn">from</span> <span class="nn">dateutil.relativedelta</span> <span class="k">import</span> <span class="n">relativedelta</span>
-<span class="kn">from</span> <span class="nn">forecaster</span> <span class="k">import</span> <span class="n">Money</span>
 <span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="p">(</span>
-    <span class="n">TaxSource</span><span class="p">,</span> <span class="n">recorded_property</span><span class="p">,</span> <span class="n">recorded_property_cached</span><span class="p">)</span>
+    <span class="n">Money</span><span class="p">,</span> <span class="n">TaxSource</span><span class="p">,</span> <span class="n">recorded_property</span><span class="p">,</span> <span class="n">recorded_property_cached</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="Person"><a class="viewcode-back" href="../../forecaster.person.html#forecaster.person.Person">[docs]</a><span class="k">class</span> <span class="nc">Person</span><span class="p">(</span><span class="n">TaxSource</span><span class="p">):</span>
@@ -404,11 +403,31 @@
 <span class="sd">        The account must provide a `contribution_token` attribute.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            A dict of {year: contribution_room} pairs for the account if</span>
-<span class="sd">            it has been registered, or None if it is not registered.</span>
+<span class="sd">            Union[dict[int, Money], None]: {year: contribution_room}</span>
+<span class="sd">                pairs for the account if it has been registered.</span>
+
+<span class="sd">                Returns None if `account` is not registered.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">account</span><span class="o">.</span><span class="n">contribution_token</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contribution_room</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contribution_room</span><span class="p">[</span><span class="n">account</span><span class="o">.</span><span class="n">contribution_token</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="Person.contribution_groups"><a class="viewcode-back" href="../../forecaster.person.html#forecaster.person.Person.contribution_groups">[docs]</a>    <span class="k">def</span> <span class="nf">contribution_groups</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">account</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The accounts sharing contribution room with `account`.</span>
+
+<span class="sd">        This method returns only accounts registered via</span>
+<span class="sd">        `register_shared_contribution`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Union[set[Account], None]: The `Account` objects sharing</span>
+<span class="sd">                contribution room with `account`. Includes this</span>
+<span class="sd">                `Account`.</span>
+
+<span class="sd">                Returns None if `account` is not registered.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contribution_groups</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contribution_groups</span><span class="p">[</span><span class="n">account</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span></div>
 
@@ -426,7 +445,7 @@
         <span class="c1"># Identify all accounts that share contribution room with this</span>
         <span class="c1"># one</span>
         <span class="n">contribution_group</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contribution_groups</span>
+            <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">accounts</span>
             <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;contribution_token&#39;</span><span class="p">)</span> <span class="ow">and</span>
             <span class="n">x</span><span class="o">.</span><span class="n">contribution_token</span> <span class="o">==</span> <span class="n">account</span><span class="o">.</span><span class="n">contribution_token</span><span class="p">}</span>
         <span class="c1"># Store the contribution group for later recall. This also</span>

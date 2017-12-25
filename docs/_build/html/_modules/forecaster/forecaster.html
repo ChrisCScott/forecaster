@@ -48,10 +48,15 @@
 <span></span><span class="sd">&#39;&#39;&#39; This module provides classes for creating and managing Forecasts. &#39;&#39;&#39;</span>
 
 <span class="kn">from</span> <span class="nn">copy</span> <span class="k">import</span> <span class="n">deepcopy</span>
-<span class="kn">from</span> <span class="nn">forecaster</span> <span class="k">import</span> <span class="p">(</span>
-    <span class="n">Forecast</span><span class="p">,</span> <span class="n">Person</span><span class="p">,</span> <span class="n">Account</span><span class="p">,</span> <span class="n">RegisteredAccount</span><span class="p">,</span> <span class="n">Debt</span><span class="p">,</span> <span class="n">Tax</span><span class="p">,</span>
+<span class="kn">from</span> <span class="nn">forecaster.forecast</span> <span class="k">import</span> <span class="n">Forecast</span>
+<span class="kn">from</span> <span class="nn">forecaster.person</span> <span class="k">import</span> <span class="n">Person</span>
+<span class="kn">from</span> <span class="nn">forecaster.accounts</span> <span class="k">import</span> <span class="n">Account</span><span class="p">,</span> <span class="n">RegisteredAccount</span><span class="p">,</span> <span class="n">Debt</span>
+<span class="kn">from</span> <span class="nn">forecaster.tax</span> <span class="k">import</span> <span class="n">Tax</span>
+<span class="kn">from</span> <span class="nn">forecaster.strategy</span> <span class="k">import</span> <span class="p">(</span>
     <span class="n">ContributionStrategy</span><span class="p">,</span> <span class="n">WithdrawalStrategy</span><span class="p">,</span> <span class="n">TransactionStrategy</span><span class="p">,</span>
-    <span class="n">AllocationStrategy</span><span class="p">,</span> <span class="n">DebtPaymentStrategy</span><span class="p">,</span> <span class="n">Scenario</span><span class="p">,</span> <span class="n">Settings</span><span class="p">)</span>
+    <span class="n">DebtPaymentStrategy</span><span class="p">,</span> <span class="n">AllocationStrategy</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">forecaster.scenario</span> <span class="k">import</span> <span class="n">Scenario</span>
+<span class="kn">from</span> <span class="nn">forecaster.settings</span> <span class="k">import</span> <span class="n">Settings</span>
 
 
 <span class="c1"># Forecaster wraps Forecast. It replicates much of that complexity</span>

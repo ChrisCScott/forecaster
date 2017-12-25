@@ -47,9 +47,10 @@
   <h1>Source code for forecaster.canada.forecaster</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot; Provides a Canada-specific implementation of Forecaster. &quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">forecaster</span> <span class="k">import</span> <span class="n">Forecaster</span>
-<span class="kn">from</span> <span class="nn">forecaster.canada</span> <span class="k">import</span> <span class="p">(</span>
-    <span class="n">RRSP</span><span class="p">,</span> <span class="n">TFSA</span><span class="p">,</span> <span class="n">TaxableAccount</span><span class="p">,</span> <span class="n">TaxCanada</span><span class="p">,</span> <span class="n">SettingsCanada</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">forecaster.forecaster</span> <span class="k">import</span> <span class="n">Forecaster</span>
+<span class="kn">from</span> <span class="nn">forecaster.canada.accounts</span> <span class="k">import</span> <span class="n">RRSP</span><span class="p">,</span> <span class="n">TFSA</span><span class="p">,</span> <span class="n">TaxableAccount</span>
+<span class="kn">from</span> <span class="nn">forecaster.canada.tax</span> <span class="k">import</span> <span class="n">TaxCanada</span>
+<span class="kn">from</span> <span class="nn">forecaster.canada.settings</span> <span class="k">import</span> <span class="n">SettingsCanada</span>
 
 
 <div class="viewcode-block" id="ForecasterCanada"><a class="viewcode-back" href="../../../forecaster.canada.forecaster.html#forecaster.canada.forecaster.ForecasterCanada">[docs]</a><span class="k">class</span> <span class="nc">ForecasterCanada</span><span class="p">(</span><span class="n">Forecaster</span><span class="p">):</span>

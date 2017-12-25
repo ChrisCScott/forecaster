@@ -371,15 +371,15 @@ is being generated.</li>
 <li><strong>debts</strong> (<em>Iterable</em><em>[</em><a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.Account" title="forecaster.accounts.Account"><em>Account</em></a><em>]</em>) – The debts of the people.</li>
 <li><strong>scenario</strong> (<a class="reference internal" href="forecaster.scenario.html#forecaster.scenario.Scenario" title="forecaster.scenario.Scenario"><em>Scenario</em></a>) – Economic information for the forecast
 (e.g. inflation and stock market returns for each year)</li>
-<li><strong>contribution_strategy</strong> (<a class="reference internal" href="forecaster.strategy.html#forecaster.strategy.ContributionStrategy" title="forecaster.strategy.ContributionStrategy"><em>ContributionStrategy</em></a>) – A callable
+<li><strong>contribution_strategy</strong> (<em>ContributionStrategy</em>) – A callable
 object that determines the gross contribution for a
 year. See the documentation for ContributionStrategy for
 acceptable args when calling this object.</li>
-<li><strong>withdrawal_strategy</strong> (<a class="reference internal" href="forecaster.strategy.html#forecaster.strategy.WithdrawalStrategy" title="forecaster.strategy.WithdrawalStrategy"><em>WithdrawalStrategy</em></a>) – A callable
+<li><strong>withdrawal_strategy</strong> (<em>WithdrawalStrategy</em>) – A callable
 object that determines the amount to withdraw for a
 year. See the documentation for WithdrawalStrategy for
 acceptable args when calling this object.</li>
-<li><strong>contribution_transaction_strategy</strong> (<a class="reference internal" href="forecaster.strategy.html#forecaster.strategy.TransactionStrategy" title="forecaster.strategy.TransactionStrategy"><em>TransactionStrategy</em></a>) – A
+<li><strong>contribution_transaction_strategy</strong> (<em>TransactionStrategy</em>) – A
 callable object that determines the schedule of
 transactions for any contributions during the year.
 See the documentation for TransactionStrategy for
@@ -389,7 +389,7 @@ A callable object that determines the schedule of
 transactions for any contributions during the year.
 See the documentation for TransactionStrategy for
 acceptable args when calling this object.</li>
-<li><strong>debt_payment_strategy</strong> (<a class="reference internal" href="forecaster.strategy.html#forecaster.strategy.DebtPaymentStrategy" title="forecaster.strategy.DebtPaymentStrategy"><em>DebtPaymentStrategy</em></a>) – A callable
+<li><strong>debt_payment_strategy</strong> (<em>DebtPaymentStrategy</em>) – A callable
 object that determines the schedule of debt payments,
 including accelerated debt payments drawn from gross
 contributions. See the documentation for
