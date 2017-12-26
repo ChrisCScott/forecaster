@@ -261,7 +261,7 @@ class TransactionStrategy(Strategy):
         override_transactions.update(remaining_transactions)
         return override_transactions
 
-    def group_by_contribution_group(self, accounts):
+    def _group_by_contribution_group(self, accounts):
         """ Groups together accounts belonging to a contribution group.
 
         Args:
@@ -295,7 +295,7 @@ class TransactionStrategy(Strategy):
         }.union(ungrouped_accounts)
         return grouped_accounts
 
-    def group_by_type(self, accounts):
+    def _group_by_type(self, accounts):
         """ Groups accounts by type into AccountGroups.
 
         Each AccountGroup contains one or more accounts which have the
@@ -313,10 +313,7 @@ class TransactionStrategy(Strategy):
         """
         accounts_by_type = collections.defaultdict(set)
         for account in accounts:
-            if isinstance(account, AccountGroup):
-                name = account.get_type().__name__
-            else:
-                name = type(account).__name__
+            name = self._get_weights_key(account)
             if name in self.weights:
                 accounts_by_type[name].add(account)
 
@@ -331,7 +328,7 @@ class TransactionStrategy(Strategy):
             grouped_accounts.add(account)
         return grouped_accounts
 
-    def group_accounts(self, accounts, total):
+    def _group_accounts(self, accounts, total):
         """ Groups accounts into AccountGroups.
 
         Each AccountGroup contains one or more accounts which are
@@ -356,13 +353,13 @@ class TransactionStrategy(Strategy):
         # Only group by contribution group if we're actually
         # contributing:
         if total > 0:
-            accounts = self.group_by_contribution_group(accounts)
+            accounts = self._group_by_contribution_group(accounts)
         # Always group by type:
-        accounts = self.group_by_type(accounts)
+        accounts = self._group_by_type(accounts)
 
         return accounts.union(grouped_accounts)
 
-    def weight_accounts(self, accounts):
+    def _weight_accounts(self, accounts):
         """ Maps accounts to a dict of `{account: weight}` pairs.
 
         Args:
@@ -375,15 +372,12 @@ class TransactionStrategy(Strategy):
         """
         weighted_accounts = {}
         for account in accounts:
-            if isinstance(account, AccountGroup):
-                name = account.get_type().__name__
-            else:
-                name = type(account).__name__
+            name = self._get_weights_key(account)
             weighted_accounts[account] = self.weights[name]
 
         return weighted_accounts
 
-    def ungroup_transactions(self, transactions):
+    def _ungroup_transactions(self, transactions):
         """ Transforms AccountGroup keys to multiple Account keys.
 
         The input `transactions` dict may also have non-AccountGroup
@@ -412,15 +406,15 @@ class TransactionStrategy(Strategy):
         # effectively "flattens" the transactions dict by removing any
         # further AccountGroup layers:
         for group in groups:
-            transactions_for_group = self.transactions_for_group(
+            transactions_for_group = self._transactions_for_group(
                 transactions[group], group.accounts)
             # Recurse onto any nested AccountGroup objects:
-            flattened_transactions = self.ungroup_transactions(
+            flattened_transactions = self._ungroup_transactions(
                 transactions_for_group)
             ungrouped_transactions.update(flattened_transactions)
         return ungrouped_transactions
 
-    def transactions_for_group(self, total, group):
+    def _transactions_for_group(self, total, group):
         """ Determines transactions for each account in a group.
 
         Accounts in `group` are treated as a group of accounts
@@ -483,13 +477,76 @@ class TransactionStrategy(Strategy):
                         remaining_total / len(finite_accounts))
         return transactions
 
+    def _get_weights_key(self, account):
+        """ Retrieves the `weights` key that `account` corresponds to.
+
+        The key for an `AccountGroup` is determined based on its
+        member accounts.
+
+        Args:
+            account (Union[Account, AccountGroup]): An `Account`-like
+                object.
+
+        Returns:
+            str: A key that may be found in `weights`. The key is not
+                guaranteed to actually be in the `weights` dict of this
+                particular `TransactionStrategy`, but if a weight is
+                given for this kind of account then this would be its
+                key.
+        """
+        return self._get_representative_type(account).__name__
+
+    def _get_representative_type(self, account):
+        """ The representative type of `account`.
+
+        The representative type of an `Account` is simply the
+        `Account`'s type.
+
+        The representative type for an `AccountGroup` is determined
+        based on the types of its member accounts. This is determined
+        recursively in the event that any members are also
+        `AccountGroup` objects.
+
+        Args:
+            account (Union[Account, AccountGroup]): An `Account`-like
+                object.
+
+        Returns:
+            type: The representative type of `account`.
+
+        Raises:
+            ValueError: Accounts in an AccountGroup must share a common
+                superclass.
+        """
+        if isinstance(account, AccountGroup):
+            account_types = {
+                self._get_representative_type(member) for member in account
+            }
+            if len(account_types) == 1:
+                return account_types.pop()
+            else:
+                # If the members aren't all of the same type, return the
+                # greatest common class:
+                classes = [
+                    type(account_type).mro() for account_type in account_types]
+                for account_type in classes[0]:
+                    if all(account_type in mro for mro in classes):
+                        return account_type
+                # If we can't identify a greatest common class, raise an
+                # error.
+                raise ValueError(
+                    'TransactionStrategy: Accounts in an AccountGroup must ' +
+                    'share a common superclass.')
+        else:
+            return type(account)
+
     def __call__(self, total, accounts, *args, **kwargs):
         """ Returns a dict of accounts mapped to transactions. """
         # First, wrap the groups into AccountGroup objects (where
         # appropriate):
-        account_groups = self.group_accounts(accounts, total)
+        account_groups = self._group_accounts(accounts, total)
         # Then map accounts to their weights:
-        weighted_accounts = self.weight_accounts(account_groups)
+        weighted_accounts = self._weight_accounts(account_groups)
         # Now map the accounts (or groups thereof) to transactions:
         transactions = super().__call__(
             total=total, weighted_accounts=weighted_accounts, *args, **kwargs)
@@ -507,7 +564,7 @@ class TransactionStrategy(Strategy):
         # flatten the results to {account: transaction} pairs by
         # eliminating any groups and flowing down transactions to the
         # accounts they contain:
-        transactions = self.ungroup_transactions(transactions)
+        transactions = self._ungroup_transactions(transactions)
         return transactions
 
 
