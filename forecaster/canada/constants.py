@@ -26,9 +26,11 @@ RRSP_ACCRUAL_MAX = {
     2017: Decimal('25750.55')
 }
 RRSP_WITHHOLDING_TAX_RATE = {
-    Decimal(0): Decimal('0.1'),
-    Decimal(5000): Decimal('0.2'),
-    Decimal(15000): Decimal('0.3')
+    2017: {
+        Decimal(0): Decimal('0.1'),
+        Decimal(5000): Decimal('0.2'),
+        Decimal(15000): Decimal('0.3')
+    }
 }
 RRSP_RRIF_CONVERSION_AGE = 71
 RRSP_RRIF_WITHDRAWAL_MIN = {

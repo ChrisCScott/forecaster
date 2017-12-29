@@ -4,7 +4,7 @@ from forecaster.accounts import Account, RegisteredAccount
 from forecaster.ledger import (
     Money, recorded_property, recorded_property_cached)
 from forecaster.utility import (
-    build_inflation_adjust, extend_inflation_adjusted)
+    build_inflation_adjust, extend_inflation_adjusted, nearest_year)
 from forecaster.canada import constants
 
 
@@ -109,17 +109,20 @@ class RRSP(RegisteredAccount):
             # are hit by the withholding tax.
             taxable_income = self.taxable_income - self.min_outflow
 
-        # TODO: inflation-adjust `x` to match the inflation-adjustment
-        # year of taxable_income? (this would likely require identifying
-        # a year for which `x` is expressed in nominal dollars, probably
-        # in Constants; maybe make RRSPWithholdingTaxRate a dict of
-        # {year: {amount: rate}}?)
-        # TODO: Pass a Tax object for RRSP tax treatment?
-        tax_rate = max(
-            (constants.RRSP_WITHHOLDING_TAX_RATE[x]
-             for x in constants.RRSP_WITHHOLDING_TAX_RATE
-             if x < taxable_income.amount),
-            default=0)
+        year = nearest_year(
+            constants.RRSP_WITHHOLDING_TAX_RATE,
+            self.this_year)
+        tax_rates = constants.RRSP_WITHHOLDING_TAX_RATE[year]
+        taxable_income_adjusted = (
+            taxable_income
+            * self.inflation_adjust(year, self.this_year)
+        )
+        bracket = max((
+            bracket for bracket in tax_rates
+            if bracket < taxable_income_adjusted.amount),
+            default=min(tax_rates.keys())
+        )
+        tax_rate = tax_rates[bracket]
         return taxable_income * tax_rate
 
     @recorded_property

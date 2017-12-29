@@ -44,8 +44,17 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
                        max(constants.RRSP_RRIF_WITHDRAWAL_MIN)) + 2
         self.extend_inflation_adjustments(min_year, max_year)
 
+    def set_initial_year(self, initial_year):
+        """ Sets initial_year for all relevant """
+        self.initial_year = initial_year
+        self.owner.initial_year = self.initial_year
+        self.owner.this_year = self.initial_year
+        for account in self.owner.accounts:
+            account.initial_year = self.initial_year
+            account.this_year = self.initial_year
+
     def extend_inflation_adjustments(self, min_year, max_year):
-        """ Convenience method.
+        """ Convenience method for extending inflation adjustments.
 
         Ensures self.inflation_adjustment spans min_year and max_year.
         """
@@ -84,7 +93,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         self.assertEqual(account.inflation_adjust, self.inflation_adjust)
 
     def test_init_type_conversion(self, *args, **kwargs):
-        """ Test type conversion of RRSP.__init__ inputs. """
+        """ Test type conversion of __init__ inputs. """
         super().test_init_type_conversion(*args, **kwargs)
 
         # Try type conversion for inflation_adjustments
@@ -108,16 +117,23 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         self.assertEqual(account.inflation_adjust(2003), Decimal(1.75))
         self.assertEqual(account.inflation_adjust(2017), Decimal(2))
 
+    def test_init_invalid(self, *args, **kwargs):
+        """ Test calling __init__ with invalid inputs. """
+        super().test_init_invalid(*args, **kwargs)
         # Try invalid inflation_adjustments.
         # First, pass in a non-dict
         with self.assertRaises(TypeError):
-            account = self.AccountType(
+            self.AccountType(
                 self.owner, *args,
                 inflation_adjust='invalid',
                 contribution_room=self.contribution_room, **kwargs)
 
     def test_taxable_income(self, *args, **kwargs):
-        """ Test RRSP.taxable_income. """
+        """ Test taxable_income with no withdrawals or contributions.
+
+        NOTE: This method overrides the superclass method of the same
+        name, otherwise it would be called `test_taxable_income_basic`.
+        """
         # Create an RRSP with a $1,000,000 balance and no withdrawals:
         account = self.AccountType(
             self.owner, *args,
@@ -127,18 +143,45 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         # Since withdrawals = $0, there's no taxable income
         self.assertEqual(account.taxable_income, 0)
 
-        # Now add a withdrawal, confirm it's included in taxable income
+    def test_taxable_income_outflow(self, *args, **kwargs):
+        """ Test taxable_income with a withdrawal. """
+        # Build an account and add a withdrawal.
+        account = self.AccountType(
+            self.owner, *args,
+            inflation_adjust=self.inflation_adjust,
+            contribution_room=self.contribution_room, balance=1000000,
+            **kwargs)
         account.add_transaction(-100, 'end')
+        # Confirm the withdrawal is included in taxable income
         self.assertEqual(account.taxable_income, Money(100))
 
-        # Now add a contribution (at a different time), confirm that it
-        # has no effect on taxable_income
+    def test_taxable_income_inflow(self, *args, **kwargs):
+        """ Test that a contribution doesn't affect taxable_income. """
+        # Build an account and add a contribution and a withdrawal.
+        account = self.AccountType(
+            self.owner, *args,
+            inflation_adjust=self.inflation_adjust,
+            contribution_room=self.contribution_room, balance=1000000,
+            **kwargs)
+        # Add a contribution and a withdrawal (at different times, so
+        # that they don't cancel each other out.)
+        account.add_transaction(-100, 'end')
         account.add_transaction(100, 'start')
+        # Confirm that the contribution has no effect on taxable_income
+        # (which should be $100 due to the withdrawal)
         self.assertEqual(account.taxable_income, Money(100))
 
     def test_tax_withheld(self, *args, **kwargs):
-        """ Test RRSP.tax_withheld. """
-        # First, test RRSP (not RRIF) behaviour:
+        """ Test tax_withheld with no transactions.
+
+        NOTE: This method overrides the superclass method of the same
+        name, otherwise it would be called `test_tax_withheld_basic`.
+        """
+        # For ease of testing, ensure that the initial year is
+        # represented in RRSP_WITHHOLDING_RATE:
+        initial_year = min(constants.RRSP_WITHHOLDING_TAX_RATE)
+        self.set_initial_year(initial_year)
+
         # Test RRSP with no withdrawals -> no tax withheld
         account = self.AccountType(
             self.owner, *args,
@@ -148,21 +191,94 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
             **kwargs)
         self.assertEqual(account.tax_withheld, 0)
 
-        # Now add a withdrawal in the lowest withholding tax bracket,
-        # say $1. This should be taxed at the lowest rate
-        account.add_transaction(-1, 'end')
-        self.assertEqual(account.tax_withheld, Money(
-            1 * min(constants.RRSP_WITHHOLDING_TAX_RATE.values())
-        ))
-        # Now add a transaction in the highest tax bracket, say $1000000
-        # This should be taxed at the highest rate
-        account.add_transaction(-999999, 'start')
-        self.assertEqual(account.tax_withheld, Money(
-            1000000 * max(constants.RRSP_WITHHOLDING_TAX_RATE.values())
-        ))
+    def test_tax_withheld_small_outflow(self, *args, **kwargs):
+        """ Test tax_withheld with a small inflow. """
+        # For ease of testing, ensure that the initial year is
+        # represented in RRSP_WITHHOLDING_RATE:
+        initial_year = min(constants.RRSP_WITHHOLDING_TAX_RATE)
+        withholding_rates = constants.RRSP_WITHHOLDING_TAX_RATE[initial_year]
+        self.set_initial_year(initial_year)
 
-        # NOTE: tax thresholds are not currently inflation-adjusted;
-        # implement inflation-adjustment and then test for it here?
+        # Add a withdrawal in the lowest withholding tax bracket ($1).
+        # This should be taxed at the lowest rate.
+        account = self.AccountType(
+            self.owner, *args,
+            inflation_adjust=self.inflation_adjust,
+            contribution_room=self.contribution_room,
+            balance=1000000,
+            **kwargs)
+        account.add_transaction(-1, 'end')
+        self.assertEqual(
+            account.tax_withheld,
+            Money(1 * min(withholding_rates.values()))
+        )
+
+    def test_tax_withheld_large_outflow(self, *args, **kwargs):
+        """ Test tax_withheld with a large outflow. """
+        # For ease of testing, ensure that the initial year is
+        # represented in RRSP_WITHHOLDING_RATE:
+        initial_year = min(constants.RRSP_WITHHOLDING_TAX_RATE)
+        withholding_rates = constants.RRSP_WITHHOLDING_TAX_RATE[initial_year]
+        self.set_initial_year(initial_year)
+
+        # Add a transaction in the highest tax bracket. (Note that the
+        # value of the transaction must be larger than the bracket
+        # threshold, otherwise it falls within the lower bracket.)
+        # This should be taxed at the highest rate.
+        bracket = max(withholding_rates)
+        val = Money(bracket + 1)
+        account = self.AccountType(
+            self.owner, *args,
+            inflation_adjust=self.inflation_adjust,
+            contribution_room=self.contribution_room,
+            balance=val * 2,
+            **kwargs)
+        account.add_transaction(-val, 'start')
+        self.assertEqual(
+            account.tax_withheld,
+            val * withholding_rates[bracket]
+        )
+
+    def test_tax_withheld_inflation(self, *args, **kwargs):
+        """ Test inflation adjustment of tax_withheld withholding rates. """
+        # Ensure that the initial year is not represented in
+        # RRSP_WITHHOLDING_RATE:
+        initial_year = max(constants.RRSP_WITHHOLDING_TAX_RATE) + 1
+        self.set_initial_year(initial_year)
+        # Set up 100% inflation between the previous year and this one.
+        self.inflation_adjustments[self.initial_year - 1] = Decimal(1)
+        self.inflation_adjustments[self.initial_year] = Decimal(2)
+        # Inflation-adjust based on the previous (represented) year:
+        withholding_rates = {
+            rate * self.inflation_adjust(initial_year, initial_year - 1):
+            constants.RRSP_WITHHOLDING_TAX_RATE[initial_year - 1][rate]
+            for rate in constants.RRSP_WITHHOLDING_TAX_RATE[initial_year - 1]
+        }
+
+        # Add a transaction that would be in the highest tax bracket in
+        # `initial_year - 1` but would be in the second-highest bracket
+        # in initial_year due to 100% inflation.
+        top_bracket = max(withholding_rates)
+        second_bracket = max(
+            bracket for bracket in withholding_rates if bracket < top_bracket
+        )
+        # We want a value that's at least as large as the top bracket
+        # from the previous year and sits somewhere between the second
+        # and top brackets this year:
+        val = Money(max(
+            max(constants.RRSP_WITHHOLDING_TAX_RATE[initial_year - 1]) + 1,
+            (top_bracket + second_bracket) / 2
+        ))
+        account = self.AccountType(
+            self.owner, *args,
+            inflation_adjust=self.inflation_adjust,
+            contribution_room=self.contribution_room,
+            balance=val * 2,
+            **kwargs)
+
+        account.add_transaction(-val)
+        rate = withholding_rates[second_bracket]
+        self.assertEqual(account.tax_withheld, Money(val * rate))
 
     def test_tax_deduction(self, *args, **kwargs):
         """ Test RRSP.tax_deduction. """
