@@ -65,7 +65,9 @@ class DebtPaymentStrategy(Strategy):
         if available <= 0:
             return transactions
 
-        accelerated_debts = {debt for debt in debts if debt.accelerate_payment}
+        accelerated_debts = {
+            debt for debt in debts
+            if debt.max_inflow(self.timing) > transactions[debt]}
         # Now we increase contributions to any accelerated debts
         # (non-accelerated debts can just have minimum payments made,
         # handled above). Here, increase contributions of the smallest
@@ -108,7 +110,9 @@ class DebtPaymentStrategy(Strategy):
         if available <= 0:
             return transactions
 
-        accelerated_debts = {debt for debt in debts if debt.accelerate_payment}
+        accelerated_debts = {
+            debt for debt in debts
+            if debt.max_inflow(self.timing) > transactions[debt]}
         # Now we increase contributions to any accelerated debts
         # (non-accelerated debts can just have minimum payments made,
         # handled above). Here, increase contributions of the largest

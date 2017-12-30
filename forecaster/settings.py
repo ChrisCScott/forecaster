@@ -95,4 +95,4 @@ class Settings:
 
     ''' Debt defaults '''
     debt_reduction_rate = 1
-    debt_accelerate_payment = False
+    debt_accelerated_payment = 0

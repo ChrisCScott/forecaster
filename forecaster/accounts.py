@@ -709,32 +709,31 @@ class Debt(Account):
     Args:
         minimum_payment (Money): The minimum annual payment on the debt.
             Optional.
-        reduction_rate (Money, Decimal, float, int): If provided, some
-            (or all) of the debt payments are drawn from savings instead
-            of living expenses. If Money, this is the amount drawn from
-            savings. If a number in [0,1], this is the percentage of the
-            payment that's drawn from savings. Optional.
-        accelerate_payment (bool): If True, payments above the minimum
-            may be made to pay off the balance earlier. Optional.
-    """
+        reduction_rate (Decimal): The amount of any payment to be drawn
+            from savings instead of living expenses. Expressed as the
+            percentage that's drawn from savings (e.g. 75% drawn from
+            savings would be `Decimal('0.75')`). Optional.
+        accelerated_payment (Money): The maximum value which may be
+            paid in a year (above `minimum_payment`) to pay off the
+            balance earlier. Optional.
 
-    # TODO #36: Revise the implementation and/or the documentation of
-    # reduction_rate to match each other. (Right now they don't
-    # correspond at all.)
-    # TODO #8: Add a max_accelerate arg (or perhaps change
-    # accelerate_payment to Money type and test for >0?) to set a cap on
-    # how much to accelerate payments by.
+            Debts may be accelerated by as much as possible by setting
+            this argument to `Money('Infinity')`, or non-accelerated
+            by setting this argument to `Money(0)`.
+    """
 
     def __init__(
         self, owner,
         balance=0, rate=0, transactions=None, nper=1,
         inputs=None, initial_year=None, minimum_payment=Money(0),
-        reduction_rate=1, accelerate_payment=False, **kwargs
+        reduction_rate=1, accelerated_payment=Money('Infinity'), **kwargs
     ):
         """ Constructor for `Debt`. """
 
         # The superclass has a lot of arguments, so we're sort of stuck
-        # with having a lot of arguments here.
+        # with having a lot of arguments here (unless we hide them via
+        # *args and **kwargs, but that's against the style guide for
+        # this project).
         # pylint: disable=too-many-arguments
 
         super().__init__(
@@ -743,7 +742,7 @@ class Debt(Account):
             inputs=inputs, initial_year=initial_year, **kwargs)
         self.minimum_payment = Money(minimum_payment)
         self.reduction_rate = Decimal(reduction_rate)
-        self.accelerate_payment = bool(accelerate_payment)
+        self.accelerated_payment = Money(accelerated_payment)
 
         # Debt must have a negative balance
         if self.balance > 0:
@@ -751,12 +750,18 @@ class Debt(Account):
 
     def min_inflow(self, when='end'):
         """ The minimum payment on the debt. """
-        return min(-self.balance_at_time(when), self.minimum_payment)
+        return min(
+            -self.balance_at_time(when),
+            max(
+                self.minimum_payment - self.inflows,
+                Money(0))
+        )
 
     def max_inflow(self, when='end'):
         """ The payment at time `when` that would reduce balance to 0.
 
-        This is in addition to any existing payments in the account.
+        This is in addition to any existing payments in the account,
+        so if an inflow is added `max_inflow` will be reduced.
 
         Example::
 
@@ -766,7 +771,14 @@ class Debt(Account):
                 debt.maximum_payment('start') == 0  # True
 
         """
-        return -self.balance_at_time(when)
+        return min(
+            -self.balance_at_time(when),
+            max(
+                self.minimum_payment
+                + self.accelerated_payment
+                - self.inflows,
+                Money(0))
+        )
 
 
 def when_conv(when):

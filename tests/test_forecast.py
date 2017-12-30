@@ -108,7 +108,7 @@ class TestForecast(unittest.TestCase):
             rate=1,  # 100% interest rate
             minimum_payment=Money(100),
             reduction_rate=1,
-            accelerate_payment=True
+            accelerated_payment=Money('Infinity')
         )
 
         forecast = Forecast(
@@ -399,11 +399,11 @@ class TestForecast(unittest.TestCase):
         # $200 to pay off this debt:
         self.forecaster.add_debt(
             balance=Money(100), rate=1, reduction_rate=1,
-            accelerate_payment=True)
+            accelerated_payment=Money('Infinity'))
         # $100 payment in each year, $50 of which is drawn from savings.
         self.forecaster.add_debt(
             balance=Money(200), rate=0, reduction_rate=0.5,
-            accelerate_payment=False, minimum_payment=Money(100))
+            accelerated_payment=Money(0), minimum_payment=Money(100))
         forecast = self.forecaster.forecast()
         # Test the first year
         # TODO: reduction_from_other isn't implemented; update this test
@@ -470,7 +470,7 @@ class TestForecast(unittest.TestCase):
         # $200 to pay off this debt (total net contributions of $800):
         self.forecaster.add_debt(
             balance=Money(100), rate=1, reduction_rate=1,
-            accelerate_payment=True)
+            accelerated_payment=Money('Infinity'))
         # Here's an account to toss transactions into:
         self.forecaster.add_asset(
             balance=Money(0)

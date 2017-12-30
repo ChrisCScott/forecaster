@@ -21,17 +21,17 @@ class TestDebtPaymentStrategies(unittest.TestCase):
         self.debt_big_high_interest = Debt(
             person,
             balance=Money(1000), rate=1, minimum_payment=Money(100),
-            reduction_rate=1, accelerate_payment=True
+            reduction_rate=1, accelerated_payment=Money('Infinity')
         )
         self.debt_small_low_interest = Debt(
             person,
             balance=Money(100), rate=0, minimum_payment=Money(10),
-            reduction_rate=1, accelerate_payment=True
+            reduction_rate=1, accelerated_payment=Money('Infinity')
         )
         self.debt_medium = Debt(
             person,
             balance=Money(500), rate=0.5, minimum_payment=Money(50),
-            reduction_rate=1, accelerate_payment=True
+            reduction_rate=1, accelerated_payment=Money('Infinity')
         )
 
         self.debts = {
@@ -321,24 +321,32 @@ class TestDebtPaymentStrategyAttributes(unittest.TestCase):
         self.debt = Debt(
             person,
             balance=Money(100), rate=0, minimum_payment=Money(10),
-            reduction_rate=1, accelerate_payment=True
+            reduction_rate=1, accelerated_payment=Money('Infinity')
         )
 
-    def test_accelerate_payment_false(self):
-        """ Tests payments to a `Debt` where `accelerate_payment=False`. """
-        self.debt.accelerate_payment = False
+    def test_accel_payment_none(self):
+        """ Tests payments where `accelerate_payment=Money(0)`. """
+        self.debt.accelerated_payment = Money(0)
         results = self.strategy(Money(100), {self.debt})
         # If there's no acceleration, only the minimum is paid.
         self.assertEqual(results[self.debt], self.debt.minimum_payment)
 
-    def test_accelerate_payment_true(self):
-        """ Tests payments to a `Debt` where `accelerate_payment=True`. """
-        self.debt.accelerate_payment = True
+    def test_accel_payment_partial(self):
+        """ Tests payments with finite, non-zero `accelerate_payment`. """
+        self.debt.accelerated_payment = Money(20)
+        results = self.strategy(Money(100), {self.debt})
+        # Payment should be $20 more than the minimum:
+        self.assertEqual(
+            results[self.debt], self.debt.minimum_payment + Money(20))
+
+    def test_accel_payment_infinity(self):
+        """ Tests payments where `accelerate_payment=Money('Infinity')`. """
+        self.debt.accelerated_payment = Money('Infinity')
         results = self.strategy(Money(50), {self.debt})
         self.assertEqual(results[self.debt], Money(50))
 
     def test_reduction_rate_none(self):
-        """ Tests payments to a `Debt` where `reduction_rate=0`. """
+        """ Tests payments where `reduction_rate=0`. """
         self.debt.reduction_rate = 0
         results = self.strategy(Money(50), {self.debt})
         # If reduction_rate is 0, we repay the whole debt immediately.
@@ -346,14 +354,14 @@ class TestDebtPaymentStrategyAttributes(unittest.TestCase):
         self.assertEqual(results[self.debt], Money(100))
 
     def test_reduction_rate_half(self):
-        """ Tests payments to a `Debt` where `reduction_rate=0.5`. """
+        """ Tests payments where `reduction_rate=0.5`. """
         self.debt.reduction_rate = Decimal(0.5)
         results = self.strategy(Money(25), {self.debt})
         # If reduction_rate is 50%, we can double the payment:
         self.assertEqual(results[self.debt], Money(50))
 
     def test_reduction_rate_full(self):
-        """ Tests payments to a `Debt` where `reduction_rate=1`. """
+        """ Tests payments where `reduction_rate=1`. """
         self.debt.reduction_rate = 1
         results = self.strategy(Money(50), {self.debt})
         # If reduction_rate is 50%, we can double the payment:
