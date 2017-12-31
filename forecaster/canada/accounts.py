@@ -156,7 +156,7 @@ class RRSP(RegisteredAccount):
 
             # Contribution room is determined based on the contributor's
             # gross income for the previous year.
-            income = self.contributor.gross_income
+            income = self.contributor.gross_income_history[self.this_year]
 
             # First, determine how much more contribution room will
             # accrue due to this year's income:

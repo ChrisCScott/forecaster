@@ -1,6 +1,7 @@
 """ Tests Canada-specific accounts in the ledger.canada module. """
 
 import unittest
+import inspect
 import decimal
 from decimal import Decimal
 from random import Random
@@ -44,14 +45,41 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
                        max(constants.RRSP_RRIF_WITHDRAWAL_MIN)) + 2
         self.extend_inflation_adjustments(min_year, max_year)
 
+        self.initial_contribution_room = Money(100)
+        # Set income to a non-Money object to test type-conversion.
+        # Use a value that won't result in a deduction exceeding the
+        # inflation-adjusted RRSPAccrualMax (~$25,000 in 2017)
+        self.owner.income = Money(100000)  # -> $18,000 accrual
+        # Ensure there are no raises so income is the same in each year:
+        self.owner.raise_rate_function = lambda _: 0
+        self.owner.gross_income = Money(100000)
+        self.owner.spouse = Person(
+            self.initial_year, "Spouse", "2 February 1998",
+            gross_income=50000,
+            retirement_date=self.owner.retirement_date)
+
     def set_initial_year(self, initial_year):
-        """ Sets initial_year for all relevant """
+        """ Sets initial_year for all relevant. """
         self.initial_year = initial_year
-        self.owner.initial_year = self.initial_year
-        self.owner.this_year = self.initial_year
+        self._set_initial_year_ledger(self.owner, initial_year)
         for account in self.owner.accounts:
-            account.initial_year = self.initial_year
-            account.this_year = self.initial_year
+            self._set_initial_year_ledger(account, initial_year)
+
+    def _set_initial_year_ledger(self, ledger, initial_year):
+        """ Updates `initial_year` for a `Ledger` object.
+
+        This involves updating the various `\\*_history` dicts that
+        store values for each recorded property.
+        """
+        for _, prop in inspect.getmembers(
+            type(ledger), lambda x: hasattr(x, 'history_property')
+        ):
+            history_dict = getattr(ledger, prop.history_dict_name)
+            if ledger.initial_year in history_dict:
+                history_dict[initial_year] = history_dict[ledger.initial_year]
+                history_dict.pop(ledger.initial_year)
+        ledger.initial_year = initial_year
+        ledger.this_year = initial_year
 
     def extend_inflation_adjustments(self, min_year, max_year):
         """ Convenience method for extending inflation adjustments.
@@ -300,133 +328,128 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         account.add_transaction(-100, 'start')
         self.assertEqual(account.tax_deduction, Money(100))
 
-    def test_next_year(self, *args, **kwargs):
-        """ Test RRSP.next_year(). """
-        super().test_next_year(*args, **kwargs)
-
-        initial_year = min(constants.RRSP_ACCRUAL_MAX)
-        initial_contribution_room = Money(100)
-        # Set income to a non-Money object to test type-conversion.
-        # Use a value that won't result in a deduction exceeding the
-        # inflation-adjusted RRSPAccrualMax (~$25,000 in 2017)
-        income = Money(100000)  # -> $18,000 deduction
-        # Build a copy of self.owner with the income defined above and
-        # no raises (so income is the same each year).
-        owner = Person(
-            initial_year, self.owner.name, self.owner.birth_date,
-            retirement_date=self.owner.retirement_date,
-            gross_income=income,
-            raise_rate=0,
-            tax_treatment=self.owner.tax_treatment)
-        # Basic test:
+    def test_cont_basic(self, *args, **kwargs):
+        """ Test `contribution_room` with no contributions. """
+        # Ensure we know the accrual max for this year:
+        self.set_initial_year(min(constants.RRSP_ACCRUAL_MAX))
+        income = self.owner.gross_income
         account = self.AccountType(
-            owner, *args,
+            self.owner, *args,
             rate=0, inflation_adjust=self.inflation_adjust,
-            contribution_room=initial_contribution_room, **kwargs)
+            contribution_room=self.initial_contribution_room, **kwargs)
         account.next_year()
         self.assertEqual(
             account.contribution_room,
-            initial_contribution_room + Money(income) *
-            constants.RRSP_ACCRUAL_RATE
-        )
+            self.initial_contribution_room
+            + income * constants.RRSP_ACCRUAL_RATE)
 
+    def test_cont_excess_rollover(self, *args, **kwargs):
+        """ Test `contribution_room` with lots of income and no inflows. """
         # Pick the initial year so that we'll know the accrual max. for
         # next year
-        initial_year = min(constants.RRSP_ACCRUAL_MAX) - 1
+        self.set_initial_year(min(constants.RRSP_ACCRUAL_MAX) - 1)
         # Use income that's $1000 more than is necessary to max out RRSP
         # contribution room accrual for the year.
-        income = (
-            constants.RRSP_ACCRUAL_MAX[initial_year + 1] /
-            constants.RRSP_ACCRUAL_RATE
-        ) + 1000
-        owner = Person(
-            initial_year, self.owner.name, self.owner.birth_date,
-            retirement_date=self.owner.retirement_date,
-            gross_income=income,
-            raise_rate=0,
-            tax_treatment=self.owner.tax_treatment)
+        self.owner.gross_income = Money(
+            constants.RRSP_ACCRUAL_MAX[self.initial_year + 1]
+            / constants.RRSP_ACCRUAL_RATE
+            + 1000)
         account = self.AccountType(
-            owner, *args,
+            self.owner, *args,
             rate=0, inflation_adjust=self.inflation_adjust,
-            contribution_room=initial_contribution_room, **kwargs)
+            contribution_room=self.initial_contribution_room, **kwargs)
         account.next_year()
         # New contribution room should be the max, plus rollover from
         # the previous year.
         self.assertEqual(
             account.contribution_room,
-            initial_contribution_room +
-            Money(constants.RRSP_ACCRUAL_MAX[
-                initial_year + 1
-            ])
+            self.initial_contribution_room
+            + Money(constants.RRSP_ACCRUAL_MAX[self.initial_year + 1])
         )
 
+    def test_cont_excess_no_rollover(self, *args, **kwargs):
+        """ Test `contribution_room` with lots of income, no rollover. """
+        # Pick the initial year so that we'll know the accrual max. for
+        # next year
+        self.set_initial_year(min(constants.RRSP_ACCRUAL_MAX) - 1)
+        # Use income that's $1000 more than is necessary to max out RRSP
+        # contribution room accrual for the year.
+        self.owner.gross_income = Money(
+            constants.RRSP_ACCRUAL_MAX[self.initial_year + 1]
+            / constants.RRSP_ACCRUAL_RATE
+            + 1000)
         # Try again, but this time contribute the max. in the first year
         account = self.AccountType(
-            owner, *args,
+            self.owner, *args,
             rate=0, inflation_adjust=self.inflation_adjust,
-            contribution_room=initial_contribution_room, **kwargs)
+            contribution_room=self.initial_contribution_room, **kwargs)
         account.add_transaction(account.contribution_room)
         account.next_year()
         # New contribution room should be the max; no rollover.
         self.assertEqual(
             account.contribution_room,
-            Money(constants.RRSP_ACCRUAL_MAX[initial_year + 1])
+            Money(constants.RRSP_ACCRUAL_MAX[self.initial_year + 1])
         )
 
-        # Try again, but this time start with the last year for which we
-        # know the nominal accrual max already. The next year's accrual
-        # max will need to be estimated via inflation-adjustment:
-        initial_year = max(constants.RRSP_ACCRUAL_MAX)
+    def test_cont_inf_adjust_basic(self, *args, **kwargs):
+        """ Test inflation-adjust for `contribution_room` accrual max. """
+        # Start with the last year for which we know the nominal accrual
+        # max already. The next year's accrual max will need to be
+        # estimated via inflation-adjustment:
+        self.set_initial_year(max(constants.RRSP_ACCRUAL_MAX))
         # Inflation-adjust the (known) accrual max for the previous year
         # to get the max for this year.
         max_accrual = (
-            constants.RRSP_ACCRUAL_MAX[initial_year] *
-            self.inflation_adjust(initial_year + 1, initial_year)
+            constants.RRSP_ACCRUAL_MAX[self.initial_year] *
+            self.inflation_adjust(self.initial_year + 1, self.initial_year)
         )
         # Let's have income that's between the initial year's max
         # accrual and the next year's max accrual:
         income = Money(
             (max_accrual +
-             constants.RRSP_ACCRUAL_MAX[initial_year]
+             constants.RRSP_ACCRUAL_MAX[self.initial_year]
              ) / 2
         ) / constants.RRSP_ACCRUAL_RATE
-        owner = Person(
-            initial_year, self.owner.name, self.owner.birth_date,
-            retirement_date=self.owner.retirement_date,
-            gross_income=income,
-            raise_rate=0,
-            tax_treatment=self.owner.tax_treatment)
+        self.owner.gross_income = income
         account = self.AccountType(
-            owner, *args,
+            self.owner, *args,
             rate=0, inflation_adjust=self.inflation_adjust,
-            contribution_room=initial_contribution_room, **kwargs)
+            contribution_room=self.initial_contribution_room, **kwargs)
         account.next_year()
         # New contribution room should be simply determined by the
         # accrual rate set in Constants plus rollover.
         self.assertEqual(
             account.contribution_room,
-            initial_contribution_room +
+            self.initial_contribution_room +
             constants.RRSP_ACCRUAL_RATE * income
         )
 
+    def test_cont_inf_adjust_excess(self, *args, **kwargs):
+        """ Test inflation-adjust for `contribution_room` accrual max. """
+        # Start with the last year for which we know the nominal accrual
+        # max already. The next year's accrual max will need to be
+        # estimated via inflation-adjustment:
+        self.set_initial_year(max(constants.RRSP_ACCRUAL_MAX))
+        # Inflation-adjust the (known) accrual max for the previous year
+        # to get the max for this year.
+        max_accrual = (
+            constants.RRSP_ACCRUAL_MAX[self.initial_year] *
+            self.inflation_adjust(self.initial_year + 1, self.initial_year)
+        )
         # Try again, but now with income greater than the inflation-
         # adjusted accrual max.
-        income = max_accrual / constants.RRSP_ACCRUAL_RATE + 1000
-        owner = Person(
-            initial_year, self.owner.name, self.owner.birth_date,
-            retirement_date=self.owner.retirement_date,
-            gross_income=income,
-            raise_rate=0,
-            tax_treatment=self.owner.tax_treatment)
+        income = Money(max_accrual / constants.RRSP_ACCRUAL_RATE + 1000)
+        self.owner.gross_income = income
         account = self.AccountType(
-            owner, *args,
+            self.owner, *args,
             rate=0, inflation_adjust=self.inflation_adjust,
-            contribution_room=initial_contribution_room, **kwargs)
+            contribution_room=self.initial_contribution_room, **kwargs)
         account.add_transaction(account.contribution_room)  # no rollover
         account.next_year()
-        # New contribution room should be the max accrual; no rollover.
-        self.assertAlmostEqual(account.contribution_room,
-                               Money(max_accrual), 3)
+        # New contribution room should be the max accrual, since there's
+        # no rollover due to the maxed-out contribution last year.
+        self.assertAlmostEqual(
+            account.contribution_room, Money(max_accrual), 3)
 
     def test_min_outflow(self, *args, **kwargs):
         """ Test RRSP.min_outflow. """
@@ -487,6 +510,32 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         self.assertEqual(account.rrif_conversion_year, account.initial_year)
 
         # NOTE: If we implement automatic RRIF conversions, test that.
+
+    def test_spousal_contribution(self, *args, **kwargs):
+        """ Tests contributions to spousal RRSP. """
+        # Ensure that the spouses have different incomes for testing:
+        self.owner.spouse.gross_income = Money(100000)
+        self.owner.gross_income = Money(10000)
+        # The contribution limits are based on self.owner (not spouse)
+        regular_account = self.AccountType(
+            self.owner, *args,
+            contribution_room=Money(1000), **kwargs)
+        spousal_account = self.AccountType(
+            self.owner.spouse, *args,
+            contributor=self.owner, **kwargs)
+        # Use up the contribution room in this year:
+        spousal_account.add_transaction(1000)
+        spousal_account.next_year()
+        regular_account.next_year()
+        # Contribution room for the accounts should be the same, and
+        # should equal the annual accrual for `self.owner` (without
+        # carryover, since we used up all contribution room last year):
+        self.assertEqual(
+            spousal_account.max_inflow(),
+            Money(10000) * constants.RRSP_ACCRUAL_RATE)
+        self.assertEqual(
+            regular_account.max_inflow(),
+            spousal_account.max_inflow())
 
 
 class TestTFSAMethods(TestRegisteredAccountMethods):

@@ -666,7 +666,8 @@ class RegisteredAccount(Account):
         """ Confirms that the year is within the range of our data. """
         # Calculate contribution room accrued based on this year's
         # transaction/etc. information
-        contribution_room = self.next_contribution_room()
+        if self.this_year + 1 not in self.contribution_room_history:
+            contribution_room = self.next_contribution_room()
         # NOTE: Invoking super().next_year will increment self.this_year
         super().next_year()
 
@@ -676,7 +677,8 @@ class RegisteredAccount(Account):
 
         # The contribution room we accrued last year becomes available
         # in the next year, so assign after calling `next_year`:
-        self.contribution_room = contribution_room
+        if self.this_year not in self.contribution_room_history:
+            self.contribution_room = contribution_room
 
     def next_contribution_room(self):
         """ Returns the contribution room for next year.
