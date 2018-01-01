@@ -7,7 +7,7 @@ __all__ = [
 ]
 
 from forecaster.canada.accounts import (
-    RRSP, TFSA, TaxableAccount, PrincipleResidence)
+    RegisteredAccount, RRSP, TFSA, TaxableAccount, PrincipleResidence)
 from forecaster.canada.tax import TaxCanada
 from forecaster.canada.settings import SettingsCanada
 from forecaster.canada.forecaster import ForecasterCanada

@@ -551,8 +551,8 @@ class Account(TaxSource):
         return max(self.returns, Money(0))
 
 
-class RegisteredAccount(Account):
-    """ An account with a contribution room limit.
+class ContributionLimitAccount(Account):
+    """ An account with contribution limits.
 
     The contribution room limit may be shared between accounts. Such
     accounts should share a `contribution_token` value, which is
@@ -567,28 +567,29 @@ class RegisteredAccount(Account):
     method `next_contribution_room`, which returns the contribution
     room for the following year.
 
-    Args:
-        contribution_room (Money): The amount of contribution room
-            available in the first year. Optional.
-        contributor (Person): The contributor to the account. Optional.
-            If not provided, the contributor is assumed to be the same
-            as the annuitant (i.e. the owner.)
+    Attributes:
+        contribution_room (Union[Money, None]): The amount of
+            contribution room available in the current year.
+
+            `None` if no contribution room has yet been recorded for
+            this year.
+        contributor (Union[Person, None]): The contributor to the
+            account. By default, this is the owner.
     """
 
     def __init__(
-        self, owner, balance=0, rate=0, transactions=None, nper=1,
-        inputs=None, initial_year=None, contribution_room=None,
-        contributor=None, **kwargs
+        self, *args, contribution_room=None, contributor=None, **kwargs
     ):
-        """ Initializes a RegisteredAccount object. """
+        """ Initializes a ContributionLimitAccount object.
 
-        # The superclass has a lot of arguments, so we're sort of stuck
-        # with having a lot of arguments here.
-        # pylint: disable=too-many-arguments
-
-        super().__init__(
-            owner, balance=balance, rate=rate, transactions=transactions,
-            nper=nper, inputs=inputs, initial_year=initial_year, **kwargs)
+        Args:
+            contribution_room (Money): The amount of contribution room
+                available in the first year. Optional.
+            contributor (Person): The contributor to the account. Optional.
+                If not provided, the contributor is assumed to be the same
+                as the annuitant (i.e. the owner.)
+        """
+        super().__init__(*args, **kwargs)
 
         # If no contributor was provided, assume it's the owner.
         self._contributor = None
@@ -597,15 +598,17 @@ class RegisteredAccount(Account):
         else:
             self.contributor = contributor
 
-        # By default, set up a contribution_token that's the same for
+        # If `contribution_token` hasn't already been set, set
+        # `contribution_token` to a value that's the same for
         # all instances of a subclass but differs between subclasses.
+        # By default, we'll use the type name, but it could be anything.
 
         # We test for whether the member has been set before
         # accessing it, so this pylint error is not appropriate here.
         # pylint: disable=access-member-before-definition
-        if (
-            not hasattr(self, 'contribution_token')
-            or self.contribution_token is not None
+        if not (
+            hasattr(self, 'contribution_token')
+            and self.contribution_token is not None
         ):
             self.contribution_token = type(self).__name__
         # pylint: enable=access-member-before-definition

@@ -5,8 +5,8 @@ import math
 import decimal
 from decimal import Decimal
 from forecaster import (
-    Person, Account, Debt, RegisteredAccount, AllocationStrategy, Scenario,
-    Money)
+    Person, Account, Debt, ContributionLimitAccount, AllocationStrategy,
+    Scenario, Money)
 from forecaster.accounts import when_conv
 from tests.test_helper import type_check
 
@@ -653,22 +653,22 @@ class TestAccountMethods(unittest.TestCase):
         self.assertEqual(account.tax_deduction, Money(0))
 
 
-class TestRegisteredAccountMethods(TestAccountMethods):
-    """ Tests RegisteredAccount. """
+class TestContributionLimitAccountMethods(TestAccountMethods):
+    """ Tests ContributionLimitAccount. """
 
     def setUp(self):
-        """ Sets up variables for testing RegisteredAccount """
+        """ Sets up variables for testing ContributionLimitAccount """
         super().setUp()
 
-        self.AccountType = RegisteredAccount
+        self.AccountType = ContributionLimitAccount
         self.contribution_room = 0
 
     def test_init_basic(self, *args, **kwargs):
-        """ Test RegisteredAccount.__init__ """
+        """ Test ContributionLimitAccount.__init__ """
         super().test_init_basic(
             *args, contribution_room=self.contribution_room, **kwargs)
 
-        # Basic init using pre-built RegisteredAccount-specific args
+        # Basic init using pre-built ContributionLimitAccount-specific args
         # and default Account args
         account = self.AccountType(
             self.owner, *args,
@@ -698,7 +698,7 @@ class TestRegisteredAccountMethods(TestAccountMethods):
         self.assertEqual(account.contribution_room, Money(100))
 
     def test_init_invalid(self, *args, **kwargs):
-        """ Test RegisteredAccount.__init__ with invalid inputs. """
+        """ Test ContributionLimitAccount.__init__ with invalid inputs. """
         super().test_init_invalid(
             *args, contribution_room=self.contribution_room, **kwargs)
 
@@ -715,7 +715,7 @@ class TestRegisteredAccountMethods(TestAccountMethods):
                 contribution_room='invalid', **kwargs)
 
     def test_properties(self, *args, **kwargs):
-        """ Test RegisteredAccount properties """
+        """ Test ContributionLimitAccount properties """
         # Basic check: properties return scalars (current year's values)
         account = self.AccountType(
             self.owner, *args,
@@ -723,19 +723,19 @@ class TestRegisteredAccountMethods(TestAccountMethods):
         self.assertEqual(account.contribution_room,
                          self.contribution_room)
 
-        # NOTE: RegisteredAccount.next_year() raises NotImplementedError
+        # NOTE: ContributionLimitAccount.next_year() raises NotImplementedError
         # and some subclasses require args for next_year(). That is
         # already dealt with by test_next, so check that properties are
         # pointing to the current year's values after calling next_year
         # in text_next.
 
     def test_next_year(self, *args, **kwargs):
-        """ Test RegisteredAccount.next_year. """
+        """ Test ContributionLimitAccount.next_year. """
         # next_contribution_room is not implemented for
-        # RegisteredAccount, and it's required for next_year, so confirm
+        # ContributionLimitAccount, and it's required for next_year, so confirm
         # that trying to call next_year() throws an appropriate error.
-        if self.AccountType == RegisteredAccount:
-            account = RegisteredAccount(self.owner)
+        if self.AccountType == ContributionLimitAccount:
+            account = ContributionLimitAccount(self.owner)
             with self.assertRaises(NotImplementedError):
                 account.next_year()
         # For other account types, try a conventional next_year test
@@ -744,16 +744,16 @@ class TestRegisteredAccountMethods(TestAccountMethods):
                 *args, **kwargs)
 
     def test_returns(self, *args, **kwargs):
-        """ Test RegisteredAccount.returns. """
+        """ Test ContributionLimitAccount.returns. """
         # super().test_returns calls next_year(), which calls
         # next_contribution_room(), which is not implemented for
-        # RegisteredAccount. Don't test returns for this class,
+        # ContributionLimitAccount. Don't test returns for this class,
         # and instead allow subclasses to pass through.
-        if self.AccountType != RegisteredAccount:
+        if self.AccountType != ContributionLimitAccount:
             super().test_returns(*args, **kwargs)
 
     def test_max_inflow(self, *args, **kwargs):
-        """ Test RegisteredAccount.max_inflow. """
+        """ Test ContributionLimitAccount.max_inflow. """
         # Init an account with standard parameters, confirm that
         # max_inflow corresponds to contribution_room.
         account = self.AccountType(

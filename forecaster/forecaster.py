@@ -3,7 +3,7 @@
 from copy import deepcopy
 from forecaster.forecast import Forecast
 from forecaster.person import Person
-from forecaster.accounts import Account, RegisteredAccount, Debt
+from forecaster.accounts import Account, ContributionLimitAccount, Debt
 from forecaster.tax import Tax
 from forecaster.strategy import (
     ContributionStrategy, WithdrawalStrategy, TransactionStrategy,
@@ -416,9 +416,9 @@ class Forecaster(object):
         self.assets.add(account)
         return account
 
-    def add_registered_account(
-        self, contribution_room=None, contributor=None, cls=RegisteredAccount,
-        **kwargs
+    def add_contribution_limit_account(
+        self, contribution_room=None, contributor=None,
+        cls=ContributionLimitAccount, **kwargs
     ):
         """ Adds an asset to the forecast and to the `assets` set.
 

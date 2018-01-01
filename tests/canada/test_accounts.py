@@ -7,19 +7,20 @@ from decimal import Decimal
 from random import Random
 from forecaster import Person, Money
 from forecaster.canada import (
-    RRSP, TFSA, TaxableAccount, PrincipleResidence, constants)
+    RRSP, TFSA, RegisteredAccount, TaxableAccount, PrincipleResidence,
+    constants)
 from tests.test_accounts import (
-    TestAccountMethods, TestRegisteredAccountMethods)
+    TestAccountMethods, TestContributionLimitAccountMethods)
 
 
-class TestRRSPMethods(TestRegisteredAccountMethods):
-    """ Test RRSP """
+class TestRegisteredAccountMethods(TestContributionLimitAccountMethods):
+    """ Test RegisteredAccount. """
 
     def setUp(self):
-        """ Sets up variables for testing RRSP. """
+        """ Sets up variables for testing RegisteredAccount. """
         super().setUp()
 
-        self.AccountType = RRSP
+        self.AccountType = RegisteredAccount
 
         # Randomly generate inflation adjustments based on inflation
         # rates of 1%-20%. Add a few extra years on to the end for
@@ -34,38 +35,15 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
             )
         self.inflation_adjust = inflation_adjust
 
-        # Ensure that inflation_adjustments covers the entire range of
-        # constants.RRSPContributionAccrualMax and the years where
-        # self.owner is 71-95 (plus a few extra for testing)
-        min_year = min(min(constants.RRSP_ACCRUAL_MAX),
-                       self.owner.birth_date.year +
-                       min(constants.RRSP_RRIF_WITHDRAWAL_MIN))
-        max_year = max(max(constants.RRSP_ACCRUAL_MAX),
-                       self.owner.birth_date.year +
-                       max(constants.RRSP_RRIF_WITHDRAWAL_MIN)) + 2
-        self.extend_inflation_adjustments(min_year, max_year)
-
-        self.initial_contribution_room = Money(100)
-        # Set income to a non-Money object to test type-conversion.
-        # Use a value that won't result in a deduction exceeding the
-        # inflation-adjusted RRSPAccrualMax (~$25,000 in 2017)
-        self.owner.income = Money(100000)  # -> $18,000 accrual
-        # Ensure there are no raises so income is the same in each year:
-        self.owner.raise_rate_function = lambda _: 0
-        self.owner.gross_income = Money(100000)
-        self.owner.spouse = Person(
-            self.initial_year, "Spouse", "2 February 1998",
-            gross_income=50000,
-            retirement_date=self.owner.retirement_date)
-
     def set_initial_year(self, initial_year):
-        """ Sets initial_year for all relevant. """
+        """ Sets initial_year for all relevant objects. """
         self.initial_year = initial_year
         self._set_initial_year_ledger(self.owner, initial_year)
         for account in self.owner.accounts:
             self._set_initial_year_ledger(account, initial_year)
 
-    def _set_initial_year_ledger(self, ledger, initial_year):
+    @staticmethod
+    def _set_initial_year_ledger(ledger, initial_year):
         """ Updates `initial_year` for a `Ledger` object.
 
         This involves updating the various `\\*_history` dicts that
@@ -107,17 +85,15 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
             i += 1
 
     def test_init_basic(self, *args, **kwargs):
-        """ Basic init tests for RRSP. """
+        """ Basic init tests for RegisteredAccount. """
         super().test_init_basic(*args, **kwargs)
 
-        # The only thing that RRSP.__init__ does is set inflation_adjust
-        # and rrif_conversion_year, so test those:
+        # The only thing that RegisteredAccount.__init__ does is set
+        # inflation_adjust, so test that:
         account = self.AccountType(
             self.owner, *args,
             inflation_adjust=self.inflation_adjust,
             contribution_room=self.contribution_room, **kwargs)
-        self.assertEqual(self.owner.age(account.rrif_conversion_year),
-                         constants.RRSP_RRIF_CONVERSION_AGE)
         self.assertEqual(account.inflation_adjust, self.inflation_adjust)
 
     def test_init_type_conversion(self, *args, **kwargs):
@@ -155,6 +131,74 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
                 self.owner, *args,
                 inflation_adjust='invalid',
                 contribution_room=self.contribution_room, **kwargs)
+
+    def test_returns(self, *args, **kwargs):
+        """ Test RegisteredAccount.returns. """
+        # super().test_returns calls next_year(), which calls
+        # next_contribution_room(), which is not implemented for
+        # RegisteredAccount. Don't test returns for this class,
+        # and instead allow subclasses to pass through.
+        if self.AccountType != RegisteredAccount:
+            super().test_returns(*args, **kwargs)
+
+    def test_next_year(self, *args, **kwargs):
+        """ Test RegisteredAccount.next_year(). """
+        # super().test_year calls next_year(), which calls
+        # next_contribution_room(), which is not implemented for
+        # RegisteredAccount. Don't test next_year for this class,
+        # and instead allow subclasses to pass through.
+        if self.AccountType != RegisteredAccount:
+            super().test_returns(*args, **kwargs)
+
+
+class TestRRSPMethods(TestRegisteredAccountMethods):
+    """ Test RRSP """
+
+    def setUp(self):
+        """ Sets up variables for testing RRSP. """
+        super().setUp()
+
+        self.AccountType = RRSP
+
+        # Ensure that inflation_adjustments covers the entire range of
+        # constants.RRSP_ACCRUAL_MAX and the years where self.owner is
+        # 71-95 (plus a few extra for testing)
+        min_year = min(min(constants.RRSP_ACCRUAL_MAX),
+                       self.owner.birth_date.year +
+                       min(constants.RRSP_RRIF_WITHDRAWAL_MIN))
+        max_year = max(max(constants.RRSP_ACCRUAL_MAX),
+                       self.owner.birth_date.year +
+                       max(constants.RRSP_RRIF_WITHDRAWAL_MIN)) + 2
+        self.extend_inflation_adjustments(min_year, max_year)
+
+        self.initial_contribution_room = Money(100)
+        # Set income to a non-Money object to test type-conversion.
+        # Use a value that won't result in a deduction exceeding the
+        # inflation-adjusted RRSPAccrualMax (~$25,000 in 2017)
+        self.owner.income = Money(100000)  # -> $18,000 accrual
+        # Ensure there are no raises so income is the same in each year:
+        self.owner.raise_rate_function = lambda _: 0
+        self.owner.gross_income = Money(100000)
+        self.owner.spouse = Person(
+            self.initial_year, "Spouse", "2 February 1998",
+            gross_income=50000,
+            retirement_date=self.owner.retirement_date)
+
+    def test_init_basic(self, *args, **kwargs):
+        """ Basic init tests for RRSP. """
+        super().test_init_basic(*args, **kwargs)
+
+        # The only thing that RRSP.__init__ does is set
+        # `rrif_conversion_year`, so test that:
+        account = self.AccountType(
+            self.owner, *args,
+            contribution_room=self.contribution_room, **kwargs)
+        self.assertEqual(
+            self.owner.age(account.rrif_conversion_year),
+            min(
+                constants.RRSP_RRIF_CONVERSION_AGE,
+                self.owner.retirement_age)
+        )
 
     def test_taxable_income(self, *args, **kwargs):
         """ Test taxable_income with no withdrawals or contributions.
@@ -539,56 +583,18 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
 
 
 class TestTFSAMethods(TestRegisteredAccountMethods):
-    """ Test TFSA """
+    """ Test TFSA. """
 
     def setUp(self):
         """ Sets up variables for testing TFSAs. """
         super().setUp()
         self.AccountType = TFSA
 
-        # Randomly generate inflation adjustments based on inflation
-        # rates of 1%-20%. Add a few extra years on to the end for
-        # testing purposes.
-        self.inflation_adjustments = {self.initial_year: Decimal(1)}
-
-        def inflation_adjust(target_year, base_year):
-            """ Inflation from base_year to target_year. """
-            return (
-                self.inflation_adjustments[target_year] /
-                self.inflation_adjustments[base_year]
-            )
-        self.inflation_adjust = inflation_adjust
-
         # Ensure that inflation_adjustments covers the entire range of
         # constants.TFSAAnnualAccrual
         min_year = min(constants.TFSA_ANNUAL_ACCRUAL)
         max_year = max(constants.TFSA_ANNUAL_ACCRUAL) + 10
         self.extend_inflation_adjustments(min_year, max_year)
-
-    def extend_inflation_adjustments(self, min_year, max_year):
-        """ Convenience method.
-
-        Ensures self.inflation_adjustment spans min_year and max_year.
-        """
-        rand = Random()
-
-        # Extend inflation_adjustments backwards, assuming 1-20% inflation
-        i = min(self.inflation_adjustments)
-        while i > min_year:
-            self.inflation_adjustments[i - 1] = (
-                self.inflation_adjustments[i] /
-                Decimal(1 + rand.randint(1, 20) / 100)
-            )
-            i -= 1
-
-        # Extend inflation_adjustments forwards, assuming 1-20% inflation
-        i = max(self.inflation_adjustments)
-        while i < max_year:
-            self.inflation_adjustments[i + 1] = (
-                self.inflation_adjustments[i] *
-                Decimal(1 + rand.randint(1, 20) / 100)
-            )
-            i += 1
 
     def test_init_basic(self, *args, **kwargs):
         """ Basic init tests for TFSA. """

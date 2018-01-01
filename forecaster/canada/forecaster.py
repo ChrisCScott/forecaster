@@ -19,13 +19,16 @@ class ForecasterCanada(Forecaster):
         super().__init__(settings=settings, **kwargs)
 
     def add_rrsp(
-        self, inflation_adjust=None, cls=RRSP, **kwargs
+        self, inflation_adjust=None, rrif_conversion_year=None, cls=RRSP,
+        **kwargs
     ):
         """ Adds an RRSP to the forecast. """
         self.set_kwarg(
             kwargs, 'inflation_adjust', inflation_adjust,
             self.scenario.inflation_adjust)
-        return self.add_registered_account(cls=cls, **kwargs)
+        self.set_kwarg(
+            kwargs, 'rrif_conversion_year', rrif_conversion_year, None)
+        return self.add_contribution_limit_account(cls=cls, **kwargs)
 
     def add_tfsa(
         self, inflation_adjust=None, cls=TFSA, **kwargs
@@ -34,7 +37,7 @@ class ForecasterCanada(Forecaster):
         self.set_kwarg(
             kwargs, 'inflation_adjust', inflation_adjust,
             self.scenario.inflation_adjust)
-        return self.add_registered_account(cls=cls, **kwargs)
+        return self.add_contribution_limit_account(cls=cls, **kwargs)
 
     def add_taxable_account(
         self, acb=None, cls=TaxableAccount, **kwargs

@@ -1,6 +1,6 @@
 """ A module for Canada-specific ledger subclasses. """
 
-from forecaster.accounts import Account, RegisteredAccount
+from forecaster.accounts import Account, ContributionLimitAccount
 from forecaster.ledger import (
     Money, recorded_property, recorded_property_cached)
 from forecaster.utility import (
@@ -8,19 +8,18 @@ from forecaster.utility import (
 from forecaster.canada import constants
 
 
-class RRSP(RegisteredAccount):
-    """ A Registered Retirement Savings Plan (Canada). """
+class RegisteredAccount(ContributionLimitAccount):
+    """ An abstract base class for RRSPs, TFSAs, etc. """
 
-    # Explicitly repeat superclass args for the sake of intellisense.
-    def __init__(
-        self, owner, balance=0, rate=0, transactions=None, nper=1, inputs=None,
-        initial_year=None, contribution_room=None, contributor=None,
-        inflation_adjust=None, **kwargs
-    ):
-        """ Initializes an RRSP object.
+    # This class is also abstract; it's up to subclasses to implement
+    # `next_contribution_room` concretely.
+    # pylint: disable=abstract-method
 
-        See documentation for `Account` and `RegisteredAccount` for
-        information on any args not listed below.
+    def __init__(self, *args, inflation_adjust=None, **kwargs):
+        """ Inits RegisteredAccount.
+
+        See documentation for `Account` and `ContributionLimitAccount`
+        for information on any args not listed below.
 
         Args:
             inflation_adjust: A method with the following form:
@@ -32,15 +31,31 @@ class RRSP(RegisteredAccount):
                 Optional. If not provided, all values are assumed to be
                 in real terms, so no inflation adjustment is performed.
         """
-        # This method does have a lot of arguments, but they're mostly
-        # inherited from a superclass. We're stuck with them here.
-        # pylint: disable=too-many-arguments
+        super().__init__(*args, **kwargs)
+        self.inflation_adjust = build_inflation_adjust(inflation_adjust)
 
-        super().__init__(
-            owner, balance=balance, rate=rate, transactions=transactions,
-            nper=nper, inputs=inputs, initial_year=initial_year,
-            contribution_room=contribution_room, contributor=contributor,
-            **kwargs)
+
+class RRSP(RegisteredAccount):
+    """ A Registered Retirement Savings Plan (Canada). """
+
+    def __init__(self, *args, rrif_conversion_year=None, **kwargs):
+        """ Initializes an RRSP object.
+
+        This class also implements RRIFs (which RRSPs are converted into
+        either at a user-defined time or by operation of law). A new
+        object is not created when the RRSP converts to an RRIF; rather,
+        the object's behaviour changes to limit inflows, require
+        minimum withdrawals, and reduce withholding taxes.
+
+        See documentation for `RegisteredAccount` for information on
+        args not listed below.
+
+        Args:
+            rrif_conversion_year (int): The year in which the `RRSP`
+                object's behaviour switches from RRSP rules to RRIF
+                rules.
+        """
+        super().__init__(*args, **kwargs)
 
         # Although `person` might provide a retirement_age, the RRSP
         # won't necessarily be turned into an RRIF at the retirement
@@ -50,13 +65,8 @@ class RRSP(RegisteredAccount):
         # TODO: Automatically trigger RRIF conversion when an outflow
         # is detected? (Perhaps control this behaviour with an arg?)
 
-        self.inflation_adjust = build_inflation_adjust(inflation_adjust)
-
-        # The law requires that RRSPs be converted to RRIFs by a certain
-        # age (currently 71). We can calculate that here:
-        self.rrif_conversion_year = self.initial_year + \
-            constants.RRSP_RRIF_CONVERSION_AGE - \
-            self.owner.age(self.initial_year)
+        self._rrif_conversion_year = None
+        self.rrif_conversion_year = rrif_conversion_year
 
         # Determine the max contribution room accrual in initial_year:
         self._initial_accrual = extend_inflation_adjusted(
@@ -68,10 +78,37 @@ class RRSP(RegisteredAccount):
         # If no contribution room is provided and none is already known,
         # set contribution_room to 0.
         if (
-            contribution_room is None and
-            self.initial_year not in self.contribution_room_history
+            'contribution_room' not in kwargs and
+            self.contribution_room is None
         ):
             self.contribution_room = Money(0)
+
+    @property
+    def rrif_conversion_year(self):
+        """ The year in which the RRSP is converted to an RRIF.
+
+        If not set explicitly, the owner's retirement year or year in
+        which conversion is required by law is returned (whichever
+        happens first).
+        """
+        if self._rrif_conversion_year is not None:
+            return self._rrif_conversion_year
+        else:
+            mandatory_conversion_year = (
+                self.initial_year
+                + constants.RRSP_RRIF_CONVERSION_AGE
+                - self.owner.age(self.initial_year)
+            )
+            return min(
+                self.owner.retirement_date.year, mandatory_conversion_year)
+
+    @rrif_conversion_year.setter
+    def rrif_conversion_year(self, val):
+        """ Sets `rrif_conversion_year`. """
+        if val is None:
+            self._rrif_conversion_year = None
+        else:
+            self._rrif_conversion_year = int(val)
 
     def convert_to_rrif(self, year=None):
         """ Converts the RRSP to an RRIF. """
