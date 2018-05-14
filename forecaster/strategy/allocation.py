@@ -1,7 +1,11 @@
 """ Provides classes for determining asset allocation. """
 
+from collections import namedtuple
 from decimal import Decimal
 from forecaster.strategy.base import Strategy, strategy_method
+
+
+AssetAllocation = namedtuple('AssetAllocation', 'stocks bonds other')
 
 
 class RateFunction(object):
@@ -112,11 +116,12 @@ class AllocationStrategy(Strategy):
             plannee.
 
     Returns:
-        dict[str, Decimal]: `{asset: allocation}` pairs, where `asset`
-        is a string in `{'stocks', 'bonds'}` and `allocation` is the
-        percentage of a portfolio that is made up of that asset class.
+        AssetAllocation: A `namedtuple` where each member is the
+        percentage of a portfolio that is made up of the named asset
+        class.
 
-        Allocations sum to 1 (e.g. `Decimal(0.03` means 3%).
+        Allocations of the members sum to 1 (e.g. `Decimal(0.03` means
+        3%).
     """
     # pylint: disable=too-many-arguments
     def __init__(
@@ -141,15 +146,17 @@ class AllocationStrategy(Strategy):
                              'greater than max_equity.')
 
     @strategy_method('n-age')
-    # pylint: disable=W0613
     def strategy_n_minus_age(
         self, age, retirement_age=None, *args, **kwargs
     ):
         """ Used for 100-age, 110-age, 125-age, etc. strategies. """
+        # *args and **kwargs are included for consistency between
+        # methods, even though we don't use them.
+        # pylint: disable=unused-argument
+
         # If we're adjusting for early/late retirement,
         # pretend we're a few years younger if we're retiring later
         # (or that we're older if retiring earlier)
-        self._param_check(age, 'age')
         if self.adjust_for_retirement_plan:
             self._param_check(retirement_age, 'retirement age')
             age += self.standard_retirement_age - retirement_age
@@ -164,12 +171,14 @@ class AllocationStrategy(Strategy):
         return {'stocks': target, 'bonds': 1 - target}
 
     @strategy_method('Transition to constant')
-    # pylint: disable=W0613
     def strategy_transition_to_const(
         self, age, retirement_age=None, *args, **kwargs
     ):
         """ Used for `Transition to 50-50`, `Transition to 70-30`, etc. """
-        self._param_check(age, 'age')
+        # *args and **kwargs are included for consistency between
+        # methods, even though we don't use them.
+        # pylint: disable=unused-argument
+
         # Assume we're retiring at the standard retirement age unless
         # adjust_for_retirement_plan is True
         if self.adjust_for_retirement_plan:
