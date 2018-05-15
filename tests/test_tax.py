@@ -4,12 +4,17 @@ import unittest
 from decimal import Decimal
 from forecaster import Tax, Money, Person
 # Include extra accounts to test handling of different tax* behaviour:
-from forecaster.canada import RRSP, TaxableAccount
+from forecaster.canada import RRSP, TaxableAccount, TFSA
 from tests.test_helper import type_check
 
 
 class TestTax(unittest.TestCase):
     """ Tests the `Tax` class. """
+
+    # We save a number of attributes for convenience in testing later
+    # on. We could refactor, but it would complicate the tests, which
+    # would be worse.
+    # pylint: disable=too-many-instance-attributes
 
     def setUp(self):
         self.initial_year = 2000
@@ -34,6 +39,11 @@ class TestTax(unittest.TestCase):
                 Money('10000'): Decimal('0.3')
             }
         }
+        # For convenience, build a sorted, type-converted array of
+        # each of the tax bracket thresholds:
+        self.brackets = sorted({
+            Money(key): self.tax_brackets[self.initial_year][key]
+            for key in self.tax_brackets[self.initial_year].keys()})
         # For convenience in testing, build an accum dict that
         # corresponds to the tax brackets above.
         self.accum = {
@@ -49,6 +59,54 @@ class TestTax(unittest.TestCase):
         self.credit_rate = {
             self.initial_year: Decimal('0.1')
         }
+
+        self.tax = Tax(
+            self.tax_brackets,
+            inflation_adjust=self.inflation_adjustments,
+            personal_deduction=self.personal_deduction,
+            credit_rate=self.credit_rate)
+
+        # Set up two people, spouses, on which to do tests
+        self.person1 = Person(
+            self.initial_year, "Tester 1", self.initial_year - 20,
+            retirement_date=self.initial_year + 45, gross_income=100000)
+        self.person2 = Person(
+            self.initial_year, "Tester 2", self.initial_year - 22,
+            retirement_date=self.initial_year + 43, gross_income=50000)
+
+        # Give the first person two accounts, one taxable and one
+        # tax-deferred. Withdraw the entirety from the taxable account,
+        # so that we don't need to worry about tax on unrealized growth:
+        self.taxable_account1 = TaxableAccount(
+            owner=self.person1,
+            acb=0, balance=50000, rate=Decimal('0.05'),
+            transactions={'start': -50000}, nper=1)
+        self.rrsp = RRSP(
+            owner=self.person1,
+            inflation_adjust=self.inflation_adjustments,
+            contribution_room=0, balance=10000, rate=Decimal('0.05'), nper=1)
+        # Employment income is fully taxable, and only half of capital
+        # gains (the income from the taxable account) is taxable:
+        self.person1_taxable_income = Money(
+            self.person1.gross_income + self.taxable_account1.balance / 2)
+
+        # Give the second person two accounts, one taxable and one
+        # non-taxable. Withdraw the entirety from the taxable account,
+        # so that we don't need to worry about tax on unrealized growth,
+        # and withdraw a bit from the non-taxable account (which should
+        # have no effect on taxable income):
+        self.taxable_account2 = TaxableAccount(
+            owner=self.person2,
+            acb=0, balance=20000, rate=Decimal('0.05'),
+            transactions={'start': -20000}, nper=1)
+        self.tfsa = TFSA(
+            owner=self.person2,
+            balance=50000, rate='0.05', transactions={'start': -20000},
+            nper=1)
+        # Employment income is fully taxable, and only half of capital
+        # gains (the income from the taxable account) is taxable:
+        self.person2_taxable_income = Money(
+            self.person2.gross_income + self.taxable_account2.balance / 2)
 
     def test_init_optional(self):
         """ Test Tax.__init__ with all arguments, including optional. """
@@ -77,7 +135,7 @@ class TestTax(unittest.TestCase):
         self.assertEqual(tax.personal_deduction(self.initial_year), Decimal(0))
         self.assertEqual(tax.credit_rate(self.initial_year), Decimal(1))
 
-    def test_init_type_conv(self):
+    def test_init_type_conv_str(self):
         """ Tests Tax.__init__ with args requiring type-conversion. """
         # Use an all-str dict and confirm that the output is correctly
         # typed
@@ -98,46 +156,53 @@ class TestTax(unittest.TestCase):
                 tax.tax_brackets(year), {Money: Decimal}))
         self.assertTrue(callable(tax.inflation_adjust))
 
-    def test_call(self):
-        """ Test Tax.__call__. """
-        # TODO: Split this into several independent tests.
+    def test_income_0(self):
+        """ Call Test on $0 income. """
+        # $0 should return $0 in tax owing. This is the easiest test.
+        self.assertEqual(self.tax(0, self.initial_year), Money(0))
 
-        # Set up variables, including some convenience variables.
-        tax = Tax(
-            self.tax_brackets,
-            inflation_adjust=self.inflation_adjustments,
-            personal_deduction=self.personal_deduction,
-            credit_rate=self.credit_rate)
-        year = self.initial_year
-        deduction = self.personal_deduction[year]
-        # Type-convert
-        brackets = sorted({
-            Money(key): self.tax_brackets[year][key]
-            for key in self.tax_brackets[year].keys()})
+    def test_income_in_deduction(self):
+        """ Call Test on income below the personal deduction. """
+        # Should return $0
+        self.assertEqual(
+            self.tax(
+                self.personal_deduction[self.initial_year] / 2,
+                self.initial_year),
+            Money(0))
 
-        # First batch: Money first arg (as opposed to iterable arg)
+    def test_income_at_deduction(self):
+        """ Call Test on income equal to the personal deduction. """
+        # Should return $0
+        self.assertEqual(
+            self.tax(
+                self.personal_deduction[self.initial_year],
+                self.initial_year),
+            Money(0))
 
-        # Easiest case: $0 should return $0 in tax owing
-        self.assertEqual(tax(0, year), Money(0))
-        # If this is less than the person deduction, should return $0
-        self.assertEqual(tax(deduction / 2, year), Money(0))
-        # Should also return $0 for the full personal deduction.
-        self.assertEqual(tax(deduction, year), Money(0))
+    def test_income_in_bracket_1(self):
+        """ Call Test on income mid-way into the lowest tax bracket. """
+        # NOTE: brackets[0] is $0; we need something between brackets[0]
+        # and brackets[1])
+        val = (
+            self.brackets[1] / 2
+            + self.personal_deduction[self.initial_year])
+        self.assertEqual(
+            self.tax(val, self.initial_year),
+            (val - self.personal_deduction[self.initial_year])
+            * self.tax_brackets[self.initial_year][self.brackets[0]])
 
-        # Find a value that's mid-way into the lowest marginal tax rate.
-        # (NOTE: brackets[0] is $0; we need something between
-        # brackets[0] and brackets[1])
-        val = brackets[1] / 2 + deduction
-        self.assertEqual(tax(val, year),
-                         (val - deduction) *
-                         self.tax_brackets[year][brackets[0]])
+    def test_income_at_bracket_1(self):
+        """ Call Test on income equal to the lowest tax bracket. """
         # Try again for a value that's at the limit of the lowest tax
         # bracket (NOTE: brackets are inclusive, so brackets[1] is
         # entirely taxed at the rate associated with brackets[0])
-        val = brackets[1] + deduction
-        self.assertEqual(tax(val, year),
-                         self.accum[year][brackets[1]])
+        val = self.brackets[1] + self.personal_deduction[self.initial_year]
+        self.assertEqual(
+            self.tax(val, self.initial_year),
+            self.accum[self.initial_year][self.brackets[1]])
 
+    def test_income_in_bracket_2(self):
+        """ Call Test on income mid-way into the second tax bracket. """
         # Find a value that's mid-way into the next (second) bracket.
         # Assuming a person deduction of $100 and tax rates bounded at
         # $0, $100 and $10000 with 10%, 20%, and 30% rates, this gives:
@@ -145,82 +210,90 @@ class TestTax(unittest.TestCase):
         #   Tax on next $100:   $10
         #   Tax on remaining:   20% of remaining
         # For a $5150 amount, this works out to tax of $1000.
-        val = (brackets[1] + brackets[2]) / 2 + deduction
-        self.assertEqual(tax(val, year),
-                         self.accum[year][brackets[1]] +
-                         ((brackets[1] + brackets[2]) / 2 - brackets[1]) *
-                         self.tax_brackets[year][brackets[1]])
-        # Try again for a value that's at the limit of the lowest tax
-        # bracket (NOTE: brackets are inclusive, so brackets[1] is
-        # entirely taxed at the rate associated with brackets[0])
-        val = brackets[2] + deduction
-        self.assertEqual(tax(val, year),
-                         self.accum[year][brackets[1]] +
-                         (brackets[2] - brackets[1]) *
-                         self.tax_brackets[year][brackets[1]])
+        val = (
+            (self.brackets[1] + self.brackets[2]) / 2
+            + self.personal_deduction[self.initial_year])
+        self.assertEqual(
+            self.tax(val, self.initial_year),
+            self.accum[self.initial_year][self.brackets[1]] +
+            (
+                (self.brackets[1] + self.brackets[2]) / 2
+                - self.brackets[1])
+            * self.tax_brackets[self.initial_year][self.brackets[1]])
 
+    def test_income_at_bracket_2(self):
+        """ Call Test on income equal to the second tax bracket. """
+        # Try again for a value that's at the limit of the second tax
+        # bracket (NOTE: brackets are inclusive, so brackets[2] is
+        # entirely taxed at the rate associated with brackets[1])
+        val = self.brackets[2] + self.personal_deduction[self.initial_year]
+        self.assertEqual(
+            self.tax(val, self.initial_year),
+            self.accum[self.initial_year][self.brackets[1]]
+            + (self.brackets[2] - self.brackets[1])
+            * self.tax_brackets[self.initial_year][self.brackets[1]])
+
+    def test_income_in_bracket_3(self):
+        """ Call Test on income in the highest tax bracket. """
         # Find a value that's somewhere in the highest (unbounded) bracket.
-        bracket = max(brackets)
-        val = bracket * 2 + deduction
-        self.assertEqual(tax(val, year),
-                         self.accum[year][bracket] +
-                         bracket * self.tax_brackets[year][bracket])
+        bracket = max(self.brackets)
+        val = bracket * 2 + self.personal_deduction[self.initial_year]
+        self.assertEqual(
+            self.tax(val, self.initial_year),
+            self.accum[self.initial_year][bracket] +
+            bracket * self.tax_brackets[self.initial_year][bracket])
 
-        # Now move on to testing tax treatment of one person:
-        person1 = Person(self.initial_year, "Tester 1", self.initial_year - 20,
-                         retirement_date=self.initial_year + 45,
-                         gross_income=100000)
-        # Build three accounts: Two for one person and one for the other
-        # The entire balance of each account is withdrawn immediately.
-        # Half of the taxable account withdrawal is taxable and 100% of
-        # the RRSP withdrawal is taxable.
-        balance1 = Money(1000000)
-        TaxableAccount(
-            owner=person1,
-            acb=0, balance=balance1, rate=Decimal('0.05'),
-            transactions={'start': -balance1}, nper=1)
-        balance2 = Money(500000)
-        RRSP(
-            owner=person1,
-            inflation_adjust=self.inflation_adjustments,
-            contribution_room=0, balance=balance2, rate=Decimal('0.05'),
-            transactions={'start': -balance2}, nper=1)
-        # This is the result we would expect
-        taxable_income1 = person1.gross_income + balance1 / 2 + balance2
-        self.assertEqual(tax(person1, person1.initial_year),
-                         tax(taxable_income1, person1.initial_year))
+    def test_taxpayer_single(self):
+        """ Call test on a single taxpayer. """
+        # The tax paid on the person's income should be the same as if
+        # we calculated the tax directly on the money itself.
+        self.assertEqual(
+            self.tax(self.person1, self.initial_year),
+            self.tax(self.person1_taxable_income, self.initial_year))
+        # We should get a similar result on the other person:
+        self.assertEqual(
+            self.tax(self.person2, self.initial_year),
+            self.tax(self.person2_taxable_income, self.initial_year))
 
-        # Finally, test tax treatment of multiple people:
-        person2 = Person(
-            self.initial_year, "Tester 2", self.initial_year - 18,
-            retirement_date=self.initial_year + 47, gross_income=50000)
-        balance3 = Money(10000)
-        TaxableAccount(
-            owner=person2,
-            acb=0, balance=balance3, rate=Decimal('0.05'),
-            transactions={'start': -balance3}, nper=1)
-        taxable_income2 = person2.gross_income + balance3 / 2  # 50% taxable
-        # Make sure that we're getting the correct result for person2:
-        self.assertEqual(tax(person2, person2.initial_year),
-                         tax(taxable_income2, person2.initial_year))
-
-        # Now confirm that the Tax object works with multiple people.
-        self.assertEqual(tax({person1, person2}, self.initial_year),
-                         tax(taxable_income1, self.initial_year) +
-                         tax(taxable_income2, self.initial_year))
-        # Try also with a single-member set; should return the same as
+    def test_taxpayer_single_set(self):
+        """ Call test on a set with a single taxpayer member. """
+        # Try with a single-member set; should return the same as
         # it would if calling on the person directly.
-        self.assertEqual(tax({person1}, person1.initial_year),
-                         tax(person1, person1.initial_year))
+        self.assertEqual(
+            self.tax({self.person1}, self.initial_year),
+            self.tax(self.person1, self.initial_year))
 
-        # Last thing: Test inflation-adjustment.
+    def test_taxpayer_set(self):
+        """ Call Test on a set of two non-spouse taxpayers. """
+        # The two test people are set up as spouses; we need to split
+        # them up.
+        self.person1.spouse = None
+        self.person2.spouse = None
+        self.assertEqual(
+            self.tax({self.person1, self.person2}, self.initial_year),
+            self.tax(self.person1_taxable_income, self.initial_year)
+            + self.tax(self.person2_taxable_income, self.initial_year))
+
+    def test_taxpayer_spouses(self):
+        """ Call Test on a set of two spouse taxpayers. """
+        # NOTE: This test is vulnerable to breakage if special tax
+        # credits get implemented for spouses. Watch out for that.
+        self.assertEqual(
+            self.tax({self.person1, self.person2}, self.initial_year),
+            self.tax(self.person1_taxable_income, self.initial_year)
+            + self.tax(self.person2_taxable_income, self.initial_year))
+
+    def test_inflation_adjust(self):
+        """ Call Test on a future year with inflation effects. """
         # Start with a baseline result in initial_year. Then confirm
         # that the tax owing on twice that amount in double_year should
         # be exactly double the tax owing on the baseline result.
         # (Anything else suggests that something is not being inflation-
         # adjusted properly, e.g. a bracket or a deduction)
-        double_tax = tax(taxable_income1 * 2, self.double_year)
-        single_tax = tax(taxable_income1, self.initial_year)
+        double_tax = self.tax(
+            self.person1_taxable_income * 2, self.double_year)
+        single_tax = self.tax(
+            self.person1_taxable_income, self.initial_year)
         self.assertEqual(double_tax, single_tax * 2)
 
 if __name__ == '__main__':
