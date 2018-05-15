@@ -451,7 +451,7 @@ class Tax(object):
                 kwargs['deduction'] = deduction[person]
             if person in credit:
                 kwargs['credit'] = credit[person]
-            tax += self.tax_people(person, year, **kwargs)
+            tax += self.tax_person(person, year, **kwargs)
         return tax
 
     def __call__(self, income, year,
