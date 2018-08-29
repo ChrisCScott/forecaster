@@ -1,8 +1,7 @@
-## Ignore Visual Studio Code-specific files.
+## Ignore Visual Studio Code-specific files, except for specific ones.
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/Global/VisualStudioCode.gitignore
 
-.vscode/
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
