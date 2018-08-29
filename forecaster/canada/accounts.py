@@ -245,7 +245,7 @@ class TFSA(RegisteredAccount):
     """ A Tax-Free Savings Account (Canada). """
 
     def __init__(self, owner, balance=0, rate=0,
-                 transactions=None, nper=1, inputs=None, initial_year=None,
+                 nper=1, inputs=None, initial_year=None,
                  contribution_room=None, contributor=None,
                  inflation_adjust=None, **kwargs):
         """ Initializes a TFSA object.
@@ -265,7 +265,7 @@ class TFSA(RegisteredAccount):
         # pylint: disable=too-many-arguments
 
         super().__init__(
-            owner, balance=balance, rate=rate, transactions=transactions,
+            owner, balance=balance, rate=rate,
             nper=nper, inputs=inputs, initial_year=initial_year,
             contribution_room=contribution_room, contributor=contributor,
             **kwargs)
@@ -400,7 +400,7 @@ class TaxableAccount(Account):
     # (But we might want to also model rental income as well...)
 
     def __init__(
-        self, owner, balance=0, rate=0, transactions=None,
+        self, owner, balance=0, rate=0,
         nper=1, inputs=None, initial_year=None, acb=None, **kwargs
     ):
         """ Constructor for `TaxableAccount`.
@@ -417,8 +417,8 @@ class TaxableAccount(Account):
         # pylint: disable=too-many-arguments
 
         super().__init__(
-            owner=owner, balance=balance, rate=rate, transactions=transactions,
-            nper=nper, inputs=inputs, initial_year=initial_year, **kwargs)
+            owner=owner, balance=balance, rate=rate, nper=nper,
+            inputs=inputs, initial_year=initial_year, **kwargs)
 
         # If acb wasn't provided, assume there have been no capital
         # gains or losses, so acb = balance.

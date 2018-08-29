@@ -88,8 +88,7 @@ class Account(TaxSource):
 
     def __init__(
         self, owner,
-        balance=0, rate=0, transactions=None, nper=1,
-        inputs=None, initial_year=None
+        balance=0, rate=0, nper=1, inputs=None, initial_year=None
     ):
         """ Constructor for `Account`.
 
@@ -109,11 +108,6 @@ class Account(TaxSource):
                 as attributes (as opposed to a method/function where
                 these objects are stored in the context), otherwise
                 `Forecaster`'s object-substitution logic will not work.
-            transactions (dict[Decimal, Money]): The transactions for
-                the first year, as `{when: value}` pairs. `when` is in
-                [0,1] (and may be one of the strings accepted by
-                `when_conv`). A positive `value` denotes an inflow, and
-                a negative `value` denotes an outflow.
             nper (int): The number of compounding periods per year.
             initial_year (int): The first year (e.g. 2000)
         """
@@ -121,10 +115,6 @@ class Account(TaxSource):
         # are closely related. It doesn't make sense to break up the
         # class any further.
         # pylint: disable=too-many-arguments
-
-        # Avoid using mutable {} as default parameter:
-        if transactions is None:
-            transactions = {}
 
         # Use the explicitly-provided initial year if available,
         # otherwise default to the owner's initial year:
@@ -142,18 +132,16 @@ class Account(TaxSource):
         self._transactions = {}
         self._rate_callable = None
 
+        # We don't really have to do this, but it helps the linter
+        # to understand that `transactions` is subscriptable:
+        self.transactions = {}
+
         # Set the various property values based on inputs:
         self.owner = owner
         self.balance = Money(balance)
         self.rate_callable = rate
         self.nper = self._conv_nper(nper)
         # NOTE: returns is calculated lazily
-
-        # Add each transaction manually to populate the transactions
-        # dict; this will do the necessary type-checking and conversions
-        # on each element:
-        for when, value in transactions.items():
-            self.add_transaction(value, when)
 
     # String codes describing compounding periods (keys) and ints
     # describing the number of such periods in a year (values):
@@ -729,7 +717,7 @@ class Debt(Account):
 
     def __init__(
         self, owner,
-        balance=0, rate=0, transactions=None, nper=1,
+        balance=0, rate=0, nper=1,
         inputs=None, initial_year=None, minimum_payment=Money(0),
         reduction_rate=1, accelerated_payment=Money('Infinity'), **kwargs
     ):
@@ -742,8 +730,7 @@ class Debt(Account):
         # pylint: disable=too-many-arguments
 
         super().__init__(
-            owner, balance=balance, rate=rate,
-            transactions=transactions, nper=nper,
+            owner, balance=balance, rate=rate, nper=nper,
             inputs=inputs, initial_year=initial_year, **kwargs)
         self.minimum_payment = Money(minimum_payment)
         self.reduction_rate = Decimal(reduction_rate)

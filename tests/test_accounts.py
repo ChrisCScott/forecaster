@@ -62,29 +62,30 @@ class TestAccountMethods(unittest.TestCase):
             raise_rate={year: 1 for year in range(2000, 2066)},
             retirement_date=2065)
 
+        # Inheriting classes should assign to self.account with an
+        # instance of an appropriate subclass of Account.
+        self.account = Account(self.owner, balance=100, rate=1.0)
+
     def test_init_basic(self, *args, **kwargs):
         """ Tests Account.__init__ """
         # Basic test: All correct values, check for equality and type
         owner = self.owner
         balance = Money(0)
         rate = 1.0
-        transactions = {1: Money(1), 0: Money(-1)}
         nper = 1  # This is the easiest case to test
         initial_year = self.initial_year
         account = self.AccountType(
-            owner, *args, balance=balance, rate=rate,
-            transactions=transactions, nper=nper, **kwargs)
+            owner, *args, balance=balance, rate=rate, nper=nper, **kwargs)
         # Test primary attributes
         # pylint: disable=no-member
         # Pylint is confused by members added by metaclass
         self.assertEqual(account.balance_history, {initial_year: balance})
         self.assertEqual(account.rate_history, {initial_year: rate})
         self.assertEqual(account.transactions_history, {
-            initial_year: transactions
+            initial_year: {}
         })
         self.assertEqual(account.balance, balance)
         self.assertEqual(account.rate, rate)
-        self.assertEqual(account.transactions, transactions)
         self.assertEqual(account.nper, 1)
         self.assertEqual(account.initial_year, initial_year)
         self.assertEqual(account.this_year, initial_year)
@@ -96,28 +97,8 @@ class TestAccountMethods(unittest.TestCase):
         self.assertIsInstance(account.balance, Money)
         self.assertTrue(type_check(account.rate_history, {int: Decimal}))
         self.assertIsInstance(account.rate, Decimal)
-        self.assertTrue(type_check(
-            account.transactions_history, {int: {Decimal: Money}}))
-        self.assertTrue(type_check(account.transactions, {Decimal: Money}))
         self.assertIsInstance(account.nper, int)
         self.assertIsInstance(account.initial_year, int)
-
-        # Basic test: Only balance and rate provided.
-        # pylint: disable=no-member
-        # Pylint is confused by members added by metaclass
-        account = self.AccountType(
-            self.owner, *args, balance=balance, rate=0, **kwargs)
-        self.assertEqual(account.balance_history, {
-            self.initial_year: balance})
-        self.assertEqual(account.rate_history, {self.initial_year: 0})
-        self.assertEqual(
-            account.transactions_history, {
-                self.initial_year: {}})
-        self.assertEqual(account.balance, balance)
-        self.assertEqual(account.rate, 0)
-        self.assertEqual(account.transactions, {})
-        self.assertEqual(account.nper, 1)
-        self.assertEqual(account.initial_year, self.initial_year)
 
     def test_init_rate_function(self, *args, **kwargs):
         """ Tests using a function as an input for arg `rate`. """
@@ -147,63 +128,28 @@ class TestAccountMethods(unittest.TestCase):
         """ Tests using (Decimal-convertible) strings as input. """
         balance = "0"
         rate = "1.0"
-        transactions = {'start': "1", 'end': "-1"}
         nper = 'A'
         initial_year = self.initial_year
         account = self.AccountType(
             self.owner, *args,
-            balance=balance, rate=rate, transactions=transactions, nper=nper,
+            balance=balance, rate=rate, nper=nper,
             **kwargs)
         # pylint: disable=no-member
         # Pylint is confused by members added by metaclass
         self.assertEqual(account.balance_history, {initial_year: Money(0)})
         self.assertEqual(account.rate_history, {initial_year: 1})
-        self.assertEqual(account.transactions_history,
-                         {initial_year: {0: Money(1), 1: Money(-1)}})
+        self.assertEqual(
+            account.transactions_history,
+            {initial_year: {}})
         self.assertEqual(account.balance, Money(0))
         self.assertEqual(account.rate, 1)
-        self.assertEqual(account.transactions, {0: Money(1), 1: Money(-1)})
         self.assertEqual(account.nper, 1)
         self.assertEqual(account.initial_year, initial_year)
         # Check types for conversion
         self.assertIsInstance(account.balance_history[initial_year], Money)
         self.assertIsInstance(account.rate_history[initial_year], Decimal)
-        self.assertIsInstance(account.transactions_history[initial_year], dict)
-        for key, value in account.transactions.items():
-            self.assertIsInstance(key, (float, int, Decimal))
-            self.assertIsInstance(value, Money)
         self.assertIsInstance(account.nper, int)
         self.assertIsInstance(account.initial_year, int)
-
-    def test_init_when(self, *args, **kwargs):
-        """ Test 'when' values inside and outside of the range [0,1] """
-        # pylint: disable=no-member,unsubscriptable-object
-        # Pylint is confused by members added by metaclass
-        balance = 0
-
-        account = self.AccountType(
-            self.owner, *args,
-            balance=balance, transactions={0: 1}, **kwargs)
-        self.assertEqual(account.transactions[Decimal(0)],
-                         Money(1))
-        account = self.AccountType(
-            self.owner, *args,
-            balance=balance, transactions={0.5: 1}, **kwargs)
-        self.assertEqual(account.transactions[Decimal(0.5)],
-                         Money(1))
-        account = self.AccountType(
-            self.owner, *args,
-            balance=balance, transactions={1: 1}, **kwargs)
-        self.assertEqual(account.transactions[Decimal(1)],
-                         Money(1))
-        with self.assertRaises(ValueError):
-            account = self.AccountType(
-                self.owner, *args,
-                balance=balance, transactions={-1: 1}, **kwargs)
-        with self.assertRaises(ValueError):
-            account = self.AccountType(
-                self.owner, *args,
-                balance=balance, transactions={2: 1}, **kwargs)
 
     def test_init_invalid(self, *args, **kwargs):
         """ Test Account.__init__ with invalid inputs. """
@@ -229,94 +175,120 @@ class TestAccountMethods(unittest.TestCase):
             if account.rate == Decimal("NaN"):
                 raise decimal.InvalidOperation()
 
-        # pylint: disable=unsupported-membership-test
-        # Pylint is confused by members added by metaclass
-        with self.assertRaises((decimal.InvalidOperation, KeyError)):
-            account = self.AccountType(
-                self.owner, *args,
-                balance=balance, transactions={"invalid input": 1}, **kwargs)
-            if Decimal('NaN') in account.transactions:
-                raise decimal.InvalidOperation()
-
         # Finally, test passing an invalid owner:
         with self.assertRaises(TypeError):
             account = self.AccountType(
                 "invalid owner", *args, **kwargs)
 
-    def test_nper(self, *args, **kwargs):
-        """ Test setting nper to various values, valid and otherwise. """
-        # Test valid nper values:
-        # Continuous (can be represented as either None or 'C')
+    def test_add_transaction_in_range(self):
+        """ Test 'when' values inside of the range [0,1]. """
+        self.account.add_transaction(1, when=0)
+        self.assertEqual(self.account.transactions[Decimal(0)], Money(1))
+
+        self.account.add_transaction(1, when=0.5)
+        self.assertEqual(self.account.transactions[Decimal(0.5)], Money(1))
+
+        self.account.add_transaction(1, when=1)
+        self.assertEqual(self.account.transactions[Decimal(1)], Money(1))
+
+    def test_add_transaction_out_range(self):
+        """ Test 'when' values outside of the range [0,1]. """
+        # All of these should raise exceptions.
+        with self.assertRaises(ValueError):  # test negative
+            self.account.add_transaction(1, when=-1)
+        with self.assertRaises(ValueError):  # test positive
+            self.account.add_transaction(1, when=2)
+
+    def test_nper_continuous(self):
+        """ Test setting nper to 'C' and 'None' (equivalent). """
+        # TODO: Refactor Account so that nper is a property, set up
+        # this test to set self.account.nper = 'C' (same for others)
         account = self.AccountType(
             self.owner, *args, nper='C', **kwargs)
-        self.assertEqual(account.nper, None)
+        self.assertEqual(account.nper, 'C')
+        self.assertIsInstance(account.nper, (type(None), str))
+        
+        account = self.AccountType(
+            self.owner, *args, nper=None, **kwargs)
+        self.assertEqual(account.nper, 'C')
         self.assertIsInstance(account.nper, (type(None), str))
 
-        # Daily
+    def test_nper_daily(self, *args, **kwargs):
+        """ Test setting nper to 'D'. """
         account = self.AccountType(
             self.owner, *args, nper='D', **kwargs)
         self.assertEqual(account.nper, 365)
         self.assertIsInstance(account.nper, int)
 
-        # Weekly
+    def test_nper_weekly(self, *args, **kwargs):
+        """ Test setting nper to 'W'. """
         account = self.AccountType(
             self.owner, *args, nper='W', **kwargs)
         self.assertEqual(account.nper, 52)
 
-        # Biweekly
+    def test_nper_biweekly(self, *args, **kwargs):
+        """ Test setting nper to 'BW'. """
         account = self.AccountType(
             self.owner, *args, nper='BW', **kwargs)
         self.assertEqual(account.nper, 26)
 
-        # Semi-monthly
+    def test_nper_semimonthly(self, *args, **kwargs):
+        """ Test setting nper to 'SM'. """
         account = self.AccountType(
             self.owner, *args, nper='SM', **kwargs)
         self.assertEqual(account.nper, 24)
 
-        # Monthly
+    def test_nper_monthly(self, *args, **kwargs):
+        """ Test setting nper to 'M'. """
         account = self.AccountType(
             self.owner, *args, nper='M', **kwargs)
         self.assertEqual(account.nper, 12)
 
-        # Bimonthly
+    def test_nper_bimonthly(self, *args, **kwargs):
+        """ Test setting nper to 'BM'. """
         account = self.AccountType(
             self.owner, *args, nper='BM', **kwargs)
         self.assertEqual(account.nper, 6)
 
-        # Quarterly
+    def test_nper_quarterly(self, *args, **kwargs):
+        """ Test setting nper to 'Q'. """
         account = self.AccountType(
             self.owner, *args, nper='Q', **kwargs)
         self.assertEqual(account.nper, 4)
 
-        # Semiannually
+    def test_nper_semiannually(self, *args, **kwargs):
+        """ Test setting nper to 'SA'. """
         account = self.AccountType(
             self.owner, *args, nper='SA', **kwargs)
         self.assertEqual(account.nper, 2)
 
-        # Annually
+    def test_nper_annually(self, *args, **kwargs):
+        """ Test setting nper to 'A'. """
         account = self.AccountType(
             self.owner, *args, nper='A', **kwargs)
         self.assertEqual(account.nper, 1)
 
-        # Test invalid nper values:
+    def test_nper_invalid(self, *args, **kwargs):
+        """ Test setting nper to invalid values. """
+        # These should all raise errors.
         with self.assertRaises(ValueError):
-            account = self.AccountType(
+            _ = self.AccountType(
                 self.owner, *args, nper=0, **kwargs)
 
         with self.assertRaises(ValueError):
-            account = self.AccountType(
+            _ = self.AccountType(
                 self.owner, *args, nper=-1, **kwargs)
 
         with self.assertRaises(TypeError):
-            account = self.AccountType(
+            _ = self.AccountType(
                 self.owner, *args, nper=0.5, **kwargs)
 
         with self.assertRaises(TypeError):
-            account = self.AccountType(
+            _ = self.AccountType(
                 self.owner, *args, nper=1.5, **kwargs)
 
         with self.assertRaises(ValueError):
-            account = self.AccountType(
+            _ = self.AccountType(
                 self.owner, *args, nper='invalid', **kwargs)
 
     def test_returns(self, *args, **kwargs):
@@ -343,8 +315,7 @@ class TestAccountMethods(unittest.TestCase):
         # Simple account: Start with $1, apply 100% growth once per
         # year, no transactions. Should yield a new balance of $2.
         account = self.AccountType(
-            self.owner, *args, balance=1, rate=1.0,
-            transactions={}, nper=1, **kwargs)
+            self.owner, *args, balance=1, rate=1.0, nper=1, **kwargs)
         account.next_year()
         self.assertEqual(account.balance, Money(2))
 
@@ -356,15 +327,13 @@ class TestAccountMethods(unittest.TestCase):
 
         # Try with continuous growth
         account = self.AccountType(
-            self.owner, *args, balance=1, rate=1,
-            transactions={}, nper='C', **kwargs)
+            self.owner, *args, balance=1, rate=1, nper='C', **kwargs)
         account.next_year()
         self.assertAlmostEqual(account.balance, Money(math.e), 3)
 
         # Try with discrete (monthly) growth
         account = self.AccountType(
-            self.owner, *args, balance=1, rate=1,
-            transactions={}, nper='M', **kwargs)
+            self.owner, *args, balance=1, rate=1, nper='M', **kwargs)
         account.next_year()
         self.assertAlmostEqual(account.balance, Money((1 + 1 / 12) ** 12), 3)
 
@@ -376,24 +345,24 @@ class TestAccountMethods(unittest.TestCase):
         # should be sensible. In  particular, it should grow by $0-$1.
         # So check to confirm that the result is in the range [$4, $5]
         account = self.AccountType(
-            self.owner, *args, balance=1, rate=1.0,
-            transactions={0.5: Money(2)}, nper=1, **kwargs)
+            self.owner, *args, balance=1, rate=1.0, nper=1, **kwargs)
+        account.add_transaction(Money(2), when='0.5')
         account.next_year()
         self.assertGreaterEqual(account.balance, Money(4))
         self.assertLessEqual(account.balance, Money(5))
 
         # No growth: Start with $1, add $2, and apply 0% growth.
         account = self.AccountType(
-            self.owner, *args, balance=1, rate=0,
-            transactions={0.5: Money(2)}, nper=1, **kwargs)
+            self.owner, *args, balance=1, rate=0, nper=1, **kwargs)
+        account.add_transaction(Money(2), when='0.5')
         account.next_year()
         self.assertEqual(account.balance, Money(3))
 
         # Try with continuous growth
         # This can be calculated from P = P_0 * e^rt
         account = self.AccountType(
-            self.owner, *args, balance=1, rate=1,
-            transactions={0.5: Money(2)}, nper='C', **kwargs)
+            self.owner, *args, balance=1, rate=1, nper='C', **kwargs)
+        account.add_transaction(Money(2), when='0.5')
         next_val = Money(1 * math.e + 2 * math.e ** 0.5)
         account.next_year()
         self.assertAlmostEqual(account.balance, next_val, 5)
@@ -401,10 +370,10 @@ class TestAccountMethods(unittest.TestCase):
         # Try with discrete growth
         # The $2 transaction happens at the start of a compounding
         # period, so behaviour is well-defined. It should grow by a
-        # factor of (1 + r/n)^nt, for n = 12, t = 0.5
+        # factor of (1 + r/n)^nt, for n = 12 (monthly) and t = 0.5
         account = self.AccountType(
-            self.owner, *args, balance=1, rate=1,
-            transactions={0.5: Money(2)}, nper='M', **kwargs)  # monthly
+            self.owner, *args, balance=1, rate=1, nper='M', **kwargs)
+        account.add_transaction(Money(2), when='0.5')
         next_val = Money((1 + 1 / 12) ** (12) + 2 * (1 + 1 / 12) ** (12 * 0.5))
         account.next_year()
         self.assertAlmostEqual(account.balance, next_val, 5)
@@ -480,16 +449,14 @@ class TestAccountMethods(unittest.TestCase):
         # Simple scenario: $100 in a no-growth account with no
         # transactions. Should return $100 for any point in time.
         account = self.AccountType(
-            self.owner, *args, balance=100, rate=0,
-            transactions={}, nper=1, **kwargs)
+            self.owner, *args, balance=100, rate=0, nper=1, **kwargs)
         self.assertEqual(account.max_outflow('start'), Money(-100))
         self.assertEqual(account.max_outflow(0.5), Money(-100))
         self.assertEqual(account.max_outflow('end'), Money(-100))
 
         # Try with negative balance - should return $0
         account = self.AccountType(
-            self.owner, *args, balance=-100, rate=1,
-            transactions={}, nper=1, **kwargs)
+            self.owner, *args, balance=-100, rate=1, nper=1, **kwargs)
         self.assertEqual(account.max_outflow('start'), Money(0))
         self.assertEqual(account.max_outflow('end'), Money(0))
 
@@ -499,8 +466,7 @@ class TestAccountMethods(unittest.TestCase):
         # well-defined in the current implementation, so avoid
         # testing at when=0.5
         account = self.AccountType(
-            self.owner, *args, balance=100, rate=1,
-            transactions={}, nper=1, **kwargs)
+            self.owner, *args, balance=100, rate=1, nper=1, **kwargs)
         self.assertEqual(account.max_outflow('start'), Money(-100))
         # self.assertEqual(account.max_outflow(0.5), Money(-150))
         self.assertEqual(account.max_outflow('end'), Money(-200))
@@ -511,8 +477,9 @@ class TestAccountMethods(unittest.TestCase):
         # points is not well-defined, so avoid adding transactions at
         # 0.5 (or anywhere other than 'start' or 'end') when nper = 1
         account = self.AccountType(
-            self.owner, *args, balance=100, rate=1,
-            transactions={'start': 100, 'end': 100}, nper=1, **kwargs)
+            self.owner, *args, balance=100, rate=1, nper=1, **kwargs)
+        account.add_transaction(100, when='start')
+        account.add_transaction(100, when='end')
         self.assertEqual(account.max_outflow('start'), Money(-200))
         # self.assertEqual(account.max_outflow(0.25), Money(-250))
         # self.assertEqual(account.max_outflow(0.5), Money(-300))
@@ -525,9 +492,10 @@ class TestAccountMethods(unittest.TestCase):
         # at t=0.5 so balance = 0 and another transaction at t='end' so
         # balance = $100.
         account = self.AccountType(
-            self.owner, *args, balance=-200, rate=2.0,
-            transactions={'start': 100, 0.5: 200, 'end': 100}, nper=2,
-            **kwargs)
+            self.owner, *args, balance=-200, rate=2.0, nper=2, **kwargs)
+        account.add_transaction(100, when='start')
+        account.add_transaction(200, when='0.5')
+        account.add_transaction(100, when='end')
         self.assertEqual(account.max_outflow('start'), Money(0))
         self.assertEqual(account.balance_at_time('start'), Money(-100))
         self.assertEqual(account.max_outflow(0.5), Money(0))
@@ -537,8 +505,8 @@ class TestAccountMethods(unittest.TestCase):
         # halfway point. Add a $100 transaction at when=0.5 just to be
         # sure.
         account = self.AccountType(
-            self.owner, *args, balance=100, rate=1,
-            transactions={0.5: Money(100)}, nper=2, **kwargs)
+            self.owner, *args, balance=100, rate=1, nper=2, **kwargs)
+        account.add_transaction(100, when=0.5)
         self.assertEqual(account.max_outflow('start'), Money(-100))
         # self.assertEqual(account.max_outflow(0.25), Money(-125))
         self.assertEqual(account.max_outflow(0.5), Money(-250))
@@ -548,8 +516,8 @@ class TestAccountMethods(unittest.TestCase):
         # Now to test continuous compounding. Add a $100 transaction at
         # when=0.5 just to be sure.
         account = self.AccountType(
-            self.owner, *args, balance=100, rate=1,
-            transactions={0.5: Money(100)}, nper='C', **kwargs)
+            self.owner, *args, balance=100, rate=1, nper='C', **kwargs)
+        account.add_transaction(100, when='0.5')
         self.assertEqual(account.max_outflow('start'), Money(-100))
         self.assertAlmostEqual(account.max_outflow(0.25),
                                -Money(100 * math.e ** 0.25), 5)
@@ -597,29 +565,35 @@ class TestAccountMethods(unittest.TestCase):
 
     def test_taxable_income(self, *args, **kwargs):
         """ Test Account.taxable_income """
-        # This method should return the growth in the account.
+        # This method should return the growth in the account, which is
+        # $200 at the start of the period. (The $100 withdrawal at the
+        # end of the period doesn't affect taxable income.)
         account = self.AccountType(
-            self.owner, *args, balance=100, rate=1.0,
-            transactions={0: 100, 1: -100}, **kwargs)
+            self.owner, *args, balance=100, rate=1.0, **kwargs)
+        account.add_transaction(100, when='start')
+        account.add_transaction(-100, when='end')
         self.assertEqual(account.taxable_income, Money(200))
 
         # Losses are not taxable:
         account = self.AccountType(
-            self.owner, *args, balance=-100, rate=1.0,
-            transactions={0: 100, 1: -100}, **kwargs)
+            self.owner, *args, balance=-100, rate=1.0, **kwargs)
+        account.add_transaction(100, when='start')
+        account.add_transaction(-100, when='end')
         self.assertEqual(account.taxable_income, Money(0))
 
     def test_tax_withheld(self, *args, **kwargs):
         """ Test Account.tax_withheld """
         # This method should always return $0
         account = self.AccountType(
-            self.owner, *args, balance=100, rate=1.0,
-            transactions={0: 100, 1: -100}, **kwargs)
+            self.owner, *args, balance=100, rate=1.0, **kwargs)
+        account.add_transaction(100, when='start')
+        account.add_transaction(-100, when='end')
         self.assertEqual(account.tax_withheld, Money(0))
 
         account = self.AccountType(
-            self.owner, *args, balance=-100, rate=1.0,
-            transactions={0: 100, 1: -100}, **kwargs)
+            self.owner, *args, balance=-100, rate=1.0, **kwargs)
+        account.add_transaction(100, when='start')
+        account.add_transaction(-100, when='end')
         self.assertEqual(account.tax_withheld, Money(0))
 
     def test_tax_credit(self, *args, **kwargs):
@@ -627,14 +601,16 @@ class TestAccountMethods(unittest.TestCase):
         # This method should always return $0, regardless of balance,
         # inflows, or outflows
         account = self.AccountType(
-            self.owner, *args, balance=100, rate=1.0,
-            transactions={0: 100, 1: -100}, **kwargs)
+            self.owner, *args, balance=100, rate=1.0, **kwargs)
+        account.add_transaction(100, when='start')
+        account.add_transaction(-100, when='end')
         self.assertEqual(account.tax_credit, Money(0))
 
         # Test with negative balance
         account = self.AccountType(
-            self.owner, *args, balance=-100, rate=1.0,
-            transactions={0: 100, 1: -100}, **kwargs)
+            self.owner, *args, balance=-100, rate=1.0, **kwargs)
+        account.add_transaction(100, when='start')
+        account.add_transaction(-100, when='end')
         self.assertEqual(account.tax_credit, Money(0))
 
     def test_tax_deduction(self, *args, **kwargs):
@@ -642,14 +618,16 @@ class TestAccountMethods(unittest.TestCase):
         # This method should always return $0, regardless of balance,
         # inflows, or outflows
         account = self.AccountType(
-            self.owner, *args, balance=100, rate=1.0,
-            transactions={0: 100, 1: -100}, **kwargs)
+            self.owner, *args, balance=100, rate=1.0, **kwargs)
+        account.add_transaction(100, when='start')
+        account.add_transaction(-100, when='end')
         self.assertEqual(account.tax_deduction, Money(0))
 
         # Test with negative balance
         account = self.AccountType(
-            self.owner, *args, balance=-100, rate=1.0,
-            transactions={0: 100, 1: -100}, **kwargs)
+            self.owner, *args, balance=-100, rate=1.0, **kwargs)
+        account.add_transaction(100, when='start')
+        account.add_transaction(-100, when='end')
         self.assertEqual(account.tax_deduction, Money(0))
 
 
