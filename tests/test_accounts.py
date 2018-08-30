@@ -199,19 +199,19 @@ class TestAccountMethods(unittest.TestCase):
         with self.assertRaises(ValueError):  # test positive
             self.account.add_transaction(1, when=2)
 
-    def test_nper_continuous(self):
+    def test_nper_continuous(self, *args, **kwargs):
         """ Test setting nper to 'C' and 'None' (equivalent). """
         # TODO: Refactor Account so that nper is a property, set up
         # this test to set self.account.nper = 'C' (same for others)
         account = self.AccountType(
             self.owner, *args, nper='C', **kwargs)
-        self.assertEqual(account.nper, 'C')
-        self.assertIsInstance(account.nper, (type(None), str))
+        self.assertEqual(account.nper, None)
+        self.assertIsInstance(account.nper, type(None))
         
         account = self.AccountType(
             self.owner, *args, nper=None, **kwargs)
-        self.assertEqual(account.nper, 'C')
-        self.assertIsInstance(account.nper, (type(None), str))
+        self.assertEqual(account.nper, None)
+        self.assertIsInstance(account.nper, type(None))
 
     def test_nper_daily(self, *args, **kwargs):
         """ Test setting nper to 'D'. """
@@ -391,7 +391,7 @@ class TestAccountMethods(unittest.TestCase):
             self.owner, *args, **kwargs)
         self.assertEqual(account.transactions_history, {
             initial_year: {}})
-        account.add_transaction(Money(1), 'end')
+        account.add_transaction(Money(1), when='end')
         self.assertEqual(account.transactions_history, {
             initial_year: {
                 1: Money(1)

@@ -124,20 +124,20 @@ class TestTaxCanada(unittest.TestCase):
         person1 = Person(
             self.initial_year, "Tester 1", self.initial_year - 20,
             retirement_date=self.initial_year + 45, gross_income=100000)
-        _ = TaxableAccount(
+        taxable_account = TaxableAccount(
             owner=person1,
-            acb=0, balance=Money(1000000), rate=Decimal('0.05'),
-            transactions={'start': -Money(1000000)}, nper=1)
+            acb=0, balance=Money(1000000), rate=Decimal('0.05'), nper=1)
+        taxable_account.add_transaction(-Money(1000000), when='start')
         # NOTE: by using an RRSP here, a pension income tax credit will
         # be applied by TaxCanadaJurisdiction. Be aware of this if you
         # want to test this output against a generic Tax object with
         # Canadian brackets.
-        _ = RRSP(
+        rrsp = RRSP(
             person1,
             inflation_adjust=self.inflation_adjustments,
             contribution_room=0,
-            balance=Money(500000), rate=Decimal('0.05'),
-            transactions={'start': -Money(500000)}, nper=1)
+            balance=Money(500000), rate=Decimal('0.05'), nper=1)
+        rrsp.add_transaction(-Money(500000), when='start')
         self.assertEqual(
             tax(person1, self.initial_year),
             tax.federal_tax(person1, self.initial_year) +
@@ -154,10 +154,10 @@ class TestTaxCanada(unittest.TestCase):
         person2 = Person(
             self.initial_year, "Tester 2", self.initial_year - 18,
             retirement_date=self.initial_year + 47, gross_income=50000)
-        _ = TaxableAccount(
+        taxable_account = TaxableAccount(
             owner=person2,
-            acb=0, balance=Money(10000), rate=Decimal('0.05'),
-            transactions={'start': -Money(10000)}, nper=1)
+            acb=0, balance=Money(10000), rate=Decimal('0.05'), nper=1)
+        taxable_account.add_transaction(-Money(10000), when='start')
         # Make sure that we're getting the correct result for person2:
         self.assertEqual(
             tax(person2, self.initial_year),

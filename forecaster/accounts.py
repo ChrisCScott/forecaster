@@ -268,9 +268,9 @@ class Account(TaxSource):
         # (Withdrawals will generate returns with the opposite sign of
         # the returns on the initial balance and prior inflows, thereby
         # cancelling out a portion of those returns.)
-        for when in self._transactions:
+        for when in self.transactions:
             returns += (
-                self._transactions[when] *
+                self.transactions[when] *
                 (self.accumulation_function(
                     1 - when, self.rate, self.nper
                 ) - 1)
@@ -374,14 +374,14 @@ class Account(TaxSource):
     def inflows(self):
         """ The sum of all inflows to the account. """
         return Money(sum(
-            val for val in self._transactions.values() if val.amount > 0)
+            val for val in self.transactions.values() if val.amount > 0)
         )
 
     @recorded_property
     def outflows(self):
         """ The sum of all outflows from the account. """
         return Money(sum(
-            val for val in self._transactions.values() if val.amount < 0)
+            val for val in self.transactions.values() if val.amount < 0)
         )
 
     def __len__(self):

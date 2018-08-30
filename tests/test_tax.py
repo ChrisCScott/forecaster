@@ -79,8 +79,8 @@ class TestTax(unittest.TestCase):
         # so that we don't need to worry about tax on unrealized growth:
         self.taxable_account1 = TaxableAccount(
             owner=self.person1,
-            acb=0, balance=50000, rate=Decimal('0.05'),
-            transactions={'start': -50000}, nper=1)
+            acb=0, balance=50000, rate=Decimal('0.05'), nper=1)
+        self.taxable_account1.add_transaction(-50000, when='start')
         self.rrsp = RRSP(
             owner=self.person1,
             inflation_adjust=self.inflation_adjustments,
@@ -97,12 +97,12 @@ class TestTax(unittest.TestCase):
         # have no effect on taxable income):
         self.taxable_account2 = TaxableAccount(
             owner=self.person2,
-            acb=0, balance=20000, rate=Decimal('0.05'),
-            transactions={'start': -20000}, nper=1)
+            acb=0, balance=20000, rate=Decimal('0.05'), nper=1)
+        self.taxable_account2.add_transaction(-20000, when='start')
         self.tfsa = TFSA(
             owner=self.person2,
-            balance=50000, rate='0.05', transactions={'start': -20000},
-            nper=1)
+            balance=50000, rate='0.05', nper=1)
+        self.tfsa.add_transaction(-20000, when='start')
         # Employment income is fully taxable, and only half of capital
         # gains (the income from the taxable account) is taxable:
         self.person2_taxable_income = Money(

@@ -31,7 +31,7 @@ def type_check(val, types):
         ValueError: `types` must have only one element at each level.
     """
     # First, deal with the iterable case:
-    if isinstance(types, collections.Iterable):
+    if isinstance(types, collections.abc.Iterable):
         # Check that val and types are of the same (ish) iterable type:
         if not isinstance(val, type(types)):
             return False

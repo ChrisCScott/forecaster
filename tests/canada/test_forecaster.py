@@ -33,7 +33,6 @@ class TestForecasterCanada(TestForecaster):
             balance=Money(0),
             rate=forecaster.allocation_strategy.rate_function(
                 forecaster.person1, forecaster.scenario),
-            transactions={},
             nper=1,
             inputs={},
             initial_year=forecaster.person1.initial_year,
@@ -58,7 +57,6 @@ class TestForecasterCanada(TestForecaster):
             balance=Money(0),
             rate=forecaster.allocation_strategy.rate_function(
                 forecaster.person1, forecaster.scenario),
-            transactions={},
             nper=1,
             inputs={},
             initial_year=forecaster.person1.initial_year,
@@ -79,7 +77,6 @@ class TestForecasterCanada(TestForecaster):
             balance=Money(0),
             rate=forecaster.allocation_strategy.rate_function(
                 forecaster.person1, forecaster.scenario),
-            transactions={},
             nper=1,
             inputs={},
             initial_year=forecaster.person1.initial_year,
