@@ -100,7 +100,7 @@ def extend_inflation_adjusted(vals, inflation_adjust, target_year):
                 k: val[k] * inflation_adjust(target_year, base_year)
                 for k in val
             }
-        elif isinstance(val, collections.Iterable):
+        elif isinstance(val, collections.abc.Iterable):
             return type(val)(
                 v * inflation_adjust(target_year, base_year) for v in val
             )

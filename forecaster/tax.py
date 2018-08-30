@@ -510,7 +510,7 @@ class Tax(object):
             kwargs['credit'] = credit
 
         # If taxpayers are non-scalar, interpret it as a group of people
-        if isinstance(income, collections.Iterable):
+        if isinstance(income, collections.abc.Iterable):
             return self.tax_people(income, year, **kwargs)
         # If it's just one taxpayer, use the appropriate method:
         elif isinstance(income, Person):

@@ -256,9 +256,9 @@ class TestForecaster(unittest.TestCase):
                 raise error
             elif isinstance(first, dict):
                 self.assertEqual_dict(first, second, msg=msg, memo=memo)
-            elif isinstance(first, collections.Sequence):
+            elif isinstance(first, collections.abc.Sequence):
                 self.assertEqual_list(first, second, msg=msg, memo=memo)
-            elif isinstance(first, collections.Iterable):
+            elif isinstance(first, collections.abc.Iterable):
                 self.assertEqual_set(first, second, msg=msg, memo=memo)
             elif hasattr(first, '__dict__'):
                 self.assertEqual_complex(first, second, msg=msg, memo=memo)

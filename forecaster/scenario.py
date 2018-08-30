@@ -156,7 +156,7 @@ class Scenario(object):
 
         # If it's not a dict, but it is iterable then convert it into a
         # [default]dict
-        if isinstance(in_val, collections.Iterable):
+        if isinstance(in_val, collections.abc.Iterable):
             if initial_year is None:
                 raise ValueError(
                     'Scenario: initial_year is required if input is a list.')
