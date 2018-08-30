@@ -1,0 +1,2 @@
+py-moneyed~=0.7.0
+python-dateutil~=2.7.3
