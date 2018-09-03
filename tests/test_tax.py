@@ -66,7 +66,12 @@ class TestTax(unittest.TestCase):
             personal_deduction=self.personal_deduction,
             credit_rate=self.credit_rate)
 
-        # Set up two people, spouses, on which to do tests
+        # Set up a simple person with no account-derived taxable income
+        self.person = Person(
+            self.initial_year, "Tester", self.initial_year - 25,
+            retirement_date=self.initial_year + 40, gross_income=0)
+
+        # Set up two people, spouses, on which to do more complex tests
         self.person1 = Person(
             self.initial_year, "Tester 1", self.initial_year - 20,
             retirement_date=self.initial_year + 45, gross_income=100000)
@@ -156,52 +161,78 @@ class TestTax(unittest.TestCase):
                 tax.tax_brackets(year), {Money: Decimal}))
         self.assertTrue(callable(tax.inflation_adjust))
 
-    def test_income_0(self):
+    def test_income_0_money(self):
         """ Call Test on $0 income. """
         # $0 should return $0 in tax owing. This is the easiest test.
-        self.assertEqual(self.tax(0, self.initial_year), Money(0))
+        income = Money(0)
+        self.assertEqual(self.tax(income, self.initial_year), Money(0))
 
-    def test_income_in_deduction(self):
-        """ Call Test on income below the personal deduction. """
+    def test_income_0_person(self):
+        """ Test tax on a person with $0 income. """
+        # $0 should return $0 in tax owing. This is the easiest test.
+        self.person.gross_income = Money(0)
+        self.assertEqual(self.tax(self.person, self.initial_year), Money(0))
+
+    def test_income_under_deduction(self):
+        """ Test tax on person with income under personal deduction. """
+        self.person.gross_income = (
+            self.personal_deduction[self.initial_year] / 2
+        )
         # Should return $0
-        self.assertEqual(
-            self.tax(
-                self.personal_deduction[self.initial_year] / 2,
-                self.initial_year),
-            Money(0))
+        self.assertEqual(self.tax(self.person, self.initial_year), Money(0))
 
     def test_income_at_deduction(self):
         """ Call Test on income equal to the personal deduction. """
+        self.person.gross_income = self.personal_deduction[self.initial_year]
         # Should return $0
-        self.assertEqual(
-            self.tax(
-                self.personal_deduction[self.initial_year],
-                self.initial_year),
-            Money(0))
+        self.assertEqual(self.tax(self.person, self.initial_year), Money(0))
 
-    def test_income_in_bracket_1(self):
+    def test_income_in_bracket_1_money(self):
         """ Call Test on income mid-way into the lowest tax bracket. """
         # NOTE: brackets[0] is $0; we need something between brackets[0]
         # and brackets[1])
-        val = (
+        income = self.brackets[1] / 2
+        self.assertEqual(
+            self.tax(income, self.initial_year),
+            income * self.tax_brackets[self.initial_year][self.brackets[0]])
+
+    def test_income_in_bracket_1_person(self):
+        """ Call Test on income mid-way into the lowest tax bracket. """
+        # NOTE: brackets[0] is $0; we need something between brackets[0]
+        # and brackets[1])
+        self.person.gross_income = (
             self.brackets[1] / 2
             + self.personal_deduction[self.initial_year])
         self.assertEqual(
-            self.tax(val, self.initial_year),
-            (val - self.personal_deduction[self.initial_year])
-            * self.tax_brackets[self.initial_year][self.brackets[0]])
+            self.tax(self.person, self.initial_year),
+            (
+                self.person.gross_income
+                - self.personal_deduction[self.initial_year]
+            ) * self.tax_brackets[self.initial_year][self.brackets[0]])
 
-    def test_income_at_bracket_1(self):
+    def test_income_at_bracket_1_money(self):
         """ Call Test on income equal to the lowest tax bracket. """
-        # Try again for a value that's at the limit of the lowest tax
+        # Try a value that's at the limit of the lowest tax
         # bracket (NOTE: brackets are inclusive, so brackets[1] is
         # entirely taxed at the rate associated with brackets[0])
-        val = self.brackets[1] + self.personal_deduction[self.initial_year]
+        income = self.brackets[1]
         self.assertEqual(
-            self.tax(val, self.initial_year),
+            self.tax(income, self.initial_year),
             self.accum[self.initial_year][self.brackets[1]])
 
-    def test_income_in_bracket_2(self):
+    def test_income_at_bracket_1_person(self):
+        """ Call Test on income equal to the lowest tax bracket. """
+        # Try a value that's at the limit of the lowest tax
+        # bracket (NOTE: brackets are inclusive, so brackets[1] is
+        # entirely taxed at the rate associated with brackets[0])
+        self.person.gross_income = (
+            self.brackets[1] + self.personal_deduction[self.initial_year]
+        )
+        self.assertEqual(
+            self.tax(self.person, self.initial_year),
+            self.accum[self.initial_year][self.brackets[1]])
+
+    def test_income_in_bracket_2_money(self):
         """ Call Test on income mid-way into the second tax bracket. """
         # Find a value that's mid-way into the next (second) bracket.
         # Assuming a person deduction of $100 and tax rates bounded at
@@ -210,50 +241,105 @@ class TestTax(unittest.TestCase):
         #   Tax on next $100:   $10
         #   Tax on remaining:   20% of remaining
         # For a $5150 amount, this works out to tax of $1000.
-        val = (
-            (self.brackets[1] + self.brackets[2]) / 2
-            + self.personal_deduction[self.initial_year])
+        income = (self.brackets[1] + self.brackets[2]) / 2
         self.assertEqual(
-            self.tax(val, self.initial_year),
+            self.tax(income, self.initial_year),
             self.accum[self.initial_year][self.brackets[1]] +
             (
                 (self.brackets[1] + self.brackets[2]) / 2
                 - self.brackets[1])
             * self.tax_brackets[self.initial_year][self.brackets[1]])
 
-    def test_income_at_bracket_2(self):
+    def test_income_in_bracket_2_person(self):
+        """ Call Test on income mid-way into the second tax bracket. """
+        # Find a value that's mid-way into the next (second) bracket.
+        # Assuming a person deduction of $100 and tax rates bounded at
+        # $0, $100 and $10000 with 10%, 20%, and 30% rates, this gives:
+        #   Tax on first $100:  $0
+        #   Tax on next $100:   $10
+        #   Tax on remaining:   20% of remaining
+        # For a $5150 amount, this works out to tax of $1000.
+        self.person.gross_income = (
+            (self.brackets[1] + self.brackets[2]) / 2
+            + self.personal_deduction[self.initial_year])
+        target = (
+            self.accum[self.initial_year][self.brackets[1]]
+            + (
+                (self.brackets[1] + self.brackets[2]) / 2
+                - self.brackets[1]
+            ) * self.tax_brackets[self.initial_year][self.brackets[1]]
+        )
+        self.assertEqual(
+            self.tax(self.person, self.initial_year),
+            target
+        )
+
+    def test_income_at_bracket_2_money(self):
         """ Call Test on income equal to the second tax bracket. """
         # Try again for a value that's at the limit of the second tax
         # bracket (NOTE: brackets are inclusive, so brackets[2] is
         # entirely taxed at the rate associated with brackets[1])
-        val = self.brackets[2] + self.personal_deduction[self.initial_year]
+        income = self.brackets[2]
         self.assertEqual(
-            self.tax(val, self.initial_year),
+            self.tax(income, self.initial_year),
             self.accum[self.initial_year][self.brackets[1]]
             + (self.brackets[2] - self.brackets[1])
             * self.tax_brackets[self.initial_year][self.brackets[1]])
 
-    def test_income_in_bracket_3(self):
+    def test_income_at_bracket_2_person(self):
+        """ Call Test on income equal to the second tax bracket. """
+        # Try again for a value that's at the limit of the second tax
+        # bracket (NOTE: brackets are inclusive, so brackets[2] is
+        # entirely taxed at the rate associated with brackets[1])
+        self.person.gross_income = (
+            self.brackets[2] + self.personal_deduction[self.initial_year]
+        )
+        self.assertEqual(
+            self.tax(self.person, self.initial_year),
+            self.accum[self.initial_year][self.brackets[1]]
+            + (self.brackets[2] - self.brackets[1])
+            * self.tax_brackets[self.initial_year][self.brackets[1]])
+
+    def test_income_in_bracket_3_money(self):
         """ Call Test on income in the highest tax bracket. """
         # Find a value that's somewhere in the highest (unbounded) bracket.
         bracket = max(self.brackets)
-        val = bracket * 2 + self.personal_deduction[self.initial_year]
+        income = bracket * 2
         self.assertEqual(
-            self.tax(val, self.initial_year),
+            self.tax(income, self.initial_year),
+            self.accum[self.initial_year][bracket] +
+            bracket * self.tax_brackets[self.initial_year][bracket])
+
+    def test_income_in_bracket_3_person(self):
+        """ Call Test on income in the highest tax bracket. """
+        # Find a value that's somewhere in the highest (unbounded) bracket.
+        bracket = max(self.brackets)
+        self.person.gross_income = (
+            bracket * 2 + self.personal_deduction[self.initial_year]
+        )
+        self.assertEqual(
+            self.tax(self.person, self.initial_year),
             self.accum[self.initial_year][bracket] +
             bracket * self.tax_brackets[self.initial_year][bracket])
 
     def test_taxpayer_single(self):
         """ Call test on a single taxpayer. """
         # The tax paid on the person's income should be the same as if
-        # we calculated the tax directly on the money itself.
+        # we calculated the tax directly on the money itself (after
+        # accounting for the personal deduction amount)
         self.assertEqual(
             self.tax(self.person1, self.initial_year),
-            self.tax(self.person1_taxable_income, self.initial_year))
+            self.tax(
+                self.person1_taxable_income
+                - self.personal_deduction[self.initial_year],
+                self.initial_year))
         # We should get a similar result on the other person:
         self.assertEqual(
             self.tax(self.person2, self.initial_year),
-            self.tax(self.person2_taxable_income, self.initial_year))
+            self.tax(
+                self.person2_taxable_income
+                - self.personal_deduction[self.initial_year],
+                self.initial_year))
 
     def test_taxpayer_single_set(self):
         """ Call test on a set with a single taxpayer member. """
@@ -269,10 +355,12 @@ class TestTax(unittest.TestCase):
         # them up.
         self.person1.spouse = None
         self.person2.spouse = None
-        self.assertEqual(
-            self.tax({self.person1, self.person2}, self.initial_year),
-            self.tax(self.person1_taxable_income, self.initial_year)
-            + self.tax(self.person2_taxable_income, self.initial_year))
+        test_result = (
+            self.tax({self.person1, self.person2}, self.initial_year))
+        test_target = (
+            self.tax(self.person1, self.initial_year)
+            + self.tax(self.person2, self.initial_year))
+        self.assertEqual(test_result, test_target)
 
     def test_taxpayer_spouses(self):
         """ Call Test on a set of two spouse taxpayers. """
@@ -280,8 +368,8 @@ class TestTax(unittest.TestCase):
         # credits get implemented for spouses. Watch out for that.
         self.assertEqual(
             self.tax({self.person1, self.person2}, self.initial_year),
-            self.tax(self.person1_taxable_income, self.initial_year)
-            + self.tax(self.person2_taxable_income, self.initial_year))
+            self.tax(self.person1, self.initial_year)
+            + self.tax(self.person2, self.initial_year))
 
     def test_inflation_adjust(self):
         """ Call Test on a future year with inflation effects. """
