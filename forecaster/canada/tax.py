@@ -22,46 +22,33 @@ class TaxCanadaJurisdiction(Tax):
 
         self.jurisdiction = jurisdiction
 
-    def tax_deduction(self, people, year):
-        """ Finds tax deduction available for each taxpayer.
-
-        Args:
-            people (set[Person]): One or more `Person` objects, each
-                having some number of accounts (or other tax sources).
-            year (int): The year in which money is expressed (used for
-                inflation adjustment)
-
-        Returns:
-            dict[Person, Money]: The tax deduction available in this
-            jurisdiction for each person.
-        """
-        # NOTE: Presenty, no deduction are modelled. We could extend
-        # this in a future update to include, e.g. the family tax cut
-        # or the childcare deduction.
-        # Since we want to preserve this call signature for subclassing or
-        # future expansions, let's disable Pylint's complaints:
-        # pylint: disable=unused-argument,no-self-use
-        deduction = {person: Money(0) for person in people}
-        return deduction
-
-    def tax_credit(self, people, year):
+    def credits(self, person, year, deductions=None):
         """ Finds tax credit available for each taxpayer.
 
         Args:
-            people (set[Person]): One or more `Person` objects, each
-                having some number of accounts (or other tax sources).
+            person (Person): A person with some number of accounts
+                (or other tax sources).
             year (int): The year in which money is expressed (used for
                 inflation adjustment)
+            deductions (Money): The deductions for which the person
+                is eligible.
 
         Returns:
-            dict[Person, Money]: The tax credit available in this
-            jurisdiction for each person.
+            Money: The tax credit available in this jurisdiction for
+                the person.
         """
-        credit = {person: Money(0) for person in people}
-        for person in people:
-            # Apply the pension income tax credit for each person:
-            credit[person] += self._pension_income_credit(person, year)
-        return credit
+        # Get basic credits (i.e. those tied to accounts) from the
+        # superclass method:
+        credits = super().credits(person, year, deductions)
+
+        # Apply the pension income tax credit for each person:
+        credits += self._pension_income_credit(person, year)
+
+        # Apply the spousal tax credit if the person is married:
+        if person.spouse is not None:
+            credits += self._spousal_tax_credit(person, year)
+
+        return credits
 
     def _pension_income_credit(self, person, year):
         """ Determines the pension income credit claimable by `person`.
@@ -75,12 +62,12 @@ class TaxCanadaJurisdiction(Tax):
         Returns:
             Money: The amount of the credit claimable by person in year.
         """
-        pension_income = sum(
+        pension_income = abs(sum(
             account.outflows for account in person.accounts
             if isinstance(account, RRSP)
             # NOTE: Other qualified pension income sources can be
             # added here
-        )
+        ))
         # Each jurisdiction has a maximum claimable amount for the
         # pension credit, so determine that (inflation-adjusted
         # amount) here:
@@ -89,69 +76,74 @@ class TaxCanadaJurisdiction(Tax):
             self.inflation_adjust,
             year
         ))
-        pension_income = min(pension_income, deduction_max)
-        return pension_income * self.credit_rate(year)
+        return min(pension_income, deduction_max)
 
-    def __call__(self, income, year,
-                 other_deduction=None, other_credit=None):
-        """ Determines taxes owing on one or more income sources.
+    def _spousal_tax_credit(self, person, year):
+        """ Determines the spousal tax credit amount claimable.
+                
+        This method assigns the credit to the higher-earning
+        partner. Multiple people can be passed and the credit
+        will be determined for each individually.
+
+        Where both partners have the same income, the credit is
+        assigned to one partner in an implementation-dependent
+        way (e.g. based on a hash).
 
         Args:
-            income (Money, Person, iterable): Taxable income for the
-                year, either as a single scalar Money object, a single
-                Person object, or as an iterable (list, set, etc.) of
-                Person objects.
-            year (int): The taxation year. This determines which tax
-                rules and inflation-adjusted brackets are used.
-            other_deduction (Money, dict[Person, Money]):
-                Deductions to be applied against the jurisdiction's
-                taxes.
-
-                See documentation for `Tax` for more.
-            other_credit (Money, dict[Person, Money]):
-                Credits to be applied against the jurisdiction's taxes.
-
-                See documentation for `Tax` for more.
+            person (Person): One member of a couple (or a single
+                person, in which case the credit will be $0).
+            year (int): The year in which the spousal tax credit is
+                claimable.
 
         Returns:
-            Money: The total amount of tax owing for the year.
+            Money: The amount of the credit claimable by the person
+                in `year`.
         """
-        # Process deduction and credit, which take different forms
-        # depending on the form of `income`:
-        # For Money `income`, there's no method to call to determine
-        # deduction/credit; either apply what was passed, or set to $0
-        if isinstance(income, Money):
-            deduction = other_deduction if other_deduction is not None \
-                else Money(0)
-            credit = other_credit if other_credit is not None \
-                else Money(0)
-        # If there's just one person, we expect other_* to be Money
-        # objects, not dicts, so handle them appropriately:
-        elif isinstance(income, Person):
-            # NOTE: These methods require iterable `income` args:
-            deduction = self.tax_deduction({income}, year)[income]
-            credit = self.tax_credit({income}, year)[income]
-            if other_deduction is not None:
-                deduction += other_deduction
-            if other_credit is not None:
-                credit += other_credit
-        # If there are multiple people passed, expect a form of
-        # dict[Person, Money] for other_* params:
-        else:
-            deduction = self.tax_deduction(income, year)
-            credit = self.tax_credit(income, year)
-            if other_deduction is not None:
-                for person in deduction:
-                    if person in other_deduction:
-                        deduction[person] += other_deduction[person]
-            if other_credit is not None:
-                for person in deduction:
-                    if person in other_credit:
-                        credit[person] += other_credit[person]
+        # Unmarried folks don't get the credit:
+        if person.spouse is None:
+            return Money(0)
 
-        # Determine taxes owing in the usual way, applying the
-        # jurisdiction-specific credit and deduction:
-        return super().__call__(income, year, deduction, credit)
+        # Determine the maximum claimable amount:
+        max_spousal_amount = Money(
+            extend_inflation_adjusted(
+                constants.TAX_SPOUSAL_AMOUNT[self.jurisdiction],
+                self.inflation_adjust,
+                year
+            )
+        )
+
+        # We need to know the spouse's net income to assess the credit:
+        # TODO: To avoid calling self.deductions many times, sort out
+        # a way to pass in deductions for both spouses as args.
+        spouse = person.spouse
+        spouse_net_income = (
+            spouse.taxable_income - self.deductions(spouse, year)
+        )
+
+        # Figure out whether to assign the credit to this person or
+        # their spouse based on who has more income:
+
+        # If this is the lower-earner, use their spouse instead:
+        person_net_income = (
+            person.taxable_income - self.deductions(person, year)
+        )
+        if person_net_income < spouse_net_income:
+            return Money(0)
+        # If their incomes are the same, use memory location to
+        # decide in a deterministic way:
+        if person_net_income == spouse_net_income:
+            if id(person) < id(spouse):
+                return Money(0)
+
+        # The credit is determined by reducing the spousal amount
+        # by the spouse's (net) income, but in any event it's not
+        # negative.
+        credit = max(
+            max_spousal_amount - spouse_net_income,
+            Money(0)
+        )
+
+        return credit
 
 
 class TaxCanada(object):

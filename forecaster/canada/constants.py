@@ -129,3 +129,8 @@ TAX_BRACKETS = {
         }
     }
 }
+
+TAX_SPOUSAL_AMOUNT = {
+    'Federal': {2017: Decimal(11635)},
+    'BC': {2017: Decimal(9614)}
+}
