@@ -446,9 +446,23 @@ class Person(TaxSource):
 
     # NOTE: Test overloading of recorded property by subclass
 
+    @recorded_property_cached
+    def tax_deduction(self):
+        """ The `Person`'s tax deductions for the year. """
+        return sum(
+            (account.tax_deduction for account in self.accounts))
+
+    @recorded_property_cached
+    def tax_credit(self):
+        """ The `Person`'s tax credits for the year. """
+        return sum(
+            (account.tax_credit for account in self.accounts))
+
     @recorded_property
     def taxable_income(self):
-        return self.gross_income
+        return self.gross_income + sum(
+            (account.taxable_income for account in self.accounts)
+        )
 
     @recorded_property
     def tax_withheld(self):
