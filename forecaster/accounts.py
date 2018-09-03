@@ -169,7 +169,11 @@ class Account(TaxSource):
         # Type-check the input
         if not isinstance(val, Person):
             raise TypeError('Account: owner must be of type Person.')
-        val.accounts.add(self)  # Track this account via owner.
+        # Unregister this account from any former owner:
+        if self.owner is not None:
+            self.owner.accounts.remove(self)
+        # Register with new owner:
+        val.accounts.add(self)
         self._owner = val
 
     @recorded_property_cached
