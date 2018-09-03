@@ -218,9 +218,44 @@ class Tax(object):
         return self._accum[year][bracket]
 
     def personal_deduction(self, year):
-        """ The inflation-adjusted personal deduction. """
+        """ Personal deduction for `year`. """
         return extend_inflation_adjusted(
             self._personal_deduction, self.inflation_adjust, year)
+
+    def deductions(self, person, year):
+        """ The deductions the person is eligible for.
+
+        Args:
+            person (Person): The person for whom deductions
+                are being assessed.
+            year (int): The year for which deductions are being
+                assessed.
+
+        Returns:
+            Money: The deductions for the person.
+                This base class determines the personal deduction
+                and other deductions provided by `Person`.
+        """
+        deductions = self.personal_deduction(year)
+        deductions += person.tax_deduction_history[year]
+        return deductions
+
+    def credits(self, person, year, deductions=None):
+        """ The tax credits each person is eligible for.
+
+        Args:
+            person (Person): The person for whom credits
+                are being assessed.
+            year (int): The year for which credits are being
+                assessed.
+            deductions (Money): The deductions claimable
+                for the person. Optional.
+
+        Returns:
+            Money: The credits for the person.
+        """
+        credits = person.tax_credit_history[year]
+        return credits
 
     def credit_rate(self, year):
         """ The credit rate for the given year. """
@@ -275,7 +310,14 @@ class Tax(object):
     def tax_money(
         self, taxable_income, year, deduction=Money(0), credit=Money(0)
     ):
-        """ Returns taxes owing without source-specific deduction/etc.
+        """ Returns taxes owing on a given amount of taxable income.
+
+        This method does not apply any deductions or credits other than
+        what is passed to it. For example, the personal deduction is
+        not applied (unless explicitly passed).
+
+        In general, you should be calling `tax_person` if you want
+        to have deductions and credits automatically applied.
 
         Args:
             taxable_income (Money): The amount of income to be taxed,
@@ -294,59 +336,65 @@ class Tax(object):
             Money: Total tax liability arising from `taxable_income` in
                 `year`, after applying `deduction` and `credit`.
         """
-        # Apply the personal deduction and any other deduction before
-        # determining brackets.
-        taxable_income = max(
-            Money(taxable_income) - (
-                self.personal_deduction(year) + deduction
-            ),
-            Money(0)
-        )
+        # Apply deductions:
+        taxable_income -= deduction
+
         # Get the inflation-adjusted tax brackets for this year:
         brackets = self.tax_brackets(year)
         bracket = self.marginal_bracket(taxable_income, year)
-        # By using accum, we only have to think about the effect of
-        # the marginal rate on any income over the bracket threshold
+
+        # `accum` gives us the tax owing on lower brackers, so we only
+        # have to think about the effect of the marginal rate on any
+        # income over the bracket threshold
         marginal_rate = brackets[bracket]
         accum = self.accum(year, bracket)
-        # NOTE: The following assumes that tax credit are nonrefundable
-        return max(
-            accum + (taxable_income - bracket) * marginal_rate -
-            credit * self.credit_rate(year),
-            Money(0))
 
-    def tax_person(self, person, year, deduction=Money(0), credit=Money(0)):
+        # Assess tax owing on marginal bracket:
+        gross_tax = accum + (taxable_income - bracket) * marginal_rate
+        # Apply tax credts:
+        net_tax = gross_tax - credit * self.credit_rate(year)
+        # Assume credits are non-refundable:
+        return max(net_tax, Money(0))
+
+    def tax_person(
+        self, person, year, deduction=Money(0), credit=Money(0)
+    ):
         """ Returns tax treatment for an individual person.
 
         Args:
             person (Person): A person for whom tax liability will be
                 determined.
             year (int): The year for which tax treatment is needed.
-            deduction (Money): A deduction to be applied against the
-                person's income, on top of whatever other deductions
+            deduction (Money): A deduction to be applied against
+                the person's income, on top of whatever other deductions
                 they are eligible for, including the personal deduction
                 for the year and any specific `tax_deduction` attribute
                 values of the person and their accounts.
-            credit (Money): A credit to be applied against the person's
-                tax liability, on top of whatever other credits they are
-                eligible for (provided via the `tax_deduction` member of
-                `person` and any of their accounts).
+            credit (Money): A credit to be applied against the
+                person's tax liability, on top of whatever other credits
+                they are eligible for (provided via the `tax_deduction`
+                member of `person` and any of their accounts).
 
         Returns:
             Money: The tax liability of the person.
         """
-        # Accumulate the relevant tax information for the person:
-        taxable_income = person.taxable_income_history[year] + \
-            sum((x.taxable_income_history[year] for x in person.accounts))
-        tax_credit = person.tax_credit_history[year] + \
-            sum((x.tax_credit_history[year] for x in person.accounts))
-        tax_deduction = person.tax_deduction_history[year] + \
-            sum((x.tax_deduction_history[year] for x in person.accounts))
-        # Apply deduction to income, find taxes payable based on that,
-        # and then apply tax credit.
+        taxable_income = person.taxable_income_history[year]
+        deductions = (
+            person.tax_deduction_history[year]
+            + self.deductions(person, year)
+            + deduction
+        )
+        credits = (
+            person.tax_credit_history[year]
+            + self.credits(person, year)
+            + credit
+        )
         return self.tax_money(
-            taxable_income - (tax_deduction + deduction), year
-        ) - (tax_credit + credit) * self.credit_rate(year)
+            taxable_income,
+            year,
+            deductions,
+            credits
+        )
 
     def tax_people(self, people, year, deduction=None, credit=None):
         """ Total tax liability for a group of people.
@@ -515,6 +563,6 @@ class Tax(object):
         # If it's just one taxpayer, use the appropriate method:
         elif isinstance(income, Person):
             return self.tax_person(income, year, **kwargs)
-        # Otherwise, this is the easy case: interpret taxable_income as
+        # Otherwise, this is the easy case: interpret income as
         # Money (or Money-convertible)
         return self.tax_money(income, year, **kwargs)
