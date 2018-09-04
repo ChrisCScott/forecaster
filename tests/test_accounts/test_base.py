@@ -1,15 +1,40 @@
-""" Module for testing forecaster.accounts classes. """
+""" TODO """
 
 import unittest
 import math
 import decimal
 from decimal import Decimal
 from forecaster import (
-    Person, Account, Debt, ContributionLimitAccount, AllocationStrategy,
-    Scenario, Money)
+    Person, Account, Money, Scenario, AllocationStrategy)
 from forecaster.accounts import when_conv
 from tests.test_helper import type_check
 
+# Test utility methods first:
+
+class TestFreeMethods(unittest.TestCase):
+    """ Tests free methods in forecaster.person module. """
+
+    def test_when_conv(self):
+        """ Tests `when_conv` """
+
+        # Test a simple, single-valued input
+        when = when_conv(1)
+        self.assertEqual(when, Decimal(1))
+
+        # Test a magic input
+        when = when_conv('start')
+        self.assertEqual(when, Decimal(0))
+
+        # Test a magic input
+        when = when_conv('end')
+        self.assertEqual(when, Decimal(1))
+
+        # Test non-magic str input
+        when = when_conv('1')
+        self.assertEqual(when, Decimal(1))
+
+        with self.assertRaises(decimal.InvalidOperation):
+            when = when_conv('invalid input')
 
 class TestAccountMethods(unittest.TestCase):
     """ A test suite for the `Account` class.
@@ -629,355 +654,6 @@ class TestAccountMethods(unittest.TestCase):
         account.add_transaction(100, when='start')
         account.add_transaction(-100, when='end')
         self.assertEqual(account.tax_deduction, Money(0))
-
-
-class TestContributionLimitAccountMethods(TestAccountMethods):
-    """ Tests ContributionLimitAccount. """
-
-    def setUp(self):
-        """ Sets up variables for testing ContributionLimitAccount """
-        super().setUp()
-
-        self.AccountType = ContributionLimitAccount
-        self.contribution_room = 0
-
-    def test_init_basic(self, *args, **kwargs):
-        """ Test ContributionLimitAccount.__init__ """
-        super().test_init_basic(
-            *args, contribution_room=self.contribution_room, **kwargs)
-
-        # Basic init using pre-built ContributionLimitAccount-specific args
-        # and default Account args
-        account = self.AccountType(
-            self.owner, *args,
-            contribution_room=self.contribution_room, **kwargs)
-        self.assertEqual(account.contributor, self.owner)
-        self.assertEqual(account.contribution_room, self.contribution_room)
-
-    def test_init_contributor_implicit(self, *args, **kwargs):
-        """ Test implicit initialization of contributor parameter. """
-        account = self.AccountType(
-            self.owner, *args, **kwargs)
-        self.assertEqual(account.contributor, self.owner)
-
-    def test_init_contributor_explicit(self, *args, **kwargs):
-        """ Test explicit initialization of contributor parameter. """
-        contributor = Person(
-            self.initial_year, "Name", "1 January 2000",
-            retirement_date="1 January 2020")
-        account = self.AccountType(
-            self.owner, *args, contributor=contributor, **kwargs)
-        self.assertEqual(account.contributor, contributor)
-
-    def test_contribution_room(self, *args, **kwargs):
-        """ Test explicit initialization of contribution_room. """
-        account = self.AccountType(
-            self.owner, *args, contribution_room=Money(100), **kwargs)
-        self.assertEqual(account.contribution_room, Money(100))
-
-    def test_init_invalid(self, *args, **kwargs):
-        """ Test ContributionLimitAccount.__init__ with invalid inputs. """
-        super().test_init_invalid(
-            *args, contribution_room=self.contribution_room, **kwargs)
-
-        # Test invalid `person` input
-        with self.assertRaises(TypeError):
-            self.AccountType(
-                self.owner, contributor='invalid person',
-                *args, **kwargs)
-
-        # Finally, test a non-Money-convertible contribution_room:
-        with self.assertRaises(decimal.InvalidOperation):
-            self.AccountType(
-                self.owner, *args,
-                contribution_room='invalid', **kwargs)
-
-    def test_properties(self, *args, **kwargs):
-        """ Test ContributionLimitAccount properties """
-        # Basic check: properties return scalars (current year's values)
-        account = self.AccountType(
-            self.owner, *args,
-            contribution_room=self.contribution_room, **kwargs)
-        self.assertEqual(account.contribution_room,
-                         self.contribution_room)
-
-        # NOTE: ContributionLimitAccount.next_year() raises NotImplementedError
-        # and some subclasses require args for next_year(). That is
-        # already dealt with by test_next, so check that properties are
-        # pointing to the current year's values after calling next_year
-        # in text_next.
-
-    def test_next_year(self, *args, **kwargs):
-        """ Test ContributionLimitAccount.next_year. """
-        # next_contribution_room is not implemented for
-        # ContributionLimitAccount, and it's required for next_year, so confirm
-        # that trying to call next_year() throws an appropriate error.
-        if self.AccountType == ContributionLimitAccount:
-            account = ContributionLimitAccount(self.owner)
-            with self.assertRaises(NotImplementedError):
-                account.next_year()
-        # For other account types, try a conventional next_year test
-        else:
-            super().test_next_year(
-                *args, **kwargs)
-
-    def test_returns(self, *args, **kwargs):
-        """ Test ContributionLimitAccount.returns. """
-        # super().test_returns calls next_year(), which calls
-        # next_contribution_room(), which is not implemented for
-        # ContributionLimitAccount. Don't test returns for this class,
-        # and instead allow subclasses to pass through.
-        if self.AccountType != ContributionLimitAccount:
-            super().test_returns(*args, **kwargs)
-
-    def test_max_inflow(self, *args, **kwargs):
-        """ Test ContributionLimitAccount.max_inflow. """
-        # Init an account with standard parameters, confirm that
-        # max_inflow corresponds to contribution_room.
-        account = self.AccountType(
-            self.owner, *args,
-            contribution_room=self.contribution_room, **kwargs)
-        self.assertEqual(account.max_inflow(), self.contribution_room)
-
-    def test_contribution_room_basic(self, *args, **kwargs):
-        """ Test sharing of contribution room between accounts. """
-        account1 = self.AccountType(
-            self.owner, *args,
-            contribution_room=Money(100), **kwargs)
-        self.assertEqual(account1.contribution_room, Money(100))
-
-        # Don't set contribution_room explicitly for account2; it should
-        # automatically match account1's contribution_room amount.
-        account2 = self.AccountType(
-            self.owner, *args, **kwargs)
-        self.assertEqual(account2.contribution_room, Money(100))
-
-    def test_contribution_room_update(self, *args, **kwargs):
-        """ Test updating contribution room via second account's init. """
-        account1 = self.AccountType(
-            self.owner, *args,
-            contribution_room=Money(100), **kwargs)
-        self.assertEqual(account1.contribution_room, Money(100))
-
-        # Set contribution_room explicitly for account2; it should
-        # override account1's contribution_room amount.
-        account2 = self.AccountType(
-            self.owner, *args,
-            contribution_room=Money(200), **kwargs)
-        self.assertEqual(account1.contribution_room, Money(200))
-        self.assertEqual(account2.contribution_room, Money(200))
-
-    def test_contribution_group_basic(self, *args, **kwargs):
-        """ Test that contribution_group is set properly for 1 account. """
-        account = self.AccountType(
-            self.owner, *args,
-            contribution_room=Money(100), **kwargs)
-        self.assertEqual(account.contribution_group, {account})
-
-    def test_contribution_group_mult(self, *args, **kwargs):
-        """ Test that contribution_group is set properly for 2 accounts. """
-        account1 = self.AccountType(
-            self.owner, *args,
-            contribution_room=Money(100), **kwargs)
-        account2 = self.AccountType(
-            self.owner, *args, **kwargs)
-        self.assertEqual(account1.contribution_group, {account1, account2})
-        self.assertEqual(account2.contribution_group, {account1, account2})
-
-
-class TestDebtMethods(unittest.TestCase):
-    """ Test Debt. """
-
-    def setUp(self):
-        """ Sets up class attributes for convenience. """
-        super().setUp()
-        # We use caps because this is a type.
-        # pylint: disable=invalid-name
-        self.AccountType = Debt
-        # pylint: enable=invalid-name
-
-        # It's important to synchronize the initial years of related
-        # objects, so store it here:
-        self.initial_year = 2000
-        # Every init requires an owner, so store that here:
-        self.owner = Person(
-            self.initial_year, "test", 2000,
-            raise_rate={year: 1 for year in range(2000, 2066)},
-            retirement_date=2065)
-
-        # Debt takes three args: reduction_rate (Decimal),
-        # minimum_payment (Money), and accelerate_payment (bool)
-        self.minimum_payment = Money(10)
-        self.reduction_rate = Decimal(1)
-        self.accelerate_payment = True
-
-    def test_init(self, *args, **kwargs):
-        """ Test Debt.__init__ """
-        # Don't call the superclass init, since it's based on positive
-        # balances.
-        # super().test_init(*args, **kwargs)
-
-        # Test default init.
-        account = self.AccountType(
-            self.owner, *args, **kwargs)
-        self.assertEqual(account.minimum_payment, Money(0))
-        self.assertEqual(account.reduction_rate, 1)
-        self.assertEqual(account.accelerated_payment, Money('Infinity'))
-
-        # Test init with appropriate-type args.
-        minimum_payment = Money(100)
-        reduction_rate = Decimal(1)
-        accelerated_payment = Money(0)
-        account = self.AccountType(
-            self.owner, *args,
-            minimum_payment=minimum_payment, reduction_rate=reduction_rate,
-            accelerated_payment=accelerated_payment, **kwargs)
-        self.assertEqual(account.minimum_payment, minimum_payment)
-        self.assertEqual(account.reduction_rate, reduction_rate)
-        self.assertEqual(account.accelerated_payment, accelerated_payment)
-
-        # Test init with args of alternative types.
-        minimum_payment = 100
-        reduction_rate = 1
-        accelerated_payment = 10
-        account = self.AccountType(
-            self.owner, *args,
-            minimum_payment=minimum_payment, reduction_rate=reduction_rate,
-            accelerated_payment=accelerated_payment, **kwargs)
-        self.assertEqual(account.minimum_payment, minimum_payment)
-        self.assertEqual(account.reduction_rate, reduction_rate)
-        self.assertEqual(
-            account.accelerated_payment, Money(accelerated_payment))
-
-        # Test init with args of non-convertible types
-        with self.assertRaises(decimal.InvalidOperation):
-            account = self.AccountType(
-                self.owner, *args,
-                minimum_payment='invalid', **kwargs)
-        with self.assertRaises(decimal.InvalidOperation):
-            account = self.AccountType(
-                self.owner, *args,
-                reduction_rate='invalid', **kwargs)
-        with self.assertRaises(decimal.InvalidOperation):
-            account = self.AccountType(
-                self.owner, *args,
-                accelerated_payment='invalid', **kwargs)
-
-    def test_max_inflow_large_balance(self, *args, **kwargs):
-        """ Test `max_inflow` with balance greater than minimum payment. """
-        account = self.AccountType(
-            self.owner, *args,
-            minimum_payment=100, balance=-1000, **kwargs)
-        self.assertEqual(account.max_inflow(), Money(1000))
-
-    def test_max_inflow_small_balance(self, *args, **kwargs):
-        """ Test `max_inflow` with balance less than minimum payment. """
-        account = self.AccountType(
-            self.owner, *args,
-            minimum_payment=1000, balance=-100, **kwargs)
-        self.assertEqual(account.max_inflow(), Money(100))
-
-    def test_max_inflow_zero_balance(self, *args, **kwargs):
-        """ Test `max_inflow` with zero balance. """
-        account = self.AccountType(
-            self.owner, *args,
-            minimum_payment=100, balance=0, **kwargs)
-        self.assertEqual(account.max_inflow(), Money(0))
-
-    def test_max_inflow_no_accel(self, *args, **kwargs):
-        """ Test `max_inflow` with zero `accelerated_payment`. """
-        account = self.AccountType(
-            self.owner, *args,
-            minimum_payment=100, balance=200, accelerated_payment=0, **kwargs)
-        self.assertEqual(account.max_inflow(), Money(100))
-
-    def test_max_inflow_partial_accel(self, *args, **kwargs):
-        """ Test `max_inflow` with finite `accelerated_payment`. """
-        account = self.AccountType(
-            self.owner, *args,
-            minimum_payment=100, balance=200, accelerated_payment=50, **kwargs)
-        self.assertEqual(account.max_inflow(), Money(150))
-
-    def test_max_inflow_small_inflow(self, *args, **kwargs):
-        """ Test `max_inflow` with inflows less than the total max. """
-        account = self.AccountType(
-            self.owner, *args,
-            minimum_payment=100, balance=200, accelerated_payment=50, **kwargs)
-        account.add_transaction(60)
-        self.assertEqual(account.max_inflow(), Money(90))
-
-    def test_max_inflow_large_inflow(self, *args, **kwargs):
-        """ Test `max_inflow` with inflows greater than the total max. """
-        account = self.AccountType(
-            self.owner, *args,
-            minimum_payment=100, balance=200, accelerated_payment=50, **kwargs)
-        account.add_transaction(170)
-        # Should not return a negative number:
-        self.assertEqual(account.max_inflow(), Money(0))
-
-    def test_min_inflow_large_balance(self, *args, **kwargs):
-        """ Test `min_inflow` with balance greater than min. payment. """
-        account = self.AccountType(
-            self.owner, *args,
-            minimum_payment=100, balance=-1000, **kwargs)
-        self.assertEqual(account.min_inflow(), Money(100))
-
-    def test_min_inflow_small_balance(self, *args, **kwargs):
-        """ Test `min_inflow` with balance less than min. payment. """
-        account = self.AccountType(
-            self.owner, *args,
-            minimum_payment=1000, balance=-100, **kwargs)
-        self.assertEqual(account.min_inflow(), Money(100))
-
-    def test_min_inflow_zero_balance(self, *args, **kwargs):
-        """ Test `min_inflow` with zero balance. """
-        account = self.AccountType(
-            self.owner, *args,
-            minimum_payment=100, balance=0, **kwargs)
-        self.assertEqual(account.min_inflow(), Money(0))
-
-    def test_min_inflow_small_inflow(self, *args, **kwargs):
-        """ Test `min_inflow` with inflows less than the min. payment. """
-        account = self.AccountType(
-            self.owner, *args,
-            minimum_payment=10, balance=-100, **kwargs)
-        account.add_transaction(5)
-        self.assertEqual(account.min_inflow(), Money(5))
-
-    def test_min_inflow_large_inflow(self, *args, **kwargs):
-        """ Test `min_inflow` with inflows more than the min. payment. """
-        account = self.AccountType(
-            self.owner, *args,
-            minimum_payment=10, balance=-100, **kwargs)
-        account.add_transaction(20)
-        self.assertEqual(account.min_inflow(), Money(0))
-
-
-class TestFreeMethods(unittest.TestCase):
-    """ Tests free methods in forecaster.person module. """
-
-    def test_when_conv(self):
-        """ Tests `when_conv` """
-
-        # Test a simple, single-valued input
-        when = when_conv(1)
-        self.assertEqual(when, Decimal(1))
-
-        # Test a magic input
-        when = when_conv('start')
-        self.assertEqual(when, Decimal(0))
-
-        # Test a magic input
-        when = when_conv('end')
-        self.assertEqual(when, Decimal(1))
-
-        # Test non-magic str input
-        when = when_conv('1')
-        self.assertEqual(when, Decimal(1))
-
-        with self.assertRaises(decimal.InvalidOperation):
-            when = when_conv('invalid input')
-
 
 if __name__ == '__main__':
     # NOTE: BasicContext is useful for debugging, as most errors are treated

@@ -1,4 +1,4 @@
-""" A module providing Account, RegisteredAccount, and Debt classes. """
+""" A module providing the base Account class. """
 
 import math
 from decimal import Decimal
@@ -6,6 +6,45 @@ from forecaster.person import Person
 from forecaster.ledger import (
     Money, TaxSource, recorded_property, recorded_property_cached)
 
+# Define utility function first:
+def when_conv(when):
+    """ Converts various types of `when` inputs to Decimal.
+
+    The Decimal value is in [0,1], where 0 is the start of the period
+    and 1 is the end.
+
+    NOTE: `numpy` defines its `when` argument such that 'end' = 0 and
+    'start' = 1. If you're using that package, consider whether any
+    conversions are necessary.
+
+    Args:
+        `when` (float, Decimal, str): The timing of the transaction.
+            Must be in the range [0,1] or in ('start', 'end').
+
+    Raises:
+        decimal.InvalidOperation: `when` must be convertible to
+            type Decimal
+        ValueError: `when` must be in [0,1]
+
+    Returns:
+        A Decimal in [0,1]
+    """
+    # Attempt to convert strings 'start' and 'end' first
+    if isinstance(when, str):
+        if when == 'end':
+            when = 1
+        elif when == 'start':
+            when = 0
+
+    # Decimal can take a variety of input types (including str), so
+    # rather than throw an error on non-start/end input strings, try
+    # to cast to Decimal and throw a decimal.InvalidOperation error.
+    when = Decimal(when)
+
+    if when > 1 or when < 0:
+        raise ValueError("When: 'when' must be in [0,1]")
+
+    return when
 
 class Account(TaxSource):
     """ An account storing a `Money` balance.
@@ -541,277 +580,3 @@ class Account(TaxSource):
     def taxable_income(self):
         """ Treats all returns as taxable. """
         return max(self.returns, Money(0))
-
-
-class ContributionLimitAccount(Account):
-    """ An account with contribution limits.
-
-    The contribution room limit may be shared between accounts. Such
-    accounts should share a `contribution_token` value, which is
-    registered with the `contributor` (the owner, by default).
-
-    If contribution room is defined per-account, assign a unique
-    contribution_token to the account (e.g. `id(self)`). By default,
-    all objects of the same subclass share a contribution_token. This
-    should be set by the subclass before invoking super().__init__.
-
-    This is an abstract base class. Any subclass must implement the
-    method `next_contribution_room`, which returns the contribution
-    room for the following year.
-
-    Attributes:
-        contribution_room (Union[Money, None]): The amount of
-            contribution room available in the current year.
-
-            `None` if no contribution room has yet been recorded for
-            this year.
-        contributor (Union[Person, None]): The contributor to the
-            account. By default, this is the owner.
-    """
-
-    def __init__(
-        self, *args, contribution_room=None, contributor=None, **kwargs
-    ):
-        """ Initializes a ContributionLimitAccount object.
-
-        Args:
-            contribution_room (Money): The amount of contribution room
-                available in the first year. Optional.
-            contributor (Person): The contributor to the account. Optional.
-                If not provided, the contributor is assumed to be the same
-                as the annuitant (i.e. the owner.)
-        """
-        super().__init__(*args, **kwargs)
-
-        # If no contributor was provided, assume it's the owner.
-        self._contributor = None
-        if contributor is None:
-            self.contributor = self.owner
-        else:
-            self.contributor = contributor
-
-        # If `contribution_token` hasn't already been set, set
-        # `contribution_token` to a value that's the same for
-        # all instances of a subclass but differs between subclasses.
-        # By default, we'll use the type name, but it could be anything.
-
-        # We test for whether the member has been set before
-        # accessing it, so this pylint error is not appropriate here.
-        # pylint: disable=access-member-before-definition
-        if not (
-            hasattr(self, 'contribution_token')
-            and self.contribution_token is not None
-        ):
-            self.contribution_token = type(self).__name__
-        # pylint: enable=access-member-before-definition
-
-        # Prepare this account for having its contribution room tracked
-        self.contributor.register_shared_contribution(self)
-        # Contribution room is stored with the contributor and shared
-        # between accounts. Accordingly, only set contribution room if
-        # it's explicitly provided, to avoid overwriting previously-
-        # determined contribution room data with a default value.
-        if contribution_room is not None:
-            self.contribution_room = contribution_room
-
-    @property
-    def contributor(self):
-        """ The contributor to the account. """
-        return self._contributor
-
-    @contributor.setter
-    def contributor(self, val):
-        """ Sets the contributor to the account.
-
-        Raises:
-            TypeError: `person` must be of type `Person`.
-        """
-        if not isinstance(val, Person):
-            raise TypeError(
-                'RegisteredAccount: person must be of type Person.'
-            )
-        else:
-            self._contributor = val
-
-    @property
-    def contribution_group(self):
-        """ The accounts that share contribution room with this one. """
-        return self.contributor.contribution_groups(self)
-
-    @property
-    def contribution_room(self):
-        """ Contribution room available for the current year. """
-        contribution_room_history = self.contributor.contribution_room(self)
-        if self.this_year in contribution_room_history:
-            return contribution_room_history[self.this_year]
-        else:
-            return None
-
-    @contribution_room.setter
-    def contribution_room(self, val):
-        """ Updates contribution room for the current year. """
-        self.contributor.contribution_room(self)[self.this_year] = Money(val)
-
-    @property
-    def contribution_room_history(self):
-        """ A dict of `{year: contribution_room}` pairs. """
-        return self.contributor.contribution_room(self)
-
-    def next_year(self):
-        """ Confirms that the year is within the range of our data. """
-        # Calculate contribution room accrued based on this year's
-        # transaction/etc. information
-        if self.this_year + 1 not in self.contribution_room_history:
-            contribution_room = self.next_contribution_room()
-        # NOTE: Invoking super().next_year will increment self.this_year
-        super().next_year()
-
-        # Ensure that the contributor has advanced to this year.
-        while self.contributor.this_year < self.this_year:
-            self.contributor.next_year()
-
-        # The contribution room we accrued last year becomes available
-        # in the next year, so assign after calling `next_year`:
-        if self.this_year not in self.contribution_room_history:
-            self.contribution_room = contribution_room
-
-    def next_contribution_room(self):
-        """ Returns the contribution room for next year.
-
-        This method must be implemented by any subclass of
-        `RegisteredAccount`.
-
-        Returns:
-            Money: The contribution room for next year.
-
-        Raises:
-            NotImplementedError: Raised if this method is not overridden
-            by a subclass.
-        """
-        raise NotImplementedError(
-            'RegisteredAccount: next_contribution_room is not implemented. '
-            + 'Subclasses must override this method.')
-
-    def max_inflow(self, when='end'):
-        """ Limits outflows based on available contribution room. """
-        return self.contribution_room_history[self.this_year]
-
-
-class Debt(Account):
-    """ A debt with a balance and an interest rate.
-
-    If there is an outstanding balance, the balance value will be a
-    *negative* value, in line with typical accounting principles.
-
-    Args:
-        minimum_payment (Money): The minimum annual payment on the debt.
-            Optional.
-        reduction_rate (Decimal): The amount of any payment to be drawn
-            from savings instead of living expenses. Expressed as the
-            percentage that's drawn from savings (e.g. 75% drawn from
-            savings would be `Decimal('0.75')`). Optional.
-        accelerated_payment (Money): The maximum value which may be
-            paid in a year (above `minimum_payment`) to pay off the
-            balance earlier. Optional.
-
-            Debts may be accelerated by as much as possible by setting
-            this argument to `Money('Infinity')`, or non-accelerated
-            by setting this argument to `Money(0)`.
-    """
-
-    def __init__(
-        self, owner,
-        balance=0, rate=0, nper=1,
-        inputs=None, initial_year=None, minimum_payment=Money(0),
-        reduction_rate=1, accelerated_payment=Money('Infinity'), **kwargs
-    ):
-        """ Constructor for `Debt`. """
-
-        # The superclass has a lot of arguments, so we're sort of stuck
-        # with having a lot of arguments here (unless we hide them via
-        # *args and **kwargs, but that's against the style guide for
-        # this project).
-        # pylint: disable=too-many-arguments
-
-        super().__init__(
-            owner, balance=balance, rate=rate, nper=nper,
-            inputs=inputs, initial_year=initial_year, **kwargs)
-        self.minimum_payment = Money(minimum_payment)
-        self.reduction_rate = Decimal(reduction_rate)
-        self.accelerated_payment = Money(accelerated_payment)
-
-        # Debt must have a negative balance
-        if self.balance > 0:
-            self.balance = -self.balance
-
-    def min_inflow(self, when='end'):
-        """ The minimum payment on the debt. """
-        return min(
-            -self.balance_at_time(when),
-            max(
-                self.minimum_payment - self.inflows,
-                Money(0))
-        )
-
-    def max_inflow(self, when='end'):
-        """ The payment at time `when` that would reduce balance to 0.
-
-        This is in addition to any existing payments in the account,
-        so if an inflow is added `max_inflow` will be reduced.
-
-        Example::
-
-                debt = Debt(-100)
-                debt.maximum_payment('start') == Money(100)  # True
-                debt.add_transaction(100, 'start')
-                debt.maximum_payment('start') == 0  # True
-
-        """
-        return min(
-            -self.balance_at_time(when),
-            max(
-                self.minimum_payment
-                + self.accelerated_payment
-                - self.inflows,
-                Money(0))
-        )
-
-
-def when_conv(when):
-    """ Converts various types of `when` inputs to Decimal.
-
-    The Decimal value is in [0,1], where 0 is the start of the period
-    and 1 is the end.
-
-    NOTE: `numpy` defines its `when` argument such that 'end' = 0 and
-    'start' = 1. If you're using that package, consider whether any
-    conversions are necessary.
-
-    Args:
-        `when` (float, Decimal, str): The timing of the transaction.
-            Must be in the range [0,1] or in ('start', 'end').
-
-    Raises:
-        decimal.InvalidOperation: `when` must be convertible to
-            type Decimal
-        ValueError: `when` must be in [0,1]
-
-    Returns:
-        A Decimal in [0,1]
-    """
-    # Attempt to convert strings 'start' and 'end' first
-    if isinstance(when, str):
-        if when == 'end':
-            when = 1
-        elif when == 'start':
-            when = 0
-
-    # Decimal can take a variety of input types (including str), so
-    # rather than throw an error on non-start/end input strings, try
-    # to cast to Decimal and throw a decimal.InvalidOperation error.
-    when = Decimal(when)
-
-    if when > 1 or when < 0:
-        raise ValueError("When: 'when' must be in [0,1]")
-
-    return when
