@@ -351,7 +351,7 @@ class Forecast(object):
         )
         self.reduction_from_debt[year] = sum(
             (
-                debt_payments[debt] * debt.reduction_rate
+                debt.payment_from_savings()
                 for debt in debt_payments
             ),
             Money(0)

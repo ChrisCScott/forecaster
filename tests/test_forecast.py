@@ -107,7 +107,7 @@ class TestForecast(unittest.TestCase):
             balance=-1000,
             rate=1,  # 100% interest rate
             minimum_payment=Money(100),
-            reduction_rate=1,
+            savings_rate=1,
             accelerated_payment=Money('Infinity')
         )
 
@@ -398,11 +398,11 @@ class TestForecast(unittest.TestCase):
         )
         # $200 to pay off this debt:
         self.forecaster.add_debt(
-            balance=Money(100), rate=1, reduction_rate=1,
+            balance=Money(100), rate=1, savings_rate=1,
             accelerated_payment=Money('Infinity'))
         # $100 payment in each year, $50 of which is drawn from savings.
         self.forecaster.add_debt(
-            balance=Money(200), rate=0, reduction_rate=0.5,
+            balance=Money(200), rate=0, savings_rate=0.5,
             accelerated_payment=Money(0), minimum_payment=Money(100))
         forecast = self.forecaster.forecast()
         # Test the first year
@@ -469,7 +469,7 @@ class TestForecast(unittest.TestCase):
         )
         # $200 to pay off this debt (total net contributions of $800):
         self.forecaster.add_debt(
-            balance=Money(100), rate=1, reduction_rate=1,
+            balance=Money(100), rate=1, savings_rate=1,
             accelerated_payment=Money('Infinity'))
         # Here's an account to toss transactions into:
         self.forecaster.add_asset(

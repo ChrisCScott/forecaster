@@ -41,7 +41,7 @@ class TestDebtMethods(unittest.TestCase):
         account = self.AccountType(
             self.owner, *args, **kwargs)
         self.assertEqual(account.minimum_payment, Money(0))
-        self.assertEqual(account.reduction_rate, 1)
+        self.assertEqual(account.savings_rate, 1)
         self.assertEqual(account.accelerated_payment, Money('Infinity'))
 
         # Test init with appropriate-type args.
@@ -50,10 +50,10 @@ class TestDebtMethods(unittest.TestCase):
         accelerated_payment = Money(0)
         account = self.AccountType(
             self.owner, *args,
-            minimum_payment=minimum_payment, reduction_rate=reduction_rate,
+            minimum_payment=minimum_payment, savings_rate=reduction_rate,
             accelerated_payment=accelerated_payment, **kwargs)
         self.assertEqual(account.minimum_payment, minimum_payment)
-        self.assertEqual(account.reduction_rate, reduction_rate)
+        self.assertEqual(account.savings_rate, reduction_rate)
         self.assertEqual(account.accelerated_payment, accelerated_payment)
 
         # Test init with args of alternative types.
@@ -62,10 +62,10 @@ class TestDebtMethods(unittest.TestCase):
         accelerated_payment = 10
         account = self.AccountType(
             self.owner, *args,
-            minimum_payment=minimum_payment, reduction_rate=reduction_rate,
+            minimum_payment=minimum_payment, savings_rate=reduction_rate,
             accelerated_payment=accelerated_payment, **kwargs)
         self.assertEqual(account.minimum_payment, minimum_payment)
-        self.assertEqual(account.reduction_rate, reduction_rate)
+        self.assertEqual(account.savings_rate, reduction_rate)
         self.assertEqual(
             account.accelerated_payment, Money(accelerated_payment))
 
@@ -77,7 +77,7 @@ class TestDebtMethods(unittest.TestCase):
         with self.assertRaises(decimal.InvalidOperation):
             account = self.AccountType(
                 self.owner, *args,
-                reduction_rate='invalid', **kwargs)
+                savings_rate='invalid', **kwargs)
         with self.assertRaises(decimal.InvalidOperation):
             account = self.AccountType(
                 self.owner, *args,

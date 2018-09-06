@@ -94,5 +94,5 @@ class Settings:
     debt_payment_timing = 'end'
 
     ''' Debt defaults '''
-    debt_reduction_rate = 1
+    debt_savings_rate = 1
     debt_accelerated_payment = 0

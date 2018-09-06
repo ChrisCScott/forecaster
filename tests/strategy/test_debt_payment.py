@@ -21,17 +21,17 @@ class TestDebtPaymentStrategies(unittest.TestCase):
         self.debt_big_high_interest = Debt(
             person,
             balance=Money(1000), rate=1, minimum_payment=Money(100),
-            reduction_rate=1, accelerated_payment=Money('Infinity')
+            savings_rate=1, accelerated_payment=Money('Infinity')
         )
         self.debt_small_low_interest = Debt(
             person,
             balance=Money(100), rate=0, minimum_payment=Money(10),
-            reduction_rate=1, accelerated_payment=Money('Infinity')
+            savings_rate=1, accelerated_payment=Money('Infinity')
         )
         self.debt_medium = Debt(
             person,
             balance=Money(500), rate=0.5, minimum_payment=Money(50),
-            reduction_rate=1, accelerated_payment=Money('Infinity')
+            savings_rate=1, accelerated_payment=Money('Infinity')
         )
 
         self.debts = {
@@ -52,7 +52,7 @@ class TestDebtPaymentStrategies(unittest.TestCase):
         """ Finds the minimum payment *from savings* for `accounts`. """
         # Find the minimum payment *from savings* for each account:
         return sum(
-            debt.min_inflow(timing) * debt.reduction_rate
+            debt.min_inflow(timing) * debt.savings_rate
             for debt in debts
         )
 
@@ -61,7 +61,7 @@ class TestDebtPaymentStrategies(unittest.TestCase):
         """ Finds the maximum payment *from savings* for `accounts`. """
         # Find the minimum payment *from savings* for each account:
         return sum(
-            debt.max_inflow(timing) * debt.reduction_rate
+            debt.max_inflow(timing) * debt.savings_rate
             for debt in debts
         )
 
@@ -307,7 +307,7 @@ class TestDebtPaymentStrategyAttributes(unittest.TestCase):
 
     In particular, this class tests payments against one debt at a time
     and confirms that the result is consistent with the attributes of
-    the Debt (i.e. `accelerate_payment`, `reduction_rate`, and
+    the Debt (i.e. `accelerate_payment`, `savings_rate`, and
     `minimum_payment`).
     """
 
@@ -321,7 +321,7 @@ class TestDebtPaymentStrategyAttributes(unittest.TestCase):
         self.debt = Debt(
             person,
             balance=Money(100), rate=0, minimum_payment=Money(10),
-            reduction_rate=1, accelerated_payment=Money('Infinity')
+            savings_rate=1, accelerated_payment=Money('Infinity')
         )
 
     def test_accel_payment_none(self):
@@ -345,26 +345,26 @@ class TestDebtPaymentStrategyAttributes(unittest.TestCase):
         results = self.strategy(Money(50), {self.debt})
         self.assertEqual(results[self.debt], Money(50))
 
-    def test_reduction_rate_none(self):
-        """ Tests payments where `reduction_rate=0`. """
-        self.debt.reduction_rate = 0
+    def test_savings_rate_none(self):
+        """ Tests payments where `savings_rate=0`. """
+        self.debt.savings_rate = 0
         results = self.strategy(Money(50), {self.debt})
-        # If reduction_rate is 0, we repay the whole debt immediately.
+        # If savings_rate is 0, we repay the whole debt immediately.
         # TODO: Change this behaviour
         self.assertEqual(results[self.debt], Money(100))
 
-    def test_reduction_rate_half(self):
-        """ Tests payments where `reduction_rate=0.5`. """
-        self.debt.reduction_rate = Decimal(0.5)
+    def test_savings_rate_half(self):
+        """ Tests payments where `savings_rate=0.5`. """
+        self.debt.savings_rate = Decimal(0.5)
         results = self.strategy(Money(25), {self.debt})
-        # If reduction_rate is 50%, we can double the payment:
+        # If savings_rate is 50%, we can double the payment:
         self.assertEqual(results[self.debt], Money(50))
 
-    def test_reduction_rate_full(self):
-        """ Tests payments where `reduction_rate=1`. """
-        self.debt.reduction_rate = 1
+    def test_savings_rate_full(self):
+        """ Tests payments where `savings_rate=1`. """
+        self.debt.savings_rate = 1
         results = self.strategy(Money(50), {self.debt})
-        # If reduction_rate is 50%, we can double the payment:
+        # If savings_rate is 50%, we can double the payment:
         self.assertEqual(results[self.debt], Money(50))
 
     def test_minimum_payment(self):

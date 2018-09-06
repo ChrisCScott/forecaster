@@ -452,7 +452,7 @@ class Forecaster(object):
     def add_debt(
         self, owner=None, balance=None, rate=None, transactions=None,
         nper=None, inputs=None, initial_year=None, minimum_payment=None,
-        reduction_rate=None, accelerated_payment=None, cls=Debt, **kwargs
+        savings_rate=None, accelerated_payment=None, cls=Debt, **kwargs
     ):
         """ Adds a Debt to the forecast.
 
@@ -473,8 +473,8 @@ class Forecaster(object):
             the relevant args, inputs, settings, and default values.
         """
         self.set_kwarg(kwargs, 'minimum_payment', minimum_payment, None)
-        self.set_kwarg(kwargs, 'reduction_rate', reduction_rate,
-                       self.settings.debt_reduction_rate)
+        self.set_kwarg(kwargs, 'savings_rate', savings_rate,
+                       self.settings.debt_savings_rate)
         self.set_kwarg(kwargs, 'accelerated_payment', accelerated_payment,
                        self.settings.debt_accelerated_payment)
 

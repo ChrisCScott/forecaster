@@ -15,11 +15,11 @@ class Debt(Account):
             Optional.
         living_expense (Money): The amount paid annually out of living
             expenses. This portion of payments is excluded from
-            the amount determined by `reduction_rate`. If payments for
+            the amount determined by `savings_rate`. If payments for
             a given year are less than this value, they are 100%
-            excluded from `reduction_rate`. (The total payment amount
+            excluded from `savings_rate`. (The total payment amount
             is not increased to match this value.) Optional.
-        reduction_rate (Decimal): The amount of any payment (in excess
+        savings_rate (Decimal): The amount of any payment (in excess
             of `living_expense`) to be drawn from savings instead of
             living expenses. Expressed as the percentage that's drawn
             from savings (e.g. 75% drawn from savings would be
@@ -37,7 +37,7 @@ class Debt(Account):
         self, owner,
         balance=0, rate=0, nper=1,
         inputs=None, initial_year=None, minimum_payment=Money(0),
-        living_expense=Money(0), reduction_rate=1,
+        living_expense=Money(0), savings_rate=1,
         accelerated_payment=Money('Infinity'),
         **kwargs
     ):
@@ -54,7 +54,7 @@ class Debt(Account):
             inputs=inputs, initial_year=initial_year, **kwargs)
         self.minimum_payment = Money(minimum_payment)
         self.living_expense = Money(living_expense)
-        self.reduction_rate = Decimal(reduction_rate)
+        self.savings_rate = Decimal(savings_rate)
         self.accelerated_payment = Money(accelerated_payment)
 
         # Debt must have a negative balance
@@ -135,18 +135,18 @@ class Debt(Account):
         # either savings or living expenses (to avoid DIV0 error).
         # We do the same for both savings and living expenses
         # because these impose separate limits.
-        if self.reduction_rate == 0:
+        if self.savings_rate == 0:
             max_savings = Money('Infinity')
         else:
-            max_savings = savings_available / self.reduction_rate
+            max_savings = savings_available / self.savings_rate
         # (This could be indented, but it's much more readable
         # this way. We can incur an extra comparison if it means
         # we're being more Pythonic.)
-        if self.reduction_rate == 1:
+        if self.savings_rate == 1:
             max_living = Money('Infinity')
         else:
             max_living = (
-                living_expenses_available / (1 - self.reduction_rate))
+                living_expenses_available / (1 - self.savings_rate))
 
         # Available savings and living expenses will result in two
         # different max payments; use the lesser of the two.
@@ -187,7 +187,7 @@ class Debt(Account):
         # for past payments, i.e. `base`)
         living_expense = max(self.living_expense - base, Money(0))
         payment_from_savings = (
-            (amount - living_expense) * self.reduction_rate
+            (amount - living_expense) * self.savings_rate
         )
 
         # Payments should always be non-negative:

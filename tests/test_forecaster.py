@@ -433,7 +433,7 @@ class TestForecaster(unittest.TestCase):
             inputs={},
             initial_year=forecaster.person1.initial_year,
             minimum_payment=Money(0),
-            reduction_rate=self.settings.debt_reduction_rate,
+            savings_rate=self.settings.debt_savings_rate,
             accelerated_payment=self.settings.debt_accelerated_payment
         ))
         self.assertEqual(forecaster.debts - debts, {debt})
