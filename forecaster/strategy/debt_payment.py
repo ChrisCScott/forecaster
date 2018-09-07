@@ -170,23 +170,8 @@ class DebtPaymentStrategy(Strategy):
         for debt in sorted(
             debts, key=lambda x: x.rate, reverse=True
         ):
-            # Keep track of how much we were paying before adding
-            # a further payment amount:
-            initial_payment = transactions[debt] + debt.inflows
-            # Determine how much debt we can repay given how much money
-            # is available:
-            transactions[debt] += debt.payment(
-                savings_available=available,
-                other_payments=transactions[debt],
-                when=self.timing
-            )
-
-            # Reduce the available amount by the portion of the further
-            # payment amount which was drawn from savngs:
-            available -= debt.payment_from_savings(
-                amount=transactions[debt] - initial_payment,
-                base=initial_payment
-            )
+            available -= self._assign_available(
+                debt, transactions, available)
 
         return transactions
 
