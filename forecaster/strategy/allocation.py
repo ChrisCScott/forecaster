@@ -37,28 +37,14 @@ class RateFunction(object):
             age=self.person.age(year),
             retirement_age=self.person.retirement_age
         )
-        # Extract stocks/bonds/other returns:
-        if 'stocks' in allocation:
-            stocks = allocation['stocks']
-        else:
-            stocks = Decimal(0)
-        if 'bonds' in allocation:
-            bonds = allocation['bonds']
-        else:
-            bonds = Decimal(0)
-        if 'other' in allocation:
-            other = allocation['other']
-        else:
-            other = Decimal(0)
-
         # Weight the returns of the various asset classes by each
         # class's allocation:
         return (
             (
-                stocks * self.scenario.stock_return[year]
-                + bonds * self.scenario.bond_return[year]
-                + other * self.scenario.other_return[year]
-            ) / (stocks + bonds + other)
+                allocation.stocks * self.scenario.stock_return[year]
+                + allocation.bonds * self.scenario.bond_return[year]
+                + allocation.other * self.scenario.other_return[year]
+            ) / (allocation.stocks + allocation.bonds + allocation.other)
         )
 
 
@@ -122,6 +108,9 @@ class AllocationStrategy(Strategy):
 
         Allocations of the members sum to 1 (e.g. `Decimal(0.03` means
         3%).
+
+    Raises:
+        ValueError: min_equity greater than max_equity.
     """
     # pylint: disable=too-many-arguments
     def __init__(
@@ -165,10 +154,9 @@ class AllocationStrategy(Strategy):
         # The formula for `n-age` is just that (recall that
         # n=constant_strategy_target). Insert the adjustment factor too.
         target = Decimal(self.target - age) / 100
-        # Ensure that we don't move past our min/max equities
-        target = min(max(target, self.min_equity), self.max_equity)
+
         # Bonds is simply whatever isn't in equities
-        return {'stocks': target, 'bonds': 1 - target}
+        return AssetAllocation(target, 1 - target, 0)
 
     @strategy_method('Transition to constant')
     def strategy_transition_to_const(
@@ -189,18 +177,19 @@ class AllocationStrategy(Strategy):
         # If retirement is outside our risk transition window (e.g. if
         # it's more than 20 years away), maximize stock holdings.
         if age <= retirement_age - self.risk_transition_period:
-            return {'stocks': self.max_equity, 'bonds': 1 - self.max_equity}
+            return AssetAllocation(self.max_equity, 1 - self.max_equity, 0)
         # If we've hit retirement, keep equity allocation constant at
         # our target
         elif age >= retirement_age:
             min_equity = max(self.min_equity, self.target)
-            return {'stocks': min_equity, 'bonds': 1 - min_equity}
+            return AssetAllocation(min_equity, 1 - min_equity, 0)
         # Otherwise, smoothly move from max_equity to target over
         # the risk_transition_period
         target = self.target + \
             (self.max_equity - self.target) * \
             (retirement_age - age) / self.risk_transition_period
-        return {'stocks': target, 'bonds': 1 - target}
+
+        return AssetAllocation(target, 1 - target, 0)
 
     def rate_function(self, person, scenario):
         """ A rate function usable by Person or Account objects.
@@ -225,6 +214,48 @@ class AllocationStrategy(Strategy):
         # attributes when running a forecast.
         return RateFunction(scenario, person, self)
 
+    def _balance_allocation(self, allocation):
+        """ Ensure that min_equity and max_equity are respected.
+
+        Args:
+            allocation (AssetAllocation): The asset allocation to
+                be balanced (i.e. reweighted, if necessary)
+
+        Returns:
+            AssetAllocation: An asset allocation that corresponds
+                to the input except that any stocks portion which
+                is outside the range defined by `min_equity` and
+                `max_equity` will be put in that range. The
+                other values are rebalanced accordingly so that
+                the sum of all allocation attributes is 1.
+        """
+        if allocation.stocks > self.max_equity:
+            # Move the excess weighting of equity into bonds and other
+            # proportionately to their current values:
+            bonds = allocation.bonds + (
+                (allocation.stocks - self.max_equity)
+                * allocation.bonds / (allocation.bonds + allocation.other)
+            )
+            other = allocation.other + (
+                (allocation.stocks - self.max_equity)
+                * allocation.other / (allocation.bonds + allocation.other)
+            )
+            allocation = AssetAllocation(self.max_equity, bonds, other)
+        elif allocation.stocks < self.min_equity:
+            # Move weighting to equity from bonds and other
+            # proportionately to their current values:
+            bonds = allocation.bonds - (
+                (self.min_equity - allocation.stocks)
+                * allocation.bonds / (allocation.bonds + allocation.other)
+            )
+            other = allocation.other - (
+                (self.max_equity - allocation.stocks)
+                * allocation.other / (allocation.bonds + allocation.other)
+            )
+            allocation = AssetAllocation(self.min_equity, bonds, other)
+
+        return allocation
+
     def __call__(self, age, retirement_age=None, *args, **kwargs):
         """ Returns a dict of {account, Money} pairs. """
         # TODO: Move min_equity and max_equity logic here to simplify
@@ -232,4 +263,6 @@ class AllocationStrategy(Strategy):
         # In the meantime, suppress Pylint's complaints about how this
         # method is useless:
         # pylint: disable=useless-super-delegation
-        return super().__call__(age, retirement_age, *args, **kwargs)
+        allocation = super().__call__(age, retirement_age, *args, **kwargs)
+
+        return self._balance_allocation(allocation)
