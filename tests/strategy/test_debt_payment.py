@@ -52,7 +52,11 @@ class TestDebtPaymentStrategies(unittest.TestCase):
         """ Finds the minimum payment *from savings* for `accounts`. """
         # Find the minimum payment *from savings* for each account:
         return sum(
-            debt.min_inflow(timing) * debt.savings_rate
+            max(
+                (debt.min_inflow(timing) - debt.living_expense)
+                * debt.savings_rate,
+                Money(0)
+            )
             for debt in debts
         )
 
@@ -61,7 +65,11 @@ class TestDebtPaymentStrategies(unittest.TestCase):
         """ Finds the maximum payment *from savings* for `accounts`. """
         # Find the minimum payment *from savings* for each account:
         return sum(
-            debt.max_inflow(timing) * debt.savings_rate
+            max(
+                (debt.max_inflow(timing) - debt.living_expense)
+                * debt.savings_rate,
+                Money(0)
+            )
             for debt in debts
         )
 
@@ -97,7 +105,7 @@ class TestDebtPaymentStrategies(unittest.TestCase):
         """ Test strategy_snowball with the minimum payment only. """
         payment = self.min_payment(
             self.debts, self.strategy_snowball.timing)
-        results = self.strategy_snowball(payment, self.debts)
+        results = self.strategy_snowball(self.debts, payment)
         for debt in self.debts:
             self.assertEqual(results[debt], debt.minimum_payment)
 
@@ -105,7 +113,7 @@ class TestDebtPaymentStrategies(unittest.TestCase):
         """ Test strategy_snowball with less than the minimum payments. """
         # Minimum should still be paid
         payment = Money(0)
-        results = self.strategy_snowball(payment, self.debts)
+        results = self.strategy_snowball(self.debts, payment)
         for debt in self.debts:
             self.assertEqual(results[debt], debt.minimum_payment)
 
@@ -115,7 +123,7 @@ class TestDebtPaymentStrategies(unittest.TestCase):
         payment = self.min_payment(
             self.debts, self.strategy_snowball.timing
         ) + self.excess
-        results = self.strategy_snowball(payment, self.debts)
+        results = self.strategy_snowball(self.debts, payment)
         self.assertEqual(
             results[self.debt_small_low_interest],
             self.debt_small_low_interest.minimum_payment + self.excess
@@ -142,7 +150,7 @@ class TestDebtPaymentStrategies(unittest.TestCase):
                 self.strategy_snowball.timing
             ) + self.excess
         )
-        results = self.strategy_snowball(payment, self.debts)
+        results = self.strategy_snowball(self.debts, payment)
         self.assertEqual(
             results[self.debt_small_low_interest],
             self.debt_small_low_interest.max_inflow(
@@ -170,7 +178,7 @@ class TestDebtPaymentStrategies(unittest.TestCase):
                 self.strategy_snowball.timing
             ) + self.excess
         )
-        results = self.strategy_snowball(payment, self.debts)
+        results = self.strategy_snowball(self.debts, payment)
         self.assertEqual(
             results[self.debt_small_low_interest],
             self.debt_small_low_interest.max_inflow(
@@ -191,7 +199,7 @@ class TestDebtPaymentStrategies(unittest.TestCase):
         payment = (
             self.max_payment(self.debts, self.strategy_snowball.timing)
             + self.excess)
-        results = self.strategy_snowball(payment, self.debts)
+        results = self.strategy_snowball(self.debts, payment)
         for debt in self.debts:
             self.assertEqual(
                 results[debt],
@@ -201,7 +209,7 @@ class TestDebtPaymentStrategies(unittest.TestCase):
         """ Test strategy_avalanche with minimum payments only. """
         payment = self.min_payment(
             self.debts, self.strategy_avalanche.timing)
-        results = self.strategy_avalanche(payment, self.debts)
+        results = self.strategy_avalanche(self.debts, payment)
         for debt in self.debts:
             self.assertEqual(results[debt], debt.minimum_payment)
 
@@ -209,7 +217,7 @@ class TestDebtPaymentStrategies(unittest.TestCase):
         """ Test strategy_avalanche with less than the minimum payments. """
         # Minimum should still be paid
         payment = Money(0)
-        results = self.strategy_avalanche(payment, self.debts)
+        results = self.strategy_avalanche(self.debts, payment)
         for debt in self.debts:
             self.assertEqual(results[debt], debt.minimum_payment)
 
@@ -219,7 +227,7 @@ class TestDebtPaymentStrategies(unittest.TestCase):
         payment = self.min_payment(
             self.debts, self.strategy_avalanche.timing
         ) + self.excess
-        results = self.strategy_avalanche(payment, self.debts)
+        results = self.strategy_avalanche(self.debts, payment)
         self.assertEqual(
             results[self.debt_big_high_interest],
             self.debt_big_high_interest.minimum_payment + self.excess
@@ -246,7 +254,7 @@ class TestDebtPaymentStrategies(unittest.TestCase):
                 self.strategy_avalanche.timing
             ) + self.excess
         )
-        results = self.strategy_avalanche(payment, self.debts)
+        results = self.strategy_avalanche(self.debts, payment)
         self.assertEqual(
             results[self.debt_big_high_interest],
             self.debt_big_high_interest.max_inflow(
@@ -273,7 +281,7 @@ class TestDebtPaymentStrategies(unittest.TestCase):
                 self.strategy_avalanche.timing
             ) + self.excess
         )
-        results = self.strategy_avalanche(payment, self.debts)
+        results = self.strategy_avalanche(self.debts, payment)
         self.assertEqual(
             results[self.debt_big_high_interest],
             self.debt_big_high_interest.max_inflow(
@@ -294,7 +302,7 @@ class TestDebtPaymentStrategies(unittest.TestCase):
         payment = self.max_payment(
             self.debts, self.strategy_avalanche.timing
         ) + self.excess
-        results = self.strategy_avalanche(payment, self.debts)
+        results = self.strategy_avalanche(self.debts, payment)
         for debt in self.debts:
             self.assertEqual(
                 results[debt],
@@ -327,14 +335,14 @@ class TestDebtPaymentStrategyAttributes(unittest.TestCase):
     def test_accel_payment_none(self):
         """ Tests payments where `accelerate_payment=Money(0)`. """
         self.debt.accelerated_payment = Money(0)
-        results = self.strategy(Money(100), {self.debt})
+        results = self.strategy({self.debt}, Money(100))
         # If there's no acceleration, only the minimum is paid.
         self.assertEqual(results[self.debt], self.debt.minimum_payment)
 
     def test_accel_payment_partial(self):
         """ Tests payments with finite, non-zero `accelerate_payment`. """
         self.debt.accelerated_payment = Money(20)
-        results = self.strategy(Money(100), {self.debt})
+        results = self.strategy({self.debt}, Money(100))
         # Payment should be $20 more than the minimum:
         self.assertEqual(
             results[self.debt], self.debt.minimum_payment + Money(20))
@@ -342,13 +350,13 @@ class TestDebtPaymentStrategyAttributes(unittest.TestCase):
     def test_accel_payment_infinity(self):
         """ Tests payments where `accelerate_payment=Money('Infinity')`. """
         self.debt.accelerated_payment = Money('Infinity')
-        results = self.strategy(Money(50), {self.debt})
+        results = self.strategy({self.debt}, Money(50))
         self.assertEqual(results[self.debt], Money(50))
 
     def test_savings_rate_none(self):
         """ Tests payments where `savings_rate=0`. """
         self.debt.savings_rate = 0
-        results = self.strategy(Money(50), {self.debt})
+        results = self.strategy({self.debt}, Money(50))
         # If savings_rate is 0, we repay the whole debt immediately.
         # TODO: Change this behaviour
         self.assertEqual(results[self.debt], Money(100))
@@ -356,21 +364,21 @@ class TestDebtPaymentStrategyAttributes(unittest.TestCase):
     def test_savings_rate_half(self):
         """ Tests payments where `savings_rate=0.5`. """
         self.debt.savings_rate = Decimal(0.5)
-        results = self.strategy(Money(25), {self.debt})
+        results = self.strategy({self.debt}, Money(25))
         # If savings_rate is 50%, we can double the payment:
         self.assertEqual(results[self.debt], Money(50))
 
     def test_savings_rate_full(self):
         """ Tests payments where `savings_rate=1`. """
         self.debt.savings_rate = 1
-        results = self.strategy(Money(50), {self.debt})
+        results = self.strategy({self.debt}, Money(50))
         # If savings_rate is 50%, we can double the payment:
         self.assertEqual(results[self.debt], Money(50))
 
     def test_minimum_payment(self):
         """ Tests payments of less than `minimum_payment`. """
         self.debt.minimum_payment = Money(10)
-        results = self.strategy(Money(0), {self.debt})
+        results = self.strategy({self.debt}, Money(0))
         self.assertEqual(results[self.debt], Money(10))
 
 if __name__ == '__main__':

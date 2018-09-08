@@ -346,8 +346,8 @@ class Forecast(object):
         self.reduction_from_other[year] = Money(0)  # TODO
         # Then determine reductions due to debt payments:
         debt_payments = self.debt_payment_strategy(
-            self.gross_contributions[year] - self.reduction_from_other[year],
-            self.debts
+            self.debts,
+            self.gross_contributions[year] - self.reduction_from_other[year]
         )
         self.reduction_from_debt[year] = sum(
             (
