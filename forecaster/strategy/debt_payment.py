@@ -2,7 +2,7 @@
 
 from decimal import Decimal
 from forecaster.strategy.base import Strategy, strategy_method
-
+from forecaster.ledger import Money
 
 class DebtPaymentStrategy(Strategy):
     """ Determines payments for a group of debts.
@@ -49,134 +49,87 @@ class DebtPaymentStrategy(Strategy):
         # timing. (We could convert to `When` here - consider it.)
         self._param_check(self.timing, 'timing', (Decimal, str))
 
-    def _assign_available(self, debt, transactions, available):
-        """ Proposes a transaction based on savings available.
+    def _strategy_ordered(self, sorted_debts, available, assign_minimums=True):
+        """ Proposes transactions based on an ordered list of debts.
         
         Args:
-            debt (Debt): A debt account.
-            transactions (dict[Debt, Money]): Maps debts to
-                payments.
-                `debt` must be a valid key. Its corresponding
-                value may be mutated by this method to reflect
-                an increased payment.
+            sorted_debts (list[Debt]): A set of debt accounts,
+                arranged in some order.
             available (Money): The amount available to repay
                 debt from savings.
+            assign_minimums (bool): Flag that determines whether
+                minimum transactions should be assigned to each
+                debt before assigning payments in list order.
+                Optional.
 
         Returns:
-            Money: The amount of savings (`available`) consumed
-                by the increased payment proposed by this
-                method (via `transactions`).
+            dict[Debt, Money]: A mapping of debts to payments.
         """
-        # Keep track of how much we were paying before adding
-        # a further payment amount:
-        initial_payment = transactions[debt] + debt.inflows
+        # Start with a $0 transaction for each debt
+        transactions = {debt: Money(0) for debt in sorted_debts}
 
-        # Determine how much debt we can repay given how much money
-        # is available:
-        transactions[debt] += debt.payment(
-            savings_available=available,
-            other_payments=transactions[debt],
-            when=self.timing
-        )
+        # Ensure all minimum payments are made
+        if assign_minimums:
+            for debt in sorted_debts:
+                # Add the minimum payment (this method accounts for
+                # any pre-existing inflows and only returns the
+                # minimum *additional* inflows)
+                transactions[debt] += debt.min_inflow(when=self.timing)
+                # And reduce the amount available for further payments
+                # based on this debt's savings/living expenses settings:
+                available -= debt.payment_from_savings(
+                    amount=transactions[debt],
+                    base=debt.inflows)
 
-        # Return the portion of `available` (i.e. savings)
-        # consumed by this transaction.
-        return debt.payment_from_savings(
-            amount=transactions[debt] - initial_payment,
-            base=initial_payment
-        )
+        # No need to continue if there's no money left:
+        if available <= 0:
+            return transactions
 
-    def _assign_minimums(self, debts, transactions):
-        """ Proposes transactions based on minimum payments.
-        
-        Args:
-            debts (set[Debt]): A set of debt accounts.
-            transactions (dict[Debt, Money]): Maps debts to
-                payments. May be empty. Will be mutated.
-            available (Money): The amount available to repay
-                debt from savings.
+        # Now add further payments in the order given by the sorted
+        # list of debts:
+        for debt in sorted_debts:
+            # Determine the maximum payment we can make with what's
+            # left:
+            payment = debt.payment(
+                savings_available=available,
+                other_payments=transactions[debt],
+                when=self.timing
+            )
 
-        Returns:
-            Money: The amount of savings consumed by the
-                payments proposed by this method.
-                (Proposed payments are returned via
-                `transactions`).
-        """
-        # Figure out the additional inflows necessary to meet minimum
-        # payment obligations:
-        payments = {
-            debt: debt.min_inflow(when=self.timing)
-            for debt in debts
-        }
+            # Reduce the pool of money remaining for further
+            # payments accordingly:
+            available -= debt.payment_from_savings(
+                amount=payment,
+                base=transactions[debt] + debt.inflows
+            )
+            # Note that we add the payment to `transactions` *after*
+            # decrementing `available`, which depends on the old
+            # value for `transactions[debt]`
+            transactions[debt] += payment
 
-        # Reduce payments by any already-pending payments (if they exist).
-        # If they don't exist, add an entry so that the following calls
-        # to transaction[debt] don't fail:
-        for debt in debts:
-            if debt not in transactions:
-                transactions[debt] = 0
-            else:
-                payments[debt] -= transactions[debt]
-
-        # Figure out the amount of savings consumed by the proposed
-        # payments:
-        savings_used = sum(
-            debt.payment_from_savings(
-                amount=payments[debt],
-                base=transactions[debt] + debt.inflows)
-            for debt in debts
-        )
-
-        # Mutate transactions to ensure that each debt meets its minimum
-        # payment obligation.
-        for debt in debts:
-            transactions[debt] += payments[debt]
-
-        return savings_used
+        return transactions
 
     # pylint: disable=W0613
     @strategy_method('Snowball')
-    def strategy_snowball(self, available, debts, *args, **kwargs):
+    def strategy_snowball(self, debts, available, *args, **kwargs):
         """ Pays off the smallest debt first. """
-        # First, ensure all minimum payments are made.
-        transactions = {}
-        # Reduce the available amount accordingly, but don't go negative.
-        available -= min(
-            self._assign_minimums(debts, transactions),
-            available)
-
-        # Increase contributions to debts in order of their balance
-        # (smallest first):
-        for debt in sorted(
-            debts, key=lambda x: abs(x.balance), reverse=False
-        ):
-            available -= self._assign_available(
-                debt, transactions, available)
-
-        return transactions
+        # Sort by increasing order of balance (i.e. smallest first):
+        sorted_debts = sorted(
+            debts, key=lambda account: abs(account.balance), reverse=False
+        )
+        return self._strategy_ordered(sorted_debts, available)
 
     @strategy_method('Avalanche')
-    def strategy_avalanche(self, available, debts, *args, **kwargs):
+    def strategy_avalanche(self, debts, available, *args, **kwargs):
         """ Pays off the highest-interest debt first. """
-        # First, ensure all minimum payments are made.
-        transactions = {}
-        # Reduce the available amount accordingly, but don't go negative.
-        available -= min(
-            self._assign_minimums(debts, transactions),
-            available)
-
-        # Now we increase contributions to debts in order of interest
-        # rate (largest rate first):
-        for debt in sorted(
-            debts, key=lambda x: x.rate, reverse=True
-        ):
-            available -= self._assign_available(
-                debt, transactions, available)
-
-        return transactions
+        # Sort by decreasing order of rate (i.e. largest first):
+        sorted_debts = sorted(
+            debts, key=lambda account: account.rate, reverse=True
+        )
+        return self._strategy_ordered(sorted_debts, available)
 
     # Overriding __call__ solely for intellisense purposes.
     # pylint: disable=W0235
-    def __call__(self, available, debts, *args, **kwargs):
+    def __call__(self, debts, available, *args, **kwargs):
         """ Returns a dict of {account, Money} pairs. """
-        return super().__call__(available, debts, *args, **kwargs)
+        return super().__call__(debts, available, *args, **kwargs)
