@@ -104,8 +104,8 @@ class Debt(Account):
         Args:
             savings_available (Money): The amount available from
                 savings to repay this debt this year. Optional.
-            living_expenses (Money): The amount available from
-                living expenses to repay this debt this year.
+            living_expenses_available (Money): The amount available
+                from living expenses to repay this debt this year.
                 Optional.
             other_payments (Money): An amount of money that is
                 planned for payment to this debt but which has
