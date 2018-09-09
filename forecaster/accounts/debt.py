@@ -49,17 +49,58 @@ class Debt(Account):
         # this project).
         # pylint: disable=too-many-arguments
 
+        # Declare hidden variables for properties:
+        self._minimum_payment = None
+        self._living_expense = None
+        self._savings_rate = None
+        self._accelerated_payment = None
+
+        # Apply generic Account logic:
         super().__init__(
             owner, balance=balance, rate=rate, nper=nper,
             inputs=inputs, initial_year=initial_year, **kwargs)
-        self.minimum_payment = Money(minimum_payment)
-        self.living_expense = Money(living_expense)
-        self.savings_rate = Decimal(savings_rate)
-        self.accelerated_payment = Money(accelerated_payment)
+
+        # Set up (and type-convert) Debt-specific inputs:
+        self.minimum_payment = minimum_payment
+        self.living_expense = living_expense
+        self.savings_rate = savings_rate
+        self.accelerated_payment = accelerated_payment
 
         # Debt must have a negative balance
         if self.balance > 0:
             self.balance = -self.balance
+
+    @property
+    def minimum_payment(self):
+        return self._minimum_payment
+
+    @minimum_payment.setter
+    def minimum_payment(self, val):
+        self._minimum_payment = Money(val)
+
+    @property
+    def living_expense(self):
+        return self._living_expense
+
+    @living_expense.setter
+    def living_expense(self, val):
+        self._living_expense = Money(val)
+
+    @property
+    def savings_rate(self):
+        return self._savings_rate
+
+    @savings_rate.setter
+    def savings_rate(self, val):
+        self._savings_rate = Decimal(val)
+
+    @property
+    def accelerated_payment(self):
+        return self._accelerated_payment
+
+    @accelerated_payment.setter
+    def accelerated_payment(self, val):
+        self._accelerated_payment = Money(val)
 
     def min_inflow(self, when='end'):
         """ The minimum payment on the debt. """
@@ -118,6 +159,14 @@ class Debt(Account):
                 this account this year given the amounts available
                 for repayment.
         """
+        # Convert types of inputs if they aren't as expected.
+        if not isinstance(savings_available, Money):
+            savings_available = Money(savings_available)
+        if not isinstance(living_expenses_available, Money):
+            living_expenses_available = Money(living_expenses_available)
+        if not isinstance(other_payments, Money):
+            other_payments = Money(other_payments)
+
         # Set aside the base amount payable directly from living
         # expenses (i.e. before drawing down any savings)
         base_living_expense = max(
