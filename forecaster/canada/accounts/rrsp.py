@@ -1,4 +1,4 @@
-""" TODO """
+""" Provices Registered Retirement Savings Accounts for Canadians. """
 
 from forecaster.canada.accounts.registered_account import RegisteredAccount
 from forecaster.ledger import Money, recorded_property
@@ -53,6 +53,14 @@ class RRSP(RegisteredAccount):
         ):
             self.contribution_room = Money(0)
 
+    def _rrif_max_conversion_year(self):
+        """ The latest year in which the RRSP can convert to an RRIF. """
+        return (
+            self.initial_year
+            + constants.RRSP_RRIF_CONVERSION_AGE
+            - self.owner.age(self.initial_year)
+        )
+
     @property
     def rrif_conversion_year(self):
         """ The year in which the RRSP is converted to an RRIF.
@@ -64,25 +72,46 @@ class RRSP(RegisteredAccount):
         if self._rrif_conversion_year is not None:
             return self._rrif_conversion_year
         else:
-            mandatory_conversion_year = (
-                self.initial_year
-                + constants.RRSP_RRIF_CONVERSION_AGE
-                - self.owner.age(self.initial_year)
-            )
             return min(
-                self.owner.retirement_date.year, mandatory_conversion_year)
+                self.owner.retirement_date.year,
+                self._rrif_max_conversion_year()
+            )
 
     @rrif_conversion_year.setter
     def rrif_conversion_year(self, val):
-        """ Sets `rrif_conversion_year`. """
+        """ Sets `rrif_conversion_year`.
+        
+        Arg:
+            val (int): The year in which to convert the RRSP to an
+                RRIF. May be None, in which case the RRIF conversion
+                year will be determined based on default logic.
+
+        Raises:
+            ValueError: Can't cast `val` to `int`
+            ValueError: Attempt to convert RRSP to RRIF after mandatory
+                conversion year.
+        """
         if val is None:
             self._rrif_conversion_year = None
         else:
+            # Convert to int if necessary.
+            # This can raise ValueError if `val` isn't convertible.
+            if not isinstance(val, int):
+                val = int(val)
+            if val > self._rrif_max_conversion_year():
+                raise ValueError(
+                    'Attempt to convert RRSP to RRIF after mandatory '
+                    + 'conversion year. Latest valid year is '
+                    + str(self._rrif_max_conversion_year())
+                )
+            # We don't worry about conversion years that are too early;
+            # even if they predate the owner's birth, it ends up just
+            # being treated as an immediate conversion.
             self._rrif_conversion_year = int(val)
 
     def convert_to_rrif(self, year=None):
         """ Converts the RRSP to an RRIF. """
-        year = self.this_year if year is None else year
+        year = self.this_year if year is None else int(year)
         self.rrif_conversion_year = year
 
     @recorded_property

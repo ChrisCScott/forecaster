@@ -1,4 +1,4 @@
-""" TODO """
+""" Tests RRSP. """
 
 import unittest
 import decimal
@@ -410,7 +410,70 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         account.convert_to_rrif()
         self.assertEqual(account.rrif_conversion_year, account.initial_year)
 
-        # NOTE: If we implement automatic RRIF conversions, test that.
+    def test_rrif_explicit(self, *args, **kwargs):
+        """ Test explicitly setting RRSP.rrif_conversion_year. """
+        account = self.AccountType(
+            self.owner, *args,
+            inflation_adjust=self.inflation_adjust,
+            contribution_room=self.contribution_room,
+            rrif_conversion_year=None, **kwargs)
+        year = account.rrif_conversion_year
+        # Advance RRIF conversion by 1 year
+        account.rrif_conversion_year = year - 1
+        self.assertEqual(account.rrif_conversion_year, year - 1)
+
+    def test_rrif_explicit_late(self, *args, **kwargs):
+        """ Test setting RRSP.rrif_conversion_year too far in future. """
+        account = self.AccountType(
+            self.owner, *args,
+            inflation_adjust=self.inflation_adjust,
+            contribution_room=self.contribution_room,
+            rrif_conversion_year=None, **kwargs)
+        # The owner will be 71 long before 2100, so we should get an error:
+        with self.assertRaises(ValueError):
+            account.rrif_conversion_year = 2100
+
+    def test_rrif_implicit_mandatory(self, *args, **kwargs):
+        """ Test RRSP.rrif_conversion_year, expecting the legal max. """
+        account = self.AccountType(
+            self.owner, *args,
+            inflation_adjust=self.inflation_adjust,
+            contribution_room=self.contribution_room,
+            rrif_conversion_year=None, **kwargs)
+        # Set retirement for just after the mandatory conversion year:
+        mandatory_year = (
+            account.owner.birth_date.year + constants.RRSP_RRIF_CONVERSION_AGE)
+        account.owner.retirement_date = mandatory_year + 1
+        self.assertEqual(account.rrif_conversion_year, mandatory_year)
+
+    def test_rrif_implicit_retirement(self, *args, **kwargs):
+        """ Test RRSP.rrif_conversion_year, expecting retirement year. """
+        account = self.AccountType(
+            self.owner, *args,
+            inflation_adjust=self.inflation_adjust,
+            contribution_room=self.contribution_room,
+            rrif_conversion_year=None, **kwargs)
+        # Set retirement for just before the mandatory conversion year:
+        mandatory_year = (
+            account.owner.birth_date.year + constants.RRSP_RRIF_CONVERSION_AGE)
+        account.owner.retirement_date = mandatory_year - 1
+        self.assertEqual(account.rrif_conversion_year, mandatory_year - 1)
+
+    def test_rrif_unset(self, *args, **kwargs):
+        """ Test setting and unsetting RRSP.rrif_conversion_year. """
+        account = self.AccountType(
+            self.owner, *args,
+            inflation_adjust=self.inflation_adjust,
+            contribution_room=self.contribution_room,
+            rrif_conversion_year=None, **kwargs)
+        # Keep track of the implicitly-determined year:
+        year = account.rrif_conversion_year
+        # Set to a different year:
+        account.rrif_conversion_year = year - 1
+        # Then unset by passing `None`:
+        account.rrif_conversion_year = None
+        # Should have the same value as before the earlier assignment:
+        self.assertEqual(account.rrif_conversion_year, year)
 
     def test_spousal_contribution(self, *args, **kwargs):
         """ Tests contributions to spousal RRSP. """
