@@ -5,8 +5,9 @@ package lives. It applies Scenario, Strategy, and Tax information to
 determine how account balances will grow or shrink year-over-year.
 """
 
+from collections import defaultdict
+from decimal import Decimal
 from forecaster.ledger import Money
-
 
 # pylint: disable=too-many-instance-attributes
 # This object has a complex state. We could store the records for each
@@ -252,6 +253,11 @@ class Forecast(object):
         last_year = max(self.scenario)
         # Build the forecast year-by-year:
         for year in self.scenario:
+            # Track flows of money into and out of savings:
+            # This maps time values (in `when` format) to net flows:
+            # `dict[Decimal, Money]`
+            self._transactions = defaultdict(lambda: Money(0))
+            # Do the actual work of forecasting:
             self.record_year(year)
             # Don't advance to the next year if this is the last one:
             if year < last_year:
@@ -283,6 +289,79 @@ class Forecast(object):
             default=None
         ).year
 
+    def _add_transaction(
+        self, transaction, when, account=None, account_transaction=None
+    ):
+        """ Helper method for `add_transaction`. """
+        # Record to the dict:
+        self._transactions[when] += transaction
+        # Also add to the account, if passed:
+        if account is not None:
+            # Use the account_transaction amount, if passed,
+            # otherwise fall back to `transaction`
+            if account_transaction is None:
+                account_transaction = transaction
+            account.add_transaction(
+                transaction,
+                when=when)
+
+    def add_transaction(
+        self, transaction, when, account=None, account_transaction=None
+    ):
+        """ Records a transaction at a time that balances the books.
+        
+        Args:
+            transaction (Money): The transaction to be added.
+                Positive for inflows, negative for outflows.
+            when (Decimal): 
+            account (Account): 
+        """
+        # Inflows are easy: We can accept those any time:
+        if transaction >= 0:
+            self._add_transaction(
+                transaction, when,
+                account=account, account_transaction=account_transaction)
+            return
+
+        # Outflows are a bit trickier.
+        # First, figure out how much money is available (i.e.
+        # the excess of inflows over outflows to date):
+        net_to_date = sum(
+            self._transactions[t]
+            for t in self._transactions if t <= when)
+        # If we have enough to spare, we're done!
+        if net_to_date >= transaction:
+            self._add_transaction(
+                transaction, when,
+                account=account, account_transaction=account_transaction)
+            return
+        # Otherwise, iterate over the remaining transactions
+        # until we find a time where we can afford the outflow:
+        for t in sorted(self._transactions):
+            # Ignore the times we summed above:
+            if t <= when:
+                continue
+            # Otherwise, keep adding them up and checking to
+            # see whether we have enough money yet:
+            net_to_date += self._transactions[t]
+            if net_to_date >= transaction:
+                # We found it! Record the transaction and end
+                self._add_transaction(
+                    transaction, when,
+                    account=account,
+                    account_transaction=account_transaction)
+                return
+
+        # If we haven't found it yet, then there isn't enough
+        # money available at _any_ time. We could reasonably do
+        # one of two things:
+        # (1) Use the originally-specified `when`
+        # (2) Push the transaction to the end of the year
+        # In this case, we'll use `when`
+        self._add_transaction(
+            transaction, when,
+            account=account, account_transaction=account_transaction)
+
     def record_income(self, year):
         """ Records gross and net income, as well as taxes withheld. """
         # Determine gross/net income for the family:
@@ -309,10 +388,18 @@ class Forecast(object):
                 self.total_tax_withheld[year - 1]
                 - self.total_tax_owing[year - 1]
             )
+            # TODO: Determine timing of tax refunds/payments:
+            self.add_transaction(self.tax_carryover[year], 0)
+
             self.other_carryover[year] = Money(0)  # TODO #30
+            self.add_transaction(self.other_carryover[year], 0)
+
         self.asset_sale[year] = Money(0)  # TODO #32
+        # TODO: Determine timing of asset sale
+        self.add_transaction(self.asset_sale[year], 0)
 
         # Prepare arguments for ContributionStrategy __call__ method:
+        # (This determines gross contributions from income)
         retirement_year = self.retirement_year()
         if self.tax_carryover[year] > 0:
             refund = self.tax_carryover[year]
@@ -330,6 +417,12 @@ class Forecast(object):
             retirement_year=retirement_year
         )
 
+        # Assume income is set aside for savings in equal amounts
+        # at the start of each month:
+        for i in range(12):
+            self._transactions[Decimal(i)/12] += (
+                self.gross_contributions[year]/12)
+
     def record_contribution_reductions(self, year):
         """ Records contribution reductions for the year.
 
@@ -344,27 +437,53 @@ class Forecast(object):
         # First determine miscellaneous other reductions (these take
         # priority because they're generally user-input):
         self.reduction_from_other[year] = Money(0)  # TODO
+        # Assume we make `other` reductions at the end of the year:
+        self._transactions[1] -= self.reduction_from_other[year]
+
         # Then determine reductions due to debt payments:
+        # Start with gross debt payments:
         debt_payments = self.debt_payment_strategy(
             self.debts,
             self.gross_contributions[year] - self.reduction_from_other[year]
         )
+        # Then determine what portion was drawn from savings:
+        debt_payments_from_savings = {
+            debt: debt.payment_from_savings(
+                amount=debt_payments[debt],
+                base=debt.inflows
+            ) for debt in debt_payments
+        }
+        # Then reduce savings by that amount (simple, right?):
         self.reduction_from_debt[year] = sum(
-            (
-                debt.payment_from_savings(
-                    amount=debt_payments[debt],
-                    base=debt.inflows)
-                for debt in debt_payments
-            ),
+            debt_payments_from_savings.values(),
             Money(0)
         )
+        # Apply (gross) debt payment transactions
+        for debt in debt_payments:
+            debt.add_transaction(
+                debt_payments[debt],
+                self.debt_payment_strategy.timing
+            )
+            # Track the savings portion against net savings in/outflows:
+            # (Currently we model all debt payments as lump sums
+            # at a time given by the `DebtPaymentStrategy` class.)
+            # TODO: Enable debt payments to be split up between multiple
+            # timings:
+            self._transactions[self.debt_payment_strategy.timing] -= (
+                debt_payments_from_savings[debt])
+
         # Now determine the total reductions across all reduction dicts:
         self.contribution_reductions[year] = (
             self.reduction_from_debt[year] +
             self.reduction_from_other[year]
         )
+
         # If there's contribution room left, use it to pay for any taxes
         # outstanding:
+        # TODO: Determine whether tax liability should be assessed first.
+        # And should it always come 100% from savings? Should this be 
+        # configurable behaviour (e.g. via a `reinvest_tax_refund` value
+        # stored... somewhere)?
         if self.tax_carryover[year] < 0:
             available = (
                 self.gross_contributions[year]
@@ -374,15 +493,15 @@ class Forecast(object):
             self.reduction_from_tax[year] = max(reduction, Money(0))
             # Update contribution reductions:
             self.contribution_reductions[year] += self.reduction_from_tax[year]
+            # Add the net transaction:
+            # NOTE: In addition to the TODO comment above re: allowing for
+            # tax amounts from savings to be configured, we should allow
+            # tax _timing_ to be configurable (presumably via the `Tax` class
+            # and its subclasses, likely with a corresponding setting)
+            # Currently, we record it as owing on the first day of the year.
+            self._transactions[0] += self.reduction_from_tax[year]
         else:
             self.reduction_from_tax[year] = Money(0)
-
-        # Apply debt payment transactions
-        for debt in debt_payments:
-            debt.add_transaction(
-                debt_payments[debt],
-                self.debt_payment_strategy.timing
-            )
 
     def record_net_contributions(self, year):
         """ Records net contributions.
