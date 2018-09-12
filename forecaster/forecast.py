@@ -8,6 +8,7 @@ determine how account balances will grow or shrink year-over-year.
 from collections import defaultdict
 from decimal import Decimal
 from forecaster.ledger import Money
+from forecaster.utility import when_conv
 
 # pylint: disable=too-many-instance-attributes
 # This object has a complex state. We could store the records for each
@@ -313,9 +314,22 @@ class Forecast(object):
         Args:
             transaction (Money): The transaction to be added.
                 Positive for inflows, negative for outflows.
-            when (Decimal): 
-            account (Account): 
+            when (Decimal): The time at which the transaction occurs.
+                Expressed as a value in [0,1].
+            account (Account): An account to which the transaction
+                is to be added. Optional.
+            account_transaction (Money): If provided, this amount
+                will be added to `Account` instead of `transaction`.
+
+        Example:
+            `f.add_transaction(Money(10), Decimal(0.5))`
+            `# f._transactions = {0.5: Money(10)}`
+            `f.add_transaction(Money(-10), Decimal(0.5))`
+            `# f._transactions = {0.5: Money(0)}`
         """
+        # Sanitize input:
+        when = when_conv(when)
+
         # Inflows are easy: We can accept those any time:
         if transaction >= 0:
             self._add_transaction(

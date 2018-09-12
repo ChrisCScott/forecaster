@@ -5,46 +5,7 @@ from decimal import Decimal
 from forecaster.person import Person
 from forecaster.ledger import (
     Money, TaxSource, recorded_property, recorded_property_cached)
-
-# Define utility function first:
-def when_conv(when):
-    """ Converts various types of `when` inputs to Decimal.
-
-    The Decimal value is in [0,1], where 0 is the start of the period
-    and 1 is the end.
-
-    NOTE: `numpy` defines its `when` argument such that 'end' = 0 and
-    'start' = 1. If you're using that package, consider whether any
-    conversions are necessary.
-
-    Args:
-        `when` (float, Decimal, str): The timing of the transaction.
-            Must be in the range [0,1] or in ('start', 'end').
-
-    Raises:
-        decimal.InvalidOperation: `when` must be convertible to
-            type Decimal
-        ValueError: `when` must be in [0,1]
-
-    Returns:
-        A Decimal in [0,1]
-    """
-    # Attempt to convert strings 'start' and 'end' first
-    if isinstance(when, str):
-        if when == 'end':
-            when = 1
-        elif when == 'start':
-            when = 0
-
-    # Decimal can take a variety of input types (including str), so
-    # rather than throw an error on non-start/end input strings, try
-    # to cast to Decimal and throw a decimal.InvalidOperation error.
-    when = Decimal(when)
-
-    if when > 1 or when < 0:
-        raise ValueError("When: 'when' must be in [0,1]")
-
-    return when
+from forecaster.utility import when_conv
 
 class Account(TaxSource):
     """ An account storing a `Money` balance.
