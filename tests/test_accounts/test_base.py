@@ -1,4 +1,4 @@
-""" TODO """
+""" Tests forecaster.accounts.base. """
 
 import unittest
 import math
@@ -6,35 +6,8 @@ import decimal
 from decimal import Decimal
 from forecaster import (
     Person, Account, Money, Scenario, AllocationStrategy)
-from forecaster.accounts import when_conv
+from forecaster.utility import when_conv
 from tests.test_helper import type_check
-
-# Test utility methods first:
-
-class TestFreeMethods(unittest.TestCase):
-    """ Tests free methods in forecaster.person module. """
-
-    def test_when_conv(self):
-        """ Tests `when_conv` """
-
-        # Test a simple, single-valued input
-        when = when_conv(1)
-        self.assertEqual(when, Decimal(1))
-
-        # Test a magic input
-        when = when_conv('start')
-        self.assertEqual(when, Decimal(0))
-
-        # Test a magic input
-        when = when_conv('end')
-        self.assertEqual(when, Decimal(1))
-
-        # Test non-magic str input
-        when = when_conv('1')
-        self.assertEqual(when, Decimal(1))
-
-        with self.assertRaises(decimal.InvalidOperation):
-            when = when_conv('invalid input')
 
 class TestAccountMethods(unittest.TestCase):
     """ A test suite for the `Account` class.
