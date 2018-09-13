@@ -303,13 +303,27 @@ class Forecast(object):
             if account_transaction is None:
                 account_transaction = transaction
             account.add_transaction(
-                transaction,
+                account_transaction,
                 when=when)
 
     def add_transaction(
         self, transaction, when, account=None, account_transaction=None
     ):
         """ Records a transaction at a time that balances the books.
+
+        This method will always add the transaction at or after `when`. 
+        It tries to find a time where adding the transaction would
+        avoid going cash-flow negative.
+        
+        In particular, it tries to find the _earliest_ such time.
+        Thus, `when` is always selected if it meets this constraint.
+        `when` is also used if no such time can be found.
+
+        Example:
+            `self.add_transaction(Money(1000), 'start')`
+            `self.add_transaction(Money(1000), Decimal(0.5))`
+            `self.add_transaction(Money(-2000), Decimal(0.25))`
+            `# The transaction is added at when=0.5`
         
         Args:
             transaction (Money): The transaction to be added.
@@ -338,42 +352,45 @@ class Forecast(object):
             return
 
         # Outflows are a bit trickier.
-        # First, figure out how much money is available (i.e.
-        # the excess of inflows over outflows to date):
-        net_to_date = sum(
-            self._transactions[t]
-            for t in self._transactions if t <= when)
-        # If we have enough to spare, we're done!
-        if net_to_date >= transaction:
-            self._add_transaction(
-                transaction, when,
-                account=account, account_transaction=account_transaction)
-            return
-        # Otherwise, iterate over the remaining transactions
-        # until we find a time where we can afford the outflow:
-        for t in sorted(self._transactions):
-            # Ignore the times we summed above:
-            if t <= when:
-                continue
-            # Otherwise, keep adding them up and checking to
-            # see whether we have enough money yet:
-            net_to_date += self._transactions[t]
-            if net_to_date >= transaction:
-                # We found it! Record the transaction and end
-                self._add_transaction(
-                    transaction, when,
-                    account=account,
-                    account_transaction=account_transaction)
-                return
+        # First, figure out how much money is available
+        # at each point in time, starting with `when`:
+        available = {
+            t: sum(
+                # For each point in time `t`, find the sum of all
+                # transactions up to this point:
+                self._transactions[r] for r in self._transactions if r <= t)
+            # We don't need to look at times before `when`:
+            for t in self._transactions if t >= when
+        }
+        # If `when` isn't already represented in self_transactions,
+        # add it manually to `available`
+        if when not in available:
+            # The amount available at `when` is just the sum of all
+            # prior transactions (or $0, if there are none).
+            available[when] = sum(
+                (
+                    self._transactions[t]
+                    for t in self._transactions if t < when
+                ),
+                Money(0)
+            )
 
-        # If we haven't found it yet, then there isn't enough
-        # money available at _any_ time. We could reasonably do
-        # one of two things:
-        # (1) Use the originally-specified `when`
-        # (2) Push the transaction to the end of the year
-        # In this case, we'll use `when`
+        # Find the set of points in time where subtracting
+        # `transaction` would not put any future point in time
+        # into negative balance.
+        # (Not really a set - it's a generator expression)
+        eligible_times = (
+            t for t in available if all(
+                available[r] >= -transaction for r in available if r >= t
+            )
+        )
+        # Find the earliest time that satisfies our requirements
+        # (or, if none exists, use the time requested by the user)
+        earliest_time = min(eligible_times, default=when)
+
+        # We've found the time; now add the transaction!
         self._add_transaction(
-            transaction, when,
+            transaction, earliest_time,
             account=account, account_transaction=account_transaction)
 
     def record_income(self, year):
@@ -434,8 +451,10 @@ class Forecast(object):
         # Assume income is set aside for savings in equal amounts
         # at the start of each month:
         for i in range(12):
-            self._transactions[Decimal(i)/12] += (
-                self.gross_contributions[year]/12)
+            self.add_transaction(
+                transaction=self.gross_contributions[year]/12,
+                when=Decimal(i)/12
+            )
 
     def record_contribution_reductions(self, year):
         """ Records contribution reductions for the year.
@@ -452,7 +471,7 @@ class Forecast(object):
         # priority because they're generally user-input):
         self.reduction_from_other[year] = Money(0)  # TODO
         # Assume we make `other` reductions at the end of the year:
-        self._transactions[1] -= self.reduction_from_other[year]
+        self.add_transaction(-self.reduction_from_other[year], 1)
 
         # Then determine reductions due to debt payments:
         # Start with gross debt payments:
@@ -474,17 +493,17 @@ class Forecast(object):
         )
         # Apply (gross) debt payment transactions
         for debt in debt_payments:
-            debt.add_transaction(
-                debt_payments[debt],
-                self.debt_payment_strategy.timing
-            )
             # Track the savings portion against net savings in/outflows:
             # (Currently we model all debt payments as lump sums
             # at a time given by the `DebtPaymentStrategy` class.)
             # TODO: Enable debt payments to be split up between multiple
             # timings:
-            self._transactions[self.debt_payment_strategy.timing] -= (
-                debt_payments_from_savings[debt])
+            self.add_transaction(
+                transaction=-debt_payments_from_savings[debt],
+                when=self.debt_payment_strategy.timing,
+                account=debt,
+                account_transaction=debt_payments[debt]
+            )
 
         # Now determine the total reductions across all reduction dicts:
         self.contribution_reductions[year] = (
@@ -513,7 +532,7 @@ class Forecast(object):
             # tax _timing_ to be configurable (presumably via the `Tax` class
             # and its subclasses, likely with a corresponding setting)
             # Currently, we record it as owing on the first day of the year.
-            self._transactions[0] += self.reduction_from_tax[year]
+            self.add_transaction(-self.reduction_from_tax[year], 0)
         else:
             self.reduction_from_tax[year] = Money(0)
 
@@ -539,9 +558,17 @@ class Forecast(object):
             self.assets
         )
         for account in contributions:
-            account.add_transaction(
-                contributions[account],
-                self.contribution_trans_strategy.timing
+            # TODO: Allow splitting contributions up into monthly
+            # (or other) instalments, e.g. based on a schedule.
+            # See #49.
+            self.add_transaction(
+                # This is being pulled from our pool of available
+                # money, so make it a negative flow here:
+                transaction=-contributions[account],
+                when=self.contribution_trans_strategy.timing,
+                account=account,
+                # It's an inflow to the account, so positive here:
+                account_transaction=contributions[account]
             )
 
     def record_principal(self, year):
