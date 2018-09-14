@@ -6,6 +6,7 @@ from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
 from forecaster.ledger import (
     Money, TaxSource, recorded_property, recorded_property_cached)
+from forecaster.utility import frequency_conv
 
 
 class Person(TaxSource):
@@ -36,6 +37,11 @@ class Person(TaxSource):
             year relative to last year.
         raise_rate_history (dict[int, Decimal]): Raises for all years
             on record.
+        payment_frequency (int): The number of times each year that
+            the Person is paid. Uses the same syntax as
+            `forecaster.utility.frequency_conv` (e.g. 'M' or 12
+            for monthly payments).
+            Optional; defaults to biweekly payments.
         spouse (Person): The person's spouse. This linkage is
             one-to-one; the spouse's `spouse` attribute points back to
             this Person.
@@ -67,7 +73,7 @@ class Person(TaxSource):
     def __init__(
         self, initial_year, name, birth_date, retirement_date=None,
         gross_income=0, raise_rate=0, spouse=None, tax_treatment=None,
-        inputs=None
+        payment_frequency='BW', inputs=None
     ):
         """ Constructor for `Person`.
 
@@ -103,6 +109,11 @@ class Person(TaxSource):
                 `tax_treatment(taxable_income, year)` and returns a
                 Money object (which corresponds to total taxes payable
                 on `taxable_income`).
+            payment_frequency (str, int): The frequency with which
+                `Person` is paid. Uses the same syntax as
+                `forecaster.utility.frequency_conv` (e.g. 'M' or 12
+                for monthly payments).
+                Optional; defaults to biweekly payments.
             inputs (dict[str, dict[int, Any]]): `{attr: {year: val}}`
                 pairs, where `attr` is any one of `Person`'s recorded
                 propertes, namely:
@@ -135,6 +146,7 @@ class Person(TaxSource):
         self._raise_rate_function = None
         self._spouse = None
         self._tax_treatment = None
+        self._payment_frequency = None
         self._contribution_room = {}
         self._contribution_groups = {}
         self.name = name
@@ -142,12 +154,13 @@ class Person(TaxSource):
         self.retirement_date = retirement_date
         self.raise_rate_callable = raise_rate
         self.spouse = spouse
-        # Set up tax treatment before calling tax_withheld()
         self.tax_treatment = tax_treatment
+        self.payment_frequency = payment_frequency
 
         # Now provide initial-year values for recorded properties:
         # NOTE: Be sure to do type-checking here.
         self.gross_income = Money(gross_income)
+        # NOTE: Be sure to set up tax_treatment before calling tax_withheld
         self.net_income = self.gross_income - self.tax_withheld
 
         # Finally, build an empty set for accounts to add themselves to.
@@ -312,6 +325,16 @@ class Person(TaxSource):
             self._tax_treatment = val
         else:
             raise TypeError('Person: tax_treatment must be callable or None.')
+
+    @property
+    def payment_frequency(self):
+        """ The number of times a year that Person is paid. """
+        return self._payment_frequency
+
+    @payment_frequency.setter
+    def payment_frequency(self, val):
+        """ Sets the Person's payment frequency. """
+        self._payment_frequency = frequency_conv(val)
 
     # pylint: disable=method-hidden
     # Pylint gets confused by attributes added by metaclass.
