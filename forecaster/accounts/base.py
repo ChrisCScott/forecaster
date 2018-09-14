@@ -5,7 +5,7 @@ from decimal import Decimal
 from forecaster.person import Person
 from forecaster.ledger import (
     Money, TaxSource, recorded_property, recorded_property_cached)
-from forecaster.utility import when_conv
+from forecaster.utility import when_conv, frequency_conv
 
 class Account(TaxSource):
     """ An account storing a `Money` balance.
@@ -140,23 +140,8 @@ class Account(TaxSource):
         self.owner = owner
         self.balance = Money(balance)
         self.rate_callable = rate
-        self.nper = self._conv_nper(nper)
+        self.nper = frequency_conv(nper)
         # NOTE: returns is calculated lazily
-
-    # String codes describing compounding periods (keys) and ints
-    # describing the number of such periods in a year (values):
-    _nper_mapping = {
-        'C': None,
-        'D': 365,
-        'W': 52,
-        'BW': 26,
-        'SM': 24,
-        'M': 12,
-        'BM': 6,
-        'Q': 4,
-        'SA': 2,
-        'A': 1
-    }
 
     @property
     def owner(self):
@@ -281,40 +266,6 @@ class Account(TaxSource):
             )
 
         return returns
-
-    @classmethod
-    def _conv_nper(cls, nper):
-        """ Number of periods in a year given a compounding frequency.
-
-        Args:
-            nper (str, int): A code (str) indicating a compounding
-                frequency (e.g. 'W', 'M'), an int, or None
-
-        Returns:
-            An int indicating the number of compounding periods in a
-                year or None if compounding is continuous.
-
-        Raises:
-            ValueError: str nper must have a known value.
-            ValueError: nper must be greater than 0.
-            TypeError: nper cannot be losslessly converted to int.
-        """
-        # nper can be None, so return gracefully.
-        if nper is None:
-            return None
-
-        # Try to parse a string based on known compounding frequencies
-        if isinstance(nper, str):
-            if nper not in cls._nper_mapping:
-                raise ValueError('Account: str nper must have a known value')
-            return cls._nper_mapping[nper]
-        else:  # Attempt to cast to int
-            if not nper == int(nper):
-                raise TypeError(
-                    'Account: nper is not losslessly convertible to int')
-            if nper <= 0:
-                raise ValueError('Account: nper must be greater than 0')
-            return int(nper)
 
     @property
     def contribution_group(self):

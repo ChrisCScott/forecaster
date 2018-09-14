@@ -4,9 +4,8 @@ import unittest
 import decimal
 from decimal import Decimal
 from forecaster.utility import (
-    nearest_year, extend_inflation_adjusted, when_conv)
-
-# Test utility methods first:
+    nearest_year, extend_inflation_adjusted,
+    when_conv, frequency_conv)
 
 class TestFreeMethods(unittest.TestCase):
     """ A test case for the free methods in the utility module. """
@@ -35,6 +34,82 @@ class TestFreeMethods(unittest.TestCase):
         """ Tests `when_conv` on an invalid input. """
         with self.assertRaises(decimal.InvalidOperation):
             _ = when_conv('invalid input')
+
+    def test_frequency_continuous(self):
+        """ Test setting frequency to 'C' and 'None' (equivalent). """
+        frequency = frequency_conv('C')
+        self.assertEqual(frequency, None)
+        self.assertIsInstance(frequency, type(None))
+        
+        frequency = frequency_conv(None)
+        self.assertEqual(frequency, None)
+        self.assertIsInstance(frequency, type(None))
+
+    def test_frequency_daily(self):
+        """ Test setting frequency to 'D'. """
+        frequency = frequency_conv('D')
+        self.assertEqual(frequency, 365)
+        self.assertIsInstance(frequency, int)
+
+    def test_frequency_weekly(self):
+        """ Test setting frequency to 'W'. """
+        frequency = frequency_conv('W')
+        self.assertEqual(frequency, 52)
+
+    def test_frequency_biweekly(self):
+        """ Test setting frequency to 'BW'. """
+        frequency = frequency_conv('BW')
+        self.assertEqual(frequency, 26)
+
+    def test_frequency_semimonthly(self):
+        """ Test setting frequency to 'SM'. """
+        frequency = frequency_conv('SM')
+        self.assertEqual(frequency, 24)
+
+    def test_frequency_monthly(self):
+        """ Test setting frequency to 'M'. """
+        frequency = frequency_conv('M')
+        self.assertEqual(frequency, 12)
+
+    def test_frequency_bimonthly(self):
+        """ Test setting frequency to 'BM'. """
+        frequency = frequency_conv('BM')
+        self.assertEqual(frequency, 6)
+
+    def test_frequency_quarterly(self):
+        """ Test setting frequency to 'Q'. """
+        frequency = frequency_conv('Q')
+        self.assertEqual(frequency, 4)
+
+    def test_frequency_semiannually(self):
+        """ Test setting frequency to 'SA'. """
+        frequency = frequency_conv('SA')
+        self.assertEqual(frequency, 2)
+
+    def test_frequency_annually(self):
+        """ Test setting frequency to 'A'. """
+        frequency = frequency_conv('A')
+        self.assertEqual(frequency, 1)
+
+    def test_frequency_invalid_0(self):
+        """ Test setting frequency to 0, an invalid value. """
+        with self.assertRaises(ValueError):
+            _ = frequency_conv(0)
+
+    def test_frequency_invalid_negative(self):
+        """ Test setting frequency to -1, an invalid value. """
+        with self.assertRaises(ValueError):
+            _ = frequency_conv(-1)
+
+    def test_frequency_invalid_fraction(self):
+        """ Test setting frequency to 0.5, an invalid value. """
+        with self.assertRaises(TypeError):
+            _ = frequency_conv(0.5)
+
+    def test_frequency_invalid_str(self):
+        """ Test setting frequency to 'invalid', an invalid value. """
+        with self.assertRaises(ValueError):
+            _ = frequency_conv('invalid')
 
     def test_nearest_year(self):
         """ Tests nearest_year(). """
