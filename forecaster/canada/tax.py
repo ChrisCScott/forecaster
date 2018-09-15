@@ -11,14 +11,18 @@ from forecaster.utility import extend_inflation_adjusted
 class TaxCanadaJurisdiction(Tax):
     """ Federal or provincial tax treatment (Canada). """
 
-    def __init__(self, inflation_adjustments, jurisdiction='Federal'):
+    def __init__(
+        self, inflation_adjustments, jurisdiction='Federal',
+        payment_timing='start'
+    ):
         super().__init__(
             tax_brackets=constants.TAX_BRACKETS[jurisdiction],
             personal_deduction=constants.TAX_PERSONAL_DEDUCTION[
                 jurisdiction
             ],
             credit_rate=constants.TAX_CREDIT_RATE[jurisdiction],
-            inflation_adjust=inflation_adjustments)
+            inflation_adjust=inflation_adjustments,
+            payment_timing=payment_timing)
 
         self.jurisdiction = jurisdiction
 
@@ -156,7 +160,9 @@ class TaxCanada(object):
         province (str): The province in which income tax is paid.
     """
 
-    def __init__(self, inflation_adjust, province='BC'):
+    def __init__(
+        self, inflation_adjust, province='BC', payment_timing='start'
+    ):
         """ Initializes TaxCanada.
 
         Args:
@@ -168,11 +174,24 @@ class TaxCanada(object):
 
                 See documentation for `Tax` for more information.
             province (str): The province in which income tax is paid.
+            payment_timing (Decimal, str): Timing for tax refunds and
+                payments. See `Tax` documentation for more information.
         """
-        self.federal_tax = TaxCanadaJurisdiction(inflation_adjust)
+        self.federal_tax = TaxCanadaJurisdiction(
+            inflation_adjust, payment_timing=payment_timing)
         self.provincial_tax = TaxCanadaJurisdiction(
-            inflation_adjust, province)
+            inflation_adjust, province, payment_timing=payment_timing)
         self.province = province
+
+    @property
+    def payment_timing(self):
+        """ Timing for refunds and payments. """
+        return self.federal_tax.payment_timing
+
+    @payment_timing.setter
+    def payment_timing(self, val):
+        """ Sets `payment_timing`. """
+        self.federal_tax.payment_timing = val
 
     # Marginal rate information is helpful for client code, so implement
     # it here based on fed. and prov. tax brackets:
