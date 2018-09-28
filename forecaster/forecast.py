@@ -306,18 +306,46 @@ class Forecast(object):
                 account_transaction,
                 when=when)
 
+    def _recurse_transaction(
+        self, transaction, frequency,
+        account=None, account_transaction=None
+    ):
+        """ Records multiple transactions with a given frequency. """
+        # Split up transaction amounts based on the number of payments:
+        transaction = transaction / frequency
+        if account_transaction is not None:
+            account_transaction = account_transaction / frequency
+
+        # Add `frequency` number of transactions, with equal amounts
+        # and even spacing, each transaction occurring at the end of
+        # a period of length equal to `frequency`.
+        for when in range(1, frequency + 1):
+            self.add_transaction(
+                transaction,
+                when=when/frequency,
+                account=account,
+                account_transaction=account_transaction)
+
     def add_transaction(
-        self, transaction, when, account=None, account_transaction=None
+        self, transaction, when=None, frequency=None,
+        account=None, account_transaction=None
     ):
         """ Records a transaction at a time that balances the books.
 
-        This method will always add the transaction at or after `when`. 
+        This method will always add the transaction at or after `when`
+        (or at or after the implied timing provided by `frequency`).
         It tries to find a time where adding the transaction would
         avoid going cash-flow negative.
-        
+
         In particular, it tries to find the _earliest_ such time.
-        Thus, `when` is always selected if it meets this constraint.
-        `when` is also used if no such time can be found.
+        Thus, the timing will be equal to `when` if that timing
+        meets this constraint. `when` is also used if no such
+        time can be found.
+
+        At least one of `when` and `frequency` must be provided.
+        If `frequency` is provided, then `transaction` is split
+        up into `frequency` equal amounts and each amount is
+        contributed at the end of `frequency` payment periods.
 
         Example:
             `self.add_transaction(Money(1000), 'start')`
@@ -329,7 +357,9 @@ class Forecast(object):
             transaction (Money): The transaction to be added.
                 Positive for inflows, negative for outflows.
             when (Decimal): The time at which the transaction occurs.
-                Expressed as a value in [0,1].
+                Expressed as a value in [0,1]. Optional.
+            frequency (int): The number of transactions made in the
+                year. Must be positive. Optional.
             account (Account): An account to which the transaction
                 is to be added. Optional.
             account_transaction (Money): If provided, this amount
@@ -341,6 +371,20 @@ class Forecast(object):
             `f.add_transaction(Money(-10), Decimal(0.5))`
             `# f._transactions = {0.5: Money(0)}`
         """
+        # If this is a `frequency` scenario, iterate
+        if when is None:
+            if frequency is not None:
+                self._recurse_transaction(
+                    transaction, frequency=frequency,
+                    account=account,
+                    account_transaction=account_transaction
+                )
+                return
+            # If neither are provided, that's an error:
+            else:
+                raise ValueError(
+                    'At least one of `when` and `frequency` must be provided.')
+
         # Sanitize input:
         when = when_conv(when)
 
@@ -408,7 +452,8 @@ class Forecast(object):
 
     def record_gross_contribution(self, year):
         """ Records gross contributions for the year. """
-        # Determine gross contributions:
+        # First, consider carryover amounts.
+        # In the first year, these are $0:
         if year == self.scenario.initial_year:
             self.tax_carryover[year] = Money(0)
             self.other_carryover[year] = Money(0)
@@ -419,15 +464,21 @@ class Forecast(object):
                 self.total_tax_withheld[year - 1]
                 - self.total_tax_owing[year - 1]
             )
-            # TODO: Determine timing of tax refunds/payments:
-            self.add_transaction(self.tax_carryover[year], 0)
+            # We determine timing for tax refunds down below, along
+            # with timing for contributions from income.
 
             self.other_carryover[year] = Money(0)  # TODO #30
-            self.add_transaction(self.other_carryover[year], 0)
+            self.add_transaction(
+                transaction=self.other_carryover[year],
+                when=0
+            )
 
         self.asset_sale[year] = Money(0)  # TODO #32
         # TODO: Determine timing of asset sale
-        self.add_transaction(self.asset_sale[year], 0)
+        self.add_transaction(
+            transaction=self.asset_sale[year],
+            when=0
+        )
 
         # Prepare arguments for ContributionStrategy __call__ method:
         # (This determines gross contributions from income)
@@ -448,13 +499,63 @@ class Forecast(object):
             retirement_year=retirement_year
         )
 
-        # Assume income is set aside for savings in equal amounts
-        # at the start of each month:
-        for i in range(12):
+        # Now we need to assign a transaction timing to each
+        # contribution. We do this in a source-specific way;
+        # i.e. income from each person is assumed to be contributed
+        # when they are paid, tax refunds are contributed at the
+        # time that refunds are issued by the tax authority,
+        # and other contributions (i.e. carryovers) are contributed
+        # at the beginning of the year.
+
+        # HACK: The current structure of ContriutionStrategy doesn't
+        # let us determine the source of each dollar of contribution,
+        # so we need to do that manually here. Changes to
+        # ContributionStrategy might break this code!
+        contributions_from_income = (
+            # Start with the entirety of our contributions
+            self.gross_contributions[year]
+            # Deduct refunds, prorated based on reinvestment rate
+            - refund * self.contribution_strategy.refund_reinvestment_rate
+            # Deduct the other contributions identified above
+            - other_contributions
+            # What's left is just the contributions from income.
+        )
+
+        # Since different people can have different payment timings,
+        # determine how much of the contributions from income should
+        # be assigned to each person (and thus use their timings).
+        if self.net_income[year] != 0:
+            # Assume each person contributes a share of the gross
+            # contributions proportionate to their (net) income:
+            weight = {
+                person: person.net_income / self.net_income[year]
+                for person in self.people
+            }
+        else:
+            # There should be no contributions from income if there
+            # is no income:
+            assert(contributions_from_income == 0)
+            # We still need to determine a weighting, since it's used
+            # for tax refunds/etc. Use equal weighting:
+            weight = {
+                person: Decimal(1) / Decimal(len(self.people))
+                for person in self.people
+            }
+
+        # Now record those transactions:
+        for person in weight:
+            # Record contributions from income:
             self.add_transaction(
-                transaction=self.gross_contributions[year]/12,
-                when=Decimal(i)/12
+                transaction=contributions_from_income * weight[person],
+                frequency=person.payment_frequency
             )
+            # Record contributions from tax refunds:
+            # (Only refunds are considered here)
+            if self.tax_carryover > 0:
+                self.add_transaction(
+                    transaction=self.tax_carryover[year] * weight[person],
+                    frequency=person.tax_treatment.payment_timing
+                )
 
     def record_contribution_reductions(self, year):
         """ Records contribution reductions for the year.
@@ -471,7 +572,10 @@ class Forecast(object):
         # priority because they're generally user-input):
         self.reduction_from_other[year] = Money(0)  # TODO
         # Assume we make `other` reductions at the end of the year:
-        self.add_transaction(-self.reduction_from_other[year], 1)
+        self.add_transaction(
+            transaction=-self.reduction_from_other[year],
+            when=1
+        )
 
         # Then determine reductions due to debt payments:
         # Start with gross debt payments:
@@ -532,7 +636,10 @@ class Forecast(object):
             # tax _timing_ to be configurable (presumably via the `Tax` class
             # and its subclasses, likely with a corresponding setting)
             # Currently, we record it as owing on the first day of the year.
-            self.add_transaction(-self.reduction_from_tax[year], 0)
+            self.add_transaction(
+                transaction=-self.reduction_from_tax[year],
+                when=0
+            )
         else:
             self.reduction_from_tax[year] = Money(0)
 
