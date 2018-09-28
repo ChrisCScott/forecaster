@@ -551,7 +551,7 @@ class Forecast(object):
             )
             # Record contributions from tax refunds:
             # (Only refunds are considered here)
-            if self.tax_carryover > 0:
+            if self.tax_carryover[year] > 0:
                 self.add_transaction(
                     transaction=self.tax_carryover[year] * weight[person],
                     frequency=person.tax_treatment.payment_timing
