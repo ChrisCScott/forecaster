@@ -14,7 +14,7 @@ from forecaster.utility import when_conv
 # This object has a complex state. We could store the records for each
 # year in some sort of pandas-style frame or table, but for now each
 # data column is its own named attribute.
-class ContributionReductionsForecast(object):
+class ReductionForecast(object):
     """ A forecast of each year's contribution reductions.
 
     Attributes:
