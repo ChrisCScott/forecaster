@@ -7,24 +7,39 @@ determine how account balances will grow or shrink year-over-year.
 
 from collections import defaultdict
 from decimal import Decimal
-from forecaster.ledger import Money
+from forecaster.ledger import (
+    Ledger, Money,
+    recorded_property, recorded_property_cached
+)
 from forecaster.utility import when_conv
 
-# pylint: disable=too-many-instance-attributes
-# This object has a complex state. We could store the records for each
-# year in some sort of pandas-style frame or table, but for now each
-# data column is its own named attribute.
-class Forecast(object):
+class Forecast(Ledger):
     """ A financial forecast spanning multiple years.
 
-    A `Forecast` contains various `Account` objects with balances that
-    grow (or shrink) from year to year. The `Forecast` object also
-    contains `Person` objects describing the plannees, `Scenario`
+    A `Forecast` is a container for various `*Forecast` objects, such
+    as `IncomeForecast` and `WithdrawalForecast`. Those objects contain
+    various `Account` objects with balances that grow (or shrink) from
+    year to year,  `Person` objects describing the plannees, `Scenario`
     information describing economic conditions over the course of the
-    forecast, and `Strategy` objects to describe the plannee's behaviour.
+    forecast, and `Strategy` objects to describe the plannees' behaviour.
 
-    The `Forecast` manages inflows to and outflows from (or between)
-    accounts based on `Strategy` and `Scenario` information.
+    The `Forecast` manages high-level cashflows each year. In particular,
+    it uses this model:
+    * Determine total (net) income for the year.
+    * Determine the portion of net income not used as living expenses;
+        this is called "gross contributions".
+    * Determine the portion of gross contributions which will be used
+        on non-retirement-savings expenditures (e.g. debt repayment,
+        childcare, contributions to education accounts). These are
+        "contribution reductions" and the remainder are "net
+        contributions".
+    * Determine per-account contributions based on net contributions.
+    * Determine the total amount withdrawn from retirement savings
+        accounts.
+    * Determine per-account withdrawals based on total withdrawals.
+    * Determine total tax liability for the year; if necessary, adjust
+        withdrawals accordingly and repeat.
+    * Determine statistics for the year (e.g. living standard.)
 
     The `Forecast` can be built around any number of people, but is
     ordinarily built around either a single person or a spousal
@@ -33,130 +48,61 @@ class Forecast(object):
     people.
 
     Attributes:
-        people (Iterable[Person]): The people for whom the financial
-            forecast is being generated. Typically a single person or a
-            person and their spouse.
-
-            Note that all `Person` objects must have the same
-            `this_year` attribute, as must their various accounts.
-        assets (Iterable[Account]): Assets of the `people`.
-        debts (Iterable[Debt]): Debts of the `people`.
+        income_forecast (IncomeForecast):
+            A callable object that returns the net income for each
+            year.
+        contribution_forecast (ContributionForecast):
+            A callable object that returns the (gross) contributions
+            for each year.
+        contribution_reduction_forecast (ContributionReductionForecast):
+            A callable object that returns the contribution
+            reductions for each year.
+        contribution_strategy (TransactionStrategy):
+            A callable object that returns the schedule of
+            transactions for any contributions during the year.
+            See the documentation for `TransactionStrategy` for
+            acceptable args when calling this object.
+        withdrawal_forecast (WithdrawalForecast):
+            A callable object that returns the total withdrawals for
+            each year.
+        withdrawal_strategy (TransactionStrategy):
+            A callable object that returns the schedule of
+            transactions for any withdrawals during the year.
+            See the documentation for `TransactionStrategy` for
+            acceptable args when calling this object.
+        tax_forecast (TaxForecast):
+            A callable object that returns the total taxes owed for
+            each year.
 
         scenario (Scenario): Economic information for the forecast
             (e.g. inflation and stock market returns for each year)
 
-        contribution_strategy (ContributionStrategy): A callable
-            object that determines the gross contribution for a
-            year. See the documentation for `ContributionStrategy` for
-            acceptable args when calling this object.
-        withdrawal_strategy (WithdrawalStrategy): A callable
-            object that determines the amount to withdraw for a
-            year. See the documentation for `WithdrawalStrategy` for
-            acceptable args when calling this object.
-        contribution_transaction_strategy (TransactionStrategy): A
-            callable object that determines the schedule of
-            transactions for any contributions during the year.
-            See the documentation for `TransactionStrategy` for
-            acceptable args when calling this object.
-        withdrawal_transaction_strategy
-            (WithdrawalTransactionStrategy):
-            A callable object that determines the schedule of
-            transactions for any contributions during the year.
-            See the documentation for `TransactionStrategy` for
-            acceptable args when calling this object.
-        debt_payment_strategy (DebtPaymentStrategy): A callable object
-            that determines the schedule of debt payments, including
-            accelerated debt payments drawn from gross contributions.
-            See the documentation for `DebtPaymentStrategy` for
-            acceptable args when calling this object.
-
-        tax_treatment (Tax): A callable object that determines the total
-            amount of tax owing in a year. See the documentation for
-            `Tax` for acceptable args when calling this object.
-
-        gross_income (dict[int, Money]): The gross income for the
-            family.
-        tax_withheld_on_income (dict[int, Money]): Taxes deducted at
-            source (or paid by installment during the year) on
-            employment income.
-        net_income (dict[int, Money]): The net income for the family.
-
-        tax_carryover (dict[int, Money]): The amount of any refund or
-            outstanding tax payable, based on the previous year's
-            tax withholdings.
-        other_carryover (dict[int, Money]): The amount of inter-year
-            carryover (other than tax refunds), such as excess
-            withdrawals being recontributed.
-        contributions_from_income (dict[int, Money]): The amount to be
-            contributed to savings from employment income in each year.
-        contributions_from_carryover (dict[int, Money]): The amount to
-            be contributed to savings from tax_carryover and
-            other_carryover.
-        contributions_from_asset_sales (dict[int, Money]): The amount to
-            be contributed to savings from asset sales in each year.
+        income (dict[int, Money]): The net income for the plannees.
         gross_contributions (dict[int, Money]): The amount available to
             contribute to savings, before any reductions. This is the
             sum of net income and various contributions_from_* values.
-        reduction_from_debt (dict[int, Money]): The amount to be
-            diverted from contributions to debt repayment in each year.
-        reduction_from_other (dict[int, Money]): The amount to be
-            diverted from contributions for other spending purposes in
-            each year.
         contribution_reductions (dict[int, Money]): Amounts diverted
             from savings, such as certain debt repayments or childcare.
         net_contributions (dict[int, Money]): The total amount
             contributed to savings accounts.
-
         principal (dict[int, Money]): The total value of all savings
             accounts (but not other property) at the start of each year.
-        gross_return (dict[int, Money]): The total return on principal
-            (only for the amounts included in `principal`) by the end of
-            the year.
-        tax_withheld_on_return (dict[int, Money]): Taxes deducted at
-            source on the returns on investments.
-        net_return (dict[int, Money]): The total return on principal
-            (only for the amounts included in `principal`) by the end of
-            the year, net of withholding taxes.
-
-        withdrawals_from_retirement_accounts (dict[int, Money]): The
-            total value of all withdrawals from retirement savings
-            accounts over the year.
-        withdrawals_from_other_accounts (dict[int, Money]): The total
-            value of all withdrawals from other savings accounts (e.g.
-            education or health accounts, if provided) over the year.
-        gross_withdrawals (dict[int, Money]): The total amount withdrawn
+        withdrawals (dict[int, Money]): The total amount withdrawn
             from all accounts.
-        tax_withheld_on_withdrawals (dict[int, Money]): Taxes deducted
-            at source on withdrawals from savings.
-        net_withdrawals (dict[int, Money]): The total amount withdrawn
-            from all accounts, net of withholding taxes.
-
-        total_tax_withheld (dict[int, Money]): The total amount of tax
-            owing for this year which was paid during this year (as
-            opposed to being paid in the following year the next year).
-
-            Note that this is not necessarily the same as the sum of
-            other `tax_withheld_on_\\*` attributes, since the tax
-            authority may require additional withholding taxes (or
-            payment by installments) based on the person's overall
-            circumstances.
-        total_tax_owing (dict[int, Money]): The total amount of tax
-            owing for this year (some of which may be paid in the
-            following year). Does not include outstanding amounts which
-            became owing but were not paid in the previous year.
+        tax (dict[int, Money]): The total tax liability for the year
+            (some of which might not be payable unti the next year).
+            Does not include outstanding amounts which became owing
+            but were not paid in the previous year.
 
         living_standard (dict[int, Money]): The total amount of money
             available for spending, net of taxes, contributions, debt
             payments, etc.
     """
 
-    # pylint: disable=too-many-arguments
-    # NOTE: Consider combining the various strategy objects into a dict
-    # or something (although it's not clear how this benefits the code.)
     def __init__(
-        self, people, assets, debts, scenario,
-        gross_contribution_forecast, contribution_reduction_forecast,
-        net_contribution_forecast, withdrawal_forecast
+        self, income_forecast, contribution_forecast, reduction_forecast,
+        contribution_strategy, withdrawal_forecast, withdrawal_strategy,
+        tax_forecast, scenario
     ):
         """ Constructs an instance of class Forecast.
 
@@ -164,95 +110,95 @@ class Forecast(object):
         year until all years of the `scenario` have been modelled.
 
         Args:
-            people (Iterable[Person]): The people for whom a forecast
-                is being generated.
-            assets (Iterable[Account]): The assets of the people.
-            debts (Iterable[Account]): The debts of the people.
-            scenario (Scenario): Economic information for the forecast
-                (e.g. inflation and stock market returns for each year)
+            income_forecast (IncomeForecast):
+                Determines net income for each year.
             gross_contribution_forecast (GrossContributionForecast):
-                Determines the gross contribution for each year.
+                Determines the gross contributions for each year.
             contribution_reduction_forecast (ContributionReductionForecast):
                 Determines the contribution reductions for each year.
-            net_contribution_forecast (NetContributionForecast):
-                Determines the contribution reductions for each year.
+            contribution_strategy (TransactionStrategy):
+                A callable object that returns the schedule of
+                transactions for any contributions during the year.
+                See the documentation for `TransactionStrategy` for
+                acceptable args when calling this object.
             withdrawal_forecast (WithdrawalForecast):
-                Determines the withdrawals for each year.
+                A callable object that returns the total withdrawals for
+                each year.
+            withdrawal_strategy (TransactionStrategy):
+                A callable object that returns the schedule of
+                transactions for any withdrawals during the year.
+                See the documentation for `TransactionStrategy` for
+                acceptable args when calling this object.
+            tax_forecast (TaxForecast):
+                Determines taxes owed for the year.
+            scenario (Scenario): Provides an `initial_year` and a
+                `num_year` property.
         """
         # Store input values
-        self.people = people
-        self.assets = assets
-        self.debts = debts
-        self.scenario = scenario
-        self.gross_contribution_forecast = gross_contribution_forecast
-        self.contribution_reduction_forecast = contribution_reduction_forecast
-        self.net_contribution_forecast = net_contribution_forecast
+        self.income_forecast = income_forecast
+        self.contribution_forecast = contribution_forecast
+        self.reduction_forecast = reduction_forecast
+        self.contribution_strategy = contribution_strategy
         self.withdrawal_forecast = withdrawal_forecast
+        self.withdrawal_strategy = withdrawal_strategy
+        self.tax_forecast = tax_forecast
+        self.scenario = scenario
 
-        # Prepare output dicts:
-        # Income
-        self.gross_income = {}
-        self.tax_withheld_on_income = {}
-        self.net_income = {}
+        # We'll keep track of cash flows over the course of the year, but
+        # we don't save it as a recorded_property, so init it here:
+        self._transactions = defaultdict(lambda: Money(0))
 
-        # Gross contribution
-        self.tax_carryover = {}
-        self.other_carryover = {}
-        self.asset_sale = {}
-        self.gross_contributions = {}
+        # Bundle forecasts together for each iterating:
+        self.forecasts = {
+            self.income_forecast, self.contribution_forecast,
+            self.reduction_forecast, self.withdrawal_forecast,
+            self.tax_forecast
+        }
 
-        # Contribution reductions
-        self.reduction_from_debt = {}
-        self.reduction_from_tax = {}
-        self.reduction_from_other = {}
-        self.contribution_reductions = {}
-        self.net_contributions = {}
-
-        # Principal (and return on principal)
-        self.principal = {}
-        self.gross_return = {}
-        self.tax_withheld_on_return = {}
-        self.net_return = {}
-
-        # Withdrawals
-        self.withdrawals_for_retirement = {}
-        self.withdrawals_for_tax = {}
-        self.withdrawals_for_other = {}
-        self.gross_withdrawals = {}
-        self.tax_withheld_on_withdrawals = {}
-        self.net_withdrawals = {}
-
-        # Total tax
-        self.total_tax_withheld = {}
-        self.total_tax_owing = {}
-
-        # Living standard
-        self.living_standard = {}
-
+        # Use the `Scenario` object to determine the range of years
+        # to iterate over.
+        # Recall that, as a Ledger object, we need to call the
+        # superclass initializer and let it know what the first
+        # year is so that `this_year` is usable.
+        super().__init__(initial_year=self.scenario.initial_year)
         last_year = max(self.scenario)
-        # Build the forecast year-by-year:
-        for year in self.scenario:
-            # Track flows of money into and out of savings:
-            # This maps time values (in `when` format) to net flows:
-            # `dict[Decimal, Money]`
-            self._transactions = defaultdict(lambda: Money(0))
-            # Do the actual work of forecasting:
-            self.record_year(year)
-            # Don't advance to the next year if this is the last one:
-            if year < last_year:
-                self.next_year(year)
+        while self.this_year < last_year:
+            self.next_year()
 
+    @property
+    def people(self):
+        """ The `Person` plannees for the forecast. """
+        return self.income_forecast.people
 
-    def next_year(self, year):
+    @property
+    def assets(self):
+        """ A set of `Asset` objects for the forecast, excluding debts. """
+        return self.withdrawal_forecast.assets
+
+    @property
+    def debts(self):
+        """ A set of `Debt` objects for the forecast. """
+        return self.reduction_forecast.debts
+
+    def next_year(self):
         """ Adds a year to the forecast. """
+        # Advance the people and accounts first:
         for person in self.people:
-            while person.this_year <= year:
+            while person.this_year <= self.this_year:
                 person.next_year()
 
         for account in self.assets.union(self.debts):
-            while account.this_year <= year:
+            while account.this_year <= self.this_year:
                 account.next_year()
 
+        # Clear out transactions for the new year:
+        self._transactions = {}
+
+        # Then update all of the recorded_property attributes
+        # based on the new annual figures:
+        super().next_year()
+
+    @property
     def retirement_year(self):
         """ Determines the retirement year for the plannees.
 
@@ -268,6 +214,47 @@ class Forecast(object):
             ),
             default=None
         ).year
+
+    @recorded_property_cached
+    def income(self):
+        """ Total net income for the year. """
+        return self.income_forecast()
+
+    @recorded_property_cached
+    def gross_contributions(self):
+        """ Gross contributions for the year, before reductions. """
+        return self.contribution_forecast()
+
+    @recorded_property_cached
+    def contribution_reductions(self):
+        """ Total contribution reductions for the year. """
+        return self.reduction_forecast()
+
+    @recorded_property_cached
+    def net_contributions(self):
+        """ Contributions to savings for the year. """
+        # Never contribute a negative amount:
+        return max(
+            self.gross_contributions - self.contribution_reductions,
+            Money(0)
+        )
+
+    @recorded_property_cached
+    def principal(self):
+        """ Total principal in accounts as of the start of the year. """
+        return sum(
+            (account.balance for account in self.assets),
+            Money(0))
+
+    @recorded_property
+    def withdrawals(self):
+        """ Total withdrawals for the year. """
+        return self.withdrawal_forecast()
+
+    @recorded_property
+    def tax(self):
+        """ Total tax liability for the year. """
+        return self.tax_forecast()
 
     def _add_transaction(
         self, transaction, when, account=None, account_transaction=None
@@ -416,199 +403,36 @@ class Forecast(object):
             transaction, earliest_time,
             account=account, account_transaction=account_transaction)
 
-    def record_income(self, year):
-        """ Records gross and net income, as well as taxes withheld. """
-        # Determine gross/net income for the family:
-        self.gross_income[year] = sum(
-            (person.gross_income for person in self.people),
-            Money(0))
-        self.tax_withheld_on_income[year] = sum(
-            (person.tax_withheld for person in self.people),
-            Money(0))
-        self.net_income[year] = sum(
-            (person.net_income for person in self.people),
-            Money(0))
+    def record_debt_payments(self, total):
+        """ TODO """
+        pass  # TODO: How to address encapsulation in ReductionForecast?
 
-
-    def record_net_contributions(self, year):
-        """ Records net contributions.
-
-        This method determines total net (i.e. actual) contributions and
-        adds inflows to the appropriate accounts.
-        """
-        # Reductions can potentially exceed gross_contributions (e.g.
-        # due to minimum debt payments or childcare expenses).
-        # Ensure the net_contributions is not negative:
-        self.net_contributions[year] = max(
-            self.gross_contributions[year] -
-            self.contribution_reductions[year],
-            Money(0)
-        )
-
-        # Add inflow transactions to debts and accounts based on our
-        # net contributions and debt payments:
-        contributions = self.contribution_trans_strategy(
-            self.net_contributions[year],
-            self.assets
-        )
-        for account in contributions:
-            # TODO: Allow splitting contributions up into monthly
-            # (or other) instalments, e.g. based on a schedule.
-            # See #49.
+    def record_contributions(self, total):
+        """ TODO """
+        # Determine the amount to contribute to each account:
+        transactions = self.contribution_strategy(
+            total=total, accounts=self.assets)
+        # Contribute the appropriate amount to each account, deducting the
+        # amount contributed from our available cashflow:
+        for account in transactions:
             self.add_transaction(
-                # This is being pulled from our pool of available
-                # money, so make it a negative flow here:
-                transaction=-contributions[account],
-                when=self.contribution_trans_strategy.timing,
-                account=account,
-                # It's an inflow to the account, so positive here:
-                account_transaction=contributions[account]
-            )
+                transaction=transactions[account],
+                # Contribute monthly. TODO: Refine this?
+                frequency='M',
+                account=account
+                )
 
-    def record_principal(self, year):
-        """ Records principal balance for the year. """
-        self.principal[year] = sum(
-            (account.balance for account in self.assets),
-            Money(0))
-
-    def record_returns(self, year):
-        """ Records gross and net returns, as well as tax withheld. """
-        self.gross_return[year] = sum(
-            (a.returns for a in self.assets),
-            Money(0))
-        # TODO: Figure out what to do with tax_withheld_on_return.
-        # Right now there's no way to distinguish between tax withheld
-        # in an account due to returns vs. due to withdrawals.
-        # IDEA: Eliminate disctinction between tax withheld on returns
-        # vs. withdrawals and only consider tax withheld on accounts?
-        # This will generally be paid from the accounts themselves, so
-        # it probably makes sense to consider it all together.
-        self.tax_withheld_on_return[year] = Money(0)  # TODO
-        self.net_return[year] = (
-            self.gross_return[year] - self.tax_withheld_on_return[year]
-        )
-
-    def record_withdrawals(self, year):
-        """ Records withdrawals for the year.
-
-        Withdrawals are divided into retirement and other withdrawals.
-        Taxes on withdrawals are determined to produce a figure for
-        net withdrawals.
-        """
-        retirement_year = self.retirement_year()
-
-        self.withdrawals_for_retirement[year] = (
-            self.withdrawal_strategy(
-                benefits=Money(0),
-                net_income=self.net_income[year],
-                gross_income=self.gross_income[year],
-                principal=self.principal[year],
-                retirement_year=retirement_year,
-                year=year
-            )
-        )
-
-        # If we have a tax balance to pay off, add that here.
-        if self.tax_carryover[year] < 0:
-            self.withdrawals_for_tax[year] = -(
-                self.reduction_from_tax[year] + self.tax_carryover[year]
-            )
-        else:
-            self.withdrawals_for_tax[year] = Money(0)
-
-        self.withdrawals_for_other[year] = Money(0)  # TODO
-        self.gross_withdrawals[year] = (
-            self.withdrawals_for_retirement[year]
-            + self.withdrawals_for_tax[year]
-            + self.withdrawals_for_other[year]
-        )
-
-        self.tax_withheld_on_withdrawals[year] = sum(
-            (account.tax_withheld for account in self.assets),
-            Money(0)
-        )
-        # TODO: Lumping net withdrawals together doesn't seem very
-        # useful. Consider splitting apart tax withholdings by
-        # withdrawal type and finding net withdrawals independently.
-        self.net_withdrawals[year] = (
-            self.gross_withdrawals[year] -
-            self.tax_withheld_on_withdrawals[year]
-        )
-
-    def record_total_tax(self, year):
-        """ Records total tax withheld and payable in the year.
-
-        TODO: Deal with tax owing but not withheld - arrange to pay this
-        in the following year? Apply against investment balances? Draw
-        a portion from income (i.e. as a living expense)?
-
-        Note that in Canada, if more than $3000 or so of tax is owing
-        but not withheld, the CRA will put you on an instalments plan,
-        so you can't really defer your total tax liability into the next
-        year.
-        """
-        self.total_tax_withheld[year] = (
-            self.tax_withheld_on_income[year] +
-            self.tax_withheld_on_return[year] +
-            self.tax_withheld_on_withdrawals[year]
-        )
-        self.total_tax_owing[year] = self.tax_treatment(self.people, year)
-
-    def record_living_standard(self, year):
-        """ Records the living standard for each year.
-
-        The living standard is the money available to spend after all
-        taxes, debt repayments (other than debts included in living
-        expenses), and savings are deducted.
-        """
-        # TODO: Check Excel spreadsheet for calculation of this.
-        # As currently shown, this deducts all taxes owing from the
-        # living standard - even if some of those taxes are attributable
-        # to activity within a savings account (and not withdrawal/etc.
-        # activity that funds the living standard)
-
-        # Determine whether we are adding a tax refund to our living
-        # standard or deducting a tax liability.
-        if self.tax_carryover[year] >= 0:
-            tax_refund = (
-                self.tax_carryover[year] *
-                (1 - self.contribution_strategy.refund_reinvestment_rate)
-            )
-            tax_bill = Money(0)
-        else:
-            tax_refund = Money(0)
-            tax_bill = (
-                -self.tax_carryover[year] - self.reduction_from_tax[year]
-            )
-        # Living standard is all inflows to personal (non-investment)
-        # accounts (from employment, withdrawals, tax refunds, benefits,
-        # etc.) minus any outflows for non-living-expense liabilities
-        # (from savings, tax withholding or amounts payable, and other
-        # non-living-expense items deducted from our savings rate).
-        # NOTE: contribution_reductions can exceed gross_contributions,
-        # in which case living_expenses will take a hit.
-        self.living_standard[year] = (  # inflows
-            self.gross_income[year]
-            + self.gross_withdrawals[year]
-            + tax_refund
-        ) - (  # outflows
-            self.total_tax_withheld[year]
-            + self.net_contributions[year]
-            + self.contribution_reductions[year]
-            + tax_bill
-        )
-
-    def record_year(self, year):
-        """ Stores high-level values across accounts for this year."""
-        # NOTE: Order is important here. This method is only split into
-        # its various sub-methods for readability - it really is just
-        # one long chain of procedural logic.
-        self.record_income(year)
-        self.record_gross_contribution(year)
-        self.record_contribution_reductions(year)
-        self.record_net_contributions(year)
-        self.record_principal(year)
-        self.record_withdrawals(year)
-        self.record_returns(year)
-        self.record_total_tax(year)
-        self.record_living_standard(year)
+    def record_withdrawals(self, total):
+        """ TODO """
+        # Determine the amount to withdraw from each account:
+        transactions = self.withdrawal_strategy(
+            total=total, accounts=self.assets)
+        # Contribute the appropriate amount to each account, deducting the
+        # amount contributed from our available cashflow:
+        for account in transactions:
+            self.add_transaction(
+                transaction=transactions[account],
+                # Contribute monthly. TODO: Refine this?
+                frequency='M',
+                account=account
+                )
