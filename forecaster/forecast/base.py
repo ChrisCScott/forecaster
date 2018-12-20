@@ -23,17 +23,32 @@ class Forecast(Ledger):
     information describing economic conditions over the course of the
     forecast, and `Strategy` objects to describe the plannees' behaviour.
 
-    The `Forecast` manages high-level cashflows each year. In particular,
-    it uses this model:
+    `Forecast` provides a high-level model for annual cashflows as they
+    relate to retirement savings. In particular, it uses this model:
     * Determine total (net) income for the year.
-    * Determine the portion of net income not used as living expenses;
-        this is called "gross contributions".
-    * Determine the portion of gross contributions which will be used
-        on non-retirement-savings expenditures (e.g. debt repayment,
-        childcare, contributions to education accounts). These are
-        "contribution reductions" and the remainder are "net
-        contributions".
-    * Determine per-account contributions based on net contributions.
+    * Determine the portion of net income not used for ordinary living
+        expenses. Call this "available"; it is the pool of money available
+        for retirement savings, lifecycle expenses, and debt repayment.
+        # TODO: Revise the semantics of this to instead determine (base)
+        # living expenses for the year? Can then deduct living expenses
+        # and lifestyle expenses to get gross contributions - seems more
+        # intuitive than this "available" rubric.
+    * Determine the portion of available money which will be used
+        on "lifecycle" expenses. These are expenditures on top of
+        ordinary living expenses which vary over time. Inflows to
+        retirement savings accounts are reduced to pay for these.
+        This can include, e.g., childcare, contributions to education
+        accounts, home purchase costs, and so on.
+
+        Deducting lifecycle expenses from available money yields
+        "gross contributions" - the total amount saved, including
+        debt repayments as a form of savings.
+    * Determine per-account debt repayments based on gross contributions.
+        Deducting debt repayments from gross contributions yields
+        "net contributions" - the total amount contributed to retirement
+        accounts.
+    * Determine per-account retirement contributions based on net
+        contributions.
     * Determine the total amount withdrawn from retirement savings
         accounts.
     * Determine per-account withdrawals based on total withdrawals.
@@ -46,6 +61,12 @@ class Forecast(Ledger):
     couple (since spouses have specific tax treatment). Otherwise, it's
     better practice to build separate `Forecast` objects for separate
     people.
+
+    Note that each of the below `Money` attributes has an associated
+    `dict[int, Money]` that stores the value of the attribute for each
+    year of the forecast. (Key values are years.) The dicts are named
+    `*_history`; e.g. `income` is associated with `income_history` and
+    `income_history[2001]` gives the value of `income` for year `2001`.
 
     Attributes:
         income_forecast (IncomeForecast):
