@@ -11,7 +11,6 @@ from forecaster.ledger import (
     Ledger, Money,
     recorded_property, recorded_property_cached
 )
-from forecaster.utility import when_conv
 
 class Forecast(Ledger):
     """ A financial forecast spanning multiple years.
@@ -122,8 +121,7 @@ class Forecast(Ledger):
 
     def __init__(
         self, income_forecast, contribution_forecast, reduction_forecast,
-        contribution_strategy, withdrawal_forecast, withdrawal_strategy,
-        tax_forecast, scenario
+        withdrawal_forecast, tax_forecast, scenario
     ):
         """ Constructs an instance of class Forecast.
 
@@ -137,19 +135,9 @@ class Forecast(Ledger):
                 Determines the gross contributions for each year.
             contribution_reduction_forecast (ContributionReductionForecast):
                 Determines the contribution reductions for each year.
-            contribution_strategy (TransactionStrategy):
-                A callable object that returns the schedule of
-                transactions for any contributions during the year.
-                See the documentation for `TransactionStrategy` for
-                acceptable args when calling this object.
             withdrawal_forecast (WithdrawalForecast):
                 A callable object that returns the total withdrawals for
                 each year.
-            withdrawal_strategy (TransactionStrategy):
-                A callable object that returns the schedule of
-                transactions for any withdrawals during the year.
-                See the documentation for `TransactionStrategy` for
-                acceptable args when calling this object.
             tax_forecast (TaxForecast):
                 Determines taxes owed for the year.
             scenario (Scenario): Provides an `initial_year` and a
@@ -159,9 +147,7 @@ class Forecast(Ledger):
         self.income_forecast = income_forecast
         self.contribution_forecast = contribution_forecast
         self.reduction_forecast = reduction_forecast
-        self.contribution_strategy = contribution_strategy
         self.withdrawal_forecast = withdrawal_forecast
-        self.withdrawal_strategy = withdrawal_strategy
         self.tax_forecast = tax_forecast
         self.scenario = scenario
 
@@ -169,12 +155,13 @@ class Forecast(Ledger):
         # we don't save it as a recorded_property, so init it here:
         self._transactions = defaultdict(lambda: Money(0))
 
-        # Bundle forecasts together for each iterating:
-        self.forecasts = {
+        # Arrange forecasts in order so it'll be easy to call them
+        # in the correct order later:
+        self.forecasts = [
             self.income_forecast, self.contribution_forecast,
             self.reduction_forecast, self.withdrawal_forecast,
             self.tax_forecast
-        }
+        ]
 
         # Use the `Scenario` object to determine the range of years
         # to iterate over.
@@ -276,184 +263,3 @@ class Forecast(Ledger):
     def tax(self):
         """ Total tax liability for the year. """
         return self.tax_forecast()
-
-    def _add_transaction(
-        self, transaction, when, account=None, account_transaction=None
-    ):
-        """ Helper method for `add_transaction`. """
-        # Record to the dict:
-        self._transactions[when] += transaction
-        # Also add to the account, if passed:
-        if account is not None:
-            # Use the account_transaction amount, if passed,
-            # otherwise fall back to `transaction`
-            if account_transaction is None:
-                account_transaction = transaction
-            account.add_transaction(
-                account_transaction,
-                when=when)
-
-    def _recurse_transaction(
-        self, transaction, frequency,
-        account=None, account_transaction=None
-    ):
-        """ Records multiple transactions with a given frequency. """
-        # Split up transaction amounts based on the number of payments:
-        transaction = transaction / frequency
-        if account_transaction is not None:
-            account_transaction = account_transaction / frequency
-
-        # Add `frequency` number of transactions, with equal amounts
-        # and even spacing, each transaction occurring at the end of
-        # a period of length equal to `frequency`.
-        for when in range(1, frequency + 1):
-            self.add_transaction(
-                transaction,
-                when=when/frequency,
-                account=account,
-                account_transaction=account_transaction)
-
-    def add_transaction(
-        self, transaction, when=None, frequency=None,
-        account=None, account_transaction=None
-    ):
-        """ Records a transaction at a time that balances the books.
-
-        This method will always add the transaction at or after `when`
-        (or at or after the implied timing provided by `frequency`).
-        It tries to find a time where adding the transaction would
-        avoid going cash-flow negative.
-
-        In particular, it tries to find the _earliest_ such time.
-        Thus, the timing will be equal to `when` if that timing
-        meets this constraint. `when` is also used if no such
-        time can be found.
-
-        At least one of `when` and `frequency` must be provided.
-        If `frequency` is provided, then `transaction` is split
-        up into `frequency` equal amounts and each amount is
-        contributed at the end of `frequency` payment periods.
-
-        Example:
-            `self.add_transaction(Money(1000), 'start')`
-            `self.add_transaction(Money(1000), Decimal(0.5))`
-            `self.add_transaction(Money(-2000), Decimal(0.25))`
-            `# The transaction is added at when=0.5`
-        
-        Args:
-            transaction (Money): The transaction to be added.
-                Positive for inflows, negative for outflows.
-            when (Decimal): The time at which the transaction occurs.
-                Expressed as a value in [0,1]. Optional.
-            frequency (int): The number of transactions made in the
-                year. Must be positive. Optional.
-            account (Account): An account to which the transaction
-                is to be added. Optional.
-            account_transaction (Money): If provided, this amount
-                will be added to `Account` instead of `transaction`.
-
-        Example:
-            `f.add_transaction(Money(10), Decimal(0.5))`
-            `# f._transactions = {0.5: Money(10)}`
-            `f.add_transaction(Money(-10), Decimal(0.5))`
-            `# f._transactions = {0.5: Money(0)}`
-        """
-        # If this is a `frequency` scenario, iterate
-        if when is None:
-            if frequency is not None:
-                self._recurse_transaction(
-                    transaction, frequency=frequency,
-                    account=account,
-                    account_transaction=account_transaction
-                )
-                return
-            # If neither are provided, that's an error:
-            else:
-                raise ValueError(
-                    'At least one of `when` and `frequency` must be provided.')
-
-        # Sanitize input:
-        when = when_conv(when)
-
-        # Inflows are easy: We can accept those any time:
-        if transaction >= 0:
-            self._add_transaction(
-                transaction, when,
-                account=account, account_transaction=account_transaction)
-            return
-
-        # Outflows are a bit trickier.
-        # First, figure out how much money is available
-        # at each point in time, starting with `when`:
-        available = {
-            t: sum(
-                # For each point in time `t`, find the sum of all
-                # transactions up to this point:
-                self._transactions[r] for r in self._transactions if r <= t)
-            # We don't need to look at times before `when`:
-            for t in self._transactions if t >= when
-        }
-        # If `when` isn't already represented in self_transactions,
-        # add it manually to `available`
-        if when not in available:
-            # The amount available at `when` is just the sum of all
-            # prior transactions (or $0, if there are none).
-            available[when] = sum(
-                (
-                    self._transactions[t]
-                    for t in self._transactions if t < when
-                ),
-                Money(0)
-            )
-
-        # Find the set of points in time where subtracting
-        # `transaction` would not put any future point in time
-        # into negative balance.
-        # (Not really a set - it's a generator expression)
-        eligible_times = (
-            t for t in available if all(
-                available[r] >= -transaction for r in available if r >= t
-            )
-        )
-        # Find the earliest time that satisfies our requirements
-        # (or, if none exists, use the time requested by the user)
-        earliest_time = min(eligible_times, default=when)
-
-        # We've found the time; now add the transaction!
-        self._add_transaction(
-            transaction, earliest_time,
-            account=account, account_transaction=account_transaction)
-
-    def record_debt_payments(self, total):
-        """ TODO """
-        pass  # TODO: How to address encapsulation in ReductionForecast?
-
-    def record_contributions(self, total):
-        """ TODO """
-        # Determine the amount to contribute to each account:
-        transactions = self.contribution_strategy(
-            total=total, accounts=self.assets)
-        # Contribute the appropriate amount to each account, deducting the
-        # amount contributed from our available cashflow:
-        for account in transactions:
-            self.add_transaction(
-                transaction=transactions[account],
-                # Contribute monthly. TODO: Refine this?
-                frequency='M',
-                account=account
-                )
-
-    def record_withdrawals(self, total):
-        """ TODO """
-        # Determine the amount to withdraw from each account:
-        transactions = self.withdrawal_strategy(
-            total=total, accounts=self.assets)
-        # Contribute the appropriate amount to each account, deducting the
-        # amount contributed from our available cashflow:
-        for account in transactions:
-            self.add_transaction(
-                transaction=transactions[account],
-                # Contribute monthly. TODO: Refine this?
-                frequency='M',
-                account=account
-                )
