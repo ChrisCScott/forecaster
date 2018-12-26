@@ -339,9 +339,89 @@ class Account(TaxSource):
             val for val in self.transactions.values() if val.amount < 0)
         )
 
+    def next_year(self):
+        """ Adds another year to the account.
+
+        This method will call the next_year method for the owner if they
+        haven't been advanced to the next year.
+        """
+        # Ensure that the owner has been brought up to this year
+        while self.owner.this_year < self.this_year:
+            self.owner.next_year()
+
+        # Now increment year via superclass:
+        super().next_year()
+
+        # Clear out transactions for the new year:
+        self._transactions = {}
+
+    def max_outflow(self, when='end'):
+        """ The maximum amount that can be withdrawn from the account.
+
+        Args:
+            when (When): The timing of the transaction.
+
+        Returns:
+            A value which, if withdrawn at time `when`, would make the
+            account balance 0 at the end of the year, after all
+            transactions are accounted for.
+        """
+        # If the balance is positive, the max outflow is simply the
+        # current balance (but negative). If the balance is negative,
+        # then there's no further outflows to be made.
+        return min(-self.balance_at_time(when), Money(0))
+
+    def max_inflow(self, when='end'):
+        """ The maximum amount that can be contributed to the account. """
+        # Subclasses may provide a `when` argument, so provide that here
+        # for consistency (even though it's unused):
+        # pylint: disable=unused-argument,no-self-use
+
+        # For non-registered accounts, there is no maximum
+        return Money('Infinity')
+
+    def min_outflow(self, when='end'):
+        """ The minimum amount to be withdrawn from the account. """
+        # Subclasses may provide a `when` argument, so provide that here
+        # for consistency (even though it's unused):
+        # pylint: disable=unused-argument,no-self-use
+
+        # For non-registered accounts, there is no minimum
+        return Money('0')
+
+    def min_inflow(self, when='end'):
+        """ The minimum amount to be contributed to the account. """
+        # Subclasses may provide a `when` argument, so provide that here
+        # for consistency (even though it's unused):
+        # pylint: disable=unused-argument,no-self-use
+
+        # For non-registered accounts, there is no minimum
+        return Money('0')
+
+    @recorded_property
+    def taxable_income(self):
+        """ Treats all returns as taxable. """
+        return max(self.returns, Money(0))
+
+    # Allow calling code to interact directly with the account as
+    # a series of transactions:
+
     def __len__(self):
-        """ The number of years of transaction data in the account. """
-        return self.this_year - self.initial_year + 1
+        """ The number of transactions for the current year. """
+        return len(self._transactions)
+
+    def __iter__(self):
+        """ Yields iterator over transactions for the current year. """
+        for transaction in sorted(self._transactions.keys()):
+            yield transaction
+
+    def __getitem__(self, key):
+        """ Returns the value of the transaction at time `key`. """
+        return self._transactions[key]
+
+    def __setitem__(self, key, value):
+        """ Sets the value of the transaction at time `key`. """
+        self._transactions[key] = value
 
     @staticmethod
     def accumulation_function(t, rate, nper=1):
@@ -426,69 +506,105 @@ class Account(TaxSource):
 
         return balance
 
-    def next_year(self):
-        """ Adds another year to the account.
+    @staticmethod
+    def accumulation_function_inverse(accum, rate, nper=1):
+        """ The inverse of the accumulation function, A^-1(a).
 
-        This method will call the next_year method for the owner if they
-        haven't been advanced to the next year.
-        """
-        # Ensure that the owner has been brought up to this year
-        while self.owner.this_year < self.this_year:
-            self.owner.next_year()
-
-        # Now increment year via superclass:
-        super().next_year()
-
-        # Clear out transactions for the new year:
-        self._transactions = {}
-
-    def max_outflow(self, when='end'):
-        """ An outflow which would reduce the end-of-year balance to 0.
-
-        NOTE: This does not guarantee that the account balance will not
-        be negative at a time between `when` and `end`.
+        A^-1(a) provides the amount of time required to achieve a
+        certain growth (or discount) factor. If `accum` is less than
+        1, the result is negative. `accum` must be positive.
 
         Args:
-            when (When): The timing of the transaction.
+            accum (float, Decimal): The accumulation factor.
+            rate (float, Decimal): The rate of return (or interest).
+            nper (int): The number of compounding periods per year.
 
         Returns:
-            A value which, if withdrawn at time `when`, would make the
-            account balance 0 at the end of the year, after all
-            transactions are accounted for.
+            (float, Decimal): A value `t` defining the period [0,t]
+                or [t, 0] (if negative) over which the accumulation
+                would be reached.
         """
-        # If the balance is positive, the max outflow is simply the
-        # current balance (but negative). If the balance is negative,
-        # then there's no further outflows to be made.
-        return min(-self.balance_at_time(when), Money(0))
+        # Convert accum and rate to Decimal
+        accum = Decimal(accum)
+        rate = Decimal(rate)
 
-    def max_inflow(self, when='end'):
-        """ The maximum amount that can be contributed to the account. """
-        # Subclasses may provide a `when` argument, so provide that here
-        # for consistency (even though it's unused):
-        # pylint: disable=unused-argument,no-self-use
+        if accum < 0:
+            raise ValueError('accum must be positive.')
 
-        # For non-registered accounts, there is no maximum
-        return Money('Infinity')
+        # The case where rate=0 results in divide-by-zero errors later
+        # on, so deal with it specifically here.
+        # If the rate is 0%, it will either take an infinite value
+        # (positive or negative, depending on the rate)
+        # or 0 (in the special case of accum=1)
+        if rate == 0:
+            if accum == 1:
+                return Decimal(0)
+            elif accum < 1:
+                return -Decimal('Infinity')
+            else:
+                return Decimal('Infinity')
 
-    def min_outflow(self, when='end'):
-        """ The minimum amount to be withdrawn from the account. """
-        # Subclasses may provide a `when` argument, so provide that here
-        # for consistency (even though it's unused):
-        # pylint: disable=unused-argument,no-self-use
+        # Use the exponential formula for continuous compounding: a=e^rt
+        # Derive from this t=ln(a)/r
+        if nper is None:
+            # math.exp(rate * t) throws a warning, since there's an
+            # implicit float-Decimal multiplication.
+            timing = math.log(accum, math.e) / rate
+        # Otherwise use the discrete formula: a=(1+r/n)^nt
+        # Derive from this t=log(a,1+r/n)/n
+        else:
+            timing = math.log(accum, 1 + rate / nper) / nper
 
-        # For non-registered accounts, there is no minimum
-        return Money('0')
+        return timing
 
-    def min_inflow(self, when='end'):
-        """ The minimum amount to be contributed to the account. """
-        # Subclasses may provide a `when` argument, so provide that here
-        # for consistency (even though it's unused):
-        # pylint: disable=unused-argument,no-self-use
+    def time_to_value(self, value_now, value_then):
+        """ The time required to grow from one value to another.
 
-        # For non-registered accounts, there is no minimum
-        return Money('0')
+        Args:
+            value_now (Money): The (nominal) value we start with.
+            value_then (Money): The (nominal) value we end with.
 
-    @recorded_property
-    def taxable_income(self):
-        """ Treats all returns as taxable. """
-        return max(self.returns, Money(0))
+        Returns:
+            A Decimal object representing the time required to
+            grow (or shrink) from `value_now` to `value_then`.
+        """
+        return self.accumulation_function_inverse(
+            accum=value_then/value_now, rate=self.rate, nper=self.nper
+        )
+
+    def time_to_balance(self, value, when=Decimal(0)):
+        """ Returns the time required to grow to a given balance.
+
+        If `when` is provided, this method returns the earliest time
+        at or after `when` when the balance has reached `value`. This
+        method is transaction-aware; a given balance may be reached
+        more than once if there are inflows/outflows.
+
+        Args:
+            value (Money): The balance to grow to.
+            when (Decimal): Only balances reached on or after `when`
+                are considered. Optional.
+        """
+        # Convert `when` to avoid type errors.
+        when = when_conv(when)
+
+        # We'll base all calculations at `when`, including the value
+        # of `balance`. Do this even for `when=0`, since there may
+        # be a transaction at the start of the year that isn't
+        # reflected by `balance` but is incorporated in
+        # `balance_at_time`.
+        balance = self.balance_at_time(when)
+
+        # Determine when we'll reach the desired amount, assuming
+        # no further transactions:
+        time = when + self.time_to_value(balance, value)
+
+        # Now look ahead to the next transaction and, if it happens
+        # before `time`, recurse onto that transaction's timing:
+        next_transaction = min(
+            (key for key in self.transactions if key > when),
+            default=time)
+        if next_transaction < time:
+            time = self.time_to_balance(value, next_transaction)
+
+        return time
