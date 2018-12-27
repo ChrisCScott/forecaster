@@ -434,6 +434,9 @@ class Account(TaxSource):
     def get(self, key, default=None):
         self._transactions.get(key, default=default)
 
+    def clear(self):
+        self._transactions.clear()
+
     # Finally, add some methods for calculating growth (i.e. balance
     # at a future time and time to get to a future balance.)
 
