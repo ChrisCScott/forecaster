@@ -1,6 +1,7 @@
 """ A module providing the base Account class. """
 
 import math
+from collections import defaultdict
 from decimal import Decimal
 from forecaster.person import Person
 from forecaster.ledger import (
@@ -22,12 +23,20 @@ class Account(TaxSource):
     A new `Account` object with an updated balance is generated; the
     calling object's balance does not change.
 
+    `Account` objects, when treated as iterables, expose the underlying
+    `transactions` dict and can be used interchangeably in most cases
+    with dicts of `{when: value}` pairs.
+
     Examples::
 
         account1 = Account(100, 0.05)
         account2 = account1.next_year()
         account1.balance == 100  # True
         account2.balance == 105  # True
+
+        account = Account(0, 0)
+        account.add_transaction(value=1, 'start')
+        account[0] == 1  # True
 
     Attributes:
         balance (Money): The opening account balance for this year.
@@ -134,7 +143,7 @@ class Account(TaxSource):
 
         # We don't really have to do this, but it helps the linter
         # to understand that `transactions` is subscriptable:
-        self.transactions = {}
+        self.transactions = defaultdict(lambda: Money(0))
 
         # Set the various property values based on inputs:
         self.owner = owner
@@ -307,23 +316,8 @@ class Account(TaxSource):
         if not isinstance(value, Money):
             value = Money(value)
 
-        # If there's already a transaction at this time, then add them
-        # together; simultaneous transactions are modelled as one sum.
-        # pylint: disable=unsupported-membership-test
-        # Pylint gets confused by attributes added by metaclass.
-        if when in self.transactions:  # Add to existing value
-            # pylint: disable=unsupported-assignment-operation
-            # Pylint gets confused by attributes added by metaclass.
-            self.transactions[when] += value
-        else:  # Create new when/value pair.
-            # pylint: disable=unsupported-assignment-operation
-            # Pylint gets confused by attributes added by metaclass.
-            self.transactions[when] = value  # pylint: disable=E1137
-
-    # TODO: Add add_inflow and add_outflow methods? These could ignore
-    # sign (or, for add_inflow, raise an error with negative sign) and
-    # add an inflow (+) or outflow (-) with the magnitude of the input
-    # arg and the appropriate sign.
+        # Simultaneous transactions are modelled as one sum,
+        self.transactions[when] += value
 
     @recorded_property
     def inflows(self):
@@ -404,24 +398,44 @@ class Account(TaxSource):
         return max(self.returns, Money(0))
 
     # Allow calling code to interact directly with the account as
-    # a series of transactions:
-
+    # a series of transactions. Implement all `Mapping` methods
+    # to redirect to `_transactions`, except for comparison
+    # and serialization methods.
     def __len__(self):
-        """ The number of transactions for the current year. """
         return len(self._transactions)
 
     def __iter__(self):
-        """ Yields iterator over transactions for the current year. """
         for transaction in sorted(self._transactions.keys()):
             yield transaction
 
+    def __contains__(self, key):
+        when = when_conv(key)
+        return when in self._transactions
+
     def __getitem__(self, key):
-        """ Returns the value of the transaction at time `key`. """
         return self._transactions[key]
 
     def __setitem__(self, key, value):
-        """ Sets the value of the transaction at time `key`. """
-        self._transactions[key] = value
+        del self._transactions[key]
+        self.add_transaction(value=value, when=key)
+
+    def __delitem__(self, key):
+        del self._transactions[key]
+
+    def keys(self):
+        return self._transactions.keys()
+
+    def values(self):
+        return self._transactions.values()
+
+    def items(self):
+        return self._transactions.items()
+
+    def get(self, key, default=None):
+        self._transactions.get(key, default=default)
+
+    # Finally, add some methods for calculating growth (i.e. balance
+    # at a future time and time to get to a future balance.)
 
     @staticmethod
     def accumulation_function(t, rate, nper=1):
