@@ -28,7 +28,11 @@ class SubForecast(Ledger):
         # Update available, if it's provided:
         if available is not None:
             self.available = available
-        # If not provided, clear it out (works for Account and dict):
+        # Otherwise, advance it to the next year:
+        if isinstance(self.available, Account):
+            while self.available.this_year < self.this_year:
+                self.available.next_year()
+        # If not a dict, we can 'advance' by clearing:
         else:
             self.available.clear()
 
