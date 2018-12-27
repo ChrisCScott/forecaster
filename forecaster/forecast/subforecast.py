@@ -1,7 +1,6 @@
 """ TODO """
 
 from collections import defaultdict
-from copy import copy
 from decimal import Decimal
 from forecaster.ledger import (
     Ledger, Money,
@@ -15,17 +14,23 @@ class SubForecast(Ledger):
 
     def __init__(self):
         """ TODO """
+        # Init members:
         self.transactions = defaultdict(lambda: Money(0))
         self.available = defaultdict(lambda: Money(0))
 
-    def next_year(self, available):
+    def next_year(self, available=None):
         """ TODO """
         # Call `next_year` first so that recorded_property values
         # are recorded with their current state:
         super().next_year()
-        # Now update available/transactions for the new year:
-        self.available = copy(available)
-        self.transactions = defaultdict(lambda: Money(0))
+        # There are no existing transactions at the start of the year:
+        self.transactions.clear()
+        # Update available, if it's provided:
+        if available is not None:
+            self.available = available
+        # If not provided, clear it out (works for Account and dict):
+        else:
+            self.available.clear()
 
     def add_transaction(
         self, value, when=Decimal(0.5), frequency=None,
