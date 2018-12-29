@@ -96,7 +96,7 @@ class Account(TaxSource):
     # pylint: disable=too-many-instance-attributes
 
     def __init__(
-        self, owner,
+        self, owner=None,
         balance=0, rate=0, nper=1, inputs=None, initial_year=None
     ):
         """ Constructor for `Account`.
@@ -120,11 +120,6 @@ class Account(TaxSource):
             nper (int): The number of compounding periods per year.
             initial_year (int): The first year (e.g. 2000)
         """
-        # This object requires a fair amount of state, and its arguments
-        # are closely related. It doesn't make sense to break up the
-        # class any further.
-        # pylint: disable=too-many-arguments
-
         # Use the explicitly-provided initial year if available,
         # otherwise default to the owner's initial year:
         if initial_year is None:
@@ -340,8 +335,9 @@ class Account(TaxSource):
         haven't been advanced to the next year.
         """
         # Ensure that the owner has been brought up to this year
-        while self.owner.this_year < self.this_year:
-            self.owner.next_year()
+        if self.owner is not None:
+            while self.owner.this_year < self.this_year:
+                self.owner.next_year()
 
         # Now increment year via superclass:
         super().next_year()
