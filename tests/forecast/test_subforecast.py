@@ -30,10 +30,11 @@ class TestSubForecast(unittest.TestCase):
 
     def test_add_transaction_basic(self):
         """ Moves $100 from available to an account. """
-        # Given $100 in cash, put it all in account1:
+        # Receive cash at start of year:
         self.available[Decimal(0)] = Money(100)
+        # Move all $100 to account1 right away:
         self.subforecast.add_transaction(
-            value=Money(100), when='start',
+            value=100, when='start',
             from_account=self.available, to_account=self.account2)
         # Transaction should be added immediately:
         self.assertEqual(
@@ -53,7 +54,7 @@ class TestSubForecast(unittest.TestCase):
 
         # Move all $100 to account1 right away:
         self.subforecast.add_transaction(
-            value=Money(100), when='start',
+            value=100, when='start',
             from_account=self.subforecast.available,
             to_account=self.account2)
         # Transaction should be added immediately:
@@ -71,7 +72,7 @@ class TestSubForecast(unittest.TestCase):
         # when cash isn't actually available until mid-year:
         self.available[Decimal(0.5)] = Money(100)
         self.subforecast.add_transaction(
-            value=Money(100), when='start',
+            value=100, when='start',
             from_account=self.available, to_account=self.account2)
         # Transaction should be delayed until mid-year:
         self.assertEqual(
@@ -92,7 +93,7 @@ class TestSubForecast(unittest.TestCase):
         # Try to move $100 in cash to account1 at the start of the year
         # (i.e. before cash is actually on-hand):
         self.subforecast.add_transaction(
-            value=Money(100), when='start',
+            value=100, when='start',
             from_account=self.available_acct, to_account=self.account2)
         # Transaction should be delayed until mid-year:
         self.assertEqual(
