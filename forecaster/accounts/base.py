@@ -133,12 +133,8 @@ class Account(TaxSource):
         # Set hidden attributes to support properties that need them to
         # be set in advance:
         self._owner = None
-        self._transactions = {}
+        self._transactions = defaultdict(lambda: Money(0))
         self._rate_callable = None
-
-        # We don't really have to do this, but it helps the linter
-        # to understand that `transactions` is subscriptable:
-        self.transactions = defaultdict(lambda: Money(0))
 
         # Set the various property values based on inputs:
         self.owner = owner
@@ -155,14 +151,18 @@ class Account(TaxSource):
     @owner.setter
     def owner(self, val):
         """ Sets the account's owner. """
-        # Type-check the input
-        if not isinstance(val, Person):
-            raise TypeError('Account: owner must be of type Person.')
         # Unregister this account from any former owner:
         if self.owner is not None:
             self.owner.accounts.remove(self)
-        # Register with new owner:
-        val.accounts.add(self)
+
+        # For new owners, do basic type-checks and then
+        # bind the account to the owner:
+        if val is not None:
+            if not isinstance(val, Person):
+                raise TypeError('Account: owner must be of type Person.')
+            # Register with new owner:
+            val.accounts.add(self)
+
         self._owner = val
 
     @recorded_property_cached
@@ -412,7 +412,8 @@ class Account(TaxSource):
         return self._transactions[key]
 
     def __setitem__(self, key, value):
-        del self._transactions[key]
+        if key in self._transactions:
+            del self._transactions[key]
         self.add_transaction(value=value, when=key)
 
     def __delitem__(self, key):
