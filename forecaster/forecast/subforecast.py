@@ -89,6 +89,12 @@ class SubForecast(Ledger):
         """
         # Sanitize input:
         when = when_conv(when)
+        
+        # For convenience, ensure that we're withdrawing from
+        # from_account and depositing to to_account:
+        if value < 0:
+            from_account, to_account = to_account, from_account
+            value = -value
 
         # If a `frequency` has been passed, split up the transaction
         # into several equal-value and equally-spaced transactions.
@@ -118,16 +124,12 @@ class SubForecast(Ledger):
         for sanitizing inputs, dealing with multiple transactions,
         and providing sensible default values where appropriate.
         """
-        # For convenience, ensure that we're withdrawing from
-        # from_account and depositing to to_account:
-        if value < 0:
-            from_account, to_account = to_account, from_account
-            value = -value
-
+        # Shift when, if appropriate, based on from_account:
         if from_account is not None and not strict_timing:
-            # Shift when, if appropriate:
             when = self._shift_when(
                 value=value, when=when, account=from_account)
+
+        # Record to from_account:
         self._add_transaction_to_account(
             value=-value, when=when, account=from_account)
 
@@ -135,25 +137,21 @@ class SubForecast(Ledger):
         self._add_transaction_to_account(
             value=value, when=when, account=to_account)
 
-        # Track transactions to/from `available` separately:
-        if from_account is self.available:
-            self.transactions[when] -= value
-        if to_account is self.available:
-            self.transactions[when] += value
-
     def _add_transaction_to_account(self, value, when, account):
         """ Records a transaction against an account. """
         if account is None:
             # Allow None for convenience in calling code.
             return
-        elif isinstance(account, Account):
-            # We _could_ use the below generic, dict-based logic
-            # for Account objects too, but prefer to invoke
-            # `add_transaction` explicitly when possible.
-            account.add_transaction(-value, when=when)
+        # Don't assume all objects provide defaultdict-like interface;
+        # test for membership first:
+        elif when in account:
+            account[when] += value
         else:
-            account[when] = (
-                account.get(when, Money(0)) - value)
+            account[when] = value
+
+        # Track transactions to/from `available` separately:
+        if account is self.available:
+            self.transactions[when] += value
 
     def _shift_when(self, value, when, account):
         """ Shifts `when` to a time that avoids negative balances. """
