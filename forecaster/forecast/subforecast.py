@@ -153,7 +153,7 @@ class SubForecast(Ledger):
             account.add_transaction(-value, when=when)
         else:
             account[when] = (
-                account.get(when, default=Money(0)) - value)
+                account.get(when, Money(0)) - value)
 
     def _shift_when(self, value, when, account):
         """ Shifts `when` to a time that avoids negative balances. """
@@ -169,25 +169,26 @@ class SubForecast(Ledger):
             # For non-Accounts, use generic dict interface to add up
             # transactions, assuming no growth rate or other
             # Account-specific features.
+            keys = account.keys() | {when}  # Always include `when`
             accum = {
                 t: sum(
                     # For each point in time `t`, find the sum of all
                     # transactions up to this point:
                     account[r] for r in account if r <= t)
-                # Exclude times before `when`, but include `when` even
-                # if there's no transaction at that time:
-                for t in account.keys() ^ when if t >= when}
+                # Exclude times before `when`:
+                for t in keys if t >= when}
 
         # Find the points in time where subtracting `value`
         # would not put any future point in time into negative
         # balance.
         eligible_times = (
             t for t in accum if all(
-                accum[r] >= -value for r in accum if r >= t))
+                accum[r] >= value for r in accum if r >= t))
 
         # Find the earliest valid time (or, if none exists,
         # use `when`)
-        return min(eligible_times, default=when)
+        min_time = min(eligible_times, default=when)
+        return min_time
 
     @staticmethod
     def _accum_account(account, when, target_value=None):
@@ -209,13 +210,13 @@ class SubForecast(Ledger):
             `when` itself (if not already included). If `target_value`
             is provided, the keys may include additional times.
         """
+        keys = account.keys() | {when}  # Always include `when`
         # Use Account logic to determine how much is available at the
         # time of each existing transaction and also at `when`:
         accum = {
             t: -account.max_outflow(t)
-            # Exclude times before `when` but include `when` even if
-            # there's no transaction at that time:
-            for t in account.keys() ^ when if t >= when
+            # Exclude times before `when`:
+            for t in keys if t >= when
         }
         # Try to interpolate times where we achieve the desired
         # value, if that value is known:
