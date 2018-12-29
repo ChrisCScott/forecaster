@@ -89,6 +89,8 @@ class SubForecast(Ledger):
         """
         # Sanitize input:
         when = when_conv(when)
+        if not isinstance(value, Money):
+            value = Money(value)
         
         # For convenience, ensure that we're withdrawing from
         # from_account and depositing to to_account:
