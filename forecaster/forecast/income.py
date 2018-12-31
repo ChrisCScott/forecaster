@@ -15,11 +15,8 @@ class IncomeForecast(SubForecast):
             `this_year` attribute, as must their various accounts.
     """
 
-    # pylint: disable=too-many-arguments
-    # NOTE: Consider combining the various strategy objects into a dict
-    # or something (although it's not clear how this benefits the code.)
     def __init__(
-        self, people
+        self, initial_year, people
     ):
         """ Constructs an instance of class IncomeForecast.
 
@@ -27,6 +24,8 @@ class IncomeForecast(SubForecast):
             people (Iterable[Person]): The people for whom a forecast
                 is being generated.
         """
+        super().__init__(initial_year)
+        # Invoke Ledger's __init__ or pay the price!
         # Store input values
         self.people = people
 
