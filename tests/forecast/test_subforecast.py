@@ -50,9 +50,11 @@ class TestSubForecast(unittest.TestCase):
 
     def setUp(self):
         """ Builds stock variables to test with. """
-        self.subforecast = SubForecast()
+        self.initial_year = 2000
+        self.subforecast = SubForecast(self.initial_year)
         self.person = Person(
-            initial_year = 2000, name="Test",
+            initial_year = self.initial_year,
+            name="Test",
             birth_date="1 January 1980",
             retirement_date="31 December 2045")
         # A basic account with 100% interest and no compounding:
@@ -63,7 +65,7 @@ class TestSubForecast(unittest.TestCase):
             owner=self.person, balance=100, rate=Decimal(1), nper=1)
         # Set up a dict and Account for use as `available`:
         self.available_dict = defaultdict(lambda: Money(0))
-        self.available_acct = Account(initial_year = 2000, rate = 0)
+        self.available_acct = Account(initial_year = self.initial_year, rate = 0)
 
     def test_transactions_property_basic(self):
         """ Tests that transactions are saved correctly. """
