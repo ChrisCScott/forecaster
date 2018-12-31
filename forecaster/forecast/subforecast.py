@@ -82,19 +82,26 @@ class TransactionDict(defaultdict):
 class SubForecast(Ledger):
     """ TODO """
 
-    def __init__(self):
+    def __init__(self, initial_year):
         """ TODO """
+        # Invoke Ledger's __init__ or pay the price!
+        super().__init__(initial_year)
         # We store transactions to/from each account so that
         # we can unwind or inspect transactions caused by this
         # subforecast later. So we store it as
         # `{Account: {when: value}}`. We use defaultdict for
         # convenience.`
-        self.transactions = TransactionDict(
+        self._transactions = TransactionDict(
             lambda: defaultdict(lambda: Money(0)))
         # If update_available is called more than once, we
         # may want to do some unwinding. Use this to track
         # whether update_available has been called before:
         self._update_available_called = False
+
+    @recorded_property
+    def transactions(self):
+        """ `TransactionDict` tracking transactions to/from accounts. """
+        return self._transactions
 
     def next_year(self):
         """ TODO """
