@@ -1,20 +1,9 @@
-""" This module provides a Forecast class for use in forecasts.
+""" Provides an IncomeForecast class for use by Forecast. """
 
-This is where most of the financial forecasting logic of the Forecaster
-package lives. It applies Scenario, Strategy, and Tax information to
-determine how account balances will grow or shrink year-over-year.
-"""
+from forecaster.ledger import Money, recorded_property
+from forecaster.forecast.subforecast import SubForecast
 
-from collections import defaultdict
-from decimal import Decimal
-from forecaster.ledger import Money
-from forecaster.utility import when_conv
-
-# pylint: disable=too-many-instance-attributes
-# This object has a complex state. We could store the records for each
-# year in some sort of pandas-style frame or table, but for now each
-# data column is its own named attribute.
-class IncomeForecast(object):
+class IncomeForecast(SubForecast):
     """ A forecast of income over the years.
 
     Attributes:
@@ -41,21 +30,40 @@ class IncomeForecast(object):
         # Store input values
         self.people = people
 
-        # Prepare output dicts:
-        # Income
-        self.gross_income = {}
-        self.tax_withheld_on_income = {}
-        self.net_income = {}
+    def update_available(self, available):
+        """ Records transactions against accounts; mutates `available`. """
+        # The superclass has some book-keeping to do before we get
+        # started on doing the updates:
+        super().update_available(available)
 
-    def record_income(self, year):
-        """ Records gross and net income, as well as taxes withheld. """
-        # Determine gross/net income for the family:
-        self.gross_income[year] = sum(
+        # Record income monthly.
+        # NOTE: This code assumes income is received at the end of
+        # each payment period. Consider whether some cases (like
+        # biweekly payments) might justify using the midpoint of
+        # each period.
+        for person in self.people:
+            self.add_transaction(
+                person.net_income, when=0.5,
+                frequency=person.payment_frequency,
+                from_account=None, to_account=available)
+
+    @recorded_property
+    def gross_income(self):
+        """ Gross income for all plannees for the year. """
+        return sum(
             (person.gross_income for person in self.people),
             Money(0))
-        self.tax_withheld_on_income[year] = sum(
+
+    @recorded_property
+    def tax_withheld_on_income(self):
+        """ Tax withheld on income for all plannees for the year. """
+        return sum(
             (person.tax_withheld for person in self.people),
             Money(0))
-        self.net_income[year] = sum(
+
+    @recorded_property
+    def net_income(self):
+        """ Net income for all plannees for the year. """
+        return sum(
             (person.net_income for person in self.people),
             Money(0))
