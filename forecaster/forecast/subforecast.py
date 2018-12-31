@@ -1,6 +1,7 @@
 """ TODO """
 
 from collections import defaultdict
+from collections.abc import Mapping, Hashable
 from decimal import Decimal
 from forecaster.ledger import (
     Ledger, Money,
@@ -9,32 +10,120 @@ from forecaster.ledger import (
 from forecaster.accounts import Account
 from forecaster.utility import when_conv
 
+class TransactionDict(defaultdict):
+    """ A defaultdict that accepts unhashable keys.
+
+    The purpose of this dictionary is to allow `SubForecast` to have
+    a `dict[dict[*], dict[Decimal, Money]]` data structure to map
+    accounts (or account-like dicts) to {when: value} transaction
+    mappings.
+
+    When this dict encounters an unhashable object being used as a
+    key, it uses the *id* of that object as a key instead. Calling
+    code does not need to use the id; it can index this dict with
+    the unhashable object and will receive the unhashable object
+    as a key when iterating over the dict.
+
+    This class implicitly treats identity as equality for non-hashable
+    keys. This avoids hashing collisions between unhashable keys
+    (since different keys have different identities) and between
+    unhashable and hashable keys, so long as no hashable key is equal
+    to an unhashable key's id. This is guaranteed if the hashable keys
+    aren't equal to any integers (and, if they are `Account` objects,
+    they won't be, so you should be fine!). Using integer (or integer-
+    convertible) objects as keys may lead to unexpected behaviour due
+    to hashing collisions (but even these are very unlikely!)
+
+    NOTE: The behaviour of `keys()` is overridden for this class to
+    return a list instead of a keyview. This mimics Python 2.x
+    behaviour but is non-standard for Python 3.x.
+    """
+    def __init__(self, *args, **kwargs):
+        """ Initializes the dict. """
+        super().__init__(*args, **kwargs)
+        self._unhashablekeys = {}
+
+    def __getitem__(self, key):
+        """ Gets an item for a key, even if key is unhashable. """
+        if not isinstance(key, Hashable):
+            # This is a defaultdict, so add new keys on get:
+            if id(key) not in self._unhashablekeys:
+                self._unhashablekeys[id(key)] = key
+            return super().__getitem__(id(key))
+        else:
+            return super().__getitem__(key)
+
+    def __setitem__(self, key, value):
+        """ Sets a value for key, even if key is unhashable. """
+        if not isinstance(key, Hashable):
+            if id(key) not in self._unhashablekeys:
+                self._unhashablekeys[id(key)] = key
+            super().__setitem__(id(key), value)
+        else:
+            super().__setitem__(key, value)
+
+    def __iter__(self):
+        """ Generates iterator over keys, including unhashable keys. """
+        for key in super().__iter__():
+            if key in self._unhashablekeys:
+                yield self._unhashablekeys[key]
+            else:
+                yield key
+    
+    def keys(self):
+        """ Returns a list of keys, including unhashable keys. """
+        # We return a list because a keyview (the usual return type in
+        # Python 3.x) exposes the underlying id-based implementation.
+        # NOTE: We can't use a frozenset; it requires hashable values.
+
+        # Translation between key and id(key) is handled by __iter__
+        return sorted(self.__iter__())  # Returns a list
+
 class SubForecast(Ledger):
     """ TODO """
 
     def __init__(self):
         """ TODO """
-        # Init members:
-        self.transactions = defaultdict(lambda: Money(0))
-        self.available = defaultdict(lambda: Money(0))
+        # We store transactions to/from each account so that
+        # we can unwind or inspect transactions caused by this
+        # subforecast later. So we store it as
+        # `{Account: {when: value}}`. We use defaultdict for
+        # convenience.`
+        self.transactions = TransactionDict(
+            lambda: defaultdict(lambda: Money(0)))
+        # If update_available is called more than once, we
+        # may want to do some unwinding. Use this to track
+        # whether update_available has been called before:
+        self._update_available_called = False
 
-    def next_year(self, available=None):
+    def next_year(self):
         """ TODO """
         # Call `next_year` first so that recorded_property values
         # are recorded with their current state:
         super().next_year()
         # There are no existing transactions at the start of the year:
         self.transactions.clear()
-        # Update available, if it's provided:
-        if available is not None:
-            self.available = available
-        # Otherwise, advance it to the next year:
-        if isinstance(self.available, Account):
-            while self.available.this_year < self.this_year:
-                self.available.next_year()
-        # If not a dict, we can 'advance' by clearing:
-        else:
-            self.available.clear()
+        self._update_available_called = False
+
+    def update_available(self, available):
+        """ Records transactions against accounts; mutates `available`. """
+        # If this isn't the first time calling this method this year,
+        # under whatever was done previously:
+        if self._update_available_called:
+            self.undo_transactions()
+        # Keep track of the fact that this method has been called again:
+        self._update_available_called = True
+
+    def undo_transactions(self):
+        """ Reverses all transactions cause by this subforecast. """
+        # Reverse transactions:
+        for account in self.transactions:
+            if account is not None:
+                for when, value in self.transactions[account].items():
+                    account[when] -= value
+        # This undoes the effect of update_available, so treat that
+        # method as if it was never called:
+        self._update_available_called = False
 
     def add_transaction(
         self, value, when=Decimal(0.5), frequency=None,
@@ -132,28 +221,21 @@ class SubForecast(Ledger):
                 value=value, when=when, account=from_account)
 
         # Record to from_account:
-        self._add_transaction_to_account(
-            value=-value, when=when, account=from_account)
+        if from_account is not None:
+            # Don't assume all objects provide defaultdict-like interface:
+            if when in from_account:
+                from_account[when] += -value
+            else:
+                from_account[when] = -value
+        self.transactions[from_account][when] += -value
 
-        # No need to shift `when` for to_account:
-        self._add_transaction_to_account(
-            value=value, when=when, account=to_account)
-
-    def _add_transaction_to_account(self, value, when, account):
-        """ Records a transaction against an account. """
-        if account is None:
-            # Allow None for convenience in calling code.
-            return
-        # Don't assume all objects provide defaultdict-like interface;
-        # test for membership first:
-        elif when in account:
-            account[when] += value
-        else:
-            account[when] = value
-
-        # Track transactions to/from `available` separately:
-        if account is self.available:
-            self.transactions[when] += value
+        # Record to to_account:
+        if to_account is not None:
+            if when in to_account:
+                to_account[when] += value
+            else:
+                to_account[when] = value
+        self.transactions[to_account][when] += value
 
     def _shift_when(self, value, when, account):
         """ Shifts `when` to a time that avoids negative balances. """
