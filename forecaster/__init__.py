@@ -19,5 +19,7 @@ from forecaster.strategy import (
     AllocationStrategy, DebtPaymentStrategy)
 from forecaster.tax import Tax
 from forecaster.settings import Settings
-from forecaster.forecast import (Forecast, SubForecast)
+from forecaster.forecast import (
+    Forecast, SubForecast, IncomeForecast, ContributionForecast,
+    ReductionForecast, WithdrawalForecast, TaxForecast)
 from forecaster.forecaster import Forecaster
