@@ -143,6 +143,12 @@ class Forecast(Ledger):
             scenario (Scenario): Provides an `initial_year` and a
                 `num_year` property.
         """
+        # Recall that, as a Ledger object, we need to call the
+        # superclass initializer and let it know what the first
+        # year is so that `this_year` is usable.
+        # TODO #53 removes this requirement.
+        super().__init__(initial_year=scenario.initial_year)
+
         # Store input values
         self.income_forecast = income_forecast
         self.contribution_forecast = contribution_forecast
@@ -165,10 +171,6 @@ class Forecast(Ledger):
 
         # Use the `Scenario` object to determine the range of years
         # to iterate over.
-        # Recall that, as a Ledger object, we need to call the
-        # superclass initializer and let it know what the first
-        # year is so that `this_year` is usable.
-        super().__init__(initial_year=self.scenario.initial_year)
         last_year = max(self.scenario)
         while self.this_year < last_year:
             self.next_year()
