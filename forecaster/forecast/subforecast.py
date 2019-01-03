@@ -85,12 +85,14 @@ class SubForecast(Ledger):
     def __init__(self, initial_year):
         """ TODO """
         # Invoke Ledger's __init__ or pay the price!
+        # TODO #53 removes this requirement
         super().__init__(initial_year)
-        # We store transactions to/from each account so that
-        # we can unwind or inspect transactions caused by this
-        # subforecast later. So we store it as
-        # `{Account: {when: value}}`. We use defaultdict for
-        # convenience.`
+        # We store transactions to/from each account so that we can
+        # unwind or inspect transactions caused by this subforecast
+        # later. So we store it as `{account: {when: value}}`.
+        # Since `account` can be a dict (which is non-hashable),
+        # we use a custom subclass of defaultdict that allows
+        # non-hashable keys.
         self._transactions = TransactionDict(
             lambda: defaultdict(lambda: Money(0)))
         # If update_available is called more than once, we
