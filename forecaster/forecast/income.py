@@ -1,6 +1,7 @@
 """ Provides an IncomeForecast class for use by Forecast. """
 
 from forecaster.ledger import Money, recorded_property
+from forecaster.accounts import Account
 from forecaster.forecast.subforecast import SubForecast
 
 class IncomeForecast(SubForecast):
@@ -35,6 +36,43 @@ class IncomeForecast(SubForecast):
         # started on doing the updates:
         super().update_available(available)
 
+        # `other_carryover` isn't added to `available`; it's simply
+        # the amount that's already in `available` before we add
+        # any new transactions!
+        if isinstance(available, Account):
+            # Use Account logic to tell us how much is available
+            # at the start of the year, since the amount available
+            # is a function not only of transactions but also of
+            # starting balance.
+            self.other_carryover = available.max_outflow('start')
+        else:
+            # If it's a dict-like non-Account, just use the
+            # transaction data.
+            self.other_carryover = sum(available)
+
+        # Assume tax carryovers occur at the start of the year.
+        # TODO: Tax refund/payment dates should be provided by
+        # a Tax object and used here.
+        # NOTE: We distinguish between carryovers from tax and
+        # carryovers from other sources. Would it instead make
+        # more sense to treat all carryovers the same? People
+        # do sometimes treat tax refunds differently than other
+        # carryovers, but perhaps we can deal with that in
+        # `Forecast`?
+        self.add_transaction(
+            self.tax_carryover,
+            when=0,  # TODO #31
+            from_account=None, to_account=available)
+        # TODO: Determine timing of asset sale. (see #32)
+        # Also: should this receive an Account (e.g. other_assets)
+        # as the `from_account`?
+        self.add_transaction(
+            value=self.asset_sale,
+            when=0.5,  # TODO #32
+            from_account=None,  # TODO #32
+            to_account=available
+        )
+
         # Record income monthly.
         # NOTE: This code assumes income is received at the end of
         # each payment period. Consider whether some cases (like
@@ -45,6 +83,45 @@ class IncomeForecast(SubForecast):
                 person.net_income, when=0.5,
                 frequency=person.payment_frequency,
                 from_account=None, to_account=available)
+
+    @recorded_property
+    def tax_carryover(self):
+        """ TODO """
+        if self.this_year == self.initial_year:
+            # In the first year, carryovers are $0:
+            return Money(0)
+        else:
+            # If more was withheld than was owed, we have a refund
+            # (positive), otherwise we have an amount owing (negative)
+            # TODO: Need to determine the difference between tax
+            # withheld and tax owing *in the previous year*.
+            # There's currently no mechanism for this class to talk
+            # to talk to `TaxForecast`; consider how to address this.
+            '''
+            self.tax_carryover = (
+                self.total_tax_withheld_history[self.this_year - 1]
+                - self.total_tax_owing_history[self.this_year - 1]
+            )
+            '''
+            return Money(0)  # TODO #54
+
+    @recorded_property
+    def asset_sale(self):
+        """ Proceeds of sale of an asset. """
+        return Money(0)  # TODO #32
+
+    @recorded_property
+    def other_carryover(self):
+        """ Excess funds carried over from last year. """
+        if self.this_year == self.initial_year:
+            # In the first year, carryovers are $0:
+            return Money(0)
+        else:
+            # Money is carried when there's more money remaining
+            # than is required for living expenses - e.g. because
+            # we withdrew more than necessary or because we accrued
+            # interest on the pool of available money.
+            return Money(0)  # TODO #30
 
     @recorded_property
     def gross_income(self):
