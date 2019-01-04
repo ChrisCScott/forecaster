@@ -1,20 +1,9 @@
-""" This module provides a Forecast class for use in forecasts.
+""" Provides a ContributionForecast class for use by Forecast. """
 
-This is where most of the financial forecasting logic of the Forecaster
-package lives. It applies Scenario, Strategy, and Tax information to
-determine how account balances will grow or shrink year-over-year.
-"""
+from forecaster.ledger import Money, recorded_property
+from forecaster.forecast.subforecast import SubForecast
 
-from collections import defaultdict
-from decimal import Decimal
-from forecaster.ledger import Money
-from forecaster.utility import when_conv
-
-# pylint: disable=too-many-instance-attributes
-# This object has a complex state. We could store the records for each
-# year in some sort of pandas-style frame or table, but for now each
-# data column is its own named attribute.
-class ContributionForecast(object):
+class ContributionForecast(SubForecast):
     """ A forecast of each year's gross contributions, before reductions.
 
     Attributes:
@@ -42,118 +31,112 @@ class ContributionForecast(object):
     """
 
     def __init__(
-        self, contribution_strategy
+        self, initial_year, contribution_strategy
     ):
-        self.tax_carryover = {}
-        self.other_carryover = {}
-        self.contributions_from_income = {}
-        self.contributions_from_carryover = {}
-        self.contributions_from_asset_sales = {}
-        self.gross_contributions = {}
+        # Recall that, as a Ledger object, we need to call the
+        # superclass initializer and let it know what the first
+        # year is so that `this_year` is usable.
+        # TODO #53 removes this requirement.
+        super().__init__(initial_year)
 
-    def record_gross_contribution(self, year):
-        """ Records gross contributions for the year. """
-        # First, consider carryover amounts.
-        # In the first year, these are $0:
-        if year == self.scenario.initial_year:
-            self.tax_carryover[year] = Money(0)
-            self.other_carryover[year] = Money(0)
+        self.contribution_strategy = contribution_strategy
+
+    def update_available(self, available):
+        """ Records transactions against accounts; mutates `available`. """
+        # The superclass has some book-keeping to do before we get
+        # started on doing the updates:
+        super().update_available(available)
+
+        # Record carryovers at the start of the year.
+        for transaction in (self.tax_carryover, self.other_carryover):
+            self.add_transaction(
+                transaction, when=0,
+                from_account=None, to_account=available)
+        # TODO: Determine timing of asset sale.
+        # Also: should this receive an Account (e.g. other_assets)
+        # as the `from_account`? Conider whether this class should
+        # receive that or whether it should be moved to
+        # `IncomeForecast`
+        self.add_transaction(
+            value=self.asset_sale, when=0,
+            from_account=None, to_account=available
+        )
+        # NOTE, TODO: This code assumes `contribution_strategy`
+        # returns the amount that will be _spent_ on living expenses,
+        # _not_ the amount saved after living expenses. This conforms
+        # with the proposals of #40 and #32.
+        # Assume living expenses are incurred at the start of each
+        # month.
+        self.add_transaction(
+            value=self.living_expenses, when=0, frequency=12,
+            from_account=available, to_account=None)
+
+    @recorded_property
+    def tax_carryover(self):
+        """ TODO """
+        if self.this_year == self.initial_year:
+            # In the first year, carryovers are $0:
+            return Money(0)
         else:
             # If more was withheld than was owed, we have a refund
             # (positive), otherwise we have an amount owing (negative)
-            self.tax_carryover[year] = (
-                self.total_tax_withheld[year - 1]
-                - self.total_tax_owing[year - 1]
+            # TODO: Need to determine the difference between tax
+            # withheld and tax owing *in the previous year*.
+            # There's currently no mechanism for this class to talk
+            # to talk to `TaxForecast`; consider how to address this.
+            '''
+            self.tax_carryover = (
+                self.total_tax_withheld_history[self.this_year - 1]
+                - self.total_tax_owing_history[self.this_year - 1]
             )
-            # We determine timing for tax refunds down below, along
-            # with timing for contributions from income.
+            '''
+            return Money(0)  # TODO
 
-            self.other_carryover[year] = Money(0)  # TODO #30
-            self.add_transaction(
-                transaction=self.other_carryover[year],
-                when=0
-            )
+    @recorded_property
+    def asset_sale(self):
+        """ TODO """
+        return Money(0)  # TODO #32
 
-        self.asset_sale[year] = Money(0)  # TODO #32
-        # TODO: Determine timing of asset sale
-        self.add_transaction(
-            transaction=self.asset_sale[year],
-            when=0
-        )
-
-        # Prepare arguments for ContributionStrategy __call__ method:
-        # (This determines gross contributions from income)
-        retirement_year = self.retirement_year()
-        if self.tax_carryover[year] > 0:
-            refund = self.tax_carryover[year]
+    @recorded_property
+    def other_carryover(self):
+        """ TODO """
+        if self.this_year == self.initial_year:
+            # In the first year, carryovers are $0:
+            return Money(0)
         else:
-            refund = Money(0)
+            # If more was withheld than was owed, we have a refund
+            # (positive), otherwise we have an amount owing (negative)
+            return Money(0)  # TODO #30
+
+    @recorded_property
+    def living_expenses(self):
+        """ TODO """
+        # Prepare arguments for call to `contribution_strategy`
+        refund = max(self.tax_carryover, Money(0))
         other_contributions = (
-            self.other_carryover[year] + self.asset_sale[year]
+            self.other_carryover + self.asset_sale
         )
-        self.gross_contributions[year] = self.contribution_strategy(
-            year=year,
+        # TODO: Receive net_income and gross_income from
+        # `IncomeForecast` and `retirement_year` from
+        # `Forecast` (or wherever else it might be stored...)
+        # pylint: disable=no-member
+        self.net_income = Money(0)  # TODO
+        self.gross_income = Money(0)  # TODO
+        self.retirement_year = Money(0)  # TODO
+        return self.contribution_strategy(
+            year=self.this_year,
             refund=refund,
             other_contributions=other_contributions,
-            net_income=self.net_income[year],
-            gross_income=self.gross_income[year],
-            retirement_year=retirement_year
+            net_income=self.net_income,  # TODO
+            gross_income=self.gross_income,  # TODO
+            retirement_year=self.retirement_year  # TODO
         )
 
-        # Now we need to assign a transaction timing to each
-        # contribution. We do this in a source-specific way;
-        # i.e. income from each person is assumed to be contributed
-        # when they are paid, tax refunds are contributed at the
-        # time that refunds are issued by the tax authority,
-        # and other contributions (i.e. carryovers) are contributed
-        # at the beginning of the year.
-
-        # HACK: The current structure of ContriutionStrategy doesn't
-        # let us determine the source of each dollar of contribution,
-        # so we need to do that manually here. Changes to
-        # ContributionStrategy might break this code!
-        contributions_from_income = (
-            # Start with the entirety of our contributions
-            self.gross_contributions[year]
-            # Deduct refunds, prorated based on reinvestment rate
-            - refund * self.contribution_strategy.refund_reinvestment_rate
-            # Deduct the other contributions identified above
-            - other_contributions
-            # What's left is just the contributions from income.
-        )
-
-        # Since different people can have different payment timings,
-        # determine how much of the contributions from income should
-        # be assigned to each person (and thus use their timings).
-        if self.net_income[year] != 0:
-            # Assume each person contributes a share of the gross
-            # contributions proportionate to their (net) income:
-            weight = {
-                person: person.net_income / self.net_income[year]
-                for person in self.people
-            }
-        else:
-            # There should be no contributions from income if there
-            # is no income:
-            assert(contributions_from_income == 0)
-            # We still need to determine a weighting, since it's used
-            # for tax refunds/etc. Use equal weighting:
-            weight = {
-                person: Decimal(1) / Decimal(len(self.people))
-                for person in self.people
-            }
-
-        # Now record those transactions:
-        for person in weight:
-            # Record contributions from income:
-            self.add_transaction(
-                transaction=contributions_from_income * weight[person],
-                frequency=person.payment_frequency
-            )
-            # Record contributions from tax refunds:
-            # (Only refunds are considered here)
-            if self.tax_carryover[year] > 0:
-                self.add_transaction(
-                    transaction=self.tax_carryover[year] * weight[person],
-                    frequency=person.tax_treatment.payment_timing
-                )
+    def gross_contributions(self):
+        """ TODO """
+        # TODO: Total income available for living expenses
+        # should probably be determined by `IncomeForecast`
+        income = (
+            self.tax_carryover + self.other_carryover
+            + self.asset_sale + self.net_income)
+        return income - self.living_expenses
