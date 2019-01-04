@@ -5,16 +5,11 @@ package lives. It applies Scenario, Strategy, and Tax information to
 determine how account balances will grow or shrink year-over-year.
 """
 
-from collections import defaultdict
-from decimal import Decimal
-from forecaster.ledger import Money
-from forecaster.utility import when_conv
+from forecaster.ledger import Money, recorded_property
+from forecaster.accounts import Account, Debt
+from forecaster.forecast.subforecast import SubForecast
 
-# pylint: disable=too-many-instance-attributes
-# This object has a complex state. We could store the records for each
-# year in some sort of pandas-style frame or table, but for now each
-# data column is its own named attribute.
-class ReductionForecast(object):
+class ReductionForecast(SubForecast):
     """ A forecast of each year's contribution reductions.
 
     Attributes:
@@ -41,88 +36,83 @@ class ReductionForecast(object):
         self.contribution_reductions = {}
         self.net_contributions = {}
 
-    def record_contribution_reductions(self, year):
-        """ Records contribution reductions for the year.
+        self.debt_payments = {}
+        self.debt_payments_from_savings = {}
 
-        This method determines total debt payments and applies per-debt
-        payments to debt accounts.
-        """
-        # Determine contribution reductions:
+    def update_available(self, available):
+        """ Records transactions against accounts; mutates `available`. """
+        # The superclass has some book-keeping to do before we get
+        # started on doing the updates:
+        super().update_available(available)
+
+        if isinstance(available, Account):
+            total_available = available.max_outflow()
+        else:
+            total_available = sum(available)
+
+        self.debt_payments = self.debt_payment_strategy(
+            self.debts,
+            total_available - self.reduction_from_other
+        )
+        # Then determine what portion was drawn from savings:
+        self.debt_payments_from_savings = {
+            debt: debt.payment_from_savings(
+                amount=self.debt_payments[debt],
+                base=debt.inflows
+            ) for debt in self.debt_payments
+        }
+
+        # Apply debt payment transactions:
+        for debt in self.debt_payments:
+            # Track the savings portion against `available`:
+            self.add_transaction(
+                value=self.debt_payments_from_savings[debt],
+                when=0.5,
+                frequency=debt.payment_frequency,
+                from_account=available,
+                to_account=debt
+            )
+            # Track the non-savings portion as well, but don't deduct
+            # from `available`
+            self.add_transaction(
+                value=
+                    self.debt_payments[debt]
+                     - self.debt_payments_from_savings[debt],
+                when=0.5,
+                frequency=debt.payment_frequency,
+                from_account=None,
+                to_account=debt
+            )
+
+        # Assume we make `other` reductions monthly:
+        self.add_transaction(
+            value=self.reduction_from_other,
+            when=0.5,
+            frequency=12,
+            from_account=available,
+            to_account=None
+        )
+
+    @recorded_property
+    def reduction_from_debt(self):
+        """ TODO """
+        return sum(
+            self.debt_payments_from_savings.values(),
+            Money(0)
+        )
+
+    @recorded_property
+    def reduction_from_other(self):
+        """ TODO """
         # TODO: Include reduced contributions to pay for last year's
         # outstanding taxes?
         # NOTE: We'll add another reduction dict for childcare expenses
         # in a future version.
         # First determine miscellaneous other reductions (these take
         # priority because they're generally user-input):
-        self.reduction_from_other[year] = Money(0)  # TODO
-        # Assume we make `other` reductions at the end of the year:
-        self.add_transaction(
-            transaction=-self.reduction_from_other[year],
-            when=1
-        )
+        return Money(0)  # TODO
 
-        # Then determine reductions due to debt payments:
-        # Start with gross debt payments:
-        debt_payments = self.debt_payment_strategy(
-            self.debts,
-            self.gross_contributions[year] - self.reduction_from_other[year]
-        )
-        # Then determine what portion was drawn from savings:
-        debt_payments_from_savings = {
-            debt: debt.payment_from_savings(
-                amount=debt_payments[debt],
-                base=debt.inflows
-            ) for debt in debt_payments
-        }
-        # Then reduce savings by that amount (simple, right?):
-        self.reduction_from_debt[year] = sum(
-            debt_payments_from_savings.values(),
-            Money(0)
-        )
-        # Apply (gross) debt payment transactions
-        for debt in debt_payments:
-            # Track the savings portion against net savings in/outflows:
-            # (Currently we model all debt payments as lump sums
-            # at a time given by the `DebtPaymentStrategy` class.)
-            # TODO: Enable debt payments to be split up between multiple
-            # timings:
-            self.add_transaction(
-                transaction=-debt_payments_from_savings[debt],
-                when=self.debt_payment_strategy.timing,
-                account=debt,
-                account_transaction=debt_payments[debt]
-            )
-
-        # Now determine the total reductions across all reduction dicts:
-        self.contribution_reductions[year] = (
-            self.reduction_from_debt[year] +
-            self.reduction_from_other[year]
-        )
-
-        # If there's contribution room left, use it to pay for any taxes
-        # outstanding:
-        # TODO: Determine whether tax liability should be assessed first.
-        # And should it always come 100% from savings? Should this be 
-        # configurable behaviour (e.g. via a `reinvest_tax_refund` value
-        # stored... somewhere)?
-        if self.tax_carryover[year] < 0:
-            available = (
-                self.gross_contributions[year]
-                - self.contribution_reductions[year]
-            )
-            reduction = min(-self.tax_carryover[year], available)
-            self.reduction_from_tax[year] = max(reduction, Money(0))
-            # Update contribution reductions:
-            self.contribution_reductions[year] += self.reduction_from_tax[year]
-            # Add the net transaction:
-            # NOTE: In addition to the TODO comment above re: allowing for
-            # tax amounts from savings to be configured, we should allow
-            # tax _timing_ to be configurable (presumably via the `Tax` class
-            # and its subclasses, likely with a corresponding setting)
-            # Currently, we record it as owing on the first day of the year.
-            self.add_transaction(
-                transaction=-self.reduction_from_tax[year],
-                when=0
-            )
-        else:
-            self.reduction_from_tax[year] = Money(0)
+    @recorded_property
+    def contribution_reductions(self):
+        """ TODO """
+        return self.reduction_from_debt + self.reduction_from_other
