@@ -5,8 +5,8 @@ from forecaster.ledger import Money
 from forecaster.strategy.base import Strategy, strategy_method
 
 
-class ContributionStrategy(Strategy):
-    """ Determines an annual gross contribution, before reductions.
+class LivingExpensesStrategy(Strategy):
+    """ Determines annual living expenses.
 
     This class is callable. Its call signature has this form::
 
@@ -50,19 +50,12 @@ class ContributionStrategy(Strategy):
             inflation_adjusted.
 
     Args:
-        refund (Money): The sum total of tax refunds and other
-            carryforward amounts from previous years. May be
-            fully or partially included in gross contributions,
-            depending on refund_reinvestment_rate.
-        other_contribution (Money): An additional amount to include
-            in the gross contribution (e.g. proceeds from the sale
-            of one's home)
-        net_income (Money): Net family income for the year.
-        gross_income (Money): Gross family income for the year.
+        people (set[Person]): The plannees (one or more people) with
+            at least `net_income` and `gross_income` attributes.
 
     Returns:
-        A Money object corresponding to the gross contribution amount
-        for the family for the year.
+        A Money object corresponding to the living expenses incurred
+        by the plannees for the year.
 
     Raises:
         ValueError: A required value was not provided for the given
@@ -96,60 +89,51 @@ class ContributionStrategy(Strategy):
     # Begin defining subclass-specific strategies
     # pylint: disable=W0613
     @strategy_method('Constant contribution')
-    def strategy_const_contribution(self, year=None, *args, **kwargs):
-        """ Contribute a constant amount each year. """
-        return Money(self.base_amount * self.inflation_adjust(year))
+    def strategy_const_contribution(self, people, year=None, *args, **kwargs):
+        """ Contribute a constant amount (in real terms) and live off the rest. """
+        total_income = sum(person.net_income for person in people)
+        contributions = Money(self.base_amount * self.inflation_adjust(year))
+        return total_income - contributions
 
     @strategy_method('Constant living expenses')
     def strategy_const_living_expenses(
-            self, net_income, year=None, *args, **kwargs
+            self, year=None, *args, **kwargs
     ):
-        """ Contribute the money remaining after living expenses. """
-        return max(
-            net_income - Money(self.base_amount * self.inflation_adjust(year)),
-            Money(0)
-        )
+        """ Living expenses remain constant, in real terms. """
+        return Money(self.base_amount * self.inflation_adjust(year))
 
     @strategy_method('Percentage of net income')
-    def strategy_net_percent(self, net_income, *args, **kwargs):
-        """ Contribute a percentage of net income. """
-        return self.rate * net_income
+    def strategy_net_percent(self, people, *args, **kwargs):
+        """ Live off a percentage of net income. """
+        return self.rate * sum(person.net_income for person in people)
 
     @strategy_method('Percentage of gross income')
-    def strategy_gross_percent(self, gross_income, *args, **kwargs):
-        """ Contribute a percentage of gross income. """
-        return self.rate * gross_income
+    def strategy_gross_percent(self, people, *args, **kwargs):
+        """ Live off a percentage of gross income. """
+        return self.rate * sum(person.gross_income for person in people)
 
     @strategy_method('Percentage of earnings growth')
     def strategy_earnings_percent(
-        self, net_income, year=None, *args, **kwargs
+        self, people, year=None, *args, **kwargs
     ):
-        """ Contribute a percentage of earnings above the base amount. """
-        return self.rate * (
-            net_income - (self.base_amount * self.inflation_adjust(year)))
+        """ Live off a base amount plus a percentage of earnings above it. """
+        base_amount = self.base_amount * self.inflation_adjust(year)
+        total_income = sum(person.net_income for person in people)
+        return base_amount + (total_income - base_amount) * self.rate
 
-    def __call__(self, year=None, refund=0, other_contribution=0,
-                 net_income=None, gross_income=None,
-                 retirement_year=None, *args, **kwargs):
-        """ Returns the gross contribution for the year. """
-        # NOTE: We layer on refund and other_contribution amounts on top
-        # of what the underlying strategy dictates.
-        # TODO: Consider reimplementing with list (dict?) arguments for
-        # consistency with WithdrawalStrategy.
-
-        # We always contribute carryover/refunds/etc:
-        contribution = refund * self.refund_reinvestment_rate + \
-            other_contribution
+    def __call__(
+        self, people, year=None, retirement_year=None, *args, **kwargs
+    ):
+        """ Returns the living expenses for the year. """
         # Don't make contributions if we've retired:
         if (
             year is not None and retirement_year is not None and
             year > retirement_year
         ):
-            return contribution
+            return Money(0)
         # If we're not yet retired, determine what to contribute:
-        return contribution + super().__call__(
-            year=year, net_income=net_income, gross_income=gross_income,
-            *args, **kwargs
+        return super().__call__(
+            people=people, year=year, *args, **kwargs
         )
 
 
