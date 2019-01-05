@@ -34,7 +34,6 @@ class ReductionForecast(SubForecast):
         self.reduction_from_debt = {}
         self.reduction_from_other = {}
         self.contribution_reductions = {}
-        self.net_contributions = {}
 
         self.debt_payments = {}
         self.debt_payments_from_savings = {}
