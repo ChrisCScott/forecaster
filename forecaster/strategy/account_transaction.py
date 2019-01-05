@@ -12,7 +12,88 @@ from forecaster.ledger import Money
 from forecaster.strategy.base import Strategy, strategy_method
 
 
-class TransactionStrategy(Strategy):
+class AccountGroup(object):
+    """ Wraps one or more accounts and mimics the `Account` interface.
+
+    This is a utility class for `TransactionStrategy`. `Accounts` that
+    share a weighting can be grouped into an `AccountGroup` by a high-
+    level function (e.g. `__call__`) and then seamlessly treated as a
+    single account by lower-level functions (e.g. `strategy_\\*`).
+
+    Not every `Account` method and property is provided here. For
+    example, `rate` and `transactions` are not provided, as all of the
+    methods of this class are simply sums of the attributes of the
+    contained accounts (and sum doesn't apply sensibly to those
+    attributes).
+
+    Attributes:
+        accounts (set[Account]): The member accounts of the
+            `AccountGroup`.
+        contribution_groups (set[set[Account]]): The members of the
+            `AccountGroup` reorganized into disjoint sets of
+            contribution groups. Each contribution group shares common
+            `min_inflow` and `max_inflow` properties.
+    """
+    def __init__(self, *args):
+        """ Inits `AccountGroup` with one or more accounts. """
+        self.accounts = frozenset(*args)
+        self.contribution_groups = frozenset(
+            frozenset(account.contribution_group.intersection(self.accounts))
+            for account in self
+        )
+
+    @property
+    def balance(self):
+        """ The sum of account balances. """
+        return sum(account.balance for account in self)
+
+    def min_outflow(self, *args, **kwargs):
+        """ The sum of account `min_outflow`. """
+        return sum(
+            account.min_outflow(*args, **kwargs) for account in self)
+
+    def min_inflow(self, *args, **kwargs):
+        """ The sum of account `min_inflow`.
+
+        This method respects contribution groups, and will not double-
+        count the contribution room of multiple accounts in the same
+        contribution group.
+        """
+        # For each group, pull an element out at random (since they
+        # should all share the same min_inflow)
+        return sum(
+            next(iter(group)).min_inflow(*args, **kwargs)
+            for group in self.contribution_groups)
+
+    def max_outflow(self, *args, **kwargs):
+        """ The sum of account `max_outflow`. """
+        return sum(
+            account.max_outflow(*args, **kwargs) for account in self)
+
+    def max_inflow(self, *args, **kwargs):
+        """ The sum of account `max_inflow`.
+
+        This method respects contribution groups, and will not double-
+        count the contribution room of multiple accounts in the same
+        contribution group.
+        """
+        # For each group, pull an element out at random (since they
+        # should all share the same max_inflow)
+        return sum(
+            next(iter(group)).max_inflow(*args, **kwargs)
+            for group in self.contribution_groups)
+
+    def get_type(self):
+        """ Gets the type of a random contained `Account`. """
+        return type(next(iter(self)))
+
+    def __iter__(self):
+        """ Iterates over accounts in the group. """
+        for account in self.accounts:
+            yield account
+
+
+class AccountTransactionStrategy(Strategy):
     """ Determines account-specific transactions.
 
     If there are multiple accounts of the same type, the behaviour
@@ -566,84 +647,3 @@ class TransactionStrategy(Strategy):
         # accounts they contain:
         transactions = self._ungroup_transactions(transactions)
         return transactions
-
-
-class AccountGroup(object):
-    """ Wraps one or more accounts and mimics the `Account` interface.
-
-    This is a utility class for `TransactionStrategy`. `Accounts` that
-    share a weighting can be grouped into an `AccountGroup` by a high-
-    level function (e.g. `__call__`) and then seamlessly treated as a
-    single account by lower-level functions (e.g. `strategy_\\*`).
-
-    Not every `Account` method and property is provided here. For
-    example, `rate` and `transactions` are not provided, as all of the
-    methods of this class are simply sums of the attributes of the
-    contained accounts (and sum doesn't apply sensibly to those
-    attributes).
-
-    Attributes:
-        accounts (set[Account]): The member accounts of the
-            `AccountGroup`.
-        contribution_groups (set[set[Account]]): The members of the
-            `AccountGroup` reorganized into disjoint sets of
-            contribution groups. Each contribution group shares common
-            `min_inflow` and `max_inflow` properties.
-    """
-    def __init__(self, *args):
-        """ Inits `AccountGroup` with one or more accounts. """
-        self.accounts = frozenset(*args)
-        self.contribution_groups = frozenset(
-            frozenset(account.contribution_group.intersection(self.accounts))
-            for account in self
-        )
-
-    @property
-    def balance(self):
-        """ The sum of account balances. """
-        return sum(account.balance for account in self)
-
-    def min_outflow(self, *args, **kwargs):
-        """ The sum of account `min_outflow`. """
-        return sum(
-            account.min_outflow(*args, **kwargs) for account in self)
-
-    def min_inflow(self, *args, **kwargs):
-        """ The sum of account `min_inflow`.
-
-        This method respects contribution groups, and will not double-
-        count the contribution room of multiple accounts in the same
-        contribution group.
-        """
-        # For each group, pull an element out at random (since they
-        # should all share the same min_inflow)
-        return sum(
-            next(iter(group)).min_inflow(*args, **kwargs)
-            for group in self.contribution_groups)
-
-    def max_outflow(self, *args, **kwargs):
-        """ The sum of account `max_outflow`. """
-        return sum(
-            account.max_outflow(*args, **kwargs) for account in self)
-
-    def max_inflow(self, *args, **kwargs):
-        """ The sum of account `max_inflow`.
-
-        This method respects contribution groups, and will not double-
-        count the contribution room of multiple accounts in the same
-        contribution group.
-        """
-        # For each group, pull an element out at random (since they
-        # should all share the same max_inflow)
-        return sum(
-            next(iter(group)).max_inflow(*args, **kwargs)
-            for group in self.contribution_groups)
-
-    def get_type(self):
-        """ Gets the type of a random contained `Account`. """
-        return type(next(iter(self)))
-
-    def __iter__(self):
-        """ Iterates over accounts in the group. """
-        for account in self.accounts:
-            yield account

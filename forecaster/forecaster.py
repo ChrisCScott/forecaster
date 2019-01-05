@@ -6,7 +6,7 @@ from forecaster.person import Person
 from forecaster.accounts import Account, ContributionLimitAccount, Debt
 from forecaster.tax import Tax
 from forecaster.strategy import (
-    LivingExpensesStrategy, WithdrawalStrategy, TransactionStrategy,
+    LivingExpensesStrategy, WithdrawalStrategy, AccountTransactionStrategy,
     DebtPaymentStrategy, AllocationStrategy)
 from forecaster.scenario import Scenario
 from forecaster.settings import Settings
@@ -551,7 +551,7 @@ class Forecaster(object):
 
     def set_transaction_in_strategy(
         self, strategy=None, weights=None, timing=None,
-        cls=TransactionStrategy, **kwargs
+        cls=AccountTransactionStrategy, **kwargs
     ):
         """ TODO """
         self.set_kwarg(kwargs, 'strategy', strategy,
@@ -566,7 +566,7 @@ class Forecaster(object):
 
     def set_transaction_out_strategy(
         self, strategy=None, weights=None, timing=None,
-        cls=TransactionStrategy, **kwargs
+        cls=AccountTransactionStrategy, **kwargs
     ):
         """ TODO """
         self.set_kwarg(kwargs, 'strategy', strategy,

@@ -5,7 +5,7 @@ import collections
 from copy import copy, deepcopy
 from forecaster import (
     Settings, Tax, Person, Money, Account, Debt, Scenario,
-    LivingExpensesStrategy, WithdrawalStrategy, TransactionStrategy,
+    LivingExpensesStrategy, WithdrawalStrategy, AccountTransactionStrategy,
     AllocationStrategy, DebtPaymentStrategy, Forecaster)
 
 
@@ -51,12 +51,12 @@ class TestForecaster(unittest.TestCase):
             income_adjusted=self.settings.withdrawal_income_adjusted,
             inflation_adjust=self.scenario.inflation_adjust
         )
-        self.transaction_in_strategy = TransactionStrategy(
+        self.transaction_in_strategy = AccountTransactionStrategy(
             strategy=self.settings.transaction_in_strategy,
             weights=self.settings.transaction_in_weights,
             timing=self.settings.transaction_in_timing
         )
-        self.transaction_out_strategy = TransactionStrategy(
+        self.transaction_out_strategy = AccountTransactionStrategy(
             strategy=self.settings.transaction_out_strategy,
             weights=self.settings.transaction_out_weights,
             timing=self.settings.transaction_out_timing

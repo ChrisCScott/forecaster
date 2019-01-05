@@ -4,7 +4,7 @@ import unittest
 from decimal import Decimal
 from forecaster import (
     Money, Person, Account, Debt, Scenario, LivingExpensesStrategy,
-    WithdrawalStrategy, TransactionStrategy, AllocationStrategy,
+    WithdrawalStrategy, AccountTransactionStrategy, AllocationStrategy,
     DebtPaymentStrategy, Tax, Forecast, Forecaster, Settings)
 from tests.test_helper import type_check
 
@@ -62,13 +62,13 @@ class TestForecast(unittest.TestCase):
             income_adjusted=False,
             inflation_adjust=scenario.inflation_adjust
         )
-        contribution_trans_strategy = TransactionStrategy(
-            strategy=TransactionStrategy.strategy_ordered,
+        contribution_trans_strategy = AccountTransactionStrategy(
+            strategy=AccountTransactionStrategy.strategy_ordered,
             weights={'Account': 1},
             timing='end'
         )
-        withdrawal_trans_strategy = TransactionStrategy(
-            strategy=TransactionStrategy.strategy_ordered,
+        withdrawal_trans_strategy = AccountTransactionStrategy(
+            strategy=AccountTransactionStrategy.strategy_ordered,
             weights={'Account': 1},
             timing='end'
         )

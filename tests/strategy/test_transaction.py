@@ -2,7 +2,7 @@
 
 import unittest
 from decimal import Decimal
-from forecaster import Person, Money, TransactionStrategy
+from forecaster import Person, Money, AccountTransactionStrategy
 from forecaster.canada import RRSP, TFSA, TaxableAccount
 
 
@@ -16,7 +16,7 @@ class TestTransactionStrategyMethods(unittest.TestCase):
             'TFSA': Decimal(0.25),
             'TaxableAccount': Decimal(0.25)
         }
-        self.method = TransactionStrategy.strategy_weighted
+        self.method = AccountTransactionStrategy.strategy_weighted
 
     def test_init_explicit(self):
         """ Test __init__ with explicit arguments. """
@@ -27,7 +27,7 @@ class TestTransactionStrategyMethods(unittest.TestCase):
             'TaxableAccount': Decimal(0.25)
         }
         timing = 'end'
-        strategy = TransactionStrategy(method, weights, timing)
+        strategy = AccountTransactionStrategy(method, weights, timing)
 
         self.assertEqual(strategy.strategy, method)
         self.assertEqual(strategy.weights, weights)
@@ -35,7 +35,7 @@ class TestTransactionStrategyMethods(unittest.TestCase):
 
     def test_init_implicit(self):
         """ Test __init__ with implicit (omitted optional) arguments. """
-        strategy = TransactionStrategy("Weighted", self.weights)
+        strategy = AccountTransactionStrategy("Weighted", self.weights)
 
         self.assertEqual(strategy.strategy, "Weighted")
         self.assertEqual(strategy.weights, self.weights)
@@ -45,22 +45,22 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         """ Test __init__ with invalid arguments. """
         # Test invalid strategies
         with self.assertRaises(ValueError):
-            TransactionStrategy(
+            AccountTransactionStrategy(
                 strategy='Not a strategy', weights={})
         with self.assertRaises(TypeError):
-            TransactionStrategy(strategy=1, weights={})
+            AccountTransactionStrategy(strategy=1, weights={})
         # Test invalid weight
         with self.assertRaises(TypeError):  # not a dict
-            TransactionStrategy(strategy=self.method, weights='a')
+            AccountTransactionStrategy(strategy=self.method, weights='a')
         with self.assertRaises(TypeError):  # dict with non-str keys
-            TransactionStrategy(
+            AccountTransactionStrategy(
                 strategy=self.method, weights={1: 5})
         with self.assertRaises(TypeError):  # dict with non-numeric values
-            TransactionStrategy(
+            AccountTransactionStrategy(
                 strategy=self.method, weights={'RRSP', 'Not a number'})
         # Test invalid timing
         with self.assertRaises(TypeError):
-            TransactionStrategy(strategy=self.method, weights={}, timing={})
+            AccountTransactionStrategy(strategy=self.method, weights={}, timing={})
 
 
 class TestTransactionStrategyOrdered(unittest.TestCase):
@@ -91,8 +91,8 @@ class TestTransactionStrategyOrdered(unittest.TestCase):
         self.accounts = {self.rrsp, self.tfsa, self.taxable_account}
 
         # Build strategy for testing (in non-init tests):
-        self.strategy = TransactionStrategy(
-            TransactionStrategy.strategy_ordered, {
+        self.strategy = AccountTransactionStrategy(
+            AccountTransactionStrategy.strategy_ordered, {
                 'RRSP': 1,
                 'TFSA': 2,
                 'TaxableAccount': 3
@@ -213,8 +213,8 @@ class TestTransactionStrategyOrderedMult(unittest.TestCase):
         }
 
         # Build strategies for testing (in non-init tests):
-        self.strategy = TransactionStrategy(
-            TransactionStrategy.strategy_ordered, {
+        self.strategy = AccountTransactionStrategy(
+            AccountTransactionStrategy.strategy_ordered, {
                 'RRSP': 1,
                 'TFSA': 2,
                 'TaxableAccount': 3
@@ -294,8 +294,8 @@ class TestTransactionStrategyWeighted(unittest.TestCase):
             'TFSA': Decimal('0.3'),
             'TaxableAccount': Decimal('0.3')
         }
-        self.strategy_weighted = TransactionStrategy(
-            TransactionStrategy.strategy_weighted, self.weights)
+        self.strategy_weighted = AccountTransactionStrategy(
+            AccountTransactionStrategy.strategy_weighted, self.weights)
 
     # Test with outflows:
 
@@ -449,8 +449,8 @@ class TestTransactionStrategyWeightedMult(unittest.TestCase):
             'TFSA': Decimal('0.3'),
             'TaxableAccount': Decimal('0.3')
         }
-        self.strategy = TransactionStrategy(
-            TransactionStrategy.strategy_weighted, self.weights)
+        self.strategy = AccountTransactionStrategy(
+            AccountTransactionStrategy.strategy_weighted, self.weights)
 
     def test_out_basic(self):
         """ Test strategy_weighted with multiple RRSPs, small outflows. """
