@@ -6,7 +6,7 @@ from forecaster.person import Person
 from forecaster.accounts import Account, ContributionLimitAccount, Debt
 from forecaster.tax import Tax
 from forecaster.strategy import (
-    ContributionStrategy, WithdrawalStrategy, TransactionStrategy,
+    LivingExpensesStrategy, WithdrawalStrategy, TransactionStrategy,
     DebtPaymentStrategy, AllocationStrategy)
 from forecaster.scenario import Scenario
 from forecaster.settings import Settings
@@ -509,7 +509,7 @@ class Forecaster(object):
     def set_contribution_strategy(
         self, strategy=None, base_amount=None, rate=None,
         refund_reinvestment_rate=None, inflation_adjust=None,
-        cls=ContributionStrategy, **kwargs
+        cls=LivingExpensesStrategy, **kwargs
     ):
         """ TODO """
         self.set_kwarg(kwargs, 'strategy', strategy,

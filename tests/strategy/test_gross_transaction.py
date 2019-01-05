@@ -4,7 +4,7 @@ import unittest
 import decimal
 from decimal import Decimal
 from random import Random
-from forecaster import Money, ContributionStrategy, WithdrawalStrategy
+from forecaster import Money, LivingExpensesStrategy, WithdrawalStrategy
 
 
 class TestContributionStrategyMethods(unittest.TestCase):
@@ -46,7 +46,7 @@ class TestContributionStrategyMethods(unittest.TestCase):
         """ Test ContributionStrategy.__init__ """
         # Test default init:
         method = "Constant contribution"
-        strategy = ContributionStrategy(method)
+        strategy = LivingExpensesStrategy(method)
 
         self.assertEqual(strategy.strategy, method)
         self.assertEqual(strategy.base_amount, Money(0))
@@ -59,7 +59,7 @@ class TestContributionStrategyMethods(unittest.TestCase):
         rate = Decimal('0.5')
         refund_reinvestment_rate = Decimal('0.5')
         inflation_adjust = self.constant_2x_inflation
-        strategy = ContributionStrategy(
+        strategy = LivingExpensesStrategy(
             strategy=method, base_amount=base_amount, rate=rate,
             refund_reinvestment_rate=refund_reinvestment_rate,
             inflation_adjust=inflation_adjust)
@@ -72,27 +72,27 @@ class TestContributionStrategyMethods(unittest.TestCase):
 
         # Test invalid strategies
         with self.assertRaises(ValueError):
-            strategy = ContributionStrategy(strategy='Not a strategy')
+            strategy = LivingExpensesStrategy(strategy='Not a strategy')
         with self.assertRaises(TypeError):
-            strategy = ContributionStrategy(strategy=1)
+            strategy = LivingExpensesStrategy(strategy=1)
         # Test invalid base_amount
         with self.assertRaises(decimal.InvalidOperation):
-            strategy = ContributionStrategy(strategy=method, base_amount='a')
+            strategy = LivingExpensesStrategy(strategy=method, base_amount='a')
         # Test invalid rate
         with self.assertRaises(decimal.InvalidOperation):
-            strategy = ContributionStrategy(strategy=method, rate='a')
+            strategy = LivingExpensesStrategy(strategy=method, rate='a')
         # Test invalid refund_reinvestment_rate
         with self.assertRaises(decimal.InvalidOperation):
-            strategy = ContributionStrategy(
+            strategy = LivingExpensesStrategy(
                 strategy=method, refund_reinvestment_rate='a')
 
     def test_strategy_const_contrib(self):
         """ Test ContributionStrategy.strategy_const_contribution. """
         # Rather than hardcode the key, let's look it up here.
-        method = ContributionStrategy.strategy_const_contribution
+        method = LivingExpensesStrategy.strategy_const_contribution
 
         # Default strategy. Set to $1 constant contributions.
-        strategy = ContributionStrategy(method, base_amount=Money(1))
+        strategy = LivingExpensesStrategy(method, base_amount=Money(1))
         # Test all default parameters (no inflation adjustments here)
         self.assertEqual(strategy(), strategy.base_amount)
         # Test refunds ($1) and other income ($2), for a total of $3
@@ -111,7 +111,7 @@ class TestContributionStrategyMethods(unittest.TestCase):
             Money(strategy.base_amount)
         )
         # Test different inflation_adjustments
-        strategy = ContributionStrategy(
+        strategy = LivingExpensesStrategy(
             strategy=method, inflation_adjust=self.variable_inflation)
         self.assertEqual(
             strategy(year=2000),
@@ -130,7 +130,7 @@ class TestContributionStrategyMethods(unittest.TestCase):
         base_amount = Money(500)
         rate = Decimal('0.5')
         refund_reinvestment_rate = 1
-        strategy = ContributionStrategy(
+        strategy = LivingExpensesStrategy(
             strategy=method, base_amount=base_amount, rate=rate,
             refund_reinvestment_rate=refund_reinvestment_rate)
         # Test all default parameters.
@@ -146,10 +146,10 @@ class TestContributionStrategyMethods(unittest.TestCase):
     def test_strategy_const_living_exp(self):
         """ Test ContributionStrategy.strategy_const_living_expenses. """
         # Rather than hardcode the key, let's look it up here.
-        method = ContributionStrategy.strategy_const_living_expenses
+        method = LivingExpensesStrategy.strategy_const_living_expenses
 
         # Default strategy
-        strategy = ContributionStrategy(
+        strategy = LivingExpensesStrategy(
             method, base_amount=Money(1000), inflation_adjust=lambda year:
             {2000: Decimal(0.5), 2001: Decimal(1), 2002: Decimal(2)}[year])
         excess = Money(1500)  # excess money (this is the contribution)
@@ -177,16 +177,16 @@ class TestContributionStrategyMethods(unittest.TestCase):
         self.assertEqual(
             strategy(year=2002, net_income=Money(2500)), Money('500'))
         # Test a lower net_income than the living standard:
-        strategy = ContributionStrategy(method, Money(1000))
+        strategy = LivingExpensesStrategy(method, Money(1000))
         self.assertEqual(strategy(year=2000, net_income=Money(500)), 0)
 
     def test_strategy_net_percent(self):
         """ Test ContributionStrategy.strategy_net_percent. """
         # Rather than hardcode the key, let's look it up here.
-        method = ContributionStrategy.strategy_net_percent
+        method = LivingExpensesStrategy.strategy_net_percent
 
         # Default strategy
-        strategy = ContributionStrategy(method)
+        strategy = LivingExpensesStrategy(method)
         net_income = Money(1000)
         # This method requires net_income
         self.assertEqual(
@@ -196,7 +196,7 @@ class TestContributionStrategyMethods(unittest.TestCase):
             strategy(net_income=net_income, gross_income=Money(20000)),
             net_income * strategy.rate
         )
-        strategy = ContributionStrategy(
+        strategy = LivingExpensesStrategy(
             strategy=method, inflation_adjust=self.variable_inflation)
         # Test different inflation_adjustments
         # (Since the net_income argument is nominal, inflation should
@@ -213,10 +213,10 @@ class TestContributionStrategyMethods(unittest.TestCase):
     def test_strategy_gross_percent(self):
         """ Test ContributionStrategy.strategy_gross_percent. """
         # Rather than hardcode the key, let's look it up here.
-        method = ContributionStrategy.strategy_gross_percent
+        method = LivingExpensesStrategy.strategy_gross_percent
 
         # Default strategy
-        strategy = ContributionStrategy(method)
+        strategy = LivingExpensesStrategy(method)
         gross_income = Money(1000)  # gross income
         # This method requires gross_income
         self.assertEqual(
@@ -231,7 +231,7 @@ class TestContributionStrategyMethods(unittest.TestCase):
         # Test different inflation_adjustments
         # (Since the gross_income argument is nominal, inflation_adjustment
         # should have no effect)
-        strategy = ContributionStrategy(
+        strategy = LivingExpensesStrategy(
             strategy=method, inflation_adjust=self.variable_inflation)
         self.assertEqual(
             strategy(gross_income=gross_income, year=2000),
@@ -244,10 +244,10 @@ class TestContributionStrategyMethods(unittest.TestCase):
 
     def test_strategy_earnings_percent(self):
         """ Test ContributionStrategy.strategy_earnings_percent. """
-        method = ContributionStrategy.strategy_earnings_percent
+        method = LivingExpensesStrategy.strategy_earnings_percent
 
         # Default strategy
-        strategy = ContributionStrategy(
+        strategy = LivingExpensesStrategy(
             method, inflation_adjust=self.variable_inflation)
         net_income = strategy.base_amount * 2
         # This method requires net_income

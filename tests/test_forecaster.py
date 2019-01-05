@@ -5,7 +5,7 @@ import collections
 from copy import copy, deepcopy
 from forecaster import (
     Settings, Tax, Person, Money, Account, Debt, Scenario,
-    ContributionStrategy, WithdrawalStrategy, TransactionStrategy,
+    LivingExpensesStrategy, WithdrawalStrategy, TransactionStrategy,
     AllocationStrategy, DebtPaymentStrategy, Forecaster)
 
 
@@ -35,7 +35,7 @@ class TestForecaster(unittest.TestCase):
             initial_year=self.settings.initial_year,
             num_years=self.settings.num_years
         )
-        self.contribution_strategy = ContributionStrategy(
+        self.contribution_strategy = LivingExpensesStrategy(
             strategy=self.settings.contribution_strategy,
             base_amount=self.settings.contribution_base_amount,
             rate=self.settings.contribution_rate,

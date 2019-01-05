@@ -1,7 +1,7 @@
 """ Unit tests for `Strategy` and related classes. """
 
 import unittest
-from forecaster import ContributionStrategy, WithdrawalStrategy
+from forecaster import LivingExpensesStrategy, WithdrawalStrategy
 from forecaster.strategy.base import Strategy, strategy_method
 
 
@@ -78,34 +78,34 @@ class TestStrategyMethods(unittest.TestCase):
         # are being added to `strategies`. We use ContributionStrategy
         # for this test. It should have at least these four strategies:
         strategies = {
-            ContributionStrategy.strategy_const_contribution.strategy_key:
-                ContributionStrategy.strategy_const_contribution,
-            ContributionStrategy.strategy_const_living_expenses.strategy_key:  # noqa
-                ContributionStrategy.strategy_const_living_expenses,
-            ContributionStrategy.strategy_gross_percent.strategy_key:
-                ContributionStrategy.strategy_gross_percent,
-            ContributionStrategy.strategy_net_percent.strategy_key:
-                ContributionStrategy.strategy_net_percent
+            LivingExpensesStrategy.strategy_const_contribution.strategy_key:
+                LivingExpensesStrategy.strategy_const_contribution,
+            LivingExpensesStrategy.strategy_const_living_expenses.strategy_key:  # noqa
+                LivingExpensesStrategy.strategy_const_living_expenses,
+            LivingExpensesStrategy.strategy_gross_percent.strategy_key:
+                LivingExpensesStrategy.strategy_gross_percent,
+            LivingExpensesStrategy.strategy_net_percent.strategy_key:
+                LivingExpensesStrategy.strategy_net_percent
         }
         # Unfortunately, unittest.assertDictContainsSubset is deprecated
         # so we'll have to do this the long way...
         for strategy in strategies:
-            self.assertIn(strategy, ContributionStrategy.strategies.keys())
+            self.assertIn(strategy, LivingExpensesStrategy.strategies.keys())
             self.assertIn(strategies[strategy],
-                          ContributionStrategy.strategies.values())
+                          LivingExpensesStrategy.strategies.values())
 
         # Also made sure that no strategies for other subclasses are
         # being added to this particular subclass instance.
         self.assertNotIn(WithdrawalStrategy.strategy_principal_percent,
-                         ContributionStrategy.strategies.values())
+                         LivingExpensesStrategy.strategies.values())
 
         # Finally, repeat the above with object instances instead of
         # classes. (Be careful - functions defined in class scope and
         # methods bound to objects are not the same. `s.strategies`
         # contains unbound functions, not comparable to s.strategy_*
         # methods)
-        strategy = ContributionStrategy(
-            ContributionStrategy.strategy_const_contribution)
+        strategy = LivingExpensesStrategy(
+            LivingExpensesStrategy.strategy_const_contribution)
         for key in strategies:
             self.assertIn(key, strategy.strategies.keys())
             self.assertIn(strategies[key], strategy.strategies.values())

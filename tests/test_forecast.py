@@ -3,7 +3,7 @@
 import unittest
 from decimal import Decimal
 from forecaster import (
-    Money, Person, Account, Debt, Scenario, ContributionStrategy,
+    Money, Person, Account, Debt, Scenario, LivingExpensesStrategy,
     WithdrawalStrategy, TransactionStrategy, AllocationStrategy,
     DebtPaymentStrategy, Tax, Forecast, Forecaster, Settings)
 from tests.test_helper import type_check
@@ -48,8 +48,8 @@ class TestForecast(unittest.TestCase):
             credit_rate={initial_year: 0.5},
             inflation_adjust=scenario.inflation_adjust
         )
-        contribution_strategy = ContributionStrategy(
-            strategy=ContributionStrategy.strategy_const_contribution,
+        contribution_strategy = LivingExpensesStrategy(
+            strategy=LivingExpensesStrategy.strategy_const_contribution,
             base_amount=Money('50000'),
             rate=Decimal(0),
             refund_reinvestment_rate=1,
