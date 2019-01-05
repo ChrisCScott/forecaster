@@ -13,22 +13,8 @@ class LivingExpensesForecast(SubForecast):
             See the documentation for `LivingExpensesStrategy` for
             acceptable args when calling this object.
 
-        tax_carryover (dict[int, Money]): The amount of any refund or
-            outstanding tax payable, based on the previous year's
-            tax withholdings.
-        other_carryover (dict[int, Money]): The amount of inter-year
-            carryover (other than tax refunds), such as excess
-            withdrawals being recontributed.
-        contributions_from_income (dict[int, Money]): The amount to be
-            contributed to savings from employment income in each year.
-        contributions_from_carryover (dict[int, Money]): The amount to
-            be contributed to savings from tax_carryover and
-            other_carryover.
-        contributions_from_asset_sales (dict[int, Money]): The amount to
-            be contributed to savings from asset sales in each year.
-        gross_contributions (dict[int, Money]): The amount available to
-            contribute to savings, before any reductions. This is the
-            sum of net income and various contributions_from_* values.
+        living_expenses (Money): The amount spent on living expenses
+            (i.e. money not available to be saved).
     """
 
     def __init__(
