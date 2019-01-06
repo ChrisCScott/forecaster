@@ -123,6 +123,24 @@ class SubForecast(Ledger):
         # Keep track of the fact that this method has been called again:
         self._update_available_called = True
 
+        # It's often useful to know (in scalar terms) how much money
+        # is available for use by the Forecast in the year. Track
+        # that here.
+        if isinstance(available, Account):
+            # For accounts, use the amount available at the _end_
+            # of the year - after all transactions.
+            # NOTE: This will give a figure that includes interest,
+            # meaning that if you withdrawl amounts from
+            # `available` at an earlier time it's possible that
+            # a lesser amount will be available for withdrawal in
+            # total.
+            # TODO: Consider whether we should instead sum over
+            # transactions (for dicts and Accounts) and add
+            # the account opening balance (only for Accounts).
+            self.total_available = available.max_outflow(1)
+        else:
+            self.total_available = sum(available.values())
+
     def undo_transactions(self):
         """ Reverses all transactions cause by this subforecast. """
         # Reverse transactions:
@@ -133,6 +151,10 @@ class SubForecast(Ledger):
         # This undoes the effect of update_available, so treat that
         # method as if it was never called:
         self._update_available_called = False
+
+        # If we've cached any recorded_property_cached values, invalidate
+        # the cache so they can be re-calculated based on the new input:
+        self.clear_cache()
 
     def add_transaction(
         self, value, when=Decimal(0.5), frequency=None,
