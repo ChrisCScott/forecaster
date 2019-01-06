@@ -60,7 +60,18 @@ class recorded_property(property):
                 history_dict = getattr(obj, self.history_dict_name)
                 history_dict[obj.this_year] = val
 
-        super().__init__(fget=getter, fset=setter, fdel=None, doc=doc)
+        def deleter(obj):
+            """ Removes a cached value, without removing user input. """
+            # Don't delete a value provided via an inputs dict:
+            if not (
+                self.__name__ in obj.inputs and
+                obj.this_year in obj.inputs[self.__name__]
+            ):
+                history_dict = getattr(obj, self.history_dict_name)
+                if obj.this_year in history_dict:
+                    del history_dict[obj.this_year]
+
+        super().__init__(fget=getter, fset=setter, fdel=deleter, doc=doc)
 
         def history(obj):
             """ Returns history dict for the property. """

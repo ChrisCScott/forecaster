@@ -110,6 +110,12 @@ class Ledger(object, metaclass=LedgerType):
         # Advance to the next year after recording properties:
         self.this_year += 1
 
+    def clear_cache(self):
+        """ Clears all recorded_property_cached values for this year. """
+        # pylint: disable=no-member
+        # Pylint gets confused by attributes added by metaclass.
+        for prop in self._recorded_properties_cached:
+            prop.fdel(obj=self)
 
 class TaxSource(Ledger):
     """ An object that can be considered when calculating taxes.
