@@ -1,4 +1,4 @@
-""" This module provides a TaxForecast class for use in forecasts. """
+""" Provides a TaxForecast class for use by Forecast. """
 
 from forecaster.forecast import SubForecast
 from forecaster.ledger import Money, recorded_property_cached

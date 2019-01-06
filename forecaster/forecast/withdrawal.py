@@ -1,9 +1,4 @@
-""" This module provides a Forecast class for use in forecasts.
-
-This is where most of the financial forecasting logic of the Forecaster
-package lives. It applies Scenario, Strategy, and Tax information to
-determine how account balances will grow or shrink year-over-year.
-"""
+""" Provides a WithdrawalForecast class for use by Forecast. """
 
 from forecaster.ledger import (
     Money, recorded_property, recorded_property_cached)
