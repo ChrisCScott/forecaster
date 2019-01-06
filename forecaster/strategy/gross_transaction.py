@@ -254,27 +254,36 @@ class WithdrawalStrategy(Strategy):
 
     @strategy_method('Percentage of principal')
     def strategy_principal_percent(
-        self, principal_history, retirement_year, year=None, *args, **kwargs
+        self, accounts, retirement_year, year=None, *args, **kwargs
     ):
         """ Withdraw a percentage of principal (as of retirement). """
-        return self.rate * principal_history[retirement_year] * \
-            self.inflation_adjust(year, retirement_year)
+        retirement_balance = sum(
+            account.balance_history[retirement_year] for account in accounts)
+        return (
+            self.rate * retirement_balance
+            * self.inflation_adjust(year, retirement_year))
 
     @strategy_method('Percentage of net income')
     def strategy_net_percent(
-        self, net_income_history, retirement_year, year=None, *args, **kwargs
+        self, people, retirement_year, year=None, *args, **kwargs
     ):
         """ Withdraw a percentage of max. net income (as of retirement). """
-        return self.rate * net_income_history[retirement_year] * \
-            self.inflation_adjust(year, retirement_year)
+        retirement_income = sum(
+            person.net_income_history[retirement_year] for person in people)
+        return (
+            self.rate * retirement_income
+            * self.inflation_adjust(year, retirement_year))
 
     @strategy_method('Percentage of gross income')
     def strategy_gross_percent(
-        self, gross_income_history, retirement_year, year=None, *args, **kwargs
+        self, people, retirement_year, year=None, *args, **kwargs
     ):
         """ Withdraw a percentage of gross income. """
-        return self.rate * gross_income_history[retirement_year] * \
-            self.inflation_adjust(year, retirement_year)
+        retirement_income = sum(
+            person.gross_income_history[retirement_year] for person in people)
+        return (
+            self.rate * retirement_income
+            * self.inflation_adjust(year, retirement_year))
 
     # TODO: Add another strategy that tweaks the withdrawal rate
     # periodically (e.g. every 10 years) based on actual portfolio
@@ -282,12 +291,15 @@ class WithdrawalStrategy(Strategy):
     # to take dicts as inputs instead of a handful of scalar values.)
 
     def __call__(
-        self, year=None, other_income=Money(0),
-        net_income_history=None, gross_income_history=None,
-        principal_history=None, retirement_year=None, *args, **kwargs
+        self, people=None, accounts=None, year=None,
+        retirement_year=None, total_available={}, *args, **kwargs
     ):
         """ Returns the gross withdrawal for the year. """
         # If we're not yet retired, no withdrawals:
+        # TODO: Determine whether this is necessary after the
+        # move to `available`-based methods. (Maybe we should
+        # allow withdrawals pre-retirement from accounts which
+        # allow it?)
         if (
             year is not None and retirement_year is not None and
             year <= retirement_year
@@ -298,16 +310,18 @@ class WithdrawalStrategy(Strategy):
         # adjusting for other income.
         strategy_result = super().__call__(
             year=year,
-            net_income_history=net_income_history,
-            gross_income_history=gross_income_history,
-            principal_history=principal_history,
+            people=people,
+            accounts=accounts,
             retirement_year=retirement_year,
             *args, **kwargs)
-        # Determine whether to (and how much to) reduce the
-        # withdrawal due to other income:
-        income_adjustment = Money(
-            other_income if self.income_adjusted else 0
-        )
-        # We want to deduct other income from the withdrawal amount,
-        # but we don't want to return a negative value.
+        # Determine whether to (and how much to) increase or reduce
+        # withdrawals due to an excess or shortfall in cashflow:
+        if self.income_adjusted:
+            income_adjustment = total_available
+        else:
+            income_adjustment = Money(0)
+
+        # A negative withdrawal makes no sense in this context;
+        # if we have more money then we need, simply avoid
+        # withdrawing anything.
         return max(strategy_result - income_adjustment, Money(0))
