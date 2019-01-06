@@ -36,20 +36,6 @@ class IncomeForecast(SubForecast):
         # started on doing the updates:
         super().update_available(available)
 
-        # `other_carryover` isn't added to `available`; it's simply
-        # the amount that's already in `available` before we add
-        # any new transactions!
-        if isinstance(available, Account):
-            # Use Account logic to tell us how much is available
-            # at the start of the year, since the amount available
-            # is a function not only of transactions but also of
-            # starting balance.
-            self.other_carryover = available.max_outflow('start')
-        else:
-            # If it's a dict-like non-Account, just use the
-            # transaction data.
-            self.other_carryover = sum(available)
-
         # Assume tax carryovers occur at the start of the year.
         # TODO: Tax refund/payment dates should be provided by
         # a Tax object and used here.
@@ -113,15 +99,14 @@ class IncomeForecast(SubForecast):
     @recorded_property
     def other_carryover(self):
         """ Excess funds carried over from last year. """
-        if self.this_year == self.initial_year:
-            # In the first year, carryovers are $0:
-            return Money(0)
-        else:
-            # Money is carried when there's more money remaining
-            # than is required for living expenses - e.g. because
-            # we withdrew more than necessary or because we accrued
-            # interest on the pool of available money.
-            return Money(0)  # TODO #30
+        # Money is carried when there's more money remaining
+        # than is required for living expenses - e.g. because
+        # we withdrew more than necessary or because we accrued
+        # interest on the pool of available money.
+        # This is the same as checking how much is in `available`
+        # before `IncomeForecast` mutates it - which is what
+        # `total_available` gives us!
+        return self.total_available
 
     @recorded_property
     def gross_income(self):

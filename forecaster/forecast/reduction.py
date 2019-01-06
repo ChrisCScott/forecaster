@@ -5,7 +5,8 @@ package lives. It applies Scenario, Strategy, and Tax information to
 determine how account balances will grow or shrink year-over-year.
 """
 
-from forecaster.ledger import Money, recorded_property
+from forecaster.ledger import (
+    Money, recorded_property, recorded_property_cached)
 from forecaster.accounts import Account, Debt
 from forecaster.forecast.subforecast import SubForecast
 
@@ -25,18 +26,15 @@ class ReductionForecast(SubForecast):
             contributed to savings accounts.
     """
 
+    # pylint: disable=not-an-iterable,unsubscriptable-object
+    # Pylint can't tell that this class's `recorded_property_cached`
+    # attributes return subscriptable objects.
+
     def __init__(
         self, debts, debt_payment_strategy
     ):
         self.debts = debts
         self.debt_payment_strategy = debt_payment_strategy
-
-        self.reduction_from_debt = {}
-        self.reduction_from_other = {}
-        self.contribution_reductions = {}
-
-        self.debt_payments = {}
-        self.debt_payments_from_savings = {}
 
     def update_available(self, available):
         """ Records transactions against accounts; mutates `available`. """
@@ -44,28 +42,11 @@ class ReductionForecast(SubForecast):
         # started on doing the updates:
         super().update_available(available)
 
-        if isinstance(available, Account):
-            total_available = available.max_outflow()
-        else:
-            total_available = sum(available)
-
-        self.debt_payments = self.debt_payment_strategy(
-            self.debts,
-            total_available - self.reduction_from_other
-        )
-        # Then determine what portion was drawn from savings:
-        self.debt_payments_from_savings = {
-            debt: debt.payment_from_savings(
-                amount=self.debt_payments[debt],
-                base=debt.inflows
-            ) for debt in self.debt_payments
-        }
-
         # Apply debt payment transactions:
-        for debt in self.debt_payments:
+        for debt in self.account_transactions:
             # Track the savings portion against `available`:
             self.add_transaction(
-                value=self.debt_payments_from_savings[debt],
+                value=self.account_transactions_from_available[debt],
                 when=0.5,
                 frequency=debt.payment_frequency,
                 from_account=available,
@@ -75,8 +56,8 @@ class ReductionForecast(SubForecast):
             # from `available`
             self.add_transaction(
                 value=
-                    self.debt_payments[debt]
-                     - self.debt_payments_from_savings[debt],
+                    self.account_transactions[debt]
+                     - self.account_transactions_from_available[debt],
                 when=0.5,
                 frequency=debt.payment_frequency,
                 from_account=None,
@@ -92,11 +73,31 @@ class ReductionForecast(SubForecast):
             to_account=None
         )
 
+    @recorded_property_cached
+    def account_transactions(self):
+        """ TODO """
+        return self.debt_payment_strategy(
+            self.debts,
+            self.total_available - self.reduction_from_other
+        )
+
+    @recorded_property_cached
+    def account_transactions_from_available(self):
+        return {
+            debt: debt.payment_from_savings(
+                amount=self.account_transactions[debt],
+                base=debt.inflows
+            ) for debt in self.account_transactions
+        }
+
     @recorded_property
     def reduction_from_debt(self):
         """ TODO """
+        # pylint: disable=no-member
+        # account_transactions_from_available is a dict and so does
+        # have a `values` member.
         return sum(
-            self.debt_payments_from_savings.values(),
+            self.account_transactions_from_available.values(),
             Money(0)
         )
 

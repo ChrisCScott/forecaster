@@ -1,6 +1,7 @@
 """ Provides a LivingExpensesForecast class for use by Forecast. """
 
-from forecaster.ledger import Money, recorded_property
+from forecaster.ledger import (
+    Money, recorded_property, recorded_property_cached)
 from forecaster.forecast.subforecast import SubForecast
 
 class LivingExpensesForecast(SubForecast):
@@ -45,7 +46,7 @@ class LivingExpensesForecast(SubForecast):
             value=self.living_expenses, when=0, frequency=12,
             from_account=available, to_account=None)
 
-    @recorded_property
+    @recorded_property_cached
     def living_expenses(self):
         """ TODO """
         # Prepare arguments for call to `contribution_strategy`
