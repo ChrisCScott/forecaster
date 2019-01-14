@@ -59,13 +59,17 @@ class TestIncomeForecast(unittest.TestCase):
         """ Test recording of cash inflows from employment. """
         available = {}
         self.forecast.update_available(available)
-        # There should be 26 inflows:
-        self.assertEqual(
+        # There should be at least 26 inflows for the 26 biweekly
+        # pay periods:
+        self.assertGreaterEqual(
             len(self.forecast.transactions[available]),
             26)
-        # Each inflow should be the same size: $150
-        for value in self.forecast.transactions[available].values():
-            self.assertEqual(value, Money(150))
+        # Assuming there are no other inflows or outflows (and, since
+        # this is the first year, there shouldn't be as there are no
+        # carryovers), the sum of inflows should be 150*26=3900
+        self.assertEqual(
+            sum(self.forecast.transactions[available].values()),
+            Money(3900))
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(
