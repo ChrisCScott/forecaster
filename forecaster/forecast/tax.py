@@ -42,11 +42,11 @@ class TaxForecast(SubForecast):
 
     @recorded_property_cached
     def tax_withheld(self):
-        """ TODO """
+        """ Total taxes withheld on income for the year. """
         # Need to sum up both tax withheld on income and also tax
         # withheld from accounts for each person:
         withheld = sum(person.tax_withheld for person in self.people)
-        # To avoid double-counting (if an account is assocaited with
+        # To avoid double-counting (if an account is associated with
         # two people), build a set of all accounts and sum over that.
         accounts = set.union(person.accounts for person in self.people)
         withheld += sum(account.tax_withheld for account in accounts)
@@ -54,5 +54,5 @@ class TaxForecast(SubForecast):
 
     @recorded_property_cached
     def tax_owing(self):
-        """ TODO """
+        """ Total taxes owing on income for the year. """
         return self.tax_treatment(self.people, self.this_year)

@@ -37,6 +37,17 @@ class ReductionForecast(SubForecast):
         # started on doing the updates:
         super().update_available(available)
 
+        # First determine miscellaneous other reductions.
+        # (These take priority because they're generally user-input.)
+        # Assume we make these payments monthly.
+        self.add_transaction(
+            value=self.reduction_from_other,
+            when=0.5,
+            frequency=12,
+            from_account=available,
+            to_account=None
+        )
+
         # Apply debt payment transactions:
         for debt in self.account_transactions:
             # Track the savings portion against `available`:
@@ -59,18 +70,9 @@ class ReductionForecast(SubForecast):
                 to_account=debt
             )
 
-        # Assume we make `other` reductions monthly:
-        self.add_transaction(
-            value=self.reduction_from_other,
-            when=0.5,
-            frequency=12,
-            from_account=available,
-            to_account=None
-        )
-
     @recorded_property_cached
     def account_transactions(self):
-        """ TODO """
+        """ Total amount repaid for each debt for the year. """
         return self.debt_payment_strategy(
             self.debts,
             self.total_available - self.reduction_from_other
@@ -78,6 +80,7 @@ class ReductionForecast(SubForecast):
 
     @recorded_property_cached
     def account_transactions_from_available(self):
+        """ Amount repaid for each debt from `available` specifically. """
         return {
             debt: debt.payment_from_savings(
                 amount=self.account_transactions[debt],
@@ -87,7 +90,7 @@ class ReductionForecast(SubForecast):
 
     @recorded_property
     def reduction_from_debt(self):
-        """ TODO """
+        """ Amount of potential savings diverted to debt. """
         # pylint: disable=no-member
         # account_transactions_from_available is a dict and so does
         # have a `values` member.
@@ -98,16 +101,14 @@ class ReductionForecast(SubForecast):
 
     @recorded_property
     def reduction_from_other(self):
-        """ TODO """
-        # TODO: Include reduced contributions to pay for last year's
-        # outstanding taxes?
-        # NOTE: We'll add another reduction dict for childcare expenses
-        # in a future version.
-        # First determine miscellaneous other reductions (these take
-        # priority because they're generally user-input):
-        return Money(0)  # TODO
+        """ Amount of potential savings diverted to other reductions. """
+        # NOTE: These amounts are generally user-input (i.e. they can
+        # be set via an `input` dict at init time.) So although it
+        # looks like we always return $0 here, in practice this won't
+        # be called if another value has been provided elsewhere.
+        return Money(0)
 
     @recorded_property
     def contribution_reductions(self):
-        """ TODO """
+        """ Total amount of potential savings diverted to reductions. """
         return self.reduction_from_debt + self.reduction_from_other

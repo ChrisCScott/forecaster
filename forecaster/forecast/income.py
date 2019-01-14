@@ -72,7 +72,7 @@ class IncomeForecast(SubForecast):
 
     @recorded_property
     def tax_carryover(self):
-        """ TODO """
+        """ Tax refund or amount owing due to last year's income. """
         if self.this_year == self.initial_year:
             # In the first year, carryovers are $0:
             return Money(0)

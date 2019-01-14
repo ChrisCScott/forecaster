@@ -26,7 +26,7 @@ class ContributionForecast(SubForecast):
         # Recall that, as a Ledger object, we need to call the
         # superclass initializer and let it know what the first
         # year is so that `this_year` is usable.
-        # TODO #53 removes this requirement.
+        # NOTE: Issue #53 removes this requirement.
         super().__init__(initial_year)
 
         self.account_transaction_strategy = account_transaction_strategy

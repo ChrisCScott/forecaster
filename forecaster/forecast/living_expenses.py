@@ -36,10 +36,6 @@ class LivingExpensesForecast(SubForecast):
         # started on doing the updates:
         super().update_available(available)
 
-        # NOTE, TODO: This code assumes `contribution_strategy`
-        # returns the amount that will be _spent_ on living expenses,
-        # _not_ the amount saved after living expenses. This conforms
-        # with the proposals of #40 and #32.
         # Assume living expenses are incurred at the start of each
         # month.
         self.add_transaction(
@@ -48,12 +44,15 @@ class LivingExpensesForecast(SubForecast):
 
     @recorded_property_cached
     def living_expenses(self):
-        """ TODO """
-        # Prepare arguments for call to `contribution_strategy`
-        # TODO: Determine retirement year from `Person` objects
-        retirement_year = None  # TODO
+        """ Living expenses for the year. """
+        # Prepare arguments for call to `living_expenses_strategy`
+        # NOTE: This is a pretty brittle way to determine the
+        # retirement year. Issues #15 and #28 will require this
+        # code to be changed in a future version.
+        retirement_year = min(
+            person.retirement_date.year for person in self.people)
         return self.living_expenses_strategy(
             year=self.this_year,
             people = self.people,
-            retirement_year=retirement_year  # TODO
+            retirement_year=retirement_year
         )

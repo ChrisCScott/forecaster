@@ -88,7 +88,7 @@ class WithdrawalForecast(SubForecast):
             self.add_transaction(
                 value=self.account_transactions[account],
                 when=0.5,
-                frequency=12,
+                frequency=12,  # TODO
                 from_account=account,
                 to_account=available
             )
@@ -105,9 +105,12 @@ class WithdrawalForecast(SubForecast):
 
     @recorded_property_cached
     def gross_withdrawals(self):
-        """ TODO """
-        # TODO: Determine retirement year from `Person` objects
-        retirement_year = None  # TODO
+        """ Total gross withdrawals for the year. """
+        # NOTE: This is a pretty brittle way to determine the
+        # retirement year. Issues #15 and #28 will require this
+        # code to be changed in a future version.
+        retirement_year = min(
+            person.retirement_date.year for person in self.people)
 
         return self.withdrawal_strategy(
             people=self.people,
@@ -118,12 +121,12 @@ class WithdrawalForecast(SubForecast):
 
     @recorded_property
     def tax_withheld(self):
-        """ TODO """
+        """ Total tax withheld on withdrawals for the year. """
         return sum(
             (account.tax_withheld for account in self.accounts),
             Money(0))
 
     @recorded_property
     def net_withdrawals(self):
-        """ TODO """
+        """ Total withdrawals, net of withholding taxes, for the year. """
         return self.gross_withdrawals - self.tax_withheld
