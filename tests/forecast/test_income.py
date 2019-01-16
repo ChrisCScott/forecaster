@@ -49,11 +49,20 @@ class TestIncomeForecast(unittest.TestCase):
             self.forecast.net_income,
             self.person1.net_income + self.person2.net_income)
 
-    def test_tax_withheld_on_income(self):
+    def test_tax_withheld(self):
         """ Test net income for two people. """
         self.assertEqual(
-            self.forecast.tax_withheld_on_income,
+            self.forecast.tax_withheld,
             self.person1.tax_withheld + self.person2.tax_withheld)
+
+    def test_carryover(self):
+        """ Test an amount carried over from previous year. """
+        carryover = Money(100)
+        available = {Decimal(0.5): carryover}
+        self.forecast.update_available(available)
+        self.assertEqual(
+            self.forecast.carryover,
+            carryover)
 
     def test_update_available(self):
         """ Test recording of cash inflows from employment. """

@@ -9,11 +9,21 @@ class IncomeForecast(SubForecast):
 
     Attributes:
         people (Iterable[Person]): The people for whom the financial
-            forecast is being generated. Typically a single person or a
-            person and their spouse.
+            forecast is being generated. Typically a single person or
+            a person and their spouse.
 
             Note that all `Person` objects must have the same
             `this_year` attribute, as must their various accounts.
+        asset_sale (Money): The proceeds from a sale of property.
+            TODO: Determine whether this belongs here or elsewhere.
+        carryover (Money): Money carried over from last year to
+            the current year.
+        gross_income (Money): Total income for all plannees for the
+            year, before taxes.
+        tax_withheld (Money): Total tax withheld on plannees' income
+            at source.
+        net_income (Money): Total income for all plannees for the
+            year, net of taxes.
     """
 
     def __init__(
@@ -36,19 +46,6 @@ class IncomeForecast(SubForecast):
         # started on doing the updates:
         super().update_available(available)
 
-        # Assume tax carryovers occur at the start of the year.
-        # TODO: Tax refund/payment dates should be provided by
-        # a Tax object and used here.
-        # NOTE: We distinguish between carryovers from tax and
-        # carryovers from other sources. Would it instead make
-        # more sense to treat all carryovers the same? People
-        # do sometimes treat tax refunds differently than other
-        # carryovers, but perhaps we can deal with that in
-        # `Forecast`?
-        self.add_transaction(
-            self.tax_carryover,
-            when=0,  # TODO #31
-            from_account=None, to_account=available)
         # TODO: Determine timing of asset sale. (see #32)
         # Also: should this receive an Account (e.g. other_assets)
         # as the `from_account`?
@@ -71,35 +68,14 @@ class IncomeForecast(SubForecast):
                 from_account=None, to_account=available)
 
     @recorded_property
-    def tax_carryover(self):
-        """ Tax refund or amount owing due to last year's income. """
-        if self.this_year == self.initial_year:
-            # In the first year, carryovers are $0:
-            return Money(0)
-        else:
-            # If more was withheld than was owed, we have a refund
-            # (positive), otherwise we have an amount owing (negative)
-            # TODO: Need to determine the difference between tax
-            # withheld and tax owing *in the previous year*.
-            # There's currently no mechanism for this class to talk
-            # to talk to `TaxForecast`; consider how to address this.
-            '''
-            self.tax_carryover = (
-                self.total_tax_withheld_history[self.this_year - 1]
-                - self.total_tax_owing_history[self.this_year - 1]
-            )
-            '''
-            return Money(0)  # TODO #54
-
-    @recorded_property
     def asset_sale(self):
         """ Proceeds of sale of an asset. """
         return Money(0)  # TODO #32
 
     @recorded_property
-    def other_carryover(self):
+    def carryover(self):
         """ Excess funds carried over from last year. """
-        # Money is carried when there's more money remaining
+        # Money is carried over when there's more money remaining
         # than is required for living expenses - e.g. because
         # we withdrew more than necessary or because we accrued
         # interest on the pool of available money.
@@ -116,7 +92,7 @@ class IncomeForecast(SubForecast):
             Money(0))
 
     @recorded_property
-    def tax_withheld_on_income(self):
+    def tax_withheld(self):
         """ Tax withheld on income for all plannees for the year. """
         return sum(
             (person.tax_withheld for person in self.people),
