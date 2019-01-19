@@ -37,10 +37,11 @@ class LivingExpensesForecast(SubForecast):
         super().update_available(available)
 
         # Assume living expenses are incurred at the start of each
-        # month.
+        # month. Make this strict, since we can't defer living
+        # expenses to a more convenient time.
         self.add_transaction(
             value=self.living_expenses, when=0, frequency=12,
-            from_account=available, to_account=None)
+            from_account=available, to_account=None, strict_timing=True)
 
     @recorded_property_cached
     def living_expenses(self):
