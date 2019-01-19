@@ -26,8 +26,14 @@ class ReductionForecast(SubForecast):
     # attributes return subscriptable objects.
 
     def __init__(
-        self, debts, debt_payment_strategy
+        self, initial_year, debts, debt_payment_strategy
     ):
+        # Recall that, as a Ledger object, we need to call the
+        # superclass initializer and let it know what the first
+        # year is so that `this_year` is usable.
+        # TODO #53 removes this requirement.
+        super().__init__(initial_year)
+        # Store attributes:
         self.debts = debts
         self.debt_payment_strategy = debt_payment_strategy
 
