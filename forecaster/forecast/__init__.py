@@ -9,6 +9,7 @@ __all__ = [
 from forecaster.forecast.base import Forecast
 from forecaster.forecast.subforecast import SubForecast
 from forecaster.forecast.income import IncomeForecast
+from forecaster.forecast.living_expenses import LivingExpensesForecast
 from forecaster.forecast.contribution import ContributionForecast
 from forecaster.forecast.reduction import ReductionForecast
 from forecaster.forecast.withdrawal import WithdrawalForecast

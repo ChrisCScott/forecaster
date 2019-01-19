@@ -20,6 +20,7 @@ from forecaster.strategy import (
 from forecaster.tax import Tax
 from forecaster.settings import Settings
 from forecaster.forecast import (
-    Forecast, SubForecast, IncomeForecast, ContributionForecast,
-    ReductionForecast, WithdrawalForecast, TaxForecast)
+    Forecast, SubForecast, IncomeForecast, LivingExpensesForecast,
+    ContributionForecast, ReductionForecast, WithdrawalForecast,
+    TaxForecast)
 from forecaster.forecaster import Forecaster
