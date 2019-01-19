@@ -1,4 +1,4 @@
-""" Unit tests for `IncomeForecast`. """
+""" Unit tests for `LivingExpensesForecast`. """
 
 import unittest
 from decimal import Decimal
@@ -8,7 +8,7 @@ from forecaster import (
 
 
 class TestLivingExpensesForecast(unittest.TestCase):
-    """ Tests IncomeForecast. """
+    """ Tests LivingExpensesForecast. """
 
     def setUp(self):
         """ Builds stock variables to test with. """
