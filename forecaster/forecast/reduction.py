@@ -15,7 +15,7 @@ class ReductionForecast(SubForecast):
         reduction_from_other (dict[int, Money]): The amount to be
             diverted from contributions for other spending purposes in
             each year.
-        contribution_reductions (dict[int, Money]): Amounts diverted
+        reductions (dict[int, Money]): Amounts diverted
             from savings, such as certain debt repayments or childcare.
         net_contributions (dict[int, Money]): The total amount
             contributed to savings accounts.
@@ -115,6 +115,6 @@ class ReductionForecast(SubForecast):
         return Money(0)
 
     @recorded_property
-    def contribution_reductions(self):
+    def reductions(self):
         """ Total amount of potential savings diverted to reductions. """
         return self.reduction_from_debt + self.reduction_from_other
