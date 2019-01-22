@@ -32,14 +32,14 @@ class TestReductionForecast(unittest.TestCase):
         self.debt_small = Debt(
             owner=self.person,
             balance=Money(-1000),  # Low balance ($1000)
-            rate=Decimal(0),  # Low interest (100%)
+            rate=Decimal(0),  # Low interest (0%)
             payment_frequency='M',  # Monthly payments
             minimum_payment=Money(10)
         )
         self.debt_large = Debt(
             owner=self.person,
             balance=Money(-5000),  # High balance ($5000)
-            rate=Decimal(1),  # High interest (0%)
+            rate=Decimal(1),  # High interest (100%)
             payment_frequency='BM',  # Bimonthly payments
             minimum_payment=Money(20)
         )
@@ -96,7 +96,109 @@ class TestReductionForecast(unittest.TestCase):
             debt_large_payment,
             self.total_available - debt_small_payment)
 
-    # TODO: Test snowball strategy and also other properties.
+    def test_account_transactions_snowball(self):
+        """ Test account transactions under snowball strategy. """
+        # Set up forecast:
+        self.strategy = DebtPaymentStrategy(
+            strategy=DebtPaymentStrategy.strategy_snowball)
+        self.forecast.debt_payment_strategy = self.strategy
+        self.forecast.update_available(self.available)
+
+        # Track total debt payments for each account for convenience:
+        # pylint: disable=unsubscriptable-object
+        # These properties return dicts, but pylint has trouble
+        # inferring that.
+        debt_small_payment = (
+            self.forecast.account_transactions[self.debt_small])
+        debt_large_payment = (
+            self.forecast.account_transactions[self.debt_large])
+        # We have $3000 available to spend on debts. The small,
+        # low-interest debt will be fully repaid and the remainder
+        # will go to the large, high-interest debt:
+        # (Note that the small debt has 0% interest)
+        self.assertEqual(
+            debt_small_payment,
+            -self.debt_small.balance)
+        self.assertEqual(
+            debt_large_payment,
+            self.total_available - debt_small_payment)
+
+    def test_account_transactions_from_available(self):
+        """ Test accounts partially repaid from living expenses. """
+        # Set up forecast:
+        self.forecast.debts = {self.debt_partial}
+        self.forecast.update_available(self.available)
+
+        # Track total debt payments for each account for convenience:
+        # pylint: disable=unsubscriptable-object
+        # These properties return dicts, but pylint has trouble
+        # inferring that.
+        debt_payment = (
+            self.forecast.account_transactions[self.debt_partial])
+        debt_payment_from_available = (
+            self.forecast.account_transactions_from_available[
+                self.debt_partial])
+        # We have $3000 available to spend on debts. That's enough
+        # to fully repay this debt. The first $100 is repaid from
+        # living expenses, plus 50% of the balance:
+        self.assertAlmostEqual(
+            self.debt_partial.balance_at_time('end'),
+            Money(0))  # fully repaid
+        self.assertEqual(
+            debt_payment_from_available,
+            (debt_payment - Money(100)) * 0.5)
+
+    def test_reduction_from_debt(self):
+        """ Test contributions redirected to debt accounts. """
+        # Set up forecast:
+        self.forecast.debts = {self.debt_partial, self.debt_small}
+        self.forecast.update_available(self.available)
+
+        # Track total debt payments for each account for convenience:
+        # pylint: disable=unsubscriptable-object
+        # These properties return dicts, but pylint has trouble
+        # inferring that.
+        reduction_from_partial = (
+            self.forecast.account_transactions_from_available[
+                self.debt_partial])
+        reduction_from_small = (
+            self.forecast.account_transactions_from_available[
+                self.debt_small])
+
+        self.assertEqual(
+            self.forecast.reduction_from_debt,
+            reduction_from_partial + reduction_from_small)
+
+    def test_reduction_from_other(self):
+        """ Test reductions from other (user-provided) sources. """
+        self.forecast.update_available(self.available)
+        # Set the reduction manually:
+        # (TODO: Test via input dict?)
+        self.forecast.reduction_from_other = Money(100)
+        # This should be reflected back when called:
+        self.assertEqual(
+            self.forecast.reduction_from_other,
+            Money(100))
+
+    def test_reductions(self):
+        """ Test contributions redirected to debt accounts. """
+        # Set up forecast:
+        self.forecast.debts = {self.debt_small}
+        self.forecast.update_available(self.available)
+        # Manually set `other` reductions:
+        self.forecast.reduction_from_other = Money(100)
+
+        # Track total debt payments for each account for convenience:
+        # pylint: disable=unsubscriptable-object
+        # These properties return dicts, but pylint has trouble
+        # inferring that.
+        reduction_from_small = (
+            self.forecast.account_transactions_from_available[
+                self.debt_small])
+
+        self.assertEqual(
+            self.forecast.reductions,
+            Money(100) + reduction_from_small)
 
 
 if __name__ == '__main__':
