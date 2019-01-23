@@ -59,13 +59,15 @@ class ContributionForecast(SubForecast):
         This is what `account_transaction_strategy` returns.
         """
         return self.account_transaction_strategy(
-            total=self.contributions,
+            total=self.total_available,
             accounts=self.accounts
         )
 
     @recorded_property
     def contributions(self):
         """ Contributions to retirement accounts for the year. """
-        # We aim to contribute 100% of the amount available.
-        # (If the amount available is negative, contribute nothing.)
-        return max(self.total_available, Money(0))
+        # pylint: disable=not-an-iterable,unsubscriptable-object
+        # pylint can't infer the type of account_transactions
+        # because we don't import `AccountTransactionsStrategy`
+        return sum(
+            self.account_transactions[account] for account in self.accounts)
