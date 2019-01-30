@@ -61,6 +61,12 @@ class WithdrawalForecast(SubForecast):
                 See the documentation for `AccountTransactionStrategy`
                 for acceptable args when calling this object.
         """
+        # Recall that, as a Ledger object, we need to call the
+        # superclass initializer and let it know what the first
+        # year is so that `this_year` is usable.
+        # NOTE: Issue #53 removes this requirement.
+        super().__init__(initial_year)
+
         # Store input values
         self.people = people
         self.accounts = accounts
@@ -86,7 +92,7 @@ class WithdrawalForecast(SubForecast):
         # because we don't import `AccountTransactionsStrategy`
         for account in self.account_transactions:
             self.add_transaction(
-                value=self.account_transactions[account],
+                value=-self.account_transactions[account],
                 when=0.5,
                 frequency=12,  # TODO
                 from_account=account,
@@ -99,8 +105,14 @@ class WithdrawalForecast(SubForecast):
         
         This is what `account_transaction_strategy` returns.
         """
+        # NOTE: gross_withdrawals is positive, but
+        # AccountTransactionStrategy expects a negative value for
+        # withdrawals.
+
+        # pylint: disable=invalid-unary-operand-type
+        # gross_withdrawals returns Money, which accepts unary `-`
         return self.account_transaction_strategy(
-            total=self.gross_withdrawals,
+            total=-self.gross_withdrawals,
             accounts=self.accounts)
 
     @recorded_property_cached
