@@ -506,5 +506,11 @@ class TestForecaster(unittest.TestCase):
         # $1. Under scenario2, the balance in 2001 should double to $2.
         self.assertEqual(forecast.principal[2001], Money(2))
 
+
 if __name__ == '__main__':
-    unittest.main()
+    # NOTE: BasicContext is useful for debugging, as most errors are treated
+    # as exceptions (instead of returning "NaN"). It is lower-precision than
+    # ExtendedContext, which is the default.
+    decimal.setcontext(decimal.BasicContext)
+    unittest.TextTestRunner().run(
+        unittest.TestLoader().loadTestsFromName(__name__))

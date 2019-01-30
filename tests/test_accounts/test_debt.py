@@ -304,9 +304,11 @@ class TestDebtMethods(unittest.TestCase):
             amount=Money(200), base=Money(60))
         self.assertEqual(payment, Money(80))
 
+
 if __name__ == '__main__':
     # NOTE: BasicContext is useful for debugging, as most errors are treated
     # as exceptions (instead of returning "NaN"). It is lower-precision than
     # ExtendedContext, which is the default.
     decimal.setcontext(decimal.BasicContext)
-    unittest.main()
+    unittest.TextTestRunner().run(
+        unittest.TestLoader().loadTestsFromName(__name__))

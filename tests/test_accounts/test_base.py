@@ -542,4 +542,4 @@ if __name__ == '__main__':
     # ExtendedContext, which is the default.
     decimal.setcontext(decimal.BasicContext)
     unittest.TextTestRunner().run(
-        unittest.TestLoader().loadTestsFromTestCase(TestAccountMethods))
+        unittest.TestLoader().loadTestsFromName(__name__))

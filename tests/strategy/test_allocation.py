@@ -198,4 +198,5 @@ class TestAllocationStrategyMethods(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.TextTestRunner().run(
+        unittest.TestLoader().loadTestsFromName(__name__))

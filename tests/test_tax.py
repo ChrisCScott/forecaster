@@ -382,7 +382,11 @@ class TestTax(unittest.TestCase):
             self.person1_taxable_income * 2, self.double_year)
         single_tax = self.tax(
             self.person1_taxable_income, self.initial_year)
-        self.assertEqual(double_tax, single_tax * 2)
+        self.assertEqual(
+            single_tax * 2,
+            double_tax)
+        
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.TextTestRunner().run(
+        unittest.TestLoader().loadTestsFromName(__name__))

@@ -381,5 +381,7 @@ class TestDebtPaymentStrategyAttributes(unittest.TestCase):
         results = self.strategy({self.debt}, Money(0))
         self.assertEqual(results[self.debt], Money(10))
 
+
 if __name__ == '__main__':
-    unittest.main()
+    unittest.TextTestRunner().run(
+        unittest.TestLoader().loadTestsFromName(__name__))

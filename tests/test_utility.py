@@ -162,5 +162,7 @@ class TestFreeMethods(unittest.TestCase):
 
     # TODO: Test build_inflation_adjust
 
+
 if __name__ == '__main__':
-    unittest.main()
+    unittest.TextTestRunner().run(
+        unittest.TestLoader().loadTestsFromName(__name__))

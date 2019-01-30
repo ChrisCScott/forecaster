@@ -652,4 +652,9 @@ class TestForecast(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    # NOTE: BasicContext is useful for debugging, as most errors are treated
+    # as exceptions (instead of returning "NaN"). It is lower-precision than
+    # ExtendedContext, which is the default.
+    decimal.setcontext(decimal.BasicContext)
+    unittest.TextTestRunner().run(
+        unittest.TestLoader().loadTestsFromName(__name__))
