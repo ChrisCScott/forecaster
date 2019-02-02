@@ -122,20 +122,16 @@ class LivingExpensesStrategy(Strategy):
         return base_amount + (total_income - base_amount) * self.rate
 
     def __call__(
-        self, people, year=None, retirement_year=None, *args, **kwargs
+        self, people=None, year=None, *args, **kwargs
     ):
         """ Returns the living expenses for the year. """
-        # Don't make contributions if we've retired:
-        if (
-            year is not None and retirement_year is not None and
-            year > retirement_year
-        ):
-            return Money(0)
-        # If we're not yet retired, determine what to contribute:
-        return super().__call__(
-            people=people, year=year, *args, **kwargs
-        )
+        # Determine how much to spend on living expenses:
+        living_expenses = super().__call__(
+            people=people, year=year, *args, **kwargs)
+        # Ensure we return non-negative value:
+        return max(living_expenses, Money(0))
 
+# TODO: Merge WithdrawalStrategy with LivingExpensesStrategy.
 
 class WithdrawalStrategy(Strategy):
     """ Determines an annual gross withdrawal.
