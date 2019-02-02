@@ -1,18 +1,20 @@
-""" Unit tests for `ContributionStrategy` and `WithdrawalStrategy`. """
+""" Unit tests for `LivingExpensesStrategy` and `WithdrawalStrategy`. """
 
 import unittest
 import decimal
 from decimal import Decimal
 from random import Random
-from forecaster import Money, LivingExpensesStrategy, WithdrawalStrategy
+from forecaster import (
+    Person, Money, Tax,
+    LivingExpensesStrategy, WithdrawalStrategy)
 
 
-class TestContributionStrategyMethods(unittest.TestCase):
-    """ A test case for the ContributionStrategy class """
+class TestLivingExpensesStrategyMethods(unittest.TestCase):
+    """ A test case for the LivingExpensesStrategy class """
 
     @classmethod
     def setUpClass(cls):
-
+        """ Set up stock variables that won't be modified by tests. """
         inflation_adjustments = {
             2000: Decimal(0.5),
             2001: Decimal(1),
@@ -42,8 +44,33 @@ class TestContributionStrategyMethods(unittest.TestCase):
         cls.variable_inflation = variable_inflation
         cls.constant_2x_inflation = constant_2x_inflation
 
+    def setUp(self):
+        """ Set up stock variables which might be modified. """
+        self.initial_year = 2000
+        # Simple tax treatment: 50% tax rate across the board.
+        tax = Tax(tax_brackets={
+            self.initial_year: {Money(0): Decimal(0.5)}})
+        # Set up people with $4000 gross income, $2000 net income:
+        self.person1 = Person(
+            initial_year = self.initial_year,
+            name="Test 1",
+            birth_date="1 January 1980",
+            retirement_date="31 December 2001",  # next year
+            gross_income=Money(1000),
+            tax_treatment=tax,
+            payment_frequency='BW')
+        self.person2 = Person(
+            initial_year = self.initial_year,
+            name="Test 2",
+            birth_date="1 January 1975",
+            retirement_date="31 December 2001",  # next year
+            gross_income=Money(3000),
+            tax_treatment=tax,
+            payment_frequency='BW')
+        self.people = {self.person1, self.person2}
+
     def test_init(self):
-        """ Test ContributionStrategy.__init__ """
+        """ Test LivingExpensesStrategy.__init__ """
         # Test default init:
         method = "Constant contribution"
         strategy = LivingExpensesStrategy(method)
@@ -87,190 +114,171 @@ class TestContributionStrategyMethods(unittest.TestCase):
                 strategy=method, refund_reinvestment_rate='a')
 
     def test_strategy_const_contrib(self):
-        """ Test ContributionStrategy.strategy_const_contribution. """
+        """ Test LivingExpensesStrategy.strategy_const_contribution. """
         # Rather than hardcode the key, let's look it up here.
         method = LivingExpensesStrategy.strategy_const_contribution
 
         # Default strategy. Set to $1 constant contributions.
         strategy = LivingExpensesStrategy(method, base_amount=Money(1))
         # Test all default parameters (no inflation adjustments here)
-        self.assertEqual(strategy(), strategy.base_amount)
-        # Test refunds ($1) and other income ($2), for a total of $3
-        # plus the default contribution rate.
         self.assertEqual(
-            strategy(refund=Money(1), other_contribution=Money(2)),
-            Money(strategy.base_amount) +
-            Money(1) * strategy.refund_reinvestment_rate +
-            Money(2))
-        # Test that changing net_income and gross_income has no effect
-        self.assertEqual(
-            strategy(
-                refund=0, other_contribution=0, net_income=Money(100000),
-                gross_income=Money(200000)
-            ),
-            Money(strategy.base_amount)
-        )
-        # Test different inflation_adjustments
-        strategy = LivingExpensesStrategy(
-            strategy=method, inflation_adjust=self.variable_inflation)
-        self.assertEqual(
-            strategy(year=2000),
-            Money(strategy.base_amount) * self.variable_inflation(2000)
-        )
-        self.assertEqual(
-            strategy(year=2001),
-            Money(strategy.base_amount) * self.variable_inflation(2001)
-        )
-        self.assertEqual(
-            strategy(year=2002),
-            Money(strategy.base_amount) * self.variable_inflation(2002)
-        )
+            strategy(people=self.people),
+            sum(person.net_income for person in self.people) - strategy.base_amount)
 
-        # Customize some inputs
-        base_amount = Money(500)
-        rate = Decimal('0.5')
-        refund_reinvestment_rate = 1
+    def test_const_contrib_inflation_adjust(self):
+        """ Test inflation-adjusted constant contributions. """
+        # Contribute $500/yr, leaving $1500/yr for living.
+        method = LivingExpensesStrategy.strategy_const_contribution
         strategy = LivingExpensesStrategy(
-            strategy=method, base_amount=base_amount, rate=rate,
-            refund_reinvestment_rate=refund_reinvestment_rate)
-        # Test all default parameters.
-        self.assertEqual(strategy(), base_amount)
-        # Test that changing net_income, gross_income have no effect on
-        # a constant contribution:
+            method, base_amount=Money(500), inflation_adjust=lambda year:
+            {2000: Decimal(0.5), 2001: Decimal(1), 2002: Decimal(2)}[year])
+
+        # Test different inflation_adjustments for different years.
+        # 2000: the adjustment is 50% so $500 contribution is reduced
+        # to $250, leaving $1750 for living expenses.
         self.assertEqual(
-            strategy(
-                net_income=Money(100000), gross_income=Money(200000)
-            ),
-            base_amount)
+            strategy(people=self.people, year=2000), Money('1750'))
+        # 2001: the adjustment is 100% so $500 contribution is
+        # unchanged, leaving $1500 for living expenses.
+        self.assertEqual(
+            strategy(people=self.people, year=2001), Money('1500'))
+        # 2002: the adjustment is 200% so $500 contribution is
+        # increased to $1000, leaving $1000 for living expenses.
+        self.assertEqual(
+            strategy(people=self.people, year=2002), Money('1000'))
+
+    def test_insufficient_income(self):
+        """ Test a lower net income than the contribution rate. """
+        # Try to contribute more than net income:
+        method = LivingExpensesStrategy.strategy_const_contribution
+        strategy = LivingExpensesStrategy(method, Money(2001))
+        # Living expenses are $0 in this case, not -$1:
+        self.assertEqual(strategy(people=self.people), 0)
 
     def test_strategy_const_living_exp(self):
-        """ Test ContributionStrategy.strategy_const_living_expenses. """
+        """ Test LivingExpensesStrategy.strategy_const_living_expenses. """
         # Rather than hardcode the key, let's look it up here.
         method = LivingExpensesStrategy.strategy_const_living_expenses
 
-        # Default strategy
+        # Contribute $1000 annually, regardless of income:
         strategy = LivingExpensesStrategy(
-            method, base_amount=Money(1000), inflation_adjust=lambda year:
-            {2000: Decimal(0.5), 2001: Decimal(1), 2002: Decimal(2)}[year])
-        excess = Money(1500)  # excess money (this is the contribution)
-        net_income = strategy.base_amount + excess  # net income
+            method, base_amount=Money(1000))
         # This method requires net_income
-        self.assertEqual(strategy(year=2001, net_income=net_income), excess)
-        # Test that changing gross_income has no effect
-        self.assertEqual(
-            strategy(
-                year=2001, net_income=net_income, gross_income=Money(20000)
-            ),
-            excess
-        )
+        self.assertEqual(strategy(people=self.people), Money(1000))
 
-        # Test different inflation_adjustments for different years.
-        # First, test nominal $2000 in a year where the inflation
-        # adjustment is 50%. Our real-value $1000 living expenses is
-        # reduced by 50% to $500 in nominal terms, leaving $2000 to
-        # contribute.
+    def test_const_living_exp_inflation_adjust(self):
+        """ Test inflation-adjusted constant living expenses. """
+        # Contribute $1000 every year, adjusted to inflation:
+        method = LivingExpensesStrategy.strategy_const_living_expenses
+        strategy = LivingExpensesStrategy(
+            strategy=method, inflation_adjust=self.variable_inflation,
+            base_amount=Money(1000))
         self.assertEqual(
-            strategy(year=2000, net_income=Money(2500)), Money('2000'))
-        # For 2002, the inflation adjustment is 200%, meaning that our
-        # living expenses are $2000 nominally. For income of $2500
-        # the contribution is now just $500
+            strategy(year=2000),
+            strategy.base_amount * self.variable_inflation(2000)
+        )
         self.assertEqual(
-            strategy(year=2002, net_income=Money(2500)), Money('500'))
-        # Test a lower net_income than the living standard:
-        strategy = LivingExpensesStrategy(method, Money(1000))
-        self.assertEqual(strategy(year=2000, net_income=Money(500)), 0)
+            strategy(year=2001),
+            strategy.base_amount * self.variable_inflation(2001)
+        )
+        self.assertEqual(
+            strategy(year=2002),
+            strategy.base_amount * self.variable_inflation(2002)
+        )
 
     def test_strategy_net_percent(self):
-        """ Test ContributionStrategy.strategy_net_percent. """
-        # Rather than hardcode the key, let's look it up here.
+        """ Test LivingExpensesStrategy.strategy_net_percent. """
+        # Live on 50% of net income:
         method = LivingExpensesStrategy.strategy_net_percent
+        strategy = LivingExpensesStrategy(method, rate=0.5)
+        net_income = sum(person.net_income for person in self.people)
+        self.assertEqual(
+            strategy(people=self.people),
+            net_income * strategy.rate)
 
-        # Default strategy
-        strategy = LivingExpensesStrategy(method)
-        net_income = Money(1000)
-        # This method requires net_income
-        self.assertEqual(
-            strategy(net_income=net_income), net_income * strategy.rate)
-        # Test that changing gross_income has no effect
-        self.assertEqual(
-            strategy(net_income=net_income, gross_income=Money(20000)),
-            net_income * strategy.rate
-        )
+    def test_net_percent_inflation_adjust(self):
+        """ Test inflation-adjusted net-percent living expenses. """
+        # Live on 50% of net income, and also provide inflation-adjust:
+        method = LivingExpensesStrategy.strategy_net_percent
         strategy = LivingExpensesStrategy(
-            strategy=method, inflation_adjust=self.variable_inflation)
-        # Test different inflation_adjustments
-        # (Since the net_income argument is nominal, inflation should
-        # have no effect)
+            strategy=method, rate=0.5,
+            inflation_adjust=self.variable_inflation)
+        # Since net_income is nominal, inflation should have no effect:
+        net_income = sum(person.net_income for person in self.people)
         self.assertEqual(
-            strategy(net_income=net_income, year=2000),
+            strategy(people=self.people, year=2000),
             net_income * strategy.rate
         )
         self.assertEqual(
-            strategy(net_income=net_income, year=2002),
+            strategy(people=self.people, year=2002),
             net_income * strategy.rate
         )
 
     def test_strategy_gross_percent(self):
-        """ Test ContributionStrategy.strategy_gross_percent. """
-        # Rather than hardcode the key, let's look it up here.
+        """ Test LivingExpensesStrategy.strategy_gross_percent. """
+        # Live on 50% of gross income:
         method = LivingExpensesStrategy.strategy_gross_percent
+        strategy = LivingExpensesStrategy(method, rate=0.5)
+        gross_income = sum(person.gross_income for person in self.people)
+        self.assertEqual(
+            strategy(people=self.people),
+            gross_income * strategy.rate)
 
-        # Default strategy
-        strategy = LivingExpensesStrategy(method)
-        gross_income = Money(1000)  # gross income
-        # This method requires gross_income
-        self.assertEqual(
-            strategy(gross_income=gross_income),
-            gross_income * strategy.rate
-        )
-        # Test that changing gross_income has no effect
-        self.assertEqual(
-            strategy(gross_income=gross_income, net_income=Money(20000)),
-            gross_income * strategy.rate
-        )
-        # Test different inflation_adjustments
-        # (Since the gross_income argument is nominal, inflation_adjustment
-        # should have no effect)
+    def test_gross_percent_inflation_adjust(self):
+        """ Test inflation-adjusted gross-percent living expenses. """
+        # Live on 50% of gross income, and also provide inflation-adjust:
+        method = LivingExpensesStrategy.strategy_gross_percent
         strategy = LivingExpensesStrategy(
-            strategy=method, inflation_adjust=self.variable_inflation)
+            strategy=method, rate=0.5,
+            inflation_adjust=self.variable_inflation)
+        # Since gross_income is nominal, inflation should have no effect:
+        gross_income = sum(person.gross_income for person in self.people)
         self.assertEqual(
-            strategy(gross_income=gross_income, year=2000),
+            strategy(people=self.people, year=2000),
             gross_income * strategy.rate
         )
         self.assertEqual(
-            strategy(gross_income=gross_income, year=2002),
+            strategy(people=self.people, year=2002),
             gross_income * strategy.rate
         )
 
     def test_strategy_earnings_percent(self):
-        """ Test ContributionStrategy.strategy_earnings_percent. """
+        """ Test LivingExpensesStrategy.strategy_earnings_percent. """
+        # Live off the first $1000 plus 50% of amounts above that:
         method = LivingExpensesStrategy.strategy_earnings_percent
-
-        # Default strategy
         strategy = LivingExpensesStrategy(
-            method, inflation_adjust=self.variable_inflation)
-        net_income = strategy.base_amount * 2
-        # This method requires net_income
-        # Also need to provide `year` because inflation_adjust needs it
-        # (2001 is the year for which inflation adjustment is 1)
+            method, base_amount=Money(1000), rate=0.5)
+        # The test people earn $2000 net. They spend $1000 plus
+        # another $500 for a total of $1500.
         self.assertEqual(
-            strategy(net_income=net_income, year=2001),
-            (net_income - strategy.base_amount) * strategy.rate
+            strategy(people=self.people),
+            Money(1500)
         )
-        # Test that changing gross_income has no effect
+
+    def test_earnings_percent_inflation_adjust(self):
+        """ Test inflation-adjusted earnings-percent living expenses. """
+        # Live off the first $1000 plus 50% of amounts above that:
+        method = LivingExpensesStrategy.strategy_earnings_percent
+        strategy = LivingExpensesStrategy(
+            strategy=method, base_amount=Money(1000), rate=0.5,
+            inflation_adjust=self.variable_inflation)
+        # 2000: Adjustment is 50%, so live on $500 plus 50% of
+        # remaining $1500 (i.e. $750) for a total of $1250:
         self.assertEqual(
-            strategy(
-                net_income=net_income, gross_income=Money(20000), year=2001),
-            (net_income - strategy.base_amount) * strategy.rate
+            strategy(people=self.people, year=2000),
+            Money(1250)
         )
-        # Test different inflation_adjustments
-        # (This should inflation_adjust base_amount)
+        # 2001: Adjustment is 100%; should yield the usual $1500:
         self.assertEqual(
-            strategy(net_income=net_income, year=2000),
-            (net_income - strategy.base_amount * Decimal(0.5)) * strategy.rate)
+            strategy(people=self.people, year=2001),
+            Money(1500)
+        )
+        # 2002: Adjustment is 200%, so live on $2000. That's all
+        # of the net income, so the 50% rate doesn't apply:
         self.assertEqual(
-            strategy(net_income=net_income, year=2002),
-            (net_income - strategy.base_amount * Decimal(2)) * strategy.rate)
+            strategy(people=self.people, year=2002),
+            Money(2000)
+        )
 
 
 class TestWithdrawalStrategyMethods(unittest.TestCase):
@@ -299,9 +307,8 @@ class TestWithdrawalStrategyMethods(unittest.TestCase):
 
         self.inflation_adjust = inflation_adjust
 
-    def test_init(self):
-        """ Test WithdrawalStrategy.__init__ """
-        # Test default init:
+    def test_init_default(self):
+        """ Test WithdrawalStrategy.__init__ with default args """
         method = "Constant withdrawal"
         strategy = WithdrawalStrategy(method)
 
@@ -311,7 +318,8 @@ class TestWithdrawalStrategyMethods(unittest.TestCase):
         self.assertEqual(strategy.timing, 'end')
         self.assertEqual(strategy.income_adjusted, False)
 
-        # Test explicit init:
+    def test_init_explicit(self):
+        """ Test WithdrawalStrategy.__init__ with explicit args """
         method = 'Constant withdrawal'
         rate = Decimal('1000')
         base_amount = Decimal('500')
@@ -331,20 +339,23 @@ class TestWithdrawalStrategyMethods(unittest.TestCase):
         self.assertEqual(strategy.income_adjusted, income_adjusted)
         self.assertEqual(strategy.inflation_adjust, inflation_adjust)
 
+    def test_init_invalid(self):
+        """ Test WithdrawalStrategy.__init__ with invalid args """
+        method = 'Constant withdrawal'
         # Test invalid strategies
         with self.assertRaises(ValueError):
-            strategy = WithdrawalStrategy(strategy='Not a strategy')
+            _ = WithdrawalStrategy(strategy='Not a strategy')
         with self.assertRaises(TypeError):
-            strategy = WithdrawalStrategy(strategy=1)
+            _ = WithdrawalStrategy(strategy=1)
         # Test invalid rate
         with self.assertRaises(decimal.InvalidOperation):
-            strategy = WithdrawalStrategy(strategy=method, rate='a')
+            _ = WithdrawalStrategy(strategy=method, rate='a')
         # Test invalid base_amount
         with self.assertRaises(decimal.InvalidOperation):
-            strategy = WithdrawalStrategy(strategy=method, base_amount='a')
+            _ = WithdrawalStrategy(strategy=method, base_amount='a')
         # Test invalid timing
         with self.assertRaises(ValueError):
-            strategy = WithdrawalStrategy(strategy=method, timing='a')
+            _ = WithdrawalStrategy(strategy=method, timing='a')
         # No need to test bool-valued attributes - everything is
         # bool-convertible!
 
