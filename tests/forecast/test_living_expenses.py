@@ -42,7 +42,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
         # Contribute 50% of net income (i.e. $3900):
         self.strategy = LivingExpensesStrategy(
             strategy=LivingExpensesStrategy.strategy_gross_percent,
-            rate=0.5, refund_reinvestment_rate=1)
+            rate=0.5)
         self.forecast = LivingExpensesForecast(
             initial_year=self.initial_year,
             people={self.person1, self.person2},
@@ -53,7 +53,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
         # Contribute 50% of gross income:
         self.strategy = LivingExpensesStrategy(
             strategy=LivingExpensesStrategy.strategy_gross_percent,
-            rate=0.5, refund_reinvestment_rate=1)
+            rate=0.5)
         self.forecast.living_expenses_strategy = self.strategy
 
         # It's not necessary to record inflows from employment,
@@ -73,7 +73,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
         # Contribute 50% of net income:
         self.strategy = LivingExpensesStrategy(
             strategy=LivingExpensesStrategy.strategy_net_percent,
-            rate=0.5, refund_reinvestment_rate=1)
+            rate=0.5)
         self.forecast.living_expenses_strategy = self.strategy
 
         # It's not necessary to record inflows from employment,
@@ -93,7 +93,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
         # Contribute $100 and live off the rest:
         self.strategy = LivingExpensesStrategy(
             strategy=LivingExpensesStrategy.strategy_const_contribution,
-            base_amount=Money(100), refund_reinvestment_rate=1)
+            base_amount=Money(100))
         self.forecast.living_expenses_strategy = self.strategy
 
         # It _is_ necessary to record inflows from employment
@@ -111,7 +111,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
         # Live off of $1200/yr:
         self.strategy = LivingExpensesStrategy(
             strategy=LivingExpensesStrategy.strategy_const_living_expenses,
-            base_amount=Money(1200), refund_reinvestment_rate=1)
+            base_amount=Money(1200))
         self.forecast.living_expenses_strategy = self.strategy
 
         # It's not necessary to record inflows from employment,
@@ -129,8 +129,8 @@ class TestLivingExpensesForecast(unittest.TestCase):
         """ Test living expenses based on percentage of raises. """
         # Live off of $1200/yr:
         self.strategy = LivingExpensesStrategy(
-            strategy=LivingExpensesStrategy.strategy_earnings_percent,
-            base_amount=Money(1200), refund_reinvestment_rate=1)
+            strategy=LivingExpensesStrategy.strategy_percent_over_base,
+            base_amount=Money(1200))
         self.forecast.living_expenses_strategy = self.strategy
 
         # It's not necessary to record inflows from employment,

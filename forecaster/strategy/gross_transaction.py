@@ -67,15 +67,13 @@ class LivingExpensesStrategy(Strategy):
     # are 6 of them (including self). Refactoring to use a dict or
     # similar would hurt readability.
     def __init__(
-        self, strategy, base_amount=0, rate=0, refund_reinvestment_rate=1,
-        inflation_adjust=None
+        self, strategy, base_amount=0, rate=0, inflation_adjust=None
     ):
         """ Constructor for ContributionStrategy. """
         super().__init__(strategy)
 
         self.base_amount = Money(base_amount)
         self.rate = Decimal(rate)
-        self.refund_reinvestment_rate = Decimal(refund_reinvestment_rate)
 
         # If no inflation_adjustment is specified, create a default
         # value so that methods don't need to test for None
@@ -113,7 +111,7 @@ class LivingExpensesStrategy(Strategy):
         return self.rate * sum(person.gross_income for person in people)
 
     @strategy_method('Percentage of earnings growth')
-    def strategy_earnings_percent(
+    def strategy_percent_over_base(
         self, people, year=None, *args, **kwargs
     ):
         """ Live off a base amount plus a percentage of earnings above it. """

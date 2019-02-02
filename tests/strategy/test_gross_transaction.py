@@ -245,7 +245,7 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
     def test_strategy_earnings_percent(self):
         """ Test LivingExpensesStrategy.strategy_earnings_percent. """
         # Live off the first $1000 plus 50% of amounts above that:
-        method = LivingExpensesStrategy.strategy_earnings_percent
+        method = LivingExpensesStrategy.strategy_percent_over_base
         strategy = LivingExpensesStrategy(
             method, base_amount=Money(1000), rate=0.5)
         # The test people earn $2000 net. They spend $1000 plus
@@ -258,7 +258,7 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
     def test_earnings_percent_inflation_adjust(self):
         """ Test inflation-adjusted earnings-percent living expenses. """
         # Live off the first $1000 plus 50% of amounts above that:
-        method = LivingExpensesStrategy.strategy_earnings_percent
+        method = LivingExpensesStrategy.strategy_percent_over_base
         strategy = LivingExpensesStrategy(
             strategy=method, base_amount=Money(1000), rate=0.5,
             inflation_adjust=self.variable_inflation)
