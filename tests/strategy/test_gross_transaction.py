@@ -78,23 +78,18 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
         self.assertEqual(strategy.strategy, method)
         self.assertEqual(strategy.base_amount, Money(0))
         self.assertEqual(strategy.rate, Decimal(0))
-        self.assertEqual(strategy.refund_reinvestment_rate, Decimal(1))
 
         # Test explicit init:
         method = 'Constant contribution'
         base_amount = Money('1000')
         rate = Decimal('0.5')
-        refund_reinvestment_rate = Decimal('0.5')
         inflation_adjust = self.constant_2x_inflation
         strategy = LivingExpensesStrategy(
             strategy=method, base_amount=base_amount, rate=rate,
-            refund_reinvestment_rate=refund_reinvestment_rate,
             inflation_adjust=inflation_adjust)
         self.assertEqual(strategy.strategy, method)
         self.assertEqual(strategy.base_amount, base_amount)
         self.assertEqual(strategy.rate, rate)
-        self.assertEqual(
-            strategy.refund_reinvestment_rate, refund_reinvestment_rate)
         self.assertEqual(strategy.inflation_adjust, inflation_adjust)
 
         # Test invalid strategies
@@ -108,10 +103,6 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
         # Test invalid rate
         with self.assertRaises(decimal.InvalidOperation):
             strategy = LivingExpensesStrategy(strategy=method, rate='a')
-        # Test invalid refund_reinvestment_rate
-        with self.assertRaises(decimal.InvalidOperation):
-            strategy = LivingExpensesStrategy(
-                strategy=method, refund_reinvestment_rate='a')
 
     def test_strategy_const_contrib(self):
         """ Test LivingExpensesStrategy.strategy_const_contribution. """
