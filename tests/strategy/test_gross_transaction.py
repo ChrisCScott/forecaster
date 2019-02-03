@@ -1,52 +1,43 @@
-""" Unit tests for `LivingExpensesStrategy` and `WithdrawalStrategy`. """
+""" Unit tests for `LivingExpensesStrategy` and `LivingExpensesStrategy`. """
 
 import unittest
 import decimal
 from decimal import Decimal
 from random import Random
 from forecaster import (
-    Person, Money, Tax,
-    LivingExpensesStrategy, WithdrawalStrategy)
+    Person, Money, Account, Tax, LivingExpensesStrategy)
 
 
 class TestLivingExpensesStrategyMethods(unittest.TestCase):
     """ A test case for the LivingExpensesStrategy class """
 
-    @classmethod
-    def setUpClass(cls):
-        """ Set up stock variables that won't be modified by tests. """
-        inflation_adjustments = {
-            2000: Decimal(0.5),
-            2001: Decimal(1),
-            2002: Decimal(2)
-        }
-
-        @staticmethod
-        def variable_inflation(year, base_year=None):
-            """ Returns different inflation rates for different years. """
-            if base_year is None:
-                base_year = 2001
-            # Store a convenient inflation_adjust function that returns
-            # 50% for 2000, 100% for 2001, and 200% for 2002:
-            return (
-                inflation_adjustments[year] /
-                inflation_adjustments[base_year]
-            )
-
-        # pylint: disable=unused-argument
-        @staticmethod
-        def constant_2x_inflation(year, base_year=None):
-            """ Returns the same inflation rate for each year. """
-            # A convenient inflation_adjust function that returns 200%
-            # for any input (and doesn't require any particular `year`)
-            return Decimal('2')
-
-        cls.variable_inflation = variable_inflation
-        cls.constant_2x_inflation = constant_2x_inflation
-
     def setUp(self):
         """ Set up stock variables which might be modified. """
-        self.initial_year = 2000
+        # Set up inflation of various rates covering 1999-2002:
+        self.year_half = 1999  # -50% inflation (values halved) in this year
+        self.year_1 = 2000  # baseline year; no inflation
+        self.year_2 = 2001  # 100% inflation (values doubled) in this year
+        self.year_10 = 2002  # Values multiplied by 10 in this year
+        self.inflation_adjustment = {
+            self.year_half: Decimal(0.5),
+            self.year_1: Decimal(1),
+            self.year_2: Decimal(2),
+            self.year_10: Decimal(10)
+        }
+
+        # We need to provide a callable object that returns inflation
+        # adjustments between years. Build that here:
+        def variable_inflation(year, base_year=self.year_1):
+            """ Returns inflation-adjustment factor between two years. """
+            return (
+                self.inflation_adjustment[year] /
+                self.inflation_adjustment[base_year]
+            )
+        self.variable_inflation = variable_inflation
+
+        # Build all the objects we need to build an instance of
+        # `LivingExpensesStrategy`:
+        self.initial_year = self.year_1
         # Simple tax treatment: 50% tax rate across the board.
         tax = Tax(tax_brackets={
             self.initial_year: {Money(0): Decimal(0.5)}})
@@ -69,6 +60,16 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
             payment_frequency='BW')
         self.people = {self.person1, self.person2}
 
+        # Give person1 a $1000 account and person2 a $9,000 account:
+        self.account1 = Account(
+            owner=self.person1,
+            balance=Money(1000),
+            rate=0)
+        self.account2 = Account(
+            owner=self.person2,
+            balance=Money(9000),
+            rate=0)
+
     def test_init(self):
         """ Test LivingExpensesStrategy.__init__ """
         # Test default init:
@@ -83,7 +84,7 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
         method = 'Constant contribution'
         base_amount = Money('1000')
         rate = Decimal('0.5')
-        inflation_adjust = self.constant_2x_inflation
+        inflation_adjust = self.variable_inflation
         strategy = LivingExpensesStrategy(
             strategy=method, base_amount=base_amount, rate=rate,
             inflation_adjust=inflation_adjust)
@@ -253,299 +254,176 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
         strategy = LivingExpensesStrategy(
             strategy=method, base_amount=Money(1000), rate=0.5,
             inflation_adjust=self.variable_inflation)
-        # 2000: Adjustment is 50%, so live on $500 plus 50% of
+        # 1999: Adjustment is 50%, so live on $500 plus 50% of
         # remaining $1500 (i.e. $750) for a total of $1250:
         self.assertEqual(
-            strategy(people=self.people, year=2000),
+            strategy(people=self.people, year=self.year_half),
             Money(1250)
         )
-        # 2001: Adjustment is 100%; should yield the usual $1500:
+        # 2000: Adjustment is 100%; should yield the usual $1500:
         self.assertEqual(
-            strategy(people=self.people, year=2001),
+            strategy(people=self.people, year=self.year_1),
             Money(1500)
         )
-        # 2002: Adjustment is 200%, so live on $2000. That's all
+        # 2001: Adjustment is 200%, so live on $2000. That's all
         # of the net income, so the 50% rate doesn't apply:
         self.assertEqual(
-            strategy(people=self.people, year=2002),
+            strategy(people=self.people, year=self.year_2),
             Money(2000)
         )
 
+    def test_strategy_principal_percent_retirement(self):
+        """ Test LivingExpensesStrategy.strategy_principal_percent_retirement. """
+        # Live off of 50% of the principal balance at retirement:
+        method = LivingExpensesStrategy.strategy_principal_percent_retirement
+        strategy = LivingExpensesStrategy(strategy=method, rate=0.5)
 
-class TestWithdrawalStrategyMethods(unittest.TestCase):
-    """ A test case for the WithdrawalStrategy class """
+        # Retire in this year and advance to next year:
+        retirement_year = self.initial_year
+        year = retirement_year + 1
+        for person in self.people:
+            person.next_year()
 
-    def setUp(self):
-        """ Sets up TestWithdrawalStrategyMethods. """
-        # Several methods use varying inflation adjustment figures.
-        self.year_half = 1999  # -50% inflation (values halved) in this year
-        self.year_1 = 2000  # baseline year; no inflation
-        self.year_2 = 2001  # 100% inflation (values doubled) in this year
-        self.year_10 = 2002  # Values multiplied by 10 in this year
-        self.inflation_adjustment = {
-            self.year_half: Decimal(0.5),
-            self.year_1: Decimal(1),
-            self.year_2: Decimal(2),
-            self.year_10: Decimal(10)
-        }
+        principal = self.account1.balance + self.account2.balance
+        self.assertEqual(
+            strategy(
+                people=self.people,
+                year=year,
+                retirement_year=retirement_year),
+            strategy.rate * principal)
 
-        def inflation_adjust(year, base_year=self.year_1):
-            """ Returns inflation-adjustment factor between two years. """
-            return (
-                self.inflation_adjustment[year] /
-                self.inflation_adjustment[base_year]
-            )
+    def test_strategy_principal_percent_retirement_inflation(self):
+        """ Test inflation-adjustment when living on principal. """
+        # Live off of 50% of the principal balance at retirement,
+        # adjusted to inflation:
+        method = LivingExpensesStrategy.strategy_principal_percent_retirement
+        strategy = LivingExpensesStrategy(
+            strategy=method, rate=0.5, inflation_adjust=self.variable_inflation)
 
-        self.inflation_adjust = inflation_adjust
+        # Retire in this year and advance to next year:
+        retirement_year = self.initial_year
+        year = retirement_year + 1
+        for person in self.people:
+            person.next_year()
 
-    def test_init_default(self):
-        """ Test WithdrawalStrategy.__init__ with default args """
-        method = "Constant withdrawal"
-        strategy = WithdrawalStrategy(method)
+        # Determine the inflation between retirement_year and
+        # the current year (since all figs. are in nominal terms)
+        inflation_adjustment = self.variable_inflation(
+            year, base_year=retirement_year)
+        principal = self.account1.balance + self.account2.balance
 
-        self.assertEqual(strategy.strategy, method)
-        self.assertEqual(strategy.rate, Decimal(0))
-        self.assertEqual(strategy.base_amount, Money(0))
-        self.assertEqual(strategy.timing, 'end')
-        self.assertEqual(strategy.income_adjusted, False)
-
-    def test_init_explicit(self):
-        """ Test WithdrawalStrategy.__init__ with explicit args """
-        method = 'Constant withdrawal'
-        rate = Decimal('1000')
-        base_amount = Decimal('500')
-        timing = 'end'
-        income_adjusted = True
-        inflation_adjust = self.inflation_adjust
-        strategy = WithdrawalStrategy(
-            strategy=method, base_amount=base_amount, rate=rate,
-            timing=timing, income_adjusted=income_adjusted,
-            inflation_adjust=inflation_adjust
+        self.assertEqual(
+            strategy(
+                people=self.people, year=year,
+                retirement_year=retirement_year),
+            strategy.rate * principal * inflation_adjustment
         )
 
-        self.assertEqual(strategy.strategy, method)
-        self.assertEqual(strategy.rate, rate)
-        self.assertEqual(strategy.base_amount, base_amount)
-        self.assertEqual(strategy.timing, timing)
-        self.assertEqual(strategy.income_adjusted, income_adjusted)
-        self.assertEqual(strategy.inflation_adjust, inflation_adjust)
+    def test_strategy_net_percent_retirement(self):
+        """ Test LivingExpensesStrategy.strategy_net_percent_retirement. """
+        # Live off of 50% of net income at retirement:
+        method = LivingExpensesStrategy.strategy_net_percent_retirement
+        strategy = LivingExpensesStrategy(strategy=method, rate=0.5)
 
-    def test_init_invalid(self):
-        """ Test WithdrawalStrategy.__init__ with invalid args """
-        method = 'Constant withdrawal'
-        # Test invalid strategies
-        with self.assertRaises(ValueError):
-            _ = WithdrawalStrategy(strategy='Not a strategy')
-        with self.assertRaises(TypeError):
-            _ = WithdrawalStrategy(strategy=1)
-        # Test invalid rate
-        with self.assertRaises(decimal.InvalidOperation):
-            _ = WithdrawalStrategy(strategy=method, rate='a')
-        # Test invalid base_amount
-        with self.assertRaises(decimal.InvalidOperation):
-            _ = WithdrawalStrategy(strategy=method, base_amount='a')
-        # Test invalid timing
-        with self.assertRaises(ValueError):
-            _ = WithdrawalStrategy(strategy=method, timing='a')
-        # No need to test bool-valued attributes - everything is
-        # bool-convertible!
+        # Retire in this year, advance to next year, set income to $0
+        # (record income first, since this is the year that matters):
+        net_income = sum(person.net_income for person in self.people)
+        retirement_year = self.initial_year
+        year = retirement_year + 1
+        for person in self.people:
+            person.next_year()
+            person.gross_income = Money(0)
+            person.net_income = Money(0)
 
-    def test_strategy_const_withdrawal(self):
-        """ Test WithdrawalStrategy.strategy_const_withdrawal. """
-        # Rather than hardcode the key, let's look it up here.
-        method = WithdrawalStrategy.strategy_const_withdrawal
-
-        # Default strategy
-        strategy = WithdrawalStrategy(method, base_amount=Money(100))
-        # Test all default parameters. (We don't need to provide any
-        # inflation data since this instance is not inflation-adjusted.)
-        self.assertEqual(strategy(), Money(100))
-
-        # Test different inflation_adjustments
-        strategy = WithdrawalStrategy(
-            method, base_amount=Money(100),
-            inflation_adjust=self.inflation_adjust)
-        for year in self.inflation_adjustment:
-            self.assertEqual(
-                strategy(year=year),
-                Money(strategy.base_amount) * self.inflation_adjustment[year]
-            )
-
-    def test_strategy_principal_percent(self):
-        """ Test WithdrawalStrategy.strategy_principal_percent. """
-        # Rather than hardcode the key, let's look it up here.
-        method = WithdrawalStrategy.strategy_principal_percent
-
-        rand = Random()
-        principal = {}
-        retirement_year = min(self.inflation_adjustment.keys())
-        for year in self.inflation_adjustment:
-            # Randomly generate values in [$0, $1000000.00]
-            principal[year] = Money(rand.randint(0, 100000000) / 100)
-
-        strategy = WithdrawalStrategy(strategy=method, rate=0.5)
-        # Test results for the simple, no-inflation/no-benefits case:
-        for year in self.inflation_adjustment:
-            self.assertEqual(
-                strategy(
-                    principal_history=principal,
-                    retirement_year=retirement_year),
-                Money(strategy.rate * principal[retirement_year]))
-
-        # Test different inflation_adjustments
-        strategy = WithdrawalStrategy(
-            strategy=method, rate=0.5, inflation_adjust=self.inflation_adjust)
-        for year in self.inflation_adjustment:
-            # Determine the inflation between retirement_year and
-            # the current year (since all figs. are in nominal terms)
-            inflation_adjustment = self.inflation_adjustment[year] / \
-                self.inflation_adjustment[retirement_year]
-            # For readability, we store the result of the strategy here
-            # and perform separate tests below depending on whether or
-            # not the plannee has retired yet:
-            test_withdrawal = strategy(
-                principal_history=principal,
-                retirement_year=retirement_year,
-                year=year
-            )
-            true_withdrawal = (
-                Money(strategy.rate * principal[retirement_year]) *
-                inflation_adjustment
-            )
-            if year <= retirement_year:  # Not retired. No withdrawals
-                self.assertEqual(test_withdrawal, Money(0))
-            else:  # Retired. Withdraw according to strategy.
-                self.assertEqual(test_withdrawal, true_withdrawal)
-
-    def test_strategy_net_percent(self):
-        """ Test WithdrawalStrategy.strategy_net_percent. """
-        # Rather than hardcode the key, let's look it up here.
-        method = WithdrawalStrategy.strategy_net_percent
-
-        rand = Random()
-        net_income = {}
-        retirement_year = min(self.inflation_adjustment.keys())
-        for year in self.inflation_adjustment:
-            # Randomly generate values in [$0, $1000000.00]
-            net_income[year] = Money(rand.randint(0, 100000000) / 100)
-
-        strategy = WithdrawalStrategy(strategy=method, rate=0.5, base_amount=0)
-        # Test results for the simple, no-inflation/no-benefits case:
-        for year in self.inflation_adjustment:
-            self.assertEqual(
-                strategy(
-                    net_income_history=net_income,
-                    retirement_year=retirement_year),
-                Money(strategy.rate * net_income[retirement_year]))
-
-        # Test different inflation_adjustments
-        strategy = WithdrawalStrategy(
-            strategy=method, rate=0.5, base_amount=0,
-            inflation_adjust=self.inflation_adjust)
-        for year in self.inflation_adjustment:
-            # Determine the inflation between retirement_year and
-            # the current year (since all figs. are in nominal terms)
-            inflation_adjustment = self.inflation_adjustment[year] / \
-                self.inflation_adjustment[retirement_year]
-            # For readability, we store the result of the strategy here
-            # and perform separate tests below depending on whether or
-            # not the plannee has retired yet:
-            test_withdrawal = strategy(
-                net_income_history=net_income,
-                retirement_year=retirement_year,
-                year=year
-            )
-            true_withdrawal = Money(
-                strategy.rate * net_income[retirement_year]
-            ) * inflation_adjustment
-            if year <= retirement_year:  # Not retired. No withdrawals
-                self.assertEqual(test_withdrawal, Money(0))
-            else:  # Retired. Withdraw according to strategy.
-                self.assertEqual(test_withdrawal, true_withdrawal)
-
-    def test_strategy_gross_percent(self):
-        """ Test WithdrawalStrategy.strategy_gross_percent. """
-        # Rather than hardcode the key, let's look it up here.
-        method = WithdrawalStrategy.strategy_gross_percent
-
-        rand = Random()
-        gross_income = {}
-        retirement_year = min(self.inflation_adjustment.keys())
-        for year in self.inflation_adjustment:
-            # Randomly generate values in [$0, $1000000.00]
-            gross_income[year] = Money(rand.randint(0, 100000000) / 100)
-
-        strategy = WithdrawalStrategy(method, rate=0.5, base_amount=0)
-        # Test results for the simple, no-inflation/no-benefits case:
-        for year in self.inflation_adjustment:
-            self.assertEqual(
-                strategy(
-                    gross_income_history=gross_income,
-                    retirement_year=retirement_year
-                ),
-                Money(strategy.rate * gross_income[retirement_year])
-            )
-
-        # Test different inflation_adjustments
-        strategy = WithdrawalStrategy(
-            strategy=method, rate=0.5, base_amount=0,
-            inflation_adjust=self.inflation_adjust)
-        for year in self.inflation_adjustment:
-            # Determine the inflation between retirement_year and
-            # the current year (since all figs. are in nominal terms)
-            inflation_adjustment = self.inflation_adjustment[year] / \
-                self.inflation_adjustment[retirement_year]
-            # For readability, we store the result of the strategy here
-            # and perform separate tests below depending on whether or
-            # not the plannee has retired yet:
-            test_withdrawal = strategy(
-                gross_income_history=gross_income,
-                retirement_year=retirement_year,
-                year=year
-            )
-            true_withdrawal = Money(
-                strategy.rate * gross_income[retirement_year]
-            ) * inflation_adjustment
-            if year <= retirement_year:  # Not retired. No withdrawals
-                self.assertEqual(test_withdrawal, Money(0))
-            else:  # Retired. Withdraw according to strategy.
-                self.assertEqual(test_withdrawal, true_withdrawal)
-
-    def test_call(self):
-        """ Test __call__ logic (but not strategy-specific logic). """
-        # Select a simple, constant withdrawal strategy.
-        method = WithdrawalStrategy.strategy_const_withdrawal
-
-        # Test other income. No inflation adjustment.
-        strategy = WithdrawalStrategy(
-            strategy=method, base_amount=Money(100), rate=0,
-            timing='end', income_adjusted=True)
-        # $0 benefits -> no change:
-        self.assertEqual(strategy(other_income=Money(0)),
-                         Money(strategy.base_amount))
-        # $1 benefits -> $1 reduction
-        self.assertEqual(strategy(other_income=Money(1)),
-                         Money(strategy.base_amount) - Money(1))
-        # Benefits = withdrawal rate -> $0 withdrawal
-        self.assertEqual(strategy(other_income=Money(strategy.base_amount)),
-                         Money(0))
-        # Benefits > withdrawal rate -> $0 withdrawal
         self.assertEqual(
-            strategy(other_income=Money(strategy.base_amount) + Money(1)),
-            Money(0))
+            strategy(
+                people=self.people,
+                year=year,
+                retirement_year=retirement_year),
+            strategy.rate * net_income)
 
-        # Re-run above tests, but this time with income_adjusted=False
-        strategy = WithdrawalStrategy(
-            strategy=method, base_amount=Money(100), rate=0, timing='end',
-            income_adjusted=False)
-        # In every case, there should be no change:
-        self.assertEqual(strategy(Money(0)), Money(strategy.base_amount))
-        self.assertEqual(strategy(Money(1)), Money(strategy.base_amount))
+    def test_strategy_net_percent_retirement_inflation(self):
+        """ Test inflation-adjustment when living on net income. """
+        # Live off of 50% of net income at retirement,
+        # adjusted to inflation:
+        method = LivingExpensesStrategy.strategy_net_percent_retirement
+        strategy = LivingExpensesStrategy(
+            strategy=method, rate=0.5, inflation_adjust=self.variable_inflation)
+
+        # Retire in this year, advance to next year, set income to $0
+        # (record income first, since this is the year that matters):
+        net_income = sum(person.net_income for person in self.people)
+        retirement_year = self.initial_year
+        year = retirement_year + 1
+        for person in self.people:
+            person.next_year()
+            person.gross_income = Money(0)
+            person.net_income = Money(0)
+
+        # Determine the inflation between retirement_year and
+        # the current year (since all figs. are in nominal terms)
+        inflation_adjustment = self.variable_inflation(
+            year, base_year=retirement_year)
+
         self.assertEqual(
-            strategy(Money(strategy.base_amount)),
-            Money(strategy.base_amount))
-        self.assertEqual(strategy(Money(strategy.base_amount) + Money(1)),
-                         Money(strategy.base_amount))
+            strategy(
+                people=self.people, year=year,
+                retirement_year=retirement_year),
+            strategy.rate * net_income * inflation_adjustment
+        )
+
+    def test_strategy_gross_percent_retirement(self):
+        """ Test LivingExpensesStrategy.strategy_gross_percent_retirement. """
+        # Live off of 50% of gross income at retirement:
+        method = LivingExpensesStrategy.strategy_gross_percent_retirement
+        strategy = LivingExpensesStrategy(strategy=method, rate=0.5)
+
+        # Retire in this year, advance to next year, set income to $0
+        # (record income first, since this is the year that matters):
+        gross_income = sum(person.gross_income for person in self.people)
+        retirement_year = self.initial_year
+        year = retirement_year + 1
+        for person in self.people:
+            person.next_year()
+            person.gross_income = Money(0)
+            person.net_income = Money(0)
+
+        self.assertEqual(
+            strategy(
+                people=self.people,
+                year=year,
+                retirement_year=retirement_year),
+            strategy.rate * gross_income)
+
+    def test_strategy_gross_percent_retirement_inflation(self):
+        """ Test inflation-adjustment when living on gross income. """
+        # Live off of 50% of gross income at retirement,
+        # adjusted to inflation:
+        method = LivingExpensesStrategy.strategy_gross_percent_retirement
+        strategy = LivingExpensesStrategy(
+            strategy=method, rate=0.5, inflation_adjust=self.variable_inflation)
+
+        # Retire in this year, advance to next year, set income to $0
+        # (record income first, since this is the year that matters):
+        gross_income = sum(person.gross_income for person in self.people)
+        retirement_year = self.initial_year
+        year = retirement_year + 1
+        for person in self.people:
+            person.next_year()
+            person.gross_income = Money(0)
+            person.net_income = Money(0)
+
+        # Determine the inflation between retirement_year and
+        # the current year (since all figs. are in nominal terms)
+        inflation_adjustment = self.variable_inflation(
+            year, base_year=retirement_year)
+
+        self.assertEqual(
+            strategy(
+                people=self.people, year=year,
+                retirement_year=retirement_year),
+            strategy.rate * gross_income * inflation_adjustment
+        )
 
 
 if __name__ == '__main__':

@@ -30,6 +30,9 @@ class LivingExpensesStrategy(Strategy):
             * "Constant living expenses"
             * "Percentage of gross income"
             * "Percentage of net income"
+            * "Percentage of principal at retirement"
+            * "Percentage of gross income at retirement"
+            * "Percentage of net income at retirement"
 
         base_amount (Money): A user-supplied amount of money, used in
             some strategies as a baseline for contributions.
@@ -69,7 +72,7 @@ class LivingExpensesStrategy(Strategy):
     def __init__(
         self, strategy, base_amount=0, rate=0, inflation_adjust=None
     ):
-        """ Constructor for ContributionStrategy. """
+        """ Constructor for LivingExpensesStrategy. """
         super().__init__(strategy)
 
         self.base_amount = Money(base_amount)
@@ -118,134 +121,8 @@ class LivingExpensesStrategy(Strategy):
         total_income = sum(person.net_income for person in people)
         return base_amount + (total_income - base_amount) * self.rate
 
-    def __call__(
-        self, people=None, year=None, *args, **kwargs
-    ):
-        """ Returns the living expenses for the year. """
-        # Determine how much to spend on living expenses:
-        living_expenses = super().__call__(
-            people=people, year=year, *args, **kwargs)
-        # Ensure we return non-negative value:
-        return max(living_expenses, Money(0))
-
-# TODO: Merge WithdrawalStrategy with LivingExpensesStrategy.
-
-class WithdrawalStrategy(Strategy):
-    """ Determines an annual gross withdrawal.
-
-    This class is callable. Its call signature has this form::
-
-        obj(
-            year, benefits, net_income, gross_income, principal,
-            retirement_year
-        )
-
-    Arguments may be omitted if the selected strategy does not require
-    it; otherwise, an error is raised. All arguments are keyword
-    arguments.
-
-    Attributes:
-        strategy (str, func): Either a string corresponding to a
-            particular strategy or an instance of the strategy itself.
-            See `strategies` for acceptable keys.
-        strategies (dict): {str, func} pairs where each key identifies
-            a strategy (in human-readable text) and each value is a
-            function with the same arguments and return value as
-            gross_contribution(). See its documentation for more info.
-
-            Acceptable keys include:
-
-            * "Constant withdrawal"
-            * "Percentage of principal"
-            * "Percentage of gross income"
-            * "Percentage of net income"
-
-        base_amount (Money): A user-supplied amount of money, used in
-            some strategies as a baseline for withdrawals.
-        rate (Decimal): A user-supplied withdrawal rate. Must be a
-            percentage (e.g. Decimal('0.03') means 3%).
-        timing (str, Decimal): Withdrawals are modelled as a lump sum
-            which takes place at this time. If you're using a
-            TransactionStrategy to determine per-account withdrawals,
-            it's recommended that it use the same timing.
-
-            This is expressed according to the `when` convention
-            described in `ledger.Account`.
-        inflation_adjust (callable): If provided, `base_amount` is
-            interpreted as a real (i.e. inflation-adjusted) currency
-            value.
-
-            This callable object will be called as
-            `inflation_adjust(year[, base_year])` to receive the
-            inflation-adjustment factor between real and nominal values
-            for that year (relative to base_year, if provided).
-
-            Optional. If not provided, `base_amount` is not
-            inflation_adjusted.
-        income_adjusted (bool): If True, withdrawals are reduced to
-            account for income from other sources.
-
-    Args:
-        year (int): The current year. Optional, but if inflation_adjust
-            requires a year parameter than an error will be raised.
-        benefits (Money): Other income for the year.
-            If `benefits_adjusted` is True, withdrawals will be reduced
-            accordingly to maintain the target living standard.
-        net_income (dict): {year: Money} pairs. Provides the family's
-            total net income for each year.
-        gross_income (dict): {year: Money} pairs. Provides the family's
-            total gross income for each year.
-        principal (dict): {year: Money} pairs. Provides the total
-            principal saves for each year.
-        retirement_year (int): The year in which the family retired.
-            Used as a reference date to set withdrawals for some
-            strategies.
-
-    Returns:
-        A Money object corresponding to the gross withdrawal amount
-        for the family for the year.
-
-    Raises:
-        ValueError: A required value was not provided for the given
-            strategy.
-    """
-
-    # pylint: disable=too-many-arguments
-    def __init__(
-        self, strategy, base_amount=0, rate=0, timing='end',
-        income_adjusted=False, inflation_adjust=None
-    ):
-        """ Constructor for ContributionStrategy. """
-        super().__init__(strategy)
-
-        self.base_amount = Money(base_amount)
-        self.rate = Decimal(rate)
-        self.timing = timing
-        self.income_adjusted = bool(income_adjusted)
-
-        # If no inflation_adjustment is specified, create a default
-        # value so that methods don't need to test for None
-        if inflation_adjust is not None:
-            self.inflation_adjust = inflation_adjust
-        else:
-            self.inflation_adjust = lambda *args, **kwargs: 1
-
-        if not isinstance(self.timing, (Decimal, str)):
-            raise TypeError('WithdrawalStrategy: timing must be Decimal ' +
-                            'or str type.')
-        elif isinstance(self.timing, str) and not (self.timing == 'start' or
-                                                   self.timing == 'end'):
-            raise ValueError('WithdrawalStrategy: timing must be \'start\' ' +
-                             'or \'end\' if of type str')
-
-    # Begin defining subclass-specific strategies
-    @strategy_method('Constant withdrawal')
-    def strategy_const_withdrawal(self, year=None, *args, **kwargs):
-        """ Withdraw a constant amount each year. """
-        return Money(self.base_amount * self.inflation_adjust(year))
-
-    @strategy_method('Percentage of principal')
-    def strategy_principal_percent(
+    @strategy_method('Percentage of principal at retirement')
+    def strategy_principal_percent_retirement(
         self, accounts, retirement_year, year=None, *args, **kwargs
     ):
         """ Withdraw a percentage of principal (as of retirement). """
@@ -255,8 +132,8 @@ class WithdrawalStrategy(Strategy):
             self.rate * retirement_balance
             * self.inflation_adjust(year, retirement_year))
 
-    @strategy_method('Percentage of net income')
-    def strategy_net_percent(
+    @strategy_method('Percentage of net income at retirement')
+    def strategy_net_percent_retirement(
         self, people, retirement_year, year=None, *args, **kwargs
     ):
         """ Withdraw a percentage of max. net income (as of retirement). """
@@ -266,8 +143,8 @@ class WithdrawalStrategy(Strategy):
             self.rate * retirement_income
             * self.inflation_adjust(year, retirement_year))
 
-    @strategy_method('Percentage of gross income')
-    def strategy_gross_percent(
+    @strategy_method('Percentage of gross income at retirement')
+    def strategy_gross_percent_retirement(
         self, people, retirement_year, year=None, *args, **kwargs
     ):
         """ Withdraw a percentage of gross income. """
@@ -277,43 +154,98 @@ class WithdrawalStrategy(Strategy):
             self.rate * retirement_income
             * self.inflation_adjust(year, retirement_year))
 
-    # TODO: Add another strategy that tweaks the withdrawal rate
-    # periodically (e.g. every 10 years) based on actual portfolio
-    # performance? (This sort of thing is why this class was redesigned
-    # to take dicts as inputs instead of a handful of scalar values.)
-
     def __call__(
-        self, people=None, accounts=None, year=None,
-        retirement_year=None, total_available={}, *args, **kwargs
+        self, people=None, year=None, retirement_year=None,
+        *args, **kwargs
     ):
-        """ Returns the gross withdrawal for the year. """
-        # If we're not yet retired, no withdrawals:
-        # TODO: Determine whether this is necessary after the
-        # move to `available`-based methods. (Maybe we should
-        # allow withdrawals pre-retirement from accounts which
-        # allow it?)
-        if (
-            year is not None and retirement_year is not None and
-            year <= retirement_year
-        ):
-            return Money(0)
-
-        # First determine what the strategy recommends, before
-        # adjusting for other income.
-        strategy_result = super().__call__(
-            year=year,
-            people=people,
+        """ Returns the living expenses for the year. """
+        # Collect the accounts owned by `people` into a flat
+        # `set[Account]` object:
+        if people is not None:
+            accounts = set.union(*[person.accounts for person in people])
+        else:
+            accounts = None
+        # Determine how much to spend on living expenses:
+        living_expenses = super().__call__(
+            people=people, year=year,
             accounts=accounts,
             retirement_year=retirement_year,
             *args, **kwargs)
-        # Determine whether to (and how much to) increase or reduce
-        # withdrawals due to an excess or shortfall in cashflow:
-        if self.income_adjusted:
-            income_adjustment = total_available
-        else:
-            income_adjustment = Money(0)
+        # Ensure we return non-negative value:
+        return max(living_expenses, Money(0))
 
-        # A negative withdrawal makes no sense in this context;
-        # if we have more money then we need, simply avoid
-        # withdrawing anything.
-        return max(strategy_result - income_adjustment, Money(0))
+
+class LivingExpensesStrategySchedule(object):
+    """ Determines living expenses while working and retired.
+    
+    This class is callable, like `LivingExpensesStrategy`, and
+    accepts all of the same arguments when called.
+
+    Objects of this class wrap `LivingExpensesStrategy`
+    objects - one for working life and one for retirement.
+    The appropriate object is called depending on the current
+    year.
+
+    An additional `LivingExpensesStrategy` may also, optionally,
+    be provided as a minimum level of expenses. This lets you
+    avoid perverse situations where annual fluctuations in
+    income or assets reduce living expenses unacceptably low.
+
+    Attributes:
+        working (LivingExpensesStrategy): The strategy to use
+            during the plannees' working life.
+        retirement (LivingExpensesStrategy): The strategy to
+            use during the plannees' retirement.
+        minimum (LivingExpensesStrategy): Provides a minimum
+            living standard that must be met. Optional. May
+            be a `LivingExpensesStrategySchedule` if you want
+            to use different minima for working and retired
+            phases of life.
+
+    Args:
+        year (int): The current year.
+        retirement_year (int): The plannees' retirement year.
+            Optional; if not provided, it's assumed that the
+            plannees are still working.
+
+    Returns:
+        A Money object corresponding to the living expenses incurred
+        by the plannees for the year.
+
+    Raises:
+        ValueError: A required value was not provided for the given
+            strategy.
+    """
+
+    def __init__(self, working, retirement, minimum=None):
+        """ Inits LivingExpensesStrategySchedule. """
+        self.working = working
+        self.retirement = retirement
+        self.minimum = minimum
+
+    def __call__(self, year=None, retirement_year=None,
+        *args, **kwargs):
+        """ Returns the living expenses for the year. """
+        # First determine whether we're using the working
+        # or retirement living expenses formula:
+        if (
+            (year is not None and retirement_year is not None)
+            and year > retirement_year
+        ):
+            living_expenses = self.retirement(
+                year=year, retirement_year=retirement_year,
+                *args, **kwargs)
+        else:
+            living_expenses = self.working(
+                year=year, retirement_year=retirement_year,
+                *args, **kwargs)
+
+        # Then, if there's a minimum living expenses formula,
+        # ensure that we meet at least that:
+        if self.minimum is not None:
+            minimum = self.minimum(
+                year=year, retirement_year=retirement_year,
+                *args, **kwargs)
+            return max(living_expenses, minimum)
+        else:
+            return living_expenses
