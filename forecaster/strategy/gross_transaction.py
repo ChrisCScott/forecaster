@@ -85,7 +85,6 @@ class LivingExpensesStrategy(Strategy):
         # Types are enforced by explicit conversion; no need to check.
 
     # Begin defining subclass-specific strategies
-    # pylint: disable=W0613
     @strategy_method('Constant contribution')
     def strategy_const_contribution(self, people, year=None, *args, **kwargs):
         """ Contribute a constant amount (in real terms) and live off the rest. """
@@ -240,7 +239,6 @@ class WithdrawalStrategy(Strategy):
                              'or \'end\' if of type str')
 
     # Begin defining subclass-specific strategies
-    # pylint: disable=W0613
     @strategy_method('Constant withdrawal')
     def strategy_const_withdrawal(self, year=None, *args, **kwargs):
         """ Withdraw a constant amount each year. """
