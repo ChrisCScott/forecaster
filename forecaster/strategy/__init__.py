@@ -8,6 +8,6 @@ __all__ = [
 
 from forecaster.strategy.allocation import AllocationStrategy
 from forecaster.strategy.gross_transaction import (
-    LivingExpensesStrategy, WithdrawalStrategy)
+    LivingExpensesStrategy, LivingExpensesStrategySchedule)
 from forecaster.strategy.account_transaction import AccountTransactionStrategy
 from forecaster.strategy.debt_payment import DebtPaymentStrategy

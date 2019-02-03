@@ -6,8 +6,8 @@ from forecaster.person import Person
 from forecaster.accounts import Account, ContributionLimitAccount, Debt
 from forecaster.tax import Tax
 from forecaster.strategy import (
-    LivingExpensesStrategy, WithdrawalStrategy, AccountTransactionStrategy,
-    DebtPaymentStrategy, AllocationStrategy)
+    LivingExpensesStrategy, LivingExpensesStrategySchedule,
+    AccountTransactionStrategy, DebtPaymentStrategy, AllocationStrategy)
 from forecaster.scenario import Scenario
 from forecaster.settings import Settings
 
@@ -530,7 +530,7 @@ class Forecaster(object):
     def set_withdrawal_strategy(
         self, strategy=None, base_amount=None, rate=None, timing=None,
         income_adjusted=None, inflation_adjust=None,
-        cls=WithdrawalStrategy, **kwargs
+        cls=LivingExpensesStrategy, **kwargs
     ):
         """ TODO """
         self.set_kwarg(kwargs, 'strategy', strategy,

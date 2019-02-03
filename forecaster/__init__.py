@@ -15,8 +15,8 @@ from forecaster.person import Person
 from forecaster.scenario import Scenario
 from forecaster.accounts import Account, ContributionLimitAccount, Debt
 from forecaster.strategy import (
-    LivingExpensesStrategy, WithdrawalStrategy, AccountTransactionStrategy,
-    AllocationStrategy, DebtPaymentStrategy)
+    LivingExpensesStrategy, LivingExpensesStrategySchedule,
+    AccountTransactionStrategy, AllocationStrategy, DebtPaymentStrategy)
 from forecaster.tax import Tax
 from forecaster.settings import Settings
 from forecaster.forecast import (
