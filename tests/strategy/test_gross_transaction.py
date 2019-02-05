@@ -5,7 +5,8 @@ import decimal
 from decimal import Decimal
 from random import Random
 from forecaster import (
-    Person, Money, Account, Tax, LivingExpensesStrategy)
+    Person, Money, Account, Tax,
+    LivingExpensesStrategy, LivingExpensesStrategySchedule)
 
 
 class TestLivingExpensesStrategyMethods(unittest.TestCase):
@@ -425,6 +426,57 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
             strategy.rate * gross_income * inflation_adjustment
         )
 
+
+class TestLivingExpensesStrategyScheduleMethods(unittest.TestCase):
+    """ A test case for the LivingExpensesStrategySchedule class """
+    
+    def setUp(self):
+        """ Set up stock variables for testing. """
+        self.initial_year = 2000
+        # Live on $24000/yr while working and $12000/yr in retirement:
+        self.working = LivingExpensesStrategy(
+            LivingExpensesStrategy.strategy_const_living_expenses,
+            base_amount=Money(24000))
+        self.retirement = LivingExpensesStrategy(
+            LivingExpensesStrategy.strategy_const_living_expenses,
+            base_amount=Money(12000))
+        self.strategy = LivingExpensesStrategySchedule(
+            self.working, self.retirement)
+
+        # Simple tax treatment: 50% tax rate across the board.
+        tax = Tax(tax_brackets={
+            self.initial_year: {Money(0): Decimal(0.5)}})
+        # Set up a person with $50000 gross income, $2000 net income:
+        self.person1 = Person(
+            initial_year = self.initial_year,
+            name="Test 1",
+            birth_date="1 January 1980",
+            retirement_date="31 December 2001",  # next year
+            gross_income=Money(50000),
+            tax_treatment=tax,
+            payment_frequency='BW')
+        self.people = {self.person1}
+
+    def test_working(self):
+        """ Test working-age living expenses. """
+        self.assertEqual(
+            self.strategy(year=2000, retirement_year=2001, people=self.people),
+            Money(24000))
+
+    def test_retirement(self):
+        """ Test retirement-age living expenses. """
+        self.assertEqual(
+            self.strategy(year=2001, retirement_year=2000, people=self.people),
+            Money(12000))
+
+    def test_minimum(self):
+        """ Test minimum living expenses. """
+        self.strategy.minimum = LivingExpensesStrategy(
+            LivingExpensesStrategy.strategy_const_living_expenses,
+            base_amount=Money(18000))
+        self.assertEqual(
+            self.strategy(year=2001, retirement_year=2000, people=self.people),
+            Money(18000))
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(
