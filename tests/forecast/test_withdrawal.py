@@ -5,7 +5,7 @@ from decimal import Decimal
 from collections import defaultdict
 from forecaster import (
     Money, Person, Tax,
-    WithdrawalForecast, WithdrawalStrategy,
+    WithdrawalForecast,
     AccountTransactionStrategy,
     Account, ContributionLimitAccount,
     Scenario)
@@ -32,7 +32,7 @@ class TestWithdrawalForecast(unittest.TestCase):
             gross_income=Money(5200),
             tax_treatment=tax,
             payment_frequency='BW')
-        # We want at least two accounts which are contributed to
+        # We want at least two accounts which are withdrawn from
         # in different orders depending on the strategy.
         self.account = Account(
             owner=self.person,
@@ -42,23 +42,24 @@ class TestWithdrawalForecast(unittest.TestCase):
             contribution_room=Money(1000),
             balance=Money(6000))  # $6,000
 
-        # Track money available for use by the forecast:
-        self.available = {}
+        # Assume there are $2000 in inflows and $22,000 in outflows,
+        # for a net need of $20,000:
+        self.available = {
+            Decimal(0.25): Money(1000),
+            Decimal(0.5): Money(-11000),
+            Decimal(0.75): Money(1000),
+            Decimal(1): Money(-11000)
+        }
 
         # Now we can set up the big-ticket items:
         self.account_strategy = AccountTransactionStrategy(
             AccountTransactionStrategy.strategy_ordered,
             {'ContributionLimitAccount': 1, 'Account': 2})
-        self.withdrawal_strategy = WithdrawalStrategy(
-            strategy=WithdrawalStrategy.strategy_const_withdrawal,
-            base_amount=Money(12000),
-            rate=Decimal(0.5))
         self.forecast = WithdrawalForecast(
             initial_year=self.initial_year,
             people={self.person},
             accounts={self.account, self.limit_account},
             scenario=self.scenario,
-            withdrawal_strategy=self.withdrawal_strategy,
             account_transaction_strategy=self.account_strategy)
 
     def test_account_transactions_ordered(self):
@@ -78,21 +79,21 @@ class TestWithdrawalForecast(unittest.TestCase):
             self.forecast.account_transactions[self.account])
         limit_account_withdrawal = (
             self.forecast.account_transactions[self.limit_account])
-        # We are withdrawing $12,000. We'll withdraw the whole balance
+        # We are withdrawing $20,000. We'll withdraw the whole balance
         # of `limit_account` ($6000), with the rest from `account`:
         self.assertEqual(
             limit_account_withdrawal,
             Money(-6000))
         self.assertEqual(
             account_withdrawal,
-            Money(-6000))
+            Money(-14000))
 
     def test_account_transactions_weighted(self):
         """ Test account transactions under weighted strategy. """
         # Set up forecast:
         self.account_strategy = AccountTransactionStrategy(
             strategy=AccountTransactionStrategy.strategy_weighted,
-            weights={'ContributionLimitAccount': 2000, 'Account': 10000})
+            weights={'ContributionLimitAccount': 3000, 'Account': 17000})
         self.forecast.account_transaction_strategy = self.account_strategy
         self.forecast.update_available(self.available)
 
@@ -104,14 +105,14 @@ class TestWithdrawalForecast(unittest.TestCase):
             self.forecast.account_transactions[self.account])
         limit_account_withdrawal = (
             self.forecast.account_transactions[self.limit_account])
-        # We are withdrawing $12,000. We'll withdraw the whole balance
-        # of `limit_account` ($6000), with the rest from `account`:
+        # We are withdrawing $20,000. We'll withdraw $3000 from
+        # `limit_account`, with the rest from `account`:
         self.assertEqual(
             limit_account_withdrawal,
-            Money(-2000))
+            Money(-3000))
         self.assertEqual(
             account_withdrawal,
-            Money(-10000))
+            Money(-17000))
 
     def test_gross_withdrawals(self):
         """ Test total withdrawn from accounts. """
@@ -119,18 +120,18 @@ class TestWithdrawalForecast(unittest.TestCase):
         self.forecast.accounts = {self.account}
         self.forecast.update_available(self.available)
 
-        # For default constant strategy, should withdraw $12,000.
+        # For default `available`, should withdraw $20,000.
         self.assertEqual(
             self.forecast.gross_withdrawals,
-            Money(12000))
+            Money(20000))
 
     def test_tax_withheld(self):
         """ Test tax withheld from accounts. """
-        # Set up forecast:
-        self.forecast.update_available(self.available)
         # Manually set tax withholdings:
         self.account.tax_withheld = Money(100)
         self.limit_account.tax_withheld = Money(400)
+        # Set up forecast:
+        self.forecast.update_available(self.available)
 
         # Total withholdings are $500
         self.assertEqual(
@@ -139,21 +140,30 @@ class TestWithdrawalForecast(unittest.TestCase):
 
     def test_net_withdrawals(self):
         """ Test total withdrawn from accounts, net of taxes. """
-        # Set up forecast:
-        self.forecast.update_available(self.available)
         # Manually set tax withholdings:
         self.account.tax_withheld = Money(100)
         self.limit_account.tax_withheld = Money(400)
+        # Set up forecast:
+        self.forecast.update_available(self.available)
 
-        # Total withdrawals are $12,000 and total withheld is $500,
-        # for total of $11,500 in net withdrawals:
+        # Total withdrawals are $20,000 and total withheld is $500,
+        # for total of $19,500 in net withdrawals:
         self.assertEqual(
             self.forecast.net_withdrawals,
-            Money(11500))
+            Money(19500))
 
-    # TODO: Test different withdrawal strategies?
-    # TODO: Test update_available to ensure that withdrawals
-    #       are being recorded to self.available correctly?
+    def test_update_available(self):
+        """ Test total withdrawn from accounts. """
+        # Set up forecast:
+        self.forecast.accounts = {self.account}
+        self.forecast.update_available(self.available)
+
+        # The amount withdrawn should zero out `available`,
+        # subject to any withholding taxes:
+        self.assertEqual(
+            sum(self.available.values()),
+            -self.forecast.tax_withheld)
+
 
 
 if __name__ == '__main__':
