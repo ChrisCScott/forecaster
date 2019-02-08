@@ -16,10 +16,6 @@ class WithdrawalForecast(SubForecast):
         scenario (Scenario): Economic information for the forecast
             (e.g. inflation and stock market returns for each year)
 
-        withdrawal_strategy (WithdrawalStrategy): A callable
-            object that determines the amount to withdraw for a
-            year. See the documentation for `WithdrawalStrategy` for
-            acceptable args when calling this object.
         account_transaction_strategy (AccountTransactionStrategy):
             A callable object that determines the schedule of
             transactions for any contributions during the year.
@@ -39,7 +35,7 @@ class WithdrawalForecast(SubForecast):
     # or something (although it's not clear how this benefits the code.)
     def __init__(
         self, initial_year, people, accounts, scenario,
-        withdrawal_strategy, account_transaction_strategy
+        account_transaction_strategy
     ):
         """ Constructs an instance of class WithdrawalForecast.
 
@@ -50,10 +46,6 @@ class WithdrawalForecast(SubForecast):
                 the plannees.
             scenario (Scenario): Economic information for the forecast
                 (e.g. inflation and stock market returns for each year)
-            withdrawal_strategy (WithdrawalStrategy): A callable
-                object that determines the amount to withdraw for a
-                year. See the documentation for `WithdrawalStrategy` for
-                acceptable args when calling this object.
             account_transaction_strategy
                 (AccountTransactionStrategy):
                 A callable object that determines the schedule of
@@ -71,7 +63,6 @@ class WithdrawalForecast(SubForecast):
         self.people = people
         self.accounts = accounts
         self.scenario = scenario
-        self.withdrawal_strategy = withdrawal_strategy
         self.account_transaction_strategy = account_transaction_strategy
 
     def update_available(self, available):
@@ -80,24 +71,67 @@ class WithdrawalForecast(SubForecast):
         # started on doing the updates:
         super().update_available(available)
 
-        # NOTE: We assume here withdrawals are made monthly.
-        # This is not a very good assumption.
-        # TODO: Revise either this class or
-        # `AccountTransactionStrategy` to include a `frequency`
-        # attribute (and, optionally, a `when` attribute),
-        # to be passed here.
-
-        # pylint: disable=not-an-iterable,unsubscriptable-object
+        # pylint: disable=not-an-iterable,unsubscriptable-object,no-member
         # pylint can't infer the type of account_transactions
         # because we don't import `AccountTransactionsStrategy`
-        for account in self.account_transactions:
-            self.add_transaction(
-                value=-self.account_transactions[account],
-                when=0.5,
-                frequency=12,  # TODO
-                from_account=account,
-                to_account=available
-            )
+
+        # Set up variables to track progress as we make withdrawals:
+        accum = Money(0)
+        transactions_total = sum(self.account_transactions.values())
+        tax_withheld = {
+            account: account.tax_withheld
+            for account in self.account_transactions}
+        # We want to step through the time-series of transactions
+        # and withdraw whenever we dip into negative balance.
+        for when in sorted(available.keys()):
+            accum += available[when]
+            if accum < 0:  # negative balance - time to withdraw!
+                # Withdraw however much we're short by:
+                withdrawal = -accum
+                for account in self.account_transactions:
+                    # Withdraw from each account proportionately to
+                    # the total amounts withdrawn from each account:
+                    account_transaction = withdrawal * (
+                        self.account_transactions[account]
+                        / transactions_total)
+                    # Add the gross transaction from the account
+                    # (not accounting for withholdings):
+                    self.add_transaction(
+                        value=account_transaction,
+                        when=when,
+                        from_account=account,
+                        to_account=available,
+                        strict_timing=True
+                    )
+                    # Now deduct any increased witholding tax
+                    # from the new `available` balance:
+                    new_withholding = (
+                        account.tax_withheld
+                        - tax_withheld[account])
+                    if new_withholding > 0:
+                        self.add_transaction(
+                            value=new_withholding,
+                            when=when,
+                            from_account=available,
+                            to_account=None,
+                            strict_timing=True
+                        )
+                    tax_withheld[account] += new_withholding
+                # NOTE: This essentially adds the *gross* withdrawals
+                # to `accum`, with the result being that any taxes
+                # withheld will result in a negative end-of-year
+                # balance.
+                # This can be partially addressed by only adding the
+                # *net* withdrawals, except that would result in
+                # larger amounts being withdrawn later in the year,
+                # and more being withdrawn than was anticipated by
+                # `account_transactions`.
+                # If we do move in this direction, we need to think
+                # carefully about how to redesign this class so that
+                # `gross_withdrawals` is determined dynamically and
+                # `net_withdrawals` is set up-front.
+                # (Right now it's the reverse.)
+                accum += withdrawal
 
     @recorded_property_cached
     def account_transactions(self):
@@ -118,18 +152,12 @@ class WithdrawalForecast(SubForecast):
     @recorded_property_cached
     def gross_withdrawals(self):
         """ Total gross withdrawals for the year. """
-        # NOTE: This is a pretty brittle way to determine the
-        # retirement year. Issues #15 and #28 will require this
-        # code to be changed in a future version.
-        retirement_year = min(
-            person.retirement_date.year for person in self.people)
-
-        return self.withdrawal_strategy(
-            people=self.people,
-            accounts=self.accounts,
-            retirement_year=retirement_year,  # TODO
-            total_available=self.total_available,
-            year=self.this_year)
+        # The amount withdrawn is simply the shortfall in cashflow
+        # over the course of the year.
+        # TODO: Incorporate some tax logic to increase gross
+        # withdrawals so that `net_withdrawals` approximates
+        # `total_available`?
+        return -self.total_available
 
     @recorded_property
     def tax_withheld(self):
