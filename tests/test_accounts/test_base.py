@@ -210,7 +210,15 @@ class TestAccountMethods(unittest.TestCase):
         self.assertEqual(account.returns_history,
                          {self.initial_year: Money(1)})
 
+    def test_returns_next_year(self, *args, **kwargs):
+        # Account with $1 balance and 100% non-compounded growth.
+        # Should have returns of $2 in its second year:
+        account = self.AccountType(
+            self.owner, *args, balance=1, rate=1.0, nper=1,
+            **kwargs)
         account.next_year()
+        # pylint: disable=no-member
+        # Pylint is confused by members added by metaclass
         self.assertEqual(account.returns_history,
                          {self.initial_year: Money(1),
                           self.initial_year + 1: Money(2)})
