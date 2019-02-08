@@ -343,7 +343,10 @@ class Account(TaxSource):
         super().next_year()
 
         # Clear out transactions for the new year:
-        self._transactions = {}
+        # (We assign a new defaultdict because the old dict is
+        # stored by the `transactions` recorded_property; invoking
+        # `clear` will affect past-year records.)
+        self._transactions = defaultdict(lambda: Money(0))
 
     def max_outflow(self, when='end'):
         """ The maximum amount that can be withdrawn from the account.
