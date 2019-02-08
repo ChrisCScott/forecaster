@@ -217,7 +217,7 @@ class TestAccountMethods(unittest.TestCase):
         self.assertEqual(account.returns, Money(2))
 
     def test_next_year(self, *args, **kwargs):
-        """ Tests next_year. """
+        """ Tests next_year with basic scenario. """
         # Simple account: Start with $1, apply 100% growth once per
         # year, no transactions. Should yield a new balance of $2.
         account = self.AccountType(
@@ -225,27 +225,31 @@ class TestAccountMethods(unittest.TestCase):
         account.next_year()
         self.assertEqual(account.balance, Money(2))
 
-        # No growth: Start with $1 and apply 0% growth.
+    def test_next_year_no_growth(self, *args, **kwargs):
+        """ Tests next_year with no growth. """
+        # Start with $1 and apply 0% growth.
         account = self.AccountType(
             self.owner, *args, balance=1, rate=0, **kwargs)
         account.next_year()
         self.assertEqual(account.balance, Money(1))
 
-        # Try with continuous growth
+    def test_next_year_continuous_growth(self, *args, **kwargs):
+        """ Tests next_year with continuous growth. """
         account = self.AccountType(
             self.owner, *args, balance=1, rate=1, nper='C', **kwargs)
         account.next_year()
         self.assertAlmostEqual(account.balance, Money(math.e), 3)
 
-        # Try with discrete (monthly) growth
+    def test_next_year_discrete_growth(self, *args, **kwargs):
+        """ Tests next_year with discrete (monthly) growth. """
         account = self.AccountType(
             self.owner, *args, balance=1, rate=1, nper='M', **kwargs)
         account.next_year()
         self.assertAlmostEqual(account.balance, Money((1 + 1 / 12) ** 12), 3)
 
-        # Repeat above with a $2 contribution halfway through the year
-
-        # Start with $1 (which grows to $2) and contribute $2.
+    def test_next_year_basic_transaction(self, *args, **kwargs):
+        """ Tests next_year with a mid-year transaction. """
+        # Start with $1 (which grows to $2), contribute $2 mid-year.
         # NOTE: The growth of the $2 transaction is not well-defined,
         # since it occurs mid-compounding-period. However, the output
         # should be sensible. In  particular, it should grow by $0-$1.
@@ -257,14 +261,17 @@ class TestAccountMethods(unittest.TestCase):
         self.assertGreaterEqual(account.balance, Money(4))
         self.assertLessEqual(account.balance, Money(5))
 
-        # No growth: Start with $1, add $2, and apply 0% growth.
+    def test_next_year_no_growth_transaction(self, *args, **kwargs):
+        """ Tests next_year with no growth and a mid-year transaction. """
+        # Start with $1, add $2, and apply 0% growth.
         account = self.AccountType(
             self.owner, *args, balance=1, rate=0, nper=1, **kwargs)
         account.add_transaction(Money(2), when='0.5')
         account.next_year()
         self.assertEqual(account.balance, Money(3))
 
-        # Try with continuous growth
+    def test_next_year_continuous_growth_transaction(self, *args, **kwargs):
+        """ Tests next_year with continuous growth and a mid-year transaction. """
         # This can be calculated from P = P_0 * e^rt
         account = self.AccountType(
             self.owner, *args, balance=1, rate=1, nper='C', **kwargs)
@@ -273,7 +280,8 @@ class TestAccountMethods(unittest.TestCase):
         account.next_year()
         self.assertAlmostEqual(account.balance, next_val, 5)
 
-        # Try with discrete growth
+    def test_next_year_discrete_growth_transaction(self, *args, **kwargs):
+        """ Tests next_year with discrete growth and a mid-year transaction. """
         # The $2 transaction happens at the start of a compounding
         # period, so behaviour is well-defined. It should grow by a
         # factor of (1 + r/n)^nt, for n = 12 (monthly) and t = 0.5
@@ -286,64 +294,64 @@ class TestAccountMethods(unittest.TestCase):
 
     def test_add_transaction(self, *args, **kwargs):
         """ Tests add_transaction. """
-        # We need to make sure that initial_year is in the same range
-        # as inflation_adjustments, otherwise init will fail:
-        initial_year = self.initial_year
-
         # Start with an empty account and add a transaction.
         # pylint: disable=no-member
         # Pylint is confused by members added by metaclass
         account = self.AccountType(
             self.owner, *args, **kwargs)
         self.assertEqual(account.transactions_history, {
-            initial_year: {}})
+            self.initial_year: {}})
         account.add_transaction(Money(1), when='end')
         self.assertEqual(account.transactions_history, {
-            initial_year: {
+            self.initial_year: {
                 1: Money(1)
             }})
         self.assertEqual(account.transactions, {1: Money(1)})
         self.assertEqual(account.inflows, Money(1))
 
-        # Try adding multiple transactions at different times.
+    def test_add_transaction_multiple_different_time(self, *args, **kwargs):
+        """ Tests add_transaction with multiple transactions at different times. """
         account = self.AccountType(
             self.owner, *args, **kwargs)
         account.add_transaction(Money(1), 'start')
         account.add_transaction(Money(2), 1)
-        self.assertEqual(account.transactions_history, {
-            initial_year: {0: Money(1), 1: Money(2)}})
+        self.assertEqual(account.transactions,
+            {0: Money(1), 1: Money(2)})
         self.assertEqual(account.inflows, Money(3))
-        self.assertEqual(account.outflows, 0)
+        self.assertEqual(account.outflows, Money(0))
 
-        # Try adding multiple transactions at the same time.
+    def test_add_transaction_multiple_same_time(self, *args, **kwargs):
+        """ Tests add_transaction with multiple transactions at the same time. """
         account = self.AccountType(
             self.owner, *args, **kwargs)
         account.add_transaction(Money(1), 'start')
         account.add_transaction(Money(1), 0)
-        self.assertEqual(account.transactions_history, {
-            initial_year: {0: Money(2)}})
+        self.assertEqual(account.transactions,
+            {0: Money(2)})
         self.assertEqual(account.inflows, Money(2))
         self.assertEqual(account.outflows, Money(0))
 
-        # Try adding both inflows and outflows at different times.
+    def test_add_transaction_different_inflows_outflows(self, *args, **kwargs):
+        """ Tests add_transaction with both inflows and outflows at different times. """
         account = self.AccountType(
             self.owner, *args, **kwargs)
         account.add_transaction(Money(1), 'start')
         account.add_transaction(Money(-2), 'end')
-        self.assertEqual(account.transactions_history, {
-            initial_year: {0: Money(1), 1: Money(-2)}})
+        self.assertEqual(account.transactions,
+            {0: Money(1), 1: Money(-2)})
         self.assertEqual(account.inflows, Money(1))
         self.assertEqual(account.outflows, Money(-2))
 
-        # Try adding simultaneous inflows and outflows
+    def test_add_transaction_same_inflows_outflows(self, *args, **kwargs):
+        """ Tests add_transaction with simultaneous inflows and outflows. """
         # NOTE: Consider whether this behaviour (i.e. simultaneous flows
         # being combined into one net flow) should be revised.
         account = self.AccountType(
             self.owner, *args, **kwargs)
         account.add_transaction(Money(1), 'start')
         account.add_transaction(Money(-2), 'start')
-        self.assertEqual(account.transactions_history, {
-            initial_year: {0: Money(-1)}})
+        self.assertEqual(account.transactions,
+            {0: Money(-1)})
         self.assertEqual(account.inflows, 0)
         self.assertEqual(account.outflows, Money(-1))
 
