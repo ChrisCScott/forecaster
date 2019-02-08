@@ -55,10 +55,10 @@ class Forecaster(object):
     def __init__(
         self, person1=None, person2=None, people=None, assets=None,
         debts=None, scenario=None, contribution_strategy=None,
-        withdrawal_strategy=None, contribution_transaction_strategy=None,
-        withdrawal_transaction_strategy=None, allocation_strategy=None,
-        debt_payment_strategy=None, tax_treatment=None, initial_year=None,
-        settings=Settings
+        contribution_transaction_strategy=None,
+        withdrawal_transaction_strategy=None,
+        allocation_strategy=None, debt_payment_strategy=None,
+        tax_treatment=None, initial_year=None, settings=Settings
     ):
         """ Inits an instance of `Forecaster`.
 
@@ -98,7 +98,6 @@ class Forecaster(object):
         self.assets = assets if assets is not None else set()
         self.debts = debts if debts is not None else set()
         self.contribution_strategy = contribution_strategy
-        self.withdrawal_strategy = withdrawal_strategy
         self.transaction_in_strategy = contribution_transaction_strategy
         self.transaction_out_strategy = withdrawal_transaction_strategy
         self.allocation_strategy = allocation_strategy
@@ -128,8 +127,6 @@ class Forecaster(object):
         # so build them next:
         if self.contribution_strategy is None:
             self.set_contribution_strategy()
-        if self.withdrawal_strategy is None:
-            self.set_withdrawal_strategy()
         if self.transaction_in_strategy is None:
             self.set_transaction_in_strategy()
         if self.transaction_out_strategy is None:
@@ -152,6 +149,9 @@ class Forecaster(object):
     def forecast(self, **kwargs):
         """ TODO """
 
+        # TODO: Divide these into various SubForecast objects and
+        # build a Forecast out of those:
+
         # Build a dict of args to pass to Forecast.__init__ based on
         # the `Forecaster`'s attributes:
         forecast_kwargs = {
@@ -160,7 +160,6 @@ class Forecaster(object):
             'assets': self.assets,
             'debts': self.debts,
             'contribution_strategy': self.contribution_strategy,
-            'withdrawal_strategy': self.withdrawal_strategy,
             'contribution_trans_strategy': self.transaction_in_strategy,
             'withdrawal_trans_strategy': self.transaction_out_strategy,
             'debt_payment_strategy': self.debt_payment_strategy,
@@ -508,8 +507,7 @@ class Forecaster(object):
 
     def set_contribution_strategy(
         self, strategy=None, base_amount=None, rate=None,
-        refund_reinvestment_rate=None, inflation_adjust=None,
-        cls=LivingExpensesStrategy, **kwargs
+        inflation_adjust=None, cls=LivingExpensesStrategy, **kwargs
     ):
         """ TODO """
         self.set_kwarg(kwargs, 'strategy', strategy,
@@ -518,35 +516,10 @@ class Forecaster(object):
                        self.settings.contribution_base_amount)
         self.set_kwarg(kwargs, 'rate', rate,
                        self.settings.contribution_rate)
-        self.set_kwarg(kwargs, 'refund_reinvestment_rate',
-                       refund_reinvestment_rate,
-                       self.settings.contribution_reinvestment_rate)
         self.set_kwarg(kwargs, 'inflation_adjust', inflation_adjust,
                        self.scenario.inflation_adjust)
 
         self.contribution_strategy = cls(**kwargs)
-        return self.contribution_strategy
-
-    def set_withdrawal_strategy(
-        self, strategy=None, base_amount=None, rate=None, timing=None,
-        income_adjusted=None, inflation_adjust=None,
-        cls=LivingExpensesStrategy, **kwargs
-    ):
-        """ TODO """
-        self.set_kwarg(kwargs, 'strategy', strategy,
-                       self.settings.withdrawal_strategy)
-        self.set_kwarg(kwargs, 'base_amount', base_amount,
-                       self.settings.withdrawal_base_amount)
-        self.set_kwarg(kwargs, 'rate', rate,
-                       self.settings.withdrawal_rate)
-        self.set_kwarg(kwargs, 'timing', timing,
-                       self.settings.transaction_out_timing)
-        self.set_kwarg(kwargs, 'income_adjusted', income_adjusted,
-                       self.settings.withdrawal_income_adjusted)
-        self.set_kwarg(kwargs, 'inflation_adjust', inflation_adjust,
-                       self.scenario.inflation_adjust)
-
-        self.withdrawal_strategy = cls(**kwargs)
         return self.contribution_strategy
 
     def set_transaction_in_strategy(

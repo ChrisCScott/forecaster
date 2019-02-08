@@ -5,7 +5,7 @@ import collections
 from copy import copy, deepcopy
 from forecaster import (
     Settings, Tax, Person, Money, Account, Debt, Scenario,
-    LivingExpensesStrategy, WithdrawalStrategy, AccountTransactionStrategy,
+    LivingExpensesStrategy, AccountTransactionStrategy,
     AllocationStrategy, DebtPaymentStrategy, Forecaster)
 
 
@@ -39,16 +39,6 @@ class TestForecaster(unittest.TestCase):
             strategy=self.settings.contribution_strategy,
             base_amount=self.settings.contribution_base_amount,
             rate=self.settings.contribution_rate,
-            refund_reinvestment_rate=(
-                self.settings.contribution_reinvestment_rate),
-            inflation_adjust=self.scenario.inflation_adjust
-        )
-        self.withdrawal_strategy = WithdrawalStrategy(
-            strategy=self.settings.withdrawal_strategy,
-            base_amount=self.settings.withdrawal_base_amount,
-            rate=self.settings.withdrawal_rate,
-            timing=self.settings.transaction_out_timing,
-            income_adjusted=self.settings.withdrawal_income_adjusted,
             inflation_adjust=self.scenario.inflation_adjust
         )
         self.transaction_in_strategy = AccountTransactionStrategy(
@@ -312,8 +302,6 @@ class TestForecaster(unittest.TestCase):
         self.assertEqual(
             forecaster.contribution_strategy, self.contribution_strategy)
         self.assertEqual(
-            forecaster.withdrawal_strategy, self.withdrawal_strategy)
-        self.assertEqual(
             forecaster.transaction_in_strategy, self.transaction_in_strategy)
         self.assertEqual(
             forecaster.transaction_out_strategy, self.transaction_out_strategy)
@@ -340,8 +328,6 @@ class TestForecaster(unittest.TestCase):
         self.assertEqual(
             forecaster.contribution_strategy, self.contribution_strategy)
         self.assertEqual(
-            forecaster.withdrawal_strategy, self.withdrawal_strategy)
-        self.assertEqual(
             forecaster.transaction_in_strategy, self.transaction_in_strategy)
         self.assertEqual(
             forecaster.transaction_out_strategy, self.transaction_out_strategy)
@@ -367,8 +353,6 @@ class TestForecaster(unittest.TestCase):
         self.assertEqual(forecaster.debts, set())
         self.assertEqual(
             forecaster.contribution_strategy, self.contribution_strategy)
-        self.assertEqual(
-            forecaster.withdrawal_strategy, self.withdrawal_strategy)
         self.assertEqual(
             forecaster.transaction_in_strategy, self.transaction_in_strategy)
         self.assertEqual(
@@ -453,10 +437,8 @@ class TestForecaster(unittest.TestCase):
             forecast.scenario.initial_year, forecaster.initial_year)
         self.assertEqual(
             len(forecast.principal), forecaster.scenario.num_years)
-        for principal in forecast.principal.values():
-            self.assertEqual(principal, Money(0))
-        for gross_income in forecast.gross_income.values():
-            self.assertEqual(gross_income, Money(0))
+        self.assertEqual(forecast.principal, Money(0))
+        self.assertEqual(forecast.income_forecast.gross_income, Money(0))
 
     def test_forecast_substitution(self):
         """ Test Forecaster.forecast with a substituted Scenario. """
@@ -502,15 +484,15 @@ class TestForecaster(unittest.TestCase):
 
         # Run the forecast with scenario2 (which has 100% stock growth):
         forecast = forecaster.forecast(scenario=scenario2)
+
         # Under scenario1, the balance in 2001 should be unchanged at
         # $1. Under scenario2, the balance in 2001 should double to $2.
-        self.assertEqual(forecast.principal[2001], Money(2))
+
+        # pylint: disable=no-member
+        self.assertEqual(forecast.principal_history[2001], Money(2))
+        # pylint: enable=no-member
 
 
 if __name__ == '__main__':
-    # NOTE: BasicContext is useful for debugging, as most errors are treated
-    # as exceptions (instead of returning "NaN"). It is lower-precision than
-    # ExtendedContext, which is the default.
-    decimal.setcontext(decimal.BasicContext)
     unittest.TextTestRunner().run(
         unittest.TestLoader().loadTestsFromName(__name__))

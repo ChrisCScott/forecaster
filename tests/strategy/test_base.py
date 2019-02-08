@@ -1,7 +1,7 @@
 """ Unit tests for `Strategy` and related classes. """
 
 import unittest
-from forecaster import LivingExpensesStrategy, WithdrawalStrategy
+from forecaster import LivingExpensesStrategy
 from forecaster.strategy.base import Strategy, strategy_method
 
 
@@ -93,11 +93,6 @@ class TestStrategyMethods(unittest.TestCase):
             self.assertIn(strategy, LivingExpensesStrategy.strategies.keys())
             self.assertIn(strategies[strategy],
                           LivingExpensesStrategy.strategies.values())
-
-        # Also made sure that no strategies for other subclasses are
-        # being added to this particular subclass instance.
-        self.assertNotIn(WithdrawalStrategy.strategy_principal_percent,
-                         LivingExpensesStrategy.strategies.values())
 
         # Finally, repeat the above with object instances instead of
         # classes. (Be careful - functions defined in class scope and
