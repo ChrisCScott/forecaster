@@ -143,7 +143,8 @@ class TestReductionForecast(unittest.TestCase):
         # living expenses, plus 50% of the balance:
         self.assertAlmostEqual(
             self.debt_partial.balance_at_time('end'),
-            Money(0))  # fully repaid
+            Money(0),  # fully repaid
+            places=2)
         self.assertEqual(
             debt_payment_from_available,
             (debt_payment - Money(100)) * 0.5)
