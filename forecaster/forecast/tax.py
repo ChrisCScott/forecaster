@@ -22,7 +22,7 @@ class TaxForecast(SubForecast):
     """
 
     def __init__(
-        self, people, tax_treatment
+        self, initial_year, people, tax_treatment
     ):
         """ Constructs an instance of class Forecast.
 
@@ -36,6 +36,8 @@ class TaxForecast(SubForecast):
                 total amount of tax owing in a year. See the documentation
                 for `Tax` for acceptable args when calling this object.
         """
+        # Call the superclass method or suffer the consequences!
+        super().__init__(initial_year)
         # Store input values
         self.people = people
         self.tax_treatment = tax_treatment
@@ -48,7 +50,7 @@ class TaxForecast(SubForecast):
         withheld = sum(person.tax_withheld for person in self.people)
         # To avoid double-counting (if an account is associated with
         # two people), build a set of all accounts and sum over that.
-        accounts = set.union(person.accounts for person in self.people)
+        accounts = set.union(*(person.accounts for person in self.people))
         withheld += sum(account.tax_withheld for account in accounts)
         return withheld
 
@@ -56,3 +58,11 @@ class TaxForecast(SubForecast):
     def tax_owing(self):
         """ Total taxes owing on income for the year. """
         return self.tax_treatment(self.people, self.this_year)
+
+    @recorded_property_cached
+    def tax_adjustment(self):
+        """ Total amount owing or refunded at tax time next year.
+        
+        Negative values are amounts owing, positive are refunds.
+        """
+        return self.tax_withheld - self.tax_owing
