@@ -71,25 +71,17 @@ class Forecast(Ledger):
         income_forecast (IncomeForecast):
             A callable object that returns the net income for each
             year.
-        contribution_forecast (ContributionForecast):
-            A callable object that returns the (gross) contributions
-            for each year.
-        contribution_reduction_forecast (ContributionReductionForecast):
-            A callable object that returns the contribution
-            reductions for each year.
-        contribution_strategy (TransactionStrategy):
-            A callable object that returns the schedule of
-            transactions for any contributions during the year.
-            See the documentation for `TransactionStrategy` for
-            acceptable args when calling this object.
+        living_expenses_forecast (LivingExpensesForecast):
+            A callable object that returns the amount spent on living
+            expenses for each year.
+        reduction_forecast (ReductionForecast): A callable object that
+            returns the contribution reductions for each year.
+        contribution_forecast (ContributionForecast): A callable
+            object that returns the amount contributed to savings for
+            each year.
         withdrawal_forecast (WithdrawalForecast):
             A callable object that returns the total withdrawals for
             each year.
-        withdrawal_strategy (TransactionStrategy):
-            A callable object that returns the schedule of
-            transactions for any withdrawals during the year.
-            See the documentation for `TransactionStrategy` for
-            acceptable args when calling this object.
         tax_forecast (TaxForecast):
             A callable object that returns the total taxes owed for
             each year.
@@ -97,43 +89,41 @@ class Forecast(Ledger):
         scenario (Scenario): Economic information for the forecast
             (e.g. inflation and stock market returns for each year)
 
-        income (dict[int, Money]): The net income for the plannees.
-        gross_contributions (dict[int, Money]): The amount available to
+        income (Money): The net income for the plannees for the year.
+        living_expenses (Money): The amount that the plannees live off
+            of for the year. 
+        gross_contributions (Money): The amount available to
             contribute to savings, before any reductions. This is the
-            sum of net income and various contributions_from_* values.
-        contribution_reductions (dict[int, Money]): Amounts diverted
-            from savings, such as certain debt repayments or childcare.
-        net_contributions (dict[int, Money]): The total amount
-            contributed to savings accounts.
-        principal (dict[int, Money]): The total value of all savings
-            accounts (but not other property) at the start of each year.
-        withdrawals (dict[int, Money]): The total amount withdrawn
-            from all accounts.
-        tax (dict[int, Money]): The total tax liability for the year
-            (some of which might not be payable unti the next year).
-            Does not include outstanding amounts which became owing
-            but were not paid in the previous year.
-
-        living_standard (dict[int, Money]): The total amount of money
-            available for spending, net of taxes, contributions, debt
-            payments, etc.
+            amount left over after living expenses.
+        contribution_reductions (Money): Amounts diverted from
+            savings, such as certain debt repayments or childcare.
+        net_contributions (Money): The total amount contributed to
+            savings accounts for the year.
+        principal (Money): The total value of all savings accounts
+            (but not other property) at the start of the year.
+        withdrawals (Money): The total amount withdrawn from all
+            accounts for the year.
+        tax (Money): The total tax liability for the year (some of
+            which might not be payable unti the next year).
+            Does not include tax liability from previous years which
+            is paid in this year, but does include tax liability
+            arising in this year which won't be repaid until a
+            future year.
     """
 
     def __init__(
-        self, income_forecast, contribution_forecast, reduction_forecast,
+        self, income_forecast, living_expenses_forecast,
+        contribution_forecast, reduction_forecast,
         withdrawal_forecast, tax_forecast, scenario
     ):
         """ Constructs an instance of class Forecast.
 
-        Iteratively advances `people` and various accounts to the next
-        year until all years of the `scenario` have been modelled.
-
         Args:
             income_forecast (IncomeForecast):
                 Determines net income for each year.
-            gross_contribution_forecast (GrossContributionForecast):
-                Determines the gross contributions for each year.
-            contribution_reduction_forecast (ContributionReductionForecast):
+            living_expenses_forecast (LivingExpensesForecast):
+                Determines the living expenses for each year.
+            reduction_forecast (ReductionForecast):
                 Determines the contribution reductions for each year.
             withdrawal_forecast (WithdrawalForecast):
                 A callable object that returns the total withdrawals for
@@ -151,6 +141,7 @@ class Forecast(Ledger):
 
         # Store input values
         self.income_forecast = income_forecast
+        self.living_expenses_forecast = living_expenses_forecast
         self.contribution_forecast = contribution_forecast
         self.reduction_forecast = reduction_forecast
         self.withdrawal_forecast = withdrawal_forecast
@@ -159,13 +150,16 @@ class Forecast(Ledger):
 
         # We'll keep track of cash flows over the course of the year, but
         # we don't save it as a recorded_property, so init it here:
-        self._transactions = defaultdict(lambda: Money(0))
+        self.available = defaultdict(lambda: Money(0))
 
         # Arrange forecasts in order so it'll be easy to call them
         # in the correct order later:
         self.forecasts = [
-            self.income_forecast, self.contribution_forecast,
-            self.reduction_forecast, self.withdrawal_forecast,
+            self.income_forecast,
+            self.living_expenses_forecast,
+            self.contribution_forecast,
+            self.reduction_forecast,
+            self.withdrawal_forecast,
             self.tax_forecast
         ]
 
@@ -173,7 +167,9 @@ class Forecast(Ledger):
         # to iterate over.
         last_year = max(self.scenario)
         while self.this_year < last_year:
+            self.update_subforecasts()
             self.next_year()
+        self.update_subforecasts()
 
     @property
     def people(self):
@@ -189,6 +185,11 @@ class Forecast(Ledger):
     def debts(self):
         """ A set of `Debt` objects for the forecast. """
         return self.reduction_forecast.debts
+
+    def update_subforecasts(self):
+        """ Calls each SubForecast in order. """
+        for forecast in self.forecasts:
+            forecast.update_available(self.available)
 
     def next_year(self):
         """ Adds a year to the forecast. """
