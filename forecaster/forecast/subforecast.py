@@ -80,10 +80,57 @@ class TransactionDict(defaultdict):
         return sorted(self.__iter__())  # Returns a list
 
 class SubForecast(Ledger):
-    """ TODO """
+    """ Generic class for implementing part of a financial forecast.
+    
+    `SubForecast` instances are managed by a `Forecast` object. Each
+    `SubForecast` instance receives a dict of cashflows (via
+    `update_available`) and mutates it by adding or substracting from
+    the cashflows. The mutated dict can then be passed to another
+    `SubForecast` for further processing. The dict is called
+    `available` and represents the amount of money available for use
+    by subsequent `SubForecast` instances.
+
+    In general, positive values indicate additions/deposits to the
+    pool of money available for use, and negative values are
+    substractions/withdrawals. E.g. when income is received, an
+    `IncomeForecast` subclass instance might add positive values
+    to `available`. A `LivingExpensesForecast` subclass instance
+    might add negative values.
+
+    In addition to mutating `available`, each `SubForecast` instance
+    can manage accounts that money moves to/from. Much of the logic
+    of this class deals with adding transactions to such accounts.
+    Money can be moved from `available` to an account (or vice-versa),
+    and those movements can be undone as well (via
+    `undo_transactions`).
+
+    This is a `Ledger` subclass, meaning that it provides
+    `recorded_property` attributes with corresponding `*_history`
+    dicts storing values of the properties over time. See the
+    documentation of `Ledger` (or concrete subclasses like `Account`)
+    for more information.
+
+    Args:
+        initial_year (int): The first year of the forecast.
+            TODO: #53 removes the requirement for this argument.
+
+    Attributes:
+        transactions (TransactionDict[
+            Union[Account, dict]: defaultdict[Decimal: Money]):
+            A record of transactions to/from various accounts.
+            An account does not have to be a formal `Account`
+            object; it can be any `Mapping`, like a `dict`.
+
+            Each account is mapped to time-series data (in the
+            {when: value} format used throughout this package) where
+            positive values correspond to inflows to inflows to the
+            account and negative values are outflows.
+
+            This dict includes transactions made to/from `available`.
+    """
 
     def __init__(self, initial_year):
-        """ TODO """
+        """ Initializes an instance of SubForecast. """
         # Invoke Ledger's __init__ or pay the price!
         # TODO #53 removes this requirement
         super().__init__(initial_year)
@@ -106,7 +153,13 @@ class SubForecast(Ledger):
         return self._transactions
 
     def next_year(self):
-        """ TODO """
+        """ Adds a year to the forecast.
+        
+        Note that SubForecast does not advance the years of its
+        `Ledger`-type attributes. This is done by `Forecast` to avoid
+        one SubForecast advancing a Ledger object that is used by
+        another SubForecast.
+        """
         # Call `next_year` first so that recorded_property values
         # are recorded with their current state:
         super().next_year()

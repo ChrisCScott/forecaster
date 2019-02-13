@@ -7,13 +7,16 @@ from forecaster.forecast.subforecast import SubForecast
 class IncomeForecast(SubForecast):
     """ A forecast of income over the years.
 
-    Attributes:
+    Args:
+        initial_year (int): The first year of the forecast.
         people (Iterable[Person]): The people for whom the financial
             forecast is being generated. Typically a single person or
             a person and their spouse.
 
             Note that all `Person` objects must have the same
             `this_year` attribute, as must their various accounts.
+
+    Attributes:
         asset_sale (Money): The proceeds from a sale of property.
             TODO: Determine whether this belongs here or elsewhere.
         carryover (Money): Money carried over from last year to
@@ -29,12 +32,7 @@ class IncomeForecast(SubForecast):
     def __init__(
         self, initial_year, people
     ):
-        """ Constructs an instance of class IncomeForecast.
-
-        Args:
-            people (Iterable[Person]): The people for whom a forecast
-                is being generated.
-        """
+        """ Initializes an instance of IncomeForecast. """
         super().__init__(initial_year)
         # Invoke Ledger's __init__ or pay the price!
         # Store input values

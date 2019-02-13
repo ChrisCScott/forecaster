@@ -7,13 +7,21 @@ from forecaster.forecast.subforecast import SubForecast
 class LivingExpensesForecast(SubForecast):
     """ A forecast of each year's living expenses.
 
-    Attributes:
+    Args:
+        initial_year (int): The first year of the forecast.
+        people (Iterable[Person]): The people for whom the financial
+            forecast is being generated. Typically a single person or
+            a person and their spouse.
+
+            Note that all `Person` objects must have the same
+            `this_year` attribute, as must their various accounts.
         living_expenses_strategy (LivingExpensesStrategy): A callable
             object that determines the living expenses for the
             plannees for a year.
             See the documentation for `LivingExpensesStrategy` for
             acceptable args when calling this object.
 
+    Attributes:
         living_expenses (Money): The amount spent on living expenses
             (i.e. money not available to be saved).
     """
@@ -21,6 +29,7 @@ class LivingExpensesForecast(SubForecast):
     def __init__(
         self, initial_year, people, living_expenses_strategy
     ):
+        """ Initializes an instance of LivingExpensesForecast. """
         # Recall that, as a Ledger object, we need to call the
         # superclass initializer and let it know what the first
         # year is so that `this_year` is usable.

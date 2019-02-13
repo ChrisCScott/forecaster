@@ -8,8 +8,16 @@ from forecaster.forecast.subforecast import SubForecast
 class ReductionForecast(SubForecast):
     """ A forecast of each year's contribution reductions.
 
-    Attributes:
+    Args:
+        initial_year (int): The first year of the forecast.
         debts (Iterable[Debt]): Debts of the `people`.
+        debt_payment_strategy (DebtPaymentStrategy): 
+            A callable object that determines the schedule of
+            transactions for any debt payments during the year.
+            See the documentation for `DebtPaymentStrategy`
+            for acceptable args when calling this object.
+
+    Attributes:
         reduction_from_debt (dict[int, Money]): The amount to be
             diverted from contributions to debt repayment in each year.
         reduction_from_other (dict[int, Money]): The amount to be
@@ -28,6 +36,7 @@ class ReductionForecast(SubForecast):
     def __init__(
         self, initial_year, debts, debt_payment_strategy
     ):
+        """ Initializes an instance of ReductionForecast. """
         # Recall that, as a Ledger object, we need to call the
         # superclass initializer and let it know what the first
         # year is so that `this_year` is usable.

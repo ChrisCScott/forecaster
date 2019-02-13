@@ -8,26 +8,28 @@ from forecaster.forecast.subforecast import SubForecast
 class WithdrawalForecast(SubForecast):
     """ A forecast of withdrawals from a portfolio over time.
 
-    Attributes:
-        initial_year (int): The first year of the SubForecast.
+    Args:
+        initial_year (int): The first year of the forecast.
         people (Iterable[Person]): The plannees.
         accounts (Iterable[Account]): Retirement accounts of the
             `people`.
         scenario (Scenario): Economic information for the forecast
             (e.g. inflation and stock market returns for each year)
-
         account_transaction_strategy (AccountTransactionStrategy):
             A callable object that determines the schedule of
             transactions for any contributions during the year.
             See the documentation for `AccountTransactionStrategy`
             for acceptable args when calling this object.
 
-        gross_withdrawals (dict[int, Money]): The total amount withdrawn
-            from all accounts.
-        tax_withheld_on_withdrawals (dict[int, Money]): Taxes deducted
-            at source on withdrawals from savings.
-        net_withdrawals (dict[int, Money]): The total amount withdrawn
-            from all accounts, net of withholding taxes.
+    Attributes:
+        account_transactions (dict[Account, Money]): The total
+            amount withdrawn from each account.
+        gross_withdrawals (Money): The total amount withdrawn from all
+            accounts.
+        tax_withheld (Money): Taxes deducted at source on withdrawals
+            from savings.
+        net_withdrawals (Money): The total amount withdrawn from all
+            accounts, net of withholding taxes.
     """
 
     # pylint: disable=too-many-arguments
@@ -37,22 +39,7 @@ class WithdrawalForecast(SubForecast):
         self, initial_year, people, accounts, scenario,
         account_transaction_strategy
     ):
-        """ Constructs an instance of class WithdrawalForecast.
-
-        Args:
-            initial_year (int): The first year of the SubForecast.
-            people (Iterable[Person]): The plannees.
-            accounts (Iterable[Account]): The retirement accounts of
-                the plannees.
-            scenario (Scenario): Economic information for the forecast
-                (e.g. inflation and stock market returns for each year)
-            account_transaction_strategy
-                (AccountTransactionStrategy):
-                A callable object that determines the schedule of
-                transactions for any contributions during the year.
-                See the documentation for `AccountTransactionStrategy`
-                for acceptable args when calling this object.
-        """
+        """ Initializes an instance of WithdrawalForecast. """
         # Recall that, as a Ledger object, we need to call the
         # superclass initializer and let it know what the first
         # year is so that `this_year` is usable.

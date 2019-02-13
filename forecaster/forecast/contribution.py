@@ -5,24 +5,27 @@ from forecaster.ledger import (
 from forecaster.forecast.subforecast import SubForecast
 
 class ContributionForecast(SubForecast):
-    """ A forecast of each year's living expenses.
+    """ A forecast of each year's contributions to various accounts.
 
-    Attributes:
+    Args:
+        initial_year (int): The first year of the forecast.
+        accounts (Iterable[Account]): The accounts to be contributed
+            to.
         account_transaction_strategy (AccountTransactionStrategy):
             A callable object that determines the contributions to
             each of the plannees' accounts for the year.
             See the documentation for `ContributionStrategy` for
             acceptable args when calling this object.
-        accounts (Iterable[Account]): The accounts to be contributed
-            to.
 
+    Attributes:
         contributions (Money): The amount contributed to retirement
             accounts.
     """
 
     def __init__(
-        self, initial_year, account_transaction_strategy, accounts
+        self, initial_year, accounts, account_transaction_strategy
     ):
+        """ Initializes an instance of ContributionForecast. """
         # Recall that, as a Ledger object, we need to call the
         # superclass initializer and let it know what the first
         # year is so that `this_year` is usable.

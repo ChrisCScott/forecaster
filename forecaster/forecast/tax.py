@@ -6,36 +6,32 @@ from forecaster.ledger import Money, recorded_property_cached
 class TaxForecast(SubForecast):
     """ A forecast of total tax owing for each year.
 
-    Attributes:
+    Args:
+        initial_year (int): The first year of the forecast.
         people (Iterable[Person]): The plannees.
         tax_treatment (Tax): A callable object that determines the total
             amount of tax owing in a year. See the documentation for
             `Tax` for acceptable args when calling this object.
 
-        total_tax_withheld (Money): The total amount of tax
-            owing for this year which was paid during this year (as
-            opposed to being paid in the following year the next year).
-        total_tax_owing (Money): The total amount of tax
-            owing for this year (some of which may be paid in the
-            following year). Does not include outstanding amounts which
-            became owing but were not paid in the previous year.
+    Attributes:
+        tax_withheld (Money): The total amount of tax owing for this
+            year which was paid during this year (as opposed to being
+            paid in the following year via `tax_adjustment`).
+        tax_owing (Money): The total amount of tax owing for this year
+            (some of which may be paid in the following year). Does
+            not include any amounts paid this year which became owing
+            last year (i.e. doesn't include the `tax_adjustment` from
+            last year.)
+        tax_adjustment (Money): The amount of tax to be refunded (if
+            positive) or paid (if negative) in next year's tax season
+            due to excess/insufficient withholding taxes during this
+            year.
     """
 
     def __init__(
         self, initial_year, people, tax_treatment
     ):
-        """ Constructs an instance of class Forecast.
-
-        Iteratively advances `people` and various accounts to the next
-        year until all years of the `scenario` have been modelled.
-
-        Args:
-            people (Iterable[Person]): The people for whom a forecast
-                is being generated.
-            tax_treatment (Tax): A callable object that determines the
-                total amount of tax owing in a year. See the documentation
-                for `Tax` for acceptable args when calling this object.
-        """
+        """ Initializes an instance of TaxForecast. """
         # Call the superclass method or suffer the consequences!
         super().__init__(initial_year)
         # Store input values
