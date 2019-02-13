@@ -9,7 +9,7 @@ from forecaster import (
 
 class DummyForecast(object):
     """ Acts like a SubForecast but is easier to debug with. """
-    def __init__(self, transactions={}):
+    def __init__(self, initial_year, transactions={}):
         """ Inits DummyForecast.
 
         This class simply adds `transactions` to `available` when
@@ -26,6 +26,8 @@ class DummyForecast(object):
         self.transactions = transactions
         self.available_in = None
         self.available_out = None
+        self.initial_year = initial_year
+        self.this_year = initial_year
 
     def update_available(self, available):
         """ Adds transactions to `available`. """
@@ -33,6 +35,10 @@ class DummyForecast(object):
         for when, value in self.transactions.items():
             available[when] += value
         self.available_out = copy(available)
+
+    def next_year(self):
+        """ Advances the forecast to next year. """
+        self.this_year += 1
 
 class TestForecast(unittest.TestCase):
     """ Tests Forecast. """
@@ -43,26 +49,30 @@ class TestForecast(unittest.TestCase):
         # We will occasionally need to swap out subforecasts when
         # we want them to have no effect (e.g. no withdrawals because
         # we're not yet retired). Use null_forecast for that:
-        self.null_forecast = DummyForecast()
+        self.null_forecast = DummyForecast(self.initial_year)
         # Paid $100 at the start of each month
-        self.income_forecast_dummy = DummyForecast({
-            Decimal(when)/12: Money(100) for when in range(12)})
+        self.income_forecast_dummy = DummyForecast(
+            self.initial_year,
+            {Decimal(when)/12: Money(100) for when in range(12)})
         self.income_forecast_dummy.people = None
         # Spend $50 on living expenses at the start of each month
-        self.living_expenses_forecast_dummy = DummyForecast({
-            Decimal(when)/12: Money(-50) for when in range(12)})
+        self.living_expenses_forecast_dummy = DummyForecast(
+            self.initial_year,
+            {Decimal(when)/12: Money(-50) for when in range(12)})
         # Another $20/mo on reductions, at the end of each month:
-        self.reduction_forecast_dummy = DummyForecast({
-            Decimal(when+1)/12: Money(-20) for when in range(12)})
+        self.reduction_forecast_dummy = DummyForecast(
+            self.initial_year,
+            {Decimal(when+1)/12: Money(-20) for when in range(12)})
         # Contribute the balance:
-        self.contribution_forecast_dummy = DummyForecast({
-            Decimal(when+1)/12: Money(-30) for when in range(12)})
+        self.contribution_forecast_dummy = DummyForecast(
+            self.initial_year,
+            {Decimal(when+1)/12: Money(-30) for when in range(12)})
         # Withdraw $300 at the start and middle of the year:
-        self.withdrawal_forecast_dummy = DummyForecast({
-            Decimal(0): Money(300),
-            Decimal(0.5): Money(300)})
+        self.withdrawal_forecast_dummy = DummyForecast(
+            self.initial_year,
+            {Decimal(0): Money(300), Decimal(0.5): Money(300)})
         # Refund for $100 next year:
-        self.tax_forecast_dummy = DummyForecast()
+        self.tax_forecast_dummy = DummyForecast(self.initial_year)
         self.tax_forecast_dummy.tax_adjustment = Money(100)
 
         # Also build a real ContributionForecast so that we can
@@ -185,9 +195,9 @@ class TestForecast(unittest.TestCase):
             forecast.principal_history[self.initial_year + 1],
             self.account.balance_at_time('end')]
         target = [
-                Money(0),
-                Money(360),
-                Money(720)]
+            Money(0),
+            Money(360),
+            Money(720)]
         self.assertEqual(results, target)
 
 if __name__ == '__main__':
