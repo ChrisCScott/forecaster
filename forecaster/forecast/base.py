@@ -113,7 +113,7 @@ class Forecast(Ledger):
 
     def __init__(
         self, income_forecast, living_expenses_forecast,
-        contribution_forecast, reduction_forecast,
+        reduction_forecast, contribution_forecast,
         withdrawal_forecast, tax_forecast, scenario
     ):
         """ Constructs an instance of class Forecast.
@@ -125,6 +125,8 @@ class Forecast(Ledger):
                 Determines the living expenses for each year.
             reduction_forecast (ReductionForecast):
                 Determines the contribution reductions for each year.
+            contribution_forecast (ContributionForecast):
+                Determines the contributions for each year.
             withdrawal_forecast (WithdrawalForecast):
                 A callable object that returns the total withdrawals for
                 each year.
@@ -142,8 +144,8 @@ class Forecast(Ledger):
         # Store input values
         self.income_forecast = income_forecast
         self.living_expenses_forecast = living_expenses_forecast
-        self.contribution_forecast = contribution_forecast
         self.reduction_forecast = reduction_forecast
+        self.contribution_forecast = contribution_forecast
         self.withdrawal_forecast = withdrawal_forecast
         self.tax_forecast = tax_forecast
         self.scenario = scenario
@@ -157,8 +159,8 @@ class Forecast(Ledger):
         self.forecasts = [
             self.income_forecast,
             self.living_expenses_forecast,
-            self.contribution_forecast,
             self.reduction_forecast,
+            self.contribution_forecast,
             self.withdrawal_forecast,
             self.tax_forecast
         ]
@@ -202,8 +204,11 @@ class Forecast(Ledger):
             while account.this_year <= self.this_year:
                 account.next_year()
 
-        # Clear out transactions for the new year:
-        self._transactions = {}
+        # Keep track of cash flows over the course of the year,
+        # rolling over unused monies to the start of next year:
+        excess = sum(self.available.values())
+        self.available = defaultdict(lambda: Money(0))
+        self.available[Decimal(0)] = excess
 
         # Then update all of the recorded_property attributes
         # based on the new annual figures:
@@ -229,26 +234,29 @@ class Forecast(Ledger):
     @recorded_property_cached
     def income(self):
         """ Total net income for the year. """
-        return self.income_forecast()
+        return self.income_forecast.net_income
+
+    @recorded_property_cached
+    def living_expenses(self):
+        """ Gross contributions for the year, before reductions. """
+        return self.living_expenses_forecast.living_expenses
 
     @recorded_property_cached
     def gross_contributions(self):
         """ Gross contributions for the year, before reductions. """
-        return self.contribution_forecast()
+        return self.income - self.living_expenses
 
     @recorded_property_cached
     def contribution_reductions(self):
         """ Total contribution reductions for the year. """
-        return self.reduction_forecast()
+        return self.reduction_forecast.reductions
 
     @recorded_property_cached
     def net_contributions(self):
         """ Contributions to savings for the year. """
         # Never contribute a negative amount:
-        return max(
-            self.gross_contributions - self.contribution_reductions,
-            Money(0)
-        )
+        contributions = self.gross_contributions - self.contribution_reductions
+        return max(contributions, Money(0))
 
     @recorded_property_cached
     def principal(self):
@@ -260,9 +268,9 @@ class Forecast(Ledger):
     @recorded_property
     def withdrawals(self):
         """ Total withdrawals for the year. """
-        return self.withdrawal_forecast()
+        return self.withdrawal_forecast.gross_withdrawals
 
     @recorded_property
     def tax(self):
         """ Total tax liability for the year. """
-        return self.tax_forecast()
+        return self.tax_forecast.tax_owing
