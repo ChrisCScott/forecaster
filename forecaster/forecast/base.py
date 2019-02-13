@@ -195,13 +195,20 @@ class Forecast(Ledger):
 
     def next_year(self):
         """ Adds a year to the forecast. """
-        # Advance the people and accounts first:
-        for person in self.people:
-            while person.this_year <= self.this_year:
-                person.next_year()
+        # First, record the state of all recorded_property attributes:
+        super().next_year()
+        # The do the same for all SubForecast objects, so they can
+        # record their state before underlying objects get updated:
+        for forecast in self.forecasts:
+            while forecast.this_year < self.this_year:
+                forecast.next_year()
 
+        # Now advance the underlying Ledger objects:
+        for person in self.people:
+            while person.this_year < self.this_year:
+                person.next_year()
         for account in self.assets.union(self.debts):
-            while account.this_year <= self.this_year:
+            while account.this_year < self.this_year:
                 account.next_year()
 
         # Keep track of cash flows over the course of the year,
@@ -209,10 +216,6 @@ class Forecast(Ledger):
         excess = sum(self.available.values())
         self.available = defaultdict(lambda: Money(0))
         self.available[Decimal(0)] = excess
-
-        # Then update all of the recorded_property attributes
-        # based on the new annual figures:
-        super().next_year()
 
     @property
     def retirement_year(self):
