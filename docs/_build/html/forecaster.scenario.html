@@ -17,43 +17,36 @@
   
 
   
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="forecaster 0.0.1 documentation" href="index.html"/>
-        <link rel="up" title="forecaster package" href="forecaster.html"/>
-        <link rel="next" title="forecaster.settings module" href="forecaster.settings.html"/>
-        <link rel="prev" title="forecaster.person module" href="forecaster.person.html"/> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="forecaster.settings module" href="forecaster.settings.html" />
+    <link rel="prev" title="forecaster.person module" href="forecaster.person.html" /> 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -125,7 +118,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">forecaster</a>
@@ -133,9 +126,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -187,13 +181,21 @@
 <dl class="class">
 <dt id="forecaster.scenario.InflationAdjust">
 <em class="property">class </em><code class="descclassname">forecaster.scenario.</code><code class="descname">InflationAdjust</code><span class="sig-paren">(</span><em>scenario</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/scenario.html#InflationAdjust"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.scenario.InflationAdjust" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Callable inflation_adjust object with mutable state.</p>
 <dl class="attribute">
 <dt id="forecaster.scenario.InflationAdjust.scenario">
 <code class="descname">scenario</code><a class="headerlink" href="#forecaster.scenario.InflationAdjust.scenario" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>Scenario</em> – A <cite>Scenario</cite> defining an
+<dd><p>A <cite>Scenario</cite> defining an
 <cite>accumulation_function</cite> for inflation over several years.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference internal" href="#forecaster.scenario.Scenario" title="forecaster.scenario.Scenario">Scenario</a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -242,7 +244,7 @@ base_year).</p>
 <dl class="class">
 <dt id="forecaster.scenario.Scenario">
 <em class="property">class </em><code class="descclassname">forecaster.scenario.</code><code class="descname">Scenario</code><span class="sig-paren">(</span><em>initial_year</em>, <em>num_years</em>, <em>inflation=0</em>, <em>stock_return=0</em>, <em>bond_return=0</em>, <em>other_return=0</em>, <em>management_fees=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/scenario.html#Scenario"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.scenario.Scenario" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Describes an economic scenario over the course of a simulation.</p>
 <p>For example, provides inflation rates and rates of return for each
 year of the simulation.</p>
@@ -252,51 +254,107 @@ action.</p>
 <dl class="attribute">
 <dt id="forecaster.scenario.Scenario.initial_year">
 <code class="descname">initial_year</code><a class="headerlink" href="#forecaster.scenario.Scenario.initial_year" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>int</em> – The first year of the simulation.</p>
+<dd><p>The first year of the simulation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">int</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.scenario.Scenario.num_years">
 <code class="descname">num_years</code><a class="headerlink" href="#forecaster.scenario.Scenario.num_years" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>int</em> – The number of years in the simulation.</p>
+<dd><p>The number of years in the simulation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">int</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.scenario.Scenario.inflation">
 <code class="descname">inflation</code><a class="headerlink" href="#forecaster.scenario.Scenario.inflation" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict[int, Decimal]</em> – <cite>{year, inflation}</cite> pairs, where
+<dd><p><cite>{year, inflation}</cite> pairs, where
 <cite>inflation</cite> is a percentage rate (e.g. <cite>Decimal(0.5)</cite> is
 50%).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">dict[int, Decimal]</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.scenario.Scenario.stock_return">
 <code class="descname">stock_return</code><a class="headerlink" href="#forecaster.scenario.Scenario.stock_return" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict[int, Decimal]</em> – <cite>{year, return}</cite> pairs where
+<dd><p><cite>{year, return}</cite> pairs where
 <cite>return</cite> is the rate of return for stocks in the given year.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">dict[int, Decimal]</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.scenario.Scenario.bond_return">
 <code class="descname">bond_return</code><a class="headerlink" href="#forecaster.scenario.Scenario.bond_return" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict[int, Decimal]</em> – <cite>{year, return}</cite> pairs where
+<dd><p><cite>{year, return}</cite> pairs where
 <cite>return</cite> is the rate of return for bonds in the given year.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">dict[int, Decimal]</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.scenario.Scenario.other_return">
 <code class="descname">other_return</code><a class="headerlink" href="#forecaster.scenario.Scenario.other_return" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict[int, Decimal]</em> – <cite>{year, return}</cite> pairs where
+<dd><p><cite>{year, return}</cite> pairs where
 <cite>return</cite> is the rate of return for other property (e.g.
 real estate) in the given year. Optional.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">dict[int, Decimal]</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.scenario.Scenario.management_fees">
 <code class="descname">management_fees</code><a class="headerlink" href="#forecaster.scenario.Scenario.management_fees" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict[int, Decimal]</em> – <cite>{year, fees}</cite> pairs
+<dd><p><cite>{year, fees}</cite> pairs
 where <cite>fees</cite> is the rate at which management fees are
 charged in invested assets in the given year. Optional.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">dict[int, Decimal]</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -331,8 +389,8 @@ a percentage (e.g. 0.05 for a 5% raise).</li>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – num_years must be positive.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – input object cannot be processed by _build_dict.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – num_years must be positive.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – input object cannot be processed by _build_dict.</li>
 </ul>
 </td>
 </tr>
@@ -432,9 +490,7 @@ of $1 in base_year)</p>
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -443,7 +499,7 @@ of $1 in base_year)</p>
         <a href="forecaster.settings.html" class="btn btn-neutral float-right" title="forecaster.settings module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="forecaster.person.html" class="btn btn-neutral" title="forecaster.person module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="forecaster.person.html" class="btn btn-neutral float-left" title="forecaster.person module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -452,11 +508,11 @@ of $1 in base_year)</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017, Christopher Scott.
+        &copy; Copyright 2017, Christopher Scott
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -469,36 +525,15 @@ of $1 in base_year)</p>
   
 
 
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'0.0.1',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
-
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script>
+
+  
+  
+    
    
 
 </body>

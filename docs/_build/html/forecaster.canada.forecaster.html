@@ -17,43 +17,36 @@
   
 
   
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="forecaster 0.0.1 documentation" href="index.html"/>
-        <link rel="up" title="forecaster.canada package" href="forecaster.canada.html"/>
-        <link rel="next" title="forecaster.canada.settings module" href="forecaster.canada.settings.html"/>
-        <link rel="prev" title="forecaster.canada.constants module" href="forecaster.canada.constants.html"/> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="forecaster.canada.settings module" href="forecaster.canada.settings.html" />
+    <link rel="prev" title="forecaster.canada.constants module" href="forecaster.canada.constants.html" /> 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -116,7 +109,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">forecaster</a>
@@ -124,9 +117,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -180,7 +174,7 @@
 <dl class="class">
 <dt id="forecaster.canada.forecaster.ForecasterCanada">
 <em class="property">class </em><code class="descclassname">forecaster.canada.forecaster.</code><code class="descname">ForecasterCanada</code><span class="sig-paren">(</span><em>settings=&lt;class 'forecaster.canada.settings.SettingsCanada'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/forecaster.html#ForecasterCanada"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.forecaster.ForecasterCanada" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="forecaster.forecaster.html#forecaster.forecaster.Forecaster" title="forecaster.forecaster.Forecaster"><code class="xref py py-class docutils literal"><span class="pre">forecaster.forecaster.Forecaster</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="forecaster.forecaster.html#forecaster.forecaster.Forecaster" title="forecaster.forecaster.Forecaster"><code class="xref py py-class docutils literal notranslate"><span class="pre">forecaster.forecaster.Forecaster</span></code></a></p>
 <p>Tests Forecaster (Canada).</p>
 <dl class="method">
 <dt id="forecaster.canada.forecaster.ForecasterCanada.__init__">
@@ -193,19 +187,19 @@ init logic for RRSPs, TFSAs, TaxableAccounts, and Tax objects.</p>
 
 <dl class="method">
 <dt id="forecaster.canada.forecaster.ForecasterCanada.add_rrsp">
-<code class="descname">add_rrsp</code><span class="sig-paren">(</span><em>inflation_adjust=None</em>, <em>cls=&lt;class 'forecaster.canada.accounts.RRSP'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/forecaster.html#ForecasterCanada.add_rrsp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.forecaster.ForecasterCanada.add_rrsp" title="Permalink to this definition">¶</a></dt>
+<code class="descname">add_rrsp</code><span class="sig-paren">(</span><em>inflation_adjust=None</em>, <em>rrif_conversion_year=None</em>, <em>cls=&lt;class 'forecaster.canada.accounts.rrsp.RRSP'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/forecaster.html#ForecasterCanada.add_rrsp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.forecaster.ForecasterCanada.add_rrsp" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adds an RRSP to the forecast.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.canada.forecaster.ForecasterCanada.add_taxable_account">
-<code class="descname">add_taxable_account</code><span class="sig-paren">(</span><em>acb=None</em>, <em>cls=&lt;class 'forecaster.canada.accounts.TaxableAccount'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/forecaster.html#ForecasterCanada.add_taxable_account"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.forecaster.ForecasterCanada.add_taxable_account" title="Permalink to this definition">¶</a></dt>
+<code class="descname">add_taxable_account</code><span class="sig-paren">(</span><em>acb=None</em>, <em>cls=&lt;class 'forecaster.canada.accounts.taxable_account.TaxableAccount'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/forecaster.html#ForecasterCanada.add_taxable_account"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.forecaster.ForecasterCanada.add_taxable_account" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adds a TaxableAccount to the forecast.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.canada.forecaster.ForecasterCanada.add_tfsa">
-<code class="descname">add_tfsa</code><span class="sig-paren">(</span><em>inflation_adjust=None</em>, <em>cls=&lt;class 'forecaster.canada.accounts.TFSA'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/forecaster.html#ForecasterCanada.add_tfsa"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.forecaster.ForecasterCanada.add_tfsa" title="Permalink to this definition">¶</a></dt>
+<code class="descname">add_tfsa</code><span class="sig-paren">(</span><em>inflation_adjust=None</em>, <em>cls=&lt;class 'forecaster.canada.accounts.tfsa.TFSA'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/forecaster.html#ForecasterCanada.add_tfsa"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.forecaster.ForecasterCanada.add_tfsa" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adds a TFSA to the forecast.</p>
 </dd></dl>
 
@@ -223,9 +217,7 @@ list for canada.tax objects.</p>
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -234,7 +226,7 @@ list for canada.tax objects.</p>
         <a href="forecaster.canada.settings.html" class="btn btn-neutral float-right" title="forecaster.canada.settings module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="forecaster.canada.constants.html" class="btn btn-neutral" title="forecaster.canada.constants module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="forecaster.canada.constants.html" class="btn btn-neutral float-left" title="forecaster.canada.constants module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -243,11 +235,11 @@ list for canada.tax objects.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017, Christopher Scott.
+        &copy; Copyright 2017, Christopher Scott
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -260,36 +252,15 @@ list for canada.tax objects.</p>
   
 
 
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'0.0.1',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
-
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script>
+
+  
+  
+    
    
 
 </body>

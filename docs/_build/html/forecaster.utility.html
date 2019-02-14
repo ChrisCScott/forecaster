@@ -17,42 +17,35 @@
   
 
   
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="forecaster 0.0.1 documentation" href="index.html"/>
-        <link rel="up" title="forecaster package" href="forecaster.html"/>
-        <link rel="prev" title="forecaster.tax module" href="forecaster.tax.html"/> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="forecaster.tax module" href="forecaster.tax.html" /> 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -124,7 +117,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">forecaster</a>
@@ -132,9 +125,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -259,6 +253,37 @@ generated.</li>
 </dd></dl>
 
 <dl class="function">
+<dt id="forecaster.utility.frequency_conv">
+<code class="descclassname">forecaster.utility.</code><code class="descname">frequency_conv</code><span class="sig-paren">(</span><em>nper</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/utility.html#frequency_conv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.utility.frequency_conv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of periods in a year given a compounding frequency.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>nper</strong> (<em>str</em><em>, </em><em>int</em>) – A code (str) indicating a compounding
+frequency (e.g. ‘W’, ‘M’), an int, or None</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>An int indicating the number of compounding periods in a</dt>
+<dd><p class="first last">year or None if compounding is continuous.</p>
+</dd>
+</dl>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – str nper must have a known value.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – nper must be greater than 0.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code> – nper cannot be losslessly converted to int.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
 <dt id="forecaster.utility.nearest_year">
 <code class="descclassname">forecaster.utility.</code><code class="descname">nearest_year</code><span class="sig-paren">(</span><em>vals</em>, <em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/utility.html#nearest_year"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.utility.nearest_year" title="Permalink to this definition">¶</a></dt>
 <dd><p>Finds the nearest (past) year to <cite>year</cite> in <cite>vals</cite>.</p>
@@ -283,20 +308,49 @@ following year.<p>Returns <cite>None</cite> if <cite>vals</cite> is empty.</p>
 </table>
 </dd></dl>
 
+<dl class="function">
+<dt id="forecaster.utility.when_conv">
+<code class="descclassname">forecaster.utility.</code><code class="descname">when_conv</code><span class="sig-paren">(</span><em>when</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/utility.html#when_conv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.utility.when_conv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts various types of <cite>when</cite> inputs to Decimal.</p>
+<p>The Decimal value is in [0,1], where 0 is the start of the period
+and 1 is the end.</p>
+<p>NOTE: <cite>numpy</cite> defines its <cite>when</cite> argument such that ‘end’ = 0 and
+‘start’ = 1. If you’re using that package, consider whether any
+conversions are necessary.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>when</strong> (<em>float</em><em>, </em><em>Decimal</em><em>, </em><em>str</em>) – The timing of the transaction.
+Must be in the range [0,1] or in (‘start’, ‘end’).</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first simple">
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">decimal.InvalidOperation</span></code> – <cite>when</cite> must be convertible to
+type Decimal</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – <cite>when</cite> must be in [0,1]</li>
+</ul>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A Decimal in [0,1]</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </div>
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
       
-        <a href="forecaster.tax.html" class="btn btn-neutral" title="forecaster.tax module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="forecaster.tax.html" class="btn btn-neutral float-left" title="forecaster.tax module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -305,11 +359,11 @@ following year.<p>Returns <cite>None</cite> if <cite>vals</cite> is empty.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017, Christopher Scott.
+        &copy; Copyright 2017, Christopher Scott
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -322,36 +376,15 @@ following year.<p>Returns <cite>None</cite> if <cite>vals</cite> is empty.</p>
   
 
 
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'0.0.1',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
-
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script>
+
+  
+  
+    
    
 
 </body>

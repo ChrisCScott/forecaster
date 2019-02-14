@@ -17,43 +17,36 @@
   
 
   
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="forecaster 0.0.1 documentation" href="index.html"/>
-        <link rel="up" title="forecaster package" href="forecaster.html"/>
-        <link rel="next" title="forecaster.ledger module" href="forecaster.ledger.html"/>
-        <link rel="prev" title="forecaster.forecast module" href="forecaster.forecast.html"/> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="forecaster.ledger module" href="forecaster.ledger.html" />
+    <link rel="prev" title="forecaster.forecast module" href="forecaster.forecast.html" /> 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -125,7 +118,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">forecaster</a>
@@ -133,9 +126,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -186,8 +180,8 @@
 <p>This module provides classes for creating and managing Forecasts.</p>
 <dl class="class">
 <dt id="forecaster.forecaster.Forecaster">
-<em class="property">class </em><code class="descclassname">forecaster.forecaster.</code><code class="descname">Forecaster</code><span class="sig-paren">(</span><em>person1=None</em>, <em>person2=None</em>, <em>people=None</em>, <em>assets=None</em>, <em>debts=None</em>, <em>scenario=None</em>, <em>contribution_strategy=None</em>, <em>withdrawal_strategy=None</em>, <em>contribution_transaction_strategy=None</em>, <em>withdrawal_transaction_strategy=None</em>, <em>allocation_strategy=None</em>, <em>debt_payment_strategy=None</em>, <em>tax_treatment=None</em>, <em>initial_year=None</em>, <em>settings=&lt;class 'forecaster.settings.Settings'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<em class="property">class </em><code class="descclassname">forecaster.forecaster.</code><code class="descname">Forecaster</code><span class="sig-paren">(</span><em>person1=None</em>, <em>person2=None</em>, <em>people=None</em>, <em>assets=None</em>, <em>debts=None</em>, <em>scenario=None</em>, <em>contribution_strategy=None</em>, <em>contribution_transaction_strategy=None</em>, <em>withdrawal_transaction_strategy=None</em>, <em>allocation_strategy=None</em>, <em>debt_payment_strategy=None</em>, <em>tax_treatment=None</em>, <em>initial_year=None</em>, <em>settings=&lt;class 'forecaster.settings.Settings'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>A convenience class for building Forecasts based on settings.</p>
 <p><cite>Forecaster</cite> takes in information for building a <cite>Forecast</cite>
 (explicitly, via a <cite>Settings</cite> object, or via a combination of the
@@ -213,7 +207,7 @@ various future economic performance scenarios (e.g. as in Monte
 Carlo analysis).</p>
 <dl class="method">
 <dt id="forecaster.forecaster.Forecaster.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>person1=None</em>, <em>person2=None</em>, <em>people=None</em>, <em>assets=None</em>, <em>debts=None</em>, <em>scenario=None</em>, <em>contribution_strategy=None</em>, <em>withdrawal_strategy=None</em>, <em>contribution_transaction_strategy=None</em>, <em>withdrawal_transaction_strategy=None</em>, <em>allocation_strategy=None</em>, <em>debt_payment_strategy=None</em>, <em>tax_treatment=None</em>, <em>initial_year=None</em>, <em>settings=&lt;class 'forecaster.settings.Settings'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.__init__" title="Permalink to this definition">¶</a></dt>
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>person1=None</em>, <em>person2=None</em>, <em>people=None</em>, <em>assets=None</em>, <em>debts=None</em>, <em>scenario=None</em>, <em>contribution_strategy=None</em>, <em>contribution_transaction_strategy=None</em>, <em>withdrawal_transaction_strategy=None</em>, <em>allocation_strategy=None</em>, <em>debt_payment_strategy=None</em>, <em>tax_treatment=None</em>, <em>initial_year=None</em>, <em>settings=&lt;class 'forecaster.settings.Settings'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Inits an instance of <cite>Forecaster</cite>.</p>
 <p>This method can receive any of the parameters that can be
 provided to <cite>Forecast</cite>. Any parameters that are not provided at
@@ -241,13 +235,13 @@ arguments are not given.</li>
 
 <dl class="method">
 <dt id="forecaster.forecaster.Forecaster.add_account">
-<code class="descname">add_account</code><span class="sig-paren">(</span><em>owner=None</em>, <em>balance=None</em>, <em>rate=None</em>, <em>transactions=None</em>, <em>nper=None</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>cls=&lt;class 'forecaster.accounts.Account'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.add_account"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.add_account" title="Permalink to this definition">¶</a></dt>
+<code class="descname">add_account</code><span class="sig-paren">(</span><em>owner=None</em>, <em>balance=None</em>, <em>rate=None</em>, <em>transactions=None</em>, <em>nper=None</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>cls=&lt;class 'forecaster.accounts.base.Account'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.add_account"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.add_account" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adds an account (asset, debt, etc.) to the forecast.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.forecaster.Forecaster.add_asset">
-<code class="descname">add_asset</code><span class="sig-paren">(</span><em>owner=None</em>, <em>balance=None</em>, <em>rate=None</em>, <em>transactions=None</em>, <em>nper=None</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>cls=&lt;class 'forecaster.accounts.Account'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.add_asset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.add_asset" title="Permalink to this definition">¶</a></dt>
+<code class="descname">add_asset</code><span class="sig-paren">(</span><em>owner=None</em>, <em>balance=None</em>, <em>rate=None</em>, <em>transactions=None</em>, <em>nper=None</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>cls=&lt;class 'forecaster.accounts.base.Account'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.add_asset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.add_asset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adds an asset to the forecast and to the <cite>assets</cite> set.</p>
 <p>This method should be used instead of the generic method
 <cite>add_account</cite> because, in addition to building an object of the
@@ -272,8 +266,34 @@ the relevant args, inputs, settings, and default values.</td>
 </dd></dl>
 
 <dl class="method">
+<dt id="forecaster.forecaster.Forecaster.add_contribution_limit_account">
+<code class="descname">add_contribution_limit_account</code><span class="sig-paren">(</span><em>contribution_room=None</em>, <em>contributor=None</em>, <em>cls=&lt;class 'forecaster.accounts.contribution_limited.ContributionLimitAccount'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.add_contribution_limit_account"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.add_contribution_limit_account" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds an asset to the forecast and to the <cite>assets</cite> set.</p>
+<p>This method should be used instead of the generic method
+<cite>add_account</cite> because, in addition to building an object of the
+appropriate type, it also manages object membership in the
+<cite>assets</cite> set.</p>
+<p>See <cite>add_account</cite> for additional documentation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>cls</strong> (<em>type</em>) – The class of <cite>RegisteredAccount</cite> being built by
+the method. This class’s <cite>__init__</cite> method must accept
+all of the args of <cite>RegisteredAccount</cite>.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">An object of type <cite>cls</cite> constructed with
+the relevant args, inputs, settings, and default values.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">RegisteredAccount</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="forecaster.forecaster.Forecaster.add_debt">
-<code class="descname">add_debt</code><span class="sig-paren">(</span><em>owner=None</em>, <em>balance=None</em>, <em>rate=None</em>, <em>transactions=None</em>, <em>nper=None</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>minimum_payment=None</em>, <em>reduction_rate=None</em>, <em>accelerate_payment=None</em>, <em>cls=&lt;class 'forecaster.accounts.Debt'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.add_debt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.add_debt" title="Permalink to this definition">¶</a></dt>
+<code class="descname">add_debt</code><span class="sig-paren">(</span><em>owner=None</em>, <em>balance=None</em>, <em>rate=None</em>, <em>transactions=None</em>, <em>nper=None</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>minimum_payment=None</em>, <em>savings_rate=None</em>, <em>accelerated_payment=None</em>, <em>cls=&lt;class 'forecaster.accounts.debt.Debt'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.add_debt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.add_debt" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adds a Debt to the forecast.</p>
 <p>This method should be used instead of the generic method
 <cite>add_account</cite> because, in addition to building an object of the
@@ -336,32 +356,6 @@ the relevant args, inputs, settings, and default values.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="forecaster.forecaster.Forecaster.add_registered_account">
-<code class="descname">add_registered_account</code><span class="sig-paren">(</span><em>contribution_room=None</em>, <em>contributor=None</em>, <em>cls=&lt;class 'forecaster.accounts.RegisteredAccount'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.add_registered_account"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.add_registered_account" title="Permalink to this definition">¶</a></dt>
-<dd><p>Adds an asset to the forecast and to the <cite>assets</cite> set.</p>
-<p>This method should be used instead of the generic method
-<cite>add_account</cite> because, in addition to building an object of the
-appropriate type, it also manages object membership in the
-<cite>assets</cite> set.</p>
-<p>See <cite>add_account</cite> for additional documentation.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>cls</strong> (<em>type</em>) – The class of <cite>RegisteredAccount</cite> being built by
-the method. This class’s <cite>__init__</cite> method must accept
-all of the args of <cite>RegisteredAccount</cite>.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">An object of type <cite>cls</cite> constructed with
-the relevant args, inputs, settings, and default values.</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.RegisteredAccount" title="forecaster.accounts.RegisteredAccount">RegisteredAccount</a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
 <dt id="forecaster.forecaster.Forecaster.forecast">
 <code class="descname">forecast</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.forecast"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.forecast" title="Permalink to this definition">¶</a></dt>
 <dd><p>TODO</p>
@@ -375,7 +369,7 @@ the relevant args, inputs, settings, and default values.</td>
 
 <dl class="method">
 <dt id="forecaster.forecaster.Forecaster.set_contribution_strategy">
-<code class="descname">set_contribution_strategy</code><span class="sig-paren">(</span><em>strategy=None</em>, <em>base_amount=None</em>, <em>rate=None</em>, <em>refund_reinvestment_rate=None</em>, <em>inflation_adjust=None</em>, <em>cls=&lt;class 'forecaster.strategy.gross_transaction.ContributionStrategy'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_contribution_strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_contribution_strategy" title="Permalink to this definition">¶</a></dt>
+<code class="descname">set_contribution_strategy</code><span class="sig-paren">(</span><em>strategy=None</em>, <em>base_amount=None</em>, <em>rate=None</em>, <em>inflation_adjust=None</em>, <em>cls=&lt;class 'forecaster.strategy.gross_transaction.LivingExpensesStrategy'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_contribution_strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_contribution_strategy" title="Permalink to this definition">¶</a></dt>
 <dd><p>TODO</p>
 </dd></dl>
 
@@ -446,19 +440,13 @@ of this method.</p>
 
 <dl class="method">
 <dt id="forecaster.forecaster.Forecaster.set_transaction_in_strategy">
-<code class="descname">set_transaction_in_strategy</code><span class="sig-paren">(</span><em>strategy=None</em>, <em>weights=None</em>, <em>timing=None</em>, <em>cls=&lt;class 'forecaster.strategy.transaction.TransactionStrategy'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_transaction_in_strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_transaction_in_strategy" title="Permalink to this definition">¶</a></dt>
+<code class="descname">set_transaction_in_strategy</code><span class="sig-paren">(</span><em>strategy=None</em>, <em>weights=None</em>, <em>timing=None</em>, <em>cls=&lt;class 'forecaster.strategy.account_transaction.AccountTransactionStrategy'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_transaction_in_strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_transaction_in_strategy" title="Permalink to this definition">¶</a></dt>
 <dd><p>TODO</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.forecaster.Forecaster.set_transaction_out_strategy">
-<code class="descname">set_transaction_out_strategy</code><span class="sig-paren">(</span><em>strategy=None</em>, <em>weights=None</em>, <em>timing=None</em>, <em>cls=&lt;class 'forecaster.strategy.transaction.TransactionStrategy'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_transaction_out_strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_transaction_out_strategy" title="Permalink to this definition">¶</a></dt>
-<dd><p>TODO</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.forecaster.Forecaster.set_withdrawal_strategy">
-<code class="descname">set_withdrawal_strategy</code><span class="sig-paren">(</span><em>strategy=None</em>, <em>base_amount=None</em>, <em>rate=None</em>, <em>timing=None</em>, <em>income_adjusted=None</em>, <em>inflation_adjust=None</em>, <em>cls=&lt;class 'forecaster.strategy.gross_transaction.WithdrawalStrategy'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_withdrawal_strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_withdrawal_strategy" title="Permalink to this definition">¶</a></dt>
+<code class="descname">set_transaction_out_strategy</code><span class="sig-paren">(</span><em>strategy=None</em>, <em>weights=None</em>, <em>timing=None</em>, <em>cls=&lt;class 'forecaster.strategy.account_transaction.AccountTransactionStrategy'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_transaction_out_strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_transaction_out_strategy" title="Permalink to this definition">¶</a></dt>
 <dd><p>TODO</p>
 </dd></dl>
 
@@ -468,9 +456,7 @@ of this method.</p>
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -479,7 +465,7 @@ of this method.</p>
         <a href="forecaster.ledger.html" class="btn btn-neutral float-right" title="forecaster.ledger module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="forecaster.forecast.html" class="btn btn-neutral" title="forecaster.forecast module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="forecaster.forecast.html" class="btn btn-neutral float-left" title="forecaster.forecast module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -488,11 +474,11 @@ of this method.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017, Christopher Scott.
+        &copy; Copyright 2017, Christopher Scott
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -505,36 +491,15 @@ of this method.</p>
   
 
 
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'0.0.1',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
-
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script>
+
+  
+  
+    
    
 
 </body>

@@ -17,43 +17,36 @@
   
 
   
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="forecaster 0.0.1 documentation" href="index.html"/>
-        <link rel="up" title="forecaster package" href="forecaster.html"/>
-        <link rel="next" title="forecaster.forecast module" href="forecaster.forecast.html"/>
-        <link rel="prev" title="forecaster.canada.tax module" href="forecaster.canada.tax.html"/> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="forecaster.forecast module" href="forecaster.forecast.html" />
+    <link rel="prev" title="forecaster.canada.tax module" href="forecaster.canada.tax.html" /> 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -125,7 +118,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">forecaster</a>
@@ -133,9 +126,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -183,769 +177,12 @@
             
   <div class="section" id="module-forecaster.accounts">
 <span id="forecaster-accounts-module"></span><h1>forecaster.accounts module<a class="headerlink" href="#module-forecaster.accounts" title="Permalink to this headline">¶</a></h1>
-<p>A module providing Account, RegisteredAccount, and Debt classes.</p>
-<dl class="class">
-<dt id="forecaster.accounts.Account">
-<em class="property">class </em><code class="descclassname">forecaster.accounts.</code><code class="descname">Account</code><span class="sig-paren">(</span><em>owner</em>, <em>balance=0</em>, <em>rate=0</em>, <em>transactions=None</em>, <em>nper=1</em>, <em>inputs=None</em>, <em>initial_year=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#Account"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.Account" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.TaxSource" title="forecaster.ledger.TaxSource"><code class="xref py py-class docutils literal"><span class="pre">forecaster.ledger.TaxSource</span></code></a></p>
-<p>An account storing a <cite>Money</cite> balance.</p>
-<p>Has a <cite>balance</cite> indicating the balance of the account at the start
-of the period (generally a year). Optionally, a rate of growth,
-<cite>rate</cite>, expressed as an apr (annual percentage rate) can be given.
-For example, a 5% apr could be passed as <cite>rate=0.05</cite>.</p>
-<p>May optionally also recieve one or more transactions defining a time
-series of inflows and outflows from the account. These transactions
-do not modify the <cite>balance</cite> directly; rather, they are applied
-to the balance, with any growth, when <cite>next_year()</cite> is called.
-A new <cite>Account</cite> object with an updated balance is generated; the
-calling object’s balance does not change.</p>
-<p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">account1</span> <span class="o">=</span> <span class="n">Account</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">)</span>
-<span class="n">account2</span> <span class="o">=</span> <span class="n">account1</span><span class="o">.</span><span class="n">next_year</span><span class="p">()</span>
-<span class="n">account1</span><span class="o">.</span><span class="n">balance</span> <span class="o">==</span> <span class="mi">100</span>  <span class="c1"># True</span>
-<span class="n">account2</span><span class="o">.</span><span class="n">balance</span> <span class="o">==</span> <span class="mi">105</span>  <span class="c1"># True</span>
-</pre></div>
-</div>
-<dl class="attribute">
-<dt id="forecaster.accounts.Account.balance">
-<code class="descname">balance</code><a class="headerlink" href="#forecaster.accounts.Account.balance" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>Money</em> – The opening account balance for this year.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Account.balance_history">
-<code class="descname">balance_history</code><a class="headerlink" href="#forecaster.accounts.Account.balance_history" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict[int, Money]</em> – <cite>{year: balance}</cite> pairs
-covering all years in the range <cite>initial_year: this_year</cite></p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Account.rate">
-<code class="descname">rate</code><a class="headerlink" href="#forecaster.accounts.Account.rate" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>Decimal</em> – The rate of return (or interest) for this year,
-before compounding.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Account.rate_history">
-<code class="descname">rate_history</code><a class="headerlink" href="#forecaster.accounts.Account.rate_history" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict[int, Decimal]</em> – <cite>{year: rate}</cite> pairs covering
-all years in the range <cite>initial_year: this_year</cite></p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Account.rate_function">
-<code class="descname">rate_function</code><a class="headerlink" href="#forecaster.accounts.Account.rate_function" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>callable</em> – A callable object that gives the rate
-for each year. Has a signature of the form
-<cite>rate(year) -&gt; Decimal</cite>.</p>
-<p>If this callable object relies on <cite>Scenario</cite> or other
-objects defined in the <cite>forecaster</cite> package, recommend
-passing an object that stores these objects explicitly
-as attributes (as opposed to a method/function where these
-objects are stored in the context), otherwise <cite>Forecaster</cite>’s
-object-substitution logic will not work.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Account.transactions">
-<code class="descname">transactions</code><a class="headerlink" href="#forecaster.accounts.Account.transactions" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict[Decimal, Money]</em> – The transactions to/from
-the account for this year. <cite>{when: value}</cite> pairs, where:</p>
-<p><cite>when</cite> describes the timing of the transaction in the year.
-In the range [0, 1].</p>
-<p><cite>value</cite> is the sum of inflows and outflows at time <cite>when</cite>.
-Positive for inflows and negative for outflows.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Account.transactions_history">
-<code class="descname">transactions_history</code><a class="headerlink" href="#forecaster.accounts.Account.transactions_history" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict[int, dict[Decimal, Money]]</em> – <cite>{year: transactions}</cite> pairs covering all years in the range
-<cite>initial_year: this_year</cite></p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Account.returns">
-<code class="descname">returns</code><a class="headerlink" href="#forecaster.accounts.Account.returns" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>Money</em> – The returns (losses) of the account for the
-year.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Account.returns_history">
-<code class="descname">returns_history</code><a class="headerlink" href="#forecaster.accounts.Account.returns_history" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict[int, Money]</em> – <cite>{year: returns}</cite> pairs
-covering all years in the range <cite>initial_year: this_year</cite></p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Account.nper">
-<code class="descname">nper</code><a class="headerlink" href="#forecaster.accounts.Account.nper" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>int, str</em> – The compounding frequency. May be given as
-a number of periods (an int) or via a code (a str). Codes
-include:</p>
-<ul class="simple">
-<li>C: Continuous (default)</li>
-<li>D: Daily</li>
-<li>W: Weekly</li>
-<li>BW: Biweekly (every two weeks)</li>
-<li>SM: Semi-monthly (twice a month)</li>
-<li>M: Monthly</li>
-<li>BM: Bimonthly (every two months)</li>
-<li>Q: Quarterly (every 3 months)</li>
-<li>SA: Semi-annually (twice a year)</li>
-<li>A: Annually</li>
-</ul>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Account.initial_year">
-<code class="descname">initial_year</code><a class="headerlink" href="#forecaster.accounts.Account.initial_year" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>int</em> – The first year for which account data is
-recorded.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.accounts.Account.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>owner</em>, <em>balance=0</em>, <em>rate=0</em>, <em>transactions=None</em>, <em>nper=1</em>, <em>inputs=None</em>, <em>initial_year=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#Account.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.Account.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Constructor for <cite>Account</cite>.</p>
-<p>This constructor receives only values for the first year.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>owner</strong> (<a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a>) – The owner of the account. Optional.</li>
-<li><strong>balance</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a>) – The balance for the first year</li>
-<li><strong>rate</strong> (<em>Decimal</em><em>, </em><em>callable</em>) – <p>An object that gives the rate for
-each year, either as a constant value (e.g. a Decimal)
-or as a callable object with a signature of the form
-<cite>rate(year) -&gt; Decimal</cite>.</p>
-<p>If this callable object relies on <cite>Scenario</cite> or other
-objects defined in the <cite>forecaster</cite> package, recommend
-passing an object that stores these objects explicitly
-as attributes (as opposed to a method/function where
-these objects are stored in the context), otherwise
-<cite>Forecaster</cite>’s object-substitution logic will not work.</p>
-</li>
-<li><strong>transactions</strong> (<em>dict</em><em>[</em><em>Decimal</em><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>]</em>) – The transactions for
-the first year, as <cite>{when: value}</cite> pairs. <cite>when</cite> is in
-[0,1] (and may be one of the strings accepted by
-<cite>when_conv</cite>). A positive <cite>value</cite> denotes an inflow, and
-a negative <cite>value</cite> denotes an outflow.</li>
-<li><strong>nper</strong> (<em>int</em>) – The number of compounding periods per year.</li>
-<li><strong>initial_year</strong> (<em>int</em>) – The first year (e.g. 2000)</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.accounts.Account.__len__">
-<code class="descname">__len__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#Account.__len__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.Account.__len__" title="Permalink to this definition">¶</a></dt>
-<dd><p>The number of years of transaction data in the account.</p>
-</dd></dl>
-
-<dl class="staticmethod">
-<dt id="forecaster.accounts.Account.accumulation_function">
-<em class="property">static </em><code class="descname">accumulation_function</code><span class="sig-paren">(</span><em>t</em>, <em>rate</em>, <em>nper=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#Account.accumulation_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.Account.accumulation_function" title="Permalink to this definition">¶</a></dt>
-<dd><p>The accumulation function, A(t), from interest theory.</p>
-<p>A(t) provides the growth (or discount) factor over the period
-[0, t]. If <cite>t</cite> is negative, this method returns the inverse
-(i.e. <cite>A(t)^-1</cite>).</p>
-<p>This method’s output is not well-defined if <cite>t</cite> does not align
-with the start/end of a compounding period. (It will produce
-sensible output, but it might not correspond to how your bank
-calculates interest).</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>t</strong> (<em>float</em><em>, </em><em>Decimal</em>) – Defines the period [0,t] over which the
-accumulation will be calculated.</li>
-<li><strong>rate</strong> (<em>float</em><em>, </em><em>Decimal</em>) – The rate of return (or interest).</li>
-<li><strong>nper</strong> (<em>int</em>) – The number of compounding periods per year.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The accumulation A(t), as a Decimal.</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.accounts.Account.add_transaction">
-<code class="descname">add_transaction</code><span class="sig-paren">(</span><em>value</em>, <em>when='end'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#Account.add_transaction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.Account.add_transaction" title="Permalink to this definition">¶</a></dt>
-<dd><p>Adds a transaction to the account.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>value</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a>) – The value of the transaction. Positive values
-are inflows and negative values are outflows.</li>
-<li><strong>when</strong> (<em>float</em><em>, </em><em>Decimal</em><em>, </em><em>str</em>) – The timing of the transaction.
-Must be in the range [0,1] or be a suitable str input,
-as described in the documentation for <cite>when_conv</cite>.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">decimal.InvalidOperation</span></code> – Transactions must be convertible
-to type Money and <cite>when</cite> must be convertible to type
-Decimal.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – <cite>when</cite> must be in [0,1]</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="attribute">
-<dt>
-<code class="descname">balance</code></dt>
-<dd><p>Returns cached value in *_history dict if available.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.accounts.Account.balance_at_time">
-<code class="descname">balance_at_time</code><span class="sig-paren">(</span><em>time</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#Account.balance_at_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.Account.balance_at_time" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the balance at a point in time.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>when</strong> (<em>Decimal</em><em>, </em><em>str</em>) – The timing of the transaction.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="attribute">
-<dt>
-<code class="descname">balance_history</code></dt>
-<dd><p>Record of balance over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Account.contribution_group">
-<code class="descname">contribution_group</code><a class="headerlink" href="#forecaster.accounts.Account.contribution_group" title="Permalink to this definition">¶</a></dt>
-<dd><p>The Accounts that share contribution room with this one.</p>
-<p>For <cite>Account</cite>, this method returns a set containing only itself;
-that is, it does not share contribution room with any other
-<cite>Account`s. However, subclasses (like `RegisteredAccount</cite>) may
-override this behaviour.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The <cite>Account</cite> objects that should be considered
-together with this <cite>Account</cite> when allocating contributions
-between them.<p>Includes this <cite>Account</cite>.</p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">set[<a class="reference internal" href="#forecaster.accounts.Account" title="forecaster.accounts.Account">Account</a>]</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Account.inflows">
-<code class="descname">inflows</code><a class="headerlink" href="#forecaster.accounts.Account.inflows" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns cached value in *_history dict if available.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Account.inflows_history">
-<code class="descname">inflows_history</code><a class="headerlink" href="#forecaster.accounts.Account.inflows_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of inflows over all past years.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.accounts.Account.max_inflow">
-<code class="descname">max_inflow</code><span class="sig-paren">(</span><em>when='end'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#Account.max_inflow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.Account.max_inflow" title="Permalink to this definition">¶</a></dt>
-<dd><p>The maximum amount that can be contributed to the account.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.accounts.Account.max_outflow">
-<code class="descname">max_outflow</code><span class="sig-paren">(</span><em>when='end'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#Account.max_outflow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.Account.max_outflow" title="Permalink to this definition">¶</a></dt>
-<dd><p>An outflow which would reduce the end-of-year balance to 0.</p>
-<p>NOTE: This does not guarantee that the account balance will not
-be negative at a time between <cite>when</cite> and <cite>end</cite>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>when</strong> (<em>When</em>) – The timing of the transaction.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A value which, if withdrawn at time <cite>when</cite>, would make the
-account balance 0 at the end of the year, after all
-transactions are accounted for.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.accounts.Account.min_inflow">
-<code class="descname">min_inflow</code><span class="sig-paren">(</span><em>when='end'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#Account.min_inflow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.Account.min_inflow" title="Permalink to this definition">¶</a></dt>
-<dd><p>The minimum amount to be contributed to the account.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.accounts.Account.min_outflow">
-<code class="descname">min_outflow</code><span class="sig-paren">(</span><em>when='end'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#Account.min_outflow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.Account.min_outflow" title="Permalink to this definition">¶</a></dt>
-<dd><p>The minimum amount to be withdrawn from the account.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.accounts.Account.next_year">
-<code class="descname">next_year</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#Account.next_year"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.Account.next_year" title="Permalink to this definition">¶</a></dt>
-<dd><p>Adds another year to the account.</p>
-<p>This method will call the next_year method for the owner if they
-haven’t been advanced to the next year.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Account.outflows">
-<code class="descname">outflows</code><a class="headerlink" href="#forecaster.accounts.Account.outflows" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns cached value in *_history dict if available.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Account.outflows_history">
-<code class="descname">outflows_history</code><a class="headerlink" href="#forecaster.accounts.Account.outflows_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of outflows over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Account.owner">
-<code class="descname">owner</code><a class="headerlink" href="#forecaster.accounts.Account.owner" title="Permalink to this definition">¶</a></dt>
-<dd><p>The account’s owner.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt>
-<code class="descname">rate</code></dt>
-<dd><p>Returns cached value in *_history dict if available.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Account.rate_callable">
-<code class="descname">rate_callable</code><a class="headerlink" href="#forecaster.accounts.Account.rate_callable" title="Permalink to this definition">¶</a></dt>
-<dd><p>A callable object that generates a rate for a given year.</p>
-<p>This object takes the signature <cite>rate(year) -&gt; Money</cite> and must
-accept this <cite>Account</cite>’s <cite>this_year</cite> attribute as input.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt>
-<code class="descname">rate_history</code></dt>
-<dd><p>Record of rate over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt>
-<code class="descname">returns</code></dt>
-<dd><p>Returns cached value in *_history dict if available.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt>
-<code class="descname">returns_history</code></dt>
-<dd><p>Record of returns over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Account.tax_credit_history">
-<code class="descname">tax_credit_history</code><a class="headerlink" href="#forecaster.accounts.Account.tax_credit_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of tax_credit over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Account.tax_deduction_history">
-<code class="descname">tax_deduction_history</code><a class="headerlink" href="#forecaster.accounts.Account.tax_deduction_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of tax_deduction over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Account.tax_withheld_history">
-<code class="descname">tax_withheld_history</code><a class="headerlink" href="#forecaster.accounts.Account.tax_withheld_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of tax_withheld over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Account.taxable_income">
-<code class="descname">taxable_income</code><a class="headerlink" href="#forecaster.accounts.Account.taxable_income" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns cached value in *_history dict if available.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Account.taxable_income_history">
-<code class="descname">taxable_income_history</code><a class="headerlink" href="#forecaster.accounts.Account.taxable_income_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of taxable_income over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt>
-<code class="descname">transactions</code></dt>
-<dd><p>Returns cached value in *_history dict if available.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt>
-<code class="descname">transactions_history</code></dt>
-<dd><p>Record of transactions over all past years.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.accounts.Account.value_at_time">
-<code class="descname">value_at_time</code><span class="sig-paren">(</span><em>value</em>, <em>now='start'</em>, <em>time='end'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#Account.value_at_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.Account.value_at_time" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the present (or future) value.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>value</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a>) – The (nominal) value to be converted.</li>
-<li><strong>now</strong> (<em>Decimal</em>) – The time associated with the nominal value.</li>
-<li><strong>time</strong> (<em>Decimal</em>) – The time to which the nominal value is to
-be converted.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A Money object representing the present value
-(if now &gt; time) or the future value (if now &lt; time) of
-<cite>value</cite>.</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="forecaster.accounts.Debt">
-<em class="property">class </em><code class="descclassname">forecaster.accounts.</code><code class="descname">Debt</code><span class="sig-paren">(</span><em>owner</em>, <em>balance=0</em>, <em>rate=0</em>, <em>transactions=None</em>, <em>nper=1</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>minimum_payment=&lt;Money: 0 CAD&gt;</em>, <em>reduction_rate=1</em>, <em>accelerate_payment=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#Debt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.Debt" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#forecaster.accounts.Account" title="forecaster.accounts.Account"><code class="xref py py-class docutils literal"><span class="pre">forecaster.accounts.Account</span></code></a></p>
-<p>A debt with a balance and an interest rate.</p>
-<p>If there is an outstanding balance, the balance value will be a
-<em>negative</em> value, in line with typical accounting principles.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>minimum_payment</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a>) – The minimum annual payment on the debt.
-Optional.</li>
-<li><strong>reduction_rate</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a><em>, </em><em>Decimal</em><em>, </em><em>float</em><em>, </em><em>int</em>) – If provided, some
-(or all) of the debt payments are drawn from savings instead
-of living expenses. If Money, this is the amount drawn from
-savings. If a number in [0,1], this is the percentage of the
-payment that’s drawn from savings. Optional.</li>
-<li><strong>accelerate_payment</strong> (<em>bool</em>) – If True, payments above the minimum
-may be made to pay off the balance earlier. Optional.</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-<dl class="method">
-<dt id="forecaster.accounts.Debt.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>owner</em>, <em>balance=0</em>, <em>rate=0</em>, <em>transactions=None</em>, <em>nper=1</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>minimum_payment=&lt;Money: 0 CAD&gt;</em>, <em>reduction_rate=1</em>, <em>accelerate_payment=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#Debt.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.Debt.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Constructor for <cite>Debt</cite>.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Debt.balance_history">
-<code class="descname">balance_history</code><a class="headerlink" href="#forecaster.accounts.Debt.balance_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of balance over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Debt.inflows_history">
-<code class="descname">inflows_history</code><a class="headerlink" href="#forecaster.accounts.Debt.inflows_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of inflows over all past years.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.accounts.Debt.max_inflow">
-<code class="descname">max_inflow</code><span class="sig-paren">(</span><em>when='end'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#Debt.max_inflow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.Debt.max_inflow" title="Permalink to this definition">¶</a></dt>
-<dd><p>The payment at time <cite>when</cite> that would reduce balance to 0.</p>
-<p>This is in addition to any existing payments in the account.</p>
-<p>Example:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">debt</span> <span class="o">=</span> <span class="n">Debt</span><span class="p">(</span><span class="o">-</span><span class="mi">100</span><span class="p">)</span>
-<span class="n">debt</span><span class="o">.</span><span class="n">maximum_payment</span><span class="p">(</span><span class="s1">&#39;start&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="n">Money</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>  <span class="c1"># True</span>
-<span class="n">debt</span><span class="o">.</span><span class="n">add_transaction</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">)</span>
-<span class="n">debt</span><span class="o">.</span><span class="n">maximum_payment</span><span class="p">(</span><span class="s1">&#39;start&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>  <span class="c1"># True</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.accounts.Debt.min_inflow">
-<code class="descname">min_inflow</code><span class="sig-paren">(</span><em>when='end'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#Debt.min_inflow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.Debt.min_inflow" title="Permalink to this definition">¶</a></dt>
-<dd><p>The minimum payment on the debt.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Debt.outflows_history">
-<code class="descname">outflows_history</code><a class="headerlink" href="#forecaster.accounts.Debt.outflows_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of outflows over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Debt.rate_history">
-<code class="descname">rate_history</code><a class="headerlink" href="#forecaster.accounts.Debt.rate_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of rate over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Debt.returns_history">
-<code class="descname">returns_history</code><a class="headerlink" href="#forecaster.accounts.Debt.returns_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of returns over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Debt.tax_credit_history">
-<code class="descname">tax_credit_history</code><a class="headerlink" href="#forecaster.accounts.Debt.tax_credit_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of tax_credit over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Debt.tax_deduction_history">
-<code class="descname">tax_deduction_history</code><a class="headerlink" href="#forecaster.accounts.Debt.tax_deduction_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of tax_deduction over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Debt.tax_withheld_history">
-<code class="descname">tax_withheld_history</code><a class="headerlink" href="#forecaster.accounts.Debt.tax_withheld_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of tax_withheld over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Debt.taxable_income_history">
-<code class="descname">taxable_income_history</code><a class="headerlink" href="#forecaster.accounts.Debt.taxable_income_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of taxable_income over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.Debt.transactions_history">
-<code class="descname">transactions_history</code><a class="headerlink" href="#forecaster.accounts.Debt.transactions_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of transactions over all past years.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="forecaster.accounts.RegisteredAccount">
-<em class="property">class </em><code class="descclassname">forecaster.accounts.</code><code class="descname">RegisteredAccount</code><span class="sig-paren">(</span><em>owner</em>, <em>balance=0</em>, <em>rate=0</em>, <em>transactions=None</em>, <em>nper=1</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>contribution_room=None</em>, <em>contributor=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#RegisteredAccount"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.RegisteredAccount" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#forecaster.accounts.Account" title="forecaster.accounts.Account"><code class="xref py py-class docutils literal"><span class="pre">forecaster.accounts.Account</span></code></a></p>
-<p>An account with a contribution room limit.</p>
-<p>The contribution room limit may be shared between accounts. Such
-accounts should share a <cite>contribution_token</cite> value, which is
-registered with the <cite>contributor</cite> (the owner, by default).</p>
-<p>If contribution room is defined per-account, assign a unique
-contribution_token to the account (e.g. <cite>id(self)</cite>). By default,
-all objects of the same subclass share a contribution_token. This
-should be set by the subclass before invoking super().__init__.</p>
-<p>This is an abstract base class. Any subclass must implement the
-method <cite>next_contribution_room</cite>, which returns the contribution
-room for the following year.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>contribution_room</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money"><em>Money</em></a>) – The amount of contribution room
-available in the first year. Optional.</li>
-<li><strong>contributor</strong> (<a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a>) – The contributor to the account. Optional.
-If not provided, the contributor is assumed to be the same
-as the annuitant (i.e. the owner.)</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-<dl class="method">
-<dt id="forecaster.accounts.RegisteredAccount.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>owner</em>, <em>balance=0</em>, <em>rate=0</em>, <em>transactions=None</em>, <em>nper=1</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>contribution_room=None</em>, <em>contributor=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#RegisteredAccount.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.RegisteredAccount.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Initializes a RegisteredAccount object.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.RegisteredAccount.balance_history">
-<code class="descname">balance_history</code><a class="headerlink" href="#forecaster.accounts.RegisteredAccount.balance_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of balance over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.RegisteredAccount.contribution_group">
-<code class="descname">contribution_group</code><a class="headerlink" href="#forecaster.accounts.RegisteredAccount.contribution_group" title="Permalink to this definition">¶</a></dt>
-<dd><p>The accounts that share contribution room with this one.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.RegisteredAccount.contribution_room">
-<code class="descname">contribution_room</code><a class="headerlink" href="#forecaster.accounts.RegisteredAccount.contribution_room" title="Permalink to this definition">¶</a></dt>
-<dd><p>Contribution room available for the current year.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.RegisteredAccount.contribution_room_history">
-<code class="descname">contribution_room_history</code><a class="headerlink" href="#forecaster.accounts.RegisteredAccount.contribution_room_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>A dict of <cite>{year – contribution_room}</cite> pairs.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.RegisteredAccount.contributor">
-<code class="descname">contributor</code><a class="headerlink" href="#forecaster.accounts.RegisteredAccount.contributor" title="Permalink to this definition">¶</a></dt>
-<dd><p>The contributor to the account.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.RegisteredAccount.inflows_history">
-<code class="descname">inflows_history</code><a class="headerlink" href="#forecaster.accounts.RegisteredAccount.inflows_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of inflows over all past years.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.accounts.RegisteredAccount.max_inflow">
-<code class="descname">max_inflow</code><span class="sig-paren">(</span><em>when='end'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#RegisteredAccount.max_inflow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.RegisteredAccount.max_inflow" title="Permalink to this definition">¶</a></dt>
-<dd><p>Limits outflows based on available contribution room.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.accounts.RegisteredAccount.next_contribution_room">
-<code class="descname">next_contribution_room</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#RegisteredAccount.next_contribution_room"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.RegisteredAccount.next_contribution_room" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the contribution room for next year.</p>
-<p>This method must be implemented by any subclass of
-<cite>RegisteredAccount</cite>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The contribution room for next year.</p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.Money" title="forecaster.ledger.Money">Money</a></p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">NotImplementedError</span></code> – Raised if this method is not overridden</li>
-<li>by a subclass.</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.accounts.RegisteredAccount.next_year">
-<code class="descname">next_year</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#RegisteredAccount.next_year"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.RegisteredAccount.next_year" title="Permalink to this definition">¶</a></dt>
-<dd><p>Confirms that the year is within the range of our data.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.RegisteredAccount.outflows_history">
-<code class="descname">outflows_history</code><a class="headerlink" href="#forecaster.accounts.RegisteredAccount.outflows_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of outflows over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.RegisteredAccount.rate_history">
-<code class="descname">rate_history</code><a class="headerlink" href="#forecaster.accounts.RegisteredAccount.rate_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of rate over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.RegisteredAccount.returns_history">
-<code class="descname">returns_history</code><a class="headerlink" href="#forecaster.accounts.RegisteredAccount.returns_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of returns over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.RegisteredAccount.tax_credit_history">
-<code class="descname">tax_credit_history</code><a class="headerlink" href="#forecaster.accounts.RegisteredAccount.tax_credit_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of tax_credit over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.RegisteredAccount.tax_deduction_history">
-<code class="descname">tax_deduction_history</code><a class="headerlink" href="#forecaster.accounts.RegisteredAccount.tax_deduction_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of tax_deduction over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.RegisteredAccount.tax_withheld_history">
-<code class="descname">tax_withheld_history</code><a class="headerlink" href="#forecaster.accounts.RegisteredAccount.tax_withheld_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of tax_withheld over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.RegisteredAccount.taxable_income_history">
-<code class="descname">taxable_income_history</code><a class="headerlink" href="#forecaster.accounts.RegisteredAccount.taxable_income_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of taxable_income over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.accounts.RegisteredAccount.transactions_history">
-<code class="descname">transactions_history</code><a class="headerlink" href="#forecaster.accounts.RegisteredAccount.transactions_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of transactions over all past years.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="function">
-<dt id="forecaster.accounts.when_conv">
-<code class="descclassname">forecaster.accounts.</code><code class="descname">when_conv</code><span class="sig-paren">(</span><em>when</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts.html#when_conv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.when_conv" title="Permalink to this definition">¶</a></dt>
-<dd><p>Converts various types of <cite>when</cite> inputs to Decimal.</p>
-<p>The Decimal value is in [0,1], where 0 is the start of the period
-and 1 is the end.</p>
-<p>NOTE: <cite>numpy</cite> defines its <cite>when</cite> argument such that ‘end’ = 0 and
-‘start’ = 1. If you’re using that package, consider whether any
-conversions are necessary.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>when</strong> (<em>float</em><em>, </em><em>Decimal</em><em>, </em><em>str</em>) – The timing of the transaction.
-Must be in the range [0,1] or in (‘start’, ‘end’).</p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">decimal.InvalidOperation</span></code> – <cite>when</cite> must be convertible to
-type Decimal</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – <cite>when</cite> must be in [0,1]</li>
-</ul>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A Decimal in [0,1]</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
+<p>A package for providing accounts of various kinds.</p>
 </div>
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -954,7 +191,7 @@ type Decimal</li>
         <a href="forecaster.forecast.html" class="btn btn-neutral float-right" title="forecaster.forecast module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="forecaster.canada.tax.html" class="btn btn-neutral" title="forecaster.canada.tax module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="forecaster.canada.tax.html" class="btn btn-neutral float-left" title="forecaster.canada.tax module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -963,11 +200,11 @@ type Decimal</li>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017, Christopher Scott.
+        &copy; Copyright 2017, Christopher Scott
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -980,36 +217,15 @@ type Decimal</li>
   
 
 
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'0.0.1',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
-
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script>
+
+  
+  
+    
    
 
 </body>

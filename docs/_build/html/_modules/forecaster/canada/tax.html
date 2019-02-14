@@ -17,41 +17,34 @@
   
 
   
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
-  
-  
-    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="../../../genindex.html"/>
-        <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="forecaster 0.0.1 documentation" href="../../../index.html"/>
-        <link rel="up" title="Module code" href="../../index.html"/> 
-
-  
-  <script src="../../../_static/js/modernizr.min.js"></script>
-
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -103,7 +96,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../../index.html">forecaster</a>
@@ -111,9 +104,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -143,8 +137,6 @@
     
       <li class="wy-breadcrumbs-aside">
         
-            
-        
       </li>
     
   </ul>
@@ -169,57 +161,48 @@
 <div class="viewcode-block" id="TaxCanadaJurisdiction"><a class="viewcode-back" href="../../../forecaster.canada.tax.html#forecaster.canada.tax.TaxCanadaJurisdiction">[docs]</a><span class="k">class</span> <span class="nc">TaxCanadaJurisdiction</span><span class="p">(</span><span class="n">Tax</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Federal or provincial tax treatment (Canada). &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inflation_adjustments</span><span class="p">,</span> <span class="n">jurisdiction</span><span class="o">=</span><span class="s1">&#39;Federal&#39;</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">inflation_adjustments</span><span class="p">,</span> <span class="n">jurisdiction</span><span class="o">=</span><span class="s1">&#39;Federal&#39;</span><span class="p">,</span>
+        <span class="n">payment_timing</span><span class="o">=</span><span class="s1">&#39;start&#39;</span>
+    <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">tax_brackets</span><span class="o">=</span><span class="n">constants</span><span class="o">.</span><span class="n">TAX_BRACKETS</span><span class="p">[</span><span class="n">jurisdiction</span><span class="p">],</span>
             <span class="n">personal_deduction</span><span class="o">=</span><span class="n">constants</span><span class="o">.</span><span class="n">TAX_PERSONAL_DEDUCTION</span><span class="p">[</span>
                 <span class="n">jurisdiction</span>
             <span class="p">],</span>
             <span class="n">credit_rate</span><span class="o">=</span><span class="n">constants</span><span class="o">.</span><span class="n">TAX_CREDIT_RATE</span><span class="p">[</span><span class="n">jurisdiction</span><span class="p">],</span>
-            <span class="n">inflation_adjust</span><span class="o">=</span><span class="n">inflation_adjustments</span><span class="p">)</span>
+            <span class="n">inflation_adjust</span><span class="o">=</span><span class="n">inflation_adjustments</span><span class="p">,</span>
+            <span class="n">payment_timing</span><span class="o">=</span><span class="n">payment_timing</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">jurisdiction</span> <span class="o">=</span> <span class="n">jurisdiction</span>
 
-<div class="viewcode-block" id="TaxCanadaJurisdiction.tax_deduction"><a class="viewcode-back" href="../../../forecaster.canada.tax.html#forecaster.canada.tax.TaxCanadaJurisdiction.tax_deduction">[docs]</a>    <span class="k">def</span> <span class="nf">tax_deduction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Finds tax deduction available for each taxpayer.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            people (set[Person]): One or more `Person` objects, each</span>
-<span class="sd">                having some number of accounts (or other tax sources).</span>
-<span class="sd">            year (int): The year in which money is expressed (used for</span>
-<span class="sd">                inflation adjustment)</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            dict[Person, Money]: The tax deduction available in this</span>
-<span class="sd">            jurisdiction for each person.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># NOTE: Presenty, no deduction are modelled. We could extend</span>
-        <span class="c1"># this in a future update to include, e.g. the family tax cut</span>
-        <span class="c1"># or the childcare deduction.</span>
-        <span class="c1"># Since we want to preserve this call signature for subclassing or</span>
-        <span class="c1"># future expansions, let&#39;s disable Pylint&#39;s complaints:</span>
-        <span class="c1"># pylint: disable=unused-argument,no-self-use</span>
-        <span class="n">deduction</span> <span class="o">=</span> <span class="p">{</span><span class="n">person</span><span class="p">:</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="k">for</span> <span class="n">person</span> <span class="ow">in</span> <span class="n">people</span><span class="p">}</span>
-        <span class="k">return</span> <span class="n">deduction</span></div>
-
-<div class="viewcode-block" id="TaxCanadaJurisdiction.tax_credit"><a class="viewcode-back" href="../../../forecaster.canada.tax.html#forecaster.canada.tax.TaxCanadaJurisdiction.tax_credit">[docs]</a>    <span class="k">def</span> <span class="nf">tax_credit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+<div class="viewcode-block" id="TaxCanadaJurisdiction.credits"><a class="viewcode-back" href="../../../forecaster.canada.tax.html#forecaster.canada.tax.TaxCanadaJurisdiction.credits">[docs]</a>    <span class="k">def</span> <span class="nf">credits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">deductions</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Finds tax credit available for each taxpayer.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            people (set[Person]): One or more `Person` objects, each</span>
-<span class="sd">                having some number of accounts (or other tax sources).</span>
+<span class="sd">            person (Person): A person with some number of accounts</span>
+<span class="sd">                (or other tax sources).</span>
 <span class="sd">            year (int): The year in which money is expressed (used for</span>
 <span class="sd">                inflation adjustment)</span>
+<span class="sd">            deductions (Money): The deductions for which the person</span>
+<span class="sd">                is eligible.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            dict[Person, Money]: The tax credit available in this</span>
-<span class="sd">            jurisdiction for each person.</span>
+<span class="sd">            Money: The tax credit available in this jurisdiction for</span>
+<span class="sd">                the person.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">credit</span> <span class="o">=</span> <span class="p">{</span><span class="n">person</span><span class="p">:</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="k">for</span> <span class="n">person</span> <span class="ow">in</span> <span class="n">people</span><span class="p">}</span>
-        <span class="k">for</span> <span class="n">person</span> <span class="ow">in</span> <span class="n">people</span><span class="p">:</span>
-            <span class="c1"># Apply the pension income tax credit for each person:</span>
-            <span class="n">credit</span><span class="p">[</span><span class="n">person</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pension_income_credit</span><span class="p">(</span><span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">credit</span></div>
+        <span class="c1"># Get basic credits (i.e. those tied to accounts) from the</span>
+        <span class="c1"># superclass method:</span>
+        <span class="n">credits</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">credits</span><span class="p">(</span><span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">deductions</span><span class="p">)</span>
+
+        <span class="c1"># Apply the pension income tax credit for each person:</span>
+        <span class="n">credits</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pension_income_credit</span><span class="p">(</span><span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span>
+
+        <span class="c1"># Apply the spousal tax credit if the person is married:</span>
+        <span class="k">if</span> <span class="n">person</span><span class="o">.</span><span class="n">spouse</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">credits</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spousal_tax_credit</span><span class="p">(</span><span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">credits</span></div>
 
     <span class="k">def</span> <span class="nf">_pension_income_credit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Determines the pension income credit claimable by `person`.</span>
@@ -233,12 +216,12 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            Money: The amount of the credit claimable by person in year.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">pension_income</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
+        <span class="n">pension_income</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span>
             <span class="n">account</span><span class="o">.</span><span class="n">outflows</span> <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">person</span><span class="o">.</span><span class="n">accounts</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">account</span><span class="p">,</span> <span class="n">RRSP</span><span class="p">)</span>
             <span class="c1"># NOTE: Other qualified pension income sources can be</span>
             <span class="c1"># added here</span>
-        <span class="p">)</span>
+        <span class="p">))</span>
         <span class="c1"># Each jurisdiction has a maximum claimable amount for the</span>
         <span class="c1"># pension credit, so determine that (inflation-adjusted</span>
         <span class="c1"># amount) here:</span>
@@ -247,69 +230,74 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">,</span>
             <span class="n">year</span>
         <span class="p">))</span>
-        <span class="n">pension_income</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">pension_income</span><span class="p">,</span> <span class="n">deduction_max</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">pension_income</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">credit_rate</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="n">pension_income</span><span class="p">,</span> <span class="n">deduction_max</span><span class="p">)</span>
 
-<div class="viewcode-block" id="TaxCanadaJurisdiction.__call__"><a class="viewcode-back" href="../../../forecaster.canada.tax.html#forecaster.canada.tax.TaxCanadaJurisdiction.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">income</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span>
-                 <span class="n">other_deduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">other_credit</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Determines taxes owing on one or more income sources.</span>
+    <span class="k">def</span> <span class="nf">_spousal_tax_credit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Determines the spousal tax credit amount claimable.</span>
+<span class="sd">                </span>
+<span class="sd">        This method assigns the credit to the higher-earning</span>
+<span class="sd">        partner. Multiple people can be passed and the credit</span>
+<span class="sd">        will be determined for each individually.</span>
+
+<span class="sd">        Where both partners have the same income, the credit is</span>
+<span class="sd">        assigned to one partner in an implementation-dependent</span>
+<span class="sd">        way (e.g. based on a hash).</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            income (Money, Person, iterable): Taxable income for the</span>
-<span class="sd">                year, either as a single scalar Money object, a single</span>
-<span class="sd">                Person object, or as an iterable (list, set, etc.) of</span>
-<span class="sd">                Person objects.</span>
-<span class="sd">            year (int): The taxation year. This determines which tax</span>
-<span class="sd">                rules and inflation-adjusted brackets are used.</span>
-<span class="sd">            other_deduction (Money, dict[Person, Money]):</span>
-<span class="sd">                Deductions to be applied against the jurisdiction&#39;s</span>
-<span class="sd">                taxes.</span>
-
-<span class="sd">                See documentation for `Tax` for more.</span>
-<span class="sd">            other_credit (Money, dict[Person, Money]):</span>
-<span class="sd">                Credits to be applied against the jurisdiction&#39;s taxes.</span>
-
-<span class="sd">                See documentation for `Tax` for more.</span>
+<span class="sd">            person (Person): One member of a couple (or a single</span>
+<span class="sd">                person, in which case the credit will be $0).</span>
+<span class="sd">            year (int): The year in which the spousal tax credit is</span>
+<span class="sd">                claimable.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            Money: The total amount of tax owing for the year.</span>
+<span class="sd">            Money: The amount of the credit claimable by the person</span>
+<span class="sd">                in `year`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Process deduction and credit, which take different forms</span>
-        <span class="c1"># depending on the form of `income`:</span>
-        <span class="c1"># For Money `income`, there&#39;s no method to call to determine</span>
-        <span class="c1"># deduction/credit; either apply what was passed, or set to $0</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">income</span><span class="p">,</span> <span class="n">Money</span><span class="p">):</span>
-            <span class="n">deduction</span> <span class="o">=</span> <span class="n">other_deduction</span> <span class="k">if</span> <span class="n">other_deduction</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> \
-                <span class="k">else</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-            <span class="n">credit</span> <span class="o">=</span> <span class="n">other_credit</span> <span class="k">if</span> <span class="n">other_credit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> \
-                <span class="k">else</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-        <span class="c1"># If there&#39;s just one person, we expect other_* to be Money</span>
-        <span class="c1"># objects, not dicts, so handle them appropriately:</span>
-        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">income</span><span class="p">,</span> <span class="n">Person</span><span class="p">):</span>
-            <span class="c1"># NOTE: These methods require iterable `income` args:</span>
-            <span class="n">deduction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_deduction</span><span class="p">({</span><span class="n">income</span><span class="p">},</span> <span class="n">year</span><span class="p">)[</span><span class="n">income</span><span class="p">]</span>
-            <span class="n">credit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_credit</span><span class="p">({</span><span class="n">income</span><span class="p">},</span> <span class="n">year</span><span class="p">)[</span><span class="n">income</span><span class="p">]</span>
-            <span class="k">if</span> <span class="n">other_deduction</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">deduction</span> <span class="o">+=</span> <span class="n">other_deduction</span>
-            <span class="k">if</span> <span class="n">other_credit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">credit</span> <span class="o">+=</span> <span class="n">other_credit</span>
-        <span class="c1"># If there are multiple people passed, expect a form of</span>
-        <span class="c1"># dict[Person, Money] for other_* params:</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">deduction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_deduction</span><span class="p">(</span><span class="n">income</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span>
-            <span class="n">credit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_credit</span><span class="p">(</span><span class="n">income</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">other_deduction</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">person</span> <span class="ow">in</span> <span class="n">deduction</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">person</span> <span class="ow">in</span> <span class="n">other_deduction</span><span class="p">:</span>
-                        <span class="n">deduction</span><span class="p">[</span><span class="n">person</span><span class="p">]</span> <span class="o">+=</span> <span class="n">other_deduction</span><span class="p">[</span><span class="n">person</span><span class="p">]</span>
-            <span class="k">if</span> <span class="n">other_credit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">person</span> <span class="ow">in</span> <span class="n">deduction</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">person</span> <span class="ow">in</span> <span class="n">other_credit</span><span class="p">:</span>
-                        <span class="n">credit</span><span class="p">[</span><span class="n">person</span><span class="p">]</span> <span class="o">+=</span> <span class="n">other_credit</span><span class="p">[</span><span class="n">person</span><span class="p">]</span>
+        <span class="c1"># Unmarried folks don&#39;t get the credit:</span>
+        <span class="k">if</span> <span class="n">person</span><span class="o">.</span><span class="n">spouse</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
-        <span class="c1"># Determine taxes owing in the usual way, applying the</span>
-        <span class="c1"># jurisdiction-specific credit and deduction:</span>
-        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__call__</span><span class="p">(</span><span class="n">income</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">deduction</span><span class="p">,</span> <span class="n">credit</span><span class="p">)</span></div></div>
+        <span class="c1"># Determine the maximum claimable amount:</span>
+        <span class="n">max_spousal_amount</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span>
+            <span class="n">extend_inflation_adjusted</span><span class="p">(</span>
+                <span class="n">constants</span><span class="o">.</span><span class="n">TAX_SPOUSAL_AMOUNT</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">jurisdiction</span><span class="p">],</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">,</span>
+                <span class="n">year</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="c1"># We need to know the spouse&#39;s net income to assess the credit:</span>
+        <span class="c1"># TODO: To avoid calling self.deductions many times, sort out</span>
+        <span class="c1"># a way to pass in deductions for both spouses as args.</span>
+        <span class="n">spouse</span> <span class="o">=</span> <span class="n">person</span><span class="o">.</span><span class="n">spouse</span>
+        <span class="n">spouse_net_income</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">spouse</span><span class="o">.</span><span class="n">taxable_income</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">deductions</span><span class="p">(</span><span class="n">spouse</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Figure out whether to assign the credit to this person or</span>
+        <span class="c1"># their spouse based on who has more income:</span>
+
+        <span class="c1"># If this is the lower-earner, use their spouse instead:</span>
+        <span class="n">person_net_income</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">person</span><span class="o">.</span><span class="n">taxable_income</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">deductions</span><span class="p">(</span><span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">person_net_income</span> <span class="o">&lt;</span> <span class="n">spouse_net_income</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="c1"># If their incomes are the same, use memory location to</span>
+        <span class="c1"># decide in a deterministic way:</span>
+        <span class="k">if</span> <span class="n">person_net_income</span> <span class="o">==</span> <span class="n">spouse_net_income</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">id</span><span class="p">(</span><span class="n">person</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">id</span><span class="p">(</span><span class="n">spouse</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># The credit is determined by reducing the spousal amount</span>
+        <span class="c1"># by the spouse&#39;s (net) income, but in any event it&#39;s not</span>
+        <span class="c1"># negative.</span>
+        <span class="n">credit</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+            <span class="n">max_spousal_amount</span> <span class="o">-</span> <span class="n">spouse_net_income</span><span class="p">,</span>
+            <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">credit</span></div>
 
 
 <div class="viewcode-block" id="TaxCanada"><a class="viewcode-back" href="../../../forecaster.canada.tax.html#forecaster.canada.tax.TaxCanada">[docs]</a><span class="k">class</span> <span class="nc">TaxCanada</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -322,7 +310,9 @@
 <span class="sd">        province (str): The province in which income tax is paid.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="TaxCanada.__init__"><a class="viewcode-back" href="../../../forecaster.canada.tax.html#forecaster.canada.tax.TaxCanada.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="p">,</span> <span class="n">province</span><span class="o">=</span><span class="s1">&#39;BC&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="TaxCanada.__init__"><a class="viewcode-back" href="../../../forecaster.canada.tax.html#forecaster.canada.tax.TaxCanada.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="p">,</span> <span class="n">province</span><span class="o">=</span><span class="s1">&#39;BC&#39;</span><span class="p">,</span> <span class="n">payment_timing</span><span class="o">=</span><span class="s1">&#39;start&#39;</span>
+    <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Initializes TaxCanada.</span>
 
 <span class="sd">        Args:</span>
@@ -334,11 +324,24 @@
 
 <span class="sd">                See documentation for `Tax` for more information.</span>
 <span class="sd">            province (str): The province in which income tax is paid.</span>
+<span class="sd">            payment_timing (Decimal, str): Timing for tax refunds and</span>
+<span class="sd">                payments. See `Tax` documentation for more information.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">federal_tax</span> <span class="o">=</span> <span class="n">TaxCanadaJurisdiction</span><span class="p">(</span><span class="n">inflation_adjust</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">federal_tax</span> <span class="o">=</span> <span class="n">TaxCanadaJurisdiction</span><span class="p">(</span>
+            <span class="n">inflation_adjust</span><span class="p">,</span> <span class="n">payment_timing</span><span class="o">=</span><span class="n">payment_timing</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">provincial_tax</span> <span class="o">=</span> <span class="n">TaxCanadaJurisdiction</span><span class="p">(</span>
-            <span class="n">inflation_adjust</span><span class="p">,</span> <span class="n">province</span><span class="p">)</span>
+            <span class="n">inflation_adjust</span><span class="p">,</span> <span class="n">province</span><span class="p">,</span> <span class="n">payment_timing</span><span class="o">=</span><span class="n">payment_timing</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">province</span> <span class="o">=</span> <span class="n">province</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">payment_timing</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Timing for refunds and payments. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">federal_tax</span><span class="o">.</span><span class="n">payment_timing</span>
+
+    <span class="nd">@payment_timing</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">payment_timing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Sets `payment_timing`. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">federal_tax</span><span class="o">.</span><span class="n">payment_timing</span> <span class="o">=</span> <span class="n">val</span>
 
     <span class="c1"># Marginal rate information is helpful for client code, so implement</span>
     <span class="c1"># it here based on fed. and prov. tax brackets:</span>
@@ -404,9 +407,7 @@
 </pre></div>
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -415,11 +416,11 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017, Christopher Scott.
+        &copy; Copyright 2017, Christopher Scott
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -432,36 +433,15 @@
   
 
 
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'../../../',
-            VERSION:'0.0.1',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="../../../_static/jquery.js"></script>
-      <script type="text/javascript" src="../../../_static/underscore.js"></script>
-      <script type="text/javascript" src="../../../_static/doctools.js"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
-  
-
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script>
+
+  
+  
+    
    
 
 </body>

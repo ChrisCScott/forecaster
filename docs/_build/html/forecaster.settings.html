@@ -17,43 +17,36 @@
   
 
   
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="forecaster 0.0.1 documentation" href="index.html"/>
-        <link rel="up" title="forecaster package" href="forecaster.html"/>
-        <link rel="next" title="forecaster.strategy module" href="forecaster.strategy.html"/>
-        <link rel="prev" title="forecaster.scenario module" href="forecaster.scenario.html"/> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="forecaster.strategy module" href="forecaster.strategy.html" />
+    <link rel="prev" title="forecaster.scenario module" href="forecaster.scenario.html" /> 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -125,7 +118,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">forecaster</a>
@@ -133,9 +126,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -189,7 +183,7 @@ classes. They provide default values for aspects of the application.</p>
 <dl class="class">
 <dt id="forecaster.settings.Settings">
 <em class="property">class </em><code class="descclassname">forecaster.settings.</code><code class="descname">Settings</code><a class="reference internal" href="_modules/forecaster/settings.html#Settings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.settings.Settings" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Container for variables used to control application settings.</p>
 <p>This class can be instantiated as an object and, where supported,
 passed to other objects to provide defaults for initialization.
@@ -275,8 +269,8 @@ one might equivalently call Settings (the class) or Settings()
 </dd></dl>
 
 <dl class="attribute">
-<dt id="forecaster.settings.Settings.debt_accelerate_payment">
-<code class="descname">debt_accelerate_payment</code><em class="property"> = False</em><a class="headerlink" href="#forecaster.settings.Settings.debt_accelerate_payment" title="Permalink to this definition">¶</a></dt>
+<dt id="forecaster.settings.Settings.debt_accelerated_payment">
+<code class="descname">debt_accelerated_payment</code><em class="property"> = 0</em><a class="headerlink" href="#forecaster.settings.Settings.debt_accelerated_payment" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
@@ -291,13 +285,13 @@ one might equivalently call Settings (the class) or Settings()
 </dd></dl>
 
 <dl class="attribute">
-<dt id="forecaster.settings.Settings.debt_reduction_rate">
-<code class="descname">debt_reduction_rate</code><em class="property"> = 1</em><a class="headerlink" href="#forecaster.settings.Settings.debt_reduction_rate" title="Permalink to this definition">¶</a></dt>
+<dt id="forecaster.settings.Settings.debt_savings_rate">
+<code class="descname">debt_savings_rate</code><em class="property"> = 1</em><a class="headerlink" href="#forecaster.settings.Settings.debt_savings_rate" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.settings.Settings.display_year">
-<code class="descname">display_year</code><em class="property"> = 2017</em><a class="headerlink" href="#forecaster.settings.Settings.display_year" title="Permalink to this definition">¶</a></dt>
+<code class="descname">display_year</code><em class="property"> = 2019</em><a class="headerlink" href="#forecaster.settings.Settings.display_year" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
@@ -307,7 +301,7 @@ one might equivalently call Settings (the class) or Settings()
 
 <dl class="attribute">
 <dt id="forecaster.settings.Settings.initial_year">
-<code class="descname">initial_year</code><em class="property"> = 2017</em><a class="headerlink" href="#forecaster.settings.Settings.initial_year" title="Permalink to this definition">¶</a></dt>
+<code class="descname">initial_year</code><em class="property"> = 2019</em><a class="headerlink" href="#forecaster.settings.Settings.initial_year" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
@@ -451,9 +445,7 @@ one might equivalently call Settings (the class) or Settings()
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -462,7 +454,7 @@ one might equivalently call Settings (the class) or Settings()
         <a href="forecaster.strategy.html" class="btn btn-neutral float-right" title="forecaster.strategy module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="forecaster.scenario.html" class="btn btn-neutral" title="forecaster.scenario module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="forecaster.scenario.html" class="btn btn-neutral float-left" title="forecaster.scenario module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -471,11 +463,11 @@ one might equivalently call Settings (the class) or Settings()
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017, Christopher Scott.
+        &copy; Copyright 2017, Christopher Scott
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -488,36 +480,15 @@ one might equivalently call Settings (the class) or Settings()
   
 
 
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'0.0.1',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
-
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script>
+
+  
+  
+    
    
 
 </body>

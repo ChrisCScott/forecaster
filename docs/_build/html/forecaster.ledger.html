@@ -17,43 +17,36 @@
   
 
   
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="forecaster 0.0.1 documentation" href="index.html"/>
-        <link rel="up" title="forecaster package" href="forecaster.html"/>
-        <link rel="next" title="forecaster.person module" href="forecaster.person.html"/>
-        <link rel="prev" title="forecaster.forecaster module" href="forecaster.forecaster.html"/> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="forecaster.person module" href="forecaster.person.html" />
+    <link rel="prev" title="forecaster.forecaster module" href="forecaster.forecaster.html" /> 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -125,7 +118,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">forecaster</a>
@@ -133,9 +126,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -183,242 +177,11 @@
             
   <div class="section" id="module-forecaster.ledger">
 <span id="forecaster-ledger-module"></span><h1>forecaster.ledger module<a class="headerlink" href="#module-forecaster.ledger" title="Permalink to this headline">¶</a></h1>
-<p>Defines basic recordkeeping classes, like <cite>Person</cite> and <cite>Account</cite>.</p>
-<dl class="class">
-<dt id="forecaster.ledger.Ledger">
-<em class="property">class </em><code class="descclassname">forecaster.ledger.</code><code class="descname">Ledger</code><span class="sig-paren">(</span><em>initial_year</em>, <em>inputs=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/ledger.html#Ledger"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.ledger.Ledger" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
-<p>An object with a next_year() method that tracks the curent year.</p>
-<p>This object provides the basic infrastructure not only for advancing
-through a sequence of years but also for managing any
-<cite>recorded_property</cite>-decorated properties.</p>
-<dl class="attribute">
-<dt id="forecaster.ledger.Ledger.initial_year">
-<code class="descname">initial_year</code><a class="headerlink" href="#forecaster.ledger.Ledger.initial_year" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>int</em> – The initial year for the object.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.ledger.Ledger.this_year">
-<code class="descname">this_year</code><a class="headerlink" href="#forecaster.ledger.Ledger.this_year" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>int</em> – The current year for the object. Incremented
-with each call to next_year()</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.ledger.Ledger.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>initial_year</em>, <em>inputs=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/ledger.html#Ledger.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.ledger.Ledger.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Inits IncrementableByYear.</p>
-<p>Behaviour when a <cite>year</cite> in <cite>inputs</cite> is equal to <cite>initial_year</cite>
-is undefined. Initialization is not guaranteed to respect such a
-value; if you want to set an initial-year value, it’s better to
-pass it as an appropriate argument at <cite>__init__</cite> time.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>initial_year</strong> (<em>int</em>) – The initial year for the object.</li>
-<li><strong>inputs</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>dict</em><em>[</em><em>int</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – <cite>{property: {year: val}}</cite> pairs. Every <cite>val</cite> is treated
-as a manual entry that overrides any programmatic value
-for that year generated by <cite>next_year</cite>.</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.ledger.Ledger.next_year">
-<code class="descname">next_year</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/ledger.html#Ledger.next_year"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.ledger.Ledger.next_year" title="Permalink to this definition">¶</a></dt>
-<dd><p>Advances to the next year.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="forecaster.ledger.LedgerType">
-<em class="property">class </em><code class="descclassname">forecaster.ledger.</code><code class="descname">LedgerType</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/ledger.html#LedgerType"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.ledger.LedgerType" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">type</span></code></p>
-<p>A metaclass for Ledger classes.</p>
-<p>This metaclass inspects the class for any
-&#64;recorded_property-decorated methods and generates a corresponding
-<em>_history method and _</em> dict attribute.</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="forecaster.ledger.Money">
-<em class="property">class </em><code class="descclassname">forecaster.ledger.</code><code class="descname">Money</code><span class="sig-paren">(</span><em>amount=Decimal('0.0')</em>, <em>currency=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/ledger.html#Money"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.ledger.Money" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">moneyed.classes.Money</span></code></p>
-<p>Extends py-moneyed to support Decimal-like functions.</p>
-<dl class="method">
-<dt id="forecaster.ledger.Money.__eq__">
-<code class="descname">__eq__</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/ledger.html#Money.__eq__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.ledger.Money.__eq__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Extends == operator to allow comparison with Decimal.</p>
-<p>This allows for comparison to 0 (or other Decimal-convertible
-values), but not with other Money objects in different
-currencies.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.ledger.Money.__gt__">
-<code class="descname">__gt__</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/ledger.html#Money.__gt__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.ledger.Money.__gt__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Extends &gt; operator to allow comparison with 0</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.ledger.Money.__hash__">
-<code class="descname">__hash__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/ledger.html#Money.__hash__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.ledger.Money.__hash__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Allows for use in sets and as dict keys.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.ledger.Money.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>amount=Decimal('0.0')</em>, <em>currency=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/ledger.html#Money.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.ledger.Money.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Initializes with application-level default currency.</p>
-<p>Also allows for initializing from another Money object.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.ledger.Money.__lt__">
-<code class="descname">__lt__</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/ledger.html#Money.__lt__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.ledger.Money.__lt__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Extends &lt; operator to allow comparison with 0</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.ledger.Money.__round__">
-<code class="descname">__round__</code><span class="sig-paren">(</span><em>ndigits=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/ledger.html#Money.__round__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.ledger.Money.__round__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Rounds to ndigits</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.ledger.Money.default_currency">
-<code class="descname">default_currency</code><em class="property"> = 'CAD'</em><a class="headerlink" href="#forecaster.ledger.Money.default_currency" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="forecaster.ledger.TaxSource">
-<em class="property">class </em><code class="descclassname">forecaster.ledger.</code><code class="descname">TaxSource</code><span class="sig-paren">(</span><em>initial_year</em>, <em>inputs=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/ledger.html#TaxSource"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.ledger.TaxSource" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#forecaster.ledger.Ledger" title="forecaster.ledger.Ledger"><code class="xref py py-class docutils literal"><span class="pre">forecaster.ledger.Ledger</span></code></a></p>
-<p>An object that can be considered when calculating taxes.</p>
-<p>Provides standard tax-related properties, listed below.</p>
-<p>Actual tax treatment will vary by subclass. Rather than override
-these properties directly, subclasses should override the methods
-_taxable_income, _tax_withheld, _tax_credit, and _tax_deduction
-(note the leading underscore).</p>
-<dl class="attribute">
-<dt id="forecaster.ledger.TaxSource.taxable_income">
-<code class="descname">taxable_income</code><a class="reference internal" href="_modules/forecaster/ledger.html#TaxSource.taxable_income"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.ledger.TaxSource.taxable_income" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>Money</em> – Taxable income arising from the
-object for the current year.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.ledger.TaxSource.tax_withheld">
-<code class="descname">tax_withheld</code><a class="reference internal" href="_modules/forecaster/ledger.html#TaxSource.tax_withheld"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.ledger.TaxSource.tax_withheld" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>Money</em> – Tax withheld from the object for the
-current year.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.ledger.TaxSource.tax_credit">
-<code class="descname">tax_credit</code><a class="reference internal" href="_modules/forecaster/ledger.html#TaxSource.tax_credit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.ledger.TaxSource.tax_credit" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>Money</em> – Taxable credits arising from the
-object for the current year.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.ledger.TaxSource.tax_deduction">
-<code class="descname">tax_deduction</code><a class="reference internal" href="_modules/forecaster/ledger.html#TaxSource.tax_deduction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.ledger.TaxSource.tax_deduction" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>Money</em> – Taxable deductions arising from the
-object for the current year.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.ledger.TaxSource.taxable_income_history">
-<code class="descname">taxable_income_history</code><a class="headerlink" href="#forecaster.ledger.TaxSource.taxable_income_history" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>Money</em> – Taxable income arising from the
-object for each year thus far.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.ledger.TaxSource.tax_withheld_history">
-<code class="descname">tax_withheld_history</code><a class="headerlink" href="#forecaster.ledger.TaxSource.tax_withheld_history" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>Money</em> – Tax withheld from the object for
-each year thus far.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.ledger.TaxSource.tax_credit_history">
-<code class="descname">tax_credit_history</code><a class="headerlink" href="#forecaster.ledger.TaxSource.tax_credit_history" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>Money</em> – Taxable credits arising from the
-object for each year thus far.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.ledger.TaxSource.tax_deduction_history">
-<code class="descname">tax_deduction_history</code><a class="headerlink" href="#forecaster.ledger.TaxSource.tax_deduction_history" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>Money</em> – Taxable deductions arising from
-the object for each year thus far.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt>
-<code class="descname">tax_credit</code><a class="reference internal" href="_modules/forecaster/ledger.html#TaxSource.tax_credit"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Returns cached value in *_history dict if available.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt>
-<code class="descname">tax_credit_history</code></dt>
-<dd><p>Record of tax_credit over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt>
-<code class="descname">tax_deduction</code><a class="reference internal" href="_modules/forecaster/ledger.html#TaxSource.tax_deduction"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Returns cached value in *_history dict if available.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt>
-<code class="descname">tax_deduction_history</code></dt>
-<dd><p>Record of tax_deduction over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt>
-<code class="descname">tax_withheld</code><a class="reference internal" href="_modules/forecaster/ledger.html#TaxSource.tax_withheld"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Returns cached value in *_history dict if available.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt>
-<code class="descname">tax_withheld_history</code></dt>
-<dd><p>Record of tax_withheld over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt>
-<code class="descname">taxable_income</code><a class="reference internal" href="_modules/forecaster/ledger.html#TaxSource.taxable_income"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Returns cached value in *_history dict if available.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt>
-<code class="descname">taxable_income_history</code></dt>
-<dd><p>Record of taxable_income over all past years.</p>
-</dd></dl>
-
-</dd></dl>
-
+<p>A package for providing ledgers (i.e. historical datasets).</p>
 <dl class="class">
 <dt id="forecaster.ledger.recorded_property">
-<em class="property">class </em><code class="descclassname">forecaster.ledger.</code><code class="descname">recorded_property</code><span class="sig-paren">(</span><em>fget=None</em>, <em>doc=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/ledger.html#recorded_property"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.ledger.recorded_property" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">property</span></code></p>
+<em class="property">class </em><code class="descclassname">forecaster.ledger.</code><code class="descname">recorded_property</code><span class="sig-paren">(</span><em>fget=None</em>, <em>doc=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/ledger/recorded_property.html#recorded_property"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.ledger.recorded_property" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">property</span></code></p>
 <p>A decorator for properties that record their annual amounts.</p>
 <p>Methods decorated with this decorator (a) are decorated with the
 &#64;property decorator, and (b) sets a recorded_property flag attribute
@@ -427,7 +190,7 @@ on the decorated property.</p>
 metaclass to automatically generate have a &lt;name&gt;_history property,
 and a _&lt;name&gt; dict attribute to the class.</p>
 <p>Example:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ExampleLedger</span><span class="p">(</span><span class="n">Ledger</span><span class="p">):</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ExampleLedger</span><span class="p">(</span><span class="n">Ledger</span><span class="p">):</span>
     <span class="nd">@recorded_property</span>
     <span class="k">def</span> <span class="nf">taxable_income</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="o">&lt;</span><span class="n">formula</span> <span class="k">for</span> <span class="n">taxable_income</span><span class="o">&gt;</span>
@@ -435,7 +198,7 @@ and a _&lt;name&gt; dict attribute to the class.</p>
 </div>
 <dl class="method">
 <dt id="forecaster.ledger.recorded_property.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>fget=None</em>, <em>doc=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/ledger.html#recorded_property.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.ledger.recorded_property.__init__" title="Permalink to this definition">¶</a></dt>
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>fget=None</em>, <em>doc=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/ledger/recorded_property.html#recorded_property.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.ledger.recorded_property.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Init recorded_property.</p>
 <p>This wraps the getter received via the <cite>&#64;recorded_property</cite>
 decoration into a method that returns a value from a dict of
@@ -447,26 +210,11 @@ this dict of recorded values.</p>
 
 </dd></dl>
 
-<dl class="class">
-<dt id="forecaster.ledger.recorded_property_cached">
-<em class="property">class </em><code class="descclassname">forecaster.ledger.</code><code class="descname">recorded_property_cached</code><span class="sig-paren">(</span><em>fget=None</em>, <em>doc=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/ledger.html#recorded_property_cached"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.ledger.recorded_property_cached" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#forecaster.ledger.recorded_property" title="forecaster.ledger.recorded_property"><code class="xref py py-class docutils literal"><span class="pre">forecaster.ledger.recorded_property</span></code></a></p>
-<p>A recorded property that is cached by Ledger classes.</p>
-<dl class="method">
-<dt id="forecaster.ledger.recorded_property_cached.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>fget=None</em>, <em>doc=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/ledger.html#recorded_property_cached.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.ledger.recorded_property_cached.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Overrides the property getter to cache on first call.</p>
-</dd></dl>
-
-</dd></dl>
-
 </div>
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -475,7 +223,7 @@ this dict of recorded values.</p>
         <a href="forecaster.person.html" class="btn btn-neutral float-right" title="forecaster.person module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="forecaster.forecaster.html" class="btn btn-neutral" title="forecaster.forecaster module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="forecaster.forecaster.html" class="btn btn-neutral float-left" title="forecaster.forecaster module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -484,11 +232,11 @@ this dict of recorded values.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017, Christopher Scott.
+        &copy; Copyright 2017, Christopher Scott
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -501,36 +249,15 @@ this dict of recorded values.</p>
   
 
 
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'0.0.1',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
-
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script>
+
+  
+  
+    
    
 
 </body>

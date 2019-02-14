@@ -17,41 +17,34 @@
   
 
   
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
-  
-  
-    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="../../genindex.html"/>
-        <link rel="search" title="Search" href="../../search.html"/>
-    <link rel="top" title="forecaster 0.0.1 documentation" href="../../index.html"/>
-        <link rel="up" title="Module code" href="../index.html"/> 
-
-  
-  <script src="../../_static/js/modernizr.min.js"></script>
-
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -103,7 +96,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../index.html">forecaster</a>
@@ -111,9 +104,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -143,8 +137,6 @@
     
       <li class="wy-breadcrumbs-aside">
         
-            
-        
       </li>
     
   </ul>
@@ -161,17 +153,28 @@
 <span class="kn">from</span> <span class="nn">copy</span> <span class="k">import</span> <span class="n">deepcopy</span>
 <span class="kn">from</span> <span class="nn">forecaster.forecast</span> <span class="k">import</span> <span class="n">Forecast</span>
 <span class="kn">from</span> <span class="nn">forecaster.person</span> <span class="k">import</span> <span class="n">Person</span>
-<span class="kn">from</span> <span class="nn">forecaster.accounts</span> <span class="k">import</span> <span class="n">Account</span><span class="p">,</span> <span class="n">RegisteredAccount</span><span class="p">,</span> <span class="n">Debt</span>
+<span class="kn">from</span> <span class="nn">forecaster.accounts</span> <span class="k">import</span> <span class="n">Account</span><span class="p">,</span> <span class="n">ContributionLimitAccount</span><span class="p">,</span> <span class="n">Debt</span>
 <span class="kn">from</span> <span class="nn">forecaster.tax</span> <span class="k">import</span> <span class="n">Tax</span>
 <span class="kn">from</span> <span class="nn">forecaster.strategy</span> <span class="k">import</span> <span class="p">(</span>
-    <span class="n">ContributionStrategy</span><span class="p">,</span> <span class="n">WithdrawalStrategy</span><span class="p">,</span> <span class="n">TransactionStrategy</span><span class="p">,</span>
-    <span class="n">DebtPaymentStrategy</span><span class="p">,</span> <span class="n">AllocationStrategy</span><span class="p">)</span>
+    <span class="n">LivingExpensesStrategy</span><span class="p">,</span> <span class="n">LivingExpensesStrategySchedule</span><span class="p">,</span>
+    <span class="n">AccountTransactionStrategy</span><span class="p">,</span> <span class="n">DebtPaymentStrategy</span><span class="p">,</span> <span class="n">AllocationStrategy</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">forecaster.scenario</span> <span class="k">import</span> <span class="n">Scenario</span>
 <span class="kn">from</span> <span class="nn">forecaster.settings</span> <span class="k">import</span> <span class="n">Settings</span>
 
+<span class="c1"># TODO: See issue #19 for ideas on reimplementing this class.</span>
+<span class="c1"># It would be ideal to provide generic code that takes a mapping</span>
+<span class="c1"># (of class to {attribute_name: default_value} pairs) and</span>
+<span class="c1"># instantiates objects of each class based on explicitly-provided</span>
+<span class="c1"># values and then fills in any remaining values with whatever is</span>
+<span class="c1"># provided by the mapping.</span>
+<span class="c1"># This class would be greatly simplified, and could provide most of</span>
+<span class="c1"># its value by (1) reading in Settings objects from files, and</span>
+<span class="c1"># (2) building various SubForecast objects using the same</span>
+<span class="c1"># `people`, `accounts`, etc., where appropriate.</span>
 
-<span class="c1"># Forecaster wraps Forecast. It replicates much of that complexity</span>
-<span class="c1"># by necessity, but it isn&#39;t necessary for client code to interact</span>
+<span class="c1"># Forecaster wraps Forecast and its SubForecast children.</span>
+<span class="c1"># It replicates much of that complexity by necessity,</span>
+<span class="c1"># but it isn&#39;t necessary for client code to interact</span>
 <span class="c1"># with it - that&#39;s the whole point of this class. Its arguments are</span>
 <span class="c1"># optional and its attributes are unavoidable, so suppress Pylint&#39;s</span>
 <span class="c1"># concerns about numbers of arguments/attributes/variables</span>
@@ -213,10 +216,10 @@
 <div class="viewcode-block" id="Forecaster.__init__"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">person1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">person2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">people</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">assets</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">debts</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">scenario</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">contribution_strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">withdrawal_strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">contribution_transaction_strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">withdrawal_transaction_strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">allocation_strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">debt_payment_strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tax_treatment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">settings</span><span class="o">=</span><span class="n">Settings</span>
+        <span class="n">contribution_transaction_strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">withdrawal_transaction_strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">allocation_strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">debt_payment_strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">tax_treatment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="n">Settings</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Inits an instance of `Forecaster`.</span>
 
@@ -256,7 +259,6 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">assets</span> <span class="o">=</span> <span class="n">assets</span> <span class="k">if</span> <span class="n">assets</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">set</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">debts</span> <span class="o">=</span> <span class="n">debts</span> <span class="k">if</span> <span class="n">debts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">set</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">contribution_strategy</span> <span class="o">=</span> <span class="n">contribution_strategy</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">withdrawal_strategy</span> <span class="o">=</span> <span class="n">withdrawal_strategy</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">transaction_in_strategy</span> <span class="o">=</span> <span class="n">contribution_transaction_strategy</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">transaction_out_strategy</span> <span class="o">=</span> <span class="n">withdrawal_transaction_strategy</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">allocation_strategy</span> <span class="o">=</span> <span class="n">allocation_strategy</span>
@@ -286,8 +288,6 @@
         <span class="c1"># so build them next:</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_strategy</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">set_contribution_strategy</span><span class="p">()</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">withdrawal_strategy</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">set_withdrawal_strategy</span><span class="p">()</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transaction_in_strategy</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">set_transaction_in_strategy</span><span class="p">()</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transaction_out_strategy</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -310,6 +310,9 @@
 <div class="viewcode-block" id="Forecaster.forecast"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.forecast">[docs]</a>    <span class="k">def</span> <span class="nf">forecast</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; TODO &quot;&quot;&quot;</span>
 
+        <span class="c1"># TODO: Divide these into various SubForecast objects and</span>
+        <span class="c1"># build a Forecast out of those:</span>
+
         <span class="c1"># Build a dict of args to pass to Forecast.__init__ based on</span>
         <span class="c1"># the `Forecaster`&#39;s attributes:</span>
         <span class="n">forecast_kwargs</span> <span class="o">=</span> <span class="p">{</span>
@@ -318,7 +321,6 @@
             <span class="s1">&#39;assets&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">assets</span><span class="p">,</span>
             <span class="s1">&#39;debts&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">debts</span><span class="p">,</span>
             <span class="s1">&#39;contribution_strategy&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_strategy</span><span class="p">,</span>
-            <span class="s1">&#39;withdrawal_strategy&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">withdrawal_strategy</span><span class="p">,</span>
             <span class="s1">&#39;contribution_trans_strategy&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">transaction_in_strategy</span><span class="p">,</span>
             <span class="s1">&#39;withdrawal_trans_strategy&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">transaction_out_strategy</span><span class="p">,</span>
             <span class="s1">&#39;debt_payment_strategy&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">debt_payment_strategy</span><span class="p">,</span>
@@ -574,9 +576,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">assets</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">account</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">account</span></div>
 
-<div class="viewcode-block" id="Forecaster.add_registered_account"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.add_registered_account">[docs]</a>    <span class="k">def</span> <span class="nf">add_registered_account</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">contribution_room</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">contributor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">RegisteredAccount</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span>
+<div class="viewcode-block" id="Forecaster.add_contribution_limit_account"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.add_contribution_limit_account">[docs]</a>    <span class="k">def</span> <span class="nf">add_contribution_limit_account</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">contribution_room</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">contributor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="bp">cls</span><span class="o">=</span><span class="n">ContributionLimitAccount</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Adds an asset to the forecast and to the `assets` set.</span>
 
@@ -610,7 +612,7 @@
 <div class="viewcode-block" id="Forecaster.add_debt"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.add_debt">[docs]</a>    <span class="k">def</span> <span class="nf">add_debt</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">nper</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">minimum_payment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">reduction_rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">accelerate_payment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">Debt</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="n">savings_rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">accelerated_payment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">Debt</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Adds a Debt to the forecast.</span>
 
@@ -631,10 +633,10 @@
 <span class="sd">            the relevant args, inputs, settings, and default values.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;minimum_payment&#39;</span><span class="p">,</span> <span class="n">minimum_payment</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;reduction_rate&#39;</span><span class="p">,</span> <span class="n">reduction_rate</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">debt_reduction_rate</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;accelerate_payment&#39;</span><span class="p">,</span> <span class="n">accelerate_payment</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">debt_accelerate_payment</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;savings_rate&#39;</span><span class="p">,</span> <span class="n">savings_rate</span><span class="p">,</span>
+                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">debt_savings_rate</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;accelerated_payment&#39;</span><span class="p">,</span> <span class="n">accelerated_payment</span><span class="p">,</span>
+                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">debt_accelerated_payment</span><span class="p">)</span>
 
         <span class="n">account</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_account</span><span class="p">(</span>
             <span class="n">owner</span><span class="o">=</span><span class="n">owner</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="n">balance</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="n">rate</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="n">transactions</span><span class="p">,</span>
@@ -666,8 +668,7 @@
 
 <div class="viewcode-block" id="Forecaster.set_contribution_strategy"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.set_contribution_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">set_contribution_strategy</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">base_amount</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">refund_reinvestment_rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="bp">cls</span><span class="o">=</span><span class="n">ContributionStrategy</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">LivingExpensesStrategy</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; TODO &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;strategy&#39;</span><span class="p">,</span> <span class="n">strategy</span><span class="p">,</span>
@@ -676,40 +677,15 @@
                        <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">contribution_base_amount</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;rate&#39;</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span>
                        <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">contribution_rate</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;refund_reinvestment_rate&#39;</span><span class="p">,</span>
-                       <span class="n">refund_reinvestment_rate</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">contribution_reinvestment_rate</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;inflation_adjust&#39;</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="p">,</span>
                        <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">contribution_strategy</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_strategy</span></div>
 
-<div class="viewcode-block" id="Forecaster.set_withdrawal_strategy"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.set_withdrawal_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">set_withdrawal_strategy</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">base_amount</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">income_adjusted</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="bp">cls</span><span class="o">=</span><span class="n">WithdrawalStrategy</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; TODO &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;strategy&#39;</span><span class="p">,</span> <span class="n">strategy</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">withdrawal_strategy</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;base_amount&#39;</span><span class="p">,</span> <span class="n">base_amount</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">withdrawal_base_amount</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;rate&#39;</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">withdrawal_rate</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;timing&#39;</span><span class="p">,</span> <span class="n">timing</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">transaction_out_timing</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;income_adjusted&#39;</span><span class="p">,</span> <span class="n">income_adjusted</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">withdrawal_income_adjusted</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;inflation_adjust&#39;</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">withdrawal_strategy</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_strategy</span></div>
-
 <div class="viewcode-block" id="Forecaster.set_transaction_in_strategy"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.set_transaction_in_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">set_transaction_in_strategy</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="bp">cls</span><span class="o">=</span><span class="n">TransactionStrategy</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="bp">cls</span><span class="o">=</span><span class="n">AccountTransactionStrategy</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; TODO &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;strategy&#39;</span><span class="p">,</span> <span class="n">strategy</span><span class="p">,</span>
@@ -724,7 +700,7 @@
 
 <div class="viewcode-block" id="Forecaster.set_transaction_out_strategy"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.set_transaction_out_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">set_transaction_out_strategy</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="bp">cls</span><span class="o">=</span><span class="n">TransactionStrategy</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="bp">cls</span><span class="o">=</span><span class="n">AccountTransactionStrategy</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; TODO &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;strategy&#39;</span><span class="p">,</span> <span class="n">strategy</span><span class="p">,</span>
@@ -819,9 +795,7 @@
 </pre></div>
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -830,11 +804,11 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017, Christopher Scott.
+        &copy; Copyright 2017, Christopher Scott
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -847,36 +821,15 @@
   
 
 
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'../../',
-            VERSION:'0.0.1',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="../../_static/jquery.js"></script>
-      <script type="text/javascript" src="../../_static/underscore.js"></script>
-      <script type="text/javascript" src="../../_static/doctools.js"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="../../_static/js/theme.js"></script>
-  
-
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script>
+
+  
+  
+    
    
 
 </body>
