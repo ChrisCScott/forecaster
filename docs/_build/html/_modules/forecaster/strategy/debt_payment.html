@@ -1,0 +1,327 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.strategy.debt_payment &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">forecaster</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>forecaster.strategy.debt_payment</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for forecaster.strategy.debt_payment</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; Provides a class for determining schedules of debt payments. &quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">decimal</span> <span class="k">import</span> <span class="n">Decimal</span>
+<span class="kn">from</span> <span class="nn">forecaster.strategy.base</span> <span class="k">import</span> <span class="n">Strategy</span><span class="p">,</span> <span class="n">strategy_method</span>
+<span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="n">Money</span>
+
+<div class="viewcode-block" id="DebtPaymentStrategy"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.debt_payment.DebtPaymentStrategy">[docs]</a><span class="k">class</span> <span class="nc">DebtPaymentStrategy</span><span class="p">(</span><span class="n">Strategy</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Determines payments for a group of debts.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        strategy (str, func): Either a string corresponding to a</span>
+<span class="sd">            particular strategy or an instance of the strategy itself.</span>
+<span class="sd">            See `strategies` for acceptable keys.</span>
+<span class="sd">        strategies (dict): {str, func} pairs where each key identifies</span>
+<span class="sd">            a strategy (in human-readable text) and each value is a</span>
+<span class="sd">            function with the same arguments and return value as</span>
+<span class="sd">            transactions(). See its documentation for more info.</span>
+
+<span class="sd">            Acceptable keys include:</span>
+
+<span class="sd">            * &quot;Snowball&quot;</span>
+<span class="sd">            * &quot;Avalanche&quot;</span>
+
+<span class="sd">        timing (str, Decimal): Transactions are modelled as lump sums</span>
+<span class="sd">            which take place at this time.</span>
+
+<span class="sd">            This is expressed according to the `when` convention</span>
+<span class="sd">            described in `ledger.Account`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        available (Money): The total amount available for repayment</span>
+<span class="sd">            across all accounts.</span>
+<span class="sd">        debts (list): Debts to repay.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A dict of {Debt, Money} pairs where each Debt object</span>
+<span class="sd">        is one of the input accounts and each Money object is a</span>
+<span class="sd">        transaction for that account.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="DebtPaymentStrategy.__init__"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.debt_payment.DebtPaymentStrategy.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Constructor for DebtPaymentStrategy. &quot;&quot;&quot;</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">timing</span> <span class="o">=</span> <span class="n">timing</span>
+
+        <span class="c1"># NOTE: We leave it to calling code to interpret str-valued</span>
+        <span class="c1"># timing. (We could convert to `When` here - consider it.)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_param_check</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timing</span><span class="p">,</span> <span class="s1">&#39;timing&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">Decimal</span><span class="p">,</span> <span class="nb">str</span><span class="p">))</span></div>
+
+    <span class="k">def</span> <span class="nf">_strategy_ordered</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sorted_debts</span><span class="p">,</span> <span class="n">available</span><span class="p">,</span> <span class="n">assign_minimums</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Proposes transactions based on an ordered list of debts.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            sorted_debts (list[Debt]): A set of debt accounts,</span>
+<span class="sd">                arranged in some order.</span>
+<span class="sd">            available (Money): The amount available to repay</span>
+<span class="sd">                debt from savings.</span>
+<span class="sd">            assign_minimums (bool): Flag that determines whether</span>
+<span class="sd">                minimum transactions should be assigned to each</span>
+<span class="sd">                debt before assigning payments in list order.</span>
+<span class="sd">                Optional.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[Debt, Money]: A mapping of debts to payments.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Start with a $0 transaction for each debt</span>
+        <span class="n">transactions</span> <span class="o">=</span> <span class="p">{</span><span class="n">debt</span><span class="p">:</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="k">for</span> <span class="n">debt</span> <span class="ow">in</span> <span class="n">sorted_debts</span><span class="p">}</span>
+
+        <span class="c1"># Ensure all minimum payments are made</span>
+        <span class="k">if</span> <span class="n">assign_minimums</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">debt</span> <span class="ow">in</span> <span class="n">sorted_debts</span><span class="p">:</span>
+                <span class="c1"># Add the minimum payment (this method accounts for</span>
+                <span class="c1"># any pre-existing inflows and only returns the</span>
+                <span class="c1"># minimum *additional* inflows)</span>
+                <span class="n">transactions</span><span class="p">[</span><span class="n">debt</span><span class="p">]</span> <span class="o">+=</span> <span class="n">debt</span><span class="o">.</span><span class="n">min_inflow</span><span class="p">(</span><span class="n">when</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timing</span><span class="p">)</span>
+                <span class="c1"># And reduce the amount available for further payments</span>
+                <span class="c1"># based on this debt&#39;s savings/living expenses settings:</span>
+                <span class="n">available</span> <span class="o">-=</span> <span class="n">debt</span><span class="o">.</span><span class="n">payment_from_savings</span><span class="p">(</span>
+                    <span class="n">amount</span><span class="o">=</span><span class="n">transactions</span><span class="p">[</span><span class="n">debt</span><span class="p">],</span>
+                    <span class="n">base</span><span class="o">=</span><span class="n">debt</span><span class="o">.</span><span class="n">inflows</span><span class="p">)</span>
+
+        <span class="c1"># No need to continue if there&#39;s no money left:</span>
+        <span class="k">if</span> <span class="n">available</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">transactions</span>
+
+        <span class="c1"># Now add further payments in the order given by the sorted</span>
+        <span class="c1"># list of debts:</span>
+        <span class="k">for</span> <span class="n">debt</span> <span class="ow">in</span> <span class="n">sorted_debts</span><span class="p">:</span>
+            <span class="c1"># Determine the maximum payment we can make with what&#39;s</span>
+            <span class="c1"># left:</span>
+            <span class="n">payment</span> <span class="o">=</span> <span class="n">debt</span><span class="o">.</span><span class="n">payment</span><span class="p">(</span>
+                <span class="n">savings_available</span><span class="o">=</span><span class="n">available</span><span class="p">,</span>
+                <span class="n">other_payments</span><span class="o">=</span><span class="n">transactions</span><span class="p">[</span><span class="n">debt</span><span class="p">],</span>
+                <span class="n">when</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timing</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Reduce the pool of money remaining for further</span>
+            <span class="c1"># payments accordingly:</span>
+            <span class="n">available</span> <span class="o">-=</span> <span class="n">debt</span><span class="o">.</span><span class="n">payment_from_savings</span><span class="p">(</span>
+                <span class="n">amount</span><span class="o">=</span><span class="n">payment</span><span class="p">,</span>
+                <span class="n">base</span><span class="o">=</span><span class="n">transactions</span><span class="p">[</span><span class="n">debt</span><span class="p">]</span> <span class="o">+</span> <span class="n">debt</span><span class="o">.</span><span class="n">inflows</span>
+            <span class="p">)</span>
+            <span class="c1"># Note that we add the payment to `transactions` *after*</span>
+            <span class="c1"># decrementing `available`, which depends on the old</span>
+            <span class="c1"># value for `transactions[debt]`</span>
+            <span class="n">transactions</span><span class="p">[</span><span class="n">debt</span><span class="p">]</span> <span class="o">+=</span> <span class="n">payment</span>
+
+        <span class="k">return</span> <span class="n">transactions</span>
+
+    <span class="c1"># pylint: disable=W0613</span>
+<div class="viewcode-block" id="DebtPaymentStrategy.strategy_snowball"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.debt_payment.DebtPaymentStrategy.strategy_snowball">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;Snowball&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">strategy_snowball</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">debts</span><span class="p">,</span> <span class="n">available</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Pays off the smallest debt first. &quot;&quot;&quot;</span>
+        <span class="c1"># Sort by increasing order of balance (i.e. smallest first):</span>
+        <span class="n">sorted_debts</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+            <span class="n">debts</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">account</span><span class="p">:</span> <span class="nb">abs</span><span class="p">(</span><span class="n">account</span><span class="o">.</span><span class="n">balance</span><span class="p">),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_strategy_ordered</span><span class="p">(</span><span class="n">sorted_debts</span><span class="p">,</span> <span class="n">available</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DebtPaymentStrategy.strategy_avalanche"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.debt_payment.DebtPaymentStrategy.strategy_avalanche">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;Avalanche&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">strategy_avalanche</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">debts</span><span class="p">,</span> <span class="n">available</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Pays off the highest-interest debt first. &quot;&quot;&quot;</span>
+        <span class="c1"># Sort by decreasing order of rate (i.e. largest first):</span>
+        <span class="n">sorted_debts</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+            <span class="n">debts</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">account</span><span class="p">:</span> <span class="n">account</span><span class="o">.</span><span class="n">rate</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_strategy_ordered</span><span class="p">(</span><span class="n">sorted_debts</span><span class="p">,</span> <span class="n">available</span><span class="p">)</span></div>
+
+    <span class="c1"># Overriding __call__ solely for intellisense purposes.</span>
+    <span class="c1"># pylint: disable=W0235</span>
+<div class="viewcode-block" id="DebtPaymentStrategy.__call__"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.debt_payment.DebtPaymentStrategy.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">debts</span><span class="p">,</span> <span class="n">available</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Returns a dict of {account, Money} pairs. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__call__</span><span class="p">(</span><span class="n">debts</span><span class="p">,</span> <span class="n">available</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -35,7 +35,7 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="forecaster.canada package" href="forecaster.canada.html" />
+    <link rel="next" title="forecaster.accounts package" href="forecaster.accounts.html" />
     <link rel="prev" title="forecaster" href="modules.html" /> 
 </head>
 
@@ -89,22 +89,20 @@
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">forecaster</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">forecaster package</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.accounts.html">forecaster.accounts package</a></li>
 <li class="toctree-l4"><a class="reference internal" href="forecaster.canada.html">forecaster.canada package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.forecast.html">forecaster.forecast package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.ledger.html">forecaster.ledger package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.strategy.html">forecaster.strategy package</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="forecaster.accounts.html">forecaster.accounts module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="forecaster.forecast.html">forecaster.forecast module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="forecaster.forecaster.html">forecaster.forecaster module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="forecaster.ledger.html">forecaster.ledger module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="forecaster.person.html">forecaster.person module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="forecaster.scenario.html">forecaster.scenario module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="forecaster.settings.html">forecaster.settings module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="forecaster.strategy.html">forecaster.strategy module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="forecaster.tax.html">forecaster.tax module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="forecaster.utility.html">forecaster.utility module</a></li>
-</ul>
-</li>
+<li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-forecaster.forecaster">forecaster.forecaster module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-forecaster.person">forecaster.person module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-forecaster.scenario">forecaster.scenario module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-forecaster.settings">forecaster.settings module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-forecaster.tax">forecaster.tax module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-forecaster.utility">forecaster.utility module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#module-forecaster">Module contents</a></li>
 </ul>
 </li>
@@ -182,16 +180,65 @@
 <h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="forecaster.canada.html">forecaster.canada package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="forecaster.canada.html#submodules">Submodules</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="forecaster.canada.accounts.html">forecaster.canada.accounts module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="forecaster.canada.constants.html">forecaster.canada.constants module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="forecaster.canada.forecaster.html">forecaster.canada.forecaster module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="forecaster.canada.settings.html">forecaster.canada.settings module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="forecaster.canada.tax.html">forecaster.canada.tax module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="forecaster.accounts.html">forecaster.accounts package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.accounts.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.accounts.html#module-forecaster.accounts.base">forecaster.accounts.base module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.accounts.html#module-forecaster.accounts.contribution_limited">forecaster.accounts.contribution_limited module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.accounts.html#module-forecaster.accounts.debt">forecaster.accounts.debt module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.accounts.html#module-forecaster.accounts">Module contents</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="forecaster.canada.html">forecaster.canada package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.canada.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.canada.accounts.html">forecaster.canada.accounts package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.canada.accounts.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.canada.accounts.html#module-forecaster.canada.accounts.principle_residence">forecaster.canada.accounts.principle_residence module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.canada.accounts.html#module-forecaster.canada.accounts.registered_account">forecaster.canada.accounts.registered_account module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.canada.accounts.html#module-forecaster.canada.accounts.rrsp">forecaster.canada.accounts.rrsp module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.canada.accounts.html#module-forecaster.canada.accounts.taxable_account">forecaster.canada.accounts.taxable_account module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.canada.accounts.html#module-forecaster.canada.accounts.tfsa">forecaster.canada.accounts.tfsa module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.canada.accounts.html#module-forecaster.canada.accounts">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.canada.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.canada.html#module-forecaster.canada.constants">forecaster.canada.constants module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.canada.html#module-forecaster.canada.forecaster">forecaster.canada.forecaster module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.canada.html#module-forecaster.canada.settings">forecaster.canada.settings module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.canada.html#module-forecaster.canada.tax">forecaster.canada.tax module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="forecaster.canada.html#module-forecaster.canada">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="forecaster.forecast.html">forecaster.forecast package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.forecast.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.forecast.html#module-forecaster.forecast.base">forecaster.forecast.base module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.forecast.html#module-forecaster.forecast.contribution">forecaster.forecast.contribution module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.forecast.html#module-forecaster.forecast.income">forecaster.forecast.income module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.forecast.html#module-forecaster.forecast.living_expenses">forecaster.forecast.living_expenses module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.forecast.html#module-forecaster.forecast.reduction">forecaster.forecast.reduction module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.forecast.html#module-forecaster.forecast.subforecast">forecaster.forecast.subforecast module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.forecast.html#module-forecaster.forecast.tax">forecaster.forecast.tax module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.forecast.html#module-forecaster.forecast.withdrawal">forecaster.forecast.withdrawal module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.forecast.html#module-forecaster.forecast">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="forecaster.ledger.html">forecaster.ledger package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.ledger.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.ledger.html#module-forecaster.ledger.base">forecaster.ledger.base module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.ledger.html#module-forecaster.ledger.money">forecaster.ledger.money module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.ledger.html#module-forecaster.ledger.recorded_property">forecaster.ledger.recorded_property module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.ledger.html#module-forecaster.ledger">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="forecaster.strategy.html">forecaster.strategy package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.strategy.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.strategy.html#module-forecaster.strategy.account_transaction">forecaster.strategy.account_transaction module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.strategy.html#module-forecaster.strategy.allocation">forecaster.strategy.allocation module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.strategy.html#module-forecaster.strategy.base">forecaster.strategy.base module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.strategy.html#module-forecaster.strategy.debt_payment">forecaster.strategy.debt_payment module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.strategy.html#module-forecaster.strategy.gross_transaction">forecaster.strategy.gross_transaction module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.strategy.html#module-forecaster.strategy">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -199,20 +246,2058 @@
 </div>
 <div class="section" id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="forecaster.accounts.html">forecaster.accounts module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="forecaster.forecast.html">forecaster.forecast module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="forecaster.forecaster.html">forecaster.forecaster module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="forecaster.ledger.html">forecaster.ledger module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="forecaster.person.html">forecaster.person module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="forecaster.scenario.html">forecaster.scenario module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="forecaster.settings.html">forecaster.settings module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="forecaster.strategy.html">forecaster.strategy module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="forecaster.tax.html">forecaster.tax module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="forecaster.utility.html">forecaster.utility module</a></li>
-</ul>
 </div>
+<div class="section" id="module-forecaster.forecaster">
+<span id="forecaster-forecaster-module"></span><h2>forecaster.forecaster module<a class="headerlink" href="#module-forecaster.forecaster" title="Permalink to this headline">¶</a></h2>
+<p>This module provides classes for creating and managing Forecasts.</p>
+<dl class="class">
+<dt id="forecaster.forecaster.Forecaster">
+<em class="property">class </em><code class="descclassname">forecaster.forecaster.</code><code class="descname">Forecaster</code><span class="sig-paren">(</span><em>person1=None</em>, <em>person2=None</em>, <em>people=None</em>, <em>assets=None</em>, <em>debts=None</em>, <em>scenario=None</em>, <em>contribution_strategy=None</em>, <em>contribution_transaction_strategy=None</em>, <em>withdrawal_transaction_strategy=None</em>, <em>allocation_strategy=None</em>, <em>debt_payment_strategy=None</em>, <em>tax_treatment=None</em>, <em>initial_year=None</em>, <em>settings=&lt;class 'forecaster.settings.Settings'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A convenience class for building Forecasts based on settings.</p>
+<p><cite>Forecaster</cite> takes in information for building a <cite>Forecast</cite>
+(explicitly, via a <cite>Settings</cite> object, or via a combination of the
+two) and builds one or more <cite>Forecast</cite> objects from that
+information.</p>
+<p>One of the purposes of this class is to enable building <cite>Forecast</cite>
+objects solely from a <cite>Settings</cite> object and a set of <cite>inputs</cite> dicts.
+Objects of this class can be initialized with any of the parameters
+that can be provided to <cite>Forecast</cite> (as well as a <cite>Settings</cite> object).
+Any parameters that are not provided at init time can be built
+afterward via an <cite>add_*</cite> method. Each <cite>add_*</cite> method takes the
+parameters of the corresponding object being built; e.g.
+<cite>add_person</cite> takes the same parameters as <cite>Person.__init__</cite> (plus
+a <cite>cls</cite> parameter – see documentation for <cite>add_person</cite>).</p>
+<p>This behaviour can be particularly useful for <cite>Ledger</cite> objects like
+<cite>Person</cite> or <cite>Account</cite>, which may have per-object historical
+data that can’t be inferred from a Settings object (represented by
+an <cite>inputs</cite> dict for each such object).</p>
+<p><cite>Forecasts</cite> may be generated based on varying <cite>Scenario</cite> object
+(while retaining the same <cite>Strategy</cite>, <cite>Person</cite>, and <cite>Account</cite>
+objects) to allow for comparison of an overarching strategy between
+various future economic performance scenarios (e.g. as in Monte
+Carlo analysis).</p>
+<dl class="method">
+<dt id="forecaster.forecaster.Forecaster.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>person1=None</em>, <em>person2=None</em>, <em>people=None</em>, <em>assets=None</em>, <em>debts=None</em>, <em>scenario=None</em>, <em>contribution_strategy=None</em>, <em>contribution_transaction_strategy=None</em>, <em>withdrawal_transaction_strategy=None</em>, <em>allocation_strategy=None</em>, <em>debt_payment_strategy=None</em>, <em>tax_treatment=None</em>, <em>initial_year=None</em>, <em>settings=&lt;class 'forecaster.settings.Settings'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inits an instance of <cite>Forecaster</cite>.</p>
+<p>This method can receive any of the parameters that can be
+provided to <cite>Forecast</cite>. Any parameters that are not provided at
+init time can be provided afterward via an <cite>add_*</cite> method.</p>
+<p>This method automatically builds <cite>Scenario</cite> and <cite>Strategy</cite>
+objects from <cite>Settings</cite>, but not any <cite>Ledger</cite> (i.e. <cite>Person</cite>,
+<cite>Debt</cite>, or <cite>Account</cite>) or <cite>Tax</cite> objects, which must be added by
+the corresponding <cite>add_*</cite> method individually.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>settings</strong> (<a class="reference internal" href="#forecaster.settings.Settings" title="forecaster.settings.Settings"><em>Settings</em></a>) – An object with settings values for the
+<cite>Forecaster</cite> to pass to various <cite>Account</cite>, <cite>Person</cite>,
+<cite>Strategy</cite>, and <cite>Scenario</cite> objects when explicit
+arguments are not given.</li>
+<li><strong>initial_year</strong> (<em>int</em>) – The initial year for the forecast.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecaster.Forecaster.add_account">
+<code class="descname">add_account</code><span class="sig-paren">(</span><em>owner=None</em>, <em>balance=None</em>, <em>rate=None</em>, <em>transactions=None</em>, <em>nper=None</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>cls=&lt;class 'forecaster.accounts.base.Account'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.add_account"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.add_account" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds an account (asset, debt, etc.) to the forecast.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecaster.Forecaster.add_asset">
+<code class="descname">add_asset</code><span class="sig-paren">(</span><em>owner=None</em>, <em>balance=None</em>, <em>rate=None</em>, <em>transactions=None</em>, <em>nper=None</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>cls=&lt;class 'forecaster.accounts.base.Account'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.add_asset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.add_asset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds an asset to the forecast and to the <cite>assets</cite> set.</p>
+<p>This method should be used instead of the generic method
+<cite>add_account</cite> because, in addition to building an object of the
+appropriate type, it also manages object membership in the
+<cite>assets</cite> set.</p>
+<p>See <cite>add_account</cite> for additional documentation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>cls</strong> (<em>type</em>) – The class of <cite>Account</cite> being built by
+the method. This class’s <cite>__init__</cite> method must accept
+all of the args of <cite>Account</cite>.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">An object of type <cite>cls</cite> constructed with
+the relevant args, inputs, settings, and default values.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><cite>Account</cite></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecaster.Forecaster.add_contribution_limit_account">
+<code class="descname">add_contribution_limit_account</code><span class="sig-paren">(</span><em>contribution_room=None</em>, <em>contributor=None</em>, <em>cls=&lt;class 'forecaster.accounts.contribution_limited.ContributionLimitAccount'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.add_contribution_limit_account"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.add_contribution_limit_account" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds an asset to the forecast and to the <cite>assets</cite> set.</p>
+<p>This method should be used instead of the generic method
+<cite>add_account</cite> because, in addition to building an object of the
+appropriate type, it also manages object membership in the
+<cite>assets</cite> set.</p>
+<p>See <cite>add_account</cite> for additional documentation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>cls</strong> (<em>type</em>) – The class of <cite>RegisteredAccount</cite> being built by
+the method. This class’s <cite>__init__</cite> method must accept
+all of the args of <cite>RegisteredAccount</cite>.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">An object of type <cite>cls</cite> constructed with
+the relevant args, inputs, settings, and default values.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount" title="forecaster.canada.accounts.registered_account.RegisteredAccount">RegisteredAccount</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecaster.Forecaster.add_debt">
+<code class="descname">add_debt</code><span class="sig-paren">(</span><em>owner=None</em>, <em>balance=None</em>, <em>rate=None</em>, <em>transactions=None</em>, <em>nper=None</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>minimum_payment=None</em>, <em>savings_rate=None</em>, <em>accelerated_payment=None</em>, <em>cls=&lt;class 'forecaster.accounts.debt.Debt'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.add_debt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.add_debt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a Debt to the forecast.</p>
+<p>This method should be used instead of the generic method
+<cite>add_account</cite> because, in addition to building an object of the
+appropriate type, it also manages object membership in the
+<cite>assets</cite> set.</p>
+<p>See <cite>_add_account</cite> for additional documentation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>cls</strong> (<em>type</em>) – The class of <cite>Debt</cite> being built by
+the method. This class’s <cite>__init__</cite> method must accept
+all of the args of <cite>Debt</cite>.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">An object of type <cite>cls</cite> constructed with
+the relevant args, inputs, settings, and default values.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><cite>Debt</cite></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecaster.Forecaster.add_person">
+<code class="descname">add_person</code><span class="sig-paren">(</span><em>name</em>, <em>birth_date</em>, <em>retirement_date=None</em>, <em>gross_income=None</em>, <em>raise_rate=None</em>, <em>spouse=None</em>, <em>tax_treatment=None</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>cls=&lt;class 'forecaster.person.Person'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.add_person"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.add_person" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a Person to the forecast.</p>
+<p>If <cite>name</cite> matches <cite>person1_name</cite> or <cite>person2_name</cite> in <cite>settings</cite>
+then the default values for that person will be used, otherwise
+no defaults will be used (be sure to provide any mandatory
+arguments!)</p>
+<p>Subclasses of Forecaster that build subclasses of Person can
+make use of this method by passing in a suitable <cite>cls</cite>
+argument along with any <cite>kwargs</cite> specific to that <cite>cls</cite>.</p>
+<p>See <cite>Person</cite> for documentation on additional args.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>inputs</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>dict</em><em>[</em><em>int</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – <cite>{arg: {year: val}}</cite>
+pairs, where <cite>arg</cite> is the name of a &#64;recorded_property
+of <cite>Person</cite> and <cite>val</cite> is the value of that property for
+<cite>year</cite>.</li>
+<li><strong>cls</strong> (<em>type</em>) – The class of <cite>Person</cite> being built by the
+method. This class’s <cite>__init__</cite> method must accept all
+of the args of <cite>Person</cite>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">An object of type <cite>cls</cite> constructed with
+the relevant args, inputs, settings, and default values.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><cite>Person</cite></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecaster.Forecaster.forecast">
+<code class="descname">forecast</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.forecast"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.forecast" title="Permalink to this definition">¶</a></dt>
+<dd><p>TODO</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecaster.Forecaster.set_allocation_strategy">
+<code class="descname">set_allocation_strategy</code><span class="sig-paren">(</span><em>strategy=None</em>, <em>min_equity=None</em>, <em>max_equity=None</em>, <em>target=None</em>, <em>standard_retirement_age=None</em>, <em>risk_transition_period=None</em>, <em>adjust_for_retirement_plan=None</em>, <em>cls=&lt;class 'forecaster.strategy.allocation.AllocationStrategy'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_allocation_strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_allocation_strategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>TODO</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecaster.Forecaster.set_contribution_strategy">
+<code class="descname">set_contribution_strategy</code><span class="sig-paren">(</span><em>strategy=None</em>, <em>base_amount=None</em>, <em>rate=None</em>, <em>inflation_adjust=None</em>, <em>cls=&lt;class 'forecaster.strategy.gross_transaction.LivingExpensesStrategy'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_contribution_strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_contribution_strategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>TODO</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecaster.Forecaster.set_debt_payment_strategy">
+<code class="descname">set_debt_payment_strategy</code><span class="sig-paren">(</span><em>strategy=None</em>, <em>timing=None</em>, <em>cls=&lt;class 'forecaster.strategy.debt_payment.DebtPaymentStrategy'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_debt_payment_strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_debt_payment_strategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>TODO</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="forecaster.forecaster.Forecaster.set_kwarg">
+<em class="property">static </em><code class="descname">set_kwarg</code><span class="sig-paren">(</span><em>kwargs</em>, <em>arg</em>, <em>val</em>, <em>default</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_kwarg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_kwarg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a keyword arg to a dict based on an input hierarchy.</p>
+<p>Adds <cite>arg</cite> to the dict <cite>kwargs</cite> with value <cite>val</cite> (usually an
+explicit argument to the calling method) or, if that’s <cite>None</cite>,
+<cite>default</cite> (usually a value from a Settings object).</p>
+<p>If both of these values are None, or if <cite>arg</cite> is already in
+<cite>kwargs</cite>, no value is added to <cite>kwargs</cite>.
+This avoids overriding the relevant parameter defaults or
+overriding args set by subclasses.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>kwargs</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>) – A dict of keyword args to be passed
+to an <cite>__init__</cite> method when initializing a Person,
+Account, or other Forecast input object.</li>
+<li><strong>arg</strong> (<em>str</em>) – The keyword arg being added to <cite>kwargs</cite>.</li>
+<li><strong>val</strong> (<em>Any</em>) – An explicitly-passed value for <cite>arg</cite>.
+May be None.</li>
+<li><strong>default</strong> (<em>Any</em>) – A value from a Settings object
+corresponding to <cite>arg</cite>. May be None.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecaster.Forecaster.set_person1">
+<code class="descname">set_person1</code><span class="sig-paren">(</span><em>name=None</em>, <em>birth_date=None</em>, <em>retirement_date=None</em>, <em>gross_income=None</em>, <em>raise_rate=None</em>, <em>spouse=None</em>, <em>tax_treatment=None</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>cls=&lt;class 'forecaster.person.Person'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_person1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_person1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a person to the forecast based on person1’s settings.</p>
+<p>See <cite>add_person</cite> for documentation on the args and return type
+of this method.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecaster.Forecaster.set_person2">
+<code class="descname">set_person2</code><span class="sig-paren">(</span><em>name=None</em>, <em>birth_date=None</em>, <em>retirement_date=None</em>, <em>gross_income=None</em>, <em>raise_rate=None</em>, <em>spouse=None</em>, <em>tax_treatment=None</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>cls=&lt;class 'forecaster.person.Person'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_person2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_person2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a person to the forecast based on person2’s settings.</p>
+<p>See <cite>add_person</cite> for documentation on the args and return type
+of this method.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecaster.Forecaster.set_scenario">
+<code class="descname">set_scenario</code><span class="sig-paren">(</span><em>inflation=None</em>, <em>stock_return=None</em>, <em>bond_return=None</em>, <em>other_return=None</em>, <em>management_fees=None</em>, <em>initial_year=None</em>, <em>num_years=None</em>, <em>cls=&lt;class 'forecaster.scenario.Scenario'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_scenario"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_scenario" title="Permalink to this definition">¶</a></dt>
+<dd><p>TODO</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecaster.Forecaster.set_tax_treatment">
+<code class="descname">set_tax_treatment</code><span class="sig-paren">(</span><em>tax_brackets=None</em>, <em>personal_deduction=None</em>, <em>credit_rate=None</em>, <em>inflation_adjust=None</em>, <em>cls=&lt;class 'forecaster.tax.Tax'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_tax_treatment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_tax_treatment" title="Permalink to this definition">¶</a></dt>
+<dd><p>TODO</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecaster.Forecaster.set_transaction_in_strategy">
+<code class="descname">set_transaction_in_strategy</code><span class="sig-paren">(</span><em>strategy=None</em>, <em>weights=None</em>, <em>timing=None</em>, <em>cls=&lt;class 'forecaster.strategy.account_transaction.AccountTransactionStrategy'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_transaction_in_strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_transaction_in_strategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>TODO</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecaster.Forecaster.set_transaction_out_strategy">
+<code class="descname">set_transaction_out_strategy</code><span class="sig-paren">(</span><em>strategy=None</em>, <em>weights=None</em>, <em>timing=None</em>, <em>cls=&lt;class 'forecaster.strategy.account_transaction.AccountTransactionStrategy'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_transaction_out_strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_transaction_out_strategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>TODO</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-forecaster.person">
+<span id="forecaster-person-module"></span><h2>forecaster.person module<a class="headerlink" href="#module-forecaster.person" title="Permalink to this headline">¶</a></h2>
+<p>A module providing a Person class.</p>
+<dl class="class">
+<dt id="forecaster.person.Person">
+<em class="property">class </em><code class="descclassname">forecaster.person.</code><code class="descname">Person</code><span class="sig-paren">(</span><em>initial_year</em>, <em>name</em>, <em>birth_date</em>, <em>retirement_date=None</em>, <em>gross_income=0</em>, <em>raise_rate=0</em>, <em>spouse=None</em>, <em>tax_treatment=None</em>, <em>payment_frequency='BW'</em>, <em>inputs=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/person.html#Person"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.person.Person" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.base.TaxSource" title="forecaster.ledger.base.TaxSource"><code class="xref py py-class docutils literal notranslate"><span class="pre">forecaster.ledger.base.TaxSource</span></code></a></p>
+<p>Represents a person’s basic information: age and retirement age.</p>
+<dl class="attribute">
+<dt id="forecaster.person.Person.name">
+<code class="descname">name</code><a class="headerlink" href="#forecaster.person.Person.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>The person’s name. No specific form is required;
+this is only used for display, not any computations.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">str</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.birth_date">
+<code class="descname">birth_date</code><a class="headerlink" href="#forecaster.person.Person.birth_date" title="Permalink to this definition">¶</a></dt>
+<dd><p>The person’s birth date.
+May be passed as an int (interpreted as the birth year) or
+as a datetime-convertible value (e.g. a string in a
+suitable format)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">datetime</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.retirement_date">
+<code class="descname">retirement_date</code><a class="headerlink" href="#forecaster.person.Person.retirement_date" title="Permalink to this definition">¶</a></dt>
+<dd><p>The person’s retirement date.
+Optional.
+May be passed as an int (interpreted as the birth year) or
+as a datetime-convertible value (e.g. a string in a
+suitable format)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">datetime</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.gross_income">
+<code class="descname">gross_income</code><a class="headerlink" href="#forecaster.person.Person.gross_income" title="Permalink to this definition">¶</a></dt>
+<dd><p>Annual gross income for the current year.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.gross_income_history">
+<code class="descname">gross_income_history</code><a class="headerlink" href="#forecaster.person.Person.gross_income_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gross income for all
+years on record.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">dict[int, <a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.net_income">
+<code class="descname">net_income</code><a class="headerlink" href="#forecaster.person.Person.net_income" title="Permalink to this definition">¶</a></dt>
+<dd><p>Annual net income for the current year.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.net_income_history">
+<code class="descname">net_income_history</code><a class="headerlink" href="#forecaster.person.Person.net_income_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Net income for all
+years on record.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">dict[int, <a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.raise_rate_callable">
+<code class="descname">raise_rate_callable</code><a class="headerlink" href="#forecaster.person.Person.raise_rate_callable" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function for determining the
+Person’s raise rate for a given year. A callable object with
+the form <cite>raise_rate_function(year) -&gt; Decimal</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">callable</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.raise_rate">
+<code class="descname">raise_rate</code><a class="headerlink" href="#forecaster.person.Person.raise_rate" title="Permalink to this definition">¶</a></dt>
+<dd><p>The person’s raise in gross income this
+year relative to last year.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">Decimal</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.raise_rate_history">
+<code class="descname">raise_rate_history</code><a class="headerlink" href="#forecaster.person.Person.raise_rate_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raises for all years
+on record.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">dict[int, Decimal]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.payment_frequency">
+<code class="descname">payment_frequency</code><a class="headerlink" href="#forecaster.person.Person.payment_frequency" title="Permalink to this definition">¶</a></dt>
+<dd><p>The number of times each year that
+the Person is paid. Uses the same syntax as
+<cite>forecaster.utility.frequency_conv</cite> (e.g. ‘M’ or 12
+for monthly payments).
+Optional; defaults to biweekly payments.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">int</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.spouse">
+<code class="descname">spouse</code><a class="headerlink" href="#forecaster.person.Person.spouse" title="Permalink to this definition">¶</a></dt>
+<dd><p>The person’s spouse. This linkage is
+one-to-one; the spouse’s <cite>spouse</cite> attribute points back to
+this Person.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference internal" href="#forecaster.person.Person" title="forecaster.person.Person">Person</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.tax_treatment">
+<code class="descname">tax_treatment</code><a class="headerlink" href="#forecaster.person.Person.tax_treatment" title="Permalink to this definition">¶</a></dt>
+<dd><p>The tax treatment of the person. A callable
+object; see documentation for <cite>Tax</cite> for more information.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference internal" href="#forecaster.tax.Tax" title="forecaster.tax.Tax">Tax</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.person.Person.__gt__">
+<code class="descname">__gt__</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/person.html#Person.__gt__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.person.Person.__gt__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Allows for sorting, max, min, etc. based on gross income.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.person.Person.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>initial_year</em>, <em>name</em>, <em>birth_date</em>, <em>retirement_date=None</em>, <em>gross_income=0</em>, <em>raise_rate=0</em>, <em>spouse=None</em>, <em>tax_treatment=None</em>, <em>payment_frequency='BW'</em>, <em>inputs=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/person.html#Person.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.person.Person.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructor for <cite>Person</cite>.</p>
+<dl class="attribute">
+<dt id="forecaster.person.Person.accounts">
+<code class="descname">accounts</code><a class="headerlink" href="#forecaster.person.Person.accounts" title="Permalink to this definition">¶</a></dt>
+<dd><p>All accounts naming this Person as an owner.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">set</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>initial_year</strong> (<em>int</em>) – The first year of recorded data.</li>
+<li><strong>name</strong> (<em>str</em>) – The person’s name.</li>
+<li><strong>birth_date</strong> (<em>datetime</em>) – The person’s date of birth.
+May be passed as any value that can be cast to str and
+converted to datetime by python-dateutils.parse().</li>
+<li><strong>retirement_date</strong> (<em>datetime</em>) – The person’s retirement date.
+May be passed as any value that can be cast to str and
+converted to datetime by python-dateutils.parse().
+Optional.</li>
+<li><strong>gross_income</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – The person’s gross income in
+<cite>initial_year</cite>.</li>
+<li><strong>raise_rate</strong> (<em>dict</em><em>[</em><em>int</em><em>, </em><em>Decimal</em><em>]</em><em>, </em><em>callable</em>) – The person’s
+raise for each year, as a callable object with the
+signature <cite>raise_rate(year)</cite> or a dict of
+<cite>{year: raise}</cite> pairs. The raise is a Decimal
+interpreted as a percentage (e.g. <cite>Decimal(‘0.03’)</cite>
+indicates a 3% raise).</li>
+<li><strong>spouse</strong> (<a class="reference internal" href="#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a>) – The person’s spouse. Optional.
+In ordinary use, the first person of the couple is
+constructed with <cite>spouse=None</cite>, and the second person is
+constructed with <cite>spouse=person1</cite>. Both persons will
+automatically have their spouse attribute updated to
+point at each other.</li>
+<li><strong>tax_treatment</strong> (<a class="reference internal" href="#forecaster.tax.Tax" title="forecaster.tax.Tax"><em>Tax</em></a>) – The person’s tax treatment. Optional.
+This can be any callable object that accepts the form
+<cite>tax_treatment(taxable_income, year)</cite> and returns a
+Money object (which corresponds to total taxes payable
+on <cite>taxable_income</cite>).</li>
+<li><strong>payment_frequency</strong> (<em>str</em><em>, </em><em>int</em>) – The frequency with which
+<cite>Person</cite> is paid. Uses the same syntax as
+<cite>forecaster.utility.frequency_conv</cite> (e.g. ‘M’ or 12
+for monthly payments).
+Optional; defaults to biweekly payments.</li>
+<li><strong>inputs</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>dict</em><em>[</em><em>int</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – <p><cite>{attr: {year: val}}</cite>
+pairs, where <cite>attr</cite> is any one of <cite>Person</cite>’s recorded
+propertes, namely:</p>
+<ul>
+<li>taxable_income</li>
+<li>tax_withheld</li>
+<li>tax_credit</li>
+<li>tax_deduction</li>
+<li>gross_income</li>
+<li>net_income</li>
+<li>raise_rate</li>
+</ul>
+</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">An instance of class <cite>Person</cite></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – birth_date or retirement_date are not parseable
+as dates.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – retirement_date precedes birth_date</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">OverflowError</span></code> – birth_date or retirement_date are too large.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.person.Person.age">
+<code class="descname">age</code><span class="sig-paren">(</span><em>date</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/person.html#Person.age"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.person.Person.age" title="Permalink to this definition">¶</a></dt>
+<dd><p>The age of the <cite>Person</cite> as of <cite>date</cite>.</p>
+<p><cite>date</cite> may be a <cite>datetime</cite> object or a numeric value indicating
+a year (e.g. 2001). In the latter case, the age on the person’s
+birthday (in that year) is returned.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>date</strong> – The date at which to determine the person’s age.
+May be passed as a datetime or any other value that can
+be cast to str and converted to datetime by
+python-dateutils.parse().</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The age of the <cite>Person</cite>.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">int</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – <cite>date</cite> is not parseable as a datetime.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – <cite>date</cite> is earlier than <cite>birth_date</cite>.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">OverflowError</span></code> – <cite>date</cite> is too large.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">birth_date</code></dt>
+<dd><p>The birth date of the Person.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.person.Person.contribution_groups">
+<code class="descname">contribution_groups</code><span class="sig-paren">(</span><em>account</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/person.html#Person.contribution_groups"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.person.Person.contribution_groups" title="Permalink to this definition">¶</a></dt>
+<dd><p>The accounts sharing contribution room with <cite>account</cite>.</p>
+<p>This method returns only accounts registered via
+<cite>register_shared_contribution</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><dl class="docutils">
+<dt>The <cite>Account</cite> objects sharing</dt>
+<dd>contribution room with <cite>account</cite>. Includes this
+<cite>Account</cite>.<p class="last">Returns None if <cite>account</cite> is not registered.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">Union[set[<a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.base.Account" title="forecaster.accounts.base.Account">Account</a>], None]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.person.Person.contribution_room">
+<code class="descname">contribution_room</code><span class="sig-paren">(</span><em>account</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/person.html#Person.contribution_room"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.person.Person.contribution_room" title="Permalink to this definition">¶</a></dt>
+<dd><p>The contribution room for the given account.</p>
+<p>The account must provide a <cite>contribution_token</cite> attribute.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><dl class="docutils">
+<dt>{year: contribution_room}</dt>
+<dd>pairs for the account if it has been registered.<p class="last">Returns None if <cite>account</cite> is not registered.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">Union[dict[int, <a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a>], None]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">gross_income</code></dt>
+<dd><p>Returns cached value in *_history dict if available.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">gross_income_history</code></dt>
+<dd><p>Record of gross_income over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">name</code></dt>
+<dd><p>The name of the Person.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">net_income</code></dt>
+<dd><p>Returns cached value in *_history dict if available.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">net_income_history</code></dt>
+<dd><p>Record of net_income over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">payment_frequency</code></dt>
+<dd><p>The number of times a year that Person is paid.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">raise_rate</code></dt>
+<dd><p>Returns cached value in *_history dict if available.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">raise_rate_callable</code></dt>
+<dd><p>A callable object that generates a raise rate for the year.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A function with signature
+<cite>raise_rate(year) -&gt; Decimal</cite>.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">callable</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">raise_rate_history</code></dt>
+<dd><p>Record of raise_rate over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.person.Person.register_shared_contribution">
+<code class="descname">register_shared_contribution</code><span class="sig-paren">(</span><em>account</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/person.html#Person.register_shared_contribution"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.person.Person.register_shared_contribution" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepares a Person to store contribution room for an account.</p>
+<p>This method starts tracking contribution room for the account if
+it isn’t already and also keeps track of which accounts have
+shared contribution room.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.retirement_age">
+<code class="descname">retirement_age</code><a class="headerlink" href="#forecaster.person.Person.retirement_age" title="Permalink to this definition">¶</a></dt>
+<dd><p>The age of the Person at retirement</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">retirement_date</code></dt>
+<dd><p>The retirement date of the Person.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">spouse</code></dt>
+<dd><p>The Person’s spouse.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.tax_credit">
+<code class="descname">tax_credit</code><a class="headerlink" href="#forecaster.person.Person.tax_credit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns cached value in *_history dict if available.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.tax_credit_history">
+<code class="descname">tax_credit_history</code><a class="headerlink" href="#forecaster.person.Person.tax_credit_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of tax_credit over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.tax_deduction">
+<code class="descname">tax_deduction</code><a class="headerlink" href="#forecaster.person.Person.tax_deduction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns cached value in *_history dict if available.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.tax_deduction_history">
+<code class="descname">tax_deduction_history</code><a class="headerlink" href="#forecaster.person.Person.tax_deduction_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of tax_deduction over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">tax_treatment</code></dt>
+<dd><p>The tax treatment of the Person.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.tax_withheld">
+<code class="descname">tax_withheld</code><a class="headerlink" href="#forecaster.person.Person.tax_withheld" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns cached value in *_history dict if available.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.tax_withheld_history">
+<code class="descname">tax_withheld_history</code><a class="headerlink" href="#forecaster.person.Person.tax_withheld_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of tax_withheld over all past years.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.taxable_income">
+<code class="descname">taxable_income</code><a class="headerlink" href="#forecaster.person.Person.taxable_income" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns cached value in *_history dict if available.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.taxable_income_history">
+<code class="descname">taxable_income_history</code><a class="headerlink" href="#forecaster.person.Person.taxable_income_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of taxable_income over all past years.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-forecaster.scenario">
+<span id="forecaster-scenario-module"></span><h2>forecaster.scenario module<a class="headerlink" href="#module-forecaster.scenario" title="Permalink to this headline">¶</a></h2>
+<p>Basic economic classes, such as <cite>Scenario</cite> and <cite>Money</cite>.</p>
+<dl class="class">
+<dt id="forecaster.scenario.InflationAdjust">
+<em class="property">class </em><code class="descclassname">forecaster.scenario.</code><code class="descname">InflationAdjust</code><span class="sig-paren">(</span><em>scenario</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/scenario.html#InflationAdjust"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.scenario.InflationAdjust" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Callable inflation_adjust object with mutable state.</p>
+<dl class="attribute">
+<dt id="forecaster.scenario.InflationAdjust.scenario">
+<code class="descname">scenario</code><a class="headerlink" href="#forecaster.scenario.InflationAdjust.scenario" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <cite>Scenario</cite> defining an
+<cite>accumulation_function</cite> for inflation over several years.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference internal" href="#forecaster.scenario.Scenario" title="forecaster.scenario.Scenario">Scenario</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.scenario.InflationAdjust.__call__">
+<code class="descname">__call__</code><span class="sig-paren">(</span><em>target_year</em>, <em>base_year=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/scenario.html#InflationAdjust.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.scenario.InflationAdjust.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inflation-adjustment factor from base_year to target_year.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>target_year</strong> (<em>int</em>) – The year for which an
+inflation-adjustment factor is desired.</li>
+<li><strong>base_year</strong> (<em>int</em>) – <p>The year in which inflation-adjusted
+figures are expressed.</p>
+<p>The inflation adjustment for this year is 1 and the
+inflation adjustment for target_year is defined relative
+to this year.</p>
+<p>Optional. Defaults to the initial year of the object’s
+<cite>scenario</cite> attribute.</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The inflation-adjustment factor from base_year to
+target_year. This is the product of inflation-adjustments
+for each year (or its inverse, if target_year precedes
+base_year).</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Decimal</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.scenario.InflationAdjust.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>scenario</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/scenario.html#InflationAdjust.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.scenario.InflationAdjust.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inits InflationAdjust.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="forecaster.scenario.Scenario">
+<em class="property">class </em><code class="descclassname">forecaster.scenario.</code><code class="descname">Scenario</code><span class="sig-paren">(</span><em>initial_year</em>, <em>num_years</em>, <em>inflation=0</em>, <em>stock_return=0</em>, <em>bond_return=0</em>, <em>other_return=0</em>, <em>management_fees=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/scenario.html#Scenario"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.scenario.Scenario" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Describes an economic scenario over the course of a simulation.</p>
+<p>For example, provides inflation rates and rates of return for each
+year of the simulation.</p>
+<p>This is the foil to <cite>Strategy</cite>; all <cite>Scenario</cite> information is
+reflective of broader economic trends and is independent of any user
+action.</p>
+<dl class="attribute">
+<dt id="forecaster.scenario.Scenario.initial_year">
+<code class="descname">initial_year</code><a class="headerlink" href="#forecaster.scenario.Scenario.initial_year" title="Permalink to this definition">¶</a></dt>
+<dd><p>The first year of the simulation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">int</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.scenario.Scenario.num_years">
+<code class="descname">num_years</code><a class="headerlink" href="#forecaster.scenario.Scenario.num_years" title="Permalink to this definition">¶</a></dt>
+<dd><p>The number of years in the simulation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">int</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.scenario.Scenario.inflation">
+<code class="descname">inflation</code><a class="headerlink" href="#forecaster.scenario.Scenario.inflation" title="Permalink to this definition">¶</a></dt>
+<dd><p><cite>{year, inflation}</cite> pairs, where
+<cite>inflation</cite> is a percentage rate (e.g. <cite>Decimal(0.5)</cite> is
+50%).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">dict[int, Decimal]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.scenario.Scenario.stock_return">
+<code class="descname">stock_return</code><a class="headerlink" href="#forecaster.scenario.Scenario.stock_return" title="Permalink to this definition">¶</a></dt>
+<dd><p><cite>{year, return}</cite> pairs where
+<cite>return</cite> is the rate of return for stocks in the given year.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">dict[int, Decimal]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.scenario.Scenario.bond_return">
+<code class="descname">bond_return</code><a class="headerlink" href="#forecaster.scenario.Scenario.bond_return" title="Permalink to this definition">¶</a></dt>
+<dd><p><cite>{year, return}</cite> pairs where
+<cite>return</cite> is the rate of return for bonds in the given year.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">dict[int, Decimal]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.scenario.Scenario.other_return">
+<code class="descname">other_return</code><a class="headerlink" href="#forecaster.scenario.Scenario.other_return" title="Permalink to this definition">¶</a></dt>
+<dd><p><cite>{year, return}</cite> pairs where
+<cite>return</cite> is the rate of return for other property (e.g.
+real estate) in the given year. Optional.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">dict[int, Decimal]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.scenario.Scenario.management_fees">
+<code class="descname">management_fees</code><a class="headerlink" href="#forecaster.scenario.Scenario.management_fees" title="Permalink to this definition">¶</a></dt>
+<dd><p><cite>{year, fees}</cite> pairs
+where <cite>fees</cite> is the rate at which management fees are
+charged in invested assets in the given year. Optional.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">dict[int, Decimal]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.scenario.Scenario.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>initial_year</em>, <em>num_years</em>, <em>inflation=0</em>, <em>stock_return=0</em>, <em>bond_return=0</em>, <em>other_return=0</em>, <em>management_fees=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/scenario.html#Scenario.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.scenario.Scenario.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructor for <cite>Scenario</cite>.</p>
+<p>Arguments may be dicts (of {year, value} pairs), lists (or
+similar <cite>Sequence</cite>) or scalar values.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>inflation</strong> (<em>Decimal</em><em>, </em><em>list</em><em>, </em><em>dict</em>) – The rate of inflation.</li>
+<li><strong>stock_return</strong> (<em>dict</em><em>[</em><em>int</em><em>, </em><em>Decimal</em><em>]</em>) – <cite>{year: return}</cite> pairs
+for stocks.</li>
+<li><strong>bond_return</strong> (<em>dict</em><em>[</em><em>int</em><em>, </em><em>Decimal</em><em>]</em>) – <cite>{year: return}</cite> pairs
+for bonds.</li>
+<li><strong>other_return</strong> (<em>dict</em><em>[</em><em>int</em><em>, </em><em>Decimal</em><em>]</em>) – <cite>{year: return}</cite> pairs
+for other assets (not stocks/bonds), e.g. real estate.</li>
+<li><strong>management_fees</strong> (<em>Decimal</em><em>, </em><em>list</em><em>, </em><em>dict</em>) – The management fees
+charged on investments.</li>
+<li><strong>person1_raise_rate</strong> (<em>Decimal</em><em>, </em><em>list</em><em>, </em><em>dict</em>) – The amount that is
+expected for a raise for person1 this year, expressed as
+a percentage (e.g. 0.05 for a 5% raise).</li>
+<li><strong>person2_raise_rate</strong> (<em>Decimal</em><em>, </em><em>list</em><em>, </em><em>dict</em>) – The amount that is
+expected for a raise for person2 this year, expressed as
+a percentage (e.g. 0.05 for a 5% raise).</li>
+<li><strong>initial_year</strong> (<em>int</em>) – The first year of the projection.</li>
+<li><strong>num_years</strong> (<em>int</em>) – The number of years in the projection.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – num_years must be positive.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – input object cannot be processed by _build_dict.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.scenario.Scenario.__iter__">
+<code class="descname">__iter__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/scenario.html#Scenario.__iter__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.scenario.Scenario.__iter__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterates over years modelled by the Scenario.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Yields:</th><td class="field-body"><em>int</em> – Each year modelled by the Scenario, in ascending order.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.scenario.Scenario.__len__">
+<code class="descname">__len__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/scenario.html#Scenario.__len__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.scenario.Scenario.__len__" title="Permalink to this definition">¶</a></dt>
+<dd><p>The number of years modelled by the Scenario.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.scenario.Scenario.accumulation_function">
+<code class="descname">accumulation_function</code><span class="sig-paren">(</span><em>year1</em>, <em>year2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/scenario.html#Scenario.accumulation_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.scenario.Scenario.accumulation_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>The discount applied in the period from year1 to year2.</p>
+<p>If year2 precedes year1 then the discount rate is inverted.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.scenario.Scenario.discount_rate">
+<code class="descname">discount_rate</code><span class="sig-paren">(</span><em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/scenario.html#Scenario.discount_rate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.scenario.Scenario.discount_rate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the discount rate for <cite>year</cite>.</p>
+<p>This is the same as calling <cite>inflation[year]</cite>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.scenario.Scenario.inflation_adjust">
+<code class="descname">inflation_adjust</code><a class="headerlink" href="#forecaster.scenario.Scenario.inflation_adjust" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inflation-adjustment factor from base_year to target_year.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>target_year</strong> (<em>int</em>) – The year for which an
+inflation-adjustment factor is desired.</li>
+<li><strong>base_year</strong> (<em>int</em>) – <p>The year in which inflation-adjusted
+figures are expressed.</p>
+<p>The inflation adjustment for this year is 1 and the
+inflation adjustment for target_year is defined relative
+to this year.</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The inflation-adjustment factor from <cite>base_year</cite> to
+<cite>target_year</cite>. This is the product of inflation-adjustments
+for each year (or its inverse, if target_year precedes
+base_year).</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Decimal</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.scenario.Scenario.inflation_adjustments">
+<code class="descname">inflation_adjustments</code><span class="sig-paren">(</span><em>base_year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/scenario.html#Scenario.inflation_adjustments"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.scenario.Scenario.inflation_adjustments" title="Permalink to this definition">¶</a></dt>
+<dd><p>Annual inflation adjustment factors relative to base_year.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><cite>{year: adjustment}</cite> pairs.<p><cite>adjustment</cite> is the cumulative inflation since <cite>base_year</cite>
+(or, for years prior to <cite>base_year</cite>, it is the present value
+of $1 in base_year)</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">dict[int, Decimal]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-forecaster.settings">
+<span id="forecaster-settings-module"></span><h2>forecaster.settings module<a class="headerlink" href="#module-forecaster.settings" title="Permalink to this headline">¶</a></h2>
+<p>This module provides user-modifiable settings for the application.</p>
+<p>It provides the <cite>Settings</cite> class, which contains various <cite>*Defaults</cite>
+classes. They provide default values for aspects of the application.</p>
+<dl class="class">
+<dt id="forecaster.settings.Settings">
+<em class="property">class </em><code class="descclassname">forecaster.settings.</code><code class="descname">Settings</code><a class="reference internal" href="_modules/forecaster/settings.html#Settings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.settings.Settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Container for variables used to control application settings.</p>
+<p>This class can be instantiated as an object and, where supported,
+passed to other objects to provide defaults for initialization.
+However, it also provides sensible defaults at the class level, so
+one might equivalently call Settings (the class) or Settings()
+(an object).</p>
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.allocation_adjust_retirement">
+<code class="descname">allocation_adjust_retirement</code><em class="property"> = True</em><a class="headerlink" href="#forecaster.settings.Settings.allocation_adjust_retirement" title="Permalink to this definition">¶</a></dt>
+<dd><p>DebtPaymentStrategy defaults</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.allocation_const_target">
+<code class="descname">allocation_const_target</code><em class="property"> = 65</em><a class="headerlink" href="#forecaster.settings.Settings.allocation_const_target" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.allocation_max_equity">
+<code class="descname">allocation_max_equity</code><em class="property"> = Decimal('0.3')</em><a class="headerlink" href="#forecaster.settings.Settings.allocation_max_equity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.allocation_min_equity">
+<code class="descname">allocation_min_equity</code><em class="property"> = Decimal('0.3')</em><a class="headerlink" href="#forecaster.settings.Settings.allocation_min_equity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.allocation_risk_trans_period">
+<code class="descname">allocation_risk_trans_period</code><em class="property"> = 20</em><a class="headerlink" href="#forecaster.settings.Settings.allocation_risk_trans_period" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.allocation_std_retirement_age">
+<code class="descname">allocation_std_retirement_age</code><em class="property"> = 65</em><a class="headerlink" href="#forecaster.settings.Settings.allocation_std_retirement_age" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.allocation_strategy">
+<code class="descname">allocation_strategy</code><em class="property"> = 'n-age'</em><a class="headerlink" href="#forecaster.settings.Settings.allocation_strategy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.allocation_trans_target">
+<code class="descname">allocation_trans_target</code><em class="property"> = Decimal('0.5')</em><a class="headerlink" href="#forecaster.settings.Settings.allocation_trans_target" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.bond_return">
+<code class="descname">bond_return</code><em class="property"> = 0.04</em><a class="headerlink" href="#forecaster.settings.Settings.bond_return" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.contribution_base_amount">
+<code class="descname">contribution_base_amount</code><em class="property"> = Decimal('20000')</em><a class="headerlink" href="#forecaster.settings.Settings.contribution_base_amount" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.contribution_inflation_adjusted">
+<code class="descname">contribution_inflation_adjusted</code><em class="property"> = True</em><a class="headerlink" href="#forecaster.settings.Settings.contribution_inflation_adjusted" title="Permalink to this definition">¶</a></dt>
+<dd><p>TransactionStrategy defaults for inflows/contributions</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.contribution_rate">
+<code class="descname">contribution_rate</code><em class="property"> = Decimal('0.2')</em><a class="headerlink" href="#forecaster.settings.Settings.contribution_rate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.contribution_reinvestment_rate">
+<code class="descname">contribution_reinvestment_rate</code><em class="property"> = 1</em><a class="headerlink" href="#forecaster.settings.Settings.contribution_reinvestment_rate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.contribution_strategy">
+<code class="descname">contribution_strategy</code><em class="property"> = 'Percentage of net income'</em><a class="headerlink" href="#forecaster.settings.Settings.contribution_strategy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.currency">
+<code class="descname">currency</code><em class="property"> = 'CAD'</em><a class="headerlink" href="#forecaster.settings.Settings.currency" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defaults for <cite>Scenario</cite></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.debt_accelerated_payment">
+<code class="descname">debt_accelerated_payment</code><em class="property"> = 0</em><a class="headerlink" href="#forecaster.settings.Settings.debt_accelerated_payment" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.debt_payment_strategy">
+<code class="descname">debt_payment_strategy</code><em class="property"> = 'Avalanche'</em><a class="headerlink" href="#forecaster.settings.Settings.debt_payment_strategy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.debt_payment_timing">
+<code class="descname">debt_payment_timing</code><em class="property"> = 'end'</em><a class="headerlink" href="#forecaster.settings.Settings.debt_payment_timing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Debt defaults</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.debt_savings_rate">
+<code class="descname">debt_savings_rate</code><em class="property"> = 1</em><a class="headerlink" href="#forecaster.settings.Settings.debt_savings_rate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.display_year">
+<code class="descname">display_year</code><em class="property"> = 2019</em><a class="headerlink" href="#forecaster.settings.Settings.display_year" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.inflation">
+<code class="descname">inflation</code><em class="property"> = 0.02</em><a class="headerlink" href="#forecaster.settings.Settings.inflation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.initial_year">
+<code class="descname">initial_year</code><em class="property"> = 2019</em><a class="headerlink" href="#forecaster.settings.Settings.initial_year" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.management_fees">
+<code class="descname">management_fees</code><em class="property"> = 0.005</em><a class="headerlink" href="#forecaster.settings.Settings.management_fees" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.num_children">
+<code class="descname">num_children</code><em class="property"> = 3</em><a class="headerlink" href="#forecaster.settings.Settings.num_children" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.num_years">
+<code class="descname">num_years</code><em class="property"> = 100</em><a class="headerlink" href="#forecaster.settings.Settings.num_years" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defaults for <cite>Person</cite> instances.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.other_return">
+<code class="descname">other_return</code><em class="property"> = 0.03</em><a class="headerlink" href="#forecaster.settings.Settings.other_return" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.person1_birth_date">
+<code class="descname">person1_birth_date</code><em class="property"> = '1 January 1980'</em><a class="headerlink" href="#forecaster.settings.Settings.person1_birth_date" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.person1_gross_income">
+<code class="descname">person1_gross_income</code><em class="property"> = Decimal('50000')</em><a class="headerlink" href="#forecaster.settings.Settings.person1_gross_income" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.person1_name">
+<code class="descname">person1_name</code><em class="property"> = 'Person 1'</em><a class="headerlink" href="#forecaster.settings.Settings.person1_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.person1_raise_rate">
+<code class="descname">person1_raise_rate</code><em class="property"> = 0.03</em><a class="headerlink" href="#forecaster.settings.Settings.person1_raise_rate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.person1_retirement_date">
+<code class="descname">person1_retirement_date</code><em class="property"> = '31 December 2045'</em><a class="headerlink" href="#forecaster.settings.Settings.person1_retirement_date" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.person2_birth_date">
+<code class="descname">person2_birth_date</code><em class="property"> = None</em><a class="headerlink" href="#forecaster.settings.Settings.person2_birth_date" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.person2_gross_income">
+<code class="descname">person2_gross_income</code><em class="property"> = None</em><a class="headerlink" href="#forecaster.settings.Settings.person2_gross_income" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.person2_name">
+<code class="descname">person2_name</code><em class="property"> = None</em><a class="headerlink" href="#forecaster.settings.Settings.person2_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.person2_raise_rate">
+<code class="descname">person2_raise_rate</code><em class="property"> = None</em><a class="headerlink" href="#forecaster.settings.Settings.person2_raise_rate" title="Permalink to this definition">¶</a></dt>
+<dd><p>ContributionStrategy defaults</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.person2_retirement_date">
+<code class="descname">person2_retirement_date</code><em class="property"> = None</em><a class="headerlink" href="#forecaster.settings.Settings.person2_retirement_date" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.stock_return">
+<code class="descname">stock_return</code><em class="property"> = 0.07</em><a class="headerlink" href="#forecaster.settings.Settings.stock_return" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.transaction_in_strategy">
+<code class="descname">transaction_in_strategy</code><em class="property"> = 'Ordered'</em><a class="headerlink" href="#forecaster.settings.Settings.transaction_in_strategy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.transaction_in_timing">
+<code class="descname">transaction_in_timing</code><em class="property"> = 'end'</em><a class="headerlink" href="#forecaster.settings.Settings.transaction_in_timing" title="Permalink to this definition">¶</a></dt>
+<dd><p>WithdrawalStrategy defaults</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.transaction_in_weights">
+<code class="descname">transaction_in_weights</code><em class="property"> = {'Account': 1}</em><a class="headerlink" href="#forecaster.settings.Settings.transaction_in_weights" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.transaction_out_strategy">
+<code class="descname">transaction_out_strategy</code><em class="property"> = 'Ordered'</em><a class="headerlink" href="#forecaster.settings.Settings.transaction_out_strategy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.transaction_out_timing">
+<code class="descname">transaction_out_timing</code><em class="property"> = 'end'</em><a class="headerlink" href="#forecaster.settings.Settings.transaction_out_timing" title="Permalink to this definition">¶</a></dt>
+<dd><p>AllocationStrategy defaults</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.transaction_out_weights">
+<code class="descname">transaction_out_weights</code><em class="property"> = {'Account': 1}</em><a class="headerlink" href="#forecaster.settings.Settings.transaction_out_weights" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.withdrawal_base_amount">
+<code class="descname">withdrawal_base_amount</code><em class="property"> = Decimal('100000')</em><a class="headerlink" href="#forecaster.settings.Settings.withdrawal_base_amount" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.withdrawal_income_adjusted">
+<code class="descname">withdrawal_income_adjusted</code><em class="property"> = True</em><a class="headerlink" href="#forecaster.settings.Settings.withdrawal_income_adjusted" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.withdrawal_inflation_adjusted">
+<code class="descname">withdrawal_inflation_adjusted</code><em class="property"> = True</em><a class="headerlink" href="#forecaster.settings.Settings.withdrawal_inflation_adjusted" title="Permalink to this definition">¶</a></dt>
+<dd><p>TransactionStrategy defaults for outflows/withdrawals</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.withdrawal_rate">
+<code class="descname">withdrawal_rate</code><em class="property"> = Decimal('0.04')</em><a class="headerlink" href="#forecaster.settings.Settings.withdrawal_rate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.withdrawal_strategy">
+<code class="descname">withdrawal_strategy</code><em class="property"> = 'Constant withdrawal'</em><a class="headerlink" href="#forecaster.settings.Settings.withdrawal_strategy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-forecaster.tax">
+<span id="forecaster-tax-module"></span><h2>forecaster.tax module<a class="headerlink" href="#module-forecaster.tax" title="Permalink to this headline">¶</a></h2>
+<p>This module provides a Tax class and subclasses.</p>
+<p>These classes are callable with the form <cite>tax(taxable_income, year)</cite></p>
+<dl class="class">
+<dt id="forecaster.tax.Tax">
+<em class="property">class </em><code class="descclassname">forecaster.tax.</code><code class="descname">Tax</code><span class="sig-paren">(</span><em>tax_brackets</em>, <em>personal_deduction=None</em>, <em>credit_rate=None</em>, <em>inflation_adjust=None</em>, <em>payment_timing='start'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/tax.html#Tax"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.tax.Tax" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Determines taxes payable on taxable income.</p>
+<p>When called with a Money-type first argument (i.e. as
+<cite>tax(taxable_income, year)</cite>), this object returns the amount of tax
+payable on taxable income without any source-specific deduction or
+credit. This should correspond to how employment withholding taxes
+are calculated, so <cite>gross_income - tax(gross_income, year)</cite>
+will return a person’s net income.</p>
+<p>For a more sophisticated assessment of credit/etc., provide a
+<cite>Person</cite> object as input (or an iterable of <cite>Person</cite> objects). This
+will assess taxable income, credits, and deductions for the <cite>Person</cite>
+and any <cite>Account</cite> objects they own.</p>
+<p>Thus, calling <cite>tax({person1, person2}, year)</cite> will
+return the total tax liability for the year for both person1 and
+person2, after applying any credit/etc., and including the
+employment income and taxable account activity of each <cite>Person</cite>.</p>
+<p>If spouses are passed in, they are processed together.</p>
+<dl class="attribute">
+<dt id="forecaster.tax.Tax.tax_brackets">
+<code class="descname">tax_brackets</code><a class="reference internal" href="_modules/forecaster/tax.html#Tax.tax_brackets"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.tax.Tax.tax_brackets" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dict of <cite>{year: brackets}</cite> pairs, where
+<cite>brackets</cite> is a dict of <cite>{bracket: rate}</cite> pairs. <cite>bracket</cite>
+must be convertible to Money and <cite>rate</cite> must be convertible
+to Decimal. <cite>rate</cite> will be interpreted as a percentage (e.g.
+Decimal(‘0.03’) is interpreted as 3%)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">dict</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.tax.Tax.personal_deduction">
+<code class="descname">personal_deduction</code><a class="reference internal" href="_modules/forecaster/tax.html#Tax.personal_deduction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.tax.Tax.personal_deduction" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dict of <cite>{year: deduction}</cite> pairs,
+where <cite>deduction</cite> is convertible to Money.</p>
+<p>The personal deduction for a given year is deducted from
+income when determining income tax in that year.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">dict</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.tax.Tax.credit_rate">
+<code class="descname">credit_rate</code><a class="reference internal" href="_modules/forecaster/tax.html#Tax.credit_rate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.tax.Tax.credit_rate" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dict of <cite>{year: rate}</cite> pairs, where <cite>rate</cite>
+is convertible to Decimal.</p>
+<p>The credit rate is used to determine how much each tax
+credit reduced total tax liability.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">dict</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.tax.Tax.accum">
+<code class="descname">accum</code><a class="reference internal" href="_modules/forecaster/tax.html#Tax.accum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.tax.Tax.accum" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dict of <cite>{year: {bracket: accum}}</cite> pairs, where
+each <cite>bracket</cite> corresponds to a key in <cite>tax_brackets</cite> and
+<cite>accum</cite> is the sum of tax payable on the income falling into
+all lower brackets.</p>
+<p>For example, if there are $10, $100, and $1000 tax brackets,
+then <cite>accum[year][$1000]</cite> is equal to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tax_brackets</span><span class="p">[</span><span class="n">year</span><span class="p">][</span><span class="mi">10</span><span class="p">]</span> <span class="o">*</span> <span class="mi">10</span> <span class="o">+</span> <span class="n">tax_brackets</span><span class="p">[</span><span class="n">year</span><span class="p">][</span><span class="mi">100</span><span class="p">]</span> <span class="o">*</span> <span class="mi">100</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">dict</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.tax.Tax.inflation_adjust">
+<code class="descname">inflation_adjust</code><a class="headerlink" href="#forecaster.tax.Tax.inflation_adjust" title="Permalink to this definition">¶</a></dt>
+<dd><p>A method with the following form:
+<cite>inflation_adjust(target_year, base_year)</cite>.</p>
+<p>Returns a Decimal scaling factor. Multiplying this by a
+nominal value in base_year will yield a nominal value in
+target_year with the same real value.</p>
+<p>Optional. If not provided, all values are assumed to be in
+real terms, so no inflation adjustment is performed.</p>
+</dd></dl>
+
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>taxable_income</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>, </em><em>iterable</em>) – Taxable income for the year,
+either as a single scalar Money object or as an iterable
+(list, set, etc.) of sources of taxable income (i.e.
+Person/Account objects).</li>
+<li><strong>year</strong> (<em>int</em>) – The taxation year. This determines which tax rules
+and inflation-adjusted brackets are used.</li>
+<li><strong>deduction</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – <p>Any other deduction which can be
+applied and which aren’t evident from the income sources
+themselves. These will generally be itemized deduction.</p>
+<p>It’s a good idea to be familiar with the Tax implementation
+you’re working with before passing any of these, otherwise
+you risk double-counting.</p>
+<p>Optional.</p>
+</li>
+<li><strong>credit</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – <p>Any other tax credit which can be
+applied and which aren’t evident from the income sources
+themselves. These will generally be boutique tax credit.</p>
+<p>Optional.</p>
+</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="forecaster.tax.Tax.__call__">
+<code class="descname">__call__</code><span class="sig-paren">(</span><em>income</em>, <em>year</em>, <em>deduction=None</em>, <em>credit=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/tax.html#Tax.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.tax.Tax.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines taxes owing on one or more income sources.</p>
+<p>Each <cite>Person</cite> object passed as input may have a number of tax
+sources (e.g. <cite>Account`s, `Benefit`s) associated with them,
+which `Tax</cite> will take into account when calculating taxes.
+They don’t need to be passed explicitly.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>income</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>, </em><a class="reference internal" href="#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><em>iterable</em>) – Taxable income for the
+year, either as a single scalar Money object, a single
+Person object, or as an iterable (list, set, etc.) of
+Person objects.</li>
+<li><strong>year</strong> (<em>int</em>) – The taxation year. This determines which tax
+rules and inflation-adjusted brackets are used.</li>
+<li><strong>deduction</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>, </em><em>dict</em><em>[</em><a class="reference internal" href="#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em>) – <p>Any other deduction which can be applied and which
+aren’t modelled by the income sources themselves.
+These will generally be itemized deduction.</p>
+<p>If <cite>income</cite> is passed as an iterable, this should also
+be an iterable; otherwise it should be a Money object.</p>
+<p>It’s a good idea to be familiar with the <cite>Tax</cite> and
+<cite>Person</cite> implementation you’re working with before
+passing any of these, otherwise you risk double-counting
+if both the <cite>Person</cite> and <cite>Tax</cite> objects implement the
+same deduction.</p>
+<p>Optional.</p>
+</li>
+<li><strong>credit</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>, </em><em>dict</em><em>[</em><a class="reference internal" href="#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em>) – <p>Any other tax credit which can be applied and which
+aren’t modelled by the income sources themselves.</p>
+<p>These are usually boutique tax credits.</p>
+<p>See <cite>deduction</cite> for further comments on being familiar
+with both <cite>Tax</cite> and <cite>Person</cite> implementations when
+passing this.</p>
+<p>Optional.</p>
+</li>
+<li><strong>Returns</strong> – Money: The total amount of tax owing for the year.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.tax.Tax.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>tax_brackets</em>, <em>personal_deduction=None</em>, <em>credit_rate=None</em>, <em>inflation_adjust=None</em>, <em>payment_timing='start'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/tax.html#Tax.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.tax.Tax.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes the Tax object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>tax_brackets</strong> (<em>dict</em><em>[</em><em>int</em><em>, </em><em>dict</em><em>[</em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>, </em><em>Decimal</em><em>]</em><em>]</em>) – <cite>{year: brackets}</cite> pairs, where <cite>brackets</cite> is itself a
+dict of <cite>{bracket: rate}</cite> pairs. Any income above
+<cite>bracket</cite> is taxed at <cite>rate</cite>. (It’s thus usually a good
+idea to have at least a {0: rate} element!)</li>
+<li><strong>personal_deduction</strong> (<em>dict</em><em>[</em><em>int</em><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em>) – <cite>{year: deduction}</cite>
+pairs. This deduction is applied to the income of each
+person when determining tax liability.</li>
+<li><strong>credit_rate</strong> (<em>dict</em><em>[</em><em>int</em><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em>) – <cite>{year: rate}</cite> pairs.
+This rate is applied to any tax credits the person is
+eligible for when determining tax liability.</li>
+<li><strong>inflation_adjust</strong> – <p>A method with the following form:
+<cite>inflation_adjust(val, this_year, target_year)</cite>.
+Returns a Decimal object which is the inflation-
+adjustment factor from base_year to target_year.</p>
+<p>Optional. If not provided, all values are assumed to be
+in real terms, so no inflation adjustment is performed.</p>
+</li>
+<li><strong>payment_timing</strong> (<em>Decimal</em><em>, </em><em>str</em>) – A <cite>when</cite>-formatted value
+specifying the timing of tax refunds and payments for
+amounts owing. For example, <cite>‘start’</cite> indicates that
+refunds are paid on January 1st and that if taxes are
+owing then they are due on January 1st. Optional.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">accum</code><span class="sig-paren">(</span><em>year</em>, <em>bracket=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/tax.html#Tax.accum"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>The accumulated tax payable for a given tax bracket.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.tax.Tax.add_accum">
+<code class="descname">add_accum</code><span class="sig-paren">(</span><em>brackets</em>, <em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/tax.html#Tax.add_accum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.tax.Tax.add_accum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates an accum dict for the given brackets and year.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.tax.Tax.add_brackets">
+<code class="descname">add_brackets</code><span class="sig-paren">(</span><em>brackets</em>, <em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/tax.html#Tax.add_brackets"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.tax.Tax.add_brackets" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a year of tax brackets to attribute self.tax_brackets.</p>
+<p>Also generates an <cite>accum</cite> dict based on the tax brackets.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">credit_rate</code><span class="sig-paren">(</span><em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/tax.html#Tax.credit_rate"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>The credit rate for the given year.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.tax.Tax.credits">
+<code class="descname">credits</code><span class="sig-paren">(</span><em>person</em>, <em>year</em>, <em>deductions=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/tax.html#Tax.credits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.tax.Tax.credits" title="Permalink to this definition">¶</a></dt>
+<dd><p>The tax credits each person is eligible for.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>person</strong> (<a class="reference internal" href="#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a>) – The person for whom credits
+are being assessed.</li>
+<li><strong>year</strong> (<em>int</em>) – The year for which credits are being
+assessed.</li>
+<li><strong>deductions</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – The deductions claimable
+for the person. Optional.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The credits for the person.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.tax.Tax.deductions">
+<code class="descname">deductions</code><span class="sig-paren">(</span><em>person</em>, <em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/tax.html#Tax.deductions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.tax.Tax.deductions" title="Permalink to this definition">¶</a></dt>
+<dd><p>The deductions the person is eligible for.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>person</strong> (<a class="reference internal" href="#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a>) – The person for whom deductions
+are being assessed.</li>
+<li><strong>year</strong> (<em>int</em>) – The year for which deductions are being
+assessed.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>The deductions for the person.</dt>
+<dd><p class="first last">This base class determines the personal deduction
+and other deductions provided by <cite>Person</cite>.</p>
+</dd>
+</dl>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.tax.Tax.marginal_bracket">
+<code class="descname">marginal_bracket</code><span class="sig-paren">(</span><em>taxable_income</em>, <em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/tax.html#Tax.marginal_bracket"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.tax.Tax.marginal_bracket" title="Permalink to this definition">¶</a></dt>
+<dd><p>The top tax bracket that taxable_income falls into.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.tax.Tax.marginal_rate">
+<code class="descname">marginal_rate</code><span class="sig-paren">(</span><em>taxable_income</em>, <em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/tax.html#Tax.marginal_rate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.tax.Tax.marginal_rate" title="Permalink to this definition">¶</a></dt>
+<dd><p>The marginal rate for the given income.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.tax.Tax.payment_timing">
+<code class="descname">payment_timing</code><a class="headerlink" href="#forecaster.tax.Tax.payment_timing" title="Permalink to this definition">¶</a></dt>
+<dd><p>The timing of payments to/from the tax authority.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">personal_deduction</code><span class="sig-paren">(</span><em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/tax.html#Tax.personal_deduction"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Personal deduction for <cite>year</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">tax_brackets</code><span class="sig-paren">(</span><em>year</em>, <em>bracket=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/tax.html#Tax.tax_brackets"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Retrieve tax brackets for year.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.tax.Tax.tax_money">
+<code class="descname">tax_money</code><span class="sig-paren">(</span><em>taxable_income</em>, <em>year</em>, <em>deduction=&lt;Money: 0 CAD&gt;</em>, <em>credit=&lt;Money: 0 CAD&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/tax.html#Tax.tax_money"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.tax.Tax.tax_money" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns taxes owing on a given amount of taxable income.</p>
+<p>This method does not apply any deductions or credits other than
+what is passed to it. For example, the personal deduction is
+not applied (unless explicitly passed).</p>
+<p>In general, you should be calling <cite>tax_person</cite> if you want
+to have deductions and credits automatically applied.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>taxable_income</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – The amount of income to be taxed,
+assuming it’s taxable in the hands of a single person
+with no other income and no deduction or credit other
+than those provided explicitly to this method.</li>
+<li><strong>year</strong> (<em>int</em>) – The year for which tax treatment is applied.</li>
+<li><strong>deduction</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – Any deduction from taxable income to be
+applied before determining total tax liability.
+Optional.</li>
+<li><strong>credit</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – Any tax credit to be applied against tax
+liability; these are applied at the tax credit rate for
+<cite>year</cite>. Optional.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>Total tax liability arising from <cite>taxable_income</cite> in</dt>
+<dd><p class="first last"><cite>year</cite>, after applying <cite>deduction</cite> and <cite>credit</cite>.</p>
+</dd>
+</dl>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.tax.Tax.tax_people">
+<code class="descname">tax_people</code><span class="sig-paren">(</span><em>people</em>, <em>year</em>, <em>deduction=None</em>, <em>credit=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/tax.html#Tax.tax_people"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.tax.Tax.tax_people" title="Permalink to this definition">¶</a></dt>
+<dd><p>Total tax liability for a group of people.</p>
+<p>The people do not necessarily need to be spouses or related in
+any way. If a pair of spouses is in <cite>people</cite>, they will be
+passed to <cite>tax_spouses</cite> to be processed together.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>people</strong> (<em>iterable</em><em>[</em><a class="reference internal" href="#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>]</em>) – Any number of people.</li>
+<li><strong>year</strong> (<em>int</em>) – The year for which tax treatment is needed.</li>
+<li><strong>deduction</strong> (<em>dict</em><em>[</em><a class="reference internal" href="#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em>) – A dict of
+<cite>{person: deduction}</cite> pairs. Optional.</li>
+<li><strong>credit</strong> (<em>dict</em><em>[</em><a class="reference internal" href="#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em>) – A dict of <cite>{person: credit}</cite>
+pairs. Optional.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The total tax liability of the people.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.tax.Tax.tax_person">
+<code class="descname">tax_person</code><span class="sig-paren">(</span><em>person</em>, <em>year</em>, <em>deduction=&lt;Money: 0 CAD&gt;</em>, <em>credit=&lt;Money: 0 CAD&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/tax.html#Tax.tax_person"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.tax.Tax.tax_person" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns tax treatment for an individual person.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>person</strong> (<a class="reference internal" href="#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a>) – A person for whom tax liability will be
+determined.</li>
+<li><strong>year</strong> (<em>int</em>) – The year for which tax treatment is needed.</li>
+<li><strong>deduction</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – A deduction to be applied against
+the person’s income, on top of whatever other deductions
+they are eligible for, including the personal deduction
+for the year and any specific <cite>tax_deduction</cite> attribute
+values of the person and their accounts.</li>
+<li><strong>credit</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – A credit to be applied against the
+person’s tax liability, on top of whatever other credits
+they are eligible for (provided via the <cite>tax_deduction</cite>
+member of <cite>person</cite> and any of their accounts).</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The tax liability of the person.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.tax.Tax.tax_spouses">
+<code class="descname">tax_spouses</code><span class="sig-paren">(</span><em>people</em>, <em>year</em>, <em>deduction=None</em>, <em>credit=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/tax.html#Tax.tax_spouses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.tax.Tax.tax_spouses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tax treatment for a pair of spouses.</p>
+<p>This method doesn’t provide any special tax treatment to the
+spouses, but it allows subclasses to override its functionality
+to apply special tax treatments.</p>
+<p>This method is also not restricted to two-element inputs,
+although in countries like Canada (which only recognizes two-
+person marriages for tax purposes) this method should only ever
+receive a two-element <cite>people</cite> input. By allowing for arbitrary-
+size inputs, subclasses can extend this functionality to deal
+with countries where plural marriage is recognized by the tax
+system.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>people</strong> (<em>iterable</em>) – Persons with mutual spousal
+relationships. In countries requiring monogamous
+marriages, this input should have exactly two elements.</li>
+<li><strong>year</strong> (<em>int</em>) – The year for which tax treatment is needed.</li>
+<li><strong>deduction</strong> (<em>dict</em><em>[</em><a class="reference internal" href="#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em>) – A dict of
+<cite>{person: deduction}</cite> pairs. Optional.</li>
+<li><strong>credit</strong> (<em>dict</em><em>[</em><a class="reference internal" href="#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em>) – A dict of <cite>{person: credit}</cite>
+pairs. Optional.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The tax liability of the spouses.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-forecaster.utility">
+<span id="forecaster-utility-module"></span><h2>forecaster.utility module<a class="headerlink" href="#module-forecaster.utility" title="Permalink to this headline">¶</a></h2>
+<p>A module with free methods and extensions to third-party classes.</p>
+<p>Used throughout the application, without any dependency on any other
+modules.</p>
+<dl class="function">
+<dt id="forecaster.utility.build_inflation_adjust">
+<code class="descclassname">forecaster.utility.</code><code class="descname">build_inflation_adjust</code><span class="sig-paren">(</span><em>inflation_adjust=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/utility.html#build_inflation_adjust"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.utility.build_inflation_adjust" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates an inflation_adjust method.</p>
+<p>If inflation_adjust is not provided, all values are assumed to be in
+real terms, the returned method will return its argument <cite>val</cite>
+without inflation adjustment.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>inflation_adjust</strong> – May be a dict of {year: inflation_adjustment}
+pairs, where <cite>inflation_adjustment</cite> is a Decimal that
+indicates a cumulative year-over-year inflation factor.
+Or may be a method (returned as-is). Optional.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><cite>inflation_adjust(val, this_year, target_year)</cite>.<p>The method returns a Money object (assuming Money-typed <cite>val</cite>
+input).</p>
+<p>Finds a nominal value in <cite>target_year</cite> with the same real
+value as <cite>val</cite>, a nominal value in <cite>this_year</cite>.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">A method with the following form</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="forecaster.utility.extend_inflation_adjusted">
+<code class="descclassname">forecaster.utility.</code><code class="descname">extend_inflation_adjusted</code><span class="sig-paren">(</span><em>vals</em>, <em>inflation_adjust</em>, <em>target_year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/utility.html#extend_inflation_adjusted"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.utility.extend_inflation_adjusted" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fills in partial time-series with inflation-adjusted values.</p>
+<p>This method is targeted at inflation-adjusting input data (e.g.
+as found in the Constants module), which tends to be incomplete
+and can represent non-sequential years. New years are often entered
+when something changes (i.e. when values change in real terms), so
+this method prefers to infer inflation-adjusted values based on the
+most recent <em>past</em> years when possible (since future years might
+not be comparable).</p>
+<p>If <cite>target_year</cite> is in <cite>vals</cite>, then this method returns the value
+for <cite>target_year</cite> in <cite>vals</cite> without further inflation-adjusting
+(as that value is already in nominal terms).</p>
+<p>If <cite>target_year</cite> is not in <cite>vals</cite>, then this method attempts to
+interpolate an inflation-adjusted value based on the last year in
+<cite>vals</cite> before <cite>target_year</cite> or, if no such year exists, based on the
+first year in <cite>vals</cite> after <cite>target_year</cite>.</p>
+<p>If the values of <cite>vals</cite> are dicts or other iterable, this method
+returns a dict or other iterable with values that have each been
+inflation-adjusted.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>vals</strong> (<em>dict</em>) – <p>A dict of <cite>{year: val}</cite> pairs, where <cite>val</cite> is a
+scalar, list, or dict. This dict may be incomplete, in the
+sense that some years may not be represented.</p>
+<p>If <cite>val</cite> is non-scalar, an object of the same type is
+returned with each of its values inflation-adjusted.</p>
+</li>
+<li><strong>inflation_adjust</strong> – A method of the form
+<cite>inflation_adjust(val, this_year, target_year)</cite> that finds a
+nominal value in <cite>target_year</cite> with the same real value as
+nominal value <cite>val</cite> in <cite>this_year</cite>.</li>
+<li><strong>year</strong> (<em>int</em>) – The year for which an adjusted value is to be
+generated.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="forecaster.utility.frequency_conv">
+<code class="descclassname">forecaster.utility.</code><code class="descname">frequency_conv</code><span class="sig-paren">(</span><em>nper</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/utility.html#frequency_conv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.utility.frequency_conv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of periods in a year given a compounding frequency.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>nper</strong> (<em>str</em><em>, </em><em>int</em>) – A code (str) indicating a compounding
+frequency (e.g. ‘W’, ‘M’), an int, or None</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>An int indicating the number of compounding periods in a</dt>
+<dd><p class="first last">year or None if compounding is continuous.</p>
+</dd>
+</dl>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – str nper must have a known value.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – nper must be greater than 0.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code> – nper cannot be losslessly converted to int.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="forecaster.utility.nearest_year">
+<code class="descclassname">forecaster.utility.</code><code class="descname">nearest_year</code><span class="sig-paren">(</span><em>vals</em>, <em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/utility.html#nearest_year"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.utility.nearest_year" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds the nearest (past) year to <cite>year</cite> in <cite>vals</cite>.</p>
+<p>This is a companion method to <cite>inflation_adjust()</cite>. It’s meant to be
+used when you want to pull a value out of an incomplete dict without
+inflation-adjusting it (e.g. when you want to grab the most recent
+percentage rate from a dict of <cite>{year: Decimal}</cite> pairs.)</p>
+<p>If <cite>year</cite> is in <cite>vals</cite>, then this method returns <cite>year</cite>.
+If not, then this method tries to find the last year
+before <cite>year</cite> that is in <cite>vals</cite>. If that doesn’t work, then this
+method tries to find the first year in <cite>vals</cite> following <cite>year</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A year in <cite>vals</cite> is near to <cite>year</cite>, preferring
+the nearest preceding year (if it exists) over the nearest
+following year.<p>Returns <cite>None</cite> if <cite>vals</cite> is empty.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="forecaster.utility.when_conv">
+<code class="descclassname">forecaster.utility.</code><code class="descname">when_conv</code><span class="sig-paren">(</span><em>when</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/utility.html#when_conv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.utility.when_conv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts various types of <cite>when</cite> inputs to Decimal.</p>
+<p>The Decimal value is in [0,1], where 0 is the start of the period
+and 1 is the end.</p>
+<p>NOTE: <cite>numpy</cite> defines its <cite>when</cite> argument such that ‘end’ = 0 and
+‘start’ = 1. If you’re using that package, consider whether any
+conversions are necessary.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>when</strong> (<em>float</em><em>, </em><em>Decimal</em><em>, </em><em>str</em>) – The timing of the transaction.
+Must be in the range [0,1] or in (‘start’, ‘end’).</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first simple">
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">decimal.InvalidOperation</span></code> – <cite>when</cite> must be convertible to
+type Decimal</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – <cite>when</cite> must be in [0,1]</li>
+</ul>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A Decimal in [0,1]</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </div>
 <div class="section" id="module-forecaster">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-forecaster" title="Permalink to this headline">¶</a></h2>
@@ -228,7 +2313,7 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="forecaster.canada.html" class="btn btn-neutral float-right" title="forecaster.canada package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="forecaster.accounts.html" class="btn btn-neutral float-right" title="forecaster.accounts package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="modules.html" class="btn btn-neutral float-left" title="forecaster" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>

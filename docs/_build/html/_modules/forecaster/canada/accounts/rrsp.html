@@ -1,0 +1,432 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.canada.accounts.rrsp &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">forecaster</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+      <li>forecaster.canada.accounts.rrsp</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for forecaster.canada.accounts.rrsp</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; Provices Registered Retirement Savings Accounts for Canadians. &quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">forecaster.canada.accounts.registered_account</span> <span class="k">import</span> <span class="n">RegisteredAccount</span>
+<span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="n">Money</span><span class="p">,</span> <span class="n">recorded_property</span>
+<span class="kn">from</span> <span class="nn">forecaster.utility</span> <span class="k">import</span> <span class="n">extend_inflation_adjusted</span><span class="p">,</span> <span class="n">nearest_year</span>
+<span class="kn">from</span> <span class="nn">forecaster.canada</span> <span class="k">import</span> <span class="n">constants</span>
+
+<div class="viewcode-block" id="RRSP"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP">[docs]</a><span class="k">class</span> <span class="nc">RRSP</span><span class="p">(</span><span class="n">RegisteredAccount</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; A Registered Retirement Savings Plan (Canada). &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="RRSP.__init__"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">rrif_conversion_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Initializes an RRSP object.</span>
+
+<span class="sd">        This class also implements RRIFs (which RRSPs are converted into</span>
+<span class="sd">        either at a user-defined time or by operation of law). A new</span>
+<span class="sd">        object is not created when the RRSP converts to an RRIF; rather,</span>
+<span class="sd">        the object&#39;s behaviour changes to limit inflows, require</span>
+<span class="sd">        minimum withdrawals, and reduce withholding taxes.</span>
+
+<span class="sd">        See documentation for `RegisteredAccount` for information on</span>
+<span class="sd">        args not listed below.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            rrif_conversion_year (int): The year in which the `RRSP`</span>
+<span class="sd">                object&#39;s behaviour switches from RRSP rules to RRIF</span>
+<span class="sd">                rules.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># Although `person` might provide a retirement_age, the RRSP</span>
+        <span class="c1"># won&#39;t necessarily be turned into an RRIF at the retirement</span>
+        <span class="c1"># date (depending on withdrawal strategy).</span>
+        <span class="c1"># TODO: Allow RRIF_conversion_year to be passed as an argument?</span>
+        <span class="c1"># We could use the below convert-at-71 logic if None is passed.</span>
+        <span class="c1"># TODO: Automatically trigger RRIF conversion when an outflow</span>
+        <span class="c1"># is detected? (Perhaps control this behaviour with an arg?)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rrif_conversion_year</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rrif_conversion_year</span> <span class="o">=</span> <span class="n">rrif_conversion_year</span>
+
+        <span class="c1"># Determine the max contribution room accrual in initial_year:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_initial_accrual</span> <span class="o">=</span> <span class="n">extend_inflation_adjusted</span><span class="p">(</span>
+            <span class="n">constants</span><span class="o">.</span><span class="n">RRSP_ACCRUAL_MAX</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span>
+        <span class="p">)</span>
+
+        <span class="c1"># If no contribution room is provided and none is already known,</span>
+        <span class="c1"># set contribution_room to 0.</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="s1">&#39;contribution_room&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="ow">and</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room</span> <span class="ow">is</span> <span class="kc">None</span>
+        <span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_rrif_max_conversion_year</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The latest year in which the RRSP can convert to an RRIF. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span>
+            <span class="o">+</span> <span class="n">constants</span><span class="o">.</span><span class="n">RRSP_RRIF_CONVERSION_AGE</span>
+            <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">owner</span><span class="o">.</span><span class="n">age</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">rrif_conversion_year</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The year in which the RRSP is converted to an RRIF.</span>
+
+<span class="sd">        If not set explicitly, the owner&#39;s retirement year or year in</span>
+<span class="sd">        which conversion is required by law is returned (whichever</span>
+<span class="sd">        happens first).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rrif_conversion_year</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rrif_conversion_year</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">min</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">owner</span><span class="o">.</span><span class="n">retirement_date</span><span class="o">.</span><span class="n">year</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_rrif_max_conversion_year</span><span class="p">()</span>
+            <span class="p">)</span>
+
+    <span class="nd">@rrif_conversion_year</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">rrif_conversion_year</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Sets `rrif_conversion_year`.</span>
+<span class="sd">        </span>
+<span class="sd">        Arg:</span>
+<span class="sd">            val (int): The year in which to convert the RRSP to an</span>
+<span class="sd">                RRIF. May be None, in which case the RRIF conversion</span>
+<span class="sd">                year will be determined based on default logic.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: Can&#39;t cast `val` to `int`</span>
+<span class="sd">            ValueError: Attempt to convert RRSP to RRIF after mandatory</span>
+<span class="sd">                conversion year.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_rrif_conversion_year</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Convert to int if necessary.</span>
+            <span class="c1"># This can raise ValueError if `val` isn&#39;t convertible.</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">val</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rrif_max_conversion_year</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s1">&#39;Attempt to convert RRSP to RRIF after mandatory &#39;</span>
+                    <span class="o">+</span> <span class="s1">&#39;conversion year. Latest valid year is &#39;</span>
+                    <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rrif_max_conversion_year</span><span class="p">())</span>
+                <span class="p">)</span>
+            <span class="c1"># We don&#39;t worry about conversion years that are too early;</span>
+            <span class="c1"># even if they predate the owner&#39;s birth, it ends up just</span>
+            <span class="c1"># being treated as an immediate conversion.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_rrif_conversion_year</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+
+<div class="viewcode-block" id="RRSP.convert_to_rrif"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.convert_to_rrif">[docs]</a>    <span class="k">def</span> <span class="nf">convert_to_rrif</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Converts the RRSP to an RRIF. &quot;&quot;&quot;</span>
+        <span class="n">year</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span> <span class="k">if</span> <span class="n">year</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">int</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rrif_conversion_year</span> <span class="o">=</span> <span class="n">year</span></div>
+
+    <span class="nd">@recorded_property</span>
+    <span class="k">def</span> <span class="nf">taxable_income</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The total tax owing on withdrawals from the account.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The taxable income owing on withdrawals the account as a</span>
+<span class="sd">                `Money` object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Return the sum of all withdrawals from the account.</span>
+        <span class="c1"># pylint: disable=invalid-unary-operand-type</span>
+        <span class="c1"># Pylint thinks this doesn&#39;t support negation via `-`, but it&#39;s</span>
+        <span class="c1"># wrong - `outflows` returns `Money`, which supports `-`:</span>
+        <span class="k">return</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">outflows</span>
+
+    <span class="nd">@recorded_property</span>
+    <span class="k">def</span> <span class="nf">tax_withheld</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The total tax withheld from the account for the year.</span>
+
+<span class="sd">        For RRSPs, this is calculated according to a CRA formula.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># NOTE: It&#39;s possible to attract a lower tax rate by making</span>
+        <span class="c1"># smaller one-off withdrawals, but in general multiple</span>
+        <span class="c1"># withdrawals will be treated as a lump sum for the purpose of</span>
+        <span class="c1"># determining the tax rate, so we pretend it&#39;s a lump sum.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">rrif_conversion_year</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span><span class="p">:</span>
+            <span class="n">taxable_income</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">taxable_income</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Only withdrawals in excess of the minimum RRIF withdrawal</span>
+            <span class="c1"># are hit by the withholding tax.</span>
+            <span class="n">taxable_income</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">taxable_income</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_outflow</span>
+
+        <span class="n">year</span> <span class="o">=</span> <span class="n">nearest_year</span><span class="p">(</span>
+            <span class="n">constants</span><span class="o">.</span><span class="n">RRSP_WITHHOLDING_TAX_RATE</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span><span class="p">)</span>
+        <span class="n">tax_rates</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">RRSP_WITHHOLDING_TAX_RATE</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
+        <span class="n">taxable_income_adjusted</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">taxable_income</span>
+            <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">bracket</span> <span class="o">=</span> <span class="nb">max</span><span class="p">((</span>
+            <span class="n">bracket</span> <span class="k">for</span> <span class="n">bracket</span> <span class="ow">in</span> <span class="n">tax_rates</span>
+            <span class="k">if</span> <span class="n">bracket</span> <span class="o">&lt;</span> <span class="n">taxable_income_adjusted</span><span class="o">.</span><span class="n">amount</span><span class="p">),</span>
+            <span class="n">default</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="n">tax_rates</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="p">)</span>
+        <span class="n">tax_rate</span> <span class="o">=</span> <span class="n">tax_rates</span><span class="p">[</span><span class="n">bracket</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">taxable_income</span> <span class="o">*</span> <span class="n">tax_rate</span>
+
+    <span class="nd">@recorded_property</span>
+    <span class="k">def</span> <span class="nf">tax_deduction</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The total sum of tax deductions available for the year.</span>
+
+<span class="sd">        For RRSPs, this the amount contributed in the year.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflows</span>
+
+<div class="viewcode-block" id="RRSP.next_contribution_room"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.next_contribution_room">[docs]</a>    <span class="k">def</span> <span class="nf">next_contribution_room</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Determines the amount of contribution room for next year.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            income (Money): The amount of taxable income for this year</span>
+<span class="sd">                used to calculate RRSP contribution room.</span>
+<span class="sd">            year (int): The year in which the income is received.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The contribution room for the RRSP for the year *after*</span>
+<span class="sd">            `year`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">year</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">contributor</span><span class="o">.</span><span class="n">age</span><span class="p">(</span><span class="n">year</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">constants</span><span class="o">.</span><span class="n">RRSP_RRIF_CONVERSION_AGE</span><span class="p">:</span>
+            <span class="c1"># If past the mandatory RRIF conversion age, no</span>
+            <span class="c1"># contributions are allowed.</span>
+            <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># TODO: Add pension adjustment?</span>
+
+            <span class="c1"># Contribution room is determined based on the contributor&#39;s</span>
+            <span class="c1"># gross income for the previous year.</span>
+            <span class="n">income</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">contributor</span><span class="o">.</span><span class="n">gross_income_history</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">this_year</span><span class="p">]</span>
+
+            <span class="c1"># First, determine how much more contribution room will</span>
+            <span class="c1"># accrue due to this year&#39;s income:</span>
+            <span class="n">accrual</span> <span class="o">=</span> <span class="n">income</span> <span class="o">*</span> <span class="n">constants</span><span class="o">.</span><span class="n">RRSP_ACCRUAL_RATE</span>
+            <span class="c1"># Second, compare to the (inflation-adjusted) max accrual</span>
+            <span class="c1"># for next year:</span>
+            <span class="n">max_accrual</span> <span class="o">=</span> <span class="n">extend_inflation_adjusted</span><span class="p">(</span>
+                <span class="n">constants</span><span class="o">.</span><span class="n">RRSP_ACCRUAL_MAX</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">,</span>
+                <span class="n">year</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="p">)</span>
+            <span class="c1"># Don&#39;t forget to add in any rollovers:</span>
+            <span class="n">rollover</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflows</span>
+            <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="n">accrual</span><span class="p">,</span> <span class="n">Money</span><span class="p">(</span><span class="n">max_accrual</span><span class="p">))</span> <span class="o">+</span> <span class="n">rollover</span></div>
+
+<div class="viewcode-block" id="RRSP.min_outflow"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.min_outflow">[docs]</a>    <span class="k">def</span> <span class="nf">min_outflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Minimum RRSP withdrawal &quot;&quot;&quot;</span>
+        <span class="c1"># Minimum withdrawals are required the year after converting to</span>
+        <span class="c1"># an RRIF. How it is calculated depends on the person&#39;s age.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">rrif_conversion_year</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span><span class="p">:</span>
+            <span class="n">age</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">contributor</span><span class="o">.</span><span class="n">age</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">this_year</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">age</span> <span class="ow">in</span> <span class="n">constants</span><span class="o">.</span><span class="n">RRSP_RRIF_WITHDRAWAL_MIN</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">constants</span><span class="o">.</span><span class="n">RRSP_RRIF_WITHDRAWAL_MIN</span><span class="p">[</span><span class="n">age</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">balance</span>
+            <span class="k">elif</span> <span class="n">age</span> <span class="o">&gt;</span> <span class="nb">max</span><span class="p">(</span><span class="n">constants</span><span class="o">.</span><span class="n">RRSP_RRIF_WITHDRAWAL_MIN</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">balance</span> <span class="o">*</span> \
+                    <span class="nb">max</span><span class="p">(</span><span class="n">constants</span><span class="o">.</span><span class="n">RRSP_RRIF_WITHDRAWAL_MIN</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">balance</span> <span class="o">/</span> <span class="p">(</span><span class="mi">90</span> <span class="o">-</span> <span class="n">age</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div></div>
+
+    <span class="c1"># TODO: Determine whether there are any RRSP tax credits to</span>
+    <span class="c1"># implement in an overloaded _tax_credit method</span>
+    <span class="c1"># (e.g. pension tax credit?)</span>
+
+
+<span class="c1"># TODO: Implement SpousalRRSP? (It may be that RRSP provides all of the</span>
+<span class="c1"># logic necessary, but consider that we need a way to know who receives</span>
+<span class="c1"># the deduction - this can be done by type-checking an account in the</span>
+<span class="c1"># Tax class, or perhaps we should add a method</span>
+<span class="c1"># [tax_deduction_eligibility?] that identifies one or more people who</span>
+<span class="c1"># may claim the deduction).</span>
+<span class="c1"># NOTE: This can get complicated quickly. It&#39;s probably best to</span>
+<span class="c1"># implement a test in the Tax object rather than go for totally generic</span>
+<span class="c1"># code at this point.</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

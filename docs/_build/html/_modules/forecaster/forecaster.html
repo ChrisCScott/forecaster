@@ -183,7 +183,7 @@
 <span class="c1"># pylint: disable=too-many-locals</span>
 
 
-<div class="viewcode-block" id="Forecaster"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster">[docs]</a><span class="k">class</span> <span class="nc">Forecaster</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="Forecaster"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster">[docs]</a><span class="k">class</span> <span class="nc">Forecaster</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; A convenience class for building Forecasts based on settings.</span>
 
 <span class="sd">    `Forecaster` takes in information for building a `Forecast`</span>
@@ -213,7 +213,7 @@
 <span class="sd">    Carlo analysis).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="Forecaster.__init__"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="Forecaster.__init__"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">person1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">person2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">people</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">assets</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">debts</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">scenario</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">contribution_strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">contribution_transaction_strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -307,7 +307,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">set_person2</span><span class="p">()</span></div>
         <span class="c1"># Accounts will need to be set manually.</span>
 
-<div class="viewcode-block" id="Forecaster.forecast"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.forecast">[docs]</a>    <span class="k">def</span> <span class="nf">forecast</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Forecaster.forecast"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.forecast">[docs]</a>    <span class="k">def</span> <span class="nf">forecast</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; TODO &quot;&quot;&quot;</span>
 
         <span class="c1"># TODO: Divide these into various SubForecast objects and</span>
@@ -347,7 +347,7 @@
 
         <span class="k">return</span> <span class="n">Forecast</span><span class="p">(</span><span class="o">**</span><span class="n">forecast_kwargs</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Forecaster.set_kwarg"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.set_kwarg">[docs]</a>    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Forecaster.set_kwarg"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.set_kwarg">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">arg</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">default</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Adds a keyword arg to a dict based on an input hierarchy.</span>
 
@@ -381,7 +381,7 @@
             <span class="n">kwargs</span><span class="p">[</span><span class="n">arg</span><span class="p">]</span> <span class="o">=</span> <span class="n">default</span></div>
         <span class="c1"># If there&#39;s no explicit val and no default, don&#39;t add anything.</span>
 
-<div class="viewcode-block" id="Forecaster.add_person"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.add_person">[docs]</a>    <span class="k">def</span> <span class="nf">add_person</span><span class="p">(</span>
+<div class="viewcode-block" id="Forecaster.add_person"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.add_person">[docs]</a>    <span class="k">def</span> <span class="nf">add_person</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">birth_date</span><span class="p">,</span>
         <span class="n">retirement_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gross_income</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">raise_rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">spouse</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tax_treatment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -442,7 +442,7 @@
         <span class="c1"># post-processing (if they need to)</span>
         <span class="k">return</span> <span class="n">person</span></div>
 
-<div class="viewcode-block" id="Forecaster.set_person1"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.set_person1">[docs]</a>    <span class="k">def</span> <span class="nf">set_person1</span><span class="p">(</span>
+<div class="viewcode-block" id="Forecaster.set_person1"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.set_person1">[docs]</a>    <span class="k">def</span> <span class="nf">set_person1</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">birth_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">retirement_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gross_income</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">raise_rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">spouse</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tax_treatment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -481,7 +481,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">person1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_person</span><span class="p">(</span><span class="bp">cls</span><span class="o">=</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">person1</span></div>
 
-<div class="viewcode-block" id="Forecaster.set_person2"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.set_person2">[docs]</a>    <span class="k">def</span> <span class="nf">set_person2</span><span class="p">(</span>
+<div class="viewcode-block" id="Forecaster.set_person2"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.set_person2">[docs]</a>    <span class="k">def</span> <span class="nf">set_person2</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">birth_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">retirement_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gross_income</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">raise_rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">spouse</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tax_treatment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -521,7 +521,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">person2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_person</span><span class="p">(</span><span class="bp">cls</span><span class="o">=</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">person2</span></div>
 
-<div class="viewcode-block" id="Forecaster.add_account"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.add_account">[docs]</a>    <span class="k">def</span> <span class="nf">add_account</span><span class="p">(</span>
+<div class="viewcode-block" id="Forecaster.add_account"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.add_account">[docs]</a>    <span class="k">def</span> <span class="nf">add_account</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">nper</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">Account</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
@@ -546,7 +546,7 @@
         <span class="n">account</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">account</span></div>
 
-<div class="viewcode-block" id="Forecaster.add_asset"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.add_asset">[docs]</a>    <span class="k">def</span> <span class="nf">add_asset</span><span class="p">(</span>
+<div class="viewcode-block" id="Forecaster.add_asset"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.add_asset">[docs]</a>    <span class="k">def</span> <span class="nf">add_asset</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">nper</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">Account</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
@@ -576,7 +576,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">assets</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">account</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">account</span></div>
 
-<div class="viewcode-block" id="Forecaster.add_contribution_limit_account"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.add_contribution_limit_account">[docs]</a>    <span class="k">def</span> <span class="nf">add_contribution_limit_account</span><span class="p">(</span>
+<div class="viewcode-block" id="Forecaster.add_contribution_limit_account"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.add_contribution_limit_account">[docs]</a>    <span class="k">def</span> <span class="nf">add_contribution_limit_account</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">contribution_room</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">contributor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="bp">cls</span><span class="o">=</span><span class="n">ContributionLimitAccount</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
@@ -609,7 +609,7 @@
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">account</span></div>
 
-<div class="viewcode-block" id="Forecaster.add_debt"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.add_debt">[docs]</a>    <span class="k">def</span> <span class="nf">add_debt</span><span class="p">(</span>
+<div class="viewcode-block" id="Forecaster.add_debt"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.add_debt">[docs]</a>    <span class="k">def</span> <span class="nf">add_debt</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">nper</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">minimum_payment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">savings_rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">accelerated_payment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">Debt</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
@@ -646,7 +646,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">debts</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">account</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">account</span></div>
 
-<div class="viewcode-block" id="Forecaster.set_scenario"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.set_scenario">[docs]</a>    <span class="k">def</span> <span class="nf">set_scenario</span><span class="p">(</span>
+<div class="viewcode-block" id="Forecaster.set_scenario"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.set_scenario">[docs]</a>    <span class="k">def</span> <span class="nf">set_scenario</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">inflation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">stock_return</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">bond_return</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">other_return</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">management_fees</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">num_years</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">Scenario</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
@@ -666,7 +666,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Forecaster.set_contribution_strategy"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.set_contribution_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">set_contribution_strategy</span><span class="p">(</span>
+<div class="viewcode-block" id="Forecaster.set_contribution_strategy"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.set_contribution_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">set_contribution_strategy</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">base_amount</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">LivingExpensesStrategy</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
@@ -683,7 +683,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">contribution_strategy</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_strategy</span></div>
 
-<div class="viewcode-block" id="Forecaster.set_transaction_in_strategy"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.set_transaction_in_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">set_transaction_in_strategy</span><span class="p">(</span>
+<div class="viewcode-block" id="Forecaster.set_transaction_in_strategy"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.set_transaction_in_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">set_transaction_in_strategy</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="bp">cls</span><span class="o">=</span><span class="n">AccountTransactionStrategy</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
@@ -698,7 +698,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">transaction_in_strategy</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">transaction_in_strategy</span></div>
 
-<div class="viewcode-block" id="Forecaster.set_transaction_out_strategy"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.set_transaction_out_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">set_transaction_out_strategy</span><span class="p">(</span>
+<div class="viewcode-block" id="Forecaster.set_transaction_out_strategy"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.set_transaction_out_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">set_transaction_out_strategy</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="bp">cls</span><span class="o">=</span><span class="n">AccountTransactionStrategy</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
@@ -713,7 +713,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">transaction_out_strategy</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">transaction_out_strategy</span></div>
 
-<div class="viewcode-block" id="Forecaster.set_allocation_strategy"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.set_allocation_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">set_allocation_strategy</span><span class="p">(</span>
+<div class="viewcode-block" id="Forecaster.set_allocation_strategy"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.set_allocation_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">set_allocation_strategy</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">min_equity</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_equity</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">standard_retirement_age</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">risk_transition_period</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">adjust_for_retirement_plan</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -759,7 +759,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">allocation_strategy</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">allocation_strategy</span></div>
 
-<div class="viewcode-block" id="Forecaster.set_debt_payment_strategy"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.set_debt_payment_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">set_debt_payment_strategy</span><span class="p">(</span>
+<div class="viewcode-block" id="Forecaster.set_debt_payment_strategy"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.set_debt_payment_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">set_debt_payment_strategy</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="bp">cls</span><span class="o">=</span><span class="n">DebtPaymentStrategy</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
@@ -772,7 +772,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">debt_payment_strategy</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">debt_payment_strategy</span></div>
 
-<div class="viewcode-block" id="Forecaster.set_tax_treatment"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.set_tax_treatment">[docs]</a>    <span class="k">def</span> <span class="nf">set_tax_treatment</span><span class="p">(</span>
+<div class="viewcode-block" id="Forecaster.set_tax_treatment"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.set_tax_treatment">[docs]</a>    <span class="k">def</span> <span class="nf">set_tax_treatment</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">tax_brackets</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">personal_deduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">credit_rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">Tax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>

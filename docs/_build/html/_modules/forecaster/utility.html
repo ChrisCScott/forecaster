@@ -157,7 +157,7 @@
 <span class="kn">import</span> <span class="nn">collections</span>
 <span class="kn">from</span> <span class="nn">decimal</span> <span class="k">import</span> <span class="n">Decimal</span>
 
-<div class="viewcode-block" id="when_conv"><a class="viewcode-back" href="../../forecaster.utility.html#forecaster.utility.when_conv">[docs]</a><span class="k">def</span> <span class="nf">when_conv</span><span class="p">(</span><span class="n">when</span><span class="p">):</span>
+<div class="viewcode-block" id="when_conv"><a class="viewcode-back" href="../../forecaster.html#forecaster.utility.when_conv">[docs]</a><span class="k">def</span> <span class="nf">when_conv</span><span class="p">(</span><span class="n">when</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Converts various types of `when` inputs to Decimal.</span>
 
 <span class="sd">    The Decimal value is in [0,1], where 0 is the start of the period</span>
@@ -211,7 +211,7 @@
     <span class="s1">&#39;A&#39;</span><span class="p">:</span> <span class="mi">1</span>
 <span class="p">}</span>
 
-<div class="viewcode-block" id="frequency_conv"><a class="viewcode-back" href="../../forecaster.utility.html#forecaster.utility.frequency_conv">[docs]</a><span class="k">def</span> <span class="nf">frequency_conv</span><span class="p">(</span><span class="n">nper</span><span class="p">):</span>
+<div class="viewcode-block" id="frequency_conv"><a class="viewcode-back" href="../../forecaster.html#forecaster.utility.frequency_conv">[docs]</a><span class="k">def</span> <span class="nf">frequency_conv</span><span class="p">(</span><span class="n">nper</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Number of periods in a year given a compounding frequency.</span>
 
 <span class="sd">    Args:</span>
@@ -244,7 +244,7 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Account: nper must be greater than 0&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">nper</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="nearest_year"><a class="viewcode-back" href="../../forecaster.utility.html#forecaster.utility.nearest_year">[docs]</a><span class="k">def</span> <span class="nf">nearest_year</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+<div class="viewcode-block" id="nearest_year"><a class="viewcode-back" href="../../forecaster.html#forecaster.utility.nearest_year">[docs]</a><span class="k">def</span> <span class="nf">nearest_year</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Finds the nearest (past) year to `year` in `vals`.</span>
 
 <span class="sd">    This is a companion method to `inflation_adjust()`. It&#39;s meant to be</span>
@@ -281,7 +281,7 @@
     <span class="k">return</span> <span class="n">key</span></div>
 
 
-<div class="viewcode-block" id="extend_inflation_adjusted"><a class="viewcode-back" href="../../forecaster.utility.html#forecaster.utility.extend_inflation_adjusted">[docs]</a><span class="k">def</span> <span class="nf">extend_inflation_adjusted</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="p">,</span> <span class="n">target_year</span><span class="p">):</span>
+<div class="viewcode-block" id="extend_inflation_adjusted"><a class="viewcode-back" href="../../forecaster.html#forecaster.utility.extend_inflation_adjusted">[docs]</a><span class="k">def</span> <span class="nf">extend_inflation_adjusted</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="p">,</span> <span class="n">target_year</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Fills in partial time-series with inflation-adjusted values.</span>
 
 <span class="sd">    This method is targeted at inflation-adjusting input data (e.g.</span>
@@ -348,7 +348,7 @@
                          <span class="s1">&#39;inflation_adjustment&#39;</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="build_inflation_adjust"><a class="viewcode-back" href="../../forecaster.utility.html#forecaster.utility.build_inflation_adjust">[docs]</a><span class="k">def</span> <span class="nf">build_inflation_adjust</span><span class="p">(</span><span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="build_inflation_adjust"><a class="viewcode-back" href="../../forecaster.html#forecaster.utility.build_inflation_adjust">[docs]</a><span class="k">def</span> <span class="nf">build_inflation_adjust</span><span class="p">(</span><span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Generates an inflation_adjust method.</span>
 
 <span class="sd">    If inflation_adjust is not provided, all values are assumed to be in</span>

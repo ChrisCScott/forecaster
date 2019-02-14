@@ -1,0 +1,841 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.strategy.account_transaction &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">forecaster</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>forecaster.strategy.account_transaction</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for forecaster.strategy.account_transaction</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; Provides a class for determining schedules of transactions.</span>
+
+<span class="sd">These transaction schedules determine when transactions occur, in what</span>
+<span class="sd">amounts, and to which accounts.</span>
+
+<span class="sd">`DebtPaymentStrategy` is a related `Debt`-specific class.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">from</span> <span class="nn">decimal</span> <span class="k">import</span> <span class="n">Decimal</span>
+<span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="n">Money</span>
+<span class="kn">from</span> <span class="nn">forecaster.strategy.base</span> <span class="k">import</span> <span class="n">Strategy</span><span class="p">,</span> <span class="n">strategy_method</span>
+
+
+<div class="viewcode-block" id="AccountGroup"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.account_transaction.AccountGroup">[docs]</a><span class="k">class</span> <span class="nc">AccountGroup</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Wraps one or more accounts and mimics the `Account` interface.</span>
+
+<span class="sd">    This is a utility class for `TransactionStrategy`. `Accounts` that</span>
+<span class="sd">    share a weighting can be grouped into an `AccountGroup` by a high-</span>
+<span class="sd">    level function (e.g. `__call__`) and then seamlessly treated as a</span>
+<span class="sd">    single account by lower-level functions (e.g. `strategy_\\*`).</span>
+
+<span class="sd">    Not every `Account` method and property is provided here. For</span>
+<span class="sd">    example, `rate` and `transactions` are not provided, as all of the</span>
+<span class="sd">    methods of this class are simply sums of the attributes of the</span>
+<span class="sd">    contained accounts (and sum doesn&#39;t apply sensibly to those</span>
+<span class="sd">    attributes).</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        accounts (set[Account]): The member accounts of the</span>
+<span class="sd">            `AccountGroup`.</span>
+<span class="sd">        contribution_groups (set[set[Account]]): The members of the</span>
+<span class="sd">            `AccountGroup` reorganized into disjoint sets of</span>
+<span class="sd">            contribution groups. Each contribution group shares common</span>
+<span class="sd">            `min_inflow` and `max_inflow` properties.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="AccountGroup.__init__"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.account_transaction.AccountGroup.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Inits `AccountGroup` with one or more accounts. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">accounts</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">contribution_groups</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span>
+            <span class="nb">frozenset</span><span class="p">(</span><span class="n">account</span><span class="o">.</span><span class="n">contribution_group</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">accounts</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span>
+        <span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">balance</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The sum of account balances. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">account</span><span class="o">.</span><span class="n">balance</span> <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AccountGroup.min_outflow"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.account_transaction.AccountGroup.min_outflow">[docs]</a>    <span class="k">def</span> <span class="nf">min_outflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The sum of account `min_outflow`. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="n">account</span><span class="o">.</span><span class="n">min_outflow</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AccountGroup.min_inflow"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.account_transaction.AccountGroup.min_inflow">[docs]</a>    <span class="k">def</span> <span class="nf">min_inflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The sum of account `min_inflow`.</span>
+
+<span class="sd">        This method respects contribution groups, and will not double-</span>
+<span class="sd">        count the contribution room of multiple accounts in the same</span>
+<span class="sd">        contribution group.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># For each group, pull an element out at random (since they</span>
+        <span class="c1"># should all share the same min_inflow)</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">group</span><span class="p">))</span><span class="o">.</span><span class="n">min_inflow</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_groups</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AccountGroup.max_outflow"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.account_transaction.AccountGroup.max_outflow">[docs]</a>    <span class="k">def</span> <span class="nf">max_outflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The sum of account `max_outflow`. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="n">account</span><span class="o">.</span><span class="n">max_outflow</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AccountGroup.max_inflow"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.account_transaction.AccountGroup.max_inflow">[docs]</a>    <span class="k">def</span> <span class="nf">max_inflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The sum of account `max_inflow`.</span>
+
+<span class="sd">        This method respects contribution groups, and will not double-</span>
+<span class="sd">        count the contribution room of multiple accounts in the same</span>
+<span class="sd">        contribution group.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># For each group, pull an element out at random (since they</span>
+        <span class="c1"># should all share the same max_inflow)</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">group</span><span class="p">))</span><span class="o">.</span><span class="n">max_inflow</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_groups</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AccountGroup.get_type"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.account_transaction.AccountGroup.get_type">[docs]</a>    <span class="k">def</span> <span class="nf">get_type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Gets the type of a random contained `Account`. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="p">)))</span></div>
+
+<div class="viewcode-block" id="AccountGroup.__iter__"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.account_transaction.AccountGroup.__iter__">[docs]</a>    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Iterates over accounts in the group. &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">accounts</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">account</span></div></div>
+
+
+<div class="viewcode-block" id="AccountTransactionStrategy"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.account_transaction.AccountTransactionStrategy">[docs]</a><span class="k">class</span> <span class="nc">AccountTransactionStrategy</span><span class="p">(</span><span class="n">Strategy</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Determines account-specific transactions.</span>
+
+<span class="sd">    If there are multiple accounts of the same type, the behaviour</span>
+<span class="sd">    of this class, when called, is undefined.</span>
+
+<span class="sd">    If any account has a contribution limit that is lower than the</span>
+<span class="sd">    weighted amount to be contributed, the excess contribution is</span>
+<span class="sd">    redistributed to other accounts using the same strategy.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        strategy (str, func): Either a string corresponding to a</span>
+<span class="sd">            particular strategy or an instance of the strategy itself.</span>
+<span class="sd">            See `strategies` for acceptable keys.</span>
+<span class="sd">        strategies (dict): {str, func} pairs where each key identifies</span>
+<span class="sd">            a strategy (in human-readable text) and each value is a</span>
+<span class="sd">            function with the same arguments and return value as</span>
+<span class="sd">            transactions(). See its documentation for more info.</span>
+
+<span class="sd">            Acceptable keys include:</span>
+
+<span class="sd">            * &quot;Ordered&quot;</span>
+<span class="sd">            * &quot;Weighted&quot;</span>
+
+<span class="sd">        weights (dict): {str, weight} pairs, where keys identify account</span>
+<span class="sd">            types (as class names, e.g. &#39;RRSP&#39;, &#39;SavingsAccount&#39;) and</span>
+<span class="sd">            weight values indicate how much to prioritize the</span>
+<span class="sd">            corresponding account.</span>
+<span class="sd">        timing (str, Decimal): Transactions are modelled as lump sums</span>
+<span class="sd">            which take place at this time.</span>
+
+<span class="sd">            This is expressed according to the `when` convention</span>
+<span class="sd">            described in `ledger.Account`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        total (Money): The sum of transactions (positive, for</span>
+<span class="sd">            contributions, or negative, for withdrawals) across</span>
+<span class="sd">            all accounts.</span>
+<span class="sd">        weighted_accounts (dict[Union[Account, AccountGroup], Decimal]):</span>
+<span class="sd">            Accounts to contribute to/withdraw from mapped to weights.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict[Union[Account, AccountGroup], Money] pairs. The keys are</span>
+<span class="sd">        a subset of the input `accounts` keys and the values are the</span>
+<span class="sd">        corresponding transaction amount for that account.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="AccountTransactionStrategy.__init__"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.account_transaction.AccountTransactionStrategy.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Constructor for TransactionStrategy. &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timing</span> <span class="o">=</span> <span class="n">timing</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_param_check</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="s1">&#39;weights&#39;</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_param_check</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s1">&#39;account type (key)&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+            <span class="c1"># TODO: Check that val is Decimal-convertible instead of</span>
+            <span class="c1"># a rigid type check?</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_param_check</span><span class="p">(</span>
+                <span class="n">val</span><span class="p">,</span> <span class="s1">&#39;account weight (value)&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">Decimal</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="c1"># NOTE: We leave it to calling code to interpret str-valued</span>
+        <span class="c1"># timing. (We could convert to `When` here - consider it.)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_param_check</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timing</span><span class="p">,</span> <span class="s1">&#39;timing&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">Decimal</span><span class="p">,</span> <span class="nb">str</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="AccountTransactionStrategy.strategy_ordered"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.account_transaction.AccountTransactionStrategy.strategy_ordered">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;Ordered&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">strategy_ordered</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">total</span><span class="p">,</span> <span class="n">weighted_accounts</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Contributes/withdraws in order of account priority.</span>
+
+<span class="sd">        The account with the lowest-valued priority is contributed to</span>
+<span class="sd">        (or withdrawn from) first. Thus, if three accounts have weights</span>
+<span class="sd">        1, 2, and 3, then account with weight 1 will go first, followed</span>
+<span class="sd">        by 2, then 3.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            total (Money): The sum of transactions (positive, for</span>
+<span class="sd">                contributions, or negative, for withdrawals) across</span>
+<span class="sd">                all accounts.</span>
+<span class="sd">            weighted_accounts (dict[Union[Account, AccountGroup],</span>
+<span class="sd">                Decimal]): Accounts to contribute to (or withdraw from)</span>
+<span class="sd">                mapped to weights.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[Union[Account, AccountGroup], Money] pairs. The keys</span>
+<span class="sd">            are a subset of the input `accounts` keys and the values are</span>
+<span class="sd">            the corresponding transaction amount for that account.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># We provide *args and **kwargs to maintain a consistent</span>
+        <span class="c1"># interface between strategy methods.</span>
+        <span class="c1"># pylint: disable=unused-argument</span>
+        <span class="c1"># Mixing @property (or its subclass @strategy_method) with</span>
+        <span class="c1"># @staticmethod is not recommended.</span>
+        <span class="c1"># pylint: disable=no-self-use</span>
+
+        <span class="c1"># Build a sorted list based on the account_set: weight pairings:</span>
+        <span class="n">accounts_ordered</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">weighted_accounts</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">weighted_accounts</span><span class="o">.</span><span class="n">get</span><span class="p">)</span>
+
+        <span class="n">transactions</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Now fill up (or drain) the accounts in order of priority</span>
+        <span class="c1"># until we hit the total.</span>
+        <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">accounts_ordered</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">total</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">transaction</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">total</span><span class="p">,</span> <span class="n">account</span><span class="o">.</span><span class="n">max_inflow</span><span class="p">())</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">transaction</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">total</span><span class="p">,</span> <span class="n">account</span><span class="o">.</span><span class="n">max_outflow</span><span class="p">())</span>
+            <span class="n">transactions</span><span class="p">[</span><span class="n">account</span><span class="p">]</span> <span class="o">=</span> <span class="n">transaction</span>
+            <span class="n">total</span> <span class="o">-=</span> <span class="n">transaction</span>
+
+        <span class="k">return</span> <span class="n">transactions</span></div>
+
+<div class="viewcode-block" id="AccountTransactionStrategy.strategy_weighted"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.account_transaction.AccountTransactionStrategy.strategy_weighted">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;Weighted&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">strategy_weighted</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">total</span><span class="p">,</span> <span class="n">weighted_accounts</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Assigns transactions proportionately to accounts&#39; weights.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            total (Money): The sum of transactions (positive, for</span>
+<span class="sd">                contributions, or negative, for withdrawals) across</span>
+<span class="sd">                all accounts.</span>
+<span class="sd">            weighted_accounts (dict[Union[Account, AccountGroup],</span>
+<span class="sd">                Decimal]): Accounts to contribute to (or withdraw from)</span>
+<span class="sd">                mapped to weights.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[Union[Account, AccountGroup], Money] pairs. The keys</span>
+<span class="sd">            are a subset of the input `accounts` keys and the values are</span>
+<span class="sd">            the corresponding transaction amount for that account.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># We provide *args and **kwargs to maintain a consistent</span>
+        <span class="c1"># interface between strategy methods.</span>
+        <span class="c1"># pylint: disable=unused-argument</span>
+        <span class="c1"># Mixing @property (or its subclass @strategy_method) with</span>
+        <span class="c1"># @staticmethod is not recommended.</span>
+        <span class="c1"># pylint: disable=no-self-use</span>
+
+        <span class="c1"># Due to recursion, there&#39;s no guarantee that weights will sum</span>
+        <span class="c1"># to 1, so we&#39;ll need to normalize weights.</span>
+        <span class="n">normalization</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">weighted_accounts</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+        <span class="n">transactions</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Determine contributions/withdrawals for each account set based</span>
+        <span class="c1"># on its associated weight:</span>
+        <span class="k">for</span> <span class="n">account</span><span class="p">,</span> <span class="n">weight</span> <span class="ow">in</span> <span class="n">weighted_accounts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">transaction</span> <span class="o">=</span> <span class="n">total</span> <span class="o">*</span> <span class="n">weight</span> <span class="o">/</span> <span class="n">normalization</span>
+            <span class="n">transactions</span><span class="p">[</span><span class="n">account</span><span class="p">]</span> <span class="o">=</span> <span class="n">transaction</span>
+
+        <span class="k">return</span> <span class="n">transactions</span></div>
+
+    <span class="k">def</span> <span class="nf">_recurse_min</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">total</span><span class="p">,</span> <span class="n">accounts</span><span class="p">,</span> <span class="n">transactions</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Recursively assigns minimum inflows/outflows to accounts. &quot;&quot;&quot;</span>
+        <span class="c1"># Check to see whether any accounts have minimum inflows or</span>
+        <span class="c1"># outflows that aren&#39;t met by the allocation in `transactions`.</span>
+        <span class="k">if</span> <span class="n">total</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># For inflows, check min_inflow and max_inflow</span>
+            <span class="n">override_transactions</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">account</span><span class="p">:</span> <span class="n">account</span><span class="o">.</span><span class="n">min_inflow</span><span class="p">()</span> <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">transactions</span>
+                <span class="k">if</span> <span class="n">account</span><span class="o">.</span><span class="n">min_inflow</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">transactions</span><span class="p">[</span><span class="n">account</span><span class="p">]</span>
+            <span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># For outflows, check min_outflow.</span>
+            <span class="c1"># (Recall that outflows are negative-valued)</span>
+            <span class="n">override_transactions</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">account</span><span class="p">:</span> <span class="n">account</span><span class="o">.</span><span class="n">min_outflow</span><span class="p">()</span> <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">transactions</span>
+                <span class="k">if</span> <span class="n">account</span><span class="o">.</span><span class="n">min_outflow</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">transactions</span><span class="p">[</span><span class="n">account</span><span class="p">]</span>
+            <span class="p">}</span>
+
+        <span class="c1"># If there are no accounts that need to be tweaked, we&#39;re done.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">override_transactions</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">transactions</span>
+
+        <span class="c1"># If we found some such accounts, set their transaction amounts</span>
+        <span class="c1"># manually and recurse onto the remaining accounts.</span>
+
+        <span class="c1"># Identify all accounts that haven&#39;t been manually set yet:</span>
+        <span class="n">remaining_accounts</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">account</span> <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">accounts</span>
+            <span class="k">if</span> <span class="n">account</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">override_transactions</span><span class="p">}</span>
+
+        <span class="c1"># Determine the amount remaining to be allocated:</span>
+        <span class="n">remaining_total</span> <span class="o">=</span> <span class="n">total</span> <span class="o">-</span> <span class="nb">sum</span><span class="p">(</span><span class="n">override_transactions</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+        <span class="c1"># If we&#39;ve already allocated more than the original total</span>
+        <span class="c1"># (just on the overridden accounts!) then there&#39;s no room left</span>
+        <span class="c1"># to recurse on the strategy. Simply allocate the minimum</span>
+        <span class="c1"># inflow/outflow for each remaining accounts and terminate:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">total</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">remaining_total</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> \
+           <span class="p">(</span><span class="n">total</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">remaining_total</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> \
+           <span class="n">remaining_total</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">total</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># Inflows</span>
+                <span class="n">override_transactions</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="n">account</span><span class="p">:</span> <span class="n">account</span><span class="o">.</span><span class="n">min_inflow</span><span class="p">()</span>
+                    <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">remaining_accounts</span><span class="p">}</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># Outflows</span>
+                <span class="n">override_transactions</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="n">account</span><span class="p">:</span> <span class="n">account</span><span class="o">.</span><span class="n">min_outflow</span><span class="p">()</span>
+                    <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">remaining_accounts</span><span class="p">}</span>
+            <span class="k">return</span> <span class="n">override_transactions</span>
+
+        <span class="c1"># Otherwise, if there&#39;s still money to be allocated,</span>
+        <span class="c1"># recurse onto the remaining accounts:</span>
+        <span class="n">remaining_transactions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__call__</span><span class="p">(</span>
+            <span class="n">total</span><span class="o">=</span><span class="n">remaining_total</span><span class="p">,</span>
+            <span class="n">accounts</span><span class="o">=</span><span class="n">remaining_accounts</span><span class="p">,</span>
+            <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">override_transactions</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">remaining_transactions</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">override_transactions</span>
+
+    <span class="k">def</span> <span class="nf">_recurse_max</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">total</span><span class="p">,</span> <span class="n">accounts</span><span class="p">,</span> <span class="n">transactions</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Recursively assigns minimum inflows/outflows to accounts. &quot;&quot;&quot;</span>
+        <span class="c1"># Check to see whether any accounts have minimum inflows or</span>
+        <span class="c1"># outflows that aren&#39;t met by the allocation in `transactions`.</span>
+        <span class="k">if</span> <span class="n">total</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># For inflows, check min_inflow and max_inflow</span>
+            <span class="n">override_transactions</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">account</span><span class="p">:</span> <span class="n">account</span><span class="o">.</span><span class="n">max_inflow</span><span class="p">()</span> <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">transactions</span>
+                <span class="k">if</span> <span class="n">account</span><span class="o">.</span><span class="n">max_inflow</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">transactions</span><span class="p">[</span><span class="n">account</span><span class="p">]</span>
+            <span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># For outflows, check max_outflow.</span>
+            <span class="c1"># (Recall that outflows are negative-valued)</span>
+            <span class="n">override_transactions</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">account</span><span class="p">:</span> <span class="n">account</span><span class="o">.</span><span class="n">max_outflow</span><span class="p">()</span> <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">transactions</span>
+                <span class="k">if</span> <span class="n">account</span><span class="o">.</span><span class="n">max_outflow</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">transactions</span><span class="p">[</span><span class="n">account</span><span class="p">]</span>
+            <span class="p">}</span>
+
+        <span class="c1"># If there are no accounts that need to be tweaked, we&#39;re done.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">override_transactions</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">transactions</span>
+
+        <span class="c1"># Identify all accounts that haven&#39;t been manually set yet:</span>
+        <span class="n">remaining_accounts</span> <span class="o">=</span> <span class="n">accounts</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">override_transactions</span><span class="p">)</span>
+
+        <span class="c1"># Determine the amount to be allocated to the non-maxed accounts:</span>
+        <span class="n">remaining_total</span> <span class="o">=</span> <span class="n">total</span> <span class="o">-</span> <span class="nb">sum</span><span class="p">(</span><span class="n">override_transactions</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+        <span class="c1"># Reassign money to non-maxed accounts according to the selected</span>
+        <span class="c1"># strategy.</span>
+        <span class="n">remaining_transactions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__call__</span><span class="p">(</span>
+            <span class="n">total</span><span class="o">=</span><span class="n">remaining_total</span><span class="p">,</span>
+            <span class="n">accounts</span><span class="o">=</span><span class="n">remaining_accounts</span><span class="p">,</span>
+            <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">override_transactions</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">remaining_transactions</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">override_transactions</span>
+
+    <span class="k">def</span> <span class="nf">_group_by_contribution_group</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accounts</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Groups together accounts belonging to a contribution group.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            accounts (set[Account]): The `Account` objects to be</span>
+<span class="sd">                combined into zero or more AccountGroups.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            set[Union[Account, AccountGroup]]: A version of `accounts`</span>
+<span class="sd">                where any accounts belonging to the same contribution</span>
+<span class="sd">                group are combined into a single `AccountGroup` object.</span>
+
+<span class="sd">                Accounts not sharing a contribution group</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">contribution_groups</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">ungrouped_accounts</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="c1"># We want to bundle contribution groups into AccountGroup</span>
+        <span class="c1"># objects, but we want to limit those groups to accounts</span>
+        <span class="c1"># included in `accounts`.</span>
+        <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">accounts</span><span class="p">:</span>
+            <span class="n">contribution_group</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span>
+                <span class="n">account</span><span class="o">.</span><span class="n">contribution_group</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">accounts</span><span class="p">))</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">contribution_group</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">contribution_groups</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">contribution_group</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ungrouped_accounts</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">account</span><span class="p">)</span>
+        <span class="c1"># The final set includes both contribution groups (bundled into</span>
+        <span class="c1"># account-like `AccountGroup` objects) and unmodified `Account`</span>
+        <span class="c1"># objects.</span>
+        <span class="n">grouped_accounts</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">AccountGroup</span><span class="p">(</span><span class="n">group</span><span class="p">)</span> <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">contribution_groups</span>
+        <span class="p">}</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">ungrouped_accounts</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">grouped_accounts</span>
+
+    <span class="k">def</span> <span class="nf">_group_by_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accounts</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Groups accounts by type into AccountGroups.</span>
+
+<span class="sd">        Each AccountGroup contains one or more accounts which have the</span>
+<span class="sd">        same type. Input accounts may themselves be AccountGroup</span>
+<span class="sd">        objects.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            accounts (set[Union[Account, AccountGroup]]): The `Account`</span>
+<span class="sd">                objects to be collected into weighted groups.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            set[Union[Account, AccountGroup]]: The input `accounts` set,</span>
+<span class="sd">                modified so that accounts with the same type are grouped</span>
+<span class="sd">                into `AccountGroup` objects.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">accounts_by_type</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="nb">set</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">accounts</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_weights_key</span><span class="p">(</span><span class="n">account</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">:</span>
+                <span class="n">accounts_by_type</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">account</span><span class="p">)</span>
+
+        <span class="n">grouped_accounts</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">accounts_by_type</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">group</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="c1"># Leave accounts with unique type ungrouped:</span>
+                <span class="n">account</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">group</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Group any set of 2 or more accounts:</span>
+                <span class="n">account</span> <span class="o">=</span> <span class="n">AccountGroup</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+            <span class="n">grouped_accounts</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">account</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">grouped_accounts</span>
+
+    <span class="k">def</span> <span class="nf">_group_accounts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accounts</span><span class="p">,</span> <span class="n">total</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Groups accounts into AccountGroups.</span>
+
+<span class="sd">        Each AccountGroup contains one or more accounts which are</span>
+<span class="sd">        processed together (essentially as if they were one account).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            accounts (set[Account]): The `Account` objects to be</span>
+<span class="sd">                collected into groups.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            set[Union[Account, AccountGroup]]: The input `accounts` set,</span>
+<span class="sd">                modified so that (some) accounts are grouped into</span>
+<span class="sd">                `AccountGroup` objects.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Don&#39;t wrap any accounts that are already grouped:</span>
+        <span class="n">grouped_accounts</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">account</span> <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">accounts</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">account</span><span class="p">,</span> <span class="n">AccountGroup</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="n">accounts</span> <span class="o">=</span> <span class="n">accounts</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">grouped_accounts</span><span class="p">)</span>
+
+        <span class="c1"># Only group by contribution group if we&#39;re actually</span>
+        <span class="c1"># contributing:</span>
+        <span class="k">if</span> <span class="n">total</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">accounts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group_by_contribution_group</span><span class="p">(</span><span class="n">accounts</span><span class="p">)</span>
+        <span class="c1"># Always group by type:</span>
+        <span class="n">accounts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group_by_type</span><span class="p">(</span><span class="n">accounts</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">accounts</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">grouped_accounts</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_weight_accounts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accounts</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Maps accounts to a dict of `{account: weight}` pairs.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            accounts (set[Union[Account, AccountGroup]]): The `Account`</span>
+<span class="sd">                (and/or `AccountGroup`) objects to be mapped to weights.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[set[Union[Account, AccountGroup]]: Decimal]: A mapping</span>
+<span class="sd">                of groups of `Account` objects to their weights.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">weighted_accounts</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">accounts</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_weights_key</span><span class="p">(</span><span class="n">account</span><span class="p">)</span>
+            <span class="n">weighted_accounts</span><span class="p">[</span><span class="n">account</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">weighted_accounts</span>
+
+    <span class="k">def</span> <span class="nf">_ungroup_transactions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transactions</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Transforms AccountGroup keys to multiple Account keys.</span>
+
+<span class="sd">        The input `transactions` dict may also have non-AccountGroup</span>
+<span class="sd">        keys; these are included in the return dict without</span>
+<span class="sd">        modification.</span>
+
+<span class="sd">        `AccountGroup` objects may be nested (that is, an `AccountGroup`</span>
+<span class="sd">        object may contain another `AccountGroup` object). This method</span>
+<span class="sd">        recursively flattens such hierarchies, so the output is</span>
+<span class="sd">        guaranteed not to contain any `AccountGroup` objects as keys.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            transactions (dict[Account], Money])</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Collect all AccountGroups (as opposed to ordinary Accounts):</span>
+        <span class="n">groups</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">account</span> <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">transactions</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">account</span><span class="p">,</span> <span class="n">AccountGroup</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="n">ungrouped_transactions</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">account</span><span class="p">:</span> <span class="n">transactions</span><span class="p">[</span><span class="n">account</span><span class="p">]</span> <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">transactions</span>
+            <span class="k">if</span> <span class="n">account</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">groups</span>
+        <span class="p">}</span>
+        <span class="c1"># Flow down the group-level transaction into transactions for</span>
+        <span class="c1"># each constituent account. We recurse onto the results, which</span>
+        <span class="c1"># effectively &quot;flattens&quot; the transactions dict by removing any</span>
+        <span class="c1"># further AccountGroup layers:</span>
+        <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">:</span>
+            <span class="n">transactions_for_group</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transactions_for_group</span><span class="p">(</span>
+                <span class="n">transactions</span><span class="p">[</span><span class="n">group</span><span class="p">],</span> <span class="n">group</span><span class="o">.</span><span class="n">accounts</span><span class="p">)</span>
+            <span class="c1"># Recurse onto any nested AccountGroup objects:</span>
+            <span class="n">flattened_transactions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ungroup_transactions</span><span class="p">(</span>
+                <span class="n">transactions_for_group</span><span class="p">)</span>
+            <span class="n">ungrouped_transactions</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">flattened_transactions</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ungrouped_transactions</span>
+
+    <span class="k">def</span> <span class="nf">_transactions_for_group</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">total</span><span class="p">,</span> <span class="n">group</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Determines transactions for each account in a group.</span>
+
+<span class="sd">        Accounts in `group` are treated as a group of accounts</span>
+<span class="sd">        that share a weighting. Transactions for each account are</span>
+<span class="sd">        determined proportionately to their maximum inflow/outflow.</span>
+
+<span class="sd">        Note that this method guarantees that `total` will always be</span>
+<span class="sd">        assigned, even if the accounts in `group` don&#39;t have</span>
+<span class="sd">        sufficient max inflow/outflow space.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            total (Money): The total amount to be divided up between</span>
+<span class="sd">                accounts in the group.</span>
+<span class="sd">            group (iterable): An `AccountGroup`, `set`, or other object</span>
+<span class="sd">                that iterates over a group of accounts.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[Account, Money]: A mapping of transaction amounts to</span>
+<span class="sd">                `Account` objects.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># First, identify accounts with finite limits (and create a</span>
+        <span class="c1"># mapping of accounts to applicable inflow or outflow limit for</span>
+        <span class="c1"># convenience):</span>
+        <span class="n">finite_accounts</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">infinite_accounts</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">group</span><span class="p">:</span>
+            <span class="n">limit</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">account</span><span class="o">.</span><span class="n">max_inflow</span><span class="p">()</span> <span class="k">if</span> <span class="n">total</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">else</span>
+                <span class="n">account</span><span class="o">.</span><span class="n">max_outflow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timing</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">Money</span><span class="p">(</span><span class="s1">&#39;-Infinity&#39;</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">limit</span> <span class="o">&lt;</span> <span class="n">Money</span><span class="p">(</span><span class="s1">&#39;Infinity&#39;</span><span class="p">):</span>
+                <span class="n">finite_accounts</span><span class="p">[</span><span class="n">account</span><span class="p">]</span> <span class="o">=</span> <span class="n">limit</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">infinite_accounts</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">account</span><span class="p">)</span>
+        <span class="n">total_finite_limit</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">finite_accounts</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+        <span class="c1"># Allocate to the finite accounts first. If we can&#39;t fill them</span>
+        <span class="c1"># all, add proportionately to each account&#39;s limit:</span>
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">total</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">abs</span><span class="p">(</span><span class="n">total_finite_limit</span><span class="p">):</span>
+            <span class="n">transactions</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">account</span><span class="p">:</span> <span class="n">total</span> <span class="o">*</span> <span class="p">(</span>
+                    <span class="n">finite_accounts</span><span class="p">[</span><span class="n">account</span><span class="p">]</span> <span class="o">/</span> <span class="n">total_finite_limit</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">finite_accounts</span>
+            <span class="p">}</span>
+        <span class="c1"># If we can fill each finite account, fill them and then</span>
+        <span class="c1"># allocate the remainder equally between all infinite accounts</span>
+        <span class="c1"># (or, if there are no infinite accounts, allocate it equally</span>
+        <span class="c1"># between finite accounts, even though it puts them over-limit):</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">transactions</span> <span class="o">=</span> <span class="n">finite_accounts</span>  <span class="c1"># fill finite accounts</span>
+            <span class="n">remaining_total</span> <span class="o">=</span> <span class="n">total</span> <span class="o">-</span> <span class="n">total_finite_limit</span>
+            <span class="c1"># Allocate remainder to infinite accounts:</span>
+            <span class="k">if</span> <span class="n">infinite_accounts</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">infinite_accounts</span><span class="p">:</span>
+                    <span class="n">transactions</span><span class="p">[</span><span class="n">account</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="n">remaining_total</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">infinite_accounts</span><span class="p">))</span>
+            <span class="c1"># If there are no infinite accounts, use finite accounts:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">infinite_accounts</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">finite_accounts</span><span class="p">:</span>
+                    <span class="n">transactions</span><span class="p">[</span><span class="n">account</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span>
+                        <span class="n">remaining_total</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">finite_accounts</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">transactions</span>
+
+    <span class="k">def</span> <span class="nf">_get_weights_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">account</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Retrieves the `weights` key that `account` corresponds to.</span>
+
+<span class="sd">        The key for an `AccountGroup` is determined based on its</span>
+<span class="sd">        member accounts.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            account (Union[Account, AccountGroup]): An `Account`-like</span>
+<span class="sd">                object.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: A key that may be found in `weights`. The key is not</span>
+<span class="sd">                guaranteed to actually be in the `weights` dict of this</span>
+<span class="sd">                particular `TransactionStrategy`, but if a weight is</span>
+<span class="sd">                given for this kind of account then this would be its</span>
+<span class="sd">                key.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_representative_type</span><span class="p">(</span><span class="n">account</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
+
+    <span class="k">def</span> <span class="nf">_get_representative_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">account</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The representative type of `account`.</span>
+
+<span class="sd">        The representative type of an `Account` is simply the</span>
+<span class="sd">        `Account`&#39;s type.</span>
+
+<span class="sd">        The representative type for an `AccountGroup` is determined</span>
+<span class="sd">        based on the types of its member accounts. This is determined</span>
+<span class="sd">        recursively in the event that any members are also</span>
+<span class="sd">        `AccountGroup` objects.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            account (Union[Account, AccountGroup]): An `Account`-like</span>
+<span class="sd">                object.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            type: The representative type of `account`.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: Accounts in an AccountGroup must share a common</span>
+<span class="sd">                superclass.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">account</span><span class="p">,</span> <span class="n">AccountGroup</span><span class="p">):</span>
+            <span class="n">account_types</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_get_representative_type</span><span class="p">(</span><span class="n">member</span><span class="p">)</span> <span class="k">for</span> <span class="n">member</span> <span class="ow">in</span> <span class="n">account</span>
+            <span class="p">}</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">account_types</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">account_types</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># If the members aren&#39;t all of the same type, return the</span>
+                <span class="c1"># greatest common class:</span>
+                <span class="n">classes</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="nb">type</span><span class="p">(</span><span class="n">account_type</span><span class="p">)</span><span class="o">.</span><span class="n">mro</span><span class="p">()</span> <span class="k">for</span> <span class="n">account_type</span> <span class="ow">in</span> <span class="n">account_types</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">account_type</span> <span class="ow">in</span> <span class="n">classes</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">account_type</span> <span class="ow">in</span> <span class="n">mro</span> <span class="k">for</span> <span class="n">mro</span> <span class="ow">in</span> <span class="n">classes</span><span class="p">):</span>
+                        <span class="k">return</span> <span class="n">account_type</span>
+                <span class="c1"># If we can&#39;t identify a greatest common class, raise an</span>
+                <span class="c1"># error.</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s1">&#39;TransactionStrategy: Accounts in an AccountGroup must &#39;</span> <span class="o">+</span>
+                    <span class="s1">&#39;share a common superclass.&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="n">account</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AccountTransactionStrategy.__call__"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.account_transaction.AccountTransactionStrategy.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">total</span><span class="p">,</span> <span class="n">accounts</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Returns a dict of accounts mapped to transactions. &quot;&quot;&quot;</span>
+        <span class="c1"># First, wrap the groups into AccountGroup objects (where</span>
+        <span class="c1"># appropriate):</span>
+        <span class="n">account_groups</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group_accounts</span><span class="p">(</span><span class="n">accounts</span><span class="p">,</span> <span class="n">total</span><span class="p">)</span>
+        <span class="c1"># Then map accounts to their weights:</span>
+        <span class="n">weighted_accounts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_weight_accounts</span><span class="p">(</span><span class="n">account_groups</span><span class="p">)</span>
+        <span class="c1"># Now map the accounts (or groups thereof) to transactions:</span>
+        <span class="n">transactions</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__call__</span><span class="p">(</span>
+            <span class="n">total</span><span class="o">=</span><span class="n">total</span><span class="p">,</span> <span class="n">weighted_accounts</span><span class="o">=</span><span class="n">weighted_accounts</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># That only gives us an initial proposal; we need to ensure that</span>
+        <span class="c1"># any restrictions on inflows/outflows are being respected.</span>
+        <span class="c1"># Recursively ensure that minimum in/outflows are respected:</span>
+        <span class="n">transactions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recurse_min</span><span class="p">(</span>
+            <span class="n">total</span><span class="p">,</span> <span class="n">account_groups</span><span class="p">,</span> <span class="n">transactions</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="c1"># Recursively ensure that maximum in/outflows are respected:</span>
+        <span class="n">transactions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recurse_max</span><span class="p">(</span>
+            <span class="n">total</span><span class="p">,</span> <span class="n">account_groups</span><span class="p">,</span> <span class="n">transactions</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># Once we&#39;ve found transactions that satisfy all constraints,</span>
+        <span class="c1"># flatten the results to {account: transaction} pairs by</span>
+        <span class="c1"># eliminating any groups and flowing down transactions to the</span>
+        <span class="c1"># accounts they contain:</span>
+        <span class="n">transactions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ungroup_transactions</span><span class="p">(</span><span class="n">transactions</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">transactions</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

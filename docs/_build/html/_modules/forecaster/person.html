@@ -159,7 +159,7 @@
 <span class="kn">from</span> <span class="nn">forecaster.utility</span> <span class="k">import</span> <span class="n">frequency_conv</span>
 
 
-<div class="viewcode-block" id="Person"><a class="viewcode-back" href="../../forecaster.person.html#forecaster.person.Person">[docs]</a><span class="k">class</span> <span class="nc">Person</span><span class="p">(</span><span class="n">TaxSource</span><span class="p">):</span>
+<div class="viewcode-block" id="Person"><a class="viewcode-back" href="../../forecaster.html#forecaster.person.Person">[docs]</a><span class="k">class</span> <span class="nc">Person</span><span class="p">(</span><span class="n">TaxSource</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Represents a person&#39;s basic information: age and retirement age.</span>
 
 <span class="sd">    Attributes:</span>
@@ -220,7 +220,7 @@
     <span class="c1"># to provide the spousal tax credit, and replace the `tax_treatment`</span>
     <span class="c1"># arg with a `province` (str) arg?</span>
 
-<div class="viewcode-block" id="Person.__init__"><a class="viewcode-back" href="../../forecaster.person.html#forecaster.person.Person.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="Person.__init__"><a class="viewcode-back" href="../../forecaster.html#forecaster.person.Person.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">birth_date</span><span class="p">,</span> <span class="n">retirement_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">gross_income</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">raise_rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">spouse</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tax_treatment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">payment_frequency</span><span class="o">=</span><span class="s1">&#39;BW&#39;</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span>
@@ -523,7 +523,7 @@
         <span class="sd">&quot;&quot;&quot; The `Person`&#39;s raise for the current year. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_raise_rate_function</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">this_year</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Person.contribution_room"><a class="viewcode-back" href="../../forecaster.person.html#forecaster.person.Person.contribution_room">[docs]</a>    <span class="k">def</span> <span class="nf">contribution_room</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">account</span><span class="p">):</span>
+<div class="viewcode-block" id="Person.contribution_room"><a class="viewcode-back" href="../../forecaster.html#forecaster.person.Person.contribution_room">[docs]</a>    <span class="k">def</span> <span class="nf">contribution_room</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">account</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The contribution room for the given account.</span>
 
 <span class="sd">        The account must provide a `contribution_token` attribute.</span>
@@ -539,7 +539,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span></div>
 
-<div class="viewcode-block" id="Person.contribution_groups"><a class="viewcode-back" href="../../forecaster.person.html#forecaster.person.Person.contribution_groups">[docs]</a>    <span class="k">def</span> <span class="nf">contribution_groups</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">account</span><span class="p">):</span>
+<div class="viewcode-block" id="Person.contribution_groups"><a class="viewcode-back" href="../../forecaster.html#forecaster.person.Person.contribution_groups">[docs]</a>    <span class="k">def</span> <span class="nf">contribution_groups</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">account</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The accounts sharing contribution room with `account`.</span>
 
 <span class="sd">        This method returns only accounts registered via</span>
@@ -557,7 +557,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span></div>
 
-<div class="viewcode-block" id="Person.register_shared_contribution"><a class="viewcode-back" href="../../forecaster.person.html#forecaster.person.Person.register_shared_contribution">[docs]</a>    <span class="k">def</span> <span class="nf">register_shared_contribution</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">account</span><span class="p">):</span>
+<div class="viewcode-block" id="Person.register_shared_contribution"><a class="viewcode-back" href="../../forecaster.html#forecaster.person.Person.register_shared_contribution">[docs]</a>    <span class="k">def</span> <span class="nf">register_shared_contribution</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">account</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Prepares a Person to store contribution room for an account.</span>
 
 <span class="sd">        This method starts tracking contribution room for the account if</span>
@@ -580,7 +580,7 @@
         <span class="k">for</span> <span class="n">account_in_group</span> <span class="ow">in</span> <span class="n">contribution_group</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_contribution_groups</span><span class="p">[</span><span class="n">account_in_group</span><span class="p">]</span> <span class="o">=</span> <span class="n">contribution_group</span></div>
 
-<div class="viewcode-block" id="Person.age"><a class="viewcode-back" href="../../forecaster.person.html#forecaster.person.Person.age">[docs]</a>    <span class="k">def</span> <span class="nf">age</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">date</span><span class="p">):</span>
+<div class="viewcode-block" id="Person.age"><a class="viewcode-back" href="../../forecaster.html#forecaster.person.Person.age">[docs]</a>    <span class="k">def</span> <span class="nf">age</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">date</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The age of the `Person` as of `date`.</span>
 
 <span class="sd">        `date` may be a `datetime` object or a numeric value indicating</span>
@@ -646,7 +646,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Person.__gt__"><a class="viewcode-back" href="../../forecaster.person.html#forecaster.person.Person.__gt__">[docs]</a>    <span class="k">def</span> <span class="nf">__gt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<div class="viewcode-block" id="Person.__gt__"><a class="viewcode-back" href="../../forecaster.html#forecaster.person.Person.__gt__">[docs]</a>    <span class="k">def</span> <span class="nf">__gt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Allows for sorting, max, min, etc. based on gross income. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">gross_income</span> <span class="o">&gt;</span> <span class="n">other</span><span class="o">.</span><span class="n">gross_income</span></div></div>
 </pre></div>

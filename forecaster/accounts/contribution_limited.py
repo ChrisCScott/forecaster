@@ -115,7 +115,7 @@ class ContributionLimitAccount(Account):
 
     @property
     def contribution_room_history(self):
-        """ A dict of `{year: contribution_room}` pairs. """
+        """ A dict of `{year, contribution_room}` pairs. """
         return self.contributor.contribution_room(self)
 
     def next_year(self):

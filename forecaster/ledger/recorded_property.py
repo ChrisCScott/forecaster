@@ -1,6 +1,4 @@
-""" TODO """
-
-
+""" Module providing property-like decorators for `Ledger` subclasses. """
 
 class recorded_property(property):
     """ A decorator for properties that record their annual amounts.

@@ -1,0 +1,615 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.forecast.subforecast &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">forecaster</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>forecaster.forecast.subforecast</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for forecaster.forecast.subforecast</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; TODO &quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="k">import</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Hashable</span>
+<span class="kn">from</span> <span class="nn">decimal</span> <span class="k">import</span> <span class="n">Decimal</span>
+<span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="p">(</span>
+    <span class="n">Ledger</span><span class="p">,</span> <span class="n">Money</span><span class="p">,</span>
+    <span class="n">recorded_property</span><span class="p">,</span> <span class="n">recorded_property_cached</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">forecaster.accounts</span> <span class="k">import</span> <span class="n">Account</span>
+<span class="kn">from</span> <span class="nn">forecaster.utility</span> <span class="k">import</span> <span class="n">when_conv</span>
+
+<div class="viewcode-block" id="TransactionDict"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.subforecast.TransactionDict">[docs]</a><span class="k">class</span> <span class="nc">TransactionDict</span><span class="p">(</span><span class="n">defaultdict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; A defaultdict that accepts unhashable keys.</span>
+
+<span class="sd">    The purpose of this dictionary is to allow `SubForecast` to have</span>
+<span class="sd">    a `dict[dict[*], dict[Decimal, Money]]` data structure to map</span>
+<span class="sd">    accounts (or account-like dicts) to {when: value} transaction</span>
+<span class="sd">    mappings.</span>
+
+<span class="sd">    When this dict encounters an unhashable object being used as a</span>
+<span class="sd">    key, it uses the *id* of that object as a key instead. Calling</span>
+<span class="sd">    code does not need to use the id; it can index this dict with</span>
+<span class="sd">    the unhashable object and will receive the unhashable object</span>
+<span class="sd">    as a key when iterating over the dict.</span>
+
+<span class="sd">    This class implicitly treats identity as equality for non-hashable</span>
+<span class="sd">    keys. This avoids hashing collisions between unhashable keys</span>
+<span class="sd">    (since different keys have different identities) and between</span>
+<span class="sd">    unhashable and hashable keys, so long as no hashable key is equal</span>
+<span class="sd">    to an unhashable key&#39;s id. This is guaranteed if the hashable keys</span>
+<span class="sd">    aren&#39;t equal to any integers (and, if they are `Account` objects,</span>
+<span class="sd">    they won&#39;t be, so you should be fine!). Using integer (or integer-</span>
+<span class="sd">    convertible) objects as keys may lead to unexpected behaviour due</span>
+<span class="sd">    to hashing collisions (but even these are very unlikely!)</span>
+
+<span class="sd">    NOTE: The behaviour of `keys()` is overridden for this class to</span>
+<span class="sd">    return a list instead of a keyview. This mimics Python 2.x</span>
+<span class="sd">    behaviour but is non-standard for Python 3.x.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="TransactionDict.__init__"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.subforecast.TransactionDict.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Initializes the dict. &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_unhashablekeys</span> <span class="o">=</span> <span class="p">{}</span></div>
+
+<div class="viewcode-block" id="TransactionDict.__getitem__"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.subforecast.TransactionDict.__getitem__">[docs]</a>    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Gets an item for a key, even if key is unhashable. &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">Hashable</span><span class="p">):</span>
+            <span class="c1"># This is a defaultdict, so add new keys on get:</span>
+            <span class="k">if</span> <span class="nb">id</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unhashablekeys</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_unhashablekeys</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="n">key</span><span class="p">)]</span> <span class="o">=</span> <span class="n">key</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="n">key</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransactionDict.__setitem__"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.subforecast.TransactionDict.__setitem__">[docs]</a>    <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Sets a value for key, even if key is unhashable. &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">Hashable</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">id</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unhashablekeys</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_unhashablekeys</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="n">key</span><span class="p">)]</span> <span class="o">=</span> <span class="n">key</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="n">key</span><span class="p">),</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransactionDict.__iter__"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.subforecast.TransactionDict.__iter__">[docs]</a>    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Generates iterator over keys, including unhashable keys. &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__iter__</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unhashablekeys</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unhashablekeys</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">key</span></div>
+    
+<div class="viewcode-block" id="TransactionDict.keys"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.subforecast.TransactionDict.keys">[docs]</a>    <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Returns a list of keys, including unhashable keys. &quot;&quot;&quot;</span>
+        <span class="c1"># We return a list because a keyview (the usual return type in</span>
+        <span class="c1"># Python 3.x) exposes the underlying id-based implementation.</span>
+        <span class="c1"># NOTE: We can&#39;t use a frozenset; it requires hashable values.</span>
+
+        <span class="c1"># Translation between key and id(key) is handled by __iter__</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="fm">__iter__</span><span class="p">())</span>  <span class="c1"># Returns a list</span></div></div>
+
+<div class="viewcode-block" id="SubForecast"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.subforecast.SubForecast">[docs]</a><span class="k">class</span> <span class="nc">SubForecast</span><span class="p">(</span><span class="n">Ledger</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Generic class for implementing part of a financial forecast.</span>
+<span class="sd">    </span>
+<span class="sd">    `SubForecast` instances are managed by a `Forecast` object. Each</span>
+<span class="sd">    `SubForecast` instance receives a dict of cashflows (via</span>
+<span class="sd">    `update_available`) and mutates it by adding or substracting from</span>
+<span class="sd">    the cashflows. The mutated dict can then be passed to another</span>
+<span class="sd">    `SubForecast` for further processing. The dict is called</span>
+<span class="sd">    `available` and represents the amount of money available for use</span>
+<span class="sd">    by subsequent `SubForecast` instances.</span>
+
+<span class="sd">    In general, positive values indicate additions/deposits to the</span>
+<span class="sd">    pool of money available for use, and negative values are</span>
+<span class="sd">    substractions/withdrawals. E.g. when income is received, an</span>
+<span class="sd">    `IncomeForecast` subclass instance might add positive values</span>
+<span class="sd">    to `available`. A `LivingExpensesForecast` subclass instance</span>
+<span class="sd">    might add negative values.</span>
+
+<span class="sd">    In addition to mutating `available`, each `SubForecast` instance</span>
+<span class="sd">    can manage accounts that money moves to/from. Much of the logic</span>
+<span class="sd">    of this class deals with adding transactions to such accounts.</span>
+<span class="sd">    Money can be moved from `available` to an account (or vice-versa),</span>
+<span class="sd">    and those movements can be undone as well (via</span>
+<span class="sd">    `undo_transactions`).</span>
+
+<span class="sd">    This is a `Ledger` subclass, meaning that it provides</span>
+<span class="sd">    `recorded_property` attributes with corresponding `*_history`</span>
+<span class="sd">    dicts storing values of the properties over time. See the</span>
+<span class="sd">    documentation of `Ledger` (or concrete subclasses like `Account`)</span>
+<span class="sd">    for more information.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        initial_year (int): The first year of the forecast.</span>
+<span class="sd">            TODO: #53 removes the requirement for this argument.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        transactions (TransactionDict[</span>
+<span class="sd">            Union[Account, dict]: defaultdict[Decimal: Money]):</span>
+<span class="sd">            A record of transactions to/from various accounts.</span>
+<span class="sd">            An account does not have to be a formal `Account`</span>
+<span class="sd">            object; it can be any `Mapping`, like a `dict`.</span>
+
+<span class="sd">            Each account is mapped to time-series data (in the</span>
+<span class="sd">            {when: value} format used throughout this package) where</span>
+<span class="sd">            positive values correspond to inflows to inflows to the</span>
+<span class="sd">            account and negative values are outflows.</span>
+
+<span class="sd">            This dict includes transactions made to/from `available`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="SubForecast.__init__"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.subforecast.SubForecast.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Initializes an instance of SubForecast. &quot;&quot;&quot;</span>
+        <span class="c1"># Invoke Ledger&#39;s __init__ or pay the price!</span>
+        <span class="c1"># TODO #53 removes this requirement</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">initial_year</span><span class="p">)</span>
+        <span class="c1"># We store transactions to/from each account so that we can</span>
+        <span class="c1"># unwind or inspect transactions caused by this subforecast</span>
+        <span class="c1"># later. So we store it as `{account: {when: value}}`.</span>
+        <span class="c1"># Since `account` can be a dict (which is non-hashable),</span>
+        <span class="c1"># we use a custom subclass of defaultdict that allows</span>
+        <span class="c1"># non-hashable keys.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_transactions</span> <span class="o">=</span> <span class="n">TransactionDict</span><span class="p">(</span>
+            <span class="k">lambda</span><span class="p">:</span> <span class="n">defaultdict</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)))</span>
+        <span class="c1"># If update_available is called more than once, we</span>
+        <span class="c1"># may want to do some unwinding. Use this to track</span>
+        <span class="c1"># whether update_available has been called before:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_available_called</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+    <span class="nd">@recorded_property</span>
+    <span class="k">def</span> <span class="nf">transactions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; `TransactionDict` tracking transactions to/from accounts. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transactions</span>
+
+<div class="viewcode-block" id="SubForecast.next_year"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.subforecast.SubForecast.next_year">[docs]</a>    <span class="k">def</span> <span class="nf">next_year</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Adds a year to the forecast.</span>
+<span class="sd">        </span>
+<span class="sd">        Note that SubForecast does not advance the years of its</span>
+<span class="sd">        `Ledger`-type attributes. This is done by `Forecast` to avoid</span>
+<span class="sd">        one SubForecast advancing a Ledger object that is used by</span>
+<span class="sd">        another SubForecast.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Call `next_year` first so that recorded_property values</span>
+        <span class="c1"># are recorded with their current state:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">next_year</span><span class="p">()</span>
+        <span class="c1"># There are no existing transactions at the start of the year:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transactions</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_available_called</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="SubForecast.update_available"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.subforecast.SubForecast.update_available">[docs]</a>    <span class="k">def</span> <span class="nf">update_available</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">available</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Records transactions against accounts; mutates `available`. &quot;&quot;&quot;</span>
+        <span class="c1"># If this isn&#39;t the first time calling this method this year,</span>
+        <span class="c1"># under whatever was done previously:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_update_available_called</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">undo_transactions</span><span class="p">()</span>
+        <span class="c1"># Keep track of the fact that this method has been called again:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_available_called</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="c1"># It&#39;s often useful to know (in scalar terms) how much money</span>
+        <span class="c1"># is available for use by the Forecast in the year. Track</span>
+        <span class="c1"># that here.</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">available</span><span class="p">,</span> <span class="n">Account</span><span class="p">):</span>
+            <span class="c1"># For accounts, use the amount available at the _end_</span>
+            <span class="c1"># of the year - after all transactions.</span>
+            <span class="c1"># NOTE: This will give a figure that includes interest,</span>
+            <span class="c1"># meaning that if you withdrawl amounts from</span>
+            <span class="c1"># `available` at an earlier time it&#39;s possible that</span>
+            <span class="c1"># a lesser amount will be available for withdrawal in</span>
+            <span class="c1"># total.</span>
+            <span class="c1"># TODO: Consider whether we should instead sum over</span>
+            <span class="c1"># transactions (for dicts and Accounts) and add</span>
+            <span class="c1"># the account opening balance (only for Accounts).</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">total_available</span> <span class="o">=</span> <span class="n">available</span><span class="o">.</span><span class="n">max_outflow</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">total_available</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">available</span><span class="o">.</span><span class="n">values</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="SubForecast.undo_transactions"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.subforecast.SubForecast.undo_transactions">[docs]</a>    <span class="k">def</span> <span class="nf">undo_transactions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Reverses all transactions cause by this subforecast. &quot;&quot;&quot;</span>
+        <span class="c1"># Reverse transactions:</span>
+        <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">transactions</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">account</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">when</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">transactions</span><span class="p">[</span><span class="n">account</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="n">account</span><span class="p">[</span><span class="n">when</span><span class="p">]</span> <span class="o">-=</span> <span class="n">value</span>
+        <span class="c1"># This undoes the effect of update_available, so treat that</span>
+        <span class="c1"># method as if it was never called:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_available_called</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="c1"># If we&#39;ve cached any recorded_property_cached values, invalidate</span>
+        <span class="c1"># the cache so they can be re-calculated based on the new input:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clear_cache</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="SubForecast.add_transaction"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.subforecast.SubForecast.add_transaction">[docs]</a>    <span class="k">def</span> <span class="nf">add_transaction</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="n">Decimal</span><span class="p">(</span><span class="mf">0.5</span><span class="p">),</span> <span class="n">frequency</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">from_account</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">to_account</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">strict_timing</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Records a transaction at a time that balances the books.</span>
+
+<span class="sd">        This method will always add the transaction at or after `when`</span>
+<span class="sd">        (or at or after the implied timing provided by `frequency`).</span>
+<span class="sd">        It tries to find a time where adding the transaction would</span>
+<span class="sd">        avoid putting `from_account` into a negative balance (not</span>
+<span class="sd">        only at the time of the transaction but at any subsequent</span>
+<span class="sd">        time).</span>
+
+<span class="sd">        In particular, it tries to find the _earliest_ workable</span>
+<span class="sd">        time at or after `when`. Thus, `when` is used if it meets</span>
+<span class="sd">        these constraints. `when` is also used if no such</span>
+<span class="sd">        time can be found.</span>
+
+<span class="sd">        The transaction is actually two transactions: an outflow</span>
+<span class="sd">        from `from_account` and an inflow to `to_account`. (This is</span>
+<span class="sd">        reversed if `value` is negative.) If an account are omitted,</span>
+<span class="sd">        the method treats the money as coming from (and/or going to)</span>
+<span class="sd">        an infinite pool of money outside of the model.</span>
+
+<span class="sd">        The `*_account` parameters are not necessarily `Account`</span>
+<span class="sd">        objects. `dict[Decimal, Money]` (a dict of timings mapped to</span>
+<span class="sd">        transaction values) or anything with similar semantics will</span>
+<span class="sd">        also work.</span>
+
+<span class="sd">        If `frequency` is provided, then `transaction` is split</span>
+<span class="sd">        up into `frequency` equal amounts over `frequency` equally-</span>
+<span class="sd">        spaced payment periods. The `when` parameter determines</span>
+<span class="sd">        when in each payment period the transactions are made.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            value (Money): The value of the transaction.</span>
+<span class="sd">                Positive for inflows, negative for outflows.</span>
+<span class="sd">            when (Decimal): The time at which the transaction occurs.</span>
+<span class="sd">                Expressed as a value in [0,1]. Optional.</span>
+<span class="sd">            frequency (int): The number of transactions made in the</span>
+<span class="sd">                year. Must be positive. Optional.</span>
+<span class="sd">            from_account (Account, dict[Decimal, Money]): An account</span>
+<span class="sd">                (or dict of transactions) from which the transaction</span>
+<span class="sd">                originates. Optional.</span>
+<span class="sd">            from_account (Account, dict[Decimal, Money]): An account</span>
+<span class="sd">                (or dict of transactions) to which the transaction</span>
+<span class="sd">                is being sent. Optional.</span>
+<span class="sd">            strict_timing (bool): If False, transactions may be added</span>
+<span class="sd">                later than `when` if this avoids putting accounts in</span>
+<span class="sd">                a negative balance. If True, `when` is always used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Sanitize input:</span>
+        <span class="n">when</span> <span class="o">=</span> <span class="n">when_conv</span><span class="p">(</span><span class="n">when</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Money</span><span class="p">):</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        
+        <span class="c1"># For convenience, ensure that we&#39;re withdrawing from</span>
+        <span class="c1"># from_account and depositing to to_account:</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">from_account</span><span class="p">,</span> <span class="n">to_account</span> <span class="o">=</span> <span class="n">to_account</span><span class="p">,</span> <span class="n">from_account</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="o">-</span><span class="n">value</span>
+
+        <span class="c1"># If a `frequency` has been passed, split up the transaction</span>
+        <span class="c1"># into several equal-value and equally-spaced transactions.</span>
+        <span class="k">if</span> <span class="n">frequency</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">value</span> <span class="o">/</span> <span class="n">frequency</span>
+            <span class="k">for</span> <span class="n">timing</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">frequency</span><span class="p">):</span>
+                <span class="c1"># Note that `when` is still used to determine the</span>
+                <span class="c1"># timing of each transaction within its sub-period.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_add_transaction</span><span class="p">(</span>
+                    <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="p">(</span><span class="n">timing</span><span class="o">+</span><span class="n">when</span><span class="p">)</span><span class="o">/</span><span class="n">frequency</span><span class="p">,</span>
+                    <span class="n">from_account</span><span class="o">=</span><span class="n">from_account</span><span class="p">,</span> <span class="n">to_account</span><span class="o">=</span><span class="n">to_account</span><span class="p">,</span>
+                    <span class="n">strict_timing</span><span class="o">=</span><span class="n">strict_timing</span><span class="p">)</span>
+        <span class="c1"># Otherwise, just add a single transaction:</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_transaction</span><span class="p">(</span>
+                <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="n">when</span><span class="p">,</span>
+                <span class="n">from_account</span><span class="o">=</span><span class="n">from_account</span><span class="p">,</span> <span class="n">to_account</span><span class="o">=</span><span class="n">to_account</span><span class="p">,</span>
+                <span class="n">strict_timing</span><span class="o">=</span><span class="n">strict_timing</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_add_transaction</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">when</span><span class="p">,</span> <span class="n">from_account</span><span class="p">,</span> <span class="n">to_account</span><span class="p">,</span> <span class="n">strict_timing</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Helper for `add_transaction`.</span>
+
+<span class="sd">        This method provides the high-level logical flow for </span>
+<span class="sd">        adding a single transaction. Calling code is responsible</span>
+<span class="sd">        for sanitizing inputs, dealing with multiple transactions,</span>
+<span class="sd">        and providing sensible default values where appropriate.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Shift when, if appropriate, based on from_account:</span>
+        <span class="k">if</span> <span class="n">from_account</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">strict_timing</span><span class="p">:</span>
+            <span class="n">when</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shift_when</span><span class="p">(</span>
+                <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="n">when</span><span class="p">,</span> <span class="n">account</span><span class="o">=</span><span class="n">from_account</span><span class="p">)</span>
+
+        <span class="c1"># Record to from_account:</span>
+        <span class="k">if</span> <span class="n">from_account</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Don&#39;t assume all objects provide defaultdict-like interface:</span>
+            <span class="k">if</span> <span class="n">when</span> <span class="ow">in</span> <span class="n">from_account</span><span class="p">:</span>
+                <span class="n">from_account</span><span class="p">[</span><span class="n">when</span><span class="p">]</span> <span class="o">+=</span> <span class="o">-</span><span class="n">value</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">from_account</span><span class="p">[</span><span class="n">when</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transactions</span><span class="p">[</span><span class="n">from_account</span><span class="p">][</span><span class="n">when</span><span class="p">]</span> <span class="o">+=</span> <span class="o">-</span><span class="n">value</span>
+
+        <span class="c1"># Record to to_account:</span>
+        <span class="k">if</span> <span class="n">to_account</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">when</span> <span class="ow">in</span> <span class="n">to_account</span><span class="p">:</span>
+                <span class="n">to_account</span><span class="p">[</span><span class="n">when</span><span class="p">]</span> <span class="o">+=</span> <span class="n">value</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">to_account</span><span class="p">[</span><span class="n">when</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transactions</span><span class="p">[</span><span class="n">to_account</span><span class="p">][</span><span class="n">when</span><span class="p">]</span> <span class="o">+=</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">_shift_when</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">when</span><span class="p">,</span> <span class="n">account</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Shifts `when` to a time that avoids negative balances. &quot;&quot;&quot;</span>
+        <span class="c1"># First, figure out how much is available for withdrawal at</span>
+        <span class="c1"># all material times:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">account</span><span class="p">,</span> <span class="n">Account</span><span class="p">):</span>
+            <span class="c1"># For accounts, we can use special features to (e.g.)</span>
+            <span class="c1"># interpolate balances between transactions based on</span>
+            <span class="c1"># growth rates.</span>
+            <span class="n">accum</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_accum_account</span><span class="p">(</span>
+                <span class="n">account</span><span class="o">=</span><span class="n">account</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="n">when</span><span class="p">,</span> <span class="n">target_value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># For non-Accounts, use generic dict interface to add up</span>
+            <span class="c1"># transactions, assuming no growth rate or other</span>
+            <span class="c1"># Account-specific features.</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="n">account</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="o">|</span> <span class="p">{</span><span class="n">when</span><span class="p">}</span>  <span class="c1"># Always include `when`</span>
+            <span class="n">accum</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">t</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span>
+                    <span class="c1"># For each point in time `t`, find the sum of all</span>
+                    <span class="c1"># transactions up to this point:</span>
+                    <span class="n">account</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">account</span> <span class="k">if</span> <span class="n">r</span> <span class="o">&lt;=</span> <span class="n">t</span><span class="p">)</span>
+                <span class="c1"># Exclude times before `when`:</span>
+                <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">keys</span> <span class="k">if</span> <span class="n">t</span> <span class="o">&gt;=</span> <span class="n">when</span><span class="p">}</span>
+
+        <span class="c1"># Find the points in time where subtracting `value`</span>
+        <span class="c1"># would not put any future point in time into negative</span>
+        <span class="c1"># balance.</span>
+        <span class="n">eligible_times</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">accum</span> <span class="k">if</span> <span class="nb">all</span><span class="p">(</span>
+                <span class="n">accum</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">value</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">accum</span> <span class="k">if</span> <span class="n">r</span> <span class="o">&gt;=</span> <span class="n">t</span><span class="p">))</span>
+
+        <span class="c1"># Find the earliest valid time (or, if none exists,</span>
+        <span class="c1"># use `when`)</span>
+        <span class="n">min_time</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">eligible_times</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">when</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">min_time</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_accum_account</span><span class="p">(</span><span class="n">account</span><span class="p">,</span> <span class="n">when</span><span class="p">,</span> <span class="n">target_value</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Accumulates transaction histories to provide cash available.</span>
+
+<span class="sd">        This method takes an `Account` and determines how much money is</span>
+<span class="sd">        available to be withdrawn from the account at the time of each</span>
+<span class="sd">        existing transaction and also at `when`.</span>
+
+<span class="sd">        The method also attemptes to interpolate additional times between</span>
+<span class="sd">        the existing transactions where the amount available to be</span>
+<span class="sd">        withdrawn is equal to `target_value`. Due to implementation</span>
+<span class="sd">        limitations, the exact timing is not guaranteed to ne found</span>
+<span class="sd">        (but for most Account types it will be found exactly.)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A dict of `{Decimal: Money}` pairs. The keys include</span>
+<span class="sd">            all times in `transactions` at or after `when`, plus</span>
+<span class="sd">            `when` itself (if not already included). If `target_value`</span>
+<span class="sd">            is provided, the keys may include additional times.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="n">account</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="o">|</span> <span class="p">{</span><span class="n">when</span><span class="p">}</span>  <span class="c1"># Always include `when`</span>
+        <span class="c1"># Use Account logic to determine how much is available at the</span>
+        <span class="c1"># time of each existing transaction and also at `when`:</span>
+        <span class="n">accum</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">t</span><span class="p">:</span> <span class="o">-</span><span class="n">account</span><span class="o">.</span><span class="n">max_outflow</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+            <span class="c1"># Exclude times before `when`:</span>
+            <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">keys</span> <span class="k">if</span> <span class="n">t</span> <span class="o">&gt;=</span> <span class="n">when</span>
+        <span class="p">}</span>
+        <span class="c1"># Try to interpolate times where we achieve the desired</span>
+        <span class="c1"># value, if that value is known:</span>
+        <span class="k">if</span> <span class="n">target_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># We want to look at each time (except the first) and</span>
+            <span class="c1"># the time immediately prior to it.</span>
+            <span class="n">times</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">accum</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>  <span class="c1"># NOTE: ascending order</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">)):</span>
+                <span class="n">earlier</span> <span class="o">=</span> <span class="n">times</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">later</span> <span class="o">=</span> <span class="n">times</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="c1"># We only care about pairs where the desired value</span>
+                <span class="c1"># falls between the times in question:</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="p">(</span><span class="n">accum</span><span class="p">[</span><span class="n">later</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">target_value</span>
+                        <span class="ow">and</span> <span class="n">accum</span><span class="p">[</span><span class="n">earlier</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">target_value</span><span class="p">)</span>
+                    <span class="ow">or</span> <span class="p">(</span><span class="n">accum</span><span class="p">[</span><span class="n">later</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">target_value</span>
+                        <span class="ow">and</span> <span class="n">accum</span><span class="p">[</span><span class="n">earlier</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">target_value</span><span class="p">)</span>
+                <span class="p">):</span>
+                    <span class="c1"># HACK: The account _balance_ is used here as a</span>
+                    <span class="c1"># proxy for money available for withdrawal.</span>
+                    <span class="c1"># This can be inaccurate; e.g. for `Debt` accounts.</span>
+                    <span class="c1"># `max_outflow` is the correct way to check this</span>
+                    <span class="c1"># for a known point in time, but there&#39;s no method</span>
+                    <span class="c1"># for finding the point in time when `max_outflow`</span>
+                    <span class="c1"># will be a certain value.</span>
+                    <span class="c1"># This hack is only used to identify candidate</span>
+                    <span class="c1"># timings to shift `when` to; those candidates</span>
+                    <span class="c1"># don&#39;t have to be correct, so this is OK.</span>
+
+                    <span class="c1"># Ask the account to find an in-between time</span>
+                    <span class="c1"># where we hit the desired value exactly.</span>
+                    <span class="n">time</span> <span class="o">=</span> <span class="n">account</span><span class="o">.</span><span class="n">time_to_balance</span><span class="p">(</span>
+                        <span class="n">value</span><span class="o">=</span><span class="n">target_value</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="n">earlier</span><span class="p">)</span>
+                    <span class="c1"># If that time falls within the period</span>
+                    <span class="c1"># (earlier, later), then add it!</span>
+                    <span class="k">if</span> <span class="n">time</span> <span class="o">&gt;</span> <span class="n">earlier</span> <span class="ow">and</span> <span class="n">time</span> <span class="o">&lt;</span> <span class="n">later</span><span class="p">:</span>
+                        <span class="n">accum</span><span class="p">[</span><span class="n">time</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">account</span><span class="o">.</span><span class="n">max_outflow</span><span class="p">[</span><span class="n">time</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">accum</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

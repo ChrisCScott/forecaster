@@ -1,0 +1,375 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.ledger.base &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">forecaster</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>forecaster.ledger.base</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for forecaster.ledger.base</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; TODO &quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">from</span> <span class="nn">decimal</span> <span class="k">import</span> <span class="n">Decimal</span>
+<span class="kn">from</span> <span class="nn">forecaster.ledger.money</span> <span class="k">import</span> <span class="n">Money</span>
+<span class="kn">from</span> <span class="nn">forecaster.ledger.recorded_property</span> <span class="k">import</span> <span class="p">(</span>
+    <span class="n">recorded_property</span><span class="p">,</span> <span class="n">recorded_property_cached</span>
+<span class="p">)</span>
+
+<div class="viewcode-block" id="LedgerType"><a class="viewcode-back" href="../../../forecaster.ledger.html#forecaster.ledger.base.LedgerType">[docs]</a><span class="k">class</span> <span class="nc">LedgerType</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; A metaclass for Ledger classes.</span>
+
+<span class="sd">    This metaclass inspects the class for any</span>
+<span class="sd">    @recorded_property-decorated methods and generates a corresponding</span>
+<span class="sd">    *_history method and _* dict attribute.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># First, build the class normally.</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># Prepare to store all recorded properties for the class.</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_recorded_properties</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_recorded_properties_cached</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+        <span class="c1"># Then identify all recorded_property attributes:</span>
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">prop</span> <span class="ow">in</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getmembers</span><span class="p">(</span>
+            <span class="bp">cls</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;history_property&#39;</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="c1"># Store the identified recorded_property:</span>
+            <span class="c1"># (This will help Ledger build object-specific dicts for</span>
+            <span class="c1"># storing the values of each recorded property. We don&#39;t</span>
+            <span class="c1"># want to do this at the class level because dicts are</span>
+            <span class="c1"># mutable and we don&#39;t want to share the dict mutations</span>
+            <span class="c1"># between objects.)</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_recorded_properties</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">prop</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prop</span><span class="p">,</span> <span class="n">recorded_property_cached</span><span class="p">):</span>
+                <span class="bp">cls</span><span class="o">.</span><span class="n">_recorded_properties_cached</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">prop</span><span class="p">)</span>
+
+            <span class="c1"># Add the new attribute to the class.</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">prop</span><span class="o">.</span><span class="n">history_prop_name</span><span class="p">,</span> <span class="n">prop</span><span class="o">.</span><span class="n">history_property</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Ledger"><a class="viewcode-back" href="../../../forecaster.ledger.html#forecaster.ledger.base.Ledger">[docs]</a><span class="k">class</span> <span class="nc">Ledger</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">LedgerType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; An object with a next_year() method that tracks the curent year.</span>
+
+<span class="sd">    This object provides the basic infrastructure not only for advancing</span>
+<span class="sd">    through a sequence of years but also for managing any</span>
+<span class="sd">    `recorded_property`-decorated properties.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        initial_year (int): The initial year for the object.</span>
+<span class="sd">        this_year (int): The current year for the object. Incremented</span>
+<span class="sd">            with each call to next_year()</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># This class is intended for subclassing. It implements only magic</span>
+    <span class="c1"># methods and a `next_year` method that manage recorded_property</span>
+    <span class="c1"># members. That&#39;s all that&#39;s necessarly for this class, and it is</span>
+    <span class="c1"># clearly behaviour that requires a class (not just a container).</span>
+    <span class="c1"># pylint: disable=too-few-public-methods</span>
+
+<div class="viewcode-block" id="Ledger.__init__"><a class="viewcode-back" href="../../../forecaster.ledger.html#forecaster.ledger.base.Ledger.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Inits IncrementableByYear.</span>
+
+<span class="sd">        Behaviour when a `year` in `inputs` is equal to `initial_year`</span>
+<span class="sd">        is undefined. Initialization is not guaranteed to respect such a</span>
+<span class="sd">        value; if you want to set an initial-year value, it&#39;s better to</span>
+<span class="sd">        pass it as an appropriate argument at `__init__` time.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            initial_year (int): The initial year for the object.</span>
+<span class="sd">            inputs (dict[str, dict[int, Any]]):</span>
+<span class="sd">                `{property: {year: val}}` pairs. Every `val` is treated</span>
+<span class="sd">                as a manual entry that overrides any programmatic value</span>
+<span class="sd">                for that year generated by `next_year`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">initial_year</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span> <span class="o">=</span> <span class="n">inputs</span> <span class="k">if</span> <span class="n">inputs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{}</span>
+
+        <span class="c1"># Build a history dict for each recorded_property</span>
+        <span class="c1"># pylint: disable=no-member</span>
+        <span class="c1"># Pylint gets confused by attributes added by metaclass.</span>
+        <span class="k">for</span> <span class="n">prop</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recorded_properties</span><span class="p">:</span>
+            <span class="c1"># Use input values if available for this property:</span>
+            <span class="k">if</span> <span class="n">prop</span><span class="o">.</span><span class="vm">__name__</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prop</span><span class="o">.</span><span class="n">history_dict_name</span><span class="p">,</span>
+                        <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="n">prop</span><span class="o">.</span><span class="vm">__name__</span><span class="p">]))</span>
+            <span class="c1"># Otherwise, use an empty dict and leave it to __init__ and</span>
+            <span class="c1"># next_year to fill it programmatically.</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prop</span><span class="o">.</span><span class="n">history_dict_name</span><span class="p">,</span> <span class="p">{})</span></div>
+
+<div class="viewcode-block" id="Ledger.next_year"><a class="viewcode-back" href="../../../forecaster.ledger.html#forecaster.ledger.base.Ledger.next_year">[docs]</a>    <span class="k">def</span> <span class="nf">next_year</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Advances to the next year. &quot;&quot;&quot;</span>
+        <span class="c1"># Record all recorded properties in the moment before advancing</span>
+        <span class="c1"># to the next year:</span>
+        <span class="c1"># pylint: disable=no-member</span>
+        <span class="c1"># Pylint gets confused by attributes added by metaclass.</span>
+        <span class="k">for</span> <span class="n">prop</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recorded_properties</span><span class="p">:</span>
+            <span class="n">history_dict</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prop</span><span class="o">.</span><span class="n">history_dict_name</span><span class="p">)</span>
+            <span class="c1"># Only add a value to the history dict if one has not</span>
+            <span class="c1"># already been added for this year:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">history_dict</span><span class="p">:</span>
+                <span class="c1"># NOTE: We could alternatively do this via setattr</span>
+                <span class="c1"># (which would call the setter function defined by the</span>
+                <span class="c1"># recorded_property decorator - perhaps preferable?)</span>
+                <span class="n">history_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">this_year</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="p">,</span> <span class="n">prop</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="c1"># Advance to the next year after recording properties:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span> <span class="o">+=</span> <span class="mi">1</span></div>
+
+<div class="viewcode-block" id="Ledger.clear_cache"><a class="viewcode-back" href="../../../forecaster.ledger.html#forecaster.ledger.base.Ledger.clear_cache">[docs]</a>    <span class="k">def</span> <span class="nf">clear_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Clears all recorded_property_cached values for this year. &quot;&quot;&quot;</span>
+        <span class="c1"># pylint: disable=no-member</span>
+        <span class="c1"># Pylint gets confused by attributes added by metaclass.</span>
+        <span class="k">for</span> <span class="n">prop</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recorded_properties_cached</span><span class="p">:</span>
+            <span class="n">prop</span><span class="o">.</span><span class="n">fdel</span><span class="p">(</span><span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="TaxSource"><a class="viewcode-back" href="../../../forecaster.ledger.html#forecaster.ledger.base.TaxSource">[docs]</a><span class="k">class</span> <span class="nc">TaxSource</span><span class="p">(</span><span class="n">Ledger</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; An object that can be considered when calculating taxes.</span>
+
+<span class="sd">    Provides standard tax-related properties, listed below.</span>
+
+<span class="sd">    Actual tax treatment will vary by subclass. Rather than override</span>
+<span class="sd">    these properties directly, subclasses should override the methods</span>
+<span class="sd">    _taxable_income, _tax_withheld, _tax_credit, and _tax_deduction</span>
+<span class="sd">    (note the leading underscore).</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        taxable_income (Money): Taxable income arising from the</span>
+<span class="sd">            object for the current year.</span>
+<span class="sd">        tax_withheld (Money): Tax withheld from the object for the</span>
+<span class="sd">            current year.</span>
+<span class="sd">        tax_credit (Money): Taxable credits arising from the</span>
+<span class="sd">            object for the current year.</span>
+<span class="sd">        tax_deduction (Money): Taxable deductions arising from the</span>
+<span class="sd">            object for the current year.</span>
+<span class="sd">        taxable_income_history (Money): Taxable income arising from the</span>
+<span class="sd">            object for each year thus far.</span>
+<span class="sd">        tax_withheld_history (Money): Tax withheld from the object for</span>
+<span class="sd">            each year thus far.</span>
+<span class="sd">        tax_credit_history (Money): Taxable credits arising from the</span>
+<span class="sd">            object for each year thus far.</span>
+<span class="sd">        tax_deduction_history (Money): Taxable deductions arising from</span>
+<span class="sd">            the object for each year thus far.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nd">@recorded_property</span>
+    <span class="k">def</span> <span class="nf">taxable_income</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Taxable income for the given year.</span>
+
+<span class="sd">        Subclasses should override this method rather than the</span>
+<span class="sd">        taxable_income and _taxable_income_history properties.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="nd">@recorded_property</span>
+    <span class="k">def</span> <span class="nf">tax_withheld</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Tax withheld for the given year.</span>
+
+<span class="sd">        Subclasses should override this method rather than the</span>
+<span class="sd">        tax_withheld and _tax_withheld_history properties.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="nd">@recorded_property</span>
+    <span class="k">def</span> <span class="nf">tax_credit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Tax credit for the given year.</span>
+
+<span class="sd">        Subclasses should override this method rather than the</span>
+<span class="sd">        tax_credit and _tax_credit_history properties.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="nd">@recorded_property</span>
+    <span class="k">def</span> <span class="nf">tax_deduction</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Tax deduction for the given year.</span>
+
+<span class="sd">        Subclasses should override this method rather than the</span>
+<span class="sd">        tax_deduction and _tax_deduction_history properties.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

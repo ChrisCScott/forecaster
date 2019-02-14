@@ -1,0 +1,328 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.canada.accounts.tfsa &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">forecaster</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+      <li>forecaster.canada.accounts.tfsa</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for forecaster.canada.accounts.tfsa</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; TODO &quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">forecaster.canada.accounts.registered_account</span> <span class="k">import</span> <span class="n">RegisteredAccount</span>
+<span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="n">Money</span><span class="p">,</span> <span class="n">recorded_property</span>
+<span class="kn">from</span> <span class="nn">forecaster.utility</span> <span class="k">import</span> <span class="p">(</span>
+    <span class="n">build_inflation_adjust</span><span class="p">,</span> <span class="n">extend_inflation_adjusted</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">forecaster.canada</span> <span class="k">import</span> <span class="n">constants</span>
+
+<div class="viewcode-block" id="TFSA"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.html#forecaster.canada.accounts.tfsa.TFSA">[docs]</a><span class="k">class</span> <span class="nc">TFSA</span><span class="p">(</span><span class="n">RegisteredAccount</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; A Tax-Free Savings Account (Canada). &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TFSA.__init__"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.html#forecaster.canada.accounts.tfsa.TFSA.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                 <span class="n">nper</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">contribution_room</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">contributor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Initializes a TFSA object.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            inflation_adjust: A method with the following form:</span>
+<span class="sd">                `inflation_adjust(val, this_year, target_year)`.</span>
+
+<span class="sd">                Returns a Decimal object which is the inflation-</span>
+<span class="sd">                adjustment factor from base_year to target_year.</span>
+
+<span class="sd">                Optional. If not provided, all values are assumed to be</span>
+<span class="sd">                in real terms, so no inflation adjustment is performed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># This method does have a lot of arguments, but they&#39;re mostly</span>
+        <span class="c1"># inherited from a superclass. We&#39;re stuck with them here.</span>
+        <span class="c1"># pylint: disable=too-many-arguments</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">owner</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="n">balance</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="n">rate</span><span class="p">,</span>
+            <span class="n">nper</span><span class="o">=</span><span class="n">nper</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="n">inputs</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="n">initial_year</span><span class="p">,</span>
+            <span class="n">contribution_room</span><span class="o">=</span><span class="n">contribution_room</span><span class="p">,</span> <span class="n">contributor</span><span class="o">=</span><span class="n">contributor</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span> <span class="o">=</span> <span class="n">build_inflation_adjust</span><span class="p">(</span><span class="n">inflation_adjust</span><span class="p">)</span>
+
+        <span class="c1"># This is our baseline for estimating contribution room</span>
+        <span class="c1"># (By law, inflation-adjustments are relative to 2009, the</span>
+        <span class="c1"># first year that TFSAs were available, and rounded to the</span>
+        <span class="c1"># nearest $500)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_base_accrual_year</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">constants</span><span class="o">.</span><span class="n">TFSA_ANNUAL_ACCRUAL</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_base_accrual</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">extend_inflation_adjusted</span><span class="p">(</span>
+            <span class="n">constants</span><span class="o">.</span><span class="n">TFSA_ANNUAL_ACCRUAL</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_base_accrual_year</span>
+        <span class="p">)</span> <span class="o">/</span> <span class="n">constants</span><span class="o">.</span><span class="n">TFSA_ACCRUAL_ROUNDING_FACTOR</span><span class="p">)</span> <span class="o">*</span> \
+            <span class="n">constants</span><span class="o">.</span><span class="n">TFSA_ACCRUAL_ROUNDING_FACTOR</span>
+
+        <span class="c1"># If contribution_room is not provided (and it&#39;s already known</span>
+        <span class="c1"># based on other TFSA accounts), infer it based on age.</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">contribution_room</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room_history</span>
+        <span class="p">):</span>
+            <span class="c1"># We might already have set contribution room for years</span>
+            <span class="c1"># before this initial_year, in which case we should start</span>
+            <span class="c1"># extrapolate from the following year onwards:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room_history</span><span class="p">:</span>
+                <span class="n">start_year</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+                    <span class="n">year</span> <span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room_history</span>
+                    <span class="k">if</span> <span class="n">year</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span>
+                <span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="n">contribution_room</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room_history</span><span class="p">[</span>
+                    <span class="n">start_year</span> <span class="o">-</span> <span class="mi">1</span>
+                <span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># If there&#39;s no known contribution room, simply sum up</span>
+                <span class="c1"># all of the default accruals from the first year the</span>
+                <span class="c1"># owner was eligible:</span>
+                <span class="n">start_year</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span> <span class="o">-</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">contributor</span><span class="o">.</span><span class="n">age</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span><span class="p">)</span> <span class="o">+</span>
+                    <span class="n">constants</span><span class="o">.</span><span class="n">TFSA_ELIGIBILITY_AGE</span><span class="p">,</span>
+                    <span class="nb">min</span><span class="p">(</span><span class="n">constants</span><span class="o">.</span><span class="n">TFSA_ANNUAL_ACCRUAL</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+                <span class="p">)</span>
+                <span class="n">contribution_room</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="c1"># Accumulate contribution room over applicable years</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room</span> <span class="o">=</span> <span class="n">contribution_room</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_contribution_room_accrual</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">start_year</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_contribution_room_accrual</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The amount of contribution room accrued in a given year.</span>
+
+<span class="sd">        This excludes any rollovers - it&#39;s just the statutory accrual.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># No accrual if the owner is too young to qualify:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">owner</span><span class="o">.</span><span class="n">age</span><span class="p">(</span><span class="n">year</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">constants</span><span class="o">.</span><span class="n">TFSA_ELIGIBILITY_AGE</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># If we already have an accrual rate set for this year, use that</span>
+        <span class="k">if</span> <span class="n">year</span> <span class="ow">in</span> <span class="n">constants</span><span class="o">.</span><span class="n">TFSA_ANNUAL_ACCRUAL</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="n">constants</span><span class="o">.</span><span class="n">TFSA_ANNUAL_ACCRUAL</span><span class="p">[</span><span class="n">year</span><span class="p">])</span>
+        <span class="c1"># Otherwise, infer the accrual rate by inflation-adjusting the</span>
+        <span class="c1"># base rate and rounding.</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Money</span><span class="p">(</span>
+                <span class="nb">round</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_base_accrual</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_base_accrual_year</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span> <span class="o">/</span>
+                    <span class="n">constants</span><span class="o">.</span><span class="n">TFSA_ACCRUAL_ROUNDING_FACTOR</span><span class="p">)</span> <span class="o">*</span>
+                <span class="n">constants</span><span class="o">.</span><span class="n">TFSA_ACCRUAL_ROUNDING_FACTOR</span>
+            <span class="p">)</span>
+
+<div class="viewcode-block" id="TFSA.next_contribution_room"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.html#forecaster.canada.accounts.tfsa.TFSA.next_contribution_room">[docs]</a>    <span class="k">def</span> <span class="nf">next_contribution_room</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The amount of contribution room for next year. &quot;&quot;&quot;</span>
+        <span class="n">year</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span>
+
+        <span class="c1"># If the contribution room for next year is already known, use</span>
+        <span class="c1"># that:</span>
+        <span class="k">if</span> <span class="n">year</span> <span class="o">+</span> <span class="mi">1</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room_history</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room_history</span><span class="p">[</span><span class="n">year</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">contribution_room</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contribution_room_accrual</span><span class="p">(</span><span class="n">year</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># On top of this year&#39;s accrual, roll over unused contribution</span>
+        <span class="c1"># room, plus any withdrawals (less contributions) from last year</span>
+        <span class="k">if</span> <span class="n">year</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room_history</span><span class="p">:</span>
+            <span class="n">rollover</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room_history</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span>
+                <span class="c1"># pylint: disable=no-member</span>
+                <span class="c1"># Pylint gets confused by attributes added by metaclass.</span>
+                <span class="c1"># recorded_property members always have a corresponding</span>
+                <span class="c1"># *_history member:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">outflows_history</span><span class="p">[</span><span class="n">year</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflows_history</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rollover</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="n">contribution_room</span> <span class="o">+</span> <span class="n">rollover</span></div>
+
+    <span class="nd">@recorded_property</span>
+    <span class="k">def</span> <span class="nf">taxable_income</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Returns $0 (TFSAs are not taxable.) &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

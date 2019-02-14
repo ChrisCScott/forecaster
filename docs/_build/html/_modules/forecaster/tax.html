@@ -183,7 +183,7 @@
 <span class="c1"># (such as FedProvTuple).</span>
 
 
-<div class="viewcode-block" id="Tax"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax">[docs]</a><span class="k">class</span> <span class="nc">Tax</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="Tax"><a class="viewcode-back" href="../../forecaster.html#forecaster.tax.Tax">[docs]</a><span class="k">class</span> <span class="nc">Tax</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Determines taxes payable on taxable income.</span>
 
 <span class="sd">    When called with a Money-type first argument (i.e. as</span>
@@ -263,7 +263,7 @@
 
 <span class="sd">            Optional.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-<div class="viewcode-block" id="Tax.__init__"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="Tax.__init__"><a class="viewcode-back" href="../../forecaster.html#forecaster.tax.Tax.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">tax_brackets</span><span class="p">,</span> <span class="n">personal_deduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">credit_rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">payment_timing</span><span class="o">=</span><span class="s1">&#39;start&#39;</span>
     <span class="p">):</span>
@@ -344,7 +344,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_payment_timing</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">payment_timing</span> <span class="o">=</span> <span class="n">payment_timing</span></div>
 
-<div class="viewcode-block" id="Tax.tax_brackets"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.tax_brackets">[docs]</a>    <span class="k">def</span> <span class="nf">tax_brackets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">bracket</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Tax.tax_brackets"><a class="viewcode-back" href="../../forecaster.html#forecaster.tax.Tax.tax_brackets">[docs]</a>    <span class="k">def</span> <span class="nf">tax_brackets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">bracket</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Retrieve tax brackets for year. &quot;&quot;&quot;</span>
         <span class="c1"># NOTE: We cache the inflation-adjusted tax brackets here,</span>
         <span class="c1"># but this will cause problems if you want to reuse the</span>
@@ -363,7 +363,7 @@
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tax_brackets</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tax_brackets</span><span class="p">[</span><span class="n">year</span><span class="p">][</span><span class="n">bracket</span><span class="p">]</span></div>
 
-<div class="viewcode-block" id="Tax.accum"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.accum">[docs]</a>    <span class="k">def</span> <span class="nf">accum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">bracket</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Tax.accum"><a class="viewcode-back" href="../../forecaster.html#forecaster.tax.Tax.accum">[docs]</a>    <span class="k">def</span> <span class="nf">accum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">bracket</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The accumulated tax payable for a given tax bracket. &quot;&quot;&quot;</span>
         <span class="c1"># If we don&#39;t have this accum, we&#39;ll need to generate it.</span>
         <span class="c1"># add_brackets() does this for us.</span>
@@ -376,12 +376,12 @@
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_accum</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_accum</span><span class="p">[</span><span class="n">year</span><span class="p">][</span><span class="n">bracket</span><span class="p">]</span></div>
 
-<div class="viewcode-block" id="Tax.personal_deduction"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.personal_deduction">[docs]</a>    <span class="k">def</span> <span class="nf">personal_deduction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+<div class="viewcode-block" id="Tax.personal_deduction"><a class="viewcode-back" href="../../forecaster.html#forecaster.tax.Tax.personal_deduction">[docs]</a>    <span class="k">def</span> <span class="nf">personal_deduction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Personal deduction for `year`. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">extend_inflation_adjusted</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_personal_deduction</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Tax.deductions"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.deductions">[docs]</a>    <span class="k">def</span> <span class="nf">deductions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+<div class="viewcode-block" id="Tax.deductions"><a class="viewcode-back" href="../../forecaster.html#forecaster.tax.Tax.deductions">[docs]</a>    <span class="k">def</span> <span class="nf">deductions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The deductions the person is eligible for.</span>
 
 <span class="sd">        Args:</span>
@@ -399,7 +399,7 @@
         <span class="n">deductions</span> <span class="o">+=</span> <span class="n">person</span><span class="o">.</span><span class="n">tax_deduction_history</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">deductions</span></div>
 
-<div class="viewcode-block" id="Tax.credits"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.credits">[docs]</a>    <span class="k">def</span> <span class="nf">credits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">deductions</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Tax.credits"><a class="viewcode-back" href="../../forecaster.html#forecaster.tax.Tax.credits">[docs]</a>    <span class="k">def</span> <span class="nf">credits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">deductions</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The tax credits each person is eligible for.</span>
 
 <span class="sd">        Args:</span>
@@ -416,7 +416,7 @@
         <span class="n">credits</span> <span class="o">=</span> <span class="n">person</span><span class="o">.</span><span class="n">tax_credit_history</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">credits</span></div>
 
-<div class="viewcode-block" id="Tax.credit_rate"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.credit_rate">[docs]</a>    <span class="k">def</span> <span class="nf">credit_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+<div class="viewcode-block" id="Tax.credit_rate"><a class="viewcode-back" href="../../forecaster.html#forecaster.tax.Tax.credit_rate">[docs]</a>    <span class="k">def</span> <span class="nf">credit_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The credit rate for the given year. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_credit_rate</span><span class="p">[</span><span class="n">nearest_year</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_credit_rate</span><span class="p">,</span> <span class="n">year</span><span class="p">)]</span></div>
 
@@ -430,7 +430,7 @@
         <span class="sd">&quot;&quot;&quot; Sets `payment_timing`. &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_payment_timing</span> <span class="o">=</span> <span class="n">when_conv</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Tax.marginal_bracket"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.marginal_bracket">[docs]</a>    <span class="k">def</span> <span class="nf">marginal_bracket</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">taxable_income</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+<div class="viewcode-block" id="Tax.marginal_bracket"><a class="viewcode-back" href="../../forecaster.html#forecaster.tax.Tax.marginal_bracket">[docs]</a>    <span class="k">def</span> <span class="nf">marginal_bracket</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">taxable_income</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The top tax bracket that taxable_income falls into. &quot;&quot;&quot;</span>
         <span class="n">brackets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_brackets</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
         <span class="k">return</span> <span class="nb">max</span><span class="p">(</span>
@@ -439,12 +439,12 @@
             <span class="n">default</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="n">brackets</span><span class="p">)</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="Tax.marginal_rate"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.marginal_rate">[docs]</a>    <span class="k">def</span> <span class="nf">marginal_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">taxable_income</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+<div class="viewcode-block" id="Tax.marginal_rate"><a class="viewcode-back" href="../../forecaster.html#forecaster.tax.Tax.marginal_rate">[docs]</a>    <span class="k">def</span> <span class="nf">marginal_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">taxable_income</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The marginal rate for the given income. &quot;&quot;&quot;</span>
         <span class="n">brackets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_brackets</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">brackets</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">marginal_bracket</span><span class="p">(</span><span class="n">taxable_income</span><span class="p">,</span> <span class="n">year</span><span class="p">)]</span></div>
 
-<div class="viewcode-block" id="Tax.add_brackets"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.add_brackets">[docs]</a>    <span class="k">def</span> <span class="nf">add_brackets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">brackets</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+<div class="viewcode-block" id="Tax.add_brackets"><a class="viewcode-back" href="../../forecaster.html#forecaster.tax.Tax.add_brackets">[docs]</a>    <span class="k">def</span> <span class="nf">add_brackets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">brackets</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Adds a year of tax brackets to attribute self.tax_brackets.</span>
 
 <span class="sd">        Also generates an `accum` dict based on the tax brackets.</span>
@@ -460,7 +460,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">add_accum</span><span class="p">(</span><span class="n">brackets</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Tax.add_accum"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.add_accum">[docs]</a>    <span class="k">def</span> <span class="nf">add_accum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">brackets</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+<div class="viewcode-block" id="Tax.add_accum"><a class="viewcode-back" href="../../forecaster.html#forecaster.tax.Tax.add_accum">[docs]</a>    <span class="k">def</span> <span class="nf">add_accum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">brackets</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Generates an accum dict for the given brackets and year. &quot;&quot;&quot;</span>
         <span class="c1"># For each bracket, the new accumulation is whatever the accum</span>
         <span class="c1"># is for the next-lowest bracket (which itself is the</span>
@@ -476,7 +476,7 @@
                 <span class="p">(</span><span class="n">bracket</span> <span class="o">-</span> <span class="n">prev</span><span class="p">)</span> <span class="o">*</span> <span class="n">brackets</span><span class="p">[</span><span class="n">prev</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_accum</span><span class="p">[</span><span class="n">year</span><span class="p">][</span><span class="n">prev</span><span class="p">]</span>
             <span class="n">prev</span> <span class="o">=</span> <span class="n">bracket</span>  <span class="c1"># Keep track of next-lowest bracket</span></div>
 
-<div class="viewcode-block" id="Tax.tax_money"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.tax_money">[docs]</a>    <span class="k">def</span> <span class="nf">tax_money</span><span class="p">(</span>
+<div class="viewcode-block" id="Tax.tax_money"><a class="viewcode-back" href="../../forecaster.html#forecaster.tax.Tax.tax_money">[docs]</a>    <span class="k">def</span> <span class="nf">tax_money</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">taxable_income</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">deduction</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">credit</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Returns taxes owing on a given amount of taxable income.</span>
@@ -525,7 +525,7 @@
         <span class="c1"># Assume credits are non-refundable:</span>
         <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">net_tax</span><span class="p">,</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="Tax.tax_person"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.tax_person">[docs]</a>    <span class="k">def</span> <span class="nf">tax_person</span><span class="p">(</span>
+<div class="viewcode-block" id="Tax.tax_person"><a class="viewcode-back" href="../../forecaster.html#forecaster.tax.Tax.tax_person">[docs]</a>    <span class="k">def</span> <span class="nf">tax_person</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">deduction</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">credit</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Returns tax treatment for an individual person.</span>
@@ -565,7 +565,7 @@
             <span class="n">credits</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="Tax.tax_people"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.tax_people">[docs]</a>    <span class="k">def</span> <span class="nf">tax_people</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">deduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">credit</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Tax.tax_people"><a class="viewcode-back" href="../../forecaster.html#forecaster.tax.Tax.tax_people">[docs]</a>    <span class="k">def</span> <span class="nf">tax_people</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">deduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">credit</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Total tax liability for a group of people.</span>
 
 <span class="sd">        The people do not necessarily need to be spouses or related in</span>
@@ -624,7 +624,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">tax_people</span><span class="p">(</span><span class="n">people</span> <span class="o">-</span> <span class="p">{</span><span class="n">person</span><span class="p">},</span> <span class="n">year</span><span class="p">,</span>
                                 <span class="n">deduction</span><span class="p">,</span> <span class="n">credit</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Tax.tax_spouses"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.tax_spouses">[docs]</a>    <span class="k">def</span> <span class="nf">tax_spouses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">deduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">credit</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Tax.tax_spouses"><a class="viewcode-back" href="../../forecaster.html#forecaster.tax.Tax.tax_spouses">[docs]</a>    <span class="k">def</span> <span class="nf">tax_spouses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">deduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">credit</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Tax treatment for a pair of spouses.</span>
 
 <span class="sd">        This method doesn&#39;t provide any special tax treatment to the</span>
@@ -671,7 +671,7 @@
             <span class="n">tax</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_person</span><span class="p">(</span><span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">tax</span></div>
 
-<div class="viewcode-block" id="Tax.__call__"><a class="viewcode-back" href="../../forecaster.tax.html#forecaster.tax.Tax.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">income</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span>
+<div class="viewcode-block" id="Tax.__call__"><a class="viewcode-back" href="../../forecaster.html#forecaster.tax.Tax.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">income</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span>
                  <span class="n">deduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">credit</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Determines taxes owing on one or more income sources.</span>
 

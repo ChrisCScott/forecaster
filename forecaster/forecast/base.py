@@ -24,33 +24,34 @@ class Forecast(Ledger):
 
     `Forecast` provides a high-level model for annual cashflows as they
     relate to retirement savings. In particular, it uses this model:
+
     * Determine total (net) income for the year.
     * Determine the portion of net income used for ordinary living
-        expenses. This is the pool of money available for retirement
-        savings and lifecycle expenses.
+      expenses. This is the pool of money available for retirement
+      savings and lifecycle expenses.
 
-        Deducting living expenses from income yields "gross
-        contributions" - the total amount available to be saved.
+      Deducting living expenses from income yields "gross
+      contributions" - the total amount available to be saved.
     * Determine the portion of available money which will be used
-        on "lifecycle" expenses. These are expenditures on top of
-        ordinary living expenses which vary over time. Inflows to
-        retirement savings accounts are reduced to pay for these.
-        This can include, e.g., childcare, contributions to education
-        accounts, home purchase costs, debt repayment, and so on.
+      on "lifecycle" expenses. These are expenditures on top of
+      ordinary living expenses which vary over time. Inflows to
+      retirement savings accounts are reduced to pay for these.
+      This can include, e.g., childcare, contributions to education
+      accounts, home purchase costs, debt repayment, and so on.
 
-        Where lifecycle expenses involve contributions to
-        non-retirement accounts (like education savings accounts or
-        debt accounts), per-account contributions are also determined
-        at this step.
+      Where lifecycle expenses involve contributions to
+      non-retirement accounts (like education savings accounts or
+      debt accounts), per-account contributions are also determined
+      at this step.
 
-        Deducting lifecycle expenses from gross contributions yields
-        "net contributions" - the total amount actually saved.
+      Deducting lifecycle expenses from gross contributions yields
+      "net contributions" - the total amount actually saved.
     * Determine per-account retirement contributions based on net
-        contributions.
+      contributions.
     * Determine the amount withdrawn from retirement savings accounts.
-        Allocate portions of that to each retirement account.
+      Allocate portions of that to each retirement account.
     * Determine total tax liability for the year; if necessary, adjust
-        withdrawals accordingly and repeat.
+      withdrawals accordingly and repeat.
     * Determine statistics for the year (e.g. living standard.)
 
     The `Forecast` can be built around any number of people, but is
