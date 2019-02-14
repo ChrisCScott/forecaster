@@ -13,8 +13,6 @@ class WithdrawalForecast(SubForecast):
         people (Iterable[Person]): The plannees.
         accounts (Iterable[Account]): Retirement accounts of the
             `people`.
-        scenario (Scenario): Economic information for the forecast
-            (e.g. inflation and stock market returns for each year)
         account_transaction_strategy (AccountTransactionStrategy):
             A callable object that determines the schedule of
             transactions for any contributions during the year.
@@ -36,7 +34,7 @@ class WithdrawalForecast(SubForecast):
     # NOTE: Consider combining the various strategy objects into a dict
     # or something (although it's not clear how this benefits the code.)
     def __init__(
-        self, initial_year, people, accounts, scenario,
+        self, initial_year, people, accounts,
         account_transaction_strategy
     ):
         """ Initializes an instance of WithdrawalForecast. """
@@ -49,7 +47,6 @@ class WithdrawalForecast(SubForecast):
         # Store input values
         self.people = people
         self.accounts = accounts
-        self.scenario = scenario
         self.account_transaction_strategy = account_transaction_strategy
 
     def update_available(self, available):

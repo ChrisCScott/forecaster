@@ -17,9 +17,6 @@ class TestWithdrawalForecast(unittest.TestCase):
     def setUp(self):
         """ Builds stock variables to test with. """
         self.initial_year = 2000
-        self.scenario = Scenario(
-            initial_year=self.initial_year,
-            num_years=1)
         # Simple tax treatment: 50% tax rate across the board.
         tax = Tax(tax_brackets={
             self.initial_year: {Money(0): Decimal(0.5)}})
@@ -59,7 +56,6 @@ class TestWithdrawalForecast(unittest.TestCase):
             initial_year=self.initial_year,
             people={self.person},
             accounts={self.account, self.limit_account},
-            scenario=self.scenario,
             account_transaction_strategy=self.account_strategy)
 
     def test_account_transactions_ordered(self):
