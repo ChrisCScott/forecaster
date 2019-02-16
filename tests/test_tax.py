@@ -385,7 +385,7 @@ class TestTax(unittest.TestCase):
         self.assertEqual(
             single_tax * 2,
             double_tax)
-        
+
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(

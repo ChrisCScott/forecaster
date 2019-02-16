@@ -1,7 +1,6 @@
 """ TODO """
 
 import inspect
-from decimal import Decimal
 from forecaster.ledger.money import Money
 from forecaster.ledger.recorded_property import (
     recorded_property, recorded_property_cached
@@ -24,8 +23,7 @@ class LedgerType(type):
 
         # Then identify all recorded_property attributes:
         for _, prop in inspect.getmembers(
-            cls, lambda x: hasattr(x, 'history_property')
-        ):
+                cls, lambda x: hasattr(x, 'history_property')):
             # Store the identified recorded_property:
             # (This will help Ledger build object-specific dicts for
             # storing the values of each recorded property. We don't

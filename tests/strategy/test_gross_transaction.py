@@ -3,7 +3,6 @@
 import unittest
 import decimal
 from decimal import Decimal
-from random import Random
 from forecaster import (
     Person, Money, Account, Tax,
     LivingExpensesStrategy, LivingExpensesStrategySchedule)
@@ -44,7 +43,7 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
             self.initial_year: {Money(0): Decimal(0.5)}})
         # Set up people with $4000 gross income, $2000 net income:
         self.person1 = Person(
-            initial_year = self.initial_year,
+            initial_year=self.initial_year,
             name="Test 1",
             birth_date="1 January 1980",
             retirement_date="31 December 2001",  # next year
@@ -52,7 +51,7 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
             tax_treatment=tax,
             payment_frequency='BW')
         self.person2 = Person(
-            initial_year = self.initial_year,
+            initial_year=self.initial_year,
             name="Test 2",
             birth_date="1 January 1975",
             retirement_date="31 December 2001",  # next year
@@ -116,9 +115,10 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
         # Test all default parameters (no inflation adjustments here)
         self.assertEqual(
             strategy(people=self.people),
-            sum(person.net_income for person in self.people) - strategy.base_amount)
+            sum(person.net_income for person in self.people)
+            - strategy.base_amount)
 
-    def test_const_contrib_inflation_adjust(self):
+    def test_const_contrib_inf(self):
         """ Test inflation-adjusted constant contributions. """
         # Contribute $500/yr, leaving $1500/yr for living.
         method = LivingExpensesStrategy.strategy_const_contribution
@@ -159,7 +159,7 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
         # This method requires net_income
         self.assertEqual(strategy(people=self.people), Money(1000))
 
-    def test_const_living_exp_inflation_adjust(self):
+    def test_const_living_exp_inf(self):
         """ Test inflation-adjusted constant living expenses. """
         # Contribute $1000 every year, adjusted to inflation:
         method = LivingExpensesStrategy.strategy_const_living_expenses
@@ -189,7 +189,7 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
             strategy(people=self.people),
             net_income * strategy.rate)
 
-    def test_net_percent_inflation_adjust(self):
+    def test_net_percent_inf(self):
         """ Test inflation-adjusted net-percent living expenses. """
         # Live on 50% of net income, and also provide inflation-adjust:
         method = LivingExpensesStrategy.strategy_net_percent
@@ -208,7 +208,7 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
         )
 
     def test_strategy_gross_percent(self):
-        """ Test LivingExpensesStrategy.strategy_gross_percent. """
+        """ Test living off percentage of gross income. """
         # Live on 50% of gross income:
         method = LivingExpensesStrategy.strategy_gross_percent
         strategy = LivingExpensesStrategy(method, rate=0.5)
@@ -217,7 +217,7 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
             strategy(people=self.people),
             gross_income * strategy.rate)
 
-    def test_gross_percent_inflation_adjust(self):
+    def test_gross_percent_inf(self):
         """ Test inflation-adjusted gross-percent living expenses. """
         # Live on 50% of gross income, and also provide inflation-adjust:
         method = LivingExpensesStrategy.strategy_gross_percent
@@ -236,7 +236,7 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
         )
 
     def test_strategy_earnings_percent(self):
-        """ Test LivingExpensesStrategy.strategy_earnings_percent. """
+        """ Test living off of percentage of earnings over a base amount. """
         # Live off the first $1000 plus 50% of amounts above that:
         method = LivingExpensesStrategy.strategy_percent_over_base
         strategy = LivingExpensesStrategy(
@@ -248,7 +248,7 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
             Money(1500)
         )
 
-    def test_earnings_percent_inflation_adjust(self):
+    def test_earnings_percent_inf(self):
         """ Test inflation-adjusted earnings-percent living expenses. """
         # Live off the first $1000 plus 50% of amounts above that:
         method = LivingExpensesStrategy.strategy_percent_over_base
@@ -273,10 +273,10 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
             Money(2000)
         )
 
-    def test_strategy_principal_percent_retirement(self):
-        """ Test LivingExpensesStrategy.strategy_principal_percent_retirement. """
+    def test_strategy_principal_pct_ret(self):
+        """ Test living off of percentage of principal at retirement. """
         # Live off of 50% of the principal balance at retirement:
-        method = LivingExpensesStrategy.strategy_principal_percent_retirement
+        method = LivingExpensesStrategy.strategy_principal_percent_ret
         strategy = LivingExpensesStrategy(strategy=method, rate=0.5)
 
         # Retire in this year and advance to next year:
@@ -293,11 +293,11 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
                 retirement_year=retirement_year),
             strategy.rate * principal)
 
-    def test_strategy_principal_percent_retirement_inflation(self):
+    def test_strategy_princ_pct_ret_inf(self):
         """ Test inflation-adjustment when living on principal. """
         # Live off of 50% of the principal balance at retirement,
         # adjusted to inflation:
-        method = LivingExpensesStrategy.strategy_principal_percent_retirement
+        method = LivingExpensesStrategy.strategy_principal_percent_ret
         strategy = LivingExpensesStrategy(
             strategy=method, rate=0.5, inflation_adjust=self.variable_inflation)
 
@@ -320,10 +320,10 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
             strategy.rate * principal * inflation_adjustment
         )
 
-    def test_strategy_net_percent_retirement(self):
-        """ Test LivingExpensesStrategy.strategy_net_percent_retirement. """
+    def test_strategy_net_pct_ret(self):
+        """ Test living off of a percentage of net income at retirement. """
         # Live off of 50% of net income at retirement:
-        method = LivingExpensesStrategy.strategy_net_percent_retirement
+        method = LivingExpensesStrategy.strategy_net_percent_ret
         strategy = LivingExpensesStrategy(strategy=method, rate=0.5)
 
         # Retire in this year, advance to next year, set income to $0
@@ -343,11 +343,11 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
                 retirement_year=retirement_year),
             strategy.rate * net_income)
 
-    def test_strategy_net_percent_retirement_inflation(self):
+    def test_strategy_net_pct_ret_inf(self):
         """ Test inflation-adjustment when living on net income. """
         # Live off of 50% of net income at retirement,
         # adjusted to inflation:
-        method = LivingExpensesStrategy.strategy_net_percent_retirement
+        method = LivingExpensesStrategy.strategy_net_percent_ret
         strategy = LivingExpensesStrategy(
             strategy=method, rate=0.5, inflation_adjust=self.variable_inflation)
 
@@ -373,10 +373,10 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
             strategy.rate * net_income * inflation_adjustment
         )
 
-    def test_strategy_gross_percent_retirement(self):
-        """ Test LivingExpensesStrategy.strategy_gross_percent_retirement. """
+    def test_strategy_gross_pct_ret(self):
+        """ Test living off of gross income at retirement. """
         # Live off of 50% of gross income at retirement:
-        method = LivingExpensesStrategy.strategy_gross_percent_retirement
+        method = LivingExpensesStrategy.strategy_gross_percent_ret
         strategy = LivingExpensesStrategy(strategy=method, rate=0.5)
 
         # Retire in this year, advance to next year, set income to $0
@@ -396,11 +396,11 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
                 retirement_year=retirement_year),
             strategy.rate * gross_income)
 
-    def test_strategy_gross_percent_retirement_inflation(self):
+    def test_strategy_gross_pct_ret_inf(self):
         """ Test inflation-adjustment when living on gross income. """
         # Live off of 50% of gross income at retirement,
         # adjusted to inflation:
-        method = LivingExpensesStrategy.strategy_gross_percent_retirement
+        method = LivingExpensesStrategy.strategy_gross_percent_ret
         strategy = LivingExpensesStrategy(
             strategy=method, rate=0.5, inflation_adjust=self.variable_inflation)
 
@@ -429,7 +429,7 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
 
 class TestLivingExpensesStrategyScheduleMethods(unittest.TestCase):
     """ A test case for the LivingExpensesStrategySchedule class """
-    
+
     def setUp(self):
         """ Set up stock variables for testing. """
         self.initial_year = 2000
@@ -448,7 +448,7 @@ class TestLivingExpensesStrategyScheduleMethods(unittest.TestCase):
             self.initial_year: {Money(0): Decimal(0.5)}})
         # Set up a person with $50000 gross income, $2000 net income:
         self.person1 = Person(
-            initial_year = self.initial_year,
+            initial_year=self.initial_year,
             name="Test 1",
             birth_date="1 January 1980",
             retirement_date="31 December 2001",  # next year

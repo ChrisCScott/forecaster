@@ -1,4 +1,4 @@
-""" TODO """
+""" Tests for forecaster.canada.PrincipleResidence. """
 
 import unittest
 import decimal

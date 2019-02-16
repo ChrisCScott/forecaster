@@ -9,7 +9,7 @@ from forecaster import (
 
 class DummyForecast(object):
     """ Acts like a SubForecast but is easier to debug with. """
-    def __init__(self, initial_year, transactions={}):
+    def __init__(self, initial_year, transactions=None):
         """ Inits DummyForecast.
 
         This class simply adds `transactions` to `available` when
@@ -23,6 +23,8 @@ class DummyForecast(object):
                 `{when: value}` pairs that are added to
                 `available` whenever `update_available` is called.
         """
+        if transactions is None:
+            transactions = {}
         self.transactions = transactions
         self.available_in = None
         self.available_out = None
@@ -83,7 +85,7 @@ class TestForecast(unittest.TestCase):
             self.initial_year: {Money(0): Decimal(0.5)}})
         # One person, to own the account:
         self.person = Person(
-            initial_year = self.initial_year,
+            initial_year=self.initial_year,
             name="Test",
             birth_date="1 January 1980",
             retirement_date="31 December 2045",
@@ -128,9 +130,11 @@ class TestForecast(unittest.TestCase):
         # Add the same properties to the null forecast, since it
         # could be substituted for any of the above:
         self.null_forecast.net_income = self.income_forecast_dummy.net_income
-        self.null_forecast.living_expenses = self.living_expenses_forecast_dummy.living_expenses
+        self.null_forecast.living_expenses = (
+            self.living_expenses_forecast_dummy.living_expenses)
         self.null_forecast.reductions = self.reduction_forecast_dummy.reductions
-        self.null_forecast.gross_withdrawals = self.withdrawal_forecast_dummy.gross_withdrawals
+        self.null_forecast.gross_withdrawals = (
+            self.withdrawal_forecast_dummy.gross_withdrawals)
         self.null_forecast.tax_owing = self.tax_forecast_dummy.tax_owing
 
         # Finally, we need a Scenario to build a Forecast.
@@ -139,7 +143,7 @@ class TestForecast(unittest.TestCase):
 
     def test_update_available(self):
         """ Test the mechanics of the update_available method.
-        
+
         We don't want to test the underlying SubForecast classes,
         so just use end-to-end dummies.
         """

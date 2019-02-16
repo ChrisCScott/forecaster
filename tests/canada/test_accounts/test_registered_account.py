@@ -47,8 +47,7 @@ class TestRegisteredAccountMethods(TestContributionLimitAccountMethods):
         store values for each recorded property.
         """
         for _, prop in inspect.getmembers(
-            type(ledger), lambda x: hasattr(x, 'history_property')
-        ):
+                type(ledger), lambda x: hasattr(x, 'history_property')):
             history_dict = getattr(ledger, prop.history_dict_name)
             if ledger.initial_year in history_dict:
                 history_dict[initial_year] = history_dict[ledger.initial_year]

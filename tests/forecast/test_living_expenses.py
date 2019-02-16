@@ -18,7 +18,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
             self.initial_year: {Money(0): Decimal(0.5)}})
         # A person who is paid $200 gross ($100 net) every 2 weeks:
         self.person1 = Person(
-            initial_year = self.initial_year,
+            initial_year=self.initial_year,
             name="Test 1",
             birth_date="1 January 1980",
             retirement_date="31 December 2045",
@@ -27,7 +27,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
             payment_frequency='BW')
         # A person who is paid $100 gross ($50 net) every 2 weeks:
         self.person2 = Person(
-            initial_year = self.initial_year,
+            initial_year=self.initial_year,
             name="Test 2",
             birth_date="1 January 1982",
             retirement_date="31 December 2047",
@@ -48,7 +48,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
             people={self.person1, self.person2},
             living_expenses_strategy=self.strategy)
 
-    def test_living_expenses_gross_percent(self):
+    def test_living_gross_percent(self):
         """ Test living expenses based on percent of gross income. """
         # Contribute 50% of gross income:
         self.strategy = LivingExpensesStrategy(
@@ -68,7 +68,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
             living_expenses,
             self.forecast.living_expenses)
 
-    def test_living_expenses_net_percent(self):
+    def test_living_net_percent(self):
         """ Test living expenses based on percent of net income. """
         # Contribute 50% of net income:
         self.strategy = LivingExpensesStrategy(
@@ -88,7 +88,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
             living_expenses,
             self.forecast.living_expenses)
 
-    def test_living_expenses_const_contribution(self):
+    def test_living_const_contrib(self):
         """ Test living expenses based on constant contribution. """
         # Contribute $100 and live off the rest:
         self.strategy = LivingExpensesStrategy(
@@ -106,7 +106,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
             living_expenses,
             self.forecast.living_expenses)
 
-    def test_living_expenses_const_living_expenses(self):
+    def test_living_const_living(self):
         """ Test living expenses based on constant living expenses. """
         # Live off of $1200/yr:
         self.strategy = LivingExpensesStrategy(
@@ -125,7 +125,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
             living_expenses,
             self.forecast.living_expenses)
 
-    def test_living_expenses_earnings_percent(self):
+    def test_living_earnings_pct(self):
         """ Test living expenses based on percentage of raises. """
         # Live off of $1200/yr:
         self.strategy = LivingExpensesStrategy(

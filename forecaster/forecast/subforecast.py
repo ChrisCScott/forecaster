@@ -1,12 +1,9 @@
 """ TODO """
 
 from collections import defaultdict
-from collections.abc import Mapping, Hashable
+from collections.abc import Hashable
 from decimal import Decimal
-from forecaster.ledger import (
-    Ledger, Money,
-    recorded_property, recorded_property_cached
-)
+from forecaster.ledger import Ledger, Money, recorded_property
 from forecaster.accounts import Account
 from forecaster.utility import when_conv
 
@@ -69,7 +66,7 @@ class TransactionDict(defaultdict):
                 yield self._unhashablekeys[key]
             else:
                 yield key
-    
+
     def keys(self):
         """ Returns a list of keys, including unhashable keys. """
         # We return a list because a keyview (the usual return type in
@@ -81,7 +78,7 @@ class TransactionDict(defaultdict):
 
 class SubForecast(Ledger):
     """ Generic class for implementing part of a financial forecast.
-    
+
     `SubForecast` instances are managed by a `Forecast` object. Each
     `SubForecast` instance receives a dict of cashflows (via
     `update_available`) and mutates it by adding or substracting from
@@ -112,7 +109,7 @@ class SubForecast(Ledger):
 
     Args:
         initial_year (int): The first year of the forecast.
-            TODO: #53 removes the requirement for this argument.
+            NOTE: Issue #53 removes the requirement for initial_year.
 
     Attributes:
         transactions (TransactionDict[
@@ -132,7 +129,7 @@ class SubForecast(Ledger):
     def __init__(self, initial_year):
         """ Initializes an instance of SubForecast. """
         # Invoke Ledger's __init__ or pay the price!
-        # TODO #53 removes this requirement
+        # NOTE Issue #53 removes this requirement
         super().__init__(initial_year)
         # We store transactions to/from each account so that we can
         # unwind or inspect transactions caused by this subforecast
@@ -146,6 +143,7 @@ class SubForecast(Ledger):
         # may want to do some unwinding. Use this to track
         # whether update_available has been called before:
         self._update_available_called = False
+        self.total_available = Money(0)
 
     @recorded_property
     def transactions(self):
@@ -154,7 +152,7 @@ class SubForecast(Ledger):
 
     def next_year(self):
         """ Adds a year to the forecast.
-        
+
         Note that SubForecast does not advance the years of its
         `Ledger`-type attributes. This is done by `Forecast` to avoid
         one SubForecast advancing a Ledger object that is used by
@@ -210,9 +208,8 @@ class SubForecast(Ledger):
         self.clear_cache()
 
     def add_transaction(
-        self, value, when=Decimal(0.5), frequency=None,
-        from_account=None, to_account=None, strict_timing=False
-    ):
+            self, value, when=Decimal(0.5), frequency=None,
+            from_account=None, to_account=None, strict_timing=False):
         """ Records a transaction at a time that balances the books.
 
         This method will always add the transaction at or after `when`
@@ -264,7 +261,7 @@ class SubForecast(Ledger):
         when = when_conv(when)
         if not isinstance(value, Money):
             value = Money(value)
-        
+
         # For convenience, ensure that we're withdrawing from
         # from_account and depositing to to_account:
         if value < 0:
@@ -290,11 +287,10 @@ class SubForecast(Ledger):
                 strict_timing=strict_timing)
 
     def _add_transaction(
-        self, value, when, from_account, to_account, strict_timing
-    ):
+            self, value, when, from_account, to_account, strict_timing):
         """ Helper for `add_transaction`.
 
-        This method provides the high-level logical flow for 
+        This method provides the high-level logical flow for
         adding a single transaction. Calling code is responsible
         for sanitizing inputs, dealing with multiple transactions,
         and providing sensible default values where appropriate.
@@ -341,7 +337,7 @@ class SubForecast(Ledger):
                     # For each point in time `t`, find the sum of all
                     # transactions up to this point:
                     account[r] for r in account if r <= t)
-                # Exclude times before `when`:
+                   # Exclude times before `when`:
                 for t in keys if t >= when}
 
         # Find the points in time where subtracting `value`
@@ -381,7 +377,7 @@ class SubForecast(Ledger):
         # time of each existing transaction and also at `when`:
         accum = {
             t: -account.max_outflow(t)
-            # Exclude times before `when`:
+               # Exclude times before `when`:
             for t in keys if t >= when
         }
         # Try to interpolate times where we achieve the desired
@@ -396,10 +392,12 @@ class SubForecast(Ledger):
                 # We only care about pairs where the desired value
                 # falls between the times in question:
                 if (
-                    (accum[later] > target_value
-                        and accum[earlier] < target_value)
-                    or (accum[later] < target_value
-                        and accum[earlier] > target_value)
+                        (
+                            accum[later] > target_value
+                            and accum[earlier] < target_value)
+                        or (
+                            accum[later] < target_value
+                            and accum[earlier] > target_value)
                 ):
                     # HACK: The account _balance_ is used here as a
                     # proxy for money available for withdrawal.

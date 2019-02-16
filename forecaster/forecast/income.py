@@ -1,7 +1,6 @@
 """ Provides an IncomeForecast class for use by Forecast. """
 
 from forecaster.ledger import Money, recorded_property
-from forecaster.accounts import Account
 from forecaster.forecast.subforecast import SubForecast
 
 class IncomeForecast(SubForecast):
@@ -18,7 +17,7 @@ class IncomeForecast(SubForecast):
 
     Attributes:
         asset_sale (Money): The proceeds from a sale of property.
-            TODO: Determine whether this belongs here or elsewhere.
+            TODO: Determine if asset sale belongs here or elsewhere.
         carryover (Money): Money carried over from last year to
             the current year.
         gross_income (Money): Total income for all plannees for the
@@ -30,8 +29,7 @@ class IncomeForecast(SubForecast):
     """
 
     def __init__(
-        self, initial_year, people
-    ):
+            self, initial_year, people):
         """ Initializes an instance of IncomeForecast. """
         super().__init__(initial_year)
         # Invoke Ledger's __init__ or pay the price!
@@ -49,8 +47,8 @@ class IncomeForecast(SubForecast):
         # as the `from_account`?
         self.add_transaction(
             value=self.asset_sale,
-            when=0.5,  # TODO #32
-            from_account=None,  # TODO #32
+            when=0.5,  # TODO Determine timing of asset sale #32
+            from_account=None,  # TODO Move money from asset account #32
             to_account=available
         )
 
@@ -68,7 +66,7 @@ class IncomeForecast(SubForecast):
     @recorded_property
     def asset_sale(self):
         """ Proceeds of sale of an asset. """
-        return Money(0)  # TODO #32
+        return Money(0)  # TODO Implement asset sale #32
 
     @recorded_property
     def carryover(self):

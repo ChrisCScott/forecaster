@@ -60,7 +60,8 @@ class TestTransactionStrategyMethods(unittest.TestCase):
                 strategy=self.method, weights={'RRSP', 'Not a number'})
         # Test invalid timing
         with self.assertRaises(TypeError):
-            AccountTransactionStrategy(strategy=self.method, weights={}, timing={})
+            AccountTransactionStrategy(
+                strategy=self.method, weights={}, timing={})
 
 
 class TestTransactionStrategyOrdered(unittest.TestCase):
@@ -302,10 +303,9 @@ class TestTransactionStrategyWeighted(unittest.TestCase):
     def test_out_basic(self):
         """ Test strategy_weighted with small amount of outflows. """
         # Amount withdrawn is smaller than the balance of each account.
-        val = Money(max(
-            account.max_outflow(self.strategy_weighted.timing)
-            for account in self.accounts)
-        )
+        val = Money(
+            max(account.max_outflow(self.strategy_weighted.timing)
+                for account in self.accounts))
         results = self.strategy_weighted(val, self.accounts)
         self.assertEqual(sum(results.values()), val)
         self.assertEqual(results[self.rrsp], val * self.weights['RRSP'])
@@ -455,10 +455,9 @@ class TestTransactionStrategyWeightedMult(unittest.TestCase):
     def test_out_basic(self):
         """ Test strategy_weighted with multiple RRSPs, small outflows. """
         # Amount withdrawn is less than the balance of each account.
-        val = Money(max(
-            account.max_outflow(self.strategy.timing)
-            for account in self.accounts)
-        )
+        val = Money(
+            max(account.max_outflow(self.strategy.timing)
+                for account in self.accounts))
         results = self.strategy(val, self.accounts)
         self.assertEqual(sum(results.values()), val)
         self.assertEqual(
@@ -558,4 +557,3 @@ class TestTransactionStrategyWeightedMult(unittest.TestCase):
 if __name__ == '__main__':
     unittest.TextTestRunner().run(
         unittest.TestLoader().loadTestsFromName(__name__))
-

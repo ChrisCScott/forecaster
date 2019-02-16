@@ -1,7 +1,7 @@
 """ Provides a TaxForecast class for use by Forecast. """
 
 from forecaster.forecast import SubForecast
-from forecaster.ledger import Money, recorded_property_cached
+from forecaster.ledger import recorded_property_cached
 
 class TaxForecast(SubForecast):
     """ A forecast of total tax owing for each year.
@@ -29,8 +29,7 @@ class TaxForecast(SubForecast):
     """
 
     def __init__(
-        self, initial_year, people, tax_treatment
-    ):
+            self, initial_year, people, tax_treatment):
         """ Initializes an instance of TaxForecast. """
         # Call the superclass method or suffer the consequences!
         super().__init__(initial_year)
@@ -58,7 +57,7 @@ class TaxForecast(SubForecast):
     @recorded_property_cached
     def tax_adjustment(self):
         """ Total amount owing or refunded at tax time next year.
-        
+
         Negative values are amounts owing, positive are refunds.
         """
         return self.tax_withheld - self.tax_owing

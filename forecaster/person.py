@@ -58,23 +58,22 @@ class Person(TaxSource):
     # into several sub-objects.
     # pylint: disable=too-many-instance-attributes,too-many-arguments
 
-    # TODO: Add life expectancy?
-    # TODO: Add estimated_retirement_date(...) method? Perhaps add an
-    # arg for a generator function that takes certain arguments (total
-    # investable savings, target withdrawal, and [optionally] year?) and
-    # returns an estimated year of retirement?
+    # TODO: Add life expectancy? #14
+    # TODO: Add estimated_retirement_date(...) method? #15
+    # Perhaps add an arg for a generator function that takes certain
+    # arguments (total investable savings, target withdrawal, and
+    # [optionally] year?) and returns an estimated year of retirement?
     #   NOTE: This would allow client code to implement Dr. Pfau's
     #   study's results on safe withdrawal rates, or perhaps to take
     #   into account the person's risk-tolerance.
-    # TODO: Subclass Person into CanadianResident, override _tax_credit
-    # to provide the spousal tax credit, and replace the `tax_treatment`
-    # arg with a `province` (str) arg?
+    # TODO: Subclass Person into CanadianResident?
+    # We could override `_tax_credit` to provide the spousal tax credit
+    # and replace the `tax_treatment` arg with a `province` (str) arg.
 
     def __init__(
-        self, initial_year, name, birth_date, retirement_date=None,
-        gross_income=0, raise_rate=0, spouse=None, tax_treatment=None,
-        payment_frequency='BW', inputs=None
-    ):
+            self, initial_year, name, birth_date, retirement_date=None,
+            gross_income=0, raise_rate=0, spouse=None, tax_treatment=None,
+            payment_frequency='BW', inputs=None):
         """ Constructor for `Person`.
 
         Attributes:
@@ -346,9 +345,8 @@ class Person(TaxSource):
         # No income if retired, otherwise apply the raise rate to last
         # year's income:
         if (
-            self.retirement_date is not None and
-            self.retirement_date.year < self.this_year
-        ):
+                self.retirement_date is not None and
+                self.retirement_date.year < self.this_year):
             return Money(0)
         else:
             return (

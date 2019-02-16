@@ -358,7 +358,7 @@ class TestDebtPaymentStrategyAttributes(unittest.TestCase):
         self.debt.savings_rate = 0
         results = self.strategy({self.debt}, Money(50))
         # If savings_rate is 0, we repay the whole debt immediately.
-        # TODO: Change this behaviour
+        # TODO: Limit repayments in case where savings_rate=0
         self.assertEqual(results[self.debt], Money(100))
 
     def test_savings_rate_half(self):

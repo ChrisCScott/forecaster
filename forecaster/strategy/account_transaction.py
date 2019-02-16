@@ -243,8 +243,7 @@ class AccountTransactionStrategy(Strategy):
         return transactions
 
     def _recurse_min(
-        self, total, accounts, transactions, *args, **kwargs
-    ):
+            self, total, accounts, transactions, *args, **kwargs):
         """ Recursively assigns minimum inflows/outflows to accounts. """
         # Check to see whether any accounts have minimum inflows or
         # outflows that aren't met by the allocation in `transactions`.
@@ -304,8 +303,7 @@ class AccountTransactionStrategy(Strategy):
         return override_transactions
 
     def _recurse_max(
-        self, total, accounts, transactions, *args, **kwargs
-    ):
+            self, total, accounts, transactions, *args, **kwargs):
         """ Recursively assigns minimum inflows/outflows to accounts. """
         # Check to see whether any accounts have minimum inflows or
         # outflows that aren't met by the allocation in `transactions`.

@@ -2,7 +2,6 @@
 
 from forecaster.ledger import (
     Money, recorded_property, recorded_property_cached)
-from forecaster.accounts import Account
 from forecaster.forecast.subforecast import SubForecast
 
 class WithdrawalForecast(SubForecast):
@@ -34,9 +33,8 @@ class WithdrawalForecast(SubForecast):
     # NOTE: Consider combining the various strategy objects into a dict
     # or something (although it's not clear how this benefits the code.)
     def __init__(
-        self, initial_year, people, accounts,
-        account_transaction_strategy
-    ):
+            self, initial_year, people, accounts,
+            account_transaction_strategy):
         """ Initializes an instance of WithdrawalForecast. """
         # Recall that, as a Ledger object, we need to call the
         # superclass initializer and let it know what the first
@@ -120,7 +118,7 @@ class WithdrawalForecast(SubForecast):
     @recorded_property_cached
     def account_transactions(self):
         """ Transactions for each account, according to the strategy.
-        
+
         This is what `account_transaction_strategy` returns.
         """
         # NOTE: gross_withdrawals is positive, but

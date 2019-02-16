@@ -19,9 +19,8 @@ class ForecasterCanada(Forecaster):
         super().__init__(settings=settings, **kwargs)
 
     def add_rrsp(
-        self, inflation_adjust=None, rrif_conversion_year=None, cls=RRSP,
-        **kwargs
-    ):
+            self, inflation_adjust=None, rrif_conversion_year=None, cls=RRSP,
+            **kwargs):
         """ Adds an RRSP to the forecast. """
         self.set_kwarg(
             kwargs, 'inflation_adjust', inflation_adjust,
@@ -31,8 +30,7 @@ class ForecasterCanada(Forecaster):
         return self.add_contribution_limit_account(cls=cls, **kwargs)
 
     def add_tfsa(
-        self, inflation_adjust=None, cls=TFSA, **kwargs
-    ):
+            self, inflation_adjust=None, cls=TFSA, **kwargs):
         """ Adds a TFSA to the forecast. """
         self.set_kwarg(
             kwargs, 'inflation_adjust', inflation_adjust,
@@ -40,15 +38,14 @@ class ForecasterCanada(Forecaster):
         return self.add_contribution_limit_account(cls=cls, **kwargs)
 
     def add_taxable_account(
-        self, acb=None, cls=TaxableAccount, **kwargs
-    ):
+            self, acb=None, cls=TaxableAccount, **kwargs):
         """ Adds a TaxableAccount to the forecast. """
         self.set_kwarg(kwargs, 'acb', acb, None)
         return self.add_asset(cls=cls, **kwargs)
 
     def set_tax_treatment(
-        self, inflation_adjust=None, province=None, cls=TaxCanada, **kwargs
-    ):
+            self, inflation_adjust=None, province=None, cls=TaxCanada,
+            **kwargs):
         """ Sets tax treatment for the forecast.
 
         Overrides set_tax_treatment to deal with different parameter

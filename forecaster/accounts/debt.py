@@ -40,14 +40,13 @@ class Debt(Account):
     """
 
     def __init__(
-        self, owner,
-        balance=0, rate=0, nper=1,
-        inputs=None, initial_year=None, minimum_payment=Money(0),
-        living_expense=Money(0), savings_rate=1,
-        accelerated_payment=Money('Infinity'),
-        payment_frequency='M',
-        **kwargs
-    ):
+            self, owner,
+            balance=0, rate=0, nper=1,
+            inputs=None, initial_year=None, minimum_payment=Money(0),
+            living_expense=Money(0), savings_rate=1,
+            accelerated_payment=Money('Infinity'),
+            payment_frequency='M',
+            **kwargs):
         """ Constructor for `Debt`. """
 
         # The superclass has a lot of arguments, so we're sort of stuck
@@ -81,6 +80,7 @@ class Debt(Account):
 
     @property
     def minimum_payment(self):
+        """ The minimum payment required each year. """
         return self._minimum_payment
 
     @minimum_payment.setter
@@ -89,6 +89,7 @@ class Debt(Account):
 
     @property
     def living_expense(self):
+        """ Amount to repay each year, drawn from living expenses. """
         return self._living_expense
 
     @living_expense.setter
@@ -97,6 +98,11 @@ class Debt(Account):
 
     @property
     def savings_rate(self):
+        """ The percentage of repayments drawn from savings.
+
+        This applies only to repayment amounts in excess of the
+        amount defined by `living_expenses`.
+        """
         return self._savings_rate
 
     @savings_rate.setter
@@ -105,6 +111,7 @@ class Debt(Account):
 
     @property
     def accelerated_payment(self):
+        """ The maximum amount to repay above the minimum payment. """
         return self._accelerated_payment
 
     @accelerated_payment.setter
@@ -154,13 +161,12 @@ class Debt(Account):
         )
 
     def payment(
-        self, savings_available=Money(0),
-        living_expenses_available=Money('Infinity'),
-        other_payments=Money(0),
-        when='end'
-    ):
+            self, savings_available=Money(0),
+            living_expenses_available=Money('Infinity'),
+            other_payments=Money(0),
+            when='end'):
         """ Calculates the maximum payment amount for the year.
-        
+
         Args:
             savings_available (Money): The amount available from
                 savings to repay this debt this year. Optional.
@@ -244,7 +250,7 @@ class Debt(Account):
                 the year (and which have thus reduced the living
                 expenses portion available to be claimed.)
                 Optional.
-        
+
         Returns:
             Money: The amount paid from savings for the year.
         """

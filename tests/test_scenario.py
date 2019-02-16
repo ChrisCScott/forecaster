@@ -11,8 +11,11 @@ class TestScenarioMethods(unittest.TestCase):
 
     @staticmethod
     def get_random_scenario(initial_year=None, length=None):
-        """ Returns a random `Scenario` of length `length` starting in `initial_year`.
-        (each parameter is randomized if not provided) """
+        """ Returns a random `Scenario`.
+
+        The `Scenario` has length `length` and starts in `initial_year`.
+        Each parameter is randomized if not provided.
+        """
         rand = Random()
         # If inputs aren't given, randomly choose reasonable values.
         if initial_year is None:

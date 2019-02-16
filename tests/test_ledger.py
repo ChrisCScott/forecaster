@@ -15,11 +15,13 @@ class TestLedger(Ledger):
 
     @recorded_property
     def uncached(self):
+        """ A recorded property that is not cached. """
         self.counter += 1
         return self.counter
 
     @recorded_property_cached
     def cached(self):
+        """ A recorded property that is cached. """
         self.counter += 1
         return self.counter
 

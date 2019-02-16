@@ -96,9 +96,8 @@ class Account(TaxSource):
     # pylint: disable=too-many-instance-attributes
 
     def __init__(
-        self, owner=None,
-        balance=0, rate=0, nper=1, inputs=None, initial_year=None
-    ):
+            self, owner=None,
+            balance=0, rate=0, nper=1, inputs=None, initial_year=None):
         """ Constructor for `Account`.
 
         This constructor receives only values for the first year.
@@ -318,15 +317,13 @@ class Account(TaxSource):
     def inflows(self):
         """ The sum of all inflows to the account. """
         return Money(sum(
-            val for val in self.transactions.values() if val.amount > 0)
-        )
+            val for val in self.transactions.values() if val.amount > 0))
 
     @recorded_property
     def outflows(self):
         """ The sum of all outflows from the account. """
         return Money(sum(
-            val for val in self.transactions.values() if val.amount < 0)
-        )
+            val for val in self.transactions.values() if val.amount < 0))
 
     def next_year(self):
         """ Adds another year to the account.
@@ -423,18 +420,23 @@ class Account(TaxSource):
         del self._transactions[key]
 
     def keys(self):
+        """ The timings of the account's transactions. """
         return self._transactions.keys()
 
     def values(self):
+        """ The values of the account's transactions. """
         return self._transactions.values()
 
     def items(self):
+        """ The account's transactions, as {when: value} pairs. """
         return self._transactions.items()
 
     def get(self, key, default=None):
+        """ Gets the transaction value at a particular timing. """
         self._transactions.get(key, default=default)
 
     def clear(self):
+        """ Clears all of the account's transactions. """
         self._transactions.clear()
 
     # Finally, add some methods for calculating growth (i.e. balance

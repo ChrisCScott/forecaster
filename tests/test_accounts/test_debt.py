@@ -39,10 +39,10 @@ class TestDebtMethods(unittest.TestCase):
             accelerated_payment=Money('Infinity')
         )
 
-    def test_init_default(self, *args, **kwargs):
+    def test_init_default(self):
         """ Test Debt.__init__ with default args. """
         account = self.AccountType(
-            self.owner, *args, **kwargs)
+            self.owner)
         self.assertEqual(account.minimum_payment, Money(0))
         self.assertEqual(account.savings_rate, 1)
         self.assertEqual(account.accelerated_payment, Money('Infinity'))
@@ -98,39 +98,39 @@ class TestDebtMethods(unittest.TestCase):
                 self.owner, *args,
                 living_expense='invalid', **kwargs)
 
-    def test_max_inflow_large_balance(self, *args, **kwargs):
+    def test_max_inflow_large_balance(self):
         """ Test `max_inflow` with balance greater than minimum payment. """
         self.debt.minimum_payment = 100
         self.debt.balance = Money(-1000)
         self.assertEqual(self.debt.max_inflow(), Money(1000))
 
-    def test_max_inflow_small_balance(self, *args, **kwargs):
+    def test_max_inflow_small_balance(self):
         """ Test `max_inflow` with balance less than minimum payment. """
         self.debt.minimum_payment = 1000
         self.debt.balance = Money(-100)
         self.assertEqual(self.debt.max_inflow(), Money(100))
 
-    def test_max_inflow_zero_balance(self, *args, **kwargs):
+    def test_max_inflow_zero_balance(self):
         """ Test `max_inflow` with zero balance. """
         self.debt.minimum_payment = 100
         self.debt.balance = Money(0)
         self.assertEqual(self.debt.max_inflow(), Money(0))
 
-    def test_max_inflow_no_accel(self, *args, **kwargs):
+    def test_max_inflow_no_accel(self):
         """ Test `max_inflow` with zero `accelerated_payment`. """
         self.debt.minimum_payment = 100
         self.debt.balance = Money(-200)
         self.debt.accelerated_payment = 0
         self.assertEqual(self.debt.max_inflow(), Money(100))
 
-    def test_max_inflow_partial_accel(self, *args, **kwargs):
+    def test_max_inflow_partial_accel(self):
         """ Test `max_inflow` with finite `accelerated_payment`. """
         self.debt.minimum_payment = 100
         self.debt.balance = Money(-200)
         self.debt.accelerated_payment = 50
         self.assertEqual(self.debt.max_inflow(), Money(150))
 
-    def test_max_inflow_small_inflow(self, *args, **kwargs):
+    def test_max_inflow_small_inflow(self):
         """ Test `max_inflow` with inflows less than the total max. """
         self.debt.minimum_payment = 100
         self.debt.balance = Money(-200)
@@ -138,7 +138,7 @@ class TestDebtMethods(unittest.TestCase):
         self.debt.add_transaction(60)
         self.assertEqual(self.debt.max_inflow(), Money(90))
 
-    def test_max_inflow_large_inflow(self, *args, **kwargs):
+    def test_max_inflow_large_inflow(self):
         """ Test `max_inflow` with inflows greater than the total max. """
         self.debt.minimum_payment = 100
         self.debt.balance = Money(-200)
@@ -147,39 +147,39 @@ class TestDebtMethods(unittest.TestCase):
         # Should not return a negative number:
         self.assertEqual(self.debt.max_inflow(), Money(0))
 
-    def test_min_inflow_large_balance(self, *args, **kwargs):
+    def test_min_inflow_large_balance(self):
         """ Test `min_inflow` with balance greater than min. payment. """
         self.debt.minimum_payment = 100
         self.debt.balance = Money(-1000)
         self.assertEqual(self.debt.min_inflow(), Money(100))
 
-    def test_min_inflow_small_balance(self, *args, **kwargs):
+    def test_min_inflow_small_balance(self):
         """ Test `min_inflow` with balance less than min. payment. """
         self.debt.minimum_payment = 1000
         self.debt.balance = Money(-100)
         self.assertEqual(self.debt.min_inflow(), Money(100))
 
-    def test_min_inflow_zero_balance(self, *args, **kwargs):
+    def test_min_inflow_zero_balance(self):
         """ Test `min_inflow` with zero balance. """
         self.debt.minimum_payment = 100
         self.debt.balance = Money(0)
         self.assertEqual(self.debt.min_inflow(), Money(0))
 
-    def test_min_inflow_small_inflow(self, *args, **kwargs):
+    def test_min_inflow_small_inflow(self):
         """ Test `min_inflow` with inflows less than the min. payment. """
         self.debt.minimum_payment = 10
         self.debt.balance = Money(-100)
         self.debt.add_transaction(5)
         self.assertEqual(self.debt.min_inflow(), Money(5))
 
-    def test_min_inflow_large_inflow(self, *args, **kwargs):
+    def test_min_inflow_large_inflow(self):
         """ Test `min_inflow` with inflows more than the min. payment. """
         self.debt.minimum_payment = 10
         self.debt.balance = Money(-100)
         self.debt.add_transaction(20)
         self.assertEqual(self.debt.min_inflow(), Money(0))
 
-    def test_payment_basic(self, *args, **kwargs):
+    def test_payment_basic(self):
         """ Test `payment` for account with only `savings_rate` set. """
         payment = self.debt.payment(
             savings_available=100,
@@ -188,7 +188,7 @@ class TestDebtMethods(unittest.TestCase):
             when='end')
         self.assertEqual(payment, Money(200))
 
-    def test_payment_savings_limited(self, *args, **kwargs):
+    def test_payment_savings_limited(self):
         """ Test `payment` limited by available savings amounts. """
         payment = self.debt.payment(
             savings_available=50,
@@ -197,7 +197,7 @@ class TestDebtMethods(unittest.TestCase):
             when='end')
         self.assertEqual(payment, Money(100))
 
-    def test_payment_living_limited(self, *args, **kwargs):
+    def test_payment_living_limited(self):
         """ Test `payment` limited by available living amounts. """
         payment = self.debt.payment(
             savings_available=100,
@@ -206,7 +206,7 @@ class TestDebtMethods(unittest.TestCase):
             when='end')
         self.assertEqual(payment, Money(100))
 
-    def test_payment_accel_limited(self, *args, **kwargs):
+    def test_payment_accel_limited(self):
         """ Test `payment` limited by `accelerated_payment`. """
         self.debt.minimum_payment = 100
         self.debt.accelerated_payment = 100
@@ -218,7 +218,7 @@ class TestDebtMethods(unittest.TestCase):
             when='end')
         self.assertEqual(payment, Money(200))
 
-    def test_payment_balance_limited(self, *args, **kwargs):
+    def test_payment_balance_limited(self):
         """ Test `payment` limited by `balance`. """
         self.debt.balance = Money(-100)
         # Balance is $100, so that's the payment.
@@ -229,7 +229,7 @@ class TestDebtMethods(unittest.TestCase):
             when='end')
         self.assertEqual(payment, Money(100))
 
-    def test_payment_other_limited(self, *args, **kwargs):
+    def test_payment_other_limited(self):
         """ Test `payment` limited by `other_payment`. """
         self.debt.minimum_payment = 100
         self.debt.accelerated_payment = 100
@@ -241,7 +241,7 @@ class TestDebtMethods(unittest.TestCase):
             when='end')
         self.assertEqual(payment, Money(0))
 
-    def test_payment_inflow_limited(self, *args, **kwargs):
+    def test_payment_inflow_limited(self):
         """ Test `payment` limited by `account.inflows`. """
         self.debt.minimum_payment = 100
         self.debt.accelerated_payment = 100
@@ -254,7 +254,7 @@ class TestDebtMethods(unittest.TestCase):
             when='end')
         self.assertEqual(payment, Money(0))
 
-    def test_payment_savings_only(self, *args, **kwargs):
+    def test_payment_savings_only(self):
         """ Test `payment` with `savings_rate=1`. """
         self.debt.savings_rate = 1
         payment = self.debt.payment(
@@ -264,7 +264,7 @@ class TestDebtMethods(unittest.TestCase):
             when='end')
         self.assertEqual(payment, Money(100))
 
-    def test_payment_living_only(self, *args, **kwargs):
+    def test_payment_living_only(self):
         """ Test `payment` with `savings_rate=0`. """
         self.debt.savings_rate = 0
         payment = self.debt.payment(
@@ -274,7 +274,7 @@ class TestDebtMethods(unittest.TestCase):
             when='end')
         self.assertEqual(payment, Money(100))
 
-    def test_payment_complex(self, *args, **kwargs):
+    def test_payment_complex(self):
         """ Test `payment` with all args to non-default values. """
         self.debt.minimum_payment = 100
         self.debt.living_expense = 100
@@ -292,7 +292,7 @@ class TestDebtMethods(unittest.TestCase):
             when='end')
         self.assertEqual(payment, Money(430))
 
-    def test_payment_from_savings(self, *args, **kwargs):
+    def test_payment_from_savings(self):
         """ Test `payment_from_savings`. """
         self.debt.savings_rate = Decimal('0.5')
         self.debt.living_expense = 100

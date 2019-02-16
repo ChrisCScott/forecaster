@@ -2,7 +2,6 @@
 
 import unittest
 import decimal
-from decimal import Decimal
 from forecaster import (
     Person, ContributionLimitAccount, Money)
 from tests.test_accounts.test_base import TestAccountMethods
@@ -136,7 +135,7 @@ class TestContributionLimitAccountMethods(TestAccountMethods):
     # this class and certain subclasses. Don't run these tests for this class.
     # Instead, allow subclasses to pass through.
 
-    def test_next_year(self, *args, **kwargs):
+    def test_next(self, *args, **kwargs):
         """ Test ContributionLimitAccount.next_year. """
         # next_contribution_room is not implemented for
         # ContributionLimitAccount, and it's required for next_year, so confirm
@@ -147,8 +146,8 @@ class TestContributionLimitAccountMethods(TestAccountMethods):
                 account.next_year()
         # For other account types, try a conventional next_year test
         else:
-            try:    
-                super().test_next_year(
+            try:
+                super().test_next(
                     *args, **kwargs)
             except NotImplementedError:
                 return  # this error is OK
@@ -167,52 +166,52 @@ class TestContributionLimitAccountMethods(TestAccountMethods):
         except NotImplementedError:
             return  # this error is OK
 
-    def test_next_year_no_growth(self, *args, **kwargs):
+    def test_next_no_growth(self, *args, **kwargs):
         """ Tests next_year with no growth. """
         try:
-            super().test_next_year_no_growth(*args, **kwargs)
+            super().test_next_no_growth(*args, **kwargs)
         except NotImplementedError:
             return  # this error is OK
 
-    def test_next_year_continuous_growth(self, *args, **kwargs):
+    def test_next_cont_growth(self, *args, **kwargs):
         """ Tests next_year with continuous growth. """
         try:
-            super().test_next_year_continuous_growth(*args, **kwargs)
+            super().test_next_cont_growth(*args, **kwargs)
         except NotImplementedError:
             return  # this error is OK
 
-    def test_next_year_discrete_growth(self, *args, **kwargs):
+    def test_next_disc_growth(self, *args, **kwargs):
         """ Tests next_year with discrete (monthly) growth. """
         try:
-            super().test_next_year_discrete_growth(*args, **kwargs)
+            super().test_next_disc_growth(*args, **kwargs)
         except NotImplementedError:
             return  # this error is OK
 
-    def test_next_year_basic_transaction(self, *args, **kwargs):
+    def test_next_basic_trans(self, *args, **kwargs):
         """ Tests next_year with a mid-year transaction. """
         try:
-            super().test_next_year_basic_transaction(*args, **kwargs)
+            super().test_next_basic_trans(*args, **kwargs)
         except NotImplementedError:
             return  # this error is OK
 
-    def test_next_year_no_growth_transaction(self, *args, **kwargs):
-        """ Tests next_year with no growth and a mid-year transaction. """
+    def test_next_no_growth_trans(self, *args, **kwargs):
+        """ Tests next_year with no growth and a transaction. """
         try:
-            super().test_next_year_no_growth_transaction(*args, **kwargs)
+            super().test_next_no_growth_trans(*args, **kwargs)
         except NotImplementedError:
             return  # this error is OK
 
-    def test_next_year_continuous_growth_transaction(self, *args, **kwargs):
-        """ Tests next_year with continuous growth and a mid-year transaction. """
+    def test_next_cont_growth_trans(self, *args, **kwargs):
+        """ Tests next_year with continuous growth and transaction. """
         try:
-            super().test_next_year_continuous_growth_transaction(*args, **kwargs)
+            super().test_next_cont_growth_trans(*args, **kwargs)
         except NotImplementedError:
             return  # this error is OK
 
-    def test_next_year_discrete_growth_transaction(self, *args, **kwargs):
-        """ Tests next_year with discrete growth and a mid-year transaction. """
+    def test_next_disc_growth_trans(self, *args, **kwargs):
+        """ Tests next_year with discrete growth and a transaction. """
         try:
-            super().test_next_year_discrete_growth_transaction(*args, **kwargs)
+            super().test_next_disc_growth_trans(*args, **kwargs)
         except NotImplementedError:
             return  # this error is OK
 

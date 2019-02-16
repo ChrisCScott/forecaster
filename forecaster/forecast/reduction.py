@@ -2,7 +2,6 @@
 
 from forecaster.ledger import (
     Money, recorded_property, recorded_property_cached)
-from forecaster.accounts import Account, Debt
 from forecaster.forecast.subforecast import SubForecast
 
 class ReductionForecast(SubForecast):
@@ -11,7 +10,7 @@ class ReductionForecast(SubForecast):
     Args:
         initial_year (int): The first year of the forecast.
         debts (Iterable[Debt]): Debts of the `people`.
-        debt_payment_strategy (DebtPaymentStrategy): 
+        debt_payment_strategy (DebtPaymentStrategy):
             A callable object that determines the schedule of
             transactions for any debt payments during the year.
             See the documentation for `DebtPaymentStrategy`
@@ -34,13 +33,12 @@ class ReductionForecast(SubForecast):
     # attributes return subscriptable objects.
 
     def __init__(
-        self, initial_year, debts, debt_payment_strategy
-    ):
+            self, initial_year, debts, debt_payment_strategy):
         """ Initializes an instance of ReductionForecast. """
         # Recall that, as a Ledger object, we need to call the
         # superclass initializer and let it know what the first
         # year is so that `this_year` is usable.
-        # TODO #53 removes this requirement.
+        # NOTE Issue #53 removes this requirement.
         super().__init__(initial_year)
         # Store attributes:
         self.debts = debts
@@ -67,7 +65,7 @@ class ReductionForecast(SubForecast):
         for debt in self.account_transactions:
             # Track the savings portion against `available`:
             self.add_transaction(
-                value=self.account_transactions_from_available[debt],
+                value=self.payments_from_available[debt],
                 when=0.5,
                 frequency=debt.payment_frequency,
                 from_account=available,
@@ -76,9 +74,9 @@ class ReductionForecast(SubForecast):
             # Track the non-savings portion as well, but don't deduct
             # from `available`
             self.add_transaction(
-                value=
+                value=(
                     self.account_transactions[debt]
-                     - self.account_transactions_from_available[debt],
+                    - self.payments_from_available[debt]),
                 when=0.5,
                 frequency=debt.payment_frequency,
                 from_account=None,
@@ -94,7 +92,7 @@ class ReductionForecast(SubForecast):
         )
 
     @recorded_property_cached
-    def account_transactions_from_available(self):
+    def payments_from_available(self):
         """ Amount repaid for each debt from `available` specifically. """
         return {
             debt: debt.payment_from_savings(
@@ -110,7 +108,7 @@ class ReductionForecast(SubForecast):
         # account_transactions_from_available is a dict and so does
         # have a `values` member.
         return sum(
-            self.account_transactions_from_available.values(),
+            self.payments_from_available.values(),
             Money(0)
         )
 

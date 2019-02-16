@@ -1,7 +1,7 @@
 """ Provides a ContributionForecast class for use by Forecast. """
 
 from forecaster.ledger import (
-    Money, recorded_property, recorded_property_cached)
+    recorded_property, recorded_property_cached)
 from forecaster.forecast.subforecast import SubForecast
 
 class ContributionForecast(SubForecast):
@@ -23,8 +23,7 @@ class ContributionForecast(SubForecast):
     """
 
     def __init__(
-        self, initial_year, accounts, account_transaction_strategy
-    ):
+            self, initial_year, accounts, account_transaction_strategy):
         """ Initializes an instance of ContributionForecast. """
         # Recall that, as a Ledger object, we need to call the
         # superclass initializer and let it know what the first

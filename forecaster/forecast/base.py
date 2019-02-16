@@ -90,7 +90,7 @@ class Forecast(Ledger):
 
         income (Money): The net income for the plannees for the year.
         living_expenses (Money): The amount that the plannees live off
-            of for the year. 
+            of for the year.
         gross_contributions (Money): The amount available to
             contribute to savings, before any reductions. This is the
             amount left over after living expenses.
@@ -111,9 +111,9 @@ class Forecast(Ledger):
     """
 
     def __init__(
-        self, income_forecast, living_expenses_forecast,
-        reduction_forecast, contribution_forecast,
-        withdrawal_forecast, tax_forecast, scenario
+            self, income_forecast, living_expenses_forecast,
+            reduction_forecast, contribution_forecast,
+            withdrawal_forecast, tax_forecast, scenario
     ):
         """ Constructs an instance of class Forecast.
 
@@ -137,7 +137,7 @@ class Forecast(Ledger):
         # Recall that, as a Ledger object, we need to call the
         # superclass initializer and let it know what the first
         # year is so that `this_year` is usable.
-        # TODO #53 removes this requirement.
+        # NOTE: Issue #53 removes this requirement.
         super().__init__(initial_year=scenario.initial_year)
 
         # Store input values

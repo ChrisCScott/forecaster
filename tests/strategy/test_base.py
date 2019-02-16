@@ -31,37 +31,41 @@ class TestStrategyMethods(unittest.TestCase):
         # pylint: disable=no-member
         # Pylint has trouble with Strategy; the strategies member is
         # created at class-definition time by the StrategyType metaclass
-        self.assertEqual(strategy.strategies, {
-            'Test': self.Subclass.test_strategy,
-            'Test2': self.Subclass.test_strategy2}
-        )
+        self.assertEqual(
+            strategy.strategies,
+            {
+                'Test': self.Subclass.test_strategy,
+                'Test2': self.Subclass.test_strategy2})
         self.assertEqual(strategy(), 1)
         self.assertEqual(strategy(2), 2)
 
         # Test a basic initialization where we pass a function
         strategy = self.Subclass(self.Subclass.test_strategy)
 
-        self.assertEqual(strategy.strategies, {
-            'Test': self.Subclass.test_strategy,
-            'Test2': self.Subclass.test_strategy2}
-        )
+        self.assertEqual(
+            strategy.strategies,
+            {
+                'Test': self.Subclass.test_strategy,
+                'Test2': self.Subclass.test_strategy2})
         self.assertEqual(strategy(), 1)
         self.assertEqual(strategy(2), 2)
 
         # Test a basic initialization where we pass a bound method
         strategy = self.Subclass(strategy.test_strategy)
 
-        self.assertEqual(strategy.strategies, {
-            'Test': self.Subclass.test_strategy,
-            'Test2': self.Subclass.test_strategy2}
-        )
+        self.assertEqual(
+            strategy.strategies,
+            {
+                'Test': self.Subclass.test_strategy,
+                'Test2': self.Subclass.test_strategy2})
         self.assertEqual(strategy(), 1)
         self.assertEqual(strategy(2), 2)
 
-        self.assertEqual(strategy.strategies, {
-            'Test': self.Subclass.test_strategy,
-            'Test2': self.Subclass.test_strategy2}
-        )
+        self.assertEqual(
+            strategy.strategies,
+            {
+                'Test': self.Subclass.test_strategy,
+                'Test2': self.Subclass.test_strategy2})
         self.assertEqual(strategy(), 1)
         self.assertEqual(strategy(2), 2)
 
@@ -80,7 +84,7 @@ class TestStrategyMethods(unittest.TestCase):
         strategies = {
             LivingExpensesStrategy.strategy_const_contribution.strategy_key:
                 LivingExpensesStrategy.strategy_const_contribution,
-            LivingExpensesStrategy.strategy_const_living_expenses.strategy_key:  # noqa
+            LivingExpensesStrategy.strategy_const_living_expenses.strategy_key:
                 LivingExpensesStrategy.strategy_const_living_expenses,
             LivingExpensesStrategy.strategy_gross_percent.strategy_key:
                 LivingExpensesStrategy.strategy_gross_percent,

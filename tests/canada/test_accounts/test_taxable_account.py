@@ -64,9 +64,9 @@ class TestTaxableAccountMethods(TestAccountMethods):
         # The $200 withdrawal will yield a $125 capital gain.
         self.assertEqual(account.capital_gain, Money(125))
 
-    def test_next_year(self, *args, **kwargs):
+    def test_next(self, *args, **kwargs):
         """ Test TaxableAccount.next_year(). """
-        super().test_next_year(*args, **kwargs)
+        super().test_next(*args, **kwargs)
 
         # Init account with $50 acb.
         # Balance is $100, of which $50 is capital gains.

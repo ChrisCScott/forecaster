@@ -48,7 +48,7 @@ def when_conv(when):
 
 # String codes describing frequencies (e.g. annual, bimonthly)
 # mapped to ints giving the number of such periods in a year:
-frequency_mapping = {
+FREQUENCY_MAPPING = {
     'C': None,
     'D': 365,
     'W': 52,
@@ -83,9 +83,9 @@ def frequency_conv(nper):
 
     # Try to parse a string based on known compounding frequencies
     if isinstance(nper, str):
-        if nper not in frequency_mapping:
+        if nper not in FREQUENCY_MAPPING:
             raise ValueError('Account: str nper must have a known value')
-        return frequency_mapping[nper]
+        return FREQUENCY_MAPPING[nper]
     else:  # Attempt to cast to int
         if not nper == int(nper):
             raise TypeError(

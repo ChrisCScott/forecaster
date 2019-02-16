@@ -17,7 +17,7 @@ class TestIncomeForecast(unittest.TestCase):
             self.initial_year: {Money(0): Decimal(0.5)}})
         # A person who is paid $200 gross ($100 net) every 2 weeks:
         self.person1 = Person(
-            initial_year = self.initial_year,
+            initial_year=self.initial_year,
             name="Test 1",
             birth_date="1 January 1980",
             retirement_date="31 December 2045",
@@ -26,7 +26,7 @@ class TestIncomeForecast(unittest.TestCase):
             payment_frequency='BW')
         # A person who is paid $100 gross ($50 net) every 2 weeks:
         self.person2 = Person(
-            initial_year = self.initial_year,
+            initial_year=self.initial_year,
             name="Test 2",
             birth_date="1 January 1982",
             retirement_date="31 December 2047",

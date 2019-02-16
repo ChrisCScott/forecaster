@@ -2,13 +2,11 @@
 
 import unittest
 from decimal import Decimal
-from collections import defaultdict
 from forecaster import (
     Money, Person, Tax,
     WithdrawalForecast,
     AccountTransactionStrategy,
-    Account, ContributionLimitAccount,
-    Scenario)
+    Account, ContributionLimitAccount)
 
 
 class TestWithdrawalForecast(unittest.TestCase):
@@ -22,7 +20,7 @@ class TestWithdrawalForecast(unittest.TestCase):
             self.initial_year: {Money(0): Decimal(0.5)}})
         # Accounts need an owner:
         self.person = Person(
-            initial_year = self.initial_year,
+            initial_year=self.initial_year,
             name="Test",
             birth_date="1 January 1980",
             retirement_date="31 December 1999",  # last year
@@ -58,7 +56,7 @@ class TestWithdrawalForecast(unittest.TestCase):
             accounts={self.account, self.limit_account},
             account_transaction_strategy=self.account_strategy)
 
-    def test_account_transactions_ordered(self):
+    def test_account_trans_ordered(self):
         """ Test account transactions under ordered strategy. """
         # Set up forecast:
         self.account_strategy = AccountTransactionStrategy(
@@ -84,7 +82,7 @@ class TestWithdrawalForecast(unittest.TestCase):
             account_withdrawal,
             Money(-14000))
 
-    def test_account_transactions_weighted(self):
+    def test_account_trans_weighted(self):
         """ Test account transactions under weighted strategy. """
         # Set up forecast:
         self.account_strategy = AccountTransactionStrategy(

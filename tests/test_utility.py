@@ -40,7 +40,7 @@ class TestFreeMethods(unittest.TestCase):
         frequency = frequency_conv('C')
         self.assertEqual(frequency, None)
         self.assertIsInstance(frequency, type(None))
-        
+
         frequency = frequency_conv(None)
         self.assertEqual(frequency, None)
         self.assertIsInstance(frequency, type(None))

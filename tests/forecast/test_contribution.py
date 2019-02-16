@@ -20,7 +20,7 @@ class TestContributionForecast(unittest.TestCase):
             self.initial_year: {Money(0): Decimal(0.5)}})
         # Accounts need an owner:
         self.person = Person(
-            initial_year = self.initial_year,
+            initial_year=self.initial_year,
             name="Test",
             birth_date="1 January 1980",
             retirement_date="31 December 2045",
@@ -54,7 +54,7 @@ class TestContributionForecast(unittest.TestCase):
             accounts={self.account, self.limit_account},
             account_transaction_strategy=self.strategy)
 
-    def test_account_transactions_ordered(self):
+    def test_account_trans_ordered(self):
         """ Test account transactions under ordered strategy. """
         # Set up forecast:
         self.strategy = AccountTransactionStrategy(
@@ -80,7 +80,7 @@ class TestContributionForecast(unittest.TestCase):
             account_contribution,
             self.total_available - limit_account_contribution)
 
-    def test_account_transactions_weighted(self):
+    def test_account_trans_weight(self):
         """ Test account transactions under weighted strategy. """
         # Set up forecast:
         self.strategy = AccountTransactionStrategy(

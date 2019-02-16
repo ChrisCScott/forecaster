@@ -1,7 +1,6 @@
 """ Provides a LivingExpensesForecast class for use by Forecast. """
 
-from forecaster.ledger import (
-    Money, recorded_property, recorded_property_cached)
+from forecaster.ledger import recorded_property_cached
 from forecaster.forecast.subforecast import SubForecast
 
 class LivingExpensesForecast(SubForecast):
@@ -27,13 +26,12 @@ class LivingExpensesForecast(SubForecast):
     """
 
     def __init__(
-        self, initial_year, people, living_expenses_strategy
-    ):
+            self, initial_year, people, living_expenses_strategy):
         """ Initializes an instance of LivingExpensesForecast. """
         # Recall that, as a Ledger object, we need to call the
         # superclass initializer and let it know what the first
         # year is so that `this_year` is usable.
-        # TODO #53 removes this requirement.
+        # NOTE Issue #53 removes this requirement.
         super().__init__(initial_year)
 
         self.living_expenses_strategy = living_expenses_strategy
@@ -63,6 +61,5 @@ class LivingExpensesForecast(SubForecast):
             person.retirement_date.year for person in self.people)
         return self.living_expenses_strategy(
             year=self.this_year,
-            people = self.people,
-            retirement_year=retirement_year
-        )
+            people=self.people,
+            retirement_year=retirement_year)

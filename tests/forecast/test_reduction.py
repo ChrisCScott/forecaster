@@ -19,7 +19,7 @@ class TestReductionForecast(unittest.TestCase):
             self.initial_year: {Money(0): Decimal(0.5)}})
         # Debt accounts need an owner:
         self.person = Person(
-            initial_year = self.initial_year,
+            initial_year=self.initial_year,
             name="Test",
             birth_date="1 January 1980",
             retirement_date="31 December 2045",
@@ -70,7 +70,7 @@ class TestReductionForecast(unittest.TestCase):
             debts={self.debt_large, self.debt_small},
             debt_payment_strategy=self.strategy)
 
-    def test_account_transactions_avalanche(self):
+    def test_trans_avalanche(self):
         """ Test account transactions under avalanche strategy. """
         # Set up forecast:
         self.strategy = DebtPaymentStrategy(
@@ -96,7 +96,7 @@ class TestReductionForecast(unittest.TestCase):
             debt_large_payment,
             self.total_available - debt_small_payment)
 
-    def test_account_transactions_snowball(self):
+    def test_trans_snowball(self):
         """ Test account transactions under snowball strategy. """
         # Set up forecast:
         self.strategy = DebtPaymentStrategy(
@@ -123,7 +123,7 @@ class TestReductionForecast(unittest.TestCase):
             debt_large_payment,
             self.total_available - debt_small_payment)
 
-    def test_account_transactions_from_available(self):
+    def test_payments_from_avail(self):
         """ Test accounts partially repaid from living expenses. """
         # Set up forecast:
         self.forecast.debts = {self.debt_partial}
@@ -136,7 +136,7 @@ class TestReductionForecast(unittest.TestCase):
         debt_payment = (
             self.forecast.account_transactions[self.debt_partial])
         debt_payment_from_available = (
-            self.forecast.account_transactions_from_available[
+            self.forecast.payments_from_available[
                 self.debt_partial])
         # We have $3000 available to spend on debts. That's enough
         # to fully repay this debt. The first $100 is repaid from
@@ -160,10 +160,10 @@ class TestReductionForecast(unittest.TestCase):
         # These properties return dicts, but pylint has trouble
         # inferring that.
         reduction_from_partial = (
-            self.forecast.account_transactions_from_available[
+            self.forecast.payments_from_available[
                 self.debt_partial])
         reduction_from_small = (
-            self.forecast.account_transactions_from_available[
+            self.forecast.payments_from_available[
                 self.debt_small])
 
         self.assertEqual(
@@ -194,7 +194,7 @@ class TestReductionForecast(unittest.TestCase):
         # These properties return dicts, but pylint has trouble
         # inferring that.
         reduction_from_small = (
-            self.forecast.account_transactions_from_available[
+            self.forecast.payments_from_available[
                 self.debt_small])
 
         self.assertEqual(

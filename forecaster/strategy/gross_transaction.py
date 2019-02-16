@@ -70,8 +70,7 @@ class LivingExpensesStrategy(Strategy):
     # are 6 of them (including self). Refactoring to use a dict or
     # similar would hurt readability.
     def __init__(
-        self, strategy, base_amount=0, rate=0, inflation_adjust=None
-    ):
+            self, strategy, base_amount=0, rate=0, inflation_adjust=None):
         """ Constructor for LivingExpensesStrategy. """
         super().__init__(strategy)
 
@@ -87,18 +86,21 @@ class LivingExpensesStrategy(Strategy):
 
         # Types are enforced by explicit conversion; no need to check.
 
+    # These methods all have the same signature, though they don't
+    # all use every argument. Accordingly, some unused arguments are
+    # to be expected.
+    # pylint: disable=unused-argument
+
     # Begin defining subclass-specific strategies
     @strategy_method('Constant contribution')
-    def strategy_const_contribution(self, people, year=None, *args, **kwargs):
-        """ Contribute a constant amount (in real terms) and live off the rest. """
+    def strategy_const_contribution(self, people, *args, year=None, **kwargs):
+        """ Contribute a constant (real) amount and live off the rest. """
         total_income = sum(person.net_income for person in people)
         contributions = Money(self.base_amount * self.inflation_adjust(year))
         return total_income - contributions
 
     @strategy_method('Constant living expenses')
-    def strategy_const_living_expenses(
-            self, year=None, *args, **kwargs
-    ):
+    def strategy_const_living_expenses(self, *args, year=None, **kwargs):
         """ Living expenses remain constant, in real terms. """
         return Money(self.base_amount * self.inflation_adjust(year))
 
@@ -113,18 +115,15 @@ class LivingExpensesStrategy(Strategy):
         return self.rate * sum(person.gross_income for person in people)
 
     @strategy_method('Percentage of earnings growth')
-    def strategy_percent_over_base(
-        self, people, year=None, *args, **kwargs
-    ):
+    def strategy_percent_over_base(self, people, *args, year=None, **kwargs):
         """ Live off a base amount plus a percentage of earnings above it. """
         base_amount = self.base_amount * self.inflation_adjust(year)
         total_income = sum(person.net_income for person in people)
         return base_amount + (total_income - base_amount) * self.rate
 
     @strategy_method('Percentage of principal at retirement')
-    def strategy_principal_percent_retirement(
-        self, accounts, retirement_year, year=None, *args, **kwargs
-    ):
+    def strategy_principal_percent_ret(
+            self, accounts, retirement_year, *args, year=None, **kwargs):
         """ Withdraw a percentage of principal (as of retirement). """
         retirement_balance = sum(
             account.balance_history[retirement_year] for account in accounts)
@@ -133,9 +132,8 @@ class LivingExpensesStrategy(Strategy):
             * self.inflation_adjust(year, retirement_year))
 
     @strategy_method('Percentage of net income at retirement')
-    def strategy_net_percent_retirement(
-        self, people, retirement_year, year=None, *args, **kwargs
-    ):
+    def strategy_net_percent_ret(
+            self, people, retirement_year, *args, year=None, **kwargs):
         """ Withdraw a percentage of max. net income (as of retirement). """
         retirement_income = sum(
             person.net_income_history[retirement_year] for person in people)
@@ -144,9 +142,8 @@ class LivingExpensesStrategy(Strategy):
             * self.inflation_adjust(year, retirement_year))
 
     @strategy_method('Percentage of gross income at retirement')
-    def strategy_gross_percent_retirement(
-        self, people, retirement_year, year=None, *args, **kwargs
-    ):
+    def strategy_gross_percent_ret(
+            self, people, retirement_year, *args, year=None, **kwargs):
         """ Withdraw a percentage of gross income. """
         retirement_income = sum(
             person.gross_income_history[retirement_year] for person in people)
@@ -154,10 +151,11 @@ class LivingExpensesStrategy(Strategy):
             self.rate * retirement_income
             * self.inflation_adjust(year, retirement_year))
 
+    # pylint: enable=unused-argument
+
     def __call__(
-        self, people=None, year=None, retirement_year=None,
-        *args, **kwargs
-    ):
+            self, *args,
+            people=None, year=None, retirement_year=None, **kwargs):
         """ Returns the living expenses for the year. """
         # Collect the accounts owned by `people` into a flat
         # `set[Account]` object:
@@ -177,7 +175,7 @@ class LivingExpensesStrategy(Strategy):
 
 class LivingExpensesStrategySchedule(object):
     """ Determines living expenses while working and retired.
-    
+
     This class is callable, like `LivingExpensesStrategy`, and
     accepts all of the same arguments when called.
 
@@ -223,15 +221,14 @@ class LivingExpensesStrategySchedule(object):
         self.retirement = retirement
         self.minimum = minimum
 
-    def __call__(self, year=None, retirement_year=None,
-        *args, **kwargs):
+    def __call__(self, *args, year=None, retirement_year=None, **kwargs):
         """ Returns the living expenses for the year. """
         # First determine whether we're using the working
         # or retirement living expenses formula:
         if (
-            (year is not None and retirement_year is not None)
-            and year > retirement_year
-        ):
+                year is not None
+                and retirement_year is not None
+                and year > retirement_year):
             living_expenses = self.retirement(
                 year=year, retirement_year=retirement_year,
                 *args, **kwargs)

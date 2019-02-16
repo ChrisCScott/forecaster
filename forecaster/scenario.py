@@ -33,10 +33,9 @@ class Scenario(object):
     """
 
     def __init__(
-        self, initial_year, num_years,
-        inflation=0, stock_return=0, bond_return=0, other_return=0,
-        management_fees=0
-    ):
+            self, initial_year, num_years,
+            inflation=0, stock_return=0, bond_return=0, other_return=0,
+            management_fees=0):
         """ Constructor for `Scenario`.
 
         Arguments may be dicts (of {year, value} pairs), lists (or
