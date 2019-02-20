@@ -12,60 +12,6 @@ from forecaster.strategy import (
 from forecaster.scenario import Scenario
 from forecaster.settings import Settings
 
-# To init a `Forecast`, we need:
-#   IncomeForecast:
-#       initial_year
-#       people
-#   LivingExpensesForecast:
-#       initial_year
-#       people
-#       living_expenses_strategy:
-#           strategy
-#           [base_amount]
-#           [rate]
-#           [inflation_adjust]
-#   ReductionForecast:
-#       initial_year
-#       debts
-#       debt_payment_strategy:
-#           strategy
-#           [timing]
-#   ContributionForecast:
-#       initial_year
-#       accounts
-#       account_transaction_strategy:
-#           strategy
-#           weights
-#           [timing]
-#   WithdrawalForecast:
-#       initial_year
-#       people
-#       accounts
-#       account_transaction_strategy:
-#           strategy
-#           weights
-#           [timing]
-#   TaxForecast:
-#       initial_year
-#       people
-#       tax_treatment:
-#           tax_brackets
-#           [personal_deduction]
-#           [credit_rate]
-#           [inflation_adjust]
-#           [payment_timing]
-#   Scenario:
-#       initial_year
-#       num_years
-#       inflation
-#       stock_return
-#       bond_return
-#       other_return
-#       management_fees
-# NOTE: We can likely avoid providing any defaults for tax_treatment
-# simply by using the tax_treatment attribute of one of the Person
-# objects.
-# We can also reuse `people`, `debts`, `accounts`, and `initial_year`
 
 # The `Forecaster` class makes frequent reference to the names of
 # parameters. Rather than hard-code these strings, it's better practice
@@ -147,11 +93,10 @@ DEFAULTTYPES = {
     Parameter.ALLOCATION_STRATEGY: AllocationStrategy,
     Parameter.TAX_TREATMENT: Tax}
 
-# This class would be greatly simplified, and could provide most of
-# its value by (1) reading in Settings objects from files, and
-# (2) building various SubForecast objects using the same
-# `people`, `accounts`, etc., where appropriate.
-
+# This maps certain parameters that need special init logic to
+# the method name that provides that logic.
+DEFAULTBUILDERS = {
+    Parameter.TAX_TREATMENT: "build_tax_treatment"}
 
 class Forecaster(object):
     """ A convenience class for building Forecasts based on settings.
@@ -162,26 +107,24 @@ class Forecaster(object):
     information.
 
     One of the purposes of this class is to enable building `Forecast`
-    objects solely from a `Settings` object, some `Ledger` objects
-    (i.e. people, assets, and debts) and, optionally, `inputs` dicts.
-    Objects of this class can be initialized with any of the parameters
-    that can be provided to `Forecast` (as well as a `Settings` object).
-    Any parameters that are not provided at init time can be built
-    afterward via an `add_\\*` method. Each `add_\\*` method takes the
-    parameters of the corresponding object being built; e.g.
-    `add_person` takes the same parameters as `Person.__init__` (plus
-    a `cls` parameter -- see documentation for `add_person`).
+    objects solely from a `Settings` object and some `Ledger` objects
+    (i.e. people, assets, and debts.) Client code may optionally
+    provide certain parameters required by `Forecast` or its members,
+    which will be used as-is without values from `Settings`. Client
+    code may also (or alternatively) build parameters with partial
+    init args; `Forecaster` will fill in any remaining init args with
+    the appropriate values from `Settings`.
 
-    This behaviour can be particularly useful for `Ledger` objects like
-    `Person` or `Account`, which may have per-object historical
-    data that can't be inferred from a Settings object (represented by
-    an `inputs` dict for each such object).
+    `Forecaster` also can be used to build certain objects which
+    are used by `Ledger` arguments to `Forecaster.run_forecast()`,
+    such as `Tax` and `AllocationStrategy` objects (used
+    by `Person` and some `Account` objects, respectively.)
 
-    `Forecasts` may be generated based on varying `Scenario` object
-    (while retaining the same `Strategy`, `Person`, and `Account`
-    objects) to allow for comparison of an overarching strategy between
-    various future economic performance scenarios (e.g. as in Monte
-    Carlo analysis).
+    `Forecaster` does not mutate values provided to it. `Ledger`
+    objects passed by client code are copied (actually deepcopied, so
+    that relationships between them are preserved), and the copies are
+    mutated and returned. This makes it easy to tweak a few parameters
+    and run another forecast, e.g. via Monte Carlo sampling.
     """
 
     def __init__(
@@ -194,27 +137,12 @@ class Forecaster(object):
             withdrawal_strategy=None,
             tax_treatment=None
     ):
-        """ Inits an instance of `Forecaster`.
-
-        This method can receive any of the parameters that can be
-        provided to `Forecast`. Any parameters that are not provided at
-        init time can be provided afterward via an `add_*` method.
-
-        This method automatically builds `Scenario` and `Strategy`
-        objects from `Settings`, but not any `Ledger` (i.e. `Person`,
-        `Debt`, or `Account`) objects, which must be passed
-        explicitly.
-
-        Args:
-            settings (Settings): An object with settings values for the
-                `Forecaster` to pass to various `Account`, `Person`,
-                `Strategy`, and `Scenario` objects when explicit
-                arguments are not given.
-        """
+        """ Inits an instance of `Forecaster`. """
         # Set up instance:
         super().__init__()
         self.default_values = copy(DEFAULTVALUES)
         self.default_types = copy(DEFAULTTYPES)
+        self.default_builders = copy(DEFAULTBUILDERS)
         # Store args as attributes:
         self.settings = settings
         self.scenario = scenario
@@ -287,11 +215,14 @@ class Forecaster(object):
         # Forecasts run automatically on init, so we're done!
         return forecast
 
-    def build_param(self, param_name, param_type, *args, **kwargs):
+    def build_param(self, param_name, param_type, *args, _special_builder=True, **kwargs):
         """ TODO """
-        # There's special logic for tax_treatment:
-        if param_name == Parameter.TAX_TREATMENT and param_type == Tax:
-            return self.build_tax_treatment(*args, **kwargs)
+        # If there's special logic for this parameter, use that instead:
+        # (The special builder method can call this one by setting
+        # `_special_builder` to False.)
+        if _special_builder and param_name in self.default_builders:
+            return getattr(
+                self, self.default_builders[param_name])(*args, **kwargs)
         # For everything else, use the user-provided defaults and fill
         # in the gaps with the settings-provided defaults:
         if param_name in self.default_values:
@@ -333,7 +264,8 @@ class Forecaster(object):
         other parameters.
         """
         return self.build_param(
-            Parameter.ALLOCATION_STRATEGY, AllocationStrategy, *args, **kwargs)
+            Parameter.ALLOCATION_STRATEGY, AllocationStrategy, *args,
+            _special_builder=False, **kwargs)
 
     def build_tax_treatment(self, *args, **kwargs):
         """ Convenience method to build a Tax instance.
@@ -356,4 +288,5 @@ class Forecaster(object):
             kwargs = copy(kwargs)
             kwargs["inflation_adjust"] = scenario.inflation_adjust
         return self.build_param(
-            Parameter.TAX_TREATMENT, Tax, *args, **kwargs)
+            Parameter.TAX_TREATMENT, Tax, *args,
+            _special_builder=False, **kwargs)
