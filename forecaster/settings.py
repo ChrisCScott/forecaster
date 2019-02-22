@@ -72,7 +72,7 @@ class Settings:
     debt_payment_timing = 'end'
 
     ''' Tax defaults '''
-    tax_brackets = {Decimal(0): Decimal(0)}
-    tax_personal_deduction = Decimal(0)
-    tax_credit_rate = Decimal(0)
+    tax_brackets = {initial_year: {Decimal(0): Decimal(0)}}
+    tax_personal_deduction = {initial_year: Decimal(0)}
+    tax_credit_rate = {initial_year: Decimal(0)}
     tax_payment_timing = 'start'
