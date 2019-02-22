@@ -23,4 +23,4 @@ from forecaster.forecast import (
     Forecast, SubForecast, IncomeForecast, LivingExpensesForecast,
     ContributionForecast, ReductionForecast, WithdrawalForecast,
     TaxForecast)
-from forecaster.forecaster import Forecaster
+from forecaster.forecaster import Forecaster, Parameter
