@@ -105,16 +105,16 @@ class TestForecast(unittest.TestCase):
             accounts={self.account},
             account_transaction_strategy=self.strategy)
 
-        # Now assign `people`, `assets`, and `debts` attrs to
+        # Now assign `people`, `accounts`, and `debts` attrs to
         # appropriate subforecasts so that Forecast can retrieve
         # them:
         self.income_forecast_dummy.people = {self.person}
-        self.withdrawal_forecast_dummy.assets = {self.account}
+        self.withdrawal_forecast_dummy.accounts = {self.account}
         self.reduction_forecast_dummy.debts = {}
         # Also add these to the null forecast, since it could be
         # substituted for any of the above dummy forecasts:
         self.null_forecast.people = self.income_forecast_dummy.people
-        self.null_forecast.assets = self.withdrawal_forecast_dummy.assets
+        self.null_forecast.accounts = self.withdrawal_forecast_dummy.accounts
         self.null_forecast.debts = self.reduction_forecast_dummy.debts
         # Forecast depends on SubForecasts have certain properties,
         # so add those here:

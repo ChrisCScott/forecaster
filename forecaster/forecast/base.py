@@ -180,7 +180,7 @@ class Forecast(Ledger):
     @property
     def assets(self):
         """ A set of `Asset` objects for the forecast, excluding debts. """
-        return self.withdrawal_forecast.assets
+        return self.withdrawal_forecast.accounts
 
     @property
     def debts(self):
