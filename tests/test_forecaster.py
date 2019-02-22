@@ -111,8 +111,8 @@ class TestForecaster(unittest.TestCase):
         if len(first) != len(second):
             super().assertEqual(first, second)
         # Then iterate over the elements in sequence:
-        for i in range(0, len(first)):
-            self.assertEqual(first[i], second[i], msg=msg, memo=memo)
+        for first_value, second_value in zip(first, second):
+            self.assertEqual(first_value, second_value, msg=msg, memo=memo)
 
     def assertEqual_set(self, first, second, msg=None, memo=None):
         """ Extends equality testing for sets with complex members. """
@@ -263,31 +263,31 @@ class TestForecaster(unittest.TestCase):
         # is provided by default by the Settings class:
         self.assertEqual(forecaster.settings, self.settings)
 
-    def test_build_living_expenses_strategy(self):
+    def test_build_living_exp_strat(self):
         """ Test Forecaster.build_param for living_expenses_strategy. """
         forecaster = Forecaster()
         param = forecaster.get_param(Parameter.LIVING_EXPENSES_STRATEGY)
         self.assertEqual(param, self.living_expenses_strategy)
 
-    def test_build_debt_payment_strategy(self):
+    def test_build_debt_pay_strat(self):
         """ Test Forecaster.build_param for debt_payment_strategy. """
         forecaster = Forecaster()
         param = forecaster.get_param(Parameter.DEBT_PAYMENT_STRATEGY)
         self.assertEqual(param, self.debt_payment_strategy)
 
-    def test_build_contribution_strategy(self):
+    def test_build_contrib_strat(self):
         """ Test Forecaster.build_param for contribution_strategy. """
         forecaster = Forecaster()
         param = forecaster.get_param(Parameter.CONTRIBUTION_STRATEGY)
         self.assertEqual(param, self.contribution_strategy)
 
-    def test_build_withdrawal_strategy(self):
+    def test_build_withdraw_strat(self):
         """ Test Forecaster.build_param for withdrawal_strategy. """
         forecaster = Forecaster()
         param = forecaster.get_param(Parameter.WITHDRAWAL_STRATEGY)
         self.assertEqual(param, self.withdrawal_strategy)
 
-    def test_build_allocation_strategy(self):
+    def test_build_allocation_strat(self):
         """ Test Forecaster.build_param for allocation_strategy. """
         forecaster = Forecaster()
         param = forecaster.get_param(Parameter.ALLOCATION_STRATEGY)
