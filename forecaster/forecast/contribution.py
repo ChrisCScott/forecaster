@@ -72,4 +72,5 @@ class ContributionForecast(SubForecast):
         # pylint can't infer the type of account_transactions
         # because we don't import `AccountTransactionsStrategy`
         return sum(
-            self.account_transactions[account] for account in self.accounts)
+            self.account_transactions[account]
+            for account in self.account_transactions)
