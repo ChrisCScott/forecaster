@@ -260,6 +260,8 @@ class AllocationStrategy(Strategy):
         # In the meantime, suppress Pylint's complaints about how this
         # method is useless:
         # pylint: disable=useless-super-delegation
-        allocation = super().__call__(age, retirement_age, *args, **kwargs)
+        allocation = super().__call__(
+            age, *args,
+            retirement_age=retirement_age, **kwargs)
 
         return self._balance_allocation(allocation)
