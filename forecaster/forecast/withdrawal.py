@@ -57,6 +57,12 @@ class WithdrawalForecast(SubForecast):
         # pylint can't infer the type of account_transactions
         # because we don't import `AccountTransactionsStrategy`
 
+        # TODO #59: Limit amount withdrawn to `account_transactions`
+        # for each account.
+        # It's fine to _prefer_ withdrawing at times when cashflow is
+        # negative, but we shouldn't be _increasing_ withdrawals as
+        # default behaviour (though maybe we can do it if a flag is set)
+
         # Set up variables to track progress as we make withdrawals:
         accum = Money(0)
         transactions_total = sum(self.account_transactions.values())
