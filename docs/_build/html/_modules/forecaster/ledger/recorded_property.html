@@ -1,0 +1,334 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.ledger.recorded_property &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">forecaster</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>forecaster.ledger.recorded_property</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for forecaster.ledger.recorded_property</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; Module providing property-like decorators for `Ledger` subclasses. &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="recorded_property"><a class="viewcode-back" href="../../../forecaster.ledger.html#forecaster.person.recorded_property">[docs]</a><span class="k">class</span> <span class="nc">recorded_property</span><span class="p">(</span><span class="nb">property</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; A decorator for properties that record their annual amounts.</span>
+
+<span class="sd">    Methods decorated with this decorator (a) are decorated with the</span>
+<span class="sd">    @property decorator, and (b) sets a recorded_property flag attribute</span>
+<span class="sd">    on the decorated property.</span>
+
+<span class="sd">    `recorded_property`-decorated properties are processed by the Ledger</span>
+<span class="sd">    metaclass to automatically generate have a &lt;name&gt;_history property,</span>
+<span class="sd">    and a _&lt;name&gt; dict attribute to the class.</span>
+
+<span class="sd">    Example::</span>
+
+<span class="sd">        class ExampleLedger(Ledger):</span>
+<span class="sd">            @recorded_property</span>
+<span class="sd">            def taxable_income(self):</span>
+<span class="sd">                return &lt;formula for taxable_income&gt;</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># This is a decorator, which mimics the naming convention followed by</span>
+    <span class="c1"># `property` (i.e. lowercase)</span>
+    <span class="c1"># pylint: disable=invalid-name</span>
+
+<div class="viewcode-block" id="recorded_property.__init__"><a class="viewcode-back" href="../../../forecaster.ledger.html#forecaster.person.recorded_property.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fget</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Init recorded_property.</span>
+
+<span class="sd">        This wraps the getter received via the `@recorded_property`</span>
+<span class="sd">        decoration into a method that returns a value from a dict of</span>
+<span class="sd">        recorded values if such a value is present for the key</span>
+<span class="sd">        `self.this_year`. If not, it calls the getter. No setter may be</span>
+<span class="sd">        provided; this decorator automatically generates one based on</span>
+<span class="sd">        this dict of recorded values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="n">fget</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">history_prop_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s1">&#39;_history&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">history_dict_name</span> <span class="o">=</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">history_prop_name</span>
+
+        <span class="c1"># Getter returns stored value if available, otherwise generates</span>
+        <span class="c1"># a new value (and does not cache it - we only automatically</span>
+        <span class="c1"># store a value when next_year() is called)</span>
+        <span class="k">def</span> <span class="nf">getter</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot; Returns cached value in \\*_history dict if available. &quot;&quot;&quot;</span>
+            <span class="n">history_dict</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">history_dict_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">this_year</span> <span class="ow">in</span> <span class="n">history_dict</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">history_dict</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">this_year</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">fget</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">setter</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot; Adds value to cache, without overwriting user input. &quot;&quot;&quot;</span>
+            <span class="c1"># Don&#39;t overwrite a value provided via an inputs dict:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="vm">__name__</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">inputs</span> <span class="ow">and</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">this_year</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="vm">__name__</span><span class="p">]</span>
+            <span class="p">):</span>
+                <span class="n">history_dict</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">history_dict_name</span><span class="p">)</span>
+                <span class="n">history_dict</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">this_year</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+
+        <span class="k">def</span> <span class="nf">deleter</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot; Removes a cached value, without removing user input. &quot;&quot;&quot;</span>
+            <span class="c1"># Don&#39;t delete a value provided via an inputs dict:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="vm">__name__</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">inputs</span> <span class="ow">and</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">this_year</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="vm">__name__</span><span class="p">]</span>
+            <span class="p">):</span>
+                <span class="n">history_dict</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">history_dict_name</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">this_year</span> <span class="ow">in</span> <span class="n">history_dict</span><span class="p">:</span>
+                    <span class="k">del</span> <span class="n">history_dict</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">this_year</span><span class="p">]</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">fget</span><span class="o">=</span><span class="n">getter</span><span class="p">,</span> <span class="n">fset</span><span class="o">=</span><span class="n">setter</span><span class="p">,</span> <span class="n">fdel</span><span class="o">=</span><span class="n">deleter</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="n">doc</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">history</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot; Returns history dict for the property. &quot;&quot;&quot;</span>
+            <span class="c1"># For non-cached properties, the history dict might</span>
+            <span class="c1"># not include a property for the current year.</span>
+            <span class="c1"># NOTE: Consider building a new dict and adding the</span>
+            <span class="c1"># current year to that (if not already in the dict),</span>
+            <span class="c1"># so that *_history always contains the current year</span>
+            <span class="n">history_dict</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">history_dict_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">this_year</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">history_dict</span><span class="p">:</span>
+                <span class="n">history_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">history_dict</span><span class="p">)</span>  <span class="c1"># copy dict</span>
+                <span class="n">history_dict</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">this_year</span><span class="p">]</span> <span class="o">=</span> <span class="n">fget</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>  <span class="c1"># add this year</span>
+            <span class="k">return</span> <span class="n">history_dict</span>
+
+        <span class="n">history</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">history_prop_name</span>
+
+        <span class="c1"># Cast history_function to a property with sane docstring.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">history_property</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span>
+            <span class="n">fget</span><span class="o">=</span><span class="n">history</span><span class="p">,</span>
+            <span class="n">doc</span><span class="o">=</span><span class="s1">&#39;Record of &#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s1">&#39; over all past years.&#39;</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="recorded_property_cached"><a class="viewcode-back" href="../../../forecaster.ledger.html#forecaster.person.recorded_property_cached">[docs]</a><span class="k">class</span> <span class="nc">recorded_property_cached</span><span class="p">(</span><span class="n">recorded_property</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; A recorded property that is cached by Ledger classes. &quot;&quot;&quot;</span>
+    <span class="c1"># This is a decorator, which mimics the naming convention followed by</span>
+    <span class="c1"># `property` (i.e. lowercase)</span>
+    <span class="c1"># pylint: disable=invalid-name</span>
+
+    <span class="c1"># NOTE: Due to how decorators&#39; pie-notation works, this is much</span>
+    <span class="c1"># simpler than extending `recorded_property` to take a `cached`</span>
+    <span class="c1"># argument (since `@recorded_property` (with no args) calls only</span>
+    <span class="c1"># __init__ and `@recorded_property(cached=True)` calls __init__</span>
+    <span class="c1"># with the keyword arg `cached` and then `__call__` with the</span>
+    <span class="c1"># decorated method -- which makes `recorded_property` a much more</span>
+    <span class="c1"># complicated subclass of `property`.)</span>
+<div class="viewcode-block" id="recorded_property_cached.__init__"><a class="viewcode-back" href="../../../forecaster.ledger.html#forecaster.person.recorded_property_cached.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fget</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Overrides the property getter to cache on first call. &quot;&quot;&quot;</span>
+
+        <span class="c1"># Wrap the getter in a method that will cache the property the</span>
+        <span class="c1"># first time it&#39;s called each year.</span>
+        <span class="k">def</span> <span class="nf">getter</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot; Gets the property and caches it. &quot;&quot;&quot;</span>
+            <span class="n">history_dict</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">history_dict_name</span><span class="p">)</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">fget</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="n">history_dict</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">this_year</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+            <span class="k">return</span> <span class="n">val</span>
+
+        <span class="c1"># Property needs the original name and docstring:</span>
+        <span class="n">getter</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="n">fget</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="n">getter</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">fget</span><span class="o">.</span><span class="vm">__doc__</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">fget</span><span class="o">=</span><span class="n">getter</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="n">doc</span><span class="p">)</span>
+
+        <span class="c1"># Override history property with different method that adds the</span>
+        <span class="c1"># current year&#39;s value to the cache if it isn&#39;t already there:</span>
+        <span class="k">def</span> <span class="nf">history</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot; Returns \\*_history dict (and caches this year&#39;s value). &quot;&quot;&quot;</span>
+            <span class="n">history_dict</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">history_dict_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">this_year</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">history_dict</span><span class="p">:</span>
+                <span class="n">history_dict</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">this_year</span><span class="p">]</span> <span class="o">=</span> <span class="n">fget</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">history_dict</span>
+
+        <span class="n">history</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">history_prop_name</span>
+
+        <span class="c1"># This property was set by super().__init__</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">history_property</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span>
+            <span class="n">fget</span><span class="o">=</span><span class="n">history</span><span class="p">,</span>
+            <span class="n">doc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">history_property</span><span class="o">.</span><span class="vm">__doc__</span>
+        <span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

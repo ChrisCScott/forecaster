@@ -376,4 +376,5 @@ if __name__ == '__main__':
     # as exceptions (instead of returning "NaN"). It is lower-precision than
     # ExtendedContext, which is the default.
     decimal.setcontext(decimal.BasicContext)
-    unittest.main()
+    unittest.TextTestRunner().run(
+        unittest.TestLoader().loadTestsFromName(__name__))

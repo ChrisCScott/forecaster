@@ -32,7 +32,6 @@ class Settings:
     """ Application-level and UI defaults """
     initial_year = datetime.datetime.now().year  # Model starts with this year
     display_year = initial_year  # Base year for displaying real-valued amounts
-    num_children = 3  # How many children may be represented
     currency = 'CAD'  # Use Canadian dollars as the default currency
 
     """ Defaults for `Scenario`  """
@@ -43,49 +42,28 @@ class Settings:
     management_fees = 0.005
     num_years = 100  # Model this number of years from the initial_year
 
-    """ Defaults for `Person` instances. """
-    person1_name = 'Person 1'
-    person1_birth_date = '1 January 1980'
-    person1_retirement_date = '31 December 2045'
-    person1_gross_income = Decimal('50000')
-    person1_raise_rate = inflation + 0.01
-    person2_name = None
-    person2_birth_date = None
-    person2_retirement_date = None
-    person2_gross_income = None
-    person2_raise_rate = None
+    ''' LivingExpensesStrategy defaults '''
+    living_expenses_strategy = 'Constant living expenses'
+    living_expenses_base_amount = Decimal('60000')
+    living_expenses_rate = Decimal('0.2')
+    living_expenses_inflation_adjust = True
 
     ''' ContributionStrategy defaults '''
-    contribution_strategy = 'Percentage of net income'
-    contribution_base_amount = Decimal('20000')
-    contribution_rate = Decimal('0.2')
-    contribution_reinvestment_rate = 1
-    contribution_inflation_adjusted = True
-
-    ''' TransactionStrategy defaults for inflows/contributions '''
-    transaction_in_strategy = 'Ordered'
-    transaction_in_weights = {'Account': 1}
-    transaction_in_timing = 'end'
+    contribution_strategy = 'Ordered'
+    contribution_weights = {'Account': 1}
+    contribution_timing = 'end'
 
     ''' WithdrawalStrategy defaults '''
-    withdrawal_strategy = 'Constant withdrawal'
-    withdrawal_base_amount = Decimal('100000')
-    withdrawal_rate = Decimal('0.04')
-    withdrawal_income_adjusted = True
-    withdrawal_inflation_adjusted = True
-
-    ''' TransactionStrategy defaults for outflows/withdrawals '''
-    transaction_out_strategy = 'Ordered'
-    transaction_out_weights = {'Account': 1}
-    transaction_out_timing = 'end'
+    withdrawal_strategy = 'Ordered'
+    withdrawal_weights = {'Account': 1}
+    withdrawal_timing = 'end'
 
     ''' AllocationStrategy defaults '''
     allocation_strategy = 'n-age'
     allocation_min_equity = Decimal('0.3')
     allocation_max_equity = Decimal('0.3')
     allocation_std_retirement_age = 65
-    allocation_const_target = 65
-    allocation_trans_target = Decimal('0.5')
+    allocation_target = 65
     allocation_risk_trans_period = 20
     allocation_adjust_retirement = True
 
@@ -93,6 +71,8 @@ class Settings:
     debt_payment_strategy = 'Avalanche'
     debt_payment_timing = 'end'
 
-    ''' Debt defaults '''
-    debt_savings_rate = 1
-    debt_accelerated_payment = 0
+    ''' Tax defaults '''
+    tax_brackets = {initial_year: {Decimal(0): Decimal(0)}}
+    tax_personal_deduction = {initial_year: Decimal(0)}
+    tax_credit_rate = {initial_year: Decimal(0)}
+    tax_payment_timing = 'start'

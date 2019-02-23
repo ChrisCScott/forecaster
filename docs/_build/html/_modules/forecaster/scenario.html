@@ -17,41 +17,34 @@
   
 
   
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
-  
-  
-    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="../../genindex.html"/>
-        <link rel="search" title="Search" href="../../search.html"/>
-    <link rel="top" title="forecaster 0.0.1 documentation" href="../../index.html"/>
-        <link rel="up" title="Module code" href="../index.html"/> 
-
-  
-  <script src="../../_static/js/modernizr.min.js"></script>
-
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -103,7 +96,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../index.html">forecaster</a>
@@ -111,9 +104,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -143,8 +137,6 @@
     
       <li class="wy-breadcrumbs-aside">
         
-            
-        
       </li>
     
   </ul>
@@ -162,7 +154,7 @@
 <span class="kn">from</span> <span class="nn">decimal</span> <span class="k">import</span> <span class="n">Decimal</span>
 
 
-<div class="viewcode-block" id="Scenario"><a class="viewcode-back" href="../../forecaster.scenario.html#forecaster.scenario.Scenario">[docs]</a><span class="k">class</span> <span class="nc">Scenario</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="Scenario"><a class="viewcode-back" href="../../forecaster.html#forecaster.scenario.Scenario">[docs]</a><span class="k">class</span> <span class="nc">Scenario</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Describes an economic scenario over the course of a simulation.</span>
 
 <span class="sd">    For example, provides inflation rates and rates of return for each</span>
@@ -190,7 +182,7 @@
 <span class="sd">            charged in invested assets in the given year. Optional.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="Scenario.__init__"><a class="viewcode-back" href="../../forecaster.scenario.html#forecaster.scenario.Scenario.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="Scenario.__init__"><a class="viewcode-back" href="../../forecaster.html#forecaster.scenario.Scenario.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">,</span> <span class="n">num_years</span><span class="p">,</span>
         <span class="n">inflation</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">stock_return</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">bond_return</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">other_return</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
         <span class="n">management_fees</span><span class="o">=</span><span class="mi">0</span>
@@ -314,7 +306,7 @@
 
         <span class="c1"># If it&#39;s not a dict, but it is iterable then convert it into a</span>
         <span class="c1"># [default]dict</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">in_val</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">Iterable</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">in_val</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">Iterable</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">initial_year</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                     <span class="s1">&#39;Scenario: initial_year is required if input is a list.&#39;</span><span class="p">)</span>
@@ -335,14 +327,14 @@
         <span class="n">in_val</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="n">in_val</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">in_val</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Scenario.discount_rate"><a class="viewcode-back" href="../../forecaster.scenario.html#forecaster.scenario.Scenario.discount_rate">[docs]</a>    <span class="k">def</span> <span class="nf">discount_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+<div class="viewcode-block" id="Scenario.discount_rate"><a class="viewcode-back" href="../../forecaster.html#forecaster.scenario.Scenario.discount_rate">[docs]</a>    <span class="k">def</span> <span class="nf">discount_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Returns the discount rate for `year`.</span>
 
 <span class="sd">        This is the same as calling `inflation[year]`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflation</span><span class="p">[</span><span class="n">year</span><span class="p">]</span></div>
 
-<div class="viewcode-block" id="Scenario.accumulation_function"><a class="viewcode-back" href="../../forecaster.scenario.html#forecaster.scenario.Scenario.accumulation_function">[docs]</a>    <span class="k">def</span> <span class="nf">accumulation_function</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year1</span><span class="p">,</span> <span class="n">year2</span><span class="p">):</span>
+<div class="viewcode-block" id="Scenario.accumulation_function"><a class="viewcode-back" href="../../forecaster.html#forecaster.scenario.Scenario.accumulation_function">[docs]</a>    <span class="k">def</span> <span class="nf">accumulation_function</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year1</span><span class="p">,</span> <span class="n">year2</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The discount applied in the period from year1 to year2.</span>
 
 <span class="sd">        If year2 precedes year1 then the discount rate is inverted.</span>
@@ -358,7 +350,7 @@
                 <span class="n">accum</span> <span class="o">=</span> <span class="n">accum</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">discount_rate</span><span class="p">(</span><span class="n">year</span><span class="p">))</span>
             <span class="k">return</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">accum</span></div>
 
-<div class="viewcode-block" id="Scenario.inflation_adjustments"><a class="viewcode-back" href="../../forecaster.scenario.html#forecaster.scenario.Scenario.inflation_adjustments">[docs]</a>    <span class="k">def</span> <span class="nf">inflation_adjustments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_year</span><span class="p">):</span>
+<div class="viewcode-block" id="Scenario.inflation_adjustments"><a class="viewcode-back" href="../../forecaster.html#forecaster.scenario.Scenario.inflation_adjustments">[docs]</a>    <span class="k">def</span> <span class="nf">inflation_adjustments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_year</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Annual inflation adjustment factors relative to base_year.</span>
 
 <span class="sd">        Returns:</span>
@@ -393,13 +385,13 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">InflationAdjust</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Scenario.__len__"><a class="viewcode-back" href="../../forecaster.scenario.html#forecaster.scenario.Scenario.__len__">[docs]</a>    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Scenario.__len__"><a class="viewcode-back" href="../../forecaster.html#forecaster.scenario.Scenario.__len__">[docs]</a>    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The number of years modelled by the Scenario. &quot;&quot;&quot;</span>
         <span class="c1"># pylint: disable=invalid-length-returned</span>
         <span class="c1"># This returns a positive integer (see type/value-check in init)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_years</span></div>
 
-<div class="viewcode-block" id="Scenario.__iter__"><a class="viewcode-back" href="../../forecaster.scenario.html#forecaster.scenario.Scenario.__iter__">[docs]</a>    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Scenario.__iter__"><a class="viewcode-back" href="../../forecaster.html#forecaster.scenario.Scenario.__iter__">[docs]</a>    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Iterates over years modelled by the Scenario.</span>
 
 <span class="sd">        Yields:</span>
@@ -409,7 +401,7 @@
             <span class="k">yield</span> <span class="n">year</span></div></div>
 
 
-<div class="viewcode-block" id="InflationAdjust"><a class="viewcode-back" href="../../forecaster.scenario.html#forecaster.scenario.InflationAdjust">[docs]</a><span class="k">class</span> <span class="nc">InflationAdjust</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="InflationAdjust"><a class="viewcode-back" href="../../forecaster.html#forecaster.scenario.InflationAdjust">[docs]</a><span class="k">class</span> <span class="nc">InflationAdjust</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Callable inflation_adjust object with mutable state.</span>
 
 <span class="sd">    Attributes:</span>
@@ -422,11 +414,11 @@
     <span class="c1"># to expose its state (which a method/function/lambda does not do).</span>
     <span class="c1"># pylint: disable=too-few-public-methods</span>
 
-<div class="viewcode-block" id="InflationAdjust.__init__"><a class="viewcode-back" href="../../forecaster.scenario.html#forecaster.scenario.InflationAdjust.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">):</span>
+<div class="viewcode-block" id="InflationAdjust.__init__"><a class="viewcode-back" href="../../forecaster.html#forecaster.scenario.InflationAdjust.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Inits InflationAdjust. &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span> <span class="o">=</span> <span class="n">scenario</span></div>
 
-<div class="viewcode-block" id="InflationAdjust.__call__"><a class="viewcode-back" href="../../forecaster.scenario.html#forecaster.scenario.InflationAdjust.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_year</span><span class="p">,</span> <span class="n">base_year</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="InflationAdjust.__call__"><a class="viewcode-back" href="../../forecaster.html#forecaster.scenario.InflationAdjust.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_year</span><span class="p">,</span> <span class="n">base_year</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Inflation-adjustment factor from base_year to target_year.</span>
 
 <span class="sd">        Args:</span>
@@ -455,9 +447,7 @@
 </pre></div>
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -466,11 +456,11 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017, Christopher Scott.
+        &copy; Copyright 2017, Christopher Scott
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -483,36 +473,15 @@
   
 
 
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'../../',
-            VERSION:'0.0.1',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="../../_static/jquery.js"></script>
-      <script type="text/javascript" src="../../_static/underscore.js"></script>
-      <script type="text/javascript" src="../../_static/doctools.js"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="../../_static/js/theme.js"></script>
-  
-
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script>
+
+  
+  
+    
    
 
 </body>

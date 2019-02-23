@@ -47,8 +47,7 @@ class TestRegisteredAccountMethods(TestContributionLimitAccountMethods):
         store values for each recorded property.
         """
         for _, prop in inspect.getmembers(
-            type(ledger), lambda x: hasattr(x, 'history_property')
-        ):
+                type(ledger), lambda x: hasattr(x, 'history_property')):
             history_dict = getattr(ledger, prop.history_dict_name)
             if ledger.initial_year in history_dict:
                 history_dict[initial_year] = history_dict[ledger.initial_year]
@@ -129,27 +128,11 @@ class TestRegisteredAccountMethods(TestContributionLimitAccountMethods):
                 inflation_adjust='invalid',
                 contribution_room=self.contribution_room, **kwargs)
 
-    def test_returns(self, *args, **kwargs):
-        """ Test RegisteredAccount.returns. """
-        # super().test_returns calls next_year(), which calls
-        # next_contribution_room(), which is not implemented for
-        # RegisteredAccount. Don't test returns for this class,
-        # and instead allow subclasses to pass through.
-        if self.AccountType != RegisteredAccount:
-            super().test_returns(*args, **kwargs)
-
-    def test_next_year(self, *args, **kwargs):
-        """ Test RegisteredAccount.next_year(). """
-        # super().test_year calls next_year(), which calls
-        # next_contribution_room(), which is not implemented for
-        # RegisteredAccount. Don't test next_year for this class,
-        # and instead allow subclasses to pass through.
-        if self.AccountType != RegisteredAccount:
-            super().test_returns(*args, **kwargs)
 
 if __name__ == '__main__':
     # NOTE: BasicContext is useful for debugging, as most errors are treated
     # as exceptions (instead of returning "NaN"). It is lower-precision than
     # ExtendedContext, which is the default.
     decimal.setcontext(decimal.BasicContext)
-    unittest.main()
+    unittest.TextTestRunner().run(
+        unittest.TestLoader().loadTestsFromName(__name__))

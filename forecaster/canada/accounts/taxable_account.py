@@ -33,9 +33,8 @@ class TaxableAccount(Account):
     # (But we might want to also model rental income as well...)
 
     def __init__(
-        self, owner, balance=0, rate=0,
-        nper=1, inputs=None, initial_year=None, acb=None, **kwargs
-    ):
+            self, owner, balance=0, rate=0,
+            nper=1, inputs=None, initial_year=None, acb=None, **kwargs):
         """ Constructor for `TaxableAccount`.
 
         See documentation for `Account` for information on args not
@@ -134,8 +133,10 @@ class TaxableAccount(Account):
         # Only 50% of capital gains are included in taxable income
         return self.capital_gain / 2
 
-        # TODO: Track asset allocation and apportion growth in the
-        # account between capital gains, dividends, etc.
+        # TODO: Apportion growth between asset classes.
+        # This would require us to track asset allocation and would
+        # enable us to determine how much growth is capital gains,
+        # dividends, etc.
 
     # TODO: Implement tax_withheld and tax_credit.
     # tax_withheld: foreign withholding taxes.

@@ -17,41 +17,34 @@
   
 
   
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
-  
-  
-    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="../../genindex.html"/>
-        <link rel="search" title="Search" href="../../search.html"/>
-    <link rel="top" title="forecaster 0.0.1 documentation" href="../../index.html"/>
-        <link rel="up" title="Module code" href="../index.html"/> 
-
-  
-  <script src="../../_static/js/modernizr.min.js"></script>
-
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -103,7 +96,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../index.html">forecaster</a>
@@ -111,9 +104,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -143,8 +137,6 @@
     
       <li class="wy-breadcrumbs-aside">
         
-            
-        
       </li>
     
   </ul>
@@ -164,9 +156,10 @@
 <span class="kn">from</span> <span class="nn">dateutil.relativedelta</span> <span class="k">import</span> <span class="n">relativedelta</span>
 <span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="p">(</span>
     <span class="n">Money</span><span class="p">,</span> <span class="n">TaxSource</span><span class="p">,</span> <span class="n">recorded_property</span><span class="p">,</span> <span class="n">recorded_property_cached</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">forecaster.utility</span> <span class="k">import</span> <span class="n">frequency_conv</span>
 
 
-<div class="viewcode-block" id="Person"><a class="viewcode-back" href="../../forecaster.person.html#forecaster.person.Person">[docs]</a><span class="k">class</span> <span class="nc">Person</span><span class="p">(</span><span class="n">TaxSource</span><span class="p">):</span>
+<div class="viewcode-block" id="Person"><a class="viewcode-back" href="../../forecaster.html#forecaster.person.Person">[docs]</a><span class="k">class</span> <span class="nc">Person</span><span class="p">(</span><span class="n">TaxSource</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Represents a person&#39;s basic information: age and retirement age.</span>
 
 <span class="sd">    Attributes:</span>
@@ -194,6 +187,11 @@
 <span class="sd">            year relative to last year.</span>
 <span class="sd">        raise_rate_history (dict[int, Decimal]): Raises for all years</span>
 <span class="sd">            on record.</span>
+<span class="sd">        payment_frequency (int): The number of times each year that</span>
+<span class="sd">            the Person is paid. Uses the same syntax as</span>
+<span class="sd">            `forecaster.utility.frequency_conv` (e.g. &#39;M&#39; or 12</span>
+<span class="sd">            for monthly payments).</span>
+<span class="sd">            Optional; defaults to biweekly payments.</span>
 <span class="sd">        spouse (Person): The person&#39;s spouse. This linkage is</span>
 <span class="sd">            one-to-one; the spouse&#39;s `spouse` attribute points back to</span>
 <span class="sd">            this Person.</span>
@@ -222,10 +220,10 @@
     <span class="c1"># to provide the spousal tax credit, and replace the `tax_treatment`</span>
     <span class="c1"># arg with a `province` (str) arg?</span>
 
-<div class="viewcode-block" id="Person.__init__"><a class="viewcode-back" href="../../forecaster.person.html#forecaster.person.Person.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="Person.__init__"><a class="viewcode-back" href="../../forecaster.html#forecaster.person.Person.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">birth_date</span><span class="p">,</span> <span class="n">retirement_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">gross_income</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">raise_rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">spouse</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tax_treatment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span>
+        <span class="n">payment_frequency</span><span class="o">=</span><span class="s1">&#39;BW&#39;</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Constructor for `Person`.</span>
 
@@ -261,6 +259,11 @@
 <span class="sd">                `tax_treatment(taxable_income, year)` and returns a</span>
 <span class="sd">                Money object (which corresponds to total taxes payable</span>
 <span class="sd">                on `taxable_income`).</span>
+<span class="sd">            payment_frequency (str, int): The frequency with which</span>
+<span class="sd">                `Person` is paid. Uses the same syntax as</span>
+<span class="sd">                `forecaster.utility.frequency_conv` (e.g. &#39;M&#39; or 12</span>
+<span class="sd">                for monthly payments).</span>
+<span class="sd">                Optional; defaults to biweekly payments.</span>
 <span class="sd">            inputs (dict[str, dict[int, Any]]): `{attr: {year: val}}`</span>
 <span class="sd">                pairs, where `attr` is any one of `Person`&#39;s recorded</span>
 <span class="sd">                propertes, namely:</span>
@@ -293,6 +296,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_raise_rate_function</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_spouse</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_tax_treatment</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_payment_frequency</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_contribution_room</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_contribution_groups</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
@@ -300,12 +304,13 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">retirement_date</span> <span class="o">=</span> <span class="n">retirement_date</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">raise_rate_callable</span> <span class="o">=</span> <span class="n">raise_rate</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">spouse</span> <span class="o">=</span> <span class="n">spouse</span>
-        <span class="c1"># Set up tax treatment before calling tax_withheld()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tax_treatment</span> <span class="o">=</span> <span class="n">tax_treatment</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">payment_frequency</span> <span class="o">=</span> <span class="n">payment_frequency</span>
 
         <span class="c1"># Now provide initial-year values for recorded properties:</span>
         <span class="c1"># NOTE: Be sure to do type-checking here.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">gross_income</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="n">gross_income</span><span class="p">)</span>
+        <span class="c1"># NOTE: Be sure to set up tax_treatment before calling tax_withheld</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">net_income</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gross_income</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_withheld</span>
 
         <span class="c1"># Finally, build an empty set for accounts to add themselves to.</span>
@@ -471,6 +476,16 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Person: tax_treatment must be callable or None.&#39;</span><span class="p">)</span>
 
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">payment_frequency</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The number of times a year that Person is paid. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_payment_frequency</span>
+
+    <span class="nd">@payment_frequency</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">payment_frequency</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Sets the Person&#39;s payment frequency. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_payment_frequency</span> <span class="o">=</span> <span class="n">frequency_conv</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+
     <span class="c1"># pylint: disable=method-hidden</span>
     <span class="c1"># Pylint gets confused by attributes added by metaclass.</span>
     <span class="c1"># This method isn&#39;t hidden in __init__; it&#39;s assigned to (by a</span>
@@ -508,7 +523,7 @@
         <span class="sd">&quot;&quot;&quot; The `Person`&#39;s raise for the current year. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_raise_rate_function</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">this_year</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Person.contribution_room"><a class="viewcode-back" href="../../forecaster.person.html#forecaster.person.Person.contribution_room">[docs]</a>    <span class="k">def</span> <span class="nf">contribution_room</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">account</span><span class="p">):</span>
+<div class="viewcode-block" id="Person.contribution_room"><a class="viewcode-back" href="../../forecaster.html#forecaster.person.Person.contribution_room">[docs]</a>    <span class="k">def</span> <span class="nf">contribution_room</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">account</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The contribution room for the given account.</span>
 
 <span class="sd">        The account must provide a `contribution_token` attribute.</span>
@@ -524,7 +539,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span></div>
 
-<div class="viewcode-block" id="Person.contribution_groups"><a class="viewcode-back" href="../../forecaster.person.html#forecaster.person.Person.contribution_groups">[docs]</a>    <span class="k">def</span> <span class="nf">contribution_groups</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">account</span><span class="p">):</span>
+<div class="viewcode-block" id="Person.contribution_groups"><a class="viewcode-back" href="../../forecaster.html#forecaster.person.Person.contribution_groups">[docs]</a>    <span class="k">def</span> <span class="nf">contribution_groups</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">account</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The accounts sharing contribution room with `account`.</span>
 
 <span class="sd">        This method returns only accounts registered via</span>
@@ -542,7 +557,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span></div>
 
-<div class="viewcode-block" id="Person.register_shared_contribution"><a class="viewcode-back" href="../../forecaster.person.html#forecaster.person.Person.register_shared_contribution">[docs]</a>    <span class="k">def</span> <span class="nf">register_shared_contribution</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">account</span><span class="p">):</span>
+<div class="viewcode-block" id="Person.register_shared_contribution"><a class="viewcode-back" href="../../forecaster.html#forecaster.person.Person.register_shared_contribution">[docs]</a>    <span class="k">def</span> <span class="nf">register_shared_contribution</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">account</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Prepares a Person to store contribution room for an account.</span>
 
 <span class="sd">        This method starts tracking contribution room for the account if</span>
@@ -565,7 +580,7 @@
         <span class="k">for</span> <span class="n">account_in_group</span> <span class="ow">in</span> <span class="n">contribution_group</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_contribution_groups</span><span class="p">[</span><span class="n">account_in_group</span><span class="p">]</span> <span class="o">=</span> <span class="n">contribution_group</span></div>
 
-<div class="viewcode-block" id="Person.age"><a class="viewcode-back" href="../../forecaster.person.html#forecaster.person.Person.age">[docs]</a>    <span class="k">def</span> <span class="nf">age</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">date</span><span class="p">):</span>
+<div class="viewcode-block" id="Person.age"><a class="viewcode-back" href="../../forecaster.html#forecaster.person.Person.age">[docs]</a>    <span class="k">def</span> <span class="nf">age</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">date</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The age of the `Person` as of `date`.</span>
 
 <span class="sd">        `date` may be a `datetime` object or a numeric value indicating</span>
@@ -604,9 +619,23 @@
 
     <span class="c1"># NOTE: Test overloading of recorded property by subclass</span>
 
+    <span class="nd">@recorded_property_cached</span>
+    <span class="k">def</span> <span class="nf">tax_deduction</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The `Person`&#39;s tax deductions for the year. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">account</span><span class="o">.</span><span class="n">tax_deduction</span> <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">accounts</span><span class="p">))</span>
+
+    <span class="nd">@recorded_property_cached</span>
+    <span class="k">def</span> <span class="nf">tax_credit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The `Person`&#39;s tax credits for the year. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">account</span><span class="o">.</span><span class="n">tax_credit</span> <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">accounts</span><span class="p">))</span>
+
     <span class="nd">@recorded_property</span>
     <span class="k">def</span> <span class="nf">taxable_income</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">gross_income</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">gross_income</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">account</span><span class="o">.</span><span class="n">taxable_income</span> <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">accounts</span><span class="p">)</span>
+        <span class="p">)</span>
 
     <span class="nd">@recorded_property</span>
     <span class="k">def</span> <span class="nf">tax_withheld</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -617,15 +646,13 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Person.__gt__"><a class="viewcode-back" href="../../forecaster.person.html#forecaster.person.Person.__gt__">[docs]</a>    <span class="k">def</span> <span class="nf">__gt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<div class="viewcode-block" id="Person.__gt__"><a class="viewcode-back" href="../../forecaster.html#forecaster.person.Person.__gt__">[docs]</a>    <span class="k">def</span> <span class="nf">__gt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Allows for sorting, max, min, etc. based on gross income. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">gross_income</span> <span class="o">&gt;</span> <span class="n">other</span><span class="o">.</span><span class="n">gross_income</span></div></div>
 </pre></div>
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -634,11 +661,11 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017, Christopher Scott.
+        &copy; Copyright 2017, Christopher Scott
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -651,36 +678,15 @@
   
 
 
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'../../',
-            VERSION:'0.0.1',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="../../_static/jquery.js"></script>
-      <script type="text/javascript" src="../../_static/underscore.js"></script>
-      <script type="text/javascript" src="../../_static/doctools.js"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="../../_static/js/theme.js"></script>
-  
-
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script>
+
+  
+  
+    
    
 
 </body>

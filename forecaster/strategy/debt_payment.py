@@ -51,7 +51,7 @@ class DebtPaymentStrategy(Strategy):
 
     def _strategy_ordered(self, sorted_debts, available, assign_minimums=True):
         """ Proposes transactions based on an ordered list of debts.
-        
+
         Args:
             sorted_debts (list[Debt]): A set of debt accounts,
                 arranged in some order.

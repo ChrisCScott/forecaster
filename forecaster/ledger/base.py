@@ -1,7 +1,6 @@
 """ TODO """
 
 import inspect
-from decimal import Decimal
 from forecaster.ledger.money import Money
 from forecaster.ledger.recorded_property import (
     recorded_property, recorded_property_cached
@@ -24,8 +23,7 @@ class LedgerType(type):
 
         # Then identify all recorded_property attributes:
         for _, prop in inspect.getmembers(
-            cls, lambda x: hasattr(x, 'history_property')
-        ):
+                cls, lambda x: hasattr(x, 'history_property')):
             # Store the identified recorded_property:
             # (This will help Ledger build object-specific dicts for
             # storing the values of each recorded property. We don't
@@ -110,6 +108,12 @@ class Ledger(object, metaclass=LedgerType):
         # Advance to the next year after recording properties:
         self.this_year += 1
 
+    def clear_cache(self):
+        """ Clears all recorded_property_cached values for this year. """
+        # pylint: disable=no-member
+        # Pylint gets confused by attributes added by metaclass.
+        for prop in self._recorded_properties_cached:
+            prop.fdel(obj=self)
 
 class TaxSource(Ledger):
     """ An object that can be considered when calculating taxes.

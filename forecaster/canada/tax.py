@@ -1,7 +1,6 @@
 """ A module providing Canada-specific tax treatment. """
 
 from forecaster.ledger import Money
-from forecaster.person import Person
 from forecaster.tax import Tax
 from forecaster.canada.accounts import RRSP
 from forecaster.canada import constants
@@ -12,9 +11,8 @@ class TaxCanadaJurisdiction(Tax):
     """ Federal or provincial tax treatment (Canada). """
 
     def __init__(
-        self, inflation_adjustments, jurisdiction='Federal',
-        payment_timing='start'
-    ):
+            self, inflation_adjustments, jurisdiction='Federal',
+            payment_timing='start'):
         super().__init__(
             tax_brackets=constants.TAX_BRACKETS[jurisdiction],
             personal_deduction=constants.TAX_PERSONAL_DEDUCTION[
@@ -43,16 +41,16 @@ class TaxCanadaJurisdiction(Tax):
         """
         # Get basic credits (i.e. those tied to accounts) from the
         # superclass method:
-        credits = super().credits(person, year, deductions)
+        _credits = super().credits(person, year, deductions)
 
         # Apply the pension income tax credit for each person:
-        credits += self._pension_income_credit(person, year)
+        _credits += self._pension_income_credit(person, year)
 
         # Apply the spousal tax credit if the person is married:
         if person.spouse is not None:
-            credits += self._spousal_tax_credit(person, year)
+            _credits += self._spousal_tax_credit(person, year)
 
-        return credits
+        return _credits
 
     def _pension_income_credit(self, person, year):
         """ Determines the pension income credit claimable by `person`.
@@ -84,7 +82,7 @@ class TaxCanadaJurisdiction(Tax):
 
     def _spousal_tax_credit(self, person, year):
         """ Determines the spousal tax credit amount claimable.
-                
+
         This method assigns the credit to the higher-earning
         partner. Multiple people can be passed and the credit
         will be determined for each individually.
@@ -117,8 +115,8 @@ class TaxCanadaJurisdiction(Tax):
         )
 
         # We need to know the spouse's net income to assess the credit:
-        # TODO: To avoid calling self.deductions many times, sort out
-        # a way to pass in deductions for both spouses as args.
+        # TODO: Pass in deductions for both spouses as args?
+        # This would help to avoid calling self.deductions many times.
         spouse = person.spouse
         spouse_net_income = (
             spouse.taxable_income - self.deductions(spouse, year)
@@ -161,8 +159,7 @@ class TaxCanada(object):
     """
 
     def __init__(
-        self, inflation_adjust, province='BC', payment_timing='start'
-    ):
+            self, inflation_adjust, province='BC', payment_timing='start'):
         """ Initializes TaxCanada.
 
         Args:
@@ -209,10 +206,9 @@ class TaxCanada(object):
             self.provincial_tax.marginal_rate(taxable_income, year)
 
     def __call__(
-        self, income, year,
-        other_federal_deduction=None, other_federal_credit=None,
-        other_provincial_deduction=None, other_provincial_credit=None
-    ):
+            self, income, year,
+            other_federal_deduction=None, other_federal_credit=None,
+            other_provincial_deduction=None, other_provincial_credit=None):
         """ Determines Canadian taxes owing on given income sources.
 
         This includes provincial and federal taxes.

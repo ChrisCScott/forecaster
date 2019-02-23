@@ -31,8 +31,7 @@ class ContributionLimitAccount(Account):
     """
 
     def __init__(
-        self, *args, contribution_room=None, contributor=None, **kwargs
-    ):
+            self, *args, contribution_room=None, contributor=None, **kwargs):
         """ Initializes a ContributionLimitAccount object.
 
         Args:
@@ -60,9 +59,8 @@ class ContributionLimitAccount(Account):
         # accessing it, so this pylint error is not appropriate here.
         # pylint: disable=access-member-before-definition
         if not (
-            hasattr(self, 'contribution_token')
-            and self.contribution_token is not None
-        ):
+                hasattr(self, 'contribution_token')
+                and self.contribution_token is not None):
             self.contribution_token = type(self).__name__
         # pylint: enable=access-member-before-definition
 
@@ -115,7 +113,7 @@ class ContributionLimitAccount(Account):
 
     @property
     def contribution_room_history(self):
-        """ A dict of `{year: contribution_room}` pairs. """
+        """ A dict of `{year, contribution_room}` pairs. """
         return self.contributor.contribution_room(self)
 
     def next_year(self):

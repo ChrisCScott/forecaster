@@ -1,0 +1,260 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.forecast.living_expenses &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">forecaster</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>forecaster.forecast.living_expenses</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for forecaster.forecast.living_expenses</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; Provides a LivingExpensesForecast class for use by Forecast. &quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="p">(</span>
+    <span class="n">Money</span><span class="p">,</span> <span class="n">recorded_property</span><span class="p">,</span> <span class="n">recorded_property_cached</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">forecaster.forecast.subforecast</span> <span class="k">import</span> <span class="n">SubForecast</span>
+
+<div class="viewcode-block" id="LivingExpensesForecast"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.living_expenses.LivingExpensesForecast">[docs]</a><span class="k">class</span> <span class="nc">LivingExpensesForecast</span><span class="p">(</span><span class="n">SubForecast</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; A forecast of each year&#39;s living expenses.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        initial_year (int): The first year of the forecast.</span>
+<span class="sd">        people (Iterable[Person]): The people for whom the financial</span>
+<span class="sd">            forecast is being generated. Typically a single person or</span>
+<span class="sd">            a person and their spouse.</span>
+
+<span class="sd">            Note that all `Person` objects must have the same</span>
+<span class="sd">            `this_year` attribute, as must their various accounts.</span>
+<span class="sd">        living_expenses_strategy (LivingExpensesStrategy): A callable</span>
+<span class="sd">            object that determines the living expenses for the</span>
+<span class="sd">            plannees for a year.</span>
+<span class="sd">            See the documentation for `LivingExpensesStrategy` for</span>
+<span class="sd">            acceptable args when calling this object.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        living_expenses (Money): The amount spent on living expenses</span>
+<span class="sd">            (i.e. money not available to be saved).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="LivingExpensesForecast.__init__"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.living_expenses.LivingExpensesForecast.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="n">living_expenses_strategy</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Initializes an instance of LivingExpensesForecast. &quot;&quot;&quot;</span>
+        <span class="c1"># Recall that, as a Ledger object, we need to call the</span>
+        <span class="c1"># superclass initializer and let it know what the first</span>
+        <span class="c1"># year is so that `this_year` is usable.</span>
+        <span class="c1"># TODO #53 removes this requirement.</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">initial_year</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">living_expenses_strategy</span> <span class="o">=</span> <span class="n">living_expenses_strategy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">people</span> <span class="o">=</span> <span class="n">people</span></div>
+
+<div class="viewcode-block" id="LivingExpensesForecast.update_available"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.living_expenses.LivingExpensesForecast.update_available">[docs]</a>    <span class="k">def</span> <span class="nf">update_available</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">available</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Records transactions against accounts; mutates `available`. &quot;&quot;&quot;</span>
+        <span class="c1"># The superclass has some book-keeping to do before we get</span>
+        <span class="c1"># started on doing the updates:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">update_available</span><span class="p">(</span><span class="n">available</span><span class="p">)</span>
+
+        <span class="c1"># Assume living expenses are incurred at the start of each</span>
+        <span class="c1"># month. Make this strict, since we can&#39;t defer living</span>
+        <span class="c1"># expenses to a more convenient time.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_transaction</span><span class="p">(</span>
+            <span class="n">value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">living_expenses</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">frequency</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+            <span class="n">from_account</span><span class="o">=</span><span class="n">available</span><span class="p">,</span> <span class="n">to_account</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">strict_timing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+    <span class="nd">@recorded_property_cached</span>
+    <span class="k">def</span> <span class="nf">living_expenses</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Living expenses for the year. &quot;&quot;&quot;</span>
+        <span class="c1"># Prepare arguments for call to `living_expenses_strategy`</span>
+        <span class="c1"># NOTE: This is a pretty brittle way to determine the</span>
+        <span class="c1"># retirement year. Issues #15 and #28 will require this</span>
+        <span class="c1"># code to be changed in a future version.</span>
+        <span class="n">retirement_year</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+            <span class="n">person</span><span class="o">.</span><span class="n">retirement_date</span><span class="o">.</span><span class="n">year</span> <span class="k">for</span> <span class="n">person</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">people</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">living_expenses_strategy</span><span class="p">(</span>
+            <span class="n">year</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">this_year</span><span class="p">,</span>
+            <span class="n">people</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">people</span><span class="p">,</span>
+            <span class="n">retirement_year</span><span class="o">=</span><span class="n">retirement_year</span>
+        <span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

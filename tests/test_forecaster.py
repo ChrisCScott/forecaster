@@ -3,28 +3,37 @@
 import unittest
 import collections
 from copy import copy, deepcopy
+from decimal import Decimal
 from forecaster import (
     Settings, Tax, Person, Money, Account, Debt, Scenario,
-    ContributionStrategy, WithdrawalStrategy, TransactionStrategy,
-    AllocationStrategy, DebtPaymentStrategy, Forecaster)
+    LivingExpensesStrategy, AccountTransactionStrategy,
+    AllocationStrategy, DebtPaymentStrategy, Forecaster, Parameter)
 
 
 class TestForecaster(unittest.TestCase):
     """ Tests Forecaster. """
 
-    # We need a lot of instance attributes because forecasts require
-    # a lot of instance attributes.
-    # pylint: disable=too-many-instance-attributes
-
     def setUp(self):
         """ Builds default strategies, persons, etc. """
+        # Use a default settings object:
+        # (This is conditional so that subclasses can assign their own
+        # settings object before calling super().setUp())
         if not hasattr(self, 'settings'):
             self.settings = Settings()
 
-        # These tests take a long time if we're building 100-year
-        # forecasts in each one. Use short forecasts as a default:
-        self.settings.num_years = 3
+        # To simplify tests, modify Settings so that forecasts are
+        # just 2 years with easy-to-predict contributions ($1000/yr)
+        self.settings.num_years = 2
+        self.settings.living_expenses_strategy = (
+            LivingExpensesStrategy.strategy_const_contribution)
+        self.settings.living_expenses_base_amount = Decimal(1000)
 
+        # Allow subclasses to use subclasses of Forecaster by assigning
+        # to forecaster_type
+        if not hasattr(self, 'forecaster_type'):
+            self.forecaster_type = Forecaster
+
+        # Build default `SubForecast` inputs based on `settings`:
         self.initial_year = self.settings.initial_year
         self.scenario = Scenario(
             inflation=self.settings.inflation,
@@ -33,104 +42,61 @@ class TestForecaster(unittest.TestCase):
             other_return=self.settings.other_return,
             management_fees=self.settings.management_fees,
             initial_year=self.settings.initial_year,
-            num_years=self.settings.num_years
-        )
-        self.contribution_strategy = ContributionStrategy(
+            num_years=self.settings.num_years)
+        self.living_expenses_strategy = LivingExpensesStrategy(
+            strategy=self.settings.living_expenses_strategy,
+            base_amount=self.settings.living_expenses_base_amount,
+            rate=self.settings.living_expenses_rate,
+            inflation_adjust=self.scenario.inflation_adjust)
+        self.contribution_strategy = AccountTransactionStrategy(
             strategy=self.settings.contribution_strategy,
-            base_amount=self.settings.contribution_base_amount,
-            rate=self.settings.contribution_rate,
-            refund_reinvestment_rate=(
-                self.settings.contribution_reinvestment_rate),
-            inflation_adjust=self.scenario.inflation_adjust
-        )
-        self.withdrawal_strategy = WithdrawalStrategy(
+            weights=self.settings.contribution_weights,
+            timing=self.settings.contribution_timing)
+        self.withdrawal_strategy = AccountTransactionStrategy(
             strategy=self.settings.withdrawal_strategy,
-            base_amount=self.settings.withdrawal_base_amount,
-            rate=self.settings.withdrawal_rate,
-            timing=self.settings.transaction_out_timing,
-            income_adjusted=self.settings.withdrawal_income_adjusted,
-            inflation_adjust=self.scenario.inflation_adjust
-        )
-        self.transaction_in_strategy = TransactionStrategy(
-            strategy=self.settings.transaction_in_strategy,
-            weights=self.settings.transaction_in_weights,
-            timing=self.settings.transaction_in_timing
-        )
-        self.transaction_out_strategy = TransactionStrategy(
-            strategy=self.settings.transaction_out_strategy,
-            weights=self.settings.transaction_out_weights,
-            timing=self.settings.transaction_out_timing
-        )
-
-        # We use different target values for different strategies.
-        if (
-            # pylint: disable=E1101
-            self.settings.allocation_strategy ==
-            AllocationStrategy.strategy_n_minus_age.strategy_key
-        ):
-            target = self.settings.allocation_const_target
-        elif (
-            # pylint: disable=E1101
-            self.settings.allocation_strategy ==
-            AllocationStrategy.strategy_transition_to_const.strategy_key
-        ):
-            target = self.settings.allocation_trans_target
+            weights=self.settings.withdrawal_weights,
+            timing=self.settings.withdrawal_timing)
         self.allocation_strategy = AllocationStrategy(
             strategy=self.settings.allocation_strategy,
             min_equity=self.settings.allocation_min_equity,
             max_equity=self.settings.allocation_max_equity,
-            target=target,
+            target=self.settings.allocation_target,
             standard_retirement_age=(
                 self.settings.allocation_std_retirement_age),
             risk_transition_period=self.settings.allocation_risk_trans_period,
             adjust_for_retirement_plan=(
-                self.settings.allocation_adjust_retirement)
-        )
+                self.settings.allocation_adjust_retirement))
         self.debt_payment_strategy = DebtPaymentStrategy(
             strategy=self.settings.debt_payment_strategy,
-            timing=self.settings.debt_payment_timing
-        )
+            timing=self.settings.debt_payment_timing)
         self.tax_treatment = Tax(
-            tax_brackets={self.initial_year: {0: 0}},
-            personal_deduction={},
-            credit_rate={},
-            inflation_adjust=self.scenario.inflation_adjust
-        )
-        self.person1 = Person(
-            name=self.settings.person1_name,
-            birth_date=self.settings.person1_birth_date,
-            retirement_date=self.settings.person1_retirement_date,
-            gross_income=self.settings.person1_gross_income,
-            raise_rate=self.settings.person1_raise_rate,
+            tax_brackets=self.settings.tax_brackets,
+            personal_deduction=self.settings.tax_personal_deduction,
+            credit_rate=self.settings.tax_credit_rate,
+            inflation_adjust=self.scenario.inflation_adjust)
+
+        # Now build some Ledger objects to test against:
+        # A person making $10,000/yr
+        self.person = Person(
+            initial_year=self.initial_year,
+            name="Test 1",
+            birth_date="1 January 1980",
+            retirement_date="31 December 2040",
+            gross_income=Money(10000),
+            raise_rate=Decimal(0),
             spouse=None,
-            tax_treatment=self.tax_treatment,
-            initial_year=self.initial_year
-        )
-        if self.settings.person2_name is None:
-            self.person2 = None
-        else:
-            self.person2 = Person(
-                name=self.settings.person2_name,
-                birth_date=self.settings.person2_birth_date,
-                retirement_date=self.settings.person2_retirement_date,
-                gross_income=self.settings.person2_gross_income,
-                raise_rate=self.settings.person2_raise_rate,
-                spouse=self.person1,
-                tax_treatment=None,
-                initial_year=self.initial_year
-            )
-        # For testing convenience, set up a custom version of Person1
-        # that changes the name but keeps the rest of the data the same.
-        self.custom_person = Person(
-            name='Test Name',
-            birth_date=self.settings.person1_birth_date,
-            retirement_date=self.settings.person1_retirement_date,
-            gross_income=self.settings.person1_gross_income,
-            raise_rate=self.settings.person1_raise_rate,
-            spouse=None,
-            tax_treatment=self.tax_treatment,
-            initial_year=self.settings.initial_year
-        )
+            tax_treatment=self.tax_treatment)
+        # An account with $1000 in it (and no interest)
+        self.account = Account(
+            owner=self.person,
+            balance=Money(1000))
+        # A debt with a $100 balance (and no interest)
+        self.debt = Debt(
+            owner=self.person,
+            balance=Money(100))
+
+        # Init a Forecaster object here for convenience:
+        self.forecaster = self.forecaster_type(settings=self.settings)
 
     def assertEqual_dict(self, first, second, msg=None, memo=None):
         """ Extends equality testing for dicts with complex members. """
@@ -156,8 +122,8 @@ class TestForecaster(unittest.TestCase):
         if len(first) != len(second):
             super().assertEqual(first, second)
         # Then iterate over the elements in sequence:
-        for i in range(0, len(first)):
-            self.assertEqual(first[i], second[i], msg=msg, memo=memo)
+        for first_value, second_value in zip(first, second):
+            self.assertEqual(first_value, second_value, msg=msg, memo=memo)
 
     def assertEqual_set(self, first, second, msg=None, memo=None):
         """ Extends equality testing for sets with complex members. """
@@ -280,8 +246,8 @@ class TestForecaster(unittest.TestCase):
     def test_assertEqual(self):  # pylint: disable=invalid-name
         """ Tests overloaded TestForecaster.assertEqual. """
         # Compare an object to itself
-        person1 = self.person1
-        self.assertEqual(person1, person1)
+        person1 = self.person
+        self.assertEqual(person1, self.person)
         # Compare two idential instances of an object:
         person2 = deepcopy(person1)
         self.assertEqual(person1, person2)
@@ -291,220 +257,106 @@ class TestForecaster(unittest.TestCase):
         self.assertNotEqual(person1, person2)
 
     def test_init_default(self):
-        """ Tests Forecaster.__init__ with default parameters.
+        """ Tests Forecaster.__init__ with default parameters. """
+        self.forecaster = Forecaster()
+        # For most params, not being passed means they should be None:
+        self.assertEqual(
+            self.forecaster.living_expenses_strategy, None)
+        self.assertEqual(
+            self.forecaster.contribution_strategy, None)
+        self.assertEqual(
+            self.forecaster.withdrawal_strategy, None)
+        self.assertEqual(
+            self.forecaster.allocation_strategy, None)
+        self.assertEqual(
+            self.forecaster.debt_payment_strategy, None)
+        # For two of the params, they should be initialized to whatever
+        # is provided by default by the Settings class:
+        self.assertEqual(self.forecaster.settings, Settings())
 
-        This method does not provide a settings parameter, so subclasses
-        should be sure to override it if they change the behaviour of
-        default init.
-        """
-        # Modify Settings to correspond to self.settings (since we
-        # don't pass settings in explicitly in this test)
-        Settings.num_years = 3
-        forecaster = Forecaster()
-        self.assertEqual(forecaster.person1, self.person1)
-        self.assertEqual(forecaster.person2, self.person2)
-        if self.person2 is not None:
-            self.assertEqual(forecaster.people, {self.person1, self.person2})
-        else:  # We don't add `None` to the `people` set.
-            self.assertEqual(forecaster.people, {self.person1})
-        self.assertEqual(forecaster.assets, set())
-        self.assertEqual(forecaster.debts, set())
-        self.assertEqual(
-            forecaster.contribution_strategy, self.contribution_strategy)
-        self.assertEqual(
-            forecaster.withdrawal_strategy, self.withdrawal_strategy)
-        self.assertEqual(
-            forecaster.transaction_in_strategy, self.transaction_in_strategy)
-        self.assertEqual(
-            forecaster.transaction_out_strategy, self.transaction_out_strategy)
-        self.assertEqual(
-            forecaster.allocation_strategy, self.allocation_strategy)
-        self.assertEqual(
-            forecaster.debt_payment_strategy, self.debt_payment_strategy)
-        self.assertEqual(forecaster.settings, Settings)
-        self.assertEqual(forecaster.initial_year, Settings.initial_year)
+    def test_build_living_exp_strat(self):
+        """ Test Forecaster.build_param for living_expenses_strategy. """
+        param = self.forecaster.get_param(Parameter.LIVING_EXPENSES_STRATEGY)
+        self.assertEqual(param, self.living_expenses_strategy)
 
-    def test_init_custom_settings(self):
-        """ Tests Forecaster.__init__ with custom settings. """
-        self.settings.person1_name = self.custom_person.name
-        forecaster = Forecaster(settings=self.settings)
-        self.assertEqual(forecaster.person1, self.custom_person)
-        self.assertEqual(forecaster.person2, self.person2)
-        if self.person2 is not None:
-            self.assertEqual(forecaster.people,
-                             {forecaster.person1, forecaster.person2})
-        else:  # We don't add `None` to the `people` set.
-            self.assertEqual(forecaster.people, {forecaster.person1})
-        self.assertEqual(forecaster.assets, set())
-        self.assertEqual(forecaster.debts, set())
-        self.assertEqual(
-            forecaster.contribution_strategy, self.contribution_strategy)
-        self.assertEqual(
-            forecaster.withdrawal_strategy, self.withdrawal_strategy)
-        self.assertEqual(
-            forecaster.transaction_in_strategy, self.transaction_in_strategy)
-        self.assertEqual(
-            forecaster.transaction_out_strategy, self.transaction_out_strategy)
-        self.assertEqual(
-            forecaster.allocation_strategy, self.allocation_strategy)
-        self.assertEqual(
-            forecaster.debt_payment_strategy, self.debt_payment_strategy)
-        self.assertEqual(forecaster.settings, self.settings)
-        self.assertEqual(forecaster.initial_year, self.settings.initial_year)
+    def test_build_debt_pay_strat(self):
+        """ Test Forecaster.build_param for debt_payment_strategy. """
+        param = self.forecaster.get_param(Parameter.DEBT_PAYMENT_STRATEGY)
+        self.assertEqual(param, self.debt_payment_strategy)
 
-    def test_init_custom_inputs(self):
-        """ Tests Forecaster.__init__ with custom inputs. """
-        forecaster = Forecaster(
-            person1=self.custom_person, settings=self.settings)
-        self.assertEqual(forecaster.person1, self.custom_person)
-        self.assertEqual(forecaster.person2, self.person2)
-        if self.person2 is not None:
-            self.assertEqual(
-                forecaster.people, {self.custom_person, self.person2})
-        else:  # We don't add `None` to the `people` set.
-            self.assertEqual(forecaster.people, {self.custom_person})
-        self.assertEqual(forecaster.assets, set())
-        self.assertEqual(forecaster.debts, set())
-        self.assertEqual(
-            forecaster.contribution_strategy, self.contribution_strategy)
-        self.assertEqual(
-            forecaster.withdrawal_strategy, self.withdrawal_strategy)
-        self.assertEqual(
-            forecaster.transaction_in_strategy, self.transaction_in_strategy)
-        self.assertEqual(
-            forecaster.transaction_out_strategy, self.transaction_out_strategy)
-        self.assertEqual(
-            forecaster.allocation_strategy, self.allocation_strategy)
-        self.assertEqual(
-            forecaster.debt_payment_strategy, self.debt_payment_strategy)
-        self.assertEqual(forecaster.settings, self.settings)
-        self.assertEqual(forecaster.initial_year, self.settings.initial_year)
+    def test_build_contrib_strat(self):
+        """ Test Forecaster.build_param for contribution_strategy. """
+        param = self.forecaster.get_param(Parameter.CONTRIBUTION_STRATEGY)
+        self.assertEqual(param, self.contribution_strategy)
 
-        # Test init with custom initial year:
-        initial_year = 1999
-        forecaster = Forecaster(
-            initial_year=initial_year, settings=self.settings)
-        self.assertEqual(forecaster.initial_year, initial_year)
-        self.assertEqual(forecaster.person1.initial_year, initial_year)
-        if self.person2 is not None:
-            self.assertEqual(forecaster.person2.initial_year, initial_year)
-        for account in forecaster.assets.union(forecaster.debts):
-            self.assertEqual(account.initial_year, initial_year)
+    def test_build_withdraw_strat(self):
+        """ Test Forecaster.build_param for withdrawal_strategy. """
+        param = self.forecaster.get_param(Parameter.WITHDRAWAL_STRATEGY)
+        self.assertEqual(param, self.withdrawal_strategy)
 
-    def test_add_person(self):
-        """ Test Forecaster.add_person. """
-        forecaster = Forecaster(settings=self.settings)
-        people = copy(forecaster.people)
-        person = forecaster.add_person('Test', 2000, retirement_date=2065)
-        self.assertEqual(person, Person(
-            self.initial_year, 'Test', 2000,
-            retirement_date=2065,
-            tax_treatment=forecaster.tax_treatment
-        ))
-        self.assertEqual(forecaster.people - people, {person})
+    def test_build_allocation_strat(self):
+        """ Test Forecaster.build_param for allocation_strategy. """
+        param = self.forecaster.get_param(Parameter.ALLOCATION_STRATEGY)
+        self.assertEqual(param, self.allocation_strategy)
 
-    def test_add_asset(self):
-        """ Test Forecaster.add_asset. """
-        forecaster = Forecaster(settings=self.settings)
-        assets = copy(forecaster.assets)
-        asset = forecaster.add_asset()
-        self.assertEqual(asset, Account(
-            owner=forecaster.person1,
-            balance=Money(0),
-            rate=forecaster.allocation_strategy.rate_function(
-                forecaster.person1, forecaster.scenario),
-            nper=1,
-            inputs={},
-            initial_year=forecaster.person1.initial_year
-        ))
-        self.assertEqual(forecaster.assets - assets, {asset})
+    def test_build_tax_treatment(self):
+        """ Test Forecaster.build_param for tax_treatment. """
+        param = self.forecaster.get_param(Parameter.TAX_TREATMENT)
+        self.assertEqual(param, self.tax_treatment)
 
-    def test_add_debt(self):
-        """ Test Forecaster.add_debt. """
-        forecaster = Forecaster(settings=self.settings)
-        debts = copy(forecaster.debts)
-        debt = forecaster.add_debt()
-        self.assertEqual(debt, Debt(
-            owner=forecaster.person1,
-            balance=Money(0),
-            rate=forecaster.allocation_strategy.rate_function(
-                forecaster.person1, forecaster.scenario),
-            nper=1,
-            inputs={},
-            initial_year=forecaster.person1.initial_year,
-            minimum_payment=Money(0),
-            savings_rate=self.settings.debt_savings_rate,
-            accelerated_payment=self.settings.debt_accelerated_payment
-        ))
-        self.assertEqual(forecaster.debts - debts, {debt})
+    def test_run_forecast_basic(self):
+        """ Test Forecaster.run_forecast with simple arguments. """
+        # Run a simple forecast with $10,000 income, $500 in annual
+        # contributions, and $1000 in starting balances with no growth:
+        self.forecaster = Forecaster(
+            living_expenses_strategy=LivingExpensesStrategy(
+                strategy=LivingExpensesStrategy.strategy_const_contribution,
+                base_amount=Money(500), inflation_adjust=None),
+            settings=self.settings)
+        forecast = self.forecaster.run_forecast(
+            people={self.person},
+            accounts={self.account},
+            debts={})
 
-    def test_forecast(self):
-        """ Tests Forecaster.forecast """
-        # Run a simple forecast with $0 income and $0 balances:
-        forecaster = Forecaster(settings=self.settings)
-        forecaster.set_person1(gross_income=Money(0))
-        forecaster.add_asset(owner=forecaster.person1, cls=Account)
-        forecaster.add_debt(owner=forecaster.person1, cls=Debt)
-        forecaster.set_person2(name=None)  # Remove person2, if present
-        forecast = forecaster.forecast()
         # Test that it starts and ends in the right place and that
-        # income and total balance (principal) are correct (i.e. $0)
+        # income and total balance (principal) are correct
         self.assertEqual(
-            forecast.scenario.initial_year, forecaster.initial_year)
+            forecast.scenario, self.scenario)
+        # Pylint has trouble with attributes added by metaclass
+        # pylint: disable=no-member
         self.assertEqual(
-            len(forecast.principal), forecaster.scenario.num_years)
-        for principal in forecast.principal.values():
-            self.assertEqual(principal, Money(0))
-        for gross_income in forecast.gross_income.values():
-            self.assertEqual(gross_income, Money(0))
+            len(forecast.principal_history), self.scenario.num_years)
+        # pylint: enable=no-member
 
-    def test_forecast_substitution(self):
-        """ Test Forecaster.forecast with a substituted Scenario. """
-        # Build two scenarios, init Forecaster with one, and then run
-        # `forecast` with the other.
-        scenario1 = Scenario(
-            initial_year=2000,
-            num_years=2,
-            inflation=0,
-            stock_return=0,
-            bond_return=0,
-            other_return=0,
-            management_fees=0
-        )
-        scenario2 = Scenario(
-            initial_year=2000,
-            num_years=2,
-            inflation=0,
-            stock_return=1,  # 100% growth in stocks.
-            bond_return=0,
-            other_return=0,
-            management_fees=0
-        )
-        forecaster = Forecaster(
-            scenario=scenario1, settings=self.settings)
-        forecaster.set_person1(gross_income=Money(0))
-        # Add an account with a $1 balance and 100% invested in stocks:
-        allocation_strategy = AllocationStrategy(
-            strategy=AllocationStrategy.strategy_transition_to_const,
-            # 100% invested in stocks every year:
-            target=1,
-            min_equity=1,
-            max_equity=1
-        )
-        forecaster.add_asset(
-            owner=forecaster.person1,
-            balance=Money(1),
-            # Explicitly require that we follow the above allocation:
-            rate=allocation_strategy.rate_function(
-                forecaster.person1, scenario1),
-            cls=Account)
-        forecaster.set_person2(name=None)  # Remove person2, if present
+        # Test that the $500 in contributions have been added to the
+        # initial $1000 principal by the start of year 2:
+        self.assertAlmostEqual(
+            forecast.principal,
+            Money(1500),
+            places=2)
+        # Gross income should be unchanged at $10,000:
+        self.assertAlmostEqual(
+            forecast.income_forecast.gross_income,
+            Money(10000),
+            places=2)
 
-        # Run the forecast with scenario2 (which has 100% stock growth):
-        forecast = forecaster.forecast(scenario=scenario2)
-        # Under scenario1, the balance in 2001 should be unchanged at
-        # $1. Under scenario2, the balance in 2001 should double to $2.
-        self.assertEqual(forecast.principal[2001], Money(2))
+    def test_run_forecast_mutation(self):
+        """ Test that Forecaster.run_forecast doesn't mutate arguments. """
+        # Run a forecast and check whether the inputs were mutated:
+        forecast = self.forecaster.run_forecast(
+            people={self.person},
+            accounts={self.account},
+            debts={self.debt})
+        # The originally-provided Person's history dicts should have
+        # length 1 (since they haven't been mutated). They should be
+        # length 2 for the Person held by the Forecast.
+        # pylint: disable=no-member
+        self.assertEqual(len(self.person.gross_income_history), 1)
+        # pylint: enable=no-member
+        self.assertEqual(
+            len(next(iter(forecast.people)).gross_income_history), 2)
+
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.TextTestRunner().run(
+        unittest.TestLoader().loadTestsFromName(__name__))

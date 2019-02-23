@@ -104,9 +104,9 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
             account = self.AccountType(
                 self.owner, *args, inflation_adjust='invalid', **kwargs)
 
-    def test_next_year(self, *args, **kwargs):
+    def test_next(self, *args, **kwargs):
         """ Test TFSA.next_year. """
-        super().test_next_year(*args, **kwargs)
+        super().test_next(*args, **kwargs)
 
         # Set up variables for testing.
         accruals = self.get_accruals()

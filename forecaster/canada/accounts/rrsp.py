@@ -32,8 +32,8 @@ class RRSP(RegisteredAccount):
         # date (depending on withdrawal strategy).
         # TODO: Allow RRIF_conversion_year to be passed as an argument?
         # We could use the below convert-at-71 logic if None is passed.
-        # TODO: Automatically trigger RRIF conversion when an outflow
-        # is detected? (Perhaps control this behaviour with an arg?)
+        # TODO: Automatically trigger RRIF conversion after outflow?
+        # (Perhaps control this behaviour with an arg?)
 
         self._rrif_conversion_year = None
         self.rrif_conversion_year = rrif_conversion_year
@@ -48,9 +48,8 @@ class RRSP(RegisteredAccount):
         # If no contribution room is provided and none is already known,
         # set contribution_room to 0.
         if (
-            'contribution_room' not in kwargs and
-            self.contribution_room is None
-        ):
+                'contribution_room' not in kwargs and
+                self.contribution_room is None):
             self.contribution_room = Money(0)
 
     def _rrif_max_conversion_year(self):
@@ -80,7 +79,7 @@ class RRSP(RegisteredAccount):
     @rrif_conversion_year.setter
     def rrif_conversion_year(self, val):
         """ Sets `rrif_conversion_year`.
-        
+
         Arg:
             val (int): The year in which to convert the RRSP to an
                 RRIF. May be None, in which case the RRIF conversion
@@ -153,11 +152,11 @@ class RRSP(RegisteredAccount):
             taxable_income
             * self.inflation_adjust(year, self.this_year)
         )
-        bracket = max((
-            bracket for bracket in tax_rates
-            if bracket < taxable_income_adjusted.amount),
-            default=min(tax_rates.keys())
-        )
+        bracket = max(
+            (
+                bracket for bracket in tax_rates
+                if bracket < taxable_income_adjusted.amount),
+            default=min(tax_rates.keys()))
         tax_rate = tax_rates[bracket]
         return taxable_income * tax_rate
 
@@ -224,17 +223,16 @@ class RRSP(RegisteredAccount):
         else:
             return Money(0)
 
-    # TODO: Determine whether there are any RRSP tax credits to
-    # implement in an overloaded _tax_credit method
-    # (e.g. pension tax credit?)
+    # TODO: Add RRSP tax credits (e.g. pension tax credit)?
+    # Implement this in an overloaded _tax_credit method.
 
 
-# TODO: Implement SpousalRRSP? (It may be that RRSP provides all of the
-# logic necessary, but consider that we need a way to know who receives
-# the deduction - this can be done by type-checking an account in the
-# Tax class, or perhaps we should add a method
-# [tax_deduction_eligibility?] that identifies one or more people who
-# may claim the deduction).
+# TODO: Implement SpousalRRSP?
+# (It may be that RRSP provides all of the logic necessary, but consider
+# that we need a way to know who receives the deduction - this can be
+# done by type-checking an account in the TaxCanada class, or perhaps we
+# should add a method [tax_deduction_eligibility?] that identifies one
+# or more people who may claim the deduction).
 # NOTE: This can get complicated quickly. It's probably best to
 # implement a test in the Tax object rather than go for totally generic
 # code at this point.

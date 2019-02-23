@@ -1,26 +1,104 @@
 ''' This module provides classes for creating and managing Forecasts. '''
 
-from copy import deepcopy
-from forecaster.forecast import Forecast
-from forecaster.person import Person
-from forecaster.accounts import Account, ContributionLimitAccount, Debt
+from copy import copy, deepcopy
+from functools import reduce
+from enum import Enum
+from forecaster.forecast import (
+    Forecast, IncomeForecast, LivingExpensesForecast, ReductionForecast,
+    ContributionForecast, WithdrawalForecast, TaxForecast)
 from forecaster.tax import Tax
 from forecaster.strategy import (
-    ContributionStrategy, WithdrawalStrategy, TransactionStrategy,
+    LivingExpensesStrategy, AccountTransactionStrategy,
     DebtPaymentStrategy, AllocationStrategy)
 from forecaster.scenario import Scenario
 from forecaster.settings import Settings
 
 
-# Forecaster wraps Forecast. It replicates much of that complexity
-# by necessity, but it isn't necessary for client code to interact
-# with it - that's the whole point of this class. Its arguments are
-# optional and its attributes are unavoidable, so suppress Pylint's
-# concerns about numbers of arguments/attributes/variables
-# pylint: disable=too-many-arguments
-# pylint: disable=too-many-instance-attributes
-# pylint: disable=too-many-locals
+# The `Forecaster` class makes frequent reference to the names of
+# parameters. Rather than hard-code these strings, it's better practice
+# to define them here as an enum.
+class Parameter(Enum):
+    """ TODO """
+    SCENARIO = "scenario"
+    LIVING_EXPENSES_STRATEGY = "living_expenses_strategy"
+    DEBT_PAYMENT_STRATEGY = "debt_payment_strategy"
+    CONTRIBUTION_STRATEGY = "contribution_strategy"
+    WITHDRAWAL_STRATEGY = "withdrawal_strategy"
+    ALLOCATION_STRATEGY = "allocation_strategy"
+    TAX_TREATMENT = "tax_treatment"
 
+    def __str__(self):
+        """ Cast enum members directly to their string value. """
+        return self.value
+
+# This mapping has the following form:
+#   dict[str: dict[str, str]]
+# The key provides an attribute name (as a string).
+# The {str: str} value is a mapping from the name of an __init__
+# arg for attribute (see DEFAULTTYPES for each attribute's type) to the
+# name of the corresponding `Settings` attribute that provides its
+# default value.
+# EXAMPLE:
+#   `{"scenario": {"inflation": "scenario_inflation"}}`
+#   implies that `Forecaster.scenario` receives the parameter
+#   `inflation` when initialized and its default value is provided by
+#   `Forecaster.settings.scenario_inflation`.
+DEFAULTVALUES = {
+    str(Parameter.SCENARIO): {
+        "initial_year": "settings.initial_year",
+        "inflation": "settings.inflation",
+        "stock_return": "settings.stock_return",
+        "bond_return": "settings.bond_return",
+        "other_return": "settings.other_return",
+        "management_fees": "settings.management_fees",
+        "num_years": "settings.num_years"},
+    str(Parameter.LIVING_EXPENSES_STRATEGY): {
+        "strategy": "settings.living_expenses_strategy",
+        "base_amount": "settings.living_expenses_base_amount",
+        "rate": "settings.living_expenses_rate",
+        "inflation_adjust": "scenario.inflation_adjust"},
+    str(Parameter.CONTRIBUTION_STRATEGY): {
+        "strategy": "settings.contribution_strategy",
+        "weights": "settings.contribution_weights",
+        "timing": "settings.contribution_timing"},
+    str(Parameter.WITHDRAWAL_STRATEGY): {
+        "strategy": "settings.withdrawal_strategy",
+        "weights": "settings.withdrawal_weights",
+        "timing": "settings.withdrawal_timing"},
+    str(Parameter.ALLOCATION_STRATEGY): {
+        "strategy": "settings.allocation_strategy",
+        "target": "settings.allocation_target",
+        "min_equity": "settings.allocation_min_equity",
+        "max_equity": "settings.allocation_max_equity",
+        "standard_retirement_age": "settings.allocation_std_retirement_age",
+        "risk_transition_period": "settings.allocation_risk_trans_period",
+        "adjust_for_retirement_plan": "settings.allocation_adjust_retirement"},
+    str(Parameter.DEBT_PAYMENT_STRATEGY): {
+        "strategy": "settings.debt_payment_strategy",
+        "timing": "settings.debt_payment_timing"},
+    str(Parameter.TAX_TREATMENT): {
+        "tax_brackets": "settings.tax_brackets",
+        "personal_deduction": "settings.tax_personal_deduction",
+        "credit_rate": "settings.tax_credit_rate",
+        "inflation_adjust": "scenario.inflation_adjust",
+        "payment_timing": "settings.tax_payment_timing"}
+}
+
+# This maps each of the above parameters to a type:
+DEFAULTTYPES = {
+    str(Parameter.SCENARIO): Scenario,
+    str(Parameter.LIVING_EXPENSES_STRATEGY): LivingExpensesStrategy,
+    str(Parameter.DEBT_PAYMENT_STRATEGY): DebtPaymentStrategy,
+    str(Parameter.CONTRIBUTION_STRATEGY): AccountTransactionStrategy,
+    str(Parameter.WITHDRAWAL_STRATEGY): AccountTransactionStrategy,
+    str(Parameter.ALLOCATION_STRATEGY): AllocationStrategy,
+    str(Parameter.TAX_TREATMENT): Tax}
+
+# This maps certain parameters that need special init logic to
+# the method name that provides that logic.
+DEFAULTBUILDERS = {
+    # str(Parameter.TAX_TREATMENT): "build_tax_treatment"
+}
 
 class Forecaster(object):
     """ A convenience class for building Forecasts based on settings.
@@ -31,630 +109,346 @@ class Forecaster(object):
     information.
 
     One of the purposes of this class is to enable building `Forecast`
-    objects solely from a `Settings` object and a set of `inputs` dicts.
-    Objects of this class can be initialized with any of the parameters
-    that can be provided to `Forecast` (as well as a `Settings` object).
-    Any parameters that are not provided at init time can be built
-    afterward via an `add_\\*` method. Each `add_\\*` method takes the
-    parameters of the corresponding object being built; e.g.
-    `add_person` takes the same parameters as `Person.__init__` (plus
-    a `cls` parameter -- see documentation for `add_person`).
+    objects solely from a `Settings` object and some `Ledger` objects
+    (i.e. people, assets, and debts.) Client code may optionally
+    provide certain parameters required by `Forecast` or its members,
+    which will be used as-is without values from `Settings`. Client
+    code may also (or alternatively) build parameters with partial
+    init args; `Forecaster` will fill in any remaining init args with
+    the appropriate values from `Settings`.
 
-    This behaviour can be particularly useful for `Ledger` objects like
-    `Person` or `Account`, which may have per-object historical
-    data that can't be inferred from a Settings object (represented by
-    an `inputs` dict for each such object).
+    `Forecaster` also can be used to build certain objects which
+    are used by `Ledger` arguments to `Forecaster.run_forecast()`,
+    such as `Tax` and `AllocationStrategy` objects (used
+    by `Person` and some `Account` objects, respectively.)
 
-    `Forecasts` may be generated based on varying `Scenario` object
-    (while retaining the same `Strategy`, `Person`, and `Account`
-    objects) to allow for comparison of an overarching strategy between
-    various future economic performance scenarios (e.g. as in Monte
-    Carlo analysis).
+    `Forecaster` does not mutate values provided to it. `Ledger`
+    objects passed by client code are copied (actually deepcopied, so
+    that relationships between them are preserved), and the copies are
+    mutated and returned. This makes it easy to tweak a few parameters
+    and run another forecast, e.g. via Monte Carlo sampling.
     """
 
     def __init__(
-        self, person1=None, person2=None, people=None, assets=None,
-        debts=None, scenario=None, contribution_strategy=None,
-        withdrawal_strategy=None, contribution_transaction_strategy=None,
-        withdrawal_transaction_strategy=None, allocation_strategy=None,
-        debt_payment_strategy=None, tax_treatment=None, initial_year=None,
-        settings=Settings
+            self,
+            settings=None,
+            scenario=None,
+            living_expenses_strategy=None,
+            debt_payment_strategy=None,
+            contribution_strategy=None,
+            withdrawal_strategy=None,
+            tax_treatment=None
     ):
-        """ Inits an instance of `Forecaster`.
-
-        This method can receive any of the parameters that can be
-        provided to `Forecast`. Any parameters that are not provided at
-        init time can be provided afterward via an `add_*` method.
-
-        This method automatically builds `Scenario` and `Strategy`
-        objects from `Settings`, but not any `Ledger` (i.e. `Person`,
-        `Debt`, or `Account`) or `Tax` objects, which must be added by
-        the corresponding `add_\\*` method individually.
-
-        Args:
-            settings (Settings): An object with settings values for the
-                `Forecaster` to pass to various `Account`, `Person`,
-                `Strategy`, and `Scenario` objects when explicit
-                arguments are not given.
-            initial_year (int): The initial year for the forecast.
-        """
-        # This method has very simple branches - just testing for None
-        # followed by a single statement. There's not much to be gained
-        # by splitting this method up more.
-        # pylint: disable=too-many-branches
-
-        # NOTE: Settings defines two named persons, so store them via
-        # their own named attributes (as well as in the `people` dict).
-        # TODO: Make person* properties that update `people` when set
-        # (or add add_person1 and add_person2 methods)?
-        self.person1 = person1
-        self.person2 = person2
-        self.people = people if people is not None else set()
-        # Ensure that person1/person2 are in the `people` set:
-        if self.person1 is not None:
-            self.people.add(self.person1)
-        if self.person2 is not None:
-            self.people.add(self.person2)
-        self.assets = assets if assets is not None else set()
-        self.debts = debts if debts is not None else set()
+        """ Inits an instance of `Forecaster`. """
+        # Set up instance:
+        super().__init__()
+        self.default_values = copy(DEFAULTVALUES)
+        self.default_types = copy(DEFAULTTYPES)
+        self.default_builders = copy(DEFAULTBUILDERS)
+        # Store args as attributes:
+        # For `settings` specifically, use the default values provided
+        # by the class if none are provided explicitly.
+        if settings is None:
+            self.settings = Settings()
+        else:
+            self.settings = settings
+        # For the rest, None is allowed:
+        self.scenario = scenario
+        self.living_expenses_strategy = living_expenses_strategy
+        self.debt_payment_strategy = debt_payment_strategy
         self.contribution_strategy = contribution_strategy
         self.withdrawal_strategy = withdrawal_strategy
-        self.transaction_in_strategy = contribution_transaction_strategy
-        self.transaction_out_strategy = withdrawal_transaction_strategy
-        self.allocation_strategy = allocation_strategy
-        self.debt_payment_strategy = debt_payment_strategy
-        self.scenario = scenario
         self.tax_treatment = tax_treatment
-        self.settings = settings
+        # Some params aren't used to build Forecast and so are not
+        # received as input to __init__. Create attrs for them here:
+        self.allocation_strategy = None
 
-        # Build any not-provided attributes based on Settings:
+    def _get_attr_recursive(self, name, memo=None):
+        """ Get an attribute based on a dot-delimited identifier.
 
-        # Everything takes `initial_year`, so set that first.
-        # If a `scenario` has been provided, use that rather than
-        # Settings, since `scenario` defines initial_year as well.
-        if initial_year is not None:
-            self.initial_year = initial_year
+        If the first element of `name` is an optional parameter
+        (e.g. `scenario`), then if that parameter hasn't been explicitly
+        provided this method will build the parameter via
+        `build_param`.
+
+        Example:
+            `forecaster._get_attr_recursive('settings.initial_year')`
+            Returns the value of `forecaster.settings.initial_year`
+
+        Returns:
+            (Any) The value of the requested attribute.
+
+        Raises:
+            AttributeError: The attribute does not exist.
+        """
+        # `name` is dot-delimited, so split it up into distinct names:
+        name_list = name.split('.')
+        # The first name has special treatment, since it might need to
+        # be dynamically built:
+        top_attr_name = name_list[0]
+        # NOTE: This raises AttributeError if the attribute doesn't
+        # exist. (Optional attributes should exist and be None-valued)
+        attr = getattr(self, top_attr_name)
+        # If this is an optional attribute and it hasn't been explicitly
+        # provided, build it dynamically:
+        if attr is None and top_attr_name in self.default_values:
+            attr = self.build_param(top_attr_name, memo=memo)
+        # If there are no further identifiers, we're done!
+        if len(name_list) == 1:
+            return attr
+        # Otherwise, recursively call getattr on each sub-identifier.
         else:
-            if scenario is not None:
-                self.initial_year = scenario.initial_year
-            else:
-                self.initial_year = settings.initial_year
+            return reduce(getattr, name_list[1:], attr)
 
-        # Scenario has no dependencies on other classes, so build it
-        # first:
-        if self.scenario is None:
-            self.set_scenario()
-        # Strategies can depend on Scenario, but not on Person/Accounts,
-        # so build them next:
-        if self.contribution_strategy is None:
-            self.set_contribution_strategy()
-        if self.withdrawal_strategy is None:
-            self.set_withdrawal_strategy()
-        if self.transaction_in_strategy is None:
-            self.set_transaction_in_strategy()
-        if self.transaction_out_strategy is None:
-            self.set_transaction_out_strategy()
-        if self.allocation_strategy is None:
-            self.set_allocation_strategy()
-        if self.debt_payment_strategy is None:
-            self.set_debt_payment_strategy()
-        # Tax treatment also depends on Scenario. Person depends on Tax,
-        # so build Tax first.
-        if self.tax_treatment is None:
-            self.set_tax_treatment()
-        # Finally, set `Person` objects.
-        if self.person1 is None:
-            self.set_person1()
-        if self.person2 is None:
-            self.set_person2()
-        # Accounts will need to be set manually.
+    def run_forecast(self, people, accounts, debts):
+        """ Generates a `Forecast` object.
 
-    def forecast(self, **kwargs):
-        """ TODO """
+        This method builds a `Forecast` based on any explicitly-provided
+        parameters (e.g. `scenario`, `living_expenses_strategy`) and
+        the applicable `settings`. Any parameters that have not been
+        explicitly provided are built dynamically.
 
-        # Build a dict of args to pass to Forecast.__init__ based on
-        # the `Forecaster`'s attributes:
-        forecast_kwargs = {
-            'scenario': self.scenario,
-            'people': self.people,
-            'assets': self.assets,
-            'debts': self.debts,
-            'contribution_strategy': self.contribution_strategy,
-            'withdrawal_strategy': self.withdrawal_strategy,
-            'contribution_trans_strategy': self.transaction_in_strategy,
-            'withdrawal_trans_strategy': self.transaction_out_strategy,
-            'debt_payment_strategy': self.debt_payment_strategy,
-            'tax_treatment': self.tax_treatment
-        }
+        Arguments (`people`, etc.) are copied. Copies are mutated, but
+        the objects passed as arguments are not so that they an be
+        re-used (and because mutating arguments is considered rude).
+        Relationships between arguments and their members are preserved
+        via `deepcopy`.
 
-        # This is the clever bit: `Forecast` mutates many of its
-        # arguments, so we need to deepcopy this arg list. We also
-        # want to allow the user to replace any arguments to `Forecast`
-        # so that they can test out different scenarios, account mixes,
-        # etc. We can do these both by using the deepcopy memo arg!
-        # This memo maps each of the forecast_kwarg values to the
-        # corresponding input kwarg; those values will be replaced with
-        # the input values when we pass `memo` to deepcopy.
-        memo = {
-            id(forecast_kwargs[key]): kwargs[key]
-            for key in kwargs if key in forecast_kwargs
-        }
-        forecast_kwargs = deepcopy(forecast_kwargs, memo=memo)
-        # If any of the input kwargs aren't in forecast_kwargs, add them
-        forecast_kwargs.update({
-            key: kwargs[key] for key in kwargs if key not in forecast_kwargs
-        })
-
-        return Forecast(**forecast_kwargs)
-
-    @staticmethod
-    def set_kwarg(kwargs, arg, val, default):
-        """ Adds a keyword arg to a dict based on an input hierarchy.
-
-        Adds `arg` to the dict `kwargs` with value `val` (usually an
-        explicit argument to the calling method) or, if that's `None`,
-        `default` (usually a value from a Settings object).
-
-        If both of these values are None, or if `arg` is already in
-        `kwargs`, no value is added to `kwargs`.
-        This avoids overriding the relevant parameter defaults or
-        overriding args set by subclasses.
-
-        Args:
-            kwargs (dict[str, Any]): A dict of keyword args to be passed
-                to an `__init__` method when initializing a Person,
-                Account, or other Forecast input object.
-            arg (str): The keyword arg being added to `kwargs`.
-            val (Any): An explicitly-passed value for `arg`.
-                May be None.
-            default (Any): A value from a Settings object
-                corresponding to `arg`. May be None.
-        """
-        # If the arg is already in kwargs, don't do anything:
-        if arg in kwargs:
-            return
-        # If the arg was already set explicitly, add it to the dict:
-        if val is not None:
-            kwargs[arg] = val
-        # If the arg isn't set explicitly, use the default value:
-        elif default is not None:
-            kwargs[arg] = default
-        # If there's no explicit val and no default, don't add anything.
-
-    def add_person(
-        self, name, birth_date,
-        retirement_date=None, gross_income=None, raise_rate=None,
-        spouse=None, tax_treatment=None, inputs=None, initial_year=None,
-        cls=Person, **kwargs
-    ):
-        """ Adds a Person to the forecast.
-
-        If `name` matches `person1_name` or `person2_name` in `settings`
-        then the default values for that person will be used, otherwise
-        no defaults will be used (be sure to provide any mandatory
-        arguments!)
-
-        Subclasses of Forecaster that build subclasses of Person can
-        make use of this method by passing in a suitable `cls`
-        argument along with any `kwargs` specific to that `cls`.
-
-        See `Person` for documentation on additional args.
-
-        Args:
-            inputs (dict[str, dict[int, Any]]): `{arg: {year: val}}`
-                pairs, where `arg` is the name of a @recorded_property
-                of `Person` and `val` is the value of that property for
-                `year`.
-            cls (type): The class of `Person` being built by the
-                method. This class's `__init__` method must accept all
-                of the args of `Person`.
+        Arguments:
+            people (set[Person]): One or more people for whom a forecast
+                is being generated.
+            accounts (set[Account]): Accounts belonging to the plannees.
+            debts (set[Debt]): Debts owed by the plannees.
 
         Returns:
-            `Person`: An object of type `cls` constructed with
-            the relevant args, inputs, settings, and default values.
+            Forecast: A forecast of the plannees income, savings,
+            and withdrawals over the years.
         """
-        # NOTE: We don't actually need to list Person's various args
-        # in the call signature here; we could just use `inputs`,
-        # `cls` and `**kwargs`. Doing it that way would be less
-        # brittle, but not as convenient for Intellisense or for future
-        # folks looking to extend the code to incorporate additional
-        # settings defaults.
+        # We don't want to mutate the inputs, so create copies:
+        memo = {}
+        people = deepcopy(people, memo=memo)
+        accounts = deepcopy(accounts, memo=memo)
+        debts = deepcopy(debts, memo=memo)
 
-        # There are no settings defaults for persons other than person1
-        # and person2.
-        self.set_kwarg(kwargs, 'name', name, None)
-        if kwargs['name'] is None:
-            return None
-        self.set_kwarg(kwargs, 'birth_date', birth_date, None)
-        self.set_kwarg(kwargs, 'retirement_date', retirement_date, None)
-        self.set_kwarg(kwargs, 'raise_rate', raise_rate, None)
-        self.set_kwarg(kwargs, 'gross_income', gross_income, None)
-        self.set_kwarg(kwargs, 'spouse', spouse, None)
-        self.set_kwarg(kwargs, 'tax_treatment', tax_treatment,
-                       self.tax_treatment)
-        self.set_kwarg(kwargs, 'inputs', inputs, None)
-        self.set_kwarg(kwargs, 'initial_year', initial_year, self.initial_year)
+        # Build Scenario first so that we have access to initial_year:
+        memo = {}
+        scenario = self.get_param(Parameter.SCENARIO, memo=memo)
+        initial_year = scenario.initial_year  # extract for convenience
 
-        # Construct a person with the keyword arguments we've assembled:
-        person = cls(**kwargs)
-        self.people.add(person)
-        # Return the Person so that subclass methods can do
-        # post-processing (if they need to)
-        return person
+        # Retrieve the necessary strategies for building SubForecasts:
+        living_expenses_strategy = self.get_param(
+            Parameter.LIVING_EXPENSES_STRATEGY, memo=memo)
+        debt_payment_strategy = self.get_param(
+            Parameter.DEBT_PAYMENT_STRATEGY, memo=memo)
+        contribution_strategy = self.get_param(
+            Parameter.CONTRIBUTION_STRATEGY, memo=memo)
+        withdrawal_strategy = self.get_param(
+            Parameter.WITHDRAWAL_STRATEGY, memo=memo)
+        tax_treatment = self.get_param(
+            Parameter.TAX_TREATMENT, memo=memo)
 
-    def set_person1(
-        self, name=None, birth_date=None,
-        retirement_date=None, gross_income=None, raise_rate=None,
-        spouse=None, tax_treatment=None, inputs=None, initial_year=None,
-        cls=Person, **kwargs
-    ):
-        """ Adds a person to the forecast based on person1's settings.
+        # Now build each of the SubForecast objects required by Forecast
+        income_forecast = IncomeForecast(
+            initial_year=initial_year,
+            people=people)
+        living_expenses_forecast = LivingExpensesForecast(
+            initial_year=initial_year,
+            people=people,
+            living_expenses_strategy=living_expenses_strategy)
+        reduction_forecast = ReductionForecast(
+            initial_year=initial_year,
+            debts=debts,
+            debt_payment_strategy=debt_payment_strategy)
+        contribution_forecast = ContributionForecast(
+            initial_year=initial_year,
+            accounts=accounts,
+            account_transaction_strategy=contribution_strategy)
+        withdrawal_forecast = WithdrawalForecast(
+            initial_year=initial_year,
+            people=people,
+            accounts=accounts,
+            account_transaction_strategy=withdrawal_strategy)
+        tax_forecast = TaxForecast(
+            initial_year=initial_year,
+            people=people,
+            tax_treatment=tax_treatment)
 
-        See `add_person` for documentation on the args and return type
-        of this method.
-        """
-        # Remember to remove any previously-instantiated person1
-        if self.person1 is not None:
-            self.people.remove(self.person1)
-        self.set_kwarg(kwargs, 'name', name, self.settings.person1_name)
-        # `Settings` defines a non-person by setting `name` to None
-        if kwargs['name'] is None:
-            return None
-        self.set_kwarg(kwargs, 'birth_date', birth_date,
-                       self.settings.person1_birth_date)
-        self.set_kwarg(kwargs, 'retirement_date', retirement_date,
-                       self.settings.person1_retirement_date)
-        self.set_kwarg(kwargs, 'gross_income', gross_income,
-                       self.settings.person1_gross_income)
-        self.set_kwarg(kwargs, 'raise_rate', raise_rate,
-                       self.settings.person1_raise_rate)
-        # There are no special person1-specific defaults for the
-        # remaining attributes (except that we assume that the spouse of
-        # person1 is person2)
-        self.set_kwarg(kwargs, 'gross_income', gross_income, None)
-        self.set_kwarg(kwargs, 'spouse', spouse, self.person2)
-        self.set_kwarg(kwargs, 'tax_treatment', tax_treatment,
-                       self.tax_treatment)
-        self.set_kwarg(kwargs, 'inputs', inputs, None)
-        self.set_kwarg(kwargs, 'initial_year', initial_year, self.initial_year)
+        # With these SubForecasts defined, building Forecast is trivial:
+        forecast = Forecast(
+            income_forecast=income_forecast,
+            living_expenses_forecast=living_expenses_forecast,
+            reduction_forecast=reduction_forecast,
+            contribution_forecast=contribution_forecast,
+            withdrawal_forecast=withdrawal_forecast,
+            tax_forecast=tax_forecast,
+            scenario=scenario)
 
-        self.person1 = self.add_person(cls=cls, **kwargs)
-        return self.person1
+        # Forecasts run automatically on init, so we're done!
+        return forecast
 
-    def set_person2(
-        self, name=None, birth_date=None,
-        retirement_date=None, gross_income=None, raise_rate=None,
-        spouse=None, tax_treatment=None, inputs=None, initial_year=None,
-        cls=Person, **kwargs
-    ):
-        """ Adds a person to the forecast based on person2's settings.
+    def build_param(
+            self, param_name, *args,
+            param_type=None, memo=None, _special_builder=True, **kwargs):
+        """ Builds a parameter based on settings and explicit args.
 
-        See `add_person` for documentation on the args and return type
-        of this method.
-        """
-        # Remember to remove any previously-instantiated person2
-        if self.person2 is not None:
-            self.people.remove(self.person2)
-        self.set_kwarg(kwargs, 'name', name, self.settings.person2_birth_date)
-        # `Settings` defines a non-person by setting `name` to None,
-        # which set_args interprets as not being set at all.
-        if 'name' not in kwargs:
-            return None
-        self.set_kwarg(kwargs, 'birth_date', birth_date,
-                       self.settings.person2_birth_date)
-        self.set_kwarg(kwargs, 'retirement_date', retirement_date,
-                       self.settings.person2_retirement_date)
-        self.set_kwarg(kwargs, 'gross_income', gross_income,
-                       self.settings.person2_gross_income)
-        self.set_kwarg(kwargs, 'raise_rate', raise_rate,
-                       self.settings.person2_raise_rate)
-        # There are no special person2-specific defaults for the
-        # remaining attributes (except that we assume that the spouse
-        # of person2 is person1)
-        self.set_kwarg(kwargs, 'gross_income', gross_income, None)
-        self.set_kwarg(kwargs, 'spouse', spouse, self.person1)
-        self.set_kwarg(kwargs, 'tax_treatment', tax_treatment,
-                       self.tax_treatment)
-        self.set_kwarg(kwargs, 'inputs', inputs, None)
-        self.set_kwarg(kwargs, 'initial_year', initial_year, self.initial_year)
+        This method does not set any attributes of `Forecaster`, it only
+        builds an object and returns it.
 
-        self.person2 = self.add_person(cls=cls, **kwargs)
-        return self.person2
-
-    def add_account(
-        self, owner=None, balance=None, rate=None, transactions=None,
-        nper=None, inputs=None, initial_year=None, cls=Account, **kwargs
-    ):
-        """ Adds an account (asset, debt, etc.) to the forecast. """
-        # NOTE: We don't actually need to list Account's various args
-        # in the call signature here; we could just use `inputs`,
-        # `cls` and `**kwargs`. Doing it that way would be less
-        # brittle, but not as convenient for Intellisense.
-
-        self.set_kwarg(kwargs, 'owner', owner, self.person1)
-        self.set_kwarg(kwargs, 'balance', balance, None)
-        self.set_kwarg(
-            kwargs, 'rate', rate,
-            self.allocation_strategy.rate_function(
-                kwargs['owner'], self.scenario)
-        )
-        self.set_kwarg(kwargs, 'transactions', transactions, None)
-        self.set_kwarg(kwargs, 'nper', nper, None)
-        self.set_kwarg(kwargs, 'inputs', inputs, None)
-        self.set_kwarg(kwargs, 'initial_year', initial_year, self.initial_year)
-
-        account = cls(**kwargs)
-        return account
-
-    def add_asset(
-        self, owner=None, balance=None, rate=None, transactions=None,
-        nper=None, inputs=None, initial_year=None, cls=Account, **kwargs
-    ):
-        """ Adds an asset to the forecast and to the `assets` set.
-
-        This method should be used instead of the generic method
-        `add_account` because, in addition to building an object of the
-        appropriate type, it also manages object membership in the
-        `assets` set.
-
-        See `add_account` for additional documentation.
-
-        Args:
-            cls (type): The class of `Account` being built by
-                the method. This class's `__init__` method must accept
-                all of the args of `Account`.
+        Arguments:
+            param_name (str): The name of the parameter. This should
+                match a key value in `self.default_values`.
+            *args (Any): Positional arguments to be passed to the init
+                method of the object being built. Optional.
+            param_type (type): The type of the parameter. Optional.
+                Defaults to the type provided by `self.default_types`.
+            memo (dict[str, Any]): A mapping from parameter names to
+                objects. This is not generally needed by client code;
+                in cases where `build_param` needs to build other
+                parameters to build the requested parameter, this dict
+                is mutated to record already-built parameters. Optional.
+            _special_builder (Boolean): Parameters which require special
+                logic to init (as identified in `self.default_builders`)
+                will only have the corresponding special builder called
+                iff this value is True. Optional.
+            **kwargs (Any): Keyword arguments to be passed to the init
+                method of the object being built. Optional.
 
         Returns:
-            `Account`: An object of type `cls` constructed with
-            the relevant args, inputs, settings, and default values.
+            An object of type `param_type`.
         """
-        account = self.add_account(
-            owner=owner, balance=balance, rate=rate, transactions=transactions,
-            nper=nper, inputs=inputs, initial_year=initial_year, cls=cls,
-            **kwargs
-        )
-        self.assets.add(account)
-        return account
+        # Cast param_name to str once, for convenience:
+        # (This is needed because Parameter members are Enum objects,
+        # which can't be used in place of string-valued indexes)
+        param_name = str(param_name)
 
-    def add_contribution_limit_account(
-        self, contribution_room=None, contributor=None,
-        cls=ContributionLimitAccount, **kwargs
-    ):
-        """ Adds an asset to the forecast and to the `assets` set.
+        # build_param can recurse, either via default_builders methods
+        # or via _get_attr_recursive (e.g. fetching a kwarg might
+        # involve building an attribute from which this attribute
+        # depends). If this is the first call, set up a dict of
+        # parameters we've tried to build already to keep track:
+        if memo is None:
+            memo = {}
+        elif param_name in memo:
+            return memo[param_name]
 
-        This method should be used instead of the generic method
-        `add_account` because, in addition to building an object of the
-        appropriate type, it also manages object membership in the
-        `assets` set.
+        # If there's special logic for this parameter, use that instead:
+        # (The special builder method can call this one by setting
+        # `_special_builder` to False.)
+        if _special_builder and param_name in self.default_builders:
+            return getattr(
+                self, self.default_builders[param_name])(*args, **kwargs)
+        # For everything else, use the user-provided defaults and fill
+        # in the gaps with the settings-provided defaults:
+        if param_name in self.default_values:
+            # Get the default mapping for this parameter:
+            # (We copy it to avoid mutating it)
+            default_values = copy(self.default_values[param_name])
+            # Replace each value with the value of the same-named
+            # attribute of the `Forecaster` object:
+            for key, value in default_values.items():
+                default_values[key] = self._get_attr_recursive(value, memo=memo)
+            # If any values have been provided explicitly, override
+            # the defaults with that:
+            default_values.update(kwargs)
+            kwargs = default_values
+        # Build a new object (note that we don't set the corresponding
+        # attribute of Forecaster; if this is called again, we'll build
+        # a new object)
+        if param_type is None:
+            param_type = self.default_types[param_name]
+        param = param_type(*args, **kwargs)
+        memo[param_name] = param
+        return param
 
-        See `add_account` for additional documentation.
+    def get_param(self, param_name, memo=None):
+        """ Gets a parameter, builds one if none is explicitly provided.
 
-        Args:
-            cls (type): The class of `RegisteredAccount` being built by
-                the method. This class's `__init__` method must accept
-                all of the args of `RegisteredAccount`.
+        If a parameter has been explicitly assigned to this `Forecaster`
+        instance then that object is returned. Otherwise, this method
+        calls `build_param` to build it dynamically and returns it
+        without setting any attributes of the `Forecaster` object.
+
+        This is a convenience method which allows one to guarantee
+        that an object will be returned (if `param_name` is supported)
+        whether or not it is been explicitly set.
+
+        Arguments:
+            param_name (str): The name of the parameter. This should
+                match a key value in `self.default_values`.
+            memo (dict[str, Any]): A mapping from parameter names to
+                objects. This is not generally needed by client code;
+                in cases where `build_param` needs to build other
+                parameters to build the requested parameter, this dict
+                is mutated to record already-built parameters. Optional.
 
         Returns:
-            RegisteredAccount: An object of type `cls` constructed with
-            the relevant args, inputs, settings, and default values.
+            The value of the attribute with name `param_name` or, if
+            that value is None, a dynamically-built object that uses
+            the values of `settings` for init.
         """
-        self.set_kwarg(kwargs, 'contribution_room', contribution_room, None)
-        if 'owner' in kwargs:
-            contributor_default = kwargs['owner']
+        # Cast param_name to str once, for convenience:
+        # (This is needed because Parameter members are Enum objects,
+        # which can't be used in place of string-valued indexes)
+        param_name = str(param_name)
+        explicit_attr = getattr(self, param_name)
+        if explicit_attr is not None:
+            return explicit_attr
         else:
-            contributor_default = self.person1
-        self.set_kwarg(kwargs, 'contributor', contributor, contributor_default)
-        account = self.add_asset(
-            cls=cls, **kwargs
-        )
-        return account
+            return self.build_param(param_name, memo=memo)
 
-    def add_debt(
-        self, owner=None, balance=None, rate=None, transactions=None,
-        nper=None, inputs=None, initial_year=None, minimum_payment=None,
-        savings_rate=None, accelerated_payment=None, cls=Debt, **kwargs
-    ):
-        """ Adds a Debt to the forecast.
+    def set_param(
+            self, param_name, *args,
+            param_type=None, memo=None, **kwargs):
+        """ Builds a parameter and sets the corresponding attribute.
 
-        This method should be used instead of the generic method
-        `add_account` because, in addition to building an object of the
-        appropriate type, it also manages object membership in the
-        `assets` set.
+        This is a convenience method that calls `build_param` and
+        sets the result as the value of the corresponding attribute of
+        this `Forecaster` object.
 
-        See `_add_account` for additional documentation.
+        Note that by calling this method, the resulting object will be
+        used without modification by `run_forecast` even if the
+        `settings` object changes. You can un-set the parameter by
+        assigning `None` to that attribute.
 
-        Args:
-            cls (type): The class of `Debt` being built by
-                the method. This class's `__init__` method must accept
-                all of the args of `Debt`.
+        This method does not set any attributes of `Forecaster`, it only
+        builds an object and returns it.
 
-        Returns:
-            `Debt`: An object of type `cls` constructed with
-            the relevant args, inputs, settings, and default values.
+        Arguments:
+            param_name (str): The name of the parameter. This should
+                match a key value in `self.default_values`.
+            *args (Any): Positional arguments to be passed to the init
+                method of the object being built. Optional.
+            param_type (type): The type of the parameter. Optional.
+                Defaults to the type provided by `self.default_types`.
+            memo (dict[str, Any]): A mapping from parameter names to
+                objects. This is not generally needed by client code;
+                in cases where `build_param` needs to build other
+                parameters to build the requested parameter, this dict
+                is mutated to record already-built parameters. Optional.
+            **kwargs (Any): Keyword arguments to be passed to the init
+                method of the object being built. Optional.
         """
-        self.set_kwarg(kwargs, 'minimum_payment', minimum_payment, None)
-        self.set_kwarg(kwargs, 'savings_rate', savings_rate,
-                       self.settings.debt_savings_rate)
-        self.set_kwarg(kwargs, 'accelerated_payment', accelerated_payment,
-                       self.settings.debt_accelerated_payment)
+        # Cast param_name to str once, for convenience:
+        # (This is needed because Parameter members are Enum objects,
+        # which can't be used in place of string-valued indexes)
+        param_name = str(param_name)
+        param = self.build_param(
+            param_name, *args, param_type=param_type, memo=memo, **kwargs)
+        setattr(self, param_name, param)
 
-        account = self.add_account(
-            owner=owner, balance=balance, rate=rate, transactions=transactions,
-            nper=nper, inputs=inputs, initial_year=initial_year, cls=cls,
-            **kwargs)
+    def build_allocation_strategy(self, *args, **kwargs):
+        """ Convenience method to build an allocation strategy.
 
-        self.debts.add(account)
-        return account
+        Any arguments are passed on to AllocationStrategy.__init__. Any
+        arguments that aren't passed explicitly to this function are
+        instead pulled from the `Forecaster` instance's `settings`
+        attribute.
 
-    def set_scenario(
-        self, inflation=None, stock_return=None, bond_return=None,
-        other_return=None, management_fees=None, initial_year=None,
-        num_years=None, cls=Scenario, **kwargs
-    ):
-        """ TODO """
-        self.set_kwarg(kwargs, 'inflation', inflation, self.settings.inflation)
-        self.set_kwarg(kwargs, 'stock_return', stock_return,
-                       self.settings.stock_return)
-        self.set_kwarg(kwargs, 'bond_return', bond_return,
-                       self.settings.bond_return)
-        self.set_kwarg(kwargs, 'other_return', other_return,
-                       self.settings.other_return)
-        self.set_kwarg(kwargs, 'management_fees', management_fees,
-                       self.settings.management_fees)
-        self.set_kwarg(kwargs, 'initial_year', initial_year, self.initial_year)
-        self.set_kwarg(kwargs, 'num_years', num_years, self.settings.num_years)
-
-        self.scenario = cls(**kwargs)
-
-    def set_contribution_strategy(
-        self, strategy=None, base_amount=None, rate=None,
-        refund_reinvestment_rate=None, inflation_adjust=None,
-        cls=ContributionStrategy, **kwargs
-    ):
-        """ TODO """
-        self.set_kwarg(kwargs, 'strategy', strategy,
-                       self.settings.contribution_strategy)
-        self.set_kwarg(kwargs, 'base_amount', base_amount,
-                       self.settings.contribution_base_amount)
-        self.set_kwarg(kwargs, 'rate', rate,
-                       self.settings.contribution_rate)
-        self.set_kwarg(kwargs, 'refund_reinvestment_rate',
-                       refund_reinvestment_rate,
-                       self.settings.contribution_reinvestment_rate)
-        self.set_kwarg(kwargs, 'inflation_adjust', inflation_adjust,
-                       self.scenario.inflation_adjust)
-
-        self.contribution_strategy = cls(**kwargs)
-        return self.contribution_strategy
-
-    def set_withdrawal_strategy(
-        self, strategy=None, base_amount=None, rate=None, timing=None,
-        income_adjusted=None, inflation_adjust=None,
-        cls=WithdrawalStrategy, **kwargs
-    ):
-        """ TODO """
-        self.set_kwarg(kwargs, 'strategy', strategy,
-                       self.settings.withdrawal_strategy)
-        self.set_kwarg(kwargs, 'base_amount', base_amount,
-                       self.settings.withdrawal_base_amount)
-        self.set_kwarg(kwargs, 'rate', rate,
-                       self.settings.withdrawal_rate)
-        self.set_kwarg(kwargs, 'timing', timing,
-                       self.settings.transaction_out_timing)
-        self.set_kwarg(kwargs, 'income_adjusted', income_adjusted,
-                       self.settings.withdrawal_income_adjusted)
-        self.set_kwarg(kwargs, 'inflation_adjust', inflation_adjust,
-                       self.scenario.inflation_adjust)
-
-        self.withdrawal_strategy = cls(**kwargs)
-        return self.contribution_strategy
-
-    def set_transaction_in_strategy(
-        self, strategy=None, weights=None, timing=None,
-        cls=TransactionStrategy, **kwargs
-    ):
-        """ TODO """
-        self.set_kwarg(kwargs, 'strategy', strategy,
-                       self.settings.transaction_in_strategy)
-        self.set_kwarg(kwargs, 'weights', weights,
-                       self.settings.transaction_in_weights)
-        self.set_kwarg(kwargs, 'timing', timing,
-                       self.settings.transaction_in_timing)
-
-        self.transaction_in_strategy = cls(**kwargs)
-        return self.transaction_in_strategy
-
-    def set_transaction_out_strategy(
-        self, strategy=None, weights=None, timing=None,
-        cls=TransactionStrategy, **kwargs
-    ):
-        """ TODO """
-        self.set_kwarg(kwargs, 'strategy', strategy,
-                       self.settings.transaction_out_strategy)
-        self.set_kwarg(kwargs, 'weights', weights,
-                       self.settings.transaction_out_weights)
-        self.set_kwarg(kwargs, 'timing', timing,
-                       self.settings.transaction_out_timing)
-
-        self.transaction_out_strategy = cls(**kwargs)
-        return self.transaction_out_strategy
-
-    def set_allocation_strategy(
-        self, strategy=None, min_equity=None, max_equity=None, target=None,
-        standard_retirement_age=None, risk_transition_period=None,
-        adjust_for_retirement_plan=None,
-        cls=AllocationStrategy, **kwargs
-    ):
-        """ TODO """
-        self.set_kwarg(kwargs, 'strategy', strategy,
-                       self.settings.allocation_strategy)
-        self.set_kwarg(kwargs, 'min_equity', min_equity,
-                       self.settings.allocation_min_equity)
-        self.set_kwarg(kwargs, 'max_equity', max_equity,
-                       self.settings.allocation_max_equity)
-
-        # Different strategies have different defaults in Settings:
-        if (
-            # pylint: disable=no-member
-            # Pylint thinks there's no strategy_key member. It's wrong
-            kwargs['strategy'] ==
-            AllocationStrategy.strategy_n_minus_age.strategy_key
-        ):
-            target_default = self.settings.allocation_const_target
-        elif (
-            # pylint: disable=no-member
-            # Pylint thinks there's no strategy_key member. It's wrong
-            kwargs['strategy'] ==
-            AllocationStrategy.strategy_transition_to_const.strategy_key
-        ):
-            target_default = self.settings.allocation_trans_target
-        else:
-            target_default = None
-
-        self.set_kwarg(kwargs, 'target', target, target_default)
-        self.set_kwarg(kwargs, 'standard_retirement_age',
-                       standard_retirement_age,
-                       self.settings.allocation_std_retirement_age)
-        self.set_kwarg(kwargs, 'risk_transition_period',
-                       risk_transition_period,
-                       self.settings.allocation_risk_trans_period)
-        self.set_kwarg(kwargs, 'adjust_for_retirement_plan',
-                       adjust_for_retirement_plan,
-                       self.settings.allocation_adjust_retirement)
-
-        self.allocation_strategy = cls(**kwargs)
-        return self.allocation_strategy
-
-    def set_debt_payment_strategy(
-        self, strategy=None, timing=None,
-        cls=DebtPaymentStrategy, **kwargs
-    ):
-        """ TODO """
-        self.set_kwarg(kwargs, 'strategy', strategy,
-                       self.settings.debt_payment_strategy)
-        self.set_kwarg(kwargs, 'timing', timing,
-                       self.settings.debt_payment_timing)
-
-        self.debt_payment_strategy = cls(**kwargs)
-        return self.debt_payment_strategy
-
-    def set_tax_treatment(
-        self, tax_brackets=None, personal_deduction=None, credit_rate=None,
-        inflation_adjust=None, cls=Tax, **kwargs
-    ):
-        """ TODO """
-        # By default, set a single 0% bracket starting at $0:
-        self.set_kwarg(
-            kwargs, 'tax_brackets', tax_brackets, {self.initial_year: {0: 0}})
-        self.set_kwarg(kwargs, 'personal_deduction', personal_deduction, None)
-        self.set_kwarg(kwargs, 'credit_rate', credit_rate, None)
-        # default to the inflation-adjust provided by `scenario`, if
-        # we have set a `scenario`
-        self.set_kwarg(
-            kwargs, 'inflation_adjust', inflation_adjust,
-            self.scenario.inflation_adjust if self.scenario is not None
-            else None
-        )
-
-        self.tax_treatment = cls(**kwargs)
-        return self.tax_treatment
+        The reason this specific object gets its own method is that
+        client code will likely need to call it to initialize `Account`
+        objects. In the future, we may provide similar methods for
+        other parameters.
+        """
+        return self.build_param(
+            Parameter.ALLOCATION_STRATEGY, AllocationStrategy, *args,
+            _special_builder=False, **kwargs)

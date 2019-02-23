@@ -82,7 +82,7 @@ class TestTaxCanada(unittest.TestCase):
             balance=Money(500000), rate=Decimal('0.05'), nper=1)
         self.rrsp.add_transaction(-Money(500000), when='start')
 
-        # Person2 makes $50,000/yr and has a taxable account with 
+        # Person2 makes $50,000/yr and has a taxable account with
         # $5000 taxable income.
         self.person2 = Person(
             self.initial_year, "Tester 2", self.initial_year - 18,
@@ -205,7 +205,7 @@ class TestTaxCanada(unittest.TestCase):
             self.person2, self.initial_year)
         self.person2.gross_income = deductions + spousal_amount - shortfall
 
-        # Ensure that there are is no taxable income for person2 
+        # Ensure that there are is no taxable income for person2
         # beyond the above (to stay under spousal amount):
         self.taxable_account2.owner = self.person1
 
@@ -236,7 +236,7 @@ class TestTaxCanada(unittest.TestCase):
 
     def test_pension_tax_credit(self):
         """ Test pension tax credit behaviour. """
-        # TODO
+        # TODO Implement pension tax credit, then test it.
         pass
 
 if __name__ == '__main__':

@@ -114,10 +114,9 @@ class AllocationStrategy(Strategy):
     """
     # pylint: disable=too-many-arguments
     def __init__(
-        self, strategy, target, min_equity=0, max_equity=1,
-        standard_retirement_age=65, risk_transition_period=20,
-        adjust_for_retirement_plan=True
-    ):
+            self, strategy, target, min_equity=0, max_equity=1,
+            standard_retirement_age=65, risk_transition_period=20,
+            adjust_for_retirement_plan=True):
         """ Constructor for AllocationStrategy. """
         super().__init__(strategy)
 
@@ -136,8 +135,7 @@ class AllocationStrategy(Strategy):
 
     @strategy_method('n-age')
     def strategy_n_minus_age(
-        self, age, retirement_age=None, *args, **kwargs
-    ):
+            self, age, *args, retirement_age=None, **kwargs):
         """ Used for 100-age, 110-age, 125-age, etc. strategies. """
         # *args and **kwargs are included for consistency between
         # methods, even though we don't use them.
@@ -160,8 +158,7 @@ class AllocationStrategy(Strategy):
 
     @strategy_method('Transition to constant')
     def strategy_transition_to_const(
-        self, age, retirement_age=None, *args, **kwargs
-    ):
+            self, age, *args, retirement_age=None, **kwargs):
         """ Used for `Transition to 50-50`, `Transition to 70-30`, etc. """
         # *args and **kwargs are included for consistency between
         # methods, even though we don't use them.
@@ -256,13 +253,15 @@ class AllocationStrategy(Strategy):
 
         return allocation
 
-    def __call__(self, age, retirement_age=None, *args, **kwargs):
+    def __call__(self, age, *args, retirement_age=None, **kwargs):
         """ Returns a dict of {account, Money} pairs. """
         # TODO: Move min_equity and max_equity logic here to simplify
         # the logic of each strategy.
         # In the meantime, suppress Pylint's complaints about how this
         # method is useless:
         # pylint: disable=useless-super-delegation
-        allocation = super().__call__(age, retirement_age, *args, **kwargs)
+        allocation = super().__call__(
+            age, *args,
+            retirement_age=retirement_age, **kwargs)
 
         return self._balance_allocation(allocation)

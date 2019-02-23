@@ -15,12 +15,15 @@ class SettingsCanada(Settings):
     # pylint: disable=too-few-public-methods
 
     """ Override transaction strategy weights for Canadian accounts. """
-    transaction_in_weights = {
+    contribution_weights = {
         'RRSP': 1, 'TFSA': 2, 'TaxableAccount': 3
     }
-    transaction_out_weights = {
+    withdrawal_weights = {
         'RRSP': 1, 'TFSA': 2, 'SavingsAccount': 3
     }
+
+    """ TaxCanada defaults """
+    tax_province = "BC"
 
     """ RESP defaults """
     resp_child_other_income = 0

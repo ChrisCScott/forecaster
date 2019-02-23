@@ -1,5 +1,52 @@
-forecaster\.strategy module
+forecaster.strategy package
 ===========================
+
+Submodules
+----------
+
+forecaster.strategy.account\_transaction module
+-----------------------------------------------
+
+.. automodule:: forecaster.strategy.account_transaction
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+forecaster.strategy.allocation module
+-------------------------------------
+
+.. automodule:: forecaster.strategy.allocation
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+forecaster.strategy.base module
+-------------------------------
+
+.. automodule:: forecaster.strategy.base
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+forecaster.strategy.debt\_payment module
+----------------------------------------
+
+.. automodule:: forecaster.strategy.debt_payment
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+forecaster.strategy.gross\_transaction module
+---------------------------------------------
+
+.. automodule:: forecaster.strategy.gross_transaction
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Module contents
+---------------
 
 .. automodule:: forecaster.strategy
     :members:

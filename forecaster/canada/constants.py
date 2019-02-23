@@ -9,8 +9,8 @@ from decimal import Decimal
 # that's distinct from #-prefixed comments (which we also use.)
 # pylint: disable=pointless-string-statement
 
-# TODO: Revise these values to be dicts of {year: value} pairs, like
-# Settings?
+# TODO: Revise these values to be dicts of {year: value} pairs?
+# This is what is used in Settings.
 
 """ RESP constants """
 RESP_CONTRIBUTION_ROOM = Decimal('50000')

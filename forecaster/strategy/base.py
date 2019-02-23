@@ -87,8 +87,8 @@ class Strategy(object, metaclass=StrategyType):
 
         # If the method itself was passed, translate that into the key
         if (
-            not isinstance(strategy, str) and hasattr(strategy, 'strategy_key')
-        ):
+                not isinstance(strategy, str)
+                and hasattr(strategy, 'strategy_key')):
             strategy = strategy.strategy_key
         self.strategy = strategy
 

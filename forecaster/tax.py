@@ -114,9 +114,8 @@ class Tax(object):
             Optional.
     """
     def __init__(
-        self, tax_brackets, personal_deduction=None, credit_rate=None,
-        inflation_adjust=None, payment_timing='start'
-    ):
+            self, tax_brackets, personal_deduction=None, credit_rate=None,
+            inflation_adjust=None, payment_timing='start'):
         """ Initializes the Tax object.
 
         Args:
@@ -249,6 +248,10 @@ class Tax(object):
         deductions += person.tax_deduction_history[year]
         return deductions
 
+    # This method establishes a framework for subclasses to use.
+    # It's not necessary here to determine deductions, but it may
+    # be in a subclass, so we leave it in.
+    # pylint: disable=unused-argument
     def credits(self, person, year, deductions=None):
         """ The tax credits each person is eligible for.
 
@@ -263,8 +266,10 @@ class Tax(object):
         Returns:
             Money: The credits for the person.
         """
-        credits = person.tax_credit_history[year]
-        return credits
+        _credits = person.tax_credit_history[year]
+        return _credits
+
+    # pylint: enable=unused-argument
 
     def credit_rate(self, year):
         """ The credit rate for the given year. """
@@ -327,8 +332,7 @@ class Tax(object):
             prev = bracket  # Keep track of next-lowest bracket
 
     def tax_money(
-        self, taxable_income, year, deduction=Money(0), credit=Money(0)
-    ):
+            self, taxable_income, year, deduction=Money(0), credit=Money(0)):
         """ Returns taxes owing on a given amount of taxable income.
 
         This method does not apply any deductions or credits other than
@@ -376,8 +380,7 @@ class Tax(object):
         return max(net_tax, Money(0))
 
     def tax_person(
-        self, person, year, deduction=Money(0), credit=Money(0)
-    ):
+            self, person, year, deduction=Money(0), credit=Money(0)):
         """ Returns tax treatment for an individual person.
 
         Args:
@@ -403,7 +406,7 @@ class Tax(object):
             + self.deductions(person, year)
             + deduction
         )
-        credits = (
+        _credits = (
             person.tax_credit_history[year]
             + self.credits(person, year)
             + credit
@@ -412,7 +415,7 @@ class Tax(object):
             taxable_income,
             year,
             deductions,
-            credits
+            _credits
         )
 
     def tax_people(self, people, year, deduction=None, credit=None):

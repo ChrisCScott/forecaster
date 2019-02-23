@@ -52,9 +52,8 @@ class TFSA(RegisteredAccount):
         # If contribution_room is not provided (and it's already known
         # based on other TFSA accounts), infer it based on age.
         if (
-            contribution_room is None and
-            self.initial_year not in self.contribution_room_history
-        ):
+                contribution_room is None and
+                self.initial_year not in self.contribution_room_history):
             # We might already have set contribution room for years
             # before this initial_year, in which case we should start
             # extrapolate from the following year onwards:

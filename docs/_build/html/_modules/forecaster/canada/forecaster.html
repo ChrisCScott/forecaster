@@ -17,41 +17,34 @@
   
 
   
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
-  
-  
-    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="../../../genindex.html"/>
-        <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="forecaster 0.0.1 documentation" href="../../../index.html"/>
-        <link rel="up" title="Module code" href="../../index.html"/> 
-
-  
-  <script src="../../../_static/js/modernizr.min.js"></script>
-
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -103,7 +96,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../../index.html">forecaster</a>
@@ -111,9 +104,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -143,8 +137,6 @@
     
       <li class="wy-breadcrumbs-aside">
         
-            
-        
       </li>
     
   </ul>
@@ -164,10 +156,10 @@
 <span class="kn">from</span> <span class="nn">forecaster.canada.settings</span> <span class="k">import</span> <span class="n">SettingsCanada</span>
 
 
-<div class="viewcode-block" id="ForecasterCanada"><a class="viewcode-back" href="../../../forecaster.canada.forecaster.html#forecaster.canada.forecaster.ForecasterCanada">[docs]</a><span class="k">class</span> <span class="nc">ForecasterCanada</span><span class="p">(</span><span class="n">Forecaster</span><span class="p">):</span>
+<div class="viewcode-block" id="ForecasterCanada"><a class="viewcode-back" href="../../../forecaster.canada.html#forecaster.canada.forecaster.ForecasterCanada">[docs]</a><span class="k">class</span> <span class="nc">ForecasterCanada</span><span class="p">(</span><span class="n">Forecaster</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Tests Forecaster (Canada). &quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="ForecasterCanada.__init__"><a class="viewcode-back" href="../../../forecaster.canada.forecaster.html#forecaster.canada.forecaster.ForecasterCanada.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="n">SettingsCanada</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ForecasterCanada.__init__"><a class="viewcode-back" href="../../../forecaster.canada.html#forecaster.canada.forecaster.ForecasterCanada.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="n">SettingsCanada</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Inits Forecaster with Canada-specific settings.</span>
 
 <span class="sd">        In addition to using a Canada-specific Settings object by</span>
@@ -176,32 +168,35 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">settings</span><span class="o">=</span><span class="n">settings</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="ForecasterCanada.add_rrsp"><a class="viewcode-back" href="../../../forecaster.canada.forecaster.html#forecaster.canada.forecaster.ForecasterCanada.add_rrsp">[docs]</a>    <span class="k">def</span> <span class="nf">add_rrsp</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">RRSP</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+<div class="viewcode-block" id="ForecasterCanada.add_rrsp"><a class="viewcode-back" href="../../../forecaster.canada.html#forecaster.canada.forecaster.ForecasterCanada.add_rrsp">[docs]</a>    <span class="k">def</span> <span class="nf">add_rrsp</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rrif_conversion_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">RRSP</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Adds an RRSP to the forecast. &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span>
             <span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;inflation_adjust&#39;</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_registered_account</span><span class="p">(</span><span class="bp">cls</span><span class="o">=</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span>
+            <span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;rrif_conversion_year&#39;</span><span class="p">,</span> <span class="n">rrif_conversion_year</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_contribution_limit_account</span><span class="p">(</span><span class="bp">cls</span><span class="o">=</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="ForecasterCanada.add_tfsa"><a class="viewcode-back" href="../../../forecaster.canada.forecaster.html#forecaster.canada.forecaster.ForecasterCanada.add_tfsa">[docs]</a>    <span class="k">def</span> <span class="nf">add_tfsa</span><span class="p">(</span>
+<div class="viewcode-block" id="ForecasterCanada.add_tfsa"><a class="viewcode-back" href="../../../forecaster.canada.html#forecaster.canada.forecaster.ForecasterCanada.add_tfsa">[docs]</a>    <span class="k">def</span> <span class="nf">add_tfsa</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">TFSA</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Adds a TFSA to the forecast. &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span>
             <span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;inflation_adjust&#39;</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_registered_account</span><span class="p">(</span><span class="bp">cls</span><span class="o">=</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_contribution_limit_account</span><span class="p">(</span><span class="bp">cls</span><span class="o">=</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="ForecasterCanada.add_taxable_account"><a class="viewcode-back" href="../../../forecaster.canada.forecaster.html#forecaster.canada.forecaster.ForecasterCanada.add_taxable_account">[docs]</a>    <span class="k">def</span> <span class="nf">add_taxable_account</span><span class="p">(</span>
+<div class="viewcode-block" id="ForecasterCanada.add_taxable_account"><a class="viewcode-back" href="../../../forecaster.canada.html#forecaster.canada.forecaster.ForecasterCanada.add_taxable_account">[docs]</a>    <span class="k">def</span> <span class="nf">add_taxable_account</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">acb</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">TaxableAccount</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Adds a TaxableAccount to the forecast. &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;acb&#39;</span><span class="p">,</span> <span class="n">acb</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_asset</span><span class="p">(</span><span class="bp">cls</span><span class="o">=</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="ForecasterCanada.set_tax_treatment"><a class="viewcode-back" href="../../../forecaster.canada.forecaster.html#forecaster.canada.forecaster.ForecasterCanada.set_tax_treatment">[docs]</a>    <span class="k">def</span> <span class="nf">set_tax_treatment</span><span class="p">(</span>
+<div class="viewcode-block" id="ForecasterCanada.set_tax_treatment"><a class="viewcode-back" href="../../../forecaster.canada.html#forecaster.canada.forecaster.ForecasterCanada.set_tax_treatment">[docs]</a>    <span class="k">def</span> <span class="nf">set_tax_treatment</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">province</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">TaxCanada</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Sets tax treatment for the forecast.</span>
@@ -222,9 +217,7 @@
 </pre></div>
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -233,11 +226,11 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017, Christopher Scott.
+        &copy; Copyright 2017, Christopher Scott
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -250,36 +243,15 @@
   
 
 
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'../../../',
-            VERSION:'0.0.1',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="../../../_static/jquery.js"></script>
-      <script type="text/javascript" src="../../../_static/underscore.js"></script>
-      <script type="text/javascript" src="../../../_static/doctools.js"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
-  
-
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script>
+
+  
+  
+    
    
 
 </body>

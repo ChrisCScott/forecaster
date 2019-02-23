@@ -1,0 +1,470 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.forecast.base &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">forecaster</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>forecaster.forecast.base</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for forecaster.forecast.base</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; This module provides a Forecast class for use in forecasts.</span>
+
+<span class="sd">This is where most of the financial forecasting logic of the Forecaster</span>
+<span class="sd">package lives. It applies Scenario, Strategy, and Tax information to</span>
+<span class="sd">determine how account balances will grow or shrink year-over-year.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">decimal</span> <span class="k">import</span> <span class="n">Decimal</span>
+<span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="p">(</span>
+    <span class="n">Ledger</span><span class="p">,</span> <span class="n">Money</span><span class="p">,</span>
+    <span class="n">recorded_property</span><span class="p">,</span> <span class="n">recorded_property_cached</span>
+<span class="p">)</span>
+
+<div class="viewcode-block" id="Forecast"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.base.Forecast">[docs]</a><span class="k">class</span> <span class="nc">Forecast</span><span class="p">(</span><span class="n">Ledger</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; A financial forecast spanning multiple years.</span>
+
+<span class="sd">    A `Forecast` is a container for various `*Forecast` objects, such</span>
+<span class="sd">    as `IncomeForecast` and `WithdrawalForecast`. Those objects contain</span>
+<span class="sd">    various `Account` objects with balances that grow (or shrink) from</span>
+<span class="sd">    year to year,  `Person` objects describing the plannees, `Scenario`</span>
+<span class="sd">    information describing economic conditions over the course of the</span>
+<span class="sd">    forecast, and `Strategy` objects to describe the plannees&#39; behaviour.</span>
+
+<span class="sd">    `Forecast` provides a high-level model for annual cashflows as they</span>
+<span class="sd">    relate to retirement savings. In particular, it uses this model:</span>
+
+<span class="sd">    * Determine total (net) income for the year.</span>
+<span class="sd">    * Determine the portion of net income used for ordinary living</span>
+<span class="sd">      expenses. This is the pool of money available for retirement</span>
+<span class="sd">      savings and lifecycle expenses.</span>
+
+<span class="sd">      Deducting living expenses from income yields &quot;gross</span>
+<span class="sd">      contributions&quot; - the total amount available to be saved.</span>
+<span class="sd">    * Determine the portion of available money which will be used</span>
+<span class="sd">      on &quot;lifecycle&quot; expenses. These are expenditures on top of</span>
+<span class="sd">      ordinary living expenses which vary over time. Inflows to</span>
+<span class="sd">      retirement savings accounts are reduced to pay for these.</span>
+<span class="sd">      This can include, e.g., childcare, contributions to education</span>
+<span class="sd">      accounts, home purchase costs, debt repayment, and so on.</span>
+
+<span class="sd">      Where lifecycle expenses involve contributions to</span>
+<span class="sd">      non-retirement accounts (like education savings accounts or</span>
+<span class="sd">      debt accounts), per-account contributions are also determined</span>
+<span class="sd">      at this step.</span>
+
+<span class="sd">      Deducting lifecycle expenses from gross contributions yields</span>
+<span class="sd">      &quot;net contributions&quot; - the total amount actually saved.</span>
+<span class="sd">    * Determine per-account retirement contributions based on net</span>
+<span class="sd">      contributions.</span>
+<span class="sd">    * Determine the amount withdrawn from retirement savings accounts.</span>
+<span class="sd">      Allocate portions of that to each retirement account.</span>
+<span class="sd">    * Determine total tax liability for the year; if necessary, adjust</span>
+<span class="sd">      withdrawals accordingly and repeat.</span>
+<span class="sd">    * Determine statistics for the year (e.g. living standard.)</span>
+
+<span class="sd">    The `Forecast` can be built around any number of people, but is</span>
+<span class="sd">    ordinarily built around either a single person or a spousal</span>
+<span class="sd">    couple (since spouses have specific tax treatment). Otherwise, it&#39;s</span>
+<span class="sd">    better practice to build separate `Forecast` objects for separate</span>
+<span class="sd">    people.</span>
+
+<span class="sd">    Note that each of the below `Money` attributes has an associated</span>
+<span class="sd">    `dict[int, Money]` that stores the value of the attribute for each</span>
+<span class="sd">    year of the forecast. (Key values are years.) The dicts are named</span>
+<span class="sd">    `*_history`; e.g. `income` is associated with `income_history` and</span>
+<span class="sd">    `income_history[2001]` gives the value of `income` for year `2001`.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        income_forecast (IncomeForecast):</span>
+<span class="sd">            A callable object that returns the net income for each</span>
+<span class="sd">            year.</span>
+<span class="sd">        living_expenses_forecast (LivingExpensesForecast):</span>
+<span class="sd">            A callable object that returns the amount spent on living</span>
+<span class="sd">            expenses for each year.</span>
+<span class="sd">        reduction_forecast (ReductionForecast): A callable object that</span>
+<span class="sd">            returns the contribution reductions for each year.</span>
+<span class="sd">        contribution_forecast (ContributionForecast): A callable</span>
+<span class="sd">            object that returns the amount contributed to savings for</span>
+<span class="sd">            each year.</span>
+<span class="sd">        withdrawal_forecast (WithdrawalForecast):</span>
+<span class="sd">            A callable object that returns the total withdrawals for</span>
+<span class="sd">            each year.</span>
+<span class="sd">        tax_forecast (TaxForecast):</span>
+<span class="sd">            A callable object that returns the total taxes owed for</span>
+<span class="sd">            each year.</span>
+
+<span class="sd">        scenario (Scenario): Economic information for the forecast</span>
+<span class="sd">            (e.g. inflation and stock market returns for each year)</span>
+
+<span class="sd">        income (Money): The net income for the plannees for the year.</span>
+<span class="sd">        living_expenses (Money): The amount that the plannees live off</span>
+<span class="sd">            of for the year. </span>
+<span class="sd">        gross_contributions (Money): The amount available to</span>
+<span class="sd">            contribute to savings, before any reductions. This is the</span>
+<span class="sd">            amount left over after living expenses.</span>
+<span class="sd">        contribution_reductions (Money): Amounts diverted from</span>
+<span class="sd">            savings, such as certain debt repayments or childcare.</span>
+<span class="sd">        net_contributions (Money): The total amount contributed to</span>
+<span class="sd">            savings accounts for the year.</span>
+<span class="sd">        principal (Money): The total value of all savings accounts</span>
+<span class="sd">            (but not other property) at the start of the year.</span>
+<span class="sd">        withdrawals (Money): The total amount withdrawn from all</span>
+<span class="sd">            accounts for the year.</span>
+<span class="sd">        tax (Money): The total tax liability for the year (some of</span>
+<span class="sd">            which might not be payable unti the next year).</span>
+<span class="sd">            Does not include tax liability from previous years which</span>
+<span class="sd">            is paid in this year, but does include tax liability</span>
+<span class="sd">            arising in this year which won&#39;t be repaid until a</span>
+<span class="sd">            future year.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Forecast.__init__"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.base.Forecast.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">income_forecast</span><span class="p">,</span> <span class="n">living_expenses_forecast</span><span class="p">,</span>
+        <span class="n">reduction_forecast</span><span class="p">,</span> <span class="n">contribution_forecast</span><span class="p">,</span>
+        <span class="n">withdrawal_forecast</span><span class="p">,</span> <span class="n">tax_forecast</span><span class="p">,</span> <span class="n">scenario</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Constructs an instance of class Forecast.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            income_forecast (IncomeForecast):</span>
+<span class="sd">                Determines net income for each year.</span>
+<span class="sd">            living_expenses_forecast (LivingExpensesForecast):</span>
+<span class="sd">                Determines the living expenses for each year.</span>
+<span class="sd">            reduction_forecast (ReductionForecast):</span>
+<span class="sd">                Determines the contribution reductions for each year.</span>
+<span class="sd">            contribution_forecast (ContributionForecast):</span>
+<span class="sd">                Determines the contributions for each year.</span>
+<span class="sd">            withdrawal_forecast (WithdrawalForecast):</span>
+<span class="sd">                A callable object that returns the total withdrawals for</span>
+<span class="sd">                each year.</span>
+<span class="sd">            tax_forecast (TaxForecast):</span>
+<span class="sd">                Determines taxes owed for the year.</span>
+<span class="sd">            scenario (Scenario): Provides an `initial_year` and a</span>
+<span class="sd">                `num_year` property.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Recall that, as a Ledger object, we need to call the</span>
+        <span class="c1"># superclass initializer and let it know what the first</span>
+        <span class="c1"># year is so that `this_year` is usable.</span>
+        <span class="c1"># TODO #53 removes this requirement.</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">initial_year</span><span class="o">=</span><span class="n">scenario</span><span class="o">.</span><span class="n">initial_year</span><span class="p">)</span>
+
+        <span class="c1"># Store input values</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">income_forecast</span> <span class="o">=</span> <span class="n">income_forecast</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">living_expenses_forecast</span> <span class="o">=</span> <span class="n">living_expenses_forecast</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reduction_forecast</span> <span class="o">=</span> <span class="n">reduction_forecast</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">contribution_forecast</span> <span class="o">=</span> <span class="n">contribution_forecast</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">withdrawal_forecast</span> <span class="o">=</span> <span class="n">withdrawal_forecast</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tax_forecast</span> <span class="o">=</span> <span class="n">tax_forecast</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span> <span class="o">=</span> <span class="n">scenario</span>
+
+        <span class="c1"># We&#39;ll keep track of cash flows over the course of the year, but</span>
+        <span class="c1"># we don&#39;t save it as a recorded_property, so init it here:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">available</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+
+        <span class="c1"># Arrange forecasts in order so it&#39;ll be easy to call them</span>
+        <span class="c1"># in the correct order later:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">forecasts</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">income_forecast</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">living_expenses_forecast</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reduction_forecast</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">contribution_forecast</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">withdrawal_forecast</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tax_forecast</span>
+        <span class="p">]</span>
+
+        <span class="c1"># Use the `Scenario` object to determine the range of years</span>
+        <span class="c1"># to iterate over.</span>
+        <span class="n">last_year</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scenario</span><span class="p">)</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span> <span class="o">&lt;</span> <span class="n">last_year</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update_subforecasts</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">next_year</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_subforecasts</span><span class="p">()</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">people</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The `Person` plannees for the forecast. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">income_forecast</span><span class="o">.</span><span class="n">people</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">assets</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; A set of `Asset` objects for the forecast, excluding debts. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">withdrawal_forecast</span><span class="o">.</span><span class="n">assets</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">debts</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; A set of `Debt` objects for the forecast. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">reduction_forecast</span><span class="o">.</span><span class="n">debts</span>
+
+<div class="viewcode-block" id="Forecast.update_subforecasts"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.base.Forecast.update_subforecasts">[docs]</a>    <span class="k">def</span> <span class="nf">update_subforecasts</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Calls each SubForecast in order. &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">forecast</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasts</span><span class="p">:</span>
+            <span class="n">forecast</span><span class="o">.</span><span class="n">update_available</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">available</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Forecast.next_year"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.base.Forecast.next_year">[docs]</a>    <span class="k">def</span> <span class="nf">next_year</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Adds a year to the forecast. &quot;&quot;&quot;</span>
+        <span class="c1"># First, record the state of all recorded_property attributes:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">next_year</span><span class="p">()</span>
+        <span class="c1"># The do the same for all SubForecast objects, so they can</span>
+        <span class="c1"># record their state before underlying objects get updated:</span>
+        <span class="k">for</span> <span class="n">forecast</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasts</span><span class="p">:</span>
+            <span class="k">while</span> <span class="n">forecast</span><span class="o">.</span><span class="n">this_year</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span><span class="p">:</span>
+                <span class="n">forecast</span><span class="o">.</span><span class="n">next_year</span><span class="p">()</span>
+
+        <span class="c1"># Now advance the underlying Ledger objects:</span>
+        <span class="k">for</span> <span class="n">person</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">people</span><span class="p">:</span>
+            <span class="k">while</span> <span class="n">person</span><span class="o">.</span><span class="n">this_year</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span><span class="p">:</span>
+                <span class="n">person</span><span class="o">.</span><span class="n">next_year</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">assets</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">debts</span><span class="p">):</span>
+            <span class="k">while</span> <span class="n">account</span><span class="o">.</span><span class="n">this_year</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span><span class="p">:</span>
+                <span class="n">account</span><span class="o">.</span><span class="n">next_year</span><span class="p">()</span>
+
+        <span class="c1"># Keep track of cash flows over the course of the year,</span>
+        <span class="c1"># rolling over unused monies to the start of next year:</span>
+        <span class="n">excess</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">available</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">available</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">available</span><span class="p">[</span><span class="n">Decimal</span><span class="p">(</span><span class="mi">0</span><span class="p">)]</span> <span class="o">=</span> <span class="n">excess</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">retirement_year</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Determines the retirement year for the plannees.</span>
+
+<span class="sd">        TODO: This approach forces `Forecast` to assume that all</span>
+<span class="sd">        plannees retire at the same time, which is often inaccurate.</span>
+<span class="sd">        We should use per-retiree retirement dates, meaning that this</span>
+<span class="sd">        method should be removed and the calling code refactored.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="n">person</span><span class="o">.</span><span class="n">retirement_date</span> <span class="k">for</span> <span class="n">person</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">people</span>
+                <span class="k">if</span> <span class="n">person</span><span class="o">.</span><span class="n">retirement_date</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="p">),</span>
+            <span class="n">default</span><span class="o">=</span><span class="kc">None</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">year</span>
+
+    <span class="nd">@recorded_property_cached</span>
+    <span class="k">def</span> <span class="nf">income</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Total net income for the year. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">income_forecast</span><span class="o">.</span><span class="n">net_income</span>
+
+    <span class="nd">@recorded_property_cached</span>
+    <span class="k">def</span> <span class="nf">living_expenses</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Gross contributions for the year, before reductions. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">living_expenses_forecast</span><span class="o">.</span><span class="n">living_expenses</span>
+
+    <span class="nd">@recorded_property_cached</span>
+    <span class="k">def</span> <span class="nf">gross_contributions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Gross contributions for the year, before reductions. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">income</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">living_expenses</span>
+
+    <span class="nd">@recorded_property_cached</span>
+    <span class="k">def</span> <span class="nf">contribution_reductions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Total contribution reductions for the year. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">reduction_forecast</span><span class="o">.</span><span class="n">reductions</span>
+
+    <span class="nd">@recorded_property_cached</span>
+    <span class="k">def</span> <span class="nf">net_contributions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Contributions to savings for the year. &quot;&quot;&quot;</span>
+        <span class="c1"># Never contribute a negative amount:</span>
+        <span class="n">contributions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gross_contributions</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_reductions</span>
+        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">contributions</span><span class="p">,</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+
+    <span class="nd">@recorded_property_cached</span>
+    <span class="k">def</span> <span class="nf">principal</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Total principal in accounts as of the start of the year. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">account</span><span class="o">.</span><span class="n">balance</span> <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">assets</span><span class="p">),</span>
+            <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+
+    <span class="nd">@recorded_property</span>
+    <span class="k">def</span> <span class="nf">withdrawals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Total withdrawals for the year. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">withdrawal_forecast</span><span class="o">.</span><span class="n">gross_withdrawals</span>
+
+    <span class="nd">@recorded_property</span>
+    <span class="k">def</span> <span class="nf">tax</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Total tax liability for the year. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_forecast</span><span class="o">.</span><span class="n">tax_owing</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -133,15 +133,19 @@ class TestAllocationStrategyMethods(unittest.TestCase):
             risk_transition_period=10, adjust_for_retirement_plan=True)
 
         for age in range(0, target + diff):
-            self.assertAlmostEqual(strategy(age, retirement_age).stocks,
-                                   Decimal((target + diff - age) / 100))
-            self.assertAlmostEqual(strategy(age, retirement_age).bonds,
-                                   Decimal(1 - (target + diff - age) / 100))
+            self.assertAlmostEqual(
+                strategy(age, retirement_age=retirement_age).stocks,
+                Decimal((target + diff - age) / 100))
+            self.assertAlmostEqual(
+                strategy(age, retirement_age=retirement_age).bonds,
+                Decimal(1 - (target + diff - age) / 100))
         for age in range(target + diff, target + diff + 100):
-            self.assertEqual(strategy(age, retirement_age).stocks,
-                             strategy.min_equity)
-            self.assertEqual(strategy(age, retirement_age).bonds,
-                             1 - strategy.min_equity)
+            self.assertEqual(
+                strategy(age, retirement_age=retirement_age).stocks,
+                strategy.min_equity)
+            self.assertEqual(
+                strategy(age, retirement_age=retirement_age).bonds,
+                1 - strategy.min_equity)
 
         # Finally, try n=120 without adjusting the retirement age to
         # confirm that max_equity is respected.
@@ -158,17 +162,17 @@ class TestAllocationStrategyMethods(unittest.TestCase):
             self.assertEqual(strategy(age).bonds, 1 - strategy.max_equity)
         for age in range(20, target):
             self.assertAlmostEqual(
-                strategy(age, retirement_age).stocks,
+                strategy(age, retirement_age=retirement_age).stocks,
                 Decimal((target - age) / 100))
             self.assertAlmostEqual(
-                strategy(age, retirement_age).bonds,
+                strategy(age, retirement_age=retirement_age).bonds,
                 Decimal(1 - (target - age) / 100))
         for age in range(target, target + 100):
             self.assertEqual(
-                strategy(age, retirement_age).stocks,
+                strategy(age, retirement_age=retirement_age).stocks,
                 strategy.min_equity)
             self.assertEqual(
-                strategy(age, retirement_age).bonds,
+                strategy(age, retirement_age=retirement_age).bonds,
                 1 - strategy.min_equity)
 
     def test_strategy_trans_to_const(self):
@@ -198,4 +202,5 @@ class TestAllocationStrategyMethods(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.TextTestRunner().run(
+        unittest.TestLoader().loadTestsFromName(__name__))

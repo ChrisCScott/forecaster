@@ -40,7 +40,7 @@ class TestFreeMethods(unittest.TestCase):
         frequency = frequency_conv('C')
         self.assertEqual(frequency, None)
         self.assertIsInstance(frequency, type(None))
-        
+
         frequency = frequency_conv(None)
         self.assertEqual(frequency, None)
         self.assertIsInstance(frequency, type(None))
@@ -162,5 +162,7 @@ class TestFreeMethods(unittest.TestCase):
 
     # TODO: Test build_inflation_adjust
 
+
 if __name__ == '__main__':
-    unittest.main()
+    unittest.TextTestRunner().run(
+        unittest.TestLoader().loadTestsFromName(__name__))
