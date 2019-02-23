@@ -342,7 +342,7 @@ class Forecaster(object):
         if param_name in self.default_values:
             # Get the default mapping for this parameter:
             # (We copy it to avoid mutating it)
-            default_values = copy(DEFAULTVALUES[param_name])
+            default_values = copy(self.default_values[param_name])
             # Replace each value with the value of the same-named
             # attribute of the `Forecaster` object:
             for key, value in default_values.items():
