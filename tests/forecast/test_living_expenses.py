@@ -146,17 +146,11 @@ class TestLivingExpensesForecast(unittest.TestCase):
 
     def test_update_available(self):
         """ Test recording of cash inflows from living expenses. """
-        available = {}
-        self.forecast.update_available(available)
-        # There should be at least 12 ouflows for the 12 months
-        # of living expenses:
-        self.assertGreaterEqual(
-            len(self.forecast.transactions[available]),
-            12)
-        # Assuming there are no other inflows or outflows,
-        # the sum of outflows should be 150*52*0.5=3900
+        self.forecast.update_available(self.available)
+        # There should $3900 in living expenses deducted from $7800 in
+        # net income, for net available of $3900.
         self.assertEqual(
-            sum(self.forecast.transactions[available].values()),
+            sum(self.forecast.transactions[self.available].values()),
             Money(-3900))
 
 if __name__ == '__main__':

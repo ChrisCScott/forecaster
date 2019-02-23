@@ -43,12 +43,17 @@ class LivingExpensesForecast(SubForecast):
         # started on doing the updates:
         super().update_available(available)
 
-        # Assume living expenses are incurred at the start of each
-        # month. Make this strict, since we can't defer living
-        # expenses to a more convenient time.
+        # Assume living expenses are incurred at the time cash is
+        # received (ignore outflows and zero-value transactions).
+        # Note that we assume living expenses are incurred in
+        # the same amount with each contribution
+        frequency = max(
+            len({key for key in available.keys() if available[key] > 0}),
+            1)
+        when = min(available.keys(), default=1) * frequency
         self.add_transaction(
-            value=self.living_expenses, when=0, frequency=12,
-            from_account=available, to_account=None, strict_timing=True)
+            value=self.living_expenses, when=when, frequency=frequency,
+            from_account=available, to_account=None)
 
     @recorded_property_cached
     def living_expenses(self):
