@@ -147,7 +147,7 @@ class TestReductionForecast(unittest.TestCase):
             places=2)
         self.assertEqual(
             debt_payment_from_available,
-            (debt_payment - Money(100)) * 0.5)
+            (debt_payment - Money(100)) * Decimal(0.5))
 
     def test_reduction_from_debt(self):
         """ Test contributions redirected to debt accounts. """
