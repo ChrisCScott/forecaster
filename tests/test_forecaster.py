@@ -311,6 +311,7 @@ class TestForecaster(unittest.TestCase):
             people={self.person},
             accounts={self.account},
             debts={})
+
         # Test that it starts and ends in the right place and that
         # income and total balance (principal) are correct
         self.assertEqual(
@@ -320,8 +321,14 @@ class TestForecaster(unittest.TestCase):
         self.assertEqual(
             len(forecast.principal_history), self.scenario.num_years)
         # pylint: enable=no-member
-        self.assertEqual(forecast.principal, Money(1000))
-        self.assertEqual(forecast.income_forecast.gross_income, Money(10000))
+
+        # Test that the $500 in contributions have been added to the
+        # initial $1000 principal by the start of year 2:
+        self.assertAlmostEqual(forecast.principal, Money(1500))
+        # Gross income should be unchanged at $10,000:
+        self.assertAlmostEqual(
+            forecast.income_forecast.gross_income,
+            Money(10000))
 
     def test_run_forecast_mutation(self):
         """ Test that Forecaster.run_forecast doesn't mutate arguments. """
