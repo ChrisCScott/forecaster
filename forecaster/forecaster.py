@@ -201,7 +201,29 @@ class Forecaster(object):
             return reduce(getattr, name_list[1:], attr)
 
     def run_forecast(self, people, accounts, debts):
-        """ TODO """
+        """ Generates a `Forecast` object.
+
+        This method builds a `Forecast` based on any explicitly-provided
+        parameters (e.g. `scenario`, `living_expenses_strategy`) and
+        the applicable `settings`. Any parameters that have not been
+        explicitly provided are built dynamically.
+
+        Arguments (`people`, etc.) are copied. Copies are mutated, but
+        the objects passed as arguments are not so that they an be
+        re-used (and because mutating arguments is considered rude).
+        Relationships between arguments and their members are preserved
+        via `deepcopy`.
+
+        Arguments:
+            people (set[Person]): One or more people for whom a forecast
+                is being generated.
+            accounts (set[Account]): Accounts belonging to the plannees.
+            debts (set[Debt]): Debts owed by the plannees.
+
+        Returns:
+            Forecast: A forecast of the plannees income, savings,
+            and withdrawals over the years.
+        """
         # We don't want to mutate the inputs, so create copies:
         memo = {}
         people = deepcopy(people, memo=memo)
@@ -267,7 +289,33 @@ class Forecaster(object):
     def build_param(
             self, param_name, *args,
             param_type=None, memo=None, _special_builder=True, **kwargs):
-        """ TODO """
+        """ Builds a parameter based on settings and explicit args.
+
+        This method does not set any attributes of `Forecaster`, it only
+        builds an object and returns it.
+
+        Arguments:
+            param_name (str): The name of the parameter. This should
+                match a key value in `self.default_values`.
+            *args (Any): Positional arguments to be passed to the init
+                method of the object being built. Optional.
+            param_type (type): The type of the parameter. Optional.
+                Defaults to the type provided by `self.default_types`.
+            memo (dict[str, Any]): A mapping from parameter names to
+                objects. This is not generally needed by client code;
+                in cases where `build_param` needs to build other
+                parameters to build the requested parameter, this dict
+                is mutated to record already-built parameters. Optional.
+            _special_builder (Boolean): Parameters which require special
+                logic to init (as identified in `self.default_builders`)
+                will only have the corresponding special builder called
+                iff this value is True. Optional.
+            **kwargs (Any): Keyword arguments to be passed to the init
+                method of the object being built. Optional.
+
+        Returns:
+            An object of type `param_type`.
+        """
         # Cast param_name to str once, for convenience:
         # (This is needed because Parameter members are Enum objects,
         # which can't be used in place of string-valued indexes)
@@ -313,7 +361,31 @@ class Forecaster(object):
         return param
 
     def get_param(self, param_name, memo=None):
-        """ TODO """
+        """ Gets a parameter, builds one if none is explicitly provided.
+
+        If a parameter has been explicitly assigned to this `Forecaster`
+        instance then that object is returned. Otherwise, this method
+        calls `build_param` to build it dynamically and returns it
+        without setting any attributes of the `Forecaster` object.
+
+        This is a convenience method which allows one to guarantee
+        that an object will be returned (if `param_name` is supported)
+        whether or not it is been explicitly set.
+
+        Arguments:
+            param_name (str): The name of the parameter. This should
+                match a key value in `self.default_values`.
+            memo (dict[str, Any]): A mapping from parameter names to
+                objects. This is not generally needed by client code;
+                in cases where `build_param` needs to build other
+                parameters to build the requested parameter, this dict
+                is mutated to record already-built parameters. Optional.
+
+        Returns:
+            The value of the attribute with name `param_name` or, if
+            that value is None, a dynamically-built object that uses
+            the values of `settings` for init.
+        """
         # Cast param_name to str once, for convenience:
         # (This is needed because Parameter members are Enum objects,
         # which can't be used in place of string-valued indexes)
@@ -327,7 +399,35 @@ class Forecaster(object):
     def set_param(
             self, param_name, *args,
             param_type=None, memo=None, **kwargs):
-        """ TODO """
+        """ Builds a parameter and sets the corresponding attribute.
+
+        This is a convenience method that calls `build_param` and
+        sets the result as the value of the corresponding attribute of
+        this `Forecaster` object.
+
+        Note that by calling this method, the resulting object will be
+        used without modification by `run_forecast` even if the
+        `settings` object changes. You can un-set the parameter by
+        assigning `None` to that attribute.
+
+        This method does not set any attributes of `Forecaster`, it only
+        builds an object and returns it.
+
+        Arguments:
+            param_name (str): The name of the parameter. This should
+                match a key value in `self.default_values`.
+            *args (Any): Positional arguments to be passed to the init
+                method of the object being built. Optional.
+            param_type (type): The type of the parameter. Optional.
+                Defaults to the type provided by `self.default_types`.
+            memo (dict[str, Any]): A mapping from parameter names to
+                objects. This is not generally needed by client code;
+                in cases where `build_param` needs to build other
+                parameters to build the requested parameter, this dict
+                is mutated to record already-built parameters. Optional.
+            **kwargs (Any): Keyword arguments to be passed to the init
+                method of the object being built. Optional.
+        """
         # Cast param_name to str once, for convenience:
         # (This is needed because Parameter members are Enum objects,
         # which can't be used in place of string-valued indexes)
