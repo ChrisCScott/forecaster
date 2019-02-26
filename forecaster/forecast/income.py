@@ -47,7 +47,8 @@ class IncomeForecast(SubForecast):
         # as the `from_account`?
         self.add_transaction(
             value=self.asset_sale,
-            when=0.5,  # TODO Determine timing of asset sale #32
+            # TODO Determine timing of asset sale #32
+            # timings=None,
             from_account=None,  # TODO Move money from asset account #32
             to_account=available
         )
@@ -56,8 +57,7 @@ class IncomeForecast(SubForecast):
         for person in self.people:
             self.add_transaction(
                 person.net_income,
-                when=person.payment_timing,
-                frequency=person.payment_frequency,
+                timings=person.payment_timing,
                 from_account=None, to_account=available)
 
     @recorded_property

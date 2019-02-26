@@ -1,11 +1,10 @@
-""" TODO """
+""" A module providing a base class for SubForecast objects. """
 
 from collections import defaultdict
 from collections.abc import Hashable
-from decimal import Decimal
 from forecaster.ledger import Ledger, Money, recorded_property
 from forecaster.accounts import Account
-from forecaster.utility import when_conv
+from forecaster.utility import Timing
 
 class TransactionDict(defaultdict):
     """ A defaultdict that accepts unhashable keys.
@@ -208,8 +207,9 @@ class SubForecast(Ledger):
         self.clear_cache()
 
     def add_transaction(
-            self, value, when=Decimal(0.5), frequency=None,
-            from_account=None, to_account=None, strict_timing=False):
+            self, value, timings=None,
+            from_account=None, to_account=None,
+            strict_timing=False):
         """ Records a transaction at a time that balances the books.
 
         This method will always add the transaction at or after `when`
@@ -243,8 +243,9 @@ class SubForecast(Ledger):
         Args:
             value (Money): The value of the transaction.
                 Positive for inflows, negative for outflows.
-            when (Decimal): The time at which the transaction occurs.
-                Expressed as a value in [0,1]. Optional.
+            timings (Timing, dict[float, float]): The timings of
+                payments and the weight of each payment, as
+                {timing: weight} pairs. Optional.
             frequency (int): The number of transactions made in the
                 year. Must be positive. Optional.
             from_account (Account, dict[Decimal, Money]): An account
@@ -258,9 +259,10 @@ class SubForecast(Ledger):
                 a negative balance. If True, `when` is always used.
         """
         # Sanitize input:
-        when = when_conv(when)
         if not isinstance(value, Money):
             value = Money(value)
+        if timings is None:
+            timing = Timing()
 
         # For convenience, ensure that we're withdrawing from
         # from_account and depositing to to_account:
@@ -268,21 +270,14 @@ class SubForecast(Ledger):
             from_account, to_account = to_account, from_account
             value = -value
 
-        # If a `frequency` has been passed, split up the transaction
-        # into several equal-value and equally-spaced transactions.
-        if frequency is not None:
-            value = value / frequency
-            for timing in range(0, frequency):
-                # Note that `when` is still used to determine the
-                # timing of each transaction within its sub-period.
-                self._add_transaction(
-                    value=value, when=(timing+when)/frequency,
-                    from_account=from_account, to_account=to_account,
-                    strict_timing=strict_timing)
-        # Otherwise, just add a single transaction:
-        else:
+        # (Normalize weights just in case client code was naughty and
+        # didn't do that for us...)
+        total_weight = sum(timings.values())
+        # Add a transaction at each timing, with a transaction value
+        # proportionate to the (normalized) weight for its timing:
+        for timing, weight in timings.items():
             self._add_transaction(
-                value=value, when=when,
+                value=value * (weight / total_weight), when=timing,
                 from_account=from_account, to_account=to_account,
                 strict_timing=strict_timing)
 

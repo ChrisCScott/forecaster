@@ -3,7 +3,7 @@
 from decimal import Decimal
 from forecaster.accounts.base import Account
 from forecaster.ledger import Money
-from forecaster.utility import frequency_conv, when_conv
+from forecaster.utility import Timing
 
 class Debt(Account):
     """ A debt with a balance and an interest rate.
@@ -32,15 +32,8 @@ class Debt(Account):
             Debts may be accelerated by as much as possible by setting
             this argument to `Money('Infinity')`, or non-accelerated
             by setting this argument to `Money(0)`.
-        payment_frequency (int): The number of times each year that
-            payments are due. Uses the same syntax as
-            `forecaster.utility.frequency_conv` (e.g. 'M' or 12
-            for monthly payments).
-            Optional; defaults to monthly payments.
-        payment_timing (str, int): When payments are made in each
-            payment period (e.g. 'start', 'end', 0.5). Uses the same
-            syntax as `forecaster.utility.when_conv`.
-            Optional; defaults to 'end'.
+        payment_timing (Timing, dict[float, float]): The timings of
+            payments and the weight of each payment timing. Optional.
     """
 
     def __init__(
@@ -49,7 +42,7 @@ class Debt(Account):
             inputs=None, initial_year=None, minimum_payment=Money(0),
             living_expense=Money(0), savings_rate=1,
             accelerated_payment=Money('Infinity'),
-            payment_frequency='M', payment_timing='end',
+            payment_timing=None,
             **kwargs):
         """ Constructor for `Debt`. """
 
@@ -64,8 +57,6 @@ class Debt(Account):
         self._living_expense = None
         self._savings_rate = None
         self._accelerated_payment = None
-        self._payment_frequency = None
-        self._payment_timing = None
 
         # Apply generic Account logic:
         super().__init__(
@@ -77,7 +68,9 @@ class Debt(Account):
         self.living_expense = living_expense
         self.savings_rate = savings_rate
         self.accelerated_payment = accelerated_payment
-        self.payment_frequency = payment_frequency
+
+        if payment_timing is None:
+            payment_timing = Timing()
         self.payment_timing = payment_timing
 
         # Debt must have a negative balance
@@ -123,26 +116,6 @@ class Debt(Account):
     @accelerated_payment.setter
     def accelerated_payment(self, val):
         self._accelerated_payment = Money(val)
-
-    @property
-    def payment_frequency(self):
-        """ The number of times a year that payments are due. """
-        return self._payment_frequency
-
-    @payment_frequency.setter
-    def payment_frequency(self, val):
-        """ Sets the debt's payment frequency. """
-        self._payment_frequency = frequency_conv(val)
-
-    @property
-    def payment_timing(self):
-        """ When the debt's payments are due in each payment period. """
-        return self._payment_timing
-
-    @payment_timing.setter
-    def payment_timing(self, val):
-        """ Sets the debt's payment timing. """
-        self._payment_timing = when_conv(val)
 
     def min_inflow(self, when='end'):
         """ The minimum payment on the debt. """

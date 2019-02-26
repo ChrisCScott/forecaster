@@ -3,6 +3,7 @@
 from forecaster.ledger import (
     Money, recorded_property, recorded_property_cached)
 from forecaster.forecast.subforecast import SubForecast
+from forecaster.utility import Timing
 
 class WithdrawalForecast(SubForecast):
     """ A forecast of withdrawals from a portfolio over time.
@@ -73,6 +74,7 @@ class WithdrawalForecast(SubForecast):
         # and withdraw whenever we dip into negative balance.
         for when in sorted(available.keys()):
             accum += available[when]
+            timings = Timing(when=when)
             if accum < 0:  # negative balance - time to withdraw!
                 # Withdraw however much we're short by:
                 withdrawal = -accum
@@ -86,7 +88,7 @@ class WithdrawalForecast(SubForecast):
                     # (not accounting for withholdings):
                     self.add_transaction(
                         value=account_transaction,
-                        when=when,
+                        timings=timings,
                         from_account=account,
                         to_account=available,
                         strict_timing=True
@@ -99,7 +101,7 @@ class WithdrawalForecast(SubForecast):
                     if new_withholding > 0:
                         self.add_transaction(
                             value=new_withholding,
-                            when=when,
+                            timings=timings,
                             from_account=available,
                             to_account=None,
                             strict_timing=True
@@ -142,9 +144,8 @@ class WithdrawalForecast(SubForecast):
         """ Total gross withdrawals for the year. """
         # The amount withdrawn is simply the shortfall in cashflow
         # over the course of the year.
-        # TODO: Incorporate some tax logic to increase gross
-        # withdrawals so that `net_withdrawals` approximates
-        # `total_available`?
+        # TODO: Increase gross withdrawals based on tax liability #34
+        # Aim is for `net_withdrawals` to approximate `total_available`.
         return -self.total_available
 
     @recorded_property

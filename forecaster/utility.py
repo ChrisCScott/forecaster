@@ -7,6 +7,46 @@ modules.
 import collections
 from decimal import Decimal
 
+
+class Timing(dict):
+    """ A dict of {timing: weight} pairs.
+
+    This is really just a vanilla dict with a convenient init method.
+    It divides the interval [0,1] into a number of equal-length periods
+    equal to `frequency` and, within each period, assigns a timing at
+    `when`. The timings are equally-weighted.
+
+    Examples:
+        Timing()
+        # {0.5: 1}
+        Timing(when=1, frequency=4)
+        # {0.25: 0.25, 0.5: 0.25, 0.75: 0.25, 1: 0.25}
+        Timing(when=0, frequency=4)
+        # {0: 0.25, 0.25: 0.25, 0.5: 0.25, 0.75: 0.25}
+        Timing(when=0.5, frequency=2)
+        # {0.25: 0.5, 0.75: 0.5}
+
+    Args:
+        when (Number, str): When transactions occur in each period (e.g.
+            'start', 'end', 0.5). Uses the same syntax as
+            `forecaster.utility.when_conv`. Optional.
+        frequency (str, int): The number of periods (and thus the number
+            of transactions). Uses the same syntax as
+            `forecaster.utility.frequency_conv`. Optional.
+    """
+    def __init__(self, when=0.5, frequency=1):
+        """ Initializes a Timing dict. """
+        # Get an empty dict:
+        super().__init__()
+        # Process `when` to ensure it's numeric:
+        when = when_conv(when)
+        # Each transaction has equal weight:
+        weight = 1 / frequency
+        # Build the dict:
+        for time in range(frequency):
+            self[(time + when) / frequency] = weight
+
+
 def when_conv(when):
     """ Converts various types of `when` inputs to Decimal.
 

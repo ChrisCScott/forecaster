@@ -3,6 +3,7 @@
 from forecaster.ledger import (
     recorded_property, recorded_property_cached)
 from forecaster.forecast.subforecast import SubForecast
+from forecaster.utility import Timing
 
 class ContributionForecast(SubForecast):
     """ A forecast of each year's contributions to various accounts.
@@ -41,18 +42,16 @@ class ContributionForecast(SubForecast):
         super().update_available(available)
 
         # NOTE: We assume here contributions are made monthly.
-
+        timings = Timing(when=0.5, frequency=12)
         # pylint: disable=not-an-iterable,unsubscriptable-object
         # pylint can't infer the type of account_transactions
         # because we don't import `AccountTransactionsStrategy`
         for account in self.account_transactions:
             self.add_transaction(
                 value=self.account_transactions[account],
-                when=0.5,
-                frequency=12,
+                timings=timings,
                 from_account=available,
-                to_account=account
-            )
+                to_account=account)
 
     @recorded_property_cached
     def account_transactions(self):
@@ -62,8 +61,7 @@ class ContributionForecast(SubForecast):
         """
         return self.account_transaction_strategy(
             total=self.total_available,
-            accounts=self.accounts
-        )
+            accounts=self.accounts)
 
     @recorded_property
     def contributions(self):

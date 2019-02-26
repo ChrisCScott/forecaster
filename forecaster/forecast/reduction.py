@@ -3,6 +3,7 @@
 from forecaster.ledger import (
     Money, recorded_property, recorded_property_cached)
 from forecaster.forecast.subforecast import SubForecast
+from forecaster.utility import Timing
 
 class ReductionForecast(SubForecast):
     """ A forecast of each year's contribution reductions.
@@ -53,35 +54,30 @@ class ReductionForecast(SubForecast):
         # First determine miscellaneous other reductions.
         # (These take priority because they're generally user-input.)
         # Assume we make these payments at the end of each month.
+        other_timings = Timing(when=1, frequency=12)
         self.add_transaction(
             value=self.reduction_from_other,
-            when='end',
-            frequency=12,
+            timings=other_timings,
             from_account=available,
-            to_account=None
-        )
+            to_account=None)
 
         # Apply debt payment transactions:
         for debt in self.account_transactions:
             # Track the savings portion against `available`:
             self.add_transaction(
                 value=self.payments_from_available[debt],
-                when=debt.payment_timing,
-                frequency=debt.payment_frequency,
+                timings=debt.payment_timing,
                 from_account=available,
-                to_account=debt
-            )
+                to_account=debt)
             # Track the non-savings portion as well, but don't deduct
             # from `available`
             self.add_transaction(
                 value=(
                     self.account_transactions[debt]
                     - self.payments_from_available[debt]),
-                when=debt.payment_timing,
-                frequency=debt.payment_frequency,
+                timings=debt.payment_timing,
                 from_account=None,
-                to_account=debt
-            )
+                to_account=debt)
 
     @recorded_property_cached
     def account_transactions(self):

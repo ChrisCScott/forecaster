@@ -53,8 +53,7 @@ class LivingExpensesForecast(SubForecast):
         for person in self.people:
             self.add_transaction(
                 self.living_expenses * income_weights[person],
-                when=person.payment_timing,
-                frequency=person.payment_frequency,
+                timings=person.payment_timing,
                 from_account=available, to_account=None)
 
     @recorded_property_cached
