@@ -52,6 +52,14 @@ class Person(TaxSource):
             this Person.
         tax_treatment (Tax): The tax treatment of the person. A callable
             object; see documentation for `Tax` for more information.
+
+    Raises:
+        TypeError: birth_date or retirement_date are not parseable
+            as datetimes due to an unexpected type.
+        ValueError: birth_date or retirement_date are not parseable
+            as datetimes due to an unexpected value.
+        ValueError: retirement_date precedes birth_date
+        OverflowError: birth_date or retirement_date are too large.
     """
 
     # This class has a lot of members in large part because every
@@ -138,11 +146,12 @@ class Person(TaxSource):
             An instance of class `Person`
 
         Raises:
+            TypeError: birth_date or retirement_date are not parseable
+                as datetimes due to an unexpected type.
             ValueError: birth_date or retirement_date are not parseable
-                as dates.
+                as datetimes due to an unexpected value.
             ValueError: retirement_date precedes birth_date
             OverflowError: birth_date or retirement_date are too large.
-
         """
         super().__init__(initial_year=initial_year, inputs=inputs)
 
@@ -193,7 +202,14 @@ class Person(TaxSource):
 
     @birth_date.setter
     def birth_date(self, val):
-        """ Sets the birth date of the Person. """
+        """ Sets the birth date of the Person.
+
+        Raises:
+            TypeError: `val` could not be parsed as a datetime due to
+                an unexpected type.
+            ValueError: `val` could not be parsed as a datetime due to
+                an unexpected value.
+        """
         # If `birth_date` is not a `datetime`, attempt to parse
         if not isinstance(val, datetime):
             # Parsing will fail if it can't generate a year, month, and
@@ -214,7 +230,10 @@ class Person(TaxSource):
         """ Sets both retirement_date and retirement_age.
 
         Raises:
-            ValueError: retirement_date precedes birth_date.
+            ValueError: retirement_date precedes birth_date or could
+                not be parsed as a datetime due to an unexpected value.
+            TypeError: retirement_date could not be parsed as a datetime
+                due to an unexpected type.
             NotImplementedError: retirement_date must not be None.
                 Floating retirement dates are not yet implemented.
         """
