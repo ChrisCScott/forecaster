@@ -43,17 +43,19 @@ class LivingExpensesForecast(SubForecast):
         # started on doing the updates:
         super().update_available(available)
 
-        # Assume living expenses are incurred at the time cash is
-        # received (ignore outflows and zero-value transactions).
-        # Note that we assume living expenses are incurred in
-        # the same amount with each contribution
-        frequency = max(
-            len({key for key in available.keys() if available[key] > 0}),
-            1)
-        when = min(available.keys(), default=1) * frequency
-        self.add_transaction(
-            value=self.living_expenses, when=when, frequency=frequency,
-            from_account=available, to_account=None)
+        # Assume living expenses are incurred at the same time that
+        # income is received. If there are multiple people, incur
+        # living expenses every time each of them gets paid
+        # proportionately to their share of net income.
+        total_income = sum(person.net_income for person in self.people)
+        income_weights = {
+            person: person.net_income / total_income for person in self.people}
+        for person in self.people:
+            self.add_transaction(
+                self.living_expenses * income_weights[person],
+                when=person.payment_timing,
+                frequency=person.payment_frequency,
+                from_account=available, to_account=None)
 
     @recorded_property_cached
     def living_expenses(self):

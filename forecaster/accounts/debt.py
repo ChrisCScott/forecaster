@@ -3,7 +3,7 @@
 from decimal import Decimal
 from forecaster.accounts.base import Account
 from forecaster.ledger import Money
-from forecaster.utility import frequency_conv
+from forecaster.utility import frequency_conv, when_conv
 
 class Debt(Account):
     """ A debt with a balance and an interest rate.
@@ -37,6 +37,10 @@ class Debt(Account):
             `forecaster.utility.frequency_conv` (e.g. 'M' or 12
             for monthly payments).
             Optional; defaults to monthly payments.
+        payment_timing (str, int): When payments are made in each
+            payment period (e.g. 'start', 'end', 0.5). Uses the same
+            syntax as `forecaster.utility.when_conv`.
+            Optional; defaults to 'end'.
     """
 
     def __init__(
@@ -45,7 +49,7 @@ class Debt(Account):
             inputs=None, initial_year=None, minimum_payment=Money(0),
             living_expense=Money(0), savings_rate=1,
             accelerated_payment=Money('Infinity'),
-            payment_frequency='M',
+            payment_frequency='M', payment_timing='end',
             **kwargs):
         """ Constructor for `Debt`. """
 
@@ -61,6 +65,7 @@ class Debt(Account):
         self._savings_rate = None
         self._accelerated_payment = None
         self._payment_frequency = None
+        self._payment_timing = None
 
         # Apply generic Account logic:
         super().__init__(
@@ -73,6 +78,7 @@ class Debt(Account):
         self.savings_rate = savings_rate
         self.accelerated_payment = accelerated_payment
         self.payment_frequency = payment_frequency
+        self.payment_timing = payment_timing
 
         # Debt must have a negative balance
         if self.balance > 0:
@@ -127,6 +133,16 @@ class Debt(Account):
     def payment_frequency(self, val):
         """ Sets the debt's payment frequency. """
         self._payment_frequency = frequency_conv(val)
+
+    @property
+    def payment_timing(self):
+        """ When the debt's payments are due in each payment period. """
+        return self._payment_timing
+
+    @payment_timing.setter
+    def payment_timing(self, val):
+        """ Sets the debt's payment timing. """
+        self._payment_timing = when_conv(val)
 
     def min_inflow(self, when='end'):
         """ The minimum payment on the debt. """

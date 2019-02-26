@@ -52,10 +52,10 @@ class ReductionForecast(SubForecast):
 
         # First determine miscellaneous other reductions.
         # (These take priority because they're generally user-input.)
-        # Assume we make these payments monthly.
+        # Assume we make these payments at the end of each month.
         self.add_transaction(
             value=self.reduction_from_other,
-            when=0.5,
+            when='end',
             frequency=12,
             from_account=available,
             to_account=None
@@ -66,7 +66,7 @@ class ReductionForecast(SubForecast):
             # Track the savings portion against `available`:
             self.add_transaction(
                 value=self.payments_from_available[debt],
-                when=0.5,
+                when=debt.payment_timing,
                 frequency=debt.payment_frequency,
                 from_account=available,
                 to_account=debt
@@ -77,7 +77,7 @@ class ReductionForecast(SubForecast):
                 value=(
                     self.account_transactions[debt]
                     - self.payments_from_available[debt]),
-                when=0.5,
+                when=debt.payment_timing,
                 frequency=debt.payment_frequency,
                 from_account=None,
                 to_account=debt

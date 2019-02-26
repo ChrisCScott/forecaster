@@ -6,13 +6,14 @@ from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
 from forecaster.ledger import (
     Money, TaxSource, recorded_property, recorded_property_cached)
-from forecaster.utility import frequency_conv
+from forecaster.utility import frequency_conv, when_conv
 
 
 class Person(TaxSource):
     """ Represents a person's basic information: age and retirement age.
 
     Attributes:
+        accounts (set): All accounts naming this Person as an owner.
         name (str): The person's name. No specific form is required;
             this is only used for display, not any computations.
         birth_date (datetime): The person's birth date.
@@ -37,11 +38,15 @@ class Person(TaxSource):
             year relative to last year.
         raise_rate_history (dict[int, Decimal]): Raises for all years
             on record.
-        payment_frequency (int): The number of times each year that
-            the Person is paid. Uses the same syntax as
+        payment_frequency (str, int): The frequency with which
+            `Person` is paid. Uses the same syntax as
             `forecaster.utility.frequency_conv` (e.g. 'M' or 12
             for monthly payments).
             Optional; defaults to biweekly payments.
+        payment_timing (str, int): When payments are made in each
+            payment period (e.g. 'start', 'end', 0.5). Uses the same
+            syntax as `forecaster.utility.when_conv`.
+            Optional; defaults to 'end'.
         spouse (Person): The person's spouse. This linkage is
             one-to-one; the spouse's `spouse` attribute points back to
             this Person.
@@ -73,7 +78,7 @@ class Person(TaxSource):
     def __init__(
             self, initial_year, name, birth_date, retirement_date=None,
             gross_income=0, raise_rate=0, spouse=None, tax_treatment=None,
-            payment_frequency='BW', inputs=None):
+            payment_frequency='BW', payment_timing='end', inputs=None):
         """ Constructor for `Person`.
 
         Attributes:
@@ -113,6 +118,10 @@ class Person(TaxSource):
                 `forecaster.utility.frequency_conv` (e.g. 'M' or 12
                 for monthly payments).
                 Optional; defaults to biweekly payments.
+            payment_timing (str, int): When payments are made in each
+                payment period (e.g. 'start', 'end', 0.5). Uses the same
+                syntax as `forecaster.utility.when_conv`.
+                Optional; defaults to 'end'.
             inputs (dict[str, dict[int, Any]]): `{attr: {year: val}}`
                 pairs, where `attr` is any one of `Person`'s recorded
                 propertes, namely:
@@ -146,6 +155,7 @@ class Person(TaxSource):
         self._spouse = None
         self._tax_treatment = None
         self._payment_frequency = None
+        self._payment_timing = None
         self._contribution_room = {}
         self._contribution_groups = {}
         self.name = name
@@ -155,6 +165,7 @@ class Person(TaxSource):
         self.spouse = spouse
         self.tax_treatment = tax_treatment
         self.payment_frequency = payment_frequency
+        self.payment_timing = payment_timing
 
         # Now provide initial-year values for recorded properties:
         # NOTE: Be sure to do type-checking here.
@@ -334,6 +345,16 @@ class Person(TaxSource):
     def payment_frequency(self, val):
         """ Sets the Person's payment frequency. """
         self._payment_frequency = frequency_conv(val)
+
+    @property
+    def payment_timing(self):
+        """ When the Person is paid in each payment period. """
+        return self._payment_timing
+
+    @payment_timing.setter
+    def payment_timing(self, val):
+        """ Sets the Person's payment timing. """
+        self._payment_timing = when_conv(val)
 
     # pylint: disable=method-hidden
     # Pylint gets confused by attributes added by metaclass.

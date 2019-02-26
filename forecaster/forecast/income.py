@@ -52,14 +52,11 @@ class IncomeForecast(SubForecast):
             to_account=available
         )
 
-        # Record income monthly.
-        # NOTE: This code assumes income is received at the end of
-        # each payment period. Consider whether some cases (like
-        # biweekly payments) might justify using the midpoint of
-        # each period.
+        # Record income according to the Persons' payment schedules:
         for person in self.people:
             self.add_transaction(
-                person.net_income, when=0.5,
+                person.net_income,
+                when=person.payment_timing,
                 frequency=person.payment_frequency,
                 from_account=None, to_account=available)
 
