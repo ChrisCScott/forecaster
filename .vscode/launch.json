@@ -14,32 +14,9 @@
             "cwd": "${workspaceRoot}",
             "env": {"PYTHONPATH":"${workspaceRoot}"},
             "envFile": "${workspaceRoot}/.env",
-            "debugOptions": [
-                "RedirectOutput"
-            ],
+            "redirectOutput": true,
+            "internalConsoleOptions": "openOnSessionStart",
             "console": "none"
-        },
-        {
-            "name": "PySpark",
-            "type": "python",
-            "request": "launch",
-            "stopOnEntry": true,
-            "osx": {
-                "pythonPath": "${env:SPARK_HOME}/bin/spark-submit"
-            },
-            "windows": {
-                "pythonPath": "${env:SPARK_HOME}/bin/spark-submit.cmd"
-            },
-            "linux": {
-                "pythonPath": "${env:SPARK_HOME}/bin/spark-submit"
-            },
-            "program": "${file}",
-            "cwd": "${workspaceRoot}",
-            "env": {},
-            "envFile": "${workspaceRoot}/.env",
-            "debugOptions": [
-                "RedirectOutput"
-            ]
         },
         {
             "name": "Python Module",
@@ -51,9 +28,7 @@
             "cwd": "${workspaceRoot}",
             "env": {},
             "envFile": "${workspaceRoot}/.env",
-            "debugOptions": [
-                "RedirectOutput"
-            ]
+            "redirectOutput": true
         },
         {
             "name": "Integrated Terminal/Console",
@@ -66,8 +41,7 @@
             "console": "integratedTerminal",
             "env": {},
             "envFile": "${workspaceRoot}/.env",
-            "debugOptions": [
-            ]
+            "redirectOutput": true
         },
         {
             "name": "External Terminal/Console",
@@ -79,96 +53,7 @@
             "cwd": "",
             "console": "externalTerminal",
             "env": {},
-            "envFile": "${workspaceRoot}/.env",
-            "debugOptions": [
-            ]
-        },
-        {
-            "name": "Django",
-            "type": "python",
-            "request": "launch",
-            "stopOnEntry": true,
-            "pythonPath": "${config:python.pythonPath}",
-            "program": "${workspaceRoot}/manage.py",
-            "cwd": "${workspaceRoot}",
-            "args": [
-                "runserver",
-                "--noreload",
-                "--nothreading"
-            ],
-            "env": {},
-            "envFile": "${workspaceRoot}/.env",
-            "debugOptions": [
-                "RedirectOutput",
-                "Django"
-            ]
-        },
-        {
-            "name": "Flask",
-            "type": "python",
-            "request": "launch",
-            "stopOnEntry": false,
-            "pythonPath": "${config:python.pythonPath}",
-            "program": "fully qualified path fo 'flask' executable. Generally located along with python interpreter",
-            "cwd": "${workspaceRoot}",
-            "env": {
-                "FLASK_APP": "${workspaceRoot}/quickstart/app.py"
-            },
-            "args": [
-                "run",
-                "--no-debugger",
-                "--no-reload"
-            ],
-            "envFile": "${workspaceRoot}/.env",
-            "debugOptions": [
-                "RedirectOutput"
-            ]
-        },
-        {
-            "name": "Pyramid",
-            "type": "python",
-            "request": "launch",
-            "stopOnEntry": true,
-            "pythonPath": "${config:python.pythonPath}",
-            "cwd": "${workspaceRoot}",
-            "env": {},
-            "envFile": "${workspaceRoot}/.env",
-            "args": [
-                "${workspaceRoot}/development.ini"
-            ],
-            "debugOptions": [
-                "RedirectOutput",
-                "Pyramid"
-            ]
-        },
-        {
-            "name": "Watson",
-            "type": "python",
-            "request": "launch",
-            "stopOnEntry": true,
-            "pythonPath": "${config:python.pythonPath}",
-            "program": "${workspaceRoot}/console.py",
-            "cwd": "${workspaceRoot}",
-            "args": [
-                "dev",
-                "runserver",
-                "--noreload=True"
-            ],
-            "env": {},
-            "envFile": "${workspaceRoot}/.env",
-            "debugOptions": [
-                "RedirectOutput"
-            ]
-        },
-        {
-            "name": "Attach (Remote Debug)",
-            "type": "python",
-            "request": "attach",
-            "localRoot": "${workspaceRoot}",
-            "remoteRoot": "${workspaceRoot}",
-            "port": 3000,
-            "secret": "my_secret",
-            "host": "localhost"
+            "envFile": "${workspaceRoot}/.env"
         }
     ]
 }
