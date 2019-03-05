@@ -388,6 +388,122 @@ class Account(TaxSource):
         # For non-registered accounts, there is no minimum
         return Money('0')
 
+    def transactions_to_balance(self, timings, balance):
+        """ The amounts to add/withdraw at `timings` to get `balance`.
+
+        The return value satisfies two criteria:
+
+        * If each `{when: value}` pair is added as a transaction
+        then `self.balance_at_time('end')` will return `balance`,
+        subject to precision-based error.
+        * Each `value` is proportionate to the corresponding
+        input `weight` for the given timing.
+
+        Note that this method does not guarantee that the Account will
+        not go into negative balance mid-year if the output is used to
+        apply transactions to the Account.
+
+        Arguments:
+            timings (dict[float, float]): A mapping of `{when: weight}`
+                pairs.
+            balance (Money): The balance of the Account would
+                have after applying the outflows.
+
+        Returns:
+            dict[float, Money]: A mapping of `{when: value}` pairs where
+                value indicates the amount that can be withdrawn at that
+                time such that, by the end of the year, the Account's
+                balance is `balance`.
+        """
+        # Determine how much the end-of-year balance would change under
+        # these transactions:
+        ref_balance = self.balance_at_time('end')
+        change = balance - ref_balance
+        # We'll need to normalize weights later; this will help.
+        total_weight = Decimal(sum(timings.values()))
+
+        # It would be easy to generate a dict of {when: value} pairs
+        # that achieve this change by assigning `change*w*A(1-t)`
+        # for each timing `t` with weight `w`. But then the amounts
+        # would be different at different timings even if weights were
+        # the same. We want the value at each timing to be proportional
+        # to its weight.
+
+        # This calls for math. Consider this derivation, where A is the
+        # accumulation function using the current rate/nper and
+        # each {timing: value} pair in output is abbreviated t_i: v_i:
+
+        # change = A(1-t_1)*v_1 + A(1-t_2)*v_2 + ... + A(1-t_n)*v_n
+        #   (This is just the sum of future values of the transactions)
+        # v_j = sum(v_1 ... v_n) * w_j for all j in [1 .. n]
+        #   (This is the constraint that each v_j is proportional to its
+        #   weight w_j. Note that it assumes w_j is normalized!)
+        # Define s = sum(v_1 ... v_n).
+        #   (We call s `total` in the code below for style reasons.)
+        # change = A(1-t_1)*s*w_1 + ... + A(1-t_n)*s*w_n
+        #   (Obtain this simply by substitution)
+        # s = change / (A(1-t_1)*w_1 + ... + A(1-t_n)*w_n)
+        #   (We've solved for s in terms of t_i and w_i, which are
+        #   known. We can use this to determine v_i, the value we want.)
+        total = change / sum(
+            Decimal(weight / total_weight) * self.accumulation_function(
+                t=1-timing,
+                rate=self.rate,
+                nper=self.nper)
+            for timing, weight in timings.items())
+        # We've determined `s`, now find `v_j`, i.e. the value of the
+        # transaction for a given timing t_j. In essence, we're
+        # determining a weighted portion of `total`:
+        outflows = {
+            timing: total * (weight / total_weight)
+            for timing, weight in timings.items()}
+        return outflows
+
+    def max_outflows(self, timings):
+        """ The maximum amounts that can be withdrawn at `timings`.
+
+        The output transaction values will be proportionate to the
+        values of `timings`, which are used as weights.
+
+        Example:
+            Consider an account with 100% interest without compounding:
+            ``` account = Account(balance=100, rate=1, nper=1)
+            account.max_outflows({0: 1, 1: 1})
+            # Returns {0: Money(66.66...), 1: Money(66.66...)}
+            ```
+
+        Args:
+            timings (dict[float, float]): A mapping of `{when: weight}`
+                pairs.
+
+        Returns:
+            dict[float, Money]: A mapping of `{when: value}` pairs where
+                `value` indicates the amount that can be withdrawn at
+                that time such that, by the end of the year, the
+                Account's balance is $0.
+        """
+        return self.transactions_to_balance(timings, Money(0))
+
+    def max_inflows(self, timings):
+        """ The maximum amounts that can be contributed at `timings`.
+
+        The output transaction values will be proportionate to the
+        values of `timings`, which are used as weights.
+
+        For a simple `Account`, this will return `Infinity` for all
+        timings. Subclasses can override it as appropriate.
+
+        Args:
+            timings (dict[float, float]): A mapping of `{when: weight}`
+                pairs.
+
+        Returns:
+            dict[float, Money]: A mapping of `{when: value}` pairs where
+                `value` indicates the maximum amount that can be
+                contributed at that time.
+        """
+        return self.transactions_to_balance(timings, Money('Infinity'))
+
     @recorded_property
     def taxable_income(self):
         """ Treats all returns as taxable. """
