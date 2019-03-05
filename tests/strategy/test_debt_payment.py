@@ -73,38 +73,9 @@ class TestDebtPaymentStrategies(unittest.TestCase):
             for debt in debts
         )
 
-    def test_init_implicit(self):
-        """ Test __init__ with implicit (optional omitted) parameters. """
-        # Pylint gets confused by attributes added via a metaclass.
-        # pylint: disable=no-member
-        method = DebtPaymentStrategy.strategy_avalanche.strategy_key
-        strategy = DebtPaymentStrategy(method)
-        self.assertEqual(strategy.strategy, method)
-        self.assertEqual(strategy.timing, 'end')
-
-    def test_init_explicit(self):
-        """ Test __init__ with explicit parameters. """
-        method = 'Snowball'
-        timing = 'end'
-        strategy = DebtPaymentStrategy(method, timing)
-        self.assertEqual(strategy.strategy, method)
-        self.assertEqual(strategy.timing, timing)
-
-    def test_init_invalid(self):
-        """ Test __init__ with invalid parameters. """
-        # Test invalid strategies
-        with self.assertRaises(ValueError):
-            DebtPaymentStrategy(strategy='Not a strategy')
-        with self.assertRaises(TypeError):
-            DebtPaymentStrategy(strategy=1)
-        # Test invalid timing
-        with self.assertRaises(TypeError):
-            DebtPaymentStrategy(strategy="Snowball", timing={})
-
     def test_snowball_min_payment(self):
         """ Test strategy_snowball with the minimum payment only. """
-        payment = self.min_payment(
-            self.debts, self.strategy_snowball.timing)
+        payment = self.min_payment(self.debts, self.strategy_snowball.timing)
         results = self.strategy_snowball(self.debts, payment)
         for debt in self.debts:
             self.assertEqual(results[debt], debt.minimum_payment)

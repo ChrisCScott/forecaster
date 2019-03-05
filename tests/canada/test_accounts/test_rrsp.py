@@ -57,17 +57,28 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
                 self.owner.retirement_age)
         )
 
-    def test_taxable_income(self, *args, **kwargs):
-        """ Test taxable_income with no withdrawals or contributions.
-
-        NOTE: This method overrides the superclass method of the same
-        name, otherwise it would be called `test_taxable_income_basic`.
-        """
-        # Create an RRSP with a $1,000,000 balance and no withdrawals:
+    def test_taxable_income_gain(self, *args, **kwargs):
+        """ Test taxable_income with no withdrawals or contributions. """
+        # Create an RRSP with a $1,000,000 balance, 100% growth,
+        # and no withdrawals:
         account = self.AccountType(
             self.owner, *args,
             inflation_adjust=self.inflation_adjust,
-            contribution_room=self.contribution_room, balance=1000000,
+            contribution_room=self.contribution_room,
+            balance=1000000, rate=1,
+            **kwargs)
+        # Since withdrawals = $0, there's no taxable income
+        self.assertEqual(account.taxable_income, 0)
+
+    def test_taxable_income_loss(self, *args, **kwargs):
+        """ Test taxable_income with no withdrawals or contributions. """
+        # Create an RRSP with a $1,000,000 balance, a 50% loss,
+        # and no withdrawals:
+        account = self.AccountType(
+            self.owner, *args,
+            inflation_adjust=self.inflation_adjust,
+            contribution_room=self.contribution_room,
+            balance=1000000, rate=-0.5,
             **kwargs)
         # Since withdrawals = $0, there's no taxable income
         self.assertEqual(account.taxable_income, 0)
@@ -100,12 +111,8 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         # (which should be $100 due to the withdrawal)
         self.assertEqual(account.taxable_income, Money(100))
 
-    def test_tax_withheld(self, *args, **kwargs):
-        """ Test tax_withheld with no transactions.
-
-        NOTE: This method overrides the superclass method of the same
-        name, otherwise it would be called `test_tax_withheld_basic`.
-        """
+    def test_tax_withheld_pos(self, *args, **kwargs):
+        """ Test tax_withheld with no transactions and positive balance. """
         # For ease of testing, ensure that the initial year is
         # represented in RRSP_WITHHOLDING_RATE:
         initial_year = min(constants.RRSP_WITHHOLDING_TAX_RATE)
@@ -119,6 +126,12 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
             balance=1000000,
             **kwargs)
         self.assertEqual(account.tax_withheld, 0)
+
+    def test_tax_withheld_neg(self, *args, **kwargs):
+        """ Test tax_withheld with no transactions and negative balance. """
+        # Balance makes no difference to withholding, so result should
+        # be the same as with positive balance:
+        self.test_tax_withheld_pos(*args, **kwargs)
 
     def test_tax_withheld_small_outflow(self, *args, **kwargs):
         """ Test tax_withheld with a small inflow. """
@@ -209,23 +222,40 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         rate = withholding_rates[second_bracket]
         self.assertEqual(account.tax_withheld, Money(val * rate))
 
-    def test_tax_deduction(self, *args, **kwargs):
-        """ Test RRSP.tax_deduction. """
+    def test_tax_deduction_zero(self, *args, **kwargs):
+        """ Test RRSP.tax_deduction with no transactions. """
         # Create an RRSP with a $1,000,000 balance and no contributions:
         account = self.AccountType(
             self.owner, *args,
             inflation_adjust=self.inflation_adjust,
             contribution_room=self.contribution_room, balance=1000000,
             **kwargs)
-        # Since contributions = $0, there's no taxable income
+        # Since contributions = $0, there's no tax deduction
         self.assertEqual(account.taxable_income, 0)
 
-        # Now add an inflow, confirm it's included in taxable income
+    def test_tax_deduction_pos(self, *args, **kwargs):
+        """ Test RRSP.tax_deduction with an inflow. """
+        # Create an RRSP with a $1,000,000 balance and no contributions:
+        account = self.AccountType(
+            self.owner, *args,
+            inflation_adjust=self.inflation_adjust,
+            contribution_room=self.contribution_room, balance=1000000,
+            **kwargs)
+        # Now add an inflow, confirm it's deducted from taxable income
         account.add_transaction(100, 'end')
         self.assertEqual(account.tax_deduction, Money(100))
 
-        # Now add an outflow (at a different time), confirm that it
-        # has no effect on taxable_income
+    def test_tax_deduction_neg(self, *args, **kwargs):
+        """ Test RRSP.tax_deduction with an outflow. """
+        # Create an RRSP with a $1,000,000 balance and no contributions:
+        account = self.AccountType(
+            self.owner, *args,
+            inflation_adjust=self.inflation_adjust,
+            contribution_room=self.contribution_room, balance=1000000,
+            **kwargs)
+        # Add an inflow and an outflow (at different times), confirm
+        # that the outflow has no effect on tax_deduction.
+        account.add_transaction(100, 'end')
         account.add_transaction(-100, 'start')
         self.assertEqual(account.tax_deduction, Money(100))
 
@@ -506,4 +536,5 @@ if __name__ == '__main__':
     # as exceptions (instead of returning "NaN"). It is lower-precision than
     # ExtendedContext, which is the default.
     decimal.setcontext(decimal.BasicContext)
-    unittest.main()
+    unittest.TextTestRunner().run(
+        unittest.TestLoader().loadTestsFromName(__name__))

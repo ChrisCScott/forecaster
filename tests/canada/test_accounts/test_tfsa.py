@@ -1,4 +1,4 @@
-""" TODO """
+""" Tests for forecaster.canada.TFSA. """
 
 import unittest
 import decimal
@@ -23,28 +23,34 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
         max_year = max(constants.TFSA_ANNUAL_ACCRUAL) + 10
         self.extend_inflation_adjustments(min_year, max_year)
 
-    def test_init_basic(self, *args, **kwargs):
-        """ Basic init tests for TFSA. """
-        super().test_init_basic(*args, **kwargs)
+    def test_init_contrib_default(self, *args, **kwargs):
+        """ Init TFSA with implicit contribution_room. """
+        account = self.AccountType(
+            self.owner, *args,
+            inflation_adjust=self.inflation_adjust,
+            contribution_room=self.contribution_room, **kwargs)
+        self.assertEqual(account.contributor, self.owner)
 
-        # Basic test: manually set contribution_room
+    def test_init_cont_room_explicit(self, *args, **kwargs):
+        """ Init TFSA with explicit contribution_room. """
         account = self.AccountType(
             self.owner, *args,
             inflation_adjust=self.inflation_adjust,
             contribution_room=self.contribution_room, **kwargs)
         self.assertEqual(account.contribution_room, self.contribution_room)
 
-        accruals = self.get_accruals()
-
+    def test_init_cont_room_default(self, *args, **kwargs):
+        """ Init TFSA with default contribution_room. """
         # TFSAs began in 2009. Confirm that we're correctly determining
         # future contribution room based on an inflation-adjusted 2009
         # amount (a schedule of such accruals is returned by
         # get_accruals).
-        # For each starting year, confirm that available contribution
-        # room is the sum of past accruals.
+        accruals = self.get_accruals()
         # Use a person who's at least old enough to qualify for all
         # available TFSA accruals.
         owner = Person(self.initial_year, "test", 1950, retirement_date=2015)
+        # For each starting year, confirm that available contribution
+        # room is the sum of past accruals.
         for year in accruals:
             account = self.AccountType(
                 owner, *args,
@@ -54,10 +60,14 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
                 account.contribution_room,
                 Money(
                     sum([
-                        accruals[i] for i in range(min(accruals), year + 1)
-                    ])
-                )
-            )
+                        accruals[i] for i in range(min(accruals), year + 1)])))
+
+    def test_init_inflation_adjust(self, *args, **kwargs):
+        """ Init TFSA with explicit inflation_adjust. """
+        account = self.AccountType(
+            self.owner, *args,
+            inflation_adjust=self.inflation_adjust,
+            initial_year=self.initial_year, **kwargs)
         self.assertEqual(account.inflation_adjust, self.inflation_adjust)
 
     def test_init_type_conversion(self, *args, **kwargs):
@@ -74,34 +84,19 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
         }
 
         account = self.AccountType(
-            self.owner, *args, inflation_adjust=self.inflation_adjust,
-            **kwargs)
-        self.assertEqual(account.inflation_adjust, self.inflation_adjust)
-
-        # Try type conversion for inflation_adjustments
-        inflation_adjustments = {
-            '2000': '1',
-            2001.0: 1.25,
-            Decimal(2002): 1.5,
-            2003: Decimal('1.75'),
-            2017.0: Decimal(2.0)
-        }
-
-        account = self.AccountType(
             self.owner, *args,
             contribution_room=500, inflation_adjust=inflation_adjustments,
             **kwargs)
-        self.assertEqual(account.contributor, self.owner)
-        self.assertEqual(account.contribution_room, Money('500'))
         self.assertEqual(account.inflation_adjust(2000), Decimal(1))
         self.assertEqual(account.inflation_adjust(2001), Decimal(1.25))
         self.assertEqual(account.inflation_adjust(2002), Decimal(1.5))
         self.assertEqual(account.inflation_adjust(2003), Decimal(1.75))
         self.assertEqual(account.inflation_adjust(2017), Decimal(2))
 
-        # Try an invalid inflation_adjustment.
+    def test_init_invalid_inf_adj(self, *args, **kwargs):
+        """ Test TFSA.__init__ with invalid inflation_adjust input. """
         with self.assertRaises(TypeError):
-            account = self.AccountType(
+            _ = self.AccountType(
                 self.owner, *args, inflation_adjust='invalid', **kwargs)
 
     def test_next(self, *args, **kwargs):
@@ -173,14 +168,15 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
                 accruals[year] = accrual
         return accruals
 
-    def test_taxable_income(self, *args, **kwargs):
-        """ Test TFSA.taxable_income. """
+    def test_taxable_income_gain(self, *args, **kwargs):
+        """ Test TFSA.taxable_income with a gain in the account. """
         # This method should always return $0
         account = self.AccountType(
             self.owner, *args,
             inflation_adjust=self.inflation_adjust,
             contribution_room=self.contribution_room, balance=1000, **kwargs)
-        # Throw in some transactions for good measure:
+        # Throw in some transactions for good measure, including a
+        # withdrawal to realize any gains:
         account.add_transaction(100, 'start')
         account.add_transaction(-200, 'end')
         self.assertEqual(account.taxable_income, Money(0))
@@ -190,4 +186,5 @@ if __name__ == '__main__':
     # as exceptions (instead of returning "NaN"). It is lower-precision than
     # ExtendedContext, which is the default.
     decimal.setcontext(decimal.BasicContext)
-    unittest.main()
+    unittest.TextTestRunner().run(
+        unittest.TestLoader().loadTestsFromName(__name__))

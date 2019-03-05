@@ -5,7 +5,8 @@ import decimal
 from decimal import Decimal
 from forecaster import (
     Person, Money, Account, Tax,
-    LivingExpensesStrategy, LivingExpensesStrategySchedule)
+    LivingExpensesStrategy, LivingExpensesStrategySchedule,
+    Timing)
 
 
 class TestLivingExpensesStrategyMethods(unittest.TestCase):
@@ -42,6 +43,7 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
         tax = Tax(tax_brackets={
             self.initial_year: {Money(0): Decimal(0.5)}})
         # Set up people with $4000 gross income, $2000 net income:
+        biweekly_timing = Timing(frequency="BW")
         self.person1 = Person(
             initial_year=self.initial_year,
             name="Test 1",
@@ -49,7 +51,7 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
             retirement_date="31 December 2001",  # next year
             gross_income=Money(1000),
             tax_treatment=tax,
-            payment_frequency='BW')
+            payment_timing=biweekly_timing)
         self.person2 = Person(
             initial_year=self.initial_year,
             name="Test 2",
@@ -57,7 +59,7 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
             retirement_date="31 December 2001",  # next year
             gross_income=Money(3000),
             tax_treatment=tax,
-            payment_frequency='BW')
+            payment_timing=biweekly_timing)
         self.people = {self.person1, self.person2}
 
         # Give person1 a $1000 account and person2 a $9,000 account:
@@ -454,7 +456,7 @@ class TestLivingExpensesStrategyScheduleMethods(unittest.TestCase):
             retirement_date="31 December 2001",  # next year
             gross_income=Money(50000),
             tax_treatment=tax,
-            payment_frequency='BW')
+            payment_timing=Timing(frequency="BW"))
         self.people = {self.person1}
 
     def test_working(self):

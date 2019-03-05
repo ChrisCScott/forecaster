@@ -1,4 +1,4 @@
-""" TODO """
+""" Tests for forecaster.canada.TaxableAccount. """
 
 import unittest
 import decimal
@@ -13,34 +13,22 @@ class TestTaxableAccountMethods(TestAccountMethods):
         super().setUp()
         self.AccountType = TaxableAccount
 
-    def test_init_basic(self, *args, **kwargs):
-        """ Basic init tests for TaxableAccount. """
-        super().test_init_basic(*args, **kwargs)
-
-        # Default init
-        account = self.AccountType(
-            self.owner, *args, **kwargs)
-        self.assertEqual(account.acb, account.balance)
-        self.assertEqual(account.capital_gain, Money(0))
-
-        # Confirm that acb is set to balance by default
+    def test_init_acb_default(self, *args, **kwargs):
+        """ Init account without explicit ACB. """
         account = self.AccountType(
             self.owner, *args, balance=100, **kwargs)
+        # Should be same as balance:
         self.assertEqual(account.acb, account.balance)
-        self.assertEqual(account.capital_gain, Money(0))
 
-        # Confirm that initializing an account with explicit acb works.
-        # (In this case, acb is 0, so the balance is 100% capital gains,
-        # but those gains are unrealized, so capital_gain is $0)
+    def test_init_acb_explicit(self, *args, **kwargs):
+        """ Init account with explicit ACB. """
         account = self.AccountType(
             self.owner, *args,
             acb=0, balance=100, rate=1, **kwargs)
         self.assertEqual(account.acb, Money(0))
-        self.assertEqual(account.capital_gain, Money(0))
 
-    def test_properties(self, *args, **kwargs):
-        """ Test TaxableAccount properties (i.e. acb, capital_gains). """
-
+    def test_capital_gain_zero(self, *args, **kwargs):
+        """ Test unrealized capital gains. """
         # Init account with $50 acb.
         # Balance is $100, of which $50 is capital gains.
         account = self.AccountType(
@@ -48,84 +36,134 @@ class TestTaxableAccountMethods(TestAccountMethods):
             acb=50, balance=100, rate=1, **kwargs)
         # No capital gains are realized yet, so capital_gains=$0
         self.assertEqual(account.capital_gain, Money(0))
-        # Withdrawal the entire end-of-year balance.
-        account.add_transaction(-200, 'end')
-        # Transactions will affect acb in the following year, not this
-        # one - therefore acb should be unchanged here.
+        # ACB is unchanged:
         self.assertEqual(account.acb, Money(50))
-        # capital_gains in this year should be updated to reflect the
-        # new transaction.
-        self.assertEqual(account.capital_gain, Money(150))
-        # Now add a start-of-year inflow to confirm that capital_gains
-        # isn't confused.
-        account.add_transaction(100, 'start')
-        self.assertEqual(account.acb, Money(50))
-        # By the time of the withdrawal, acb=$150 and balance=$400.
-        # The $200 withdrawal will yield a $125 capital gain.
-        self.assertEqual(account.capital_gain, Money(125))
 
-    def test_next(self, *args, **kwargs):
-        """ Test TaxableAccount.next_year(). """
-        super().test_next(*args, **kwargs)
-
+    def test_capital_gain_real_start(self, *args, **kwargs):
+        """ Test capital gains realized at start of year. """
         # Init account with $50 acb.
         # Balance is $100, of which $50 is capital gains.
         account = self.AccountType(
             self.owner, *args,
             acb=50, balance=100, rate=1, **kwargs)
-        # No capital gains are realized yet, so capital_gains=$0
-        self.assertEqual(account.capital_gain, Money(0))
-        # Withdrawal the entire end-of-year balance.
-        account.add_transaction(-200, 'end')
-        self.assertEqual(account.capital_gain, Money(150))
-
-        account.next_year()
-        # Expect $0 balance, $0 acb, and (initially) $0 capital gains
-        self.assertEqual(account.balance, Money(0))
-        self.assertEqual(account.acb, Money(0))
-        self.assertEqual(account.capital_gain, Money(0))
-        # Add inflow in the new year. It will grow by 100%.
+        # Add a $100 start-of-year transaction. This should increase
+        # ACB (to $150), but doesn't change capital gains:
         account.add_transaction(100, 'start')
-        self.assertEqual(account.acb, Money(0))
-        self.assertEqual(account.capital_gain, Money(0))
-
-        account.next_year()
-        # Expect $200 balance
-        self.assertEqual(account.acb, Money(100))
-        self.assertEqual(account.capital_gain, Money(0))
+        # Withdraw the entire starting balance.
         account.add_transaction(-200, 'start')
-        self.assertEqual(account.acb, Money(100))
+        # Regardless of the transaction, capital gain is only $50:
+        self.assertEqual(account.capital_gain, Money(50))
+        # ACB is unchanged, since it's the start of year figure:
+        self.assertEqual(account.acb, Money(50))
+
+    def test_capital_gain_real_end(self, *args, **kwargs):
+        """ Test capital gains realized at end of year. """
+        # Init account with $50 acb.
+        # Balance is $100, of which $50 is capital gains.
+        account = self.AccountType(
+            self.owner, *args,
+            acb=50, balance=100, rate=1, **kwargs)
+        # Add a $100 start-of-year transaction. This should increase
+        # ACB to $150; the end of year balance will be $400, with $250
+        # in capital gains:
+        account.add_transaction(100, 'start')
+        # Withdraw the entire ending balance.
+        account.add_transaction(-400, 'end')
+        self.assertEqual(account.capital_gain, Money(250))
+        # ACB is unchanged, since it's the start of year figure:
+        self.assertEqual(account.acb, Money(50))
+
+    def test_capital_gain_real_partial(self, *args, **kwargs):
+        """ Test capital gains only partially realized. """
+        # Init account with $100 acb, no capital gains.
+        account = self.AccountType(
+            self.owner, *args,
+            acb=100, balance=100, rate=1, **kwargs)
+        # Add a $100 start-of-year transaction. ACB is now $200.
+        # The ending balance will be $400, with $200 in capital gains:
+        account.add_transaction(100, 'start')
+        # Withdraw half the ending balance.
+        account.add_transaction(-200, 'end')
+        # Capital gains should be half of the total gains, i.e. $100
         self.assertEqual(account.capital_gain, Money(100))
+        # ACB is unchanged, since it's the start of year figure:
+        self.assertEqual(account.acb, Money(100))
 
-    def test_taxable_income(self, *args, **kwargs):
-        """ Test TaxableAccount.taxable_income. """
+    def test_capital_gain_real_next(self, *args, **kwargs):
+        """ Test realized capital gains followed by next_year. """
         # Init account with $50 acb.
+        # Balance is $100, of which $50 is capital gains.
+        account = self.AccountType(
+            self.owner, *args,
+            acb=50, balance=100, rate=1, **kwargs)
+        # Add a start-of-year inflow to make it interesting.
+        # Increases ACB by $100 to $150 and the ending balance to $400.
+        account.add_transaction(100, 'start')
+        # Withdraw half the end-of-year balance ($200).
+        # Of this, $125 is capital gain. ACB is halved to $75.
+        account.add_transaction(-200, 'end')
+        account.next_year()
+        # ACB should be updated at the start of the year to $75:
+        self.assertEqual(account.acb, Money(75))
+        # Capital gains are back to $0:
+        self.assertEqual(account.capital_gain, Money(0))
+
+    def test_taxable_income_zero(self, *args, **kwargs):
+        """ Test TaxableAccount.taxable_income with no sales. """
         # Balance is $100, of which $50 is capital gains.
         account = self.AccountType(
             self.owner, *args,
             acb=50, balance=100, rate=1, **kwargs)
         # No capital gains are realized yet, so capital_gains=$0
         self.assertEqual(account.taxable_income, Money(0))
-        # Withdrawal the entire end-of-year balance.
+
+    def test_taxable_income_gain(self, *args, **kwargs):
+        """ Test TaxableAccount.taxable_income with withdrawal on gain. """
+        # Initial balance is $100, of which $50 is capital gains.
+        account = self.AccountType(
+            self.owner, *args,
+            acb=50, balance=100, rate=1, **kwargs)
+        # Withdraw the entire end-of-year balance ($200).
         account.add_transaction(-200, 'end')
-        self.assertEqual(account.taxable_income, Money(150) / 2)
+        # Capital gains are $150, of which half is taxable income.
+        self.assertEqual(account.taxable_income, Money(75))
 
+    def test_taxable_income_gain_next(self, *args, **kwargs):
+        """ Test taxable_income after calling next_year post-withdrawal. """
+        # Initial balance is $100, of which $50 is capital gains.
+        account = self.AccountType(
+            self.owner, *args,
+            acb=50, balance=100, rate=1, **kwargs)
+        # Withdraw the entire end-of-year balance ($200).
+        account.add_transaction(-200, 'end')
+        # Capital gains are $150, of which half is taxable income.
         account.next_year()
-        # Expect $0 balance, $0 acb, and (initially) $0 capital gains
-        self.assertEqual(account.taxable_income, Money(0))
-        # Add inflow in the new year. It will grow by 100%.
+        # Should have $0 acb and $0 balance.
+        # Add $100 to account at start of year
         account.add_transaction(100, 'start')
-        self.assertEqual(account.taxable_income, Money(0))
+        # It will grow to $200 by end of year; withdraw it all:
+        account.add_transaction(-200, 'end')
+        # Taxable income should be $50 (half of $100 growth);
+        # if next_year failed to track acb correctly then we'll get
+        # a different result.
+        self.assertEqual(account.taxable_income, Money(50))
 
-        account.next_year()
-        # Expect $200 balance
-        self.assertEqual(account.taxable_income, Money(0))
-        account.add_transaction(-200, 'start')
-        self.assertEqual(account.taxable_income, Money(100) / 2)
+    def test_taxable_income_loss(self, *args, **kwargs):
+        """ Test taxable_income with withdrawal on loss. """
+        # Initial balance is $100, of which $25 is capital gains.
+        # This account will lose half of its value by the end of year.
+        account = self.AccountType(
+            self.owner, *args,
+            acb=75, balance=100, rate=-0.5, **kwargs)
+        # Withdraw the entire end-of-year balance ($50).
+        account.add_transaction(-50, 'end')
+        # Capital loss of $25 was incurred. That's halved to -$12.50:
+        self.assertEqual(account.taxable_income, Money(-12.50))
 
 if __name__ == '__main__':
     # NOTE: BasicContext is useful for debugging, as most errors are treated
     # as exceptions (instead of returning "NaN"). It is lower-precision than
     # ExtendedContext, which is the default.
     decimal.setcontext(decimal.BasicContext)
-    unittest.main()
+    unittest.TextTestRunner().run(
+        unittest.TestLoader().loadTestsFromName(__name__))
