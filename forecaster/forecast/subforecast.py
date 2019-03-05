@@ -2,6 +2,7 @@
 
 from collections import defaultdict
 from collections.abc import Hashable
+from decimal import Decimal
 from forecaster.ledger import Ledger, Money, recorded_property
 from forecaster.accounts import Account
 from forecaster.utility import Timing
@@ -262,7 +263,9 @@ class SubForecast(Ledger):
         if not isinstance(value, Money):
             value = Money(value)
         if timings is None:
-            timing = Timing()
+            # TODO: Add default_timings to this class and use that here
+            # instead of a new Timing object?
+            timings = Timing()
 
         # For convenience, ensure that we're withdrawing from
         # from_account and depositing to to_account:
@@ -276,8 +279,9 @@ class SubForecast(Ledger):
         # Add a transaction at each timing, with a transaction value
         # proportionate to the (normalized) weight for its timing:
         for timing, weight in timings.items():
+            weighted_value = value * Decimal(weight / total_weight)
             self._add_transaction(
-                value=value * (weight / total_weight), when=timing,
+                value=weighted_value, when=timing,
                 from_account=from_account, to_account=to_account,
                 strict_timing=strict_timing)
 
