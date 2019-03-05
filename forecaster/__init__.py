@@ -24,3 +24,4 @@ from forecaster.forecast import (
     ContributionForecast, ReductionForecast, WithdrawalForecast,
     TaxForecast)
 from forecaster.forecaster import Forecaster, Parameter
+from forecaster.utility import Timing

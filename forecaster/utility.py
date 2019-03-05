@@ -38,8 +38,9 @@ class Timing(dict):
         """ Initializes a Timing dict. """
         # Get an empty dict:
         super().__init__()
-        # Process `when` to ensure it's numeric:
+        # Process arguments to ensure they're numeric:
         when = when_conv(when)
+        frequency = frequency_conv(frequency)
         # Each transaction has equal weight:
         weight = 1 / frequency
         # Build the dict:
