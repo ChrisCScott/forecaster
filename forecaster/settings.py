@@ -51,12 +51,10 @@ class Settings:
     ''' ContributionStrategy defaults '''
     contribution_strategy = 'Ordered'
     contribution_weights = {'Account': 1}
-    contribution_timing = 'end'
 
     ''' WithdrawalStrategy defaults '''
     withdrawal_strategy = 'Ordered'
     withdrawal_weights = {'Account': 1}
-    withdrawal_timing = 'end'
 
     ''' AllocationStrategy defaults '''
     allocation_strategy = 'n-age'
@@ -69,7 +67,6 @@ class Settings:
 
     ''' DebtPaymentStrategy defaults '''
     debt_payment_strategy = 'Avalanche'
-    debt_payment_timing = 'end'
 
     ''' Tax defaults '''
     tax_brackets = {initial_year: {Decimal(0): Decimal(0)}}

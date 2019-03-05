@@ -121,11 +121,6 @@ class AccountTransactionStrategy(Strategy):
             types (as class names, e.g. 'RRSP', 'SavingsAccount') and
             weight values indicate how much to prioritize the
             corresponding account.
-        timing (str, Decimal): Transactions are modelled as lump sums
-            which take place at this time.
-
-            This is expressed according to the `when` convention
-            described in `ledger.Account`.
 
     Args:
         total (Money): The sum of transactions (positive, for
@@ -139,12 +134,11 @@ class AccountTransactionStrategy(Strategy):
         a subset of the input `accounts` keys and the values are the
         corresponding transaction amount for that account.
     """
-    def __init__(self, strategy, weights, timing='end'):
+    def __init__(self, strategy, weights):
         """ Constructor for TransactionStrategy. """
         super().__init__(strategy)
 
         self.weights = weights
-        self.timing = timing
 
         self._param_check(self.weights, 'weights', dict)
         for key, val in self.weights.items():
@@ -152,11 +146,7 @@ class AccountTransactionStrategy(Strategy):
             # TODO: Check that val is Decimal-convertible instead of
             # a rigid type check?
             self._param_check(
-                val, 'account weight (value)', (Decimal, float, int)
-            )
-        # NOTE: We leave it to calling code to interpret str-valued
-        # timing. (We could convert to `When` here - consider it.)
-        self._param_check(self.timing, 'timing', (Decimal, str))
+                val, 'account weight (value)', (Decimal, float, int))
 
     @strategy_method('Ordered')
     def strategy_ordered(self, total, weighted_accounts, *args, **kwargs):
@@ -520,10 +510,14 @@ class AccountTransactionStrategy(Strategy):
         finite_accounts = {}
         infinite_accounts = set()
         for account in group:
-            limit = (
-                account.max_inflow() if total >= 0 else
-                account.max_outflow(self.timing)
-            )
+            # Identify max inflow or outflow, as appropriate:
+            # TODO: Deal with timings for inflows and outflows, since
+            # the amount that we can move in/out is timing-dependent:
+            if total >= 0:
+                limit = account.max_inflow()
+            else:
+                limit = account.max_outflow()
+            # Cap transaction amount at the limit if it's too large:
             if Money('-Infinity') < limit < Money('Infinity'):
                 finite_accounts[account] = limit
             else:

@@ -1,6 +1,5 @@
 """ Provides a class for determining schedules of debt payments. """
 
-from decimal import Decimal
 from forecaster.strategy.base import Strategy, strategy_method
 from forecaster.ledger import Money
 
@@ -21,12 +20,6 @@ class DebtPaymentStrategy(Strategy):
             * "Snowball"
             * "Avalanche"
 
-        timing (str, Decimal): Transactions are modelled as lump sums
-            which take place at this time.
-
-            This is expressed according to the `when` convention
-            described in `ledger.Account`.
-
     Args:
         available (Money): The total amount available for repayment
             across all accounts.
@@ -37,17 +30,6 @@ class DebtPaymentStrategy(Strategy):
         is one of the input accounts and each Money object is a
         transaction for that account.
     """
-
-    def __init__(self, strategy, timing='end'):
-        """ Constructor for DebtPaymentStrategy. """
-
-        super().__init__(strategy)
-
-        self.timing = timing
-
-        # NOTE: We leave it to calling code to interpret str-valued
-        # timing. (We could convert to `When` here - consider it.)
-        self._param_check(self.timing, 'timing', (Decimal, str))
 
     def _strategy_ordered(self, sorted_debts, available, assign_minimums=True):
         """ Proposes transactions based on an ordered list of debts.
@@ -74,7 +56,8 @@ class DebtPaymentStrategy(Strategy):
                 # Add the minimum payment (this method accounts for
                 # any pre-existing inflows and only returns the
                 # minimum *additional* inflows)
-                transactions[debt] += debt.min_inflow(when=self.timing)
+                # TODO: Deal with timing
+                transactions[debt] += debt.min_inflow()
                 # And reduce the amount available for further payments
                 # based on this debt's savings/living expenses settings:
                 available -= debt.payment_from_savings(
@@ -92,8 +75,9 @@ class DebtPaymentStrategy(Strategy):
             # left:
             payment = debt.payment(
                 savings_available=available,
-                other_payments=transactions[debt],
-                when=self.timing
+                other_payments=transactions[debt]
+                # TODO: Deal with timing
+                # when=self.timing
             )
 
             # Reduce the pool of money remaining for further
