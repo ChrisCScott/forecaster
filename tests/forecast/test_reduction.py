@@ -5,7 +5,7 @@ from decimal import Decimal
 from collections import defaultdict
 from forecaster import (
     Money, Person, ReductionForecast,
-    DebtPaymentStrategy, Debt, Tax)
+    DebtPaymentStrategy, Debt, Tax, Timing)
 
 
 class TestReductionForecast(unittest.TestCase):
@@ -18,6 +18,7 @@ class TestReductionForecast(unittest.TestCase):
         tax = Tax(tax_brackets={
             self.initial_year: {Money(0): Decimal(0.5)}})
         # Debt accounts need an owner:
+        timing = Timing(frequency='BW')
         self.person = Person(
             initial_year=self.initial_year,
             name="Test",
@@ -25,7 +26,7 @@ class TestReductionForecast(unittest.TestCase):
             retirement_date="31 December 2045",
             gross_income=Money(5200),
             tax_treatment=tax,
-            payment_frequency='BW')
+            payment_timing=timing)
         # We want at least two debt accounts which are repaid
         # in different orders depending on whether the strategy
         # is avalanche or snowball.
@@ -33,14 +34,14 @@ class TestReductionForecast(unittest.TestCase):
             owner=self.person,
             balance=Money(-1000),  # Low balance ($1000)
             rate=Decimal(0),  # Low interest (0%)
-            payment_frequency='M',  # Monthly payments
+            payment_timing=Timing(frequency='M'),  # Monthly payments
             minimum_payment=Money(10)
         )
         self.debt_large = Debt(
             owner=self.person,
             balance=Money(-5000),  # High balance ($5000)
             rate=Decimal(1),  # High interest (100%)
-            payment_frequency='BM',  # Bimonthly payments
+            payment_timing=Timing(frequency='BM'),  # Bimonthly payments
             minimum_payment=Money(20)
         )
         # For additional tests, set up a debt where the

@@ -74,7 +74,7 @@ class WithdrawalForecast(SubForecast):
         # and withdraw whenever we dip into negative balance.
         for when in sorted(available.keys()):
             accum += available[when]
-            timings = Timing(when=when)
+            timing = Timing(when=when)
             if accum < 0:  # negative balance - time to withdraw!
                 # Withdraw however much we're short by:
                 withdrawal = -accum
@@ -88,7 +88,7 @@ class WithdrawalForecast(SubForecast):
                     # (not accounting for withholdings):
                     self.add_transaction(
                         value=account_transaction,
-                        timings=timings,
+                        timing=timing,
                         from_account=account,
                         to_account=available,
                         strict_timing=True
@@ -101,7 +101,7 @@ class WithdrawalForecast(SubForecast):
                     if new_withholding > 0:
                         self.add_transaction(
                             value=new_withholding,
-                            timings=timings,
+                            timing=timing,
                             from_account=available,
                             to_account=None,
                             strict_timing=True

@@ -3,7 +3,7 @@
 import unittest
 from decimal import Decimal
 from forecaster import (
-    Money, Person, IncomeForecast, Tax)
+    Money, Person, IncomeForecast, Tax, Timing)
 
 
 class TestIncomeForecast(unittest.TestCase):
@@ -16,6 +16,7 @@ class TestIncomeForecast(unittest.TestCase):
         tax = Tax(tax_brackets={
             self.initial_year: {Money(0): Decimal(0.5)}})
         # A person who is paid $200 gross ($100 net) every 2 weeks:
+        timing = Timing(frequency='BW')
         self.person1 = Person(
             initial_year=self.initial_year,
             name="Test 1",
@@ -23,7 +24,7 @@ class TestIncomeForecast(unittest.TestCase):
             retirement_date="31 December 2045",
             gross_income=Money(5200),
             tax_treatment=tax,
-            payment_frequency='BW')
+            payment_timing=timing)
         # A person who is paid $100 gross ($50 net) every 2 weeks:
         self.person2 = Person(
             initial_year=self.initial_year,
@@ -32,7 +33,7 @@ class TestIncomeForecast(unittest.TestCase):
             retirement_date="31 December 2047",
             gross_income=Money(2600),
             tax_treatment=tax,
-            payment_frequency='BW')
+            payment_timing=timing)
         self.forecast = IncomeForecast(
             initial_year=self.initial_year,
             people={self.person1, self.person2})
@@ -76,9 +77,10 @@ class TestIncomeForecast(unittest.TestCase):
         # Assuming there are no other inflows or outflows (and, since
         # this is the first year, there shouldn't be as there are no
         # carryovers), the sum of inflows should be 150*26=3900
-        self.assertEqual(
+        self.assertAlmostEqual(
             sum(self.forecast.transactions[available].values()),
-            Money(3900))
+            Money(3900),
+            places=2)
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(

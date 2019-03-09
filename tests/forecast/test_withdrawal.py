@@ -3,7 +3,7 @@
 import unittest
 from decimal import Decimal
 from forecaster import (
-    Money, Person, Tax,
+    Money, Person, Tax, Timing,
     WithdrawalForecast,
     AccountTransactionStrategy,
     Account, ContributionLimitAccount)
@@ -19,6 +19,7 @@ class TestWithdrawalForecast(unittest.TestCase):
         tax = Tax(tax_brackets={
             self.initial_year: {Money(0): Decimal(0.5)}})
         # Accounts need an owner:
+        timing = Timing(frequency='BW')
         self.person = Person(
             initial_year=self.initial_year,
             name="Test",
@@ -26,7 +27,7 @@ class TestWithdrawalForecast(unittest.TestCase):
             retirement_date="31 December 1999",  # last year
             gross_income=Money(5200),
             tax_treatment=tax,
-            payment_frequency='BW')
+            payment_timing=timing)
         # We want at least two accounts which are withdrawn from
         # in different orders depending on the strategy.
         self.account = Account(

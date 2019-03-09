@@ -122,8 +122,9 @@ class Person(TaxSource):
         if payment_timing is None:
             # Timing is technically mutable, so init it here rather than
             # using "Timing()" as a default value.
-            payment_timing = Timing()
-        self.payment_timing = payment_timing
+            self.payment_timing = Timing()
+        else:
+            self.payment_timing = Timing(payment_timing)
 
         # For attributes wrapped by ordinary properties, create hidden
         # attributes and assign to them using the properties:

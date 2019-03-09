@@ -16,6 +16,8 @@ class ReductionForecast(SubForecast):
             transactions for any debt payments during the year.
             See the documentation for `DebtPaymentStrategy`
             for acceptable args when calling this object.
+        other_timing (Timing): The timing of "other" contribution
+            reductions (i.e. not debt repayments).
 
     Attributes:
         reduction_from_debt (dict[int, Money]): The amount to be
@@ -34,13 +36,14 @@ class ReductionForecast(SubForecast):
     # attributes return subscriptable objects.
 
     def __init__(
-            self, initial_year, debts, debt_payment_strategy):
+            self, initial_year, debts, debt_payment_strategy,
+            other_timing=None):
         """ Initializes an instance of ReductionForecast. """
         # Recall that, as a Ledger object, we need to call the
         # superclass initializer and let it know what the first
         # year is so that `this_year` is usable.
         # NOTE Issue #53 removes this requirement.
-        super().__init__(initial_year)
+        super().__init__(initial_year, default_timing=other_timing)
         # Store attributes:
         self.debts = debts
         self.debt_payment_strategy = debt_payment_strategy
@@ -53,11 +56,9 @@ class ReductionForecast(SubForecast):
 
         # First determine miscellaneous other reductions.
         # (These take priority because they're generally user-input.)
-        # Assume we make these payments at the end of each month.
-        other_timings = Timing(when=1, frequency=12)
         self.add_transaction(
             value=self.reduction_from_other,
-            timings=other_timings,
+            timing=self.default_timing,
             from_account=available,
             to_account=None)
 
@@ -66,7 +67,7 @@ class ReductionForecast(SubForecast):
             # Track the savings portion against `available`:
             self.add_transaction(
                 value=self.payments_from_available[debt],
-                timings=debt.payment_timing,
+                timing=debt.payment_timing,
                 from_account=available,
                 to_account=debt)
             # Track the non-savings portion as well, but don't deduct
@@ -75,7 +76,7 @@ class ReductionForecast(SubForecast):
                 value=(
                     self.account_transactions[debt]
                     - self.payments_from_available[debt]),
-                timings=debt.payment_timing,
+                timing=debt.payment_timing,
                 from_account=None,
                 to_account=debt)
 

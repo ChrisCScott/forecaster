@@ -49,7 +49,7 @@ class ContributionForecast(SubForecast):
         for account in self.account_transactions:
             self.add_transaction(
                 value=self.account_transactions[account],
-                timings=timings,
+                timing=timings,
                 from_account=available,
                 to_account=account)
 
