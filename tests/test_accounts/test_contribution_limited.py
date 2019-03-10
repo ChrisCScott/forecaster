@@ -75,20 +75,32 @@ class TestContributionLimitAccountMethods(TestAccountMethods):
         self.assertEqual(account.contribution_room,
                          self.contribution_room)
 
-    def test_max_inflow_pos(self, *args, **kwargs):
-        """ Test max_inflow with positive balance. """
+    def test_max_inflows_pos(self, *args, **kwargs):
+        """ Test max_inflows with positive balance """
+        # Need to pass the superclass a suitable `contribution_room`
+        super().test_max_outflows_negative(
+            contribution_room=self.contribution_room)
+
+    def test_max_inflows_neg(self, *args, **kwargs):
+        """ Test max_inflows with negative balance """
+        # Need to pass the superclass a suitable `contribution_room`
+        super().test_max_outflows_negative(
+            contribution_room=self.contribution_room)
+
+    def test_max_inflow(self, *args, **kwargs):
+        """ Test max_inflow matches contribution room. """
         # Init an account with standard parameters, confirm that
         # max_inflow corresponds to contribution_room.
         account = self.AccountType(
             self.owner, *args,
             contribution_room=self.contribution_room, **kwargs)
-        self.assertEqual(account.max_inflow(), self.contribution_room)
+        self.assertEqual(account.max_inflow, self.contribution_room)
 
-    def test_max_inflow_neg(self, *args, **kwargs):
-        """ Test max_inflow with negative balance. """
-        # Account balance is irrelevant to this type of account.
-        # Should yield same result as test_max_inflow_pos
-        self.test_max_inflow_pos(*args, **kwargs)
+    def test_max_outflows_negative(self, *args, **kwargs):
+        """ Test max_outflows with negative-balance account. """
+        # Need to pass the superclass a suitable `contribution_room`
+        super().test_max_outflows_negative(
+            contribution_room=self.contribution_room)
 
     def test_contribution_room_basic(self, *args, **kwargs):
         """ Test sharing of contribution room between accounts. """
