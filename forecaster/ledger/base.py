@@ -1,4 +1,4 @@
-""" TODO """
+""" Module providing the Ledger base type and associated classes. """
 
 import inspect
 from forecaster.ledger.money import Money
@@ -149,7 +149,7 @@ class TaxSource(Ledger):
         """ Taxable income for the given year.
 
         Subclasses should override this method rather than the
-        taxable_income and _taxable_income_history properties.
+        _taxable_income and _taxable_income_history properties.
         """
         return Money(0)
 
@@ -158,7 +158,7 @@ class TaxSource(Ledger):
         """ Tax withheld for the given year.
 
         Subclasses should override this method rather than the
-        tax_withheld and _tax_withheld_history properties.
+        _tax_withheld and _tax_withheld_history properties.
         """
         return Money(0)
 
@@ -167,7 +167,7 @@ class TaxSource(Ledger):
         """ Tax credit for the given year.
 
         Subclasses should override this method rather than the
-        tax_credit and _tax_credit_history properties.
+        _tax_credit and _tax_credit_history properties.
         """
         return Money(0)
 
@@ -176,6 +176,6 @@ class TaxSource(Ledger):
         """ Tax deduction for the given year.
 
         Subclasses should override this method rather than the
-        tax_deduction and _tax_deduction_history properties.
+        _tax_deduction and _tax_deduction_history properties.
         """
         return Money(0)
