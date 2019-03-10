@@ -3,7 +3,6 @@
 from decimal import Decimal
 from forecaster.accounts.base import Account
 from forecaster.ledger import Money
-from forecaster.utility import Timing
 
 class Debt(Account):
     """ A debt with a balance and an interest rate.
@@ -32,7 +31,7 @@ class Debt(Account):
             Debts may be accelerated by as much as possible by setting
             this argument to `Money('Infinity')`, or non-accelerated
             by setting this argument to `Money(0)`.
-        payment_timing (Timing, dict[float, float]): The timings of
+        default_timing (Timing, dict[float, float]): The timings of
             payments and the weight of each payment timing. Optional.
     """
 
@@ -42,7 +41,7 @@ class Debt(Account):
             inputs=None, initial_year=None, minimum_payment=Money(0),
             living_expense=Money(0), savings_rate=1,
             accelerated_payment=Money('Infinity'),
-            payment_timing=None,
+            default_timing=None,
             **kwargs):
         """ Constructor for `Debt`. """
 
@@ -61,17 +60,14 @@ class Debt(Account):
         # Apply generic Account logic:
         super().__init__(
             owner, balance=balance, rate=rate, nper=nper,
-            inputs=inputs, initial_year=initial_year, **kwargs)
+            inputs=inputs, initial_year=initial_year,
+            default_timing=default_timing, **kwargs)
 
         # Set up (and type-convert) Debt-specific inputs:
         self.minimum_payment = minimum_payment
         self.living_expense = living_expense
         self.savings_rate = savings_rate
         self.accelerated_payment = accelerated_payment
-
-        if payment_timing is None:
-            payment_timing = Timing()
-        self.payment_timing = payment_timing
 
         # Debt must have a negative balance
         if self.balance > 0:
@@ -117,44 +113,32 @@ class Debt(Account):
     def accelerated_payment(self, val):
         self._accelerated_payment = Money(val)
 
-    def min_inflow(self, when='end'):
-        """ The minimum payment on the debt. """
-        return min(
-            -self.balance_at_time(when),
-            max(
-                self.minimum_payment - self.inflows,
-                Money(0))
-        )
+    @property
+    def min_inflow(self):
+        """ The minimum annual payment on the debt. """
+        return self.minimum_payment
 
-    def max_inflow(self, when='end'):
-        """ The payment at time `when` that would reduce balance to 0.
+    @property
+    def max_inflow(self):
+        """ The maximum annual payment on the debt. """
+        return self.minimum_payment + self.accelerated_payment
 
-        This is in addition to any existing payments in the account,
-        so if an inflow is added `max_inflow` will be reduced.
+    @property
+    def max_outflow(self):
+        """ The maximum annual withdrawals from the debt account. """
+        return Money(0)
 
-        Example::
-
-                debt = Debt(-100)
-                debt.maximum_payment('start') == Money(100)  # True
-                debt.add_transaction(100, 'start')
-                debt.maximum_payment('start') == 0  # True
-
-        """
-        return min(
-            -self.balance_at_time(when),
-            max(
-                self.minimum_payment
-                + self.accelerated_payment
-                - self.inflows,
-                Money(0))
-        )
-
-    def payment(
+    def max_payment(
             self, savings_available=Money(0),
             living_expenses_available=Money('Infinity'),
             other_payments=Money(0),
-            when='end'):
+            timing=None):
         """ Calculates the maximum payment amount for the year.
+
+        Unlike `max_inflow` or `max_inflows`, this method bases its
+        calculation on the amount of money available for repayment,
+        split up into pools of savings, living expenses (which each may
+        have limits on their use), and other payments.
 
         Args:
             savings_available (Money): The amount available from
@@ -165,8 +149,8 @@ class Debt(Account):
             other_payments (Money): An amount of money that is
                 planned for payment to this debt but which has
                 not yet been recorded as an inflow. Optional.
-            when (str, Decimal): The date at which the payment
-                is to occur.
+            timing (Timing): The times at which the payments
+                are to occur, along with weights for each payment.
 
         Returns:
             Money: The maximum payment amount that can be made to
@@ -185,13 +169,11 @@ class Debt(Account):
         # expenses (i.e. before drawing down any savings)
         base_living_expense = max(
             self.living_expense - (self.inflows + other_payments),
-            Money(0)
-        )
+            Money(0))
         # Apply the base living amount right up-front:
         payment = min(
             base_living_expense,
-            living_expenses_available
-        )
+            living_expenses_available)
         living_expenses_available -= payment
 
         # Deal with the special cases where we withdraw 0% from
@@ -216,10 +198,8 @@ class Debt(Account):
         payment += min(max_savings, max_living)
 
         # The payment shouldn't exceed the maximum inflow:
-        return min(
-            self.max_inflow(when) - other_payments,
-            payment
-        )
+        max_inflow = sum(self.max_inflows(timing)) - other_payments
+        return min(max_inflow, payment)
 
     def payment_from_savings(self, amount=None, base=Money(0)):
         """ The amount of annual payments made from savings.

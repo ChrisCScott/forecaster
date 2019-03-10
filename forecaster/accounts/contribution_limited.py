@@ -151,6 +151,7 @@ class ContributionLimitAccount(Account):
             'RegisteredAccount: next_contribution_room is not implemented. '
             + 'Subclasses must override this method.')
 
-    def max_inflow(self, when='end'):
-        """ Limits outflows based on available contribution room. """
-        return self.contribution_room_history[self.this_year]
+    @property
+    def max_inflow(self):
+        """ Limits outflows based on contribution room for the year. """
+        return self.contribution_room

@@ -1,4 +1,4 @@
-""" TODO """
+""" Provides a Canadian taxable investment account. """
 
 from forecaster.accounts import Account
 from forecaster.ledger import (
@@ -34,7 +34,8 @@ class TaxableAccount(Account):
 
     def __init__(
             self, owner, balance=0, rate=0,
-            nper=1, inputs=None, initial_year=None, acb=None, **kwargs):
+            nper=1, inputs=None, initial_year=None, default_timing=None,
+            acb=None, **kwargs):
         """ Constructor for `TaxableAccount`.
 
         See documentation for `Account` for information on args not
@@ -50,7 +51,8 @@ class TaxableAccount(Account):
 
         super().__init__(
             owner=owner, balance=balance, rate=rate, nper=nper,
-            inputs=inputs, initial_year=initial_year, **kwargs)
+            inputs=inputs, initial_year=initial_year,
+            default_timing=default_timing, **kwargs)
 
         # If acb wasn't provided, assume there have been no capital
         # gains or losses, so acb = balance.

@@ -6,7 +6,7 @@ from decimal import Decimal
 from forecaster.person import Person
 from forecaster.ledger import (
     Money, TaxSource, recorded_property, recorded_property_cached)
-from forecaster.utility import when_conv, frequency_conv
+from forecaster.utility import Timing, when_conv, frequency_conv
 
 class Account(TaxSource):
     """ An account storing a `Money` balance.
@@ -97,7 +97,8 @@ class Account(TaxSource):
 
     def __init__(
             self, owner=None,
-            balance=0, rate=0, nper=1, inputs=None, initial_year=None):
+            balance=0, rate=0, nper=1,
+            inputs=None, initial_year=None, default_timing=None):
         """ Constructor for `Account`.
 
         This constructor receives only values for the first year.
@@ -128,6 +129,20 @@ class Account(TaxSource):
             else:
                 initial_year = owner.initial_year
         super().__init__(initial_year=initial_year, inputs=inputs)
+
+        if default_timing is None:
+            # Use default timing if none was given (i.e. lump sum
+            # at when=0.5)
+            self.default_timing = Timing()
+        elif not isinstance(default_timing, Timing):
+            # If `Timing` wasn't provided, try to convert to Timing
+            # object (this will convert `when` strings and dicts)
+            self.default_timing = Timing(default_timing)
+        else:
+            # If Timing was passed in, just use that. This class will
+            # not mutate it. If someday we decide to mutate this attr,
+            # you can copy it with a simple `Timing(default_timing)`
+            self.default_timing = default_timing
 
         # Set hidden attributes to support properties that need them to
         # be set in advance:
@@ -345,51 +360,59 @@ class Account(TaxSource):
         # `clear` will affect past-year records.)
         self._transactions = defaultdict(lambda: Money(0))
 
-    def max_outflow(self, when='end'):
+    @property
+    def max_outflow(self):
         """ The maximum amount that can be withdrawn from the account.
 
-        Args:
-            when (When): The timing of the transaction.
+        This property provides a scalar value representing the largest
+        possible outflow for this account, ignoring timing or the
+        current balance. For example, if there is no limit on outflows,
+        this returns Money('Infinity'), regardless of the balance.
+
+        In most cases you probably want to determine the maximum
+        amount that can actually be withdrawn at the current balance.
+        For that, use `max_outflows`.
 
         Returns:
-            A value which, if withdrawn at time `when`, would make the
-            account balance 0 at the end of the year, after all
-            transactions are accounted for.
+            The maximum value that can be withdrawn from the account.
         """
-        # If the balance is positive, the max outflow is simply the
-        # current balance (but negative). If the balance is negative,
-        # then there's no further outflows to be made.
-        return min(-self.balance_at_time(when), Money(0))
+        # For an ordinary Account, there is no limit on withdrawals.
+        return Money('-Infinity')
 
-    def max_inflow(self, when='end'):
-        """ The maximum amount that can be contributed to the account. """
-        # Subclasses may provide a `when` argument, so provide that here
-        # for consistency (even though it's unused):
-        # pylint: disable=unused-argument,no-self-use
+    @property
+    def max_inflow(self):
+        """ The maximum amount that can be contributed to the account.
 
-        # For non-registered accounts, there is no maximum
+        This method uses the same semantics as `max_outflow`, except
+        for inflows.
+        """
+        # For an ordinary Account, there is no limit on contributions.
         return Money('Infinity')
 
-    def min_outflow(self, when='end'):
-        """ The minimum amount to be withdrawn from the account. """
-        # Subclasses may provide a `when` argument, so provide that here
-        # for consistency (even though it's unused):
-        # pylint: disable=unused-argument,no-self-use
+    @property
+    def min_outflow(self):
+        """ The minimum amount to be withdrawn from the account.
 
-        # For non-registered accounts, there is no minimum
+        This method uses the same semantics as `max_outflow`, except
+        it provides the minimum.
+        """
+        # For an ordinary Account, there is no minimum withdrawal
         return Money('0')
 
-    def min_inflow(self, when='end'):
-        """ The minimum amount to be contributed to the account. """
-        # Subclasses may provide a `when` argument, so provide that here
-        # for consistency (even though it's unused):
-        # pylint: disable=unused-argument,no-self-use
+    @property
+    def min_inflow(self):
+        """ The minimum amount to be contributed to the account.
 
-        # For non-registered accounts, there is no minimum
+        This method uses the same semantics as `max_outflow`, except
+        it provides the minimum for inflows.
+        """
+        # For an ordinary Account, there is no minimum contribution.
         return Money('0')
 
-    def transactions_to_balance(self, timings, balance, max_transactions=None):
-        """ The amounts to add/withdraw at `timings` to get `balance`.
+    def transactions_to_balance(
+            self, balance, timing=None,
+            max_total=None, min_total=None):
+        """ The amounts to add/withdraw at `timing` to get `balance`.
 
         The return value satisfies two criteria:
 
@@ -408,13 +431,15 @@ class Account(TaxSource):
         the account.
 
         Arguments:
-            timings (dict[float, float]): A mapping of `{when: weight}`
-                pairs.
+            timing (Timing): A mapping of `{when: weight}` pairs.
             balance (Money): The balance of the Account would
                 have after applying the outflows.
-            max_transactions (Money): If provided, the resulting
-                transactions will not exceed this total value (even if
-                this value is not sufficient to achieve balance)
+            max_total (Money): If provided, the resulting transactions
+                will not exceed this total value (even if this value is
+                not sufficient to achieve `balance`)
+            min_total (Money): If provided, the resulting transactions
+                will be at least this total value (even if this value is
+                larger than necessary to achieve `balance`)
 
         Returns:
             dict[float, Money]: A mapping of `{when: value}` pairs where
@@ -427,13 +452,21 @@ class Account(TaxSource):
         # applied to the account (via balance_at_time):
         ref_balance = self.balance_at_time('end')
         change = balance - ref_balance
+
+        # Clean inputs:
+        if timing is None:
+            # Use default timing if none was explicitly provided.
+            timing = self.default_timing
+        elif not isinstance(timing, Timing):
+            # Convert timing from str or dict if appropriate:
+            timing = Timing(timing)
         # Weights aren't guaranteed to sum to 1, so normalize them so
         # they do. This will help later.
         # (Also convert to Decimal to avoid Decimal/float mismatch.)
-        total_weight = Decimal(sum(timings.values()))
+        total_weight = Decimal(sum(timing.values()))
         normalized_timing = {
             when: Decimal(weight) / total_weight
-            for when, weight in timings.items()}
+            for when, weight in timing.items()}
 
         # We want the value at each timing to be proportional to its
         # weight. This calls for math.
@@ -461,17 +494,18 @@ class Account(TaxSource):
                 nper=self.nper)
         total = change / weighted_accum
 
-        # Cap total transaction value at `max_transactions` if it was
-        # provided:
-        if max_transactions is not None:
-            total = min(total, max_transactions)
+        # Limit total transaction value based on args:
+        if max_total is not None:
+            total = min(total, max_total)
+        if min_total is not None:
+            total = max(total, min_total)
 
-        # Now find v_j for each t_j by applying normalized weights to
-        # the total:
-        outflows = {
+        # Now find value (v_j) for each timing (t_j) by applying
+        # normalized weights to the total:
+        transactions = {
             timing: total * weight
             for timing, weight in normalized_timing.items()}
-        return outflows
+        return transactions
 
     def max_outflows(self, timing):
         """ The maximum amounts that can be withdrawn at `timings`.
@@ -495,7 +529,21 @@ class Account(TaxSource):
                 that time such that, by the end of the year, the
                 Account's balance is $0.
         """
-        return self.transactions_to_balance(timing, Money(0))
+        # Outflows are limited by the account balance:
+        balance = Money(0)
+        # Ensure that only negative amounts are returned:
+        max_total = Money(0)
+        # Limit to max total outflows, accounting for any existing
+        # inflows already recorded as transactions:
+        min_total = min(
+            self.max_outflow - self.outflows,
+            # Don't allow positive lower bounds:
+            max_total)
+        return self.transactions_to_balance(
+            balance,
+            timing=timing,
+            max_total=max_total,
+            min_total=min_total)
 
     def max_inflows(self, timing):
         """ The maximum amounts that can be contributed at `timing`.
@@ -514,7 +562,21 @@ class Account(TaxSource):
                 `value` indicates the maximum amount that can be
                 contributed at that time.
         """
-        return {when: Money('Infinity') for when in timing}
+        # Inflows have no upper cap:
+        balance = Money('Infinity')
+        # Ensure that only non-negative amounts are returned:
+        min_total = Money(0)
+        # Limit to max total inflows, accounting for any existing
+        # inflows already recorded as transactions:
+        max_total = max(
+            self.max_inflow - self.inflows,
+            # Don't allow negative upper bound:
+            min_total)
+        return self.transactions_to_balance(
+            balance,
+            timing=timing,
+            max_total=max_total,
+            min_total=min_total)
 
     def min_outflows(self, timing):
         """ The minimum outflows that should be withdrawn at `timings`.
@@ -533,7 +595,20 @@ class Account(TaxSource):
                 `value` indicates the amount that should be withdrawn at
                 that time.
         """
-        return {when: Money(0) for when in timing}
+        # Outflows are limited by the account balance:
+        balance = Money(0)
+        # Ensure that only negative amounts are returned:
+        max_total = Money(0)
+        # Ensure that the largest possible outflow is non-positive:
+        min_total = min(
+            self.min_outflow - self.outflows,
+            # Don't allow positive upper bound:
+            max_total)
+        return self.transactions_to_balance(
+            balance,
+            timing=timing,
+            max_total=max_total,
+            min_total=min_total)
 
     def min_inflows(self, timing):
         """ The minimum amounts that should be contributed at `timing`.
@@ -552,7 +627,21 @@ class Account(TaxSource):
                 `value` indicates the maximum amount that can be
                 contributed at that time.
         """
-        return {when: Money(0) for when in timing}
+        # Inflows have no upper cap:
+        balance = Money('Infinity')
+        # Ensure that only non-negative amounts are returned:
+        min_total = Money(0)
+        # Limit to min. total inflows, accounting for any existing
+        # inflows already recorded as transactions:
+        max_total = max(
+            self.min_inflow - self.inflows,
+            # Don't allow negative lower bound:
+            min_total)
+        return self.transactions_to_balance(
+            balance,
+            timing=timing,
+            max_total=max_total,
+            min_total=min_total)
 
     @recorded_property
     def taxable_income(self):

@@ -207,8 +207,9 @@ class RRSP(RegisteredAccount):
             rollover = self.contribution_room - self.inflows
             return min(accrual, Money(max_accrual)) + rollover
 
-    def min_outflow(self, when='end'):
-        """ Minimum RRSP withdrawal """
+    @property
+    def min_outflow(self):
+        """ Minimum annual RRSP/RRIF withdrawal """
         # Minimum withdrawals are required the year after converting to
         # an RRIF. How it is calculated depends on the person's age.
         if self.rrif_conversion_year < self.this_year:
