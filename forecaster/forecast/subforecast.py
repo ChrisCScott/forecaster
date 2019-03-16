@@ -374,10 +374,10 @@ class SubForecast(Ledger):
         available to be withdrawn from the account at the time of each
         existing transaction and also at `when`.
 
-        The method also attemptes to interpolate additional times between
+        The method also attempts to interpolate additional times between
         the existing transactions where the amount available to be
         withdrawn is equal to `target_value`. Due to implementation
-        limitations, the exact timing is not guaranteed to ne found
+        limitations, the exact timing is not guaranteed to be found
         (but for most Account types it will be found exactly.)
 
         Returns:
