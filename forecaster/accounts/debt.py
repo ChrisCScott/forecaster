@@ -128,6 +128,64 @@ class Debt(Account):
         """ The maximum annual withdrawals from the debt account. """
         return Money(0)
 
+    def max_inflows(self, timing=None, _balance=Money(0)):
+        """ The maximum amounts that can be contributed at `timing`.
+
+        The output transaction values will be proportionate to the
+        values of `timing`, which are used as weights.
+
+        For a `Debt`, this will return the amounts that return the
+        account to a zero balance.
+
+        Args:
+            timing (Timing): A mapping of `{when: weight}` pairs.
+                Optional. Uses default_timing if not provided.
+            _balance (Money): The balance that the method will seek to
+                achieve by end-of-year. This is primarily provided for
+                the benefit of certain subclasses (like `Debt`) which
+                calculate inflows and outflows relative to a zero point
+                different than a conventional Account. For example,
+                inflows to a Debt move its balance toward $0, not
+                $Infinity. Optional.
+
+        Returns:
+            dict[float, Money]: A mapping of `{when: value}` pairs where
+                `value` indicates the maximum amount that can be
+                contributed at that time.
+        """
+        # This method provides a different default for _balance, so
+        # it isn't a useless method.
+        return super().max_inflows(timing=timing, _balance=_balance)
+
+    def min_inflows(self, timing=None, _balance=Money(0)):
+        """ The minimum amounts that must be contributed at `timing`.
+
+        The output transaction values will be proportionate to the
+        values of `timing`, which are used as weights.
+
+        For a `Debt`, this will return the minimum payments (or the
+        amounts that return the account to a zero balance, if less).
+
+        Args:
+            timing (Timing): A mapping of `{when: weight}` pairs.
+                Optional. Uses default_timing if not provided.
+            _balance (Money): The balance that the method will seek to
+                achieve by end-of-year. This is primarily provided for
+                the benefit of certain subclasses (like `Debt`) which
+                calculate inflows and outflows relative to a zero point
+                different than a conventional Account. For example,
+                inflows to a Debt move its balance toward $0, not
+                $Infinity. Optional.
+
+        Returns:
+            dict[float, Money]: A mapping of `{when: value}` pairs where
+                `value` indicates the maximum amount that can be
+                contributed at that time.
+        """
+        # This method provides a different default for _balance, so
+        # it isn't a useless method.
+        return super().min_inflows(timing=timing, _balance=_balance)
+
     def max_payment(
             self, savings_available=Money(0),
             living_expenses_available=Money('Infinity'),
@@ -198,8 +256,10 @@ class Debt(Account):
         payment += min(max_savings, max_living)
 
         # The payment shouldn't exceed the maximum inflow:
-        max_inflow = sum(self.max_inflows(timing)) - other_payments
-        return min(max_inflow, payment)
+        max_inflow = sum(self.max_inflows(timing).values())
+        max_inflow -= other_payments
+        payment = min(max_inflow, payment)
+        return payment
 
     def payment_from_savings(self, amount=None, base=Money(0)):
         """ The amount of annual payments made from savings.
