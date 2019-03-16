@@ -6,7 +6,7 @@ modules.
 
 import collections
 from decimal import Decimal
-
+from forecaster.ledger import Money
 
 class Timing(dict):
     """ A dict of {timing: weight} pairs.
@@ -15,6 +15,10 @@ class Timing(dict):
     It divides the interval [0,1] into a number of equal-length periods
     equal to `frequency` and, within each period, assigns a timing at
     `when`. The timings are equally-weighted.
+
+    This class provides a copy-constructor that can receive a dict of
+    {when: value} pairs. If a dict has Money-type values, these are
+    converted to Decimal to avoid arithmetic errors.
 
     Examples:
         Timing()
@@ -36,23 +40,80 @@ class Timing(dict):
     """
     def __init__(self, when=0.5, frequency=1):
         """ Initializes a Timing dict. """
-        # Get an empty dict:
+        # We allow four forms of init call:
+        # 1) Init with two arguments: `when` and `frequency`
+        # 2) Init with dict of {when: value} pairs (e.g. `Timing(d)`
+        #    where d is a dict)
+        # 3) Init with string denoting a frequency (e.g. `Timing('BW')`)
+        # 4) Init with `when`-convertible value (e.g. Timing('start'),
+        #    `Timing(1)`)
+
+        # Set up the object by getting an empty dict:
         super().__init__()
-        # If we call Timing(input) with dict-type `input`, copy the
-        # input without further processing:
-        if isinstance(when, dict):
+        # Provide a simple copy-constructor. We will assume that other
+        # Timing objects have nice values already:
+        if isinstance(when, Timing):
             self.update(when)
             return
-        # Otherwise, assume inputs are scalar and build out multiple
-        # timings accordingly.
-        # Arguments might be str-valued; process to make them numeric:
-        when = when_conv(when)
-        frequency = frequency_conv(frequency)
-        # Each transaction has equal weight:
-        weight = 1 / frequency
-        # Build the dict:
-        for time in range(frequency):
-            self[(time + when) / frequency] = weight
+        # If we call Timing(input) with dict-type `input` (that isn't
+        # already a Timing object), things get trickier. We want to
+        # be able to receive time-series data of transactions (which
+        # may or may not be explicitly Money-typed), so we need to deal
+        # with negative values, and potentially with Money-typed values.
+        elif isinstance(when, dict):
+            # First, deal with Money-typed values by converting Money
+            # values to Decimal values:
+            # Get a random element from `when` so we can check its type:
+            sample = next(iter(when.values()))
+            if isinstance(sample, Money):
+                # Convert the dict's values to Decimal (no mutation!):
+                when = {timing: value.amount for timing, value in when.items()}
+
+            # If there are no negative values, simply copy the dict:
+            if all(value >= 0 for value in when.values()):
+                self.update(when)
+                return
+
+            # Otherwise, we need to account for negative values.
+            # We do this in two stages. First, for each timing,
+            # determine the cumulative value of all transactions to date
+            # and store it in `accum`:
+            accum = {}
+            tally = 0  # sum of transactions so far
+            for timing in sorted(when.keys()):
+                tally += when[timing]
+                accum[timing] = tally
+            # Now iterate over the timings *again*, this time
+            # determining for each timing the maximum amount that can be
+            # withdrawn without putting a future timing into negative
+            # balance:
+            tally = 0  # amounts withdrawn so far
+            for timing in sorted(when.keys()):
+                # Find the bottleneck: the future value with the
+                # smallest amount available to withdraw determines the
+                # maximum withdrawal we can make right now:
+                max_transaction = min({
+                    accum[key] - tally for key in accum if key >= timing})
+                # Only record timings with positive amounts available:
+                if max_transaction > 0:
+                    tally += max_transaction
+                    self[timing] = max_transaction
+        else:
+            # If we receive a frequency as the first argument, swap args
+            # and use the default value for `when`:
+            if isinstance(when, str) and when in FREQUENCY_MAPPING:
+                frequency = when
+                when = 0.5  # default value
+            # Arguments might be str-valued; make them numeric:
+            when = when_conv(when)
+            frequency = frequency_conv(frequency)
+
+            # Build out multiple timings based on scalar inputs.
+            # Each transaction has equal weight:
+            weight = 1 / frequency
+            # Build the dict:
+            for time in range(frequency):
+                self[(time + when) / frequency] = weight
 
 
 def when_conv(when):
