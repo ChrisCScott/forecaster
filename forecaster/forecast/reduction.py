@@ -63,40 +63,54 @@ class ReductionForecast(SubForecast):
             to_account=None)
 
         # Apply debt payment transactions:
-        for debt in self.account_transactions:
-            # Track the savings portion against `available`:
-            self.add_transaction(
-                value=self.payments_from_available[debt],
-                timing=debt.payment_timing,
-                from_account=available,
-                to_account=debt)
-            # Track the non-savings portion as well, but don't deduct
-            # from `available`
-            self.add_transaction(
-                value=(
-                    self.account_transactions[debt]
-                    - self.payments_from_available[debt]),
-                timing=debt.payment_timing,
-                from_account=None,
-                to_account=debt)
+        # pylint: disable=no-member
+        # These properties return dicts, but pylint has trouble
+        # inferring that.
+        for debt, transactions in self.account_transactions.items():
+            savings_payments = self.payments_from_available[debt]
+            for when, value in transactions.items():
+                # Deduct the savings portion from `available`:
+                self.add_transaction(
+                    value=savings_payments[when],
+                    timing=when,
+                    from_account=available,
+                    to_account=debt)
+                # Living expenses portion doesn't come from anywhere
+                # in particular, since we don't track living expenses
+                # cashflows in an account:
+                self.add_transaction(
+                    value=value - savings_payments[when],
+                    timing=when,
+                    from_account=None,
+                    to_account=debt)
 
     @recorded_property_cached
     def account_transactions(self):
-        """ Total amount repaid for each debt for the year. """
+        """ Payment transactions each debt for the year. """
         return self.debt_payment_strategy(
             self.debts,
-            self.total_available - self.reduction_from_other
-        )
+            self.total_available - self.reduction_from_other)
 
     @recorded_property_cached
     def payments_from_available(self):
         """ Amount repaid for each debt from `available` specifically. """
-        return {
-            debt: debt.payment_from_savings(
-                amount=self.account_transactions[debt],
-                base=debt.inflows
-            ) for debt in self.account_transactions
-        }
+        payments = {}
+        # pylint: disable=no-member
+        # These properties return dicts, but pylint has trouble
+        # inferring that.
+        for debt, transactions in self.account_transactions.items():
+            # Figure out how much is repaid from available in total:
+            total_payment = sum(transactions.values())
+            savings_total = debt.payment_from_savings(
+                amount=total_payment,
+                base=debt.inflows)
+            # Turn these into weights so that we can multiply each
+            # transaction in `account_transactions` by it:
+            savings_weight = savings_total / total_payment
+            payments[debt] = {
+                when: value * savings_weight
+                for when, value in transactions.items()}
+        return payments
 
     @recorded_property
     def reduction_from_debt(self):
@@ -104,10 +118,10 @@ class ReductionForecast(SubForecast):
         # pylint: disable=no-member
         # account_transactions_from_available is a dict and so does
         # have a `values` member.
-        return sum(
-            self.payments_from_available.values(),
-            Money(0)
-        )
+        total = Money(0)
+        for transactions in self.payments_from_available.values():
+            total += sum(transactions.values())
+        return total
 
     @recorded_property
     def reduction_from_other(self):
