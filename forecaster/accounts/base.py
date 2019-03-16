@@ -456,6 +456,17 @@ class Account(TaxSource):
         # Clean inputs:
         if timing is None:
             # Use default timing if none was explicitly provided.
+            # TODO: Should we instead use whatever timing is naturally
+            # provided by the timings of account transactions? For
+            # example, if an account receives $50 at when=0.5 and a
+            # $25 withdrawal at when=1, then the maximum outflow would
+            # occur at when=0.5 (and would have a value of $25, assuming
+            # no growth).
+            # The benefit here is that we could provide a schedule of
+            # transactions which *does* guarantee that the account will
+            # not go into negative balance at any time!
+            # A side-effect is that we might move `default_timing` logic
+            # back to the classes that need it (i.e. Debt, Person).
             timing = self.default_timing
         elif not isinstance(timing, Timing):
             # Convert timing from str or dict if appropriate:
@@ -507,7 +518,7 @@ class Account(TaxSource):
             for timing, weight in normalized_timing.items()}
         return transactions
 
-    def max_outflows(self, timing):
+    def max_outflows(self, timing, _balance=Money(0)):
         """ The maximum amounts that can be withdrawn at `timings`.
 
         The output transaction values will be proportionate to the
@@ -522,6 +533,14 @@ class Account(TaxSource):
 
         Args:
             timing (Timing): A mapping of `{when: weight}` pairs.
+                Optional. Uses default_timing if not provided.
+            _balance (Money): The balance that the method will seek to
+                achieve by end-of-year. This is primarily provided for
+                the benefit of certain subclasses (like `Debt`) which
+                calculate inflows and outflows relative to a zero point
+                different than a conventional Account. For example,
+                inflows to a Debt move its balance toward $0, not
+                $Infinity. Optional.
 
         Returns:
             dict[float, Money]: A mapping of `{when: value}` pairs where
@@ -530,7 +549,7 @@ class Account(TaxSource):
                 Account's balance is $0.
         """
         # Outflows are limited by the account balance:
-        balance = Money(0)
+        balance = _balance
         # Ensure that only negative amounts are returned:
         max_total = Money(0)
         # Limit to max total outflows, accounting for any existing
@@ -545,7 +564,7 @@ class Account(TaxSource):
             max_total=max_total,
             min_total=min_total)
 
-    def max_inflows(self, timing):
+    def max_inflows(self, timing=None, _balance=Money('Infinity')):
         """ The maximum amounts that can be contributed at `timing`.
 
         The output transaction values will be proportionate to the
@@ -556,6 +575,14 @@ class Account(TaxSource):
 
         Args:
             timing (Timing): A mapping of `{when: weight}` pairs.
+                Optional. Uses default_timing if not provided.
+            _balance (Money): The balance that the method will seek to
+                achieve by end-of-year. This is primarily provided for
+                the benefit of certain subclasses (like `Debt`) which
+                calculate inflows and outflows relative to a zero point
+                different than a conventional Account. For example,
+                inflows to a Debt move its balance toward $0, not
+                $Infinity. Optional.
 
         Returns:
             dict[float, Money]: A mapping of `{when: value}` pairs where
@@ -563,7 +590,7 @@ class Account(TaxSource):
                 contributed at that time.
         """
         # Inflows have no upper cap:
-        balance = Money('Infinity')
+        balance = _balance
         # Ensure that only non-negative amounts are returned:
         min_total = Money(0)
         # Limit to max total inflows, accounting for any existing
@@ -578,7 +605,7 @@ class Account(TaxSource):
             max_total=max_total,
             min_total=min_total)
 
-    def min_outflows(self, timing):
+    def min_outflows(self, timing=None, _balance=Money(0)):
         """ The minimum outflows that should be withdrawn at `timings`.
 
         The output transaction values will be proportionate to the
@@ -589,6 +616,14 @@ class Account(TaxSource):
 
         Args:
             timing (Timing): A mapping of `{when: weight}` pairs.
+                Optional. Uses default_timing if not provided.
+            _balance (Money): The balance that the method will seek to
+                achieve by end-of-year. This is primarily provided for
+                the benefit of certain subclasses (like `Debt`) which
+                calculate inflows and outflows relative to a zero point
+                different than a conventional Account. For example,
+                inflows to a Debt move its balance toward $0, not
+                $Infinity. Optional.
 
         Returns:
             dict[float, Money]: A mapping of `{when: value}` pairs where
@@ -596,7 +631,7 @@ class Account(TaxSource):
                 that time.
         """
         # Outflows are limited by the account balance:
-        balance = Money(0)
+        balance = _balance
         # Ensure that only negative amounts are returned:
         max_total = Money(0)
         # Ensure that the largest possible outflow is non-positive:
@@ -610,7 +645,7 @@ class Account(TaxSource):
             max_total=max_total,
             min_total=min_total)
 
-    def min_inflows(self, timing):
+    def min_inflows(self, timing=None, _balance=Money('Infinity')):
         """ The minimum amounts that should be contributed at `timing`.
 
         The output transaction values will be proportionate to the
@@ -621,6 +656,14 @@ class Account(TaxSource):
 
         Args:
             timing (Timing): A mapping of `{when: weight}` pairs.
+                Optional. Uses default_timing if not provided.
+            _balance (Money): The balance that the method will seek to
+                achieve by end-of-year. This is primarily provided for
+                the benefit of certain subclasses (like `Debt`) which
+                calculate inflows and outflows relative to a zero point
+                different than a conventional Account. For example,
+                inflows to a Debt move its balance toward $0, not
+                $Infinity. Optional.
 
         Returns:
             dict[float, Money]: A mapping of `{when: value}` pairs where
@@ -628,7 +671,7 @@ class Account(TaxSource):
                 contributed at that time.
         """
         # Inflows have no upper cap:
-        balance = Money('Infinity')
+        balance = _balance
         # Ensure that only non-negative amounts are returned:
         min_total = Money(0)
         # Limit to min. total inflows, accounting for any existing
