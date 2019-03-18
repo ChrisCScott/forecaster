@@ -147,20 +147,20 @@ class TestTransactionStrategyOrdered(unittest.TestCase):
         """ Test strategy_ordered with outflows to empty all account. """
         # Try withdrawing more than all of the accounts have:
         val = sum(
-            account.max_outflow()
+            account.max_outflow
             for account in self.accounts
         ) * 2
         results = self.strategy(val, self.accounts)
         # TODO: Deal with timings for outflows
         self.assertEqual(
             results[self.rrsp],
-            self.rrsp.max_outflow())
+            self.rrsp.max_outflow)
         self.assertEqual(
             results[self.tfsa],
-            self.tfsa.max_outflow())
+            self.tfsa.max_outflow)
         self.assertEqual(
             results[self.taxable_account],
-            self.taxable_account.max_outflow())
+            self.taxable_account.max_outflow)
 
     def test_change_order(self):
         """ Test strategy_ordered works with changed order vars. """
@@ -227,7 +227,7 @@ class TestTransactionStrategyOrderedMult(unittest.TestCase):
         # Try to withdraw more than all accounts combined contain:
         # TODO: Deal with timings for outflows:
         val = sum(
-            account.max_outflow()
+            account.max_outflow
             for account in self.accounts
         ) * 2
         results = self.strategy(val, self.accounts)
@@ -293,7 +293,7 @@ class TestTransactionStrategyWeighted(unittest.TestCase):
         # Amount withdrawn is smaller than the balance of each account.
         # TODO: Deal with timings for outflows:
         val = Money(
-            max(account.max_outflow()
+            max(account.max_outflow
                 for account in self.accounts))
         results = self.strategy_weighted(val, self.accounts)
         self.assertEqual(sum(results.values()), val)
@@ -307,13 +307,13 @@ class TestTransactionStrategyWeighted(unittest.TestCase):
         # Now withdraw enough to exceed the TFSA's balance, plus a bit.
         # TODO: Deal with timings for outflows:
         threshold = (
-            self.tfsa.max_outflow()
+            self.tfsa.max_outflow
             / self.weights['TFSA'])
         val = Money(threshold - Money(50))
         results = self.strategy_weighted(val, self.accounts)
         self.assertEqual(
             results[self.tfsa],
-            self.tfsa.max_outflow())
+            self.tfsa.max_outflow)
         self.assertAlmostEqual(sum(results.values()), val, places=5)
         self.assertAlmostEqual(
             results[self.rrsp],
@@ -326,20 +326,20 @@ class TestTransactionStrategyWeighted(unittest.TestCase):
         # This will clear out the RRSP and TFSA.
         # TODO: Deal with timings for outflows:
         val = sum(
-            account.max_outflow()
+            account.max_outflow
             for account in self.accounts
         ) + Money(50)
         results = self.strategy_weighted(val, self.accounts)
         self.assertEqual(sum(results.values()), val)
         self.assertEqual(
             results[self.rrsp],
-            self.rrsp.max_outflow())
+            self.rrsp.max_outflow)
         self.assertEqual(
             results[self.tfsa],
-            self.tfsa.max_outflow())
+            self.tfsa.max_outflow)
         self.assertEqual(
             results[self.taxable_account],
-            self.taxable_account.max_outflow()
+            self.taxable_account.max_outflow
             + Money(50))
 
     def test_out_all_empty(self):
@@ -347,25 +347,25 @@ class TestTransactionStrategyWeighted(unittest.TestCase):
         # Withdraw more than the accounts have:
         # TODO: Deal with timings for outflows:
         val = sum(
-            account.max_outflow()
+            account.max_outflow
             for account in self.accounts
         ) - Money(50)
         results = self.strategy_weighted(val, self.accounts)
         self.assertEqual(
             results[self.rrsp],
-            self.rrsp.max_outflow())
+            self.rrsp.max_outflow)
         self.assertEqual(
             results[self.tfsa],
-            self.tfsa.max_outflow())
+            self.tfsa.max_outflow)
         self.assertEqual(
             results[self.taxable_account],
-            self.taxable_account.max_outflow())
+            self.taxable_account.max_outflow)
 
     def test_in_basic(self):
         """ Test strategy_weighted with a small amount of inflows. """
         # The amount being contributed is less than the available
         # contribution room for each account
-        val = Money(min(account.max_inflow() for account in self.accounts))
+        val = Money(min(account.max_inflow for account in self.accounts))
         results = self.strategy_weighted(val, self.accounts)
         self.assertEqual(sum(results.values()), val)
         self.assertEqual(results[self.rrsp], val * self.weights['RRSP'])
@@ -380,10 +380,10 @@ class TestTransactionStrategyWeighted(unittest.TestCase):
         # TFSA but can't because of its lower contribution room) should
         # be redistributed to the other accounts proportionately to
         # their relative weights:
-        threshold = self.tfsa.max_inflow() / self.weights['TFSA']
+        threshold = self.tfsa.max_inflow / self.weights['TFSA']
         val = Money(threshold + Money(50))
         results = self.strategy_weighted(val, self.accounts)
-        self.assertEqual(results[self.tfsa], self.tfsa.max_inflow())
+        self.assertEqual(results[self.tfsa], self.tfsa.max_inflow)
         self.assertAlmostEqual(sum(results.values()), val, places=5)
         self.assertAlmostEqual(
             results[self.rrsp],
@@ -395,15 +395,15 @@ class TestTransactionStrategyWeighted(unittest.TestCase):
         """ Test strategy_weighted with inflows to fill 2 accounts. """
         # Contribute a lot of money - the rrsp and tfsa will get
         # filled and the remainder will go to the taxable account.
-        threshold = max(self.rrsp.max_inflow() / self.weights['RRSP'],
-                        self.tfsa.max_inflow() / self.weights['TFSA'])
+        threshold = max(self.rrsp.max_inflow / self.weights['RRSP'],
+                        self.tfsa.max_inflow / self.weights['TFSA'])
         val = threshold + Money(50)
         results = self.strategy_weighted(val, self.accounts)
         self.assertEqual(sum(results.values()), val)
-        self.assertEqual(results[self.rrsp], self.rrsp.max_inflow())
-        self.assertEqual(results[self.tfsa], self.tfsa.max_inflow())
+        self.assertEqual(results[self.rrsp], self.rrsp.max_inflow)
+        self.assertEqual(results[self.tfsa], self.tfsa.max_inflow)
         self.assertEqual(results[self.taxable_account], val -
-                         (self.rrsp.max_inflow() + self.tfsa.max_inflow()))
+                         (self.rrsp.max_inflow + self.tfsa.max_inflow))
 
 
 class TestTransactionStrategyWeightedMult(unittest.TestCase):
@@ -449,7 +449,7 @@ class TestTransactionStrategyWeightedMult(unittest.TestCase):
         # Amount withdrawn is less than the balance of each account.
         # TODO: Deal with timings for outflows:
         val = Money(
-            max(account.max_outflow()
+            max(account.max_outflow
                 for account in self.accounts))
         results = self.strategy(val, self.accounts)
         self.assertEqual(sum(results.values()), val)
@@ -471,14 +471,14 @@ class TestTransactionStrategyWeightedMult(unittest.TestCase):
         # TFSA, in this case, as it has the smallest balance):
         # TODO: Deal with timings for outflows:
         threshold = (
-            self.tfsa.max_outflow()
+            self.tfsa.max_outflow
             / self.weights['TFSA'])
         val = Money(threshold - Money(50))
         results = self.strategy(val, self.accounts)
         self.assertAlmostEqual(sum(results.values()), val, places=5)
         self.assertEqual(
             results[self.tfsa],
-            self.tfsa.max_outflow())
+            self.tfsa.max_outflow)
         # The excess (i.e. the amount that would ordinarily be
         # contributed to the TFSA but can't due to contribution room
         # limits) should also be split between RRSPs and the TFSA
@@ -496,23 +496,23 @@ class TestTransactionStrategyWeightedMult(unittest.TestCase):
         # has a much larger balance and roughly similar weight:
         # TODO: Deal with timings for outflows:
         val = sum(
-            account.max_outflow()
+            account.max_outflow
             for account in self.accounts
         ) + Money(50)
         results = self.strategy(val, self.accounts)
         self.assertEqual(sum(results.values()), val)
         self.assertEqual(
             results[self.rrsp],
-            self.rrsp.max_outflow())
+            self.rrsp.max_outflow)
         self.assertEqual(
             results[self.rrsp2],
-            self.rrsp2.max_outflow())
+            self.rrsp2.max_outflow)
         self.assertEqual(
             results[self.tfsa],
-            self.tfsa.max_outflow())
+            self.tfsa.max_outflow)
         self.assertEqual(
             results[self.taxable_account],
-            self.taxable_account.max_outflow()
+            self.taxable_account.max_outflow
             + Money(50))
 
     def test_out_empty_all(self):
@@ -520,19 +520,19 @@ class TestTransactionStrategyWeightedMult(unittest.TestCase):
         # Try withdrawing more than the accounts have
         # TODO: Deal with timings for outflows:
         val = sum(
-            account.max_outflow()
+            account.max_outflow
             for account in self.accounts
         ) - Money(50)
         results = self.strategy(val, self.accounts)
         self.assertEqual(
             results[self.rrsp],
-            self.rrsp.max_outflow())
+            self.rrsp.max_outflow)
         self.assertEqual(
             results[self.tfsa],
-            self.tfsa.max_outflow())
+            self.tfsa.max_outflow)
         self.assertEqual(
             results[self.taxable_account],
-            self.taxable_account.max_outflow())
+            self.taxable_account.max_outflow)
 
     def test_in_basic(self):
         """ Test strategy_weighted with multiple RRSPs, small inflows. """

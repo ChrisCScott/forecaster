@@ -186,9 +186,9 @@ class AccountTransactionStrategy(Strategy):
         # until we hit the total.
         for account in accounts_ordered:
             if total >= 0:
-                transaction = min(total, account.max_inflow())
+                transaction = min(total, account.max_inflow)
             else:
-                transaction = max(total, account.max_outflow())
+                transaction = max(total, account.max_outflow)
             transactions[account] = transaction
             total -= transaction
 
@@ -239,15 +239,15 @@ class AccountTransactionStrategy(Strategy):
         # outflows that aren't met by the allocation in `transactions`.
         if total > 0:  # For inflows, check min_inflow and max_inflow
             override_transactions = {
-                account: account.min_inflow() for account in transactions
-                if account.min_inflow() > transactions[account]
+                account: account.min_inflow for account in transactions
+                if account.min_inflow > transactions[account]
             }
         else:
             # For outflows, check min_outflow.
             # (Recall that outflows are negative-valued)
             override_transactions = {
-                account: account.min_outflow() for account in transactions
-                if account.min_outflow() < transactions[account]
+                account: account.min_outflow for account in transactions
+                if account.min_outflow < transactions[account]
             }
 
         # If there are no accounts that need to be tweaked, we're done.
@@ -274,11 +274,11 @@ class AccountTransactionStrategy(Strategy):
            remaining_total == 0:
             if total > 0:  # Inflows
                 override_transactions = {
-                    account: account.min_inflow()
+                    account: account.min_inflow
                     for account in remaining_accounts}
             else:  # Outflows
                 override_transactions = {
-                    account: account.min_outflow()
+                    account: account.min_outflow
                     for account in remaining_accounts}
             return override_transactions
 
@@ -299,15 +299,15 @@ class AccountTransactionStrategy(Strategy):
         # outflows that aren't met by the allocation in `transactions`.
         if total > 0:  # For inflows, check min_inflow and max_inflow
             override_transactions = {
-                account: account.max_inflow() for account in transactions
-                if account.max_inflow() < transactions[account]
+                account: account.max_inflow for account in transactions
+                if account.max_inflow < transactions[account]
             }
         else:
             # For outflows, check max_outflow.
             # (Recall that outflows are negative-valued)
             override_transactions = {
-                account: account.max_outflow() for account in transactions
-                if account.max_outflow() > transactions[account]
+                account: account.max_outflow for account in transactions
+                if account.max_outflow > transactions[account]
             }
 
         # If there are no accounts that need to be tweaked, we're done.
@@ -514,9 +514,9 @@ class AccountTransactionStrategy(Strategy):
             # TODO: Deal with timings for inflows and outflows, since
             # the amount that we can move in/out is timing-dependent:
             if total >= 0:
-                limit = account.max_inflow()
+                limit = account.max_inflow
             else:
-                limit = account.max_outflow()
+                limit = account.max_outflow
             # Cap transaction amount at the limit if it's too large:
             if Money('-Infinity') < limit < Money('Infinity'):
                 finite_accounts[account] = limit
