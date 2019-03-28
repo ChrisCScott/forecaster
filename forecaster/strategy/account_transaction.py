@@ -32,7 +32,7 @@ class AccountGroup(object):
         contribution_groups (set[set[Account]]): The members of the
             `AccountGroup` reorganized into disjoint sets of
             contribution groups. Each contribution group shares common
-            `min_inflow` and `max_inflow` properties.
+            `max_inflow` property values.
     """
     def __init__(self, *args):
         """ Inits `AccountGroup` with one or more accounts. """
@@ -47,30 +47,26 @@ class AccountGroup(object):
         """ The sum of account balances. """
         return sum(account.balance for account in self)
 
-    def min_outflow(self, *args, **kwargs):
+    @property
+    def min_outflow(self):
         """ The sum of account `min_outflow`. """
         return sum(
-            account.min_outflow(*args, **kwargs) for account in self)
+            account.min_outflow for account in self)
 
-    def min_inflow(self, *args, **kwargs):
-        """ The sum of account `min_inflow`.
-
-        This method respects contribution groups, and will not double-
-        count the contribution room of multiple accounts in the same
-        contribution group.
-        """
-        # For each group, pull an element out at random (since they
-        # should all share the same min_inflow)
+    @property
+    def min_inflow(self):
+        """ The sum of account `min_inflow`. """
         return sum(
-            next(iter(group)).min_inflow(*args, **kwargs)
-            for group in self.contribution_groups)
+            account.min_inflow for account in self)
 
-    def max_outflow(self, *args, **kwargs):
+    @property
+    def max_outflow(self):
         """ The sum of account `max_outflow`. """
         return sum(
-            account.max_outflow(*args, **kwargs) for account in self)
+            account.max_outflow for account in self)
 
-    def max_inflow(self, *args, **kwargs):
+    @property
+    def max_inflow(self):
         """ The sum of account `max_inflow`.
 
         This method respects contribution groups, and will not double-
@@ -80,8 +76,72 @@ class AccountGroup(object):
         # For each group, pull an element out at random (since they
         # should all share the same max_inflow)
         return sum(
-            next(iter(group)).max_inflow(*args, **kwargs)
+            next(iter(group)).max_inflow
             for group in self.contribution_groups)
+
+    def min_inflows(
+            self, timing=None, balance_limit=None, inflow_limit=None):
+        """ The combined minimum inflows for all accounts in the group. """
+        # Pretty straightforward: get the schedule of minimum inflows
+        # for each account, then add each of those inflows to `inflows`.
+        inflows = collections.defaultdict(lambda: Money(0))
+        for account in self:
+            min_inflows = account.min_inflows(
+                timing=timing, balance_limit=balance_limit,
+                inflow_limit=inflow_limit)
+            for when, value in min_inflows.items():
+                inflows[when] += value
+        return inflows
+
+    def max_inflows(
+            self, timing=None, balance_limit=None, inflow_limit=None):
+        """ The combined maximum inflows for all accounts in the group.
+
+        This method respects contribution groups, and will not double-
+        count the contribution room of multiple accounts in the same
+        contribution group.
+        """
+        # Pretty straightforward: get the schedule of minimum inflows
+        # for each account, then add each of those inflows to `inflows`.
+        inflows = collections.defaultdict(lambda: Money(0))
+        # For each group, pull an element out at random (since they
+        # should all share the same max_inflows)
+        for group in self.contribution_groups:
+            account = next(iter(group))
+            max_inflows = account.max_inflows(
+                timing=timing, balance_limit=balance_limit,
+                inflow_limit=inflow_limit)
+            for when, value in max_inflows.items():
+                inflows[when] += value
+        return inflows
+
+    def min_outflows(
+            self, timing=None, balance_limit=None, outflow_limit=None):
+        """ The combined minimum outflows for all accounts in the group. """
+        # Pretty straightforward: get the schedule of minimum outflows
+        # for each account. Add each of those outflows to `outflows`.
+        outflows = collections.defaultdict(lambda: Money(0))
+        for account in self:
+            min_outflows = account.min_outflows(
+                timing=timing, balance_limit=balance_limit,
+                outflow_limit=outflow_limit)
+            for when, value in min_outflows.items():
+                outflows[when] += value
+        return outflows
+
+    def max_outflows(
+            self, timing=None, balance_limit=None, outflow_limit=None):
+        """ The combined maximum outflows for all accounts in the group. """
+        # Pretty straightforward: get the schedule of maximum outflows
+        # for each account. Add each of those outflows to `outflows`.
+        outflows = collections.defaultdict(lambda: Money(0))
+        for account in self:
+            max_outflows = account.max_outflows(
+                timing=timing, balance_limit=balance_limit,
+                outflow_limit=outflow_limit)
+            for when, value in max_outflows.items():
+                outflows[when] += value
+        return outflows
 
     def get_type(self):
         """ Gets the type of a random contained `Account`. """
@@ -166,16 +226,14 @@ class AccountTransactionStrategy(Strategy):
                 mapped to weights.
 
         Returns:
-            dict[Union[Account, AccountGroup], Money] pairs. The keys
-            are a subset of the input `accounts` keys and the values are
-            the corresponding transaction amount for that account.
+            dict[Union[Account, AccountGroup], dict[Decimal, Money]]
+            pairs. The keys are a subset of the input `accounts` keys
+            and the values are the corresponding transactions for that
+            account (as `when: value` pairs).
         """
         # We provide *args and **kwargs to maintain a consistent
         # interface between strategy methods.
         # pylint: disable=unused-argument
-        # Mixing @property (or its subclass @strategy_method) with
-        # @staticmethod is not recommended.
-        # pylint: disable=no-self-use
 
         # Build a sorted list based on the account_set: weight pairings:
         accounts_ordered = sorted(weighted_accounts, key=weighted_accounts.get)
@@ -185,17 +243,27 @@ class AccountTransactionStrategy(Strategy):
         # Now fill up (or drain) the accounts in order of priority
         # until we hit the total.
         for account in accounts_ordered:
-            if total >= 0:
-                transaction = min(total, account.max_inflow)
+            if total > 0:
+                # Add as much inflow as we can, up to the amount we have
+                # left available.
+                transactions[account] = account.max_inflows(
+                    inflow_limit=total)
+            elif total < 0:
+                # Add as much outflow as we can, up to the amount we
+                # have left to withdraw:
+                transactions[account] = account.max_outflows(
+                    outflow_limit=total)
             else:
-                transaction = max(total, account.max_outflow)
-            transactions[account] = transaction
-            total -= transaction
+                # If we have no money left to withdraw/contribute, then
+                # we're done! Return now to avoid unnecessary iterations
+                # NOTE: Not all accounts are necessarily used as keys!
+                return transactions
+            total -= sum(transactions[account].values())
 
         return transactions
 
     @strategy_method('Weighted')
-    def strategy_weighted(self, total, weighted_accounts, *args, **kwargs):
+    def strategy_weighted(self, total, weighted_accounts, *_, **__):
         """ Assigns transactions proportionately to accounts' weights.
 
         Args:
@@ -207,28 +275,56 @@ class AccountTransactionStrategy(Strategy):
                 mapped to weights.
 
         Returns:
-            dict[Union[Account, AccountGroup], Money] pairs. The keys
-            are a subset of the input `accounts` keys and the values are
-            the corresponding transaction amount for that account.
+            dict[Union[Account, AccountGroup], dict[Decimal, Money]]
+            pairs. The keys are a subset of the input `accounts` keys
+            and the values are the corresponding transactions for that
+            account (as `when: value` pairs).
         """
-        # We provide *args and **kwargs to maintain a consistent
-        # interface between strategy methods.
-        # pylint: disable=unused-argument
-        # Mixing @property (or its subclass @strategy_method) with
-        # @staticmethod is not recommended.
-        # pylint: disable=no-self-use
-
         # Due to recursion, there's no guarantee that weights will sum
         # to 1, so we'll need to normalize weights.
         normalization = sum(weighted_accounts.values())
 
         transactions = {}
+        limited_accounts = {}
 
         # Determine contributions/withdrawals for each account set based
         # on its associated weight:
         for account, weight in weighted_accounts.items():
-            transaction = total * weight / normalization
-            transactions[account] = transaction
+            # Determine the amount to be allocated to this account:
+            value = total * weight / normalization
+            # In a perfect world we could simply assign weighted
+            # portions of `value` for keys in `account.default_timing`,
+            # but AccountGroup doesn't have a `default_timing` attribute
+            # so we'll use `max_inflows`/`max_outflows` as appropriate.
+            if total > 0:
+                transactions[account] = account.max_inflows(
+                    inflow_limit=value)
+            elif total < 0:
+                transactions[account] = account.max_outflows(
+                    outflow_limit=value)
+
+            # Using `max_inflows` or `max_outflows` creates a problem:
+            # We might assign less than `total` if it exceeds an
+            # account's max! Determine whether this has happened for
+            # any accounts...
+            amount_added = sum(transactions[account].values())
+            if value != amount_added:
+                limited_accounts[account] = amount_added
+
+        # ... and if it has, recurse on the remaining accounts.
+        if limited_accounts:
+            non_limited_accounts = set(weighted_accounts.keys()).difference(
+                limited_accounts.keys())
+            weighted_accounts = {
+                account: weighted_accounts[account]
+                for account in non_limited_accounts}
+            total -= sum(limited_accounts.values())
+            recurse_transactions = self.strategy_weighted(
+                total=total, weighted_accounts=weighted_accounts)
+            # Overwrite any non-limited accounts with the results of the
+            # recursion. Limited accounts remain as-is.
+            transactions.update(recurse_transactions)
+
 
         return transactions
 
@@ -237,18 +333,24 @@ class AccountTransactionStrategy(Strategy):
         """ Recursively assigns minimum inflows/outflows to accounts. """
         # Check to see whether any accounts have minimum inflows or
         # outflows that aren't met by the allocation in `transactions`.
-        if total > 0:  # For inflows, check min_inflow and max_inflow
+        if total > 0:  # For inflows, check min_inflows
+            min_inflows = {
+                account: account.min_inflows(timing=transactions[account])
+                for account in accounts}
             override_transactions = {
-                account: account.min_inflow for account in transactions
-                if account.min_inflow > transactions[account]
-            }
+                account: min_inflows[account] for account in transactions
+                if sum(min_inflows[account].values()) >
+                sum(transactions[account].values())}
         else:
-            # For outflows, check min_outflow.
+            # For outflows, check min_outflows.
             # (Recall that outflows are negative-valued)
+            min_outflows = {
+                account: account.min_outflows(timing=transactions[account])
+                for account in accounts}
             override_transactions = {
-                account: account.min_outflow for account in transactions
-                if account.min_outflow < transactions[account]
-            }
+                account: min_outflows[account] for account in transactions
+                if sum(min_outflows[account].values()) <
+                sum(transactions[account].values())}
 
         # If there are no accounts that need to be tweaked, we're done.
         if not override_transactions:
@@ -263,23 +365,27 @@ class AccountTransactionStrategy(Strategy):
             if account not in override_transactions}
 
         # Determine the amount remaining to be allocated:
-        remaining_total = total - sum(override_transactions.values())
+        remaining_total = total - sum(
+            sum(override_transactions[account].values())
+            for account in override_transactions)
 
         # If we've already allocated more than the original total
         # (just on the overridden accounts!) then there's no room left
         # to recurse on the strategy. Simply allocate the minimum
         # inflow/outflow for each remaining accounts and terminate:
-        if (total > 0 and remaining_total < 0) or \
-           (total < 0 and remaining_total > 0) or \
-           remaining_total == 0:
+        if (
+                total > 0 > remaining_total
+                or total < 0 < remaining_total
+                or remaining_total == 0
+        ):
             if total > 0:  # Inflows
-                override_transactions = {
-                    account: account.min_inflow
-                    for account in remaining_accounts}
+                override_transactions.update({
+                    account: account.min_inflows()
+                    for account in remaining_accounts})
             else:  # Outflows
-                override_transactions = {
-                    account: account.min_outflow
-                    for account in remaining_accounts}
+                override_transactions.update({
+                    account: account.min_outflows()
+                    for account in remaining_accounts})
             return override_transactions
 
         # Otherwise, if there's still money to be allocated,
@@ -297,18 +403,22 @@ class AccountTransactionStrategy(Strategy):
         """ Recursively assigns minimum inflows/outflows to accounts. """
         # Check to see whether any accounts have minimum inflows or
         # outflows that aren't met by the allocation in `transactions`.
-        if total > 0:  # For inflows, check min_inflow and max_inflow
+        if total > 0:  # For inflows, check max_inflows
+            max_inflows = {
+                account: account.max_inflows() for account in accounts}
             override_transactions = {
-                account: account.max_inflow for account in transactions
-                if account.max_inflow < transactions[account]
-            }
+                account: max_inflows[account] for account in transactions
+                if sum(max_inflows[account].values()) <
+                sum(transactions[account].values())}
         else:
-            # For outflows, check max_outflow.
+            # For outflows, check max_outflows.
             # (Recall that outflows are negative-valued)
+            max_outflows = {
+                account: account.max_outflows() for account in accounts}
             override_transactions = {
-                account: account.max_outflow for account in transactions
-                if account.max_outflow > transactions[account]
-            }
+                account: max_outflows[account] for account in transactions
+                if sum(max_outflows[account].values()) >
+                sum(transactions[account].values())}
 
         # If there are no accounts that need to be tweaked, we're done.
         if not override_transactions:
@@ -318,7 +428,9 @@ class AccountTransactionStrategy(Strategy):
         remaining_accounts = accounts.difference(override_transactions)
 
         # Determine the amount to be allocated to the non-maxed accounts:
-        remaining_total = total - sum(override_transactions.values())
+        remaining_total = total - sum(
+            sum(override_transactions[account].values())
+            for account in override_transactions)
 
         # Reassign money to non-maxed accounts according to the selected
         # strategy.
@@ -475,7 +587,7 @@ class AccountTransactionStrategy(Strategy):
         # effectively "flattens" the transactions dict by removing any
         # further AccountGroup layers:
         for group in groups:
-            transactions_for_group = self._transactions_for_group(
+            transactions_for_group = self._transactions_for_accounts(
                 transactions[group], group.accounts)
             # Recurse onto any nested AccountGroup objects:
             flattened_transactions = self._ungroup_transactions(
@@ -483,7 +595,7 @@ class AccountTransactionStrategy(Strategy):
             ungrouped_transactions.update(flattened_transactions)
         return ungrouped_transactions
 
-    def _transactions_for_group(self, total, group):
+    def _transactions_for_accounts(self, transactions, group):
         """ Determines transactions for each account in a group.
 
         Accounts in `group` are treated as a group of accounts
@@ -495,8 +607,8 @@ class AccountTransactionStrategy(Strategy):
         sufficient max inflow/outflow space.
 
         Args:
-            total (Money): The total amount to be divided up between
-                accounts in the group.
+            transactions (Money): The transactions allocated to the
+                group, to be divided up between accounts in the group.
             group (iterable): An `AccountGroup`, `set`, or other object
                 that iterates over a group of accounts.
 
@@ -507,48 +619,74 @@ class AccountTransactionStrategy(Strategy):
         # First, identify accounts with finite limits (and create a
         # mapping of accounts to applicable inflow or outflow limit for
         # convenience):
-        finite_accounts = {}
+        finite_accounts_trans = {}
+        finite_accounts_total = {}
         infinite_accounts = set()
+        total = sum(transactions.values())
         for account in group:
-            # Identify max inflow or outflow, as appropriate:
-            # TODO: Deal with timings for inflows and outflows, since
-            # the amount that we can move in/out is timing-dependent:
+            # Identify max inflows or outflows, as appropriate:
             if total >= 0:
-                limit = account.max_inflow
+                limit = account.max_inflows(timing=transactions)
             else:
-                limit = account.max_outflow
-            # Cap transaction amount at the limit if it's too large:
-            if Money('-Infinity') < limit < Money('Infinity'):
-                finite_accounts[account] = limit
+                limit = account.max_outflows(timing=transactions)
+            # If the account has a finite limit, store its maximum
+            # in/outflows for later reference.
+            total_limit = sum(limit.values())
+            if Money('-Infinity') < total_limit < Money('Infinity'):
+                finite_accounts_trans[account] = limit
+                finite_accounts_total[account] = total_limit
             else:
                 infinite_accounts.add(account)
-        total_finite_limit = sum(finite_accounts.values(), Money(0))
-        # Allocate to the finite accounts first. If we can't fill them
-        # all, add proportionately to each account's limit:
+
+        # For N accounts, try to allocate 1/N to each infinite account
+        # and divide the remainder between finite accounts
+        # proportionately to their limits.
+        # Try to contribute to finite accounts first:
+        total_finite_limit = sum(finite_accounts_total.values(), Money(0))
+        finite_total = total * (len(finite_accounts_trans) / len(group))
+        # First, if we can't fill them all, add proportionately to each
+        # account's limit:
         if abs(total) < abs(total_finite_limit):
-            transactions = {
-                account: total * (
-                    finite_accounts[account] / total_finite_limit)
-                for account in finite_accounts
-            }
-        # If we can fill each finite account, fill them and then
+            _transactions = {}
+            for account in finite_accounts_trans:
+                # Determine what proportion of the total transactions should
+                # go to each account based on the relative sizes of their
+                # limits:
+                weight = (
+                    (finite_accounts_total[account] / total_finite_limit)
+                    * (finite_total / total))
+                # Now scale each transaction for each account based on
+                # its weight:
+                _transactions[account] = {
+                    when: value * weight
+                    for when, value in transactions.items()}
+        # If we _can_ fill each finite account, fill them and then
         # allocate the remainder equally between all infinite accounts
         # (or, if there are no infinite accounts, allocate it equally
         # between finite accounts, even though it puts them over-limit):
         else:
-            transactions = finite_accounts  # fill finite accounts
+            _transactions = finite_accounts_trans  # fill finite accounts
             remaining_total = total - total_finite_limit
+            num_transactions = len(transactions)
             # Allocate remainder to infinite accounts:
             if infinite_accounts:
+                num_infinite = len(infinite_accounts)
                 for account in infinite_accounts:
-                    transactions[account] = (
-                        remaining_total / len(infinite_accounts))
-            # If there are no infinite accounts, use finite accounts:
+                    _transactions[account] = {
+                        when: remaining_total
+                              / (num_infinite * num_transactions)
+                        for when in transactions}
+            # If there are no infinite accounts, divide evenly between
+            # the finite accounts:
+            # TODO: Should we over-contribute to finite accounts?
+            # I doubt there is ever a reason to assign more than the max
             if not infinite_accounts:
-                for account in finite_accounts:
-                    transactions[account] += (
-                        remaining_total / len(finite_accounts))
-        return transactions
+                num_finite = len(finite_accounts_trans)
+                for account in finite_accounts_trans:
+                    for when in _transactions[account]:
+                        _transactions[account][when] += (
+                            remaining_total / (num_finite * num_transactions))
+        return _transactions
 
     def _get_weights_key(self, account):
         """ Retrieves the `weights` key that `account` corresponds to.
