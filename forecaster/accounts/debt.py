@@ -128,7 +128,7 @@ class Debt(Account):
         """ The maximum annual withdrawals from the debt account. """
         return Money(0)
 
-    def max_inflows(self, timing=None, _balance=Money(0)):
+    def max_inflows(self, timing=None, balance_limit=None, inflow_limit=None):
         """ The maximum amounts that can be contributed at `timing`.
 
         The output transaction values will be proportionate to the
@@ -140,24 +140,27 @@ class Debt(Account):
         Args:
             timing (Timing): A mapping of `{when: weight}` pairs.
                 Optional. Uses default_timing if not provided.
-            _balance (Money): The balance that the method will seek to
-                achieve by end-of-year. This is primarily provided for
-                the benefit of certain subclasses (like `Debt`) which
-                calculate inflows and outflows relative to a zero point
-                different than a conventional Account. For example,
-                inflows to a Debt move its balance toward $0, not
-                $Infinity. Optional.
+            balance_limit (Money): This balance, if provided, will not
+                be exceeded at year-end. Optional.
+            inflow_limit (Money): Total inflows will not exceed this
+                amount (not including any inflows already recorded
+                against this `Account`). Optional.
 
         Returns:
             dict[float, Money]: A mapping of `{when: value}` pairs where
                 `value` indicates the maximum amount that can be
                 contributed at that time.
         """
-        # This method provides a different default for _balance, so
-        # it isn't a useless method.
-        return super().max_inflows(timing=timing, _balance=_balance)
+        if balance_limit is None:
+            # Only pay off debts until they reach $0 balance.
+            # (Superclass assumes we want to contribute indefinitely.)
+            balance_limit = Money(0)
+        return super().max_inflows(
+            timing=timing,
+            balance_limit=balance_limit,
+            inflow_limit=inflow_limit)
 
-    def min_inflows(self, timing=None, _balance=Money(0)):
+    def min_inflows(self, timing=None, balance_limit=None, inflow_limit=None):
         """ The minimum amounts that must be contributed at `timing`.
 
         The output transaction values will be proportionate to the
@@ -169,22 +172,25 @@ class Debt(Account):
         Args:
             timing (Timing): A mapping of `{when: weight}` pairs.
                 Optional. Uses default_timing if not provided.
-            _balance (Money): The balance that the method will seek to
-                achieve by end-of-year. This is primarily provided for
-                the benefit of certain subclasses (like `Debt`) which
-                calculate inflows and outflows relative to a zero point
-                different than a conventional Account. For example,
-                inflows to a Debt move its balance toward $0, not
-                $Infinity. Optional.
+            balance_limit (Money): This balance, if provided, will not
+                be exceeded at year-end. Optional.
+            inflow_limit (Money): Total inflows will not exceed this
+                amount (not including any inflows already recorded
+                against this `Account`). Optional.
 
         Returns:
             dict[float, Money]: A mapping of `{when: value}` pairs where
                 `value` indicates the maximum amount that can be
                 contributed at that time.
         """
-        # This method provides a different default for _balance, so
-        # it isn't a useless method.
-        return super().min_inflows(timing=timing, _balance=_balance)
+        if balance_limit is None:
+            # Only pay off debts until they reach $0 balance.
+            # (Superclass assumes we want to contribute indefinitely.)
+            balance_limit = Money(0)
+        return super().min_inflows(
+            timing=timing,
+            balance_limit=balance_limit,
+            inflow_limit=inflow_limit)
 
     def max_payment(
             self, savings_available=Money(0),
