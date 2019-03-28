@@ -73,17 +73,25 @@ class Timing(dict):
             if all(value >= 0 for value in when.values()):
                 self.update(when)
                 return
+            # If all items are negative, flip the signs and then copy:
+            elif all(value <= 0 for value in when.values()):
+                self.update({time: -value for time, value in when.items()})
+                return
 
-            # Otherwise, we need to account for negative values.
-            # We do this in two stages. First, for each timing,
-            # determine the cumulative value of all transactions to date
-            # and store it in `accum`:
+            # Otherwise, we need to account for sequences of inflows and
+            # outflows. We'll assume that positive net flows correspond
+            # to the amounts available at any given time and treat these
+            # as our weights; this lets us ingest an `available` dict.
+
+            # We do this in two stages.
+            # First, for each timing, determine the cumulative value of
+            # all transactions to date and store it in `accum`:
             accum = {}
             tally = 0  # sum of transactions so far
             for timing in sorted(when.keys()):
                 tally += when[timing]
                 accum[timing] = tally
-            # Now iterate over the timings *again*, this time
+            # Second, iterate over the timings *again*, this time
             # determining for each timing the maximum amount that can be
             # withdrawn without putting a future timing into negative
             # balance:
