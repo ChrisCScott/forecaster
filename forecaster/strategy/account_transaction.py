@@ -80,68 +80,103 @@ class AccountGroup(object):
             for group in self.contribution_groups)
 
     def min_inflows(
-            self, timing=None, balance_limit=None, inflow_limit=None):
+            self, timing=None, balance_limit=None, transaction_limit=None):
         """ The combined minimum inflows for all accounts in the group. """
-        # Pretty straightforward: get the schedule of minimum inflows
-        # for each account, then add each of those inflows to `inflows`.
-        inflows = collections.defaultdict(lambda: Money(0))
-        for account in self:
-            min_inflows = account.min_inflows(
-                timing=timing, balance_limit=balance_limit,
-                inflow_limit=inflow_limit)
-            for when, value in min_inflows.items():
-                inflows[when] += value
-        return inflows
+        return self._transaction_limit(
+            method_name="min_inflows", is_max=False,
+            timing=timing, balance_limit=balance_limit,
+            transaction_limit=transaction_limit)
 
     def max_inflows(
-            self, timing=None, balance_limit=None, inflow_limit=None):
+            self, timing=None, balance_limit=None, transaction_limit=None):
         """ The combined maximum inflows for all accounts in the group.
 
         This method respects contribution groups, and will not double-
         count the contribution room of multiple accounts in the same
         contribution group.
         """
-        # Pretty straightforward: get the schedule of minimum inflows
-        # for each account, then add each of those inflows to `inflows`.
-        inflows = collections.defaultdict(lambda: Money(0))
-        # For each group, pull an element out at random (since they
-        # should all share the same max_inflows)
+        accounts = set()
+        # To be contribution group-aware, pull out one account for
+        # each contribution group:
         for group in self.contribution_groups:
-            account = next(iter(group))
-            max_inflows = account.max_inflows(
-                timing=timing, balance_limit=balance_limit,
-                inflow_limit=inflow_limit)
-            for when, value in max_inflows.items():
-                inflows[when] += value
-        return inflows
+            accounts.add(next(iter(group)))
+        return self._transaction_limit(
+            method_name="max_inflows", is_max=False,
+            accounts=accounts,
+            timing=timing, balance_limit=balance_limit,
+            transaction_limit=transaction_limit)
 
     def min_outflows(
-            self, timing=None, balance_limit=None, outflow_limit=None):
+            self, timing=None, balance_limit=None, transaction_limit=None):
         """ The combined minimum outflows for all accounts in the group. """
-        # Pretty straightforward: get the schedule of minimum outflows
-        # for each account. Add each of those outflows to `outflows`.
-        outflows = collections.defaultdict(lambda: Money(0))
-        for account in self:
-            min_outflows = account.min_outflows(
-                timing=timing, balance_limit=balance_limit,
-                outflow_limit=outflow_limit)
-            for when, value in min_outflows.items():
-                outflows[when] += value
-        return outflows
+        return self._transaction_limit(
+            method_name="min_outflows", is_max=False,
+            timing=timing, balance_limit=balance_limit,
+            transaction_limit=transaction_limit)
 
     def max_outflows(
-            self, timing=None, balance_limit=None, outflow_limit=None):
+            self, timing=None, balance_limit=None, transaction_limit=None):
         """ The combined maximum outflows for all accounts in the group. """
-        # Pretty straightforward: get the schedule of maximum outflows
-        # for each account. Add each of those outflows to `outflows`.
-        outflows = collections.defaultdict(lambda: Money(0))
-        for account in self:
-            max_outflows = account.max_outflows(
+        return self._transaction_limit(
+            method_name="max_outflows", is_max=True,
+            timing=timing, balance_limit=balance_limit,
+            transaction_limit=transaction_limit)
+
+    def _transaction_limit(
+            self, method_name, is_max, accounts=None,
+            timing=None, balance_limit=None, transaction_limit=None):
+        """ The combined max/min in/outflows for all accounts.
+
+        Args:
+            method_name (str): The name of an attribute of each account
+                which is callable with the signature
+                `method(timing, balance_limit), transaction_limit)`
+                and returns a `dict[Decimal, Money]`
+            is_max (Boolean): True if we're finding max in/outflows,
+                otherwise we find min in/outflows.
+            accounts (set): The accounts to iterate over. Optional.
+                Defaults to all accounts in the group.
+            timing (Timing): Same arg as in `max_inflows`
+            balance_limit (Money): Same arg as in `max_inflows`
+            transaction_limit (Money): Same arg as in `max_inflows`
+        """
+        if accounts is None:
+            accounts = self.accounts
+        # Get the min/max transactions for each account and store the
+        # sum of those (across all accounts) in `transactions`:
+        transactions = collections.defaultdict(lambda: Money(0))
+        for account in accounts:
+            limit_method = getattr(account, method_name)
+            account_transactions = limit_method(
                 timing=timing, balance_limit=balance_limit,
-                outflow_limit=outflow_limit)
-            for when, value in max_outflows.items():
-                outflows[when] += value
-        return outflows
+                # NOTE: It's useful to specify `transaction_limit` here,
+                # even though we scale down later, because accounts can
+                # provide an infinite limit which would be harder to
+                # scale.
+                transaction_limit=transaction_limit)
+            for when, value in account_transactions.items():
+                transactions[when] += value
+        # Ensure that `transaction_limit` is respected; scale down the
+        # transactions if necessary.
+        if transaction_limit is not None:
+            total_transactions = abs(sum(transactions.values()))
+            transaction_limit_abs = abs(transaction_limit)
+            if (
+                    is_max and total_transactions > transaction_limit_abs or
+                    not is_max and total_transactions < transaction_limit_abs
+            ):
+                scaling_factor = transaction_limit_abs / total_transactions
+                transactions = {
+                    when: value * scaling_factor
+                    for when, value in transactions.items()}
+        # TODO: Do the same for `balance_limit`.
+        # NOTE: If we scale each transaction equally, we can assume that
+        # change in balance varies linearly as we scale transactions.
+        # One obstacle: Since transactions aren't recorded against each
+        # account, it's hard to tell what balance each account will
+        # reach under these transactions. We may need to add a
+        # `balance_after_transactions` that ingests a transactions dict.
+        return transactions
 
     def get_type(self):
         """ Gets the type of a random contained `Account`. """
@@ -247,12 +282,12 @@ class AccountTransactionStrategy(Strategy):
                 # Add as much inflow as we can, up to the amount we have
                 # left available.
                 transactions[account] = account.max_inflows(
-                    inflow_limit=total)
+                    transaction_limit=total)
             elif total < 0:
                 # Add as much outflow as we can, up to the amount we
                 # have left to withdraw:
                 transactions[account] = account.max_outflows(
-                    outflow_limit=total)
+                    transaction_limit=total)
             else:
                 # If we have no money left to withdraw/contribute, then
                 # we're done! Return now to avoid unnecessary iterations
@@ -298,10 +333,10 @@ class AccountTransactionStrategy(Strategy):
             # so we'll use `max_inflows`/`max_outflows` as appropriate.
             if total > 0:
                 transactions[account] = account.max_inflows(
-                    inflow_limit=value)
+                    transaction_limit=value)
             elif total < 0:
                 transactions[account] = account.max_outflows(
-                    outflow_limit=value)
+                    transaction_limit=value)
 
             # Using `max_inflows` or `max_outflows` creates a problem:
             # We might assign less than `total` if it exceeds an
@@ -328,29 +363,31 @@ class AccountTransactionStrategy(Strategy):
 
         return transactions
 
-    def _recurse_min(
-            self, total, accounts, transactions, *args, **kwargs):
-        """ Recursively assigns minimum inflows/outflows to accounts. """
-        # Check to see whether any accounts have minimum inflows or
-        # outflows that aren't met by the allocation in `transactions`.
-        if total > 0:  # For inflows, check min_inflows
-            min_inflows = {
-                account: account.min_inflows(timing=transactions[account])
-                for account in accounts}
-            override_transactions = {
-                account: min_inflows[account] for account in transactions
-                if sum(min_inflows[account].values()) >
-                sum(transactions[account].values())}
-        else:
-            # For outflows, check min_outflows.
-            # (Recall that outflows are negative-valued)
-            min_outflows = {
-                account: account.min_outflows(timing=transactions[account])
-                for account in accounts}
-            override_transactions = {
-                account: min_outflows[account] for account in transactions
-                if sum(min_outflows[account].values()) <
-                sum(transactions[account].values())}
+    def _recurse_limit(
+            self, total, accounts, transactions, method_name, is_min,
+            *args, **kwargs
+        ):
+        """ Recursively assigns min/max inflows/outflows to accounts. """
+        # Check to see whether any accounts have transactions that don't
+        # meet the min/max limit provided by `method_name`.
+        min_transactions = {}  # Find this for every account
+        override_transactions = {}  # Only for accts. where min not met
+        for account in accounts:
+            # Grab the appropriate bound method for this account:
+            limit_method = getattr(account, method_name)
+            # Use the timing in `transactions` if available:
+            if account in transactions:
+                min_transactions[account] = limit_method(
+                    timing=transactions[account])
+                # If min aren't met by `transactions`, we'll want to
+                # override them. Record that here:
+                total_limit = abs(sum(min_transactions[account].values()))
+                total_trans = abs(sum(transactions[account].values()))
+                if (
+                        (is_min and total_limit > total_trans)
+                        or (not is_min and total_limit < total_trans)
+                    ):
+                    override_transactions[account] = min_transactions[account]
 
         # If there are no accounts that need to be tweaked, we're done.
         if not override_transactions:
@@ -369,23 +406,18 @@ class AccountTransactionStrategy(Strategy):
             sum(override_transactions[account].values())
             for account in override_transactions)
 
-        # If we've already allocated more than the original total
-        # (just on the overridden accounts!) then there's no room left
+        # For minimum transactions only:
+        # If there's no `remaining_total` left (or if it's overshot
+        # total and thus has a different sign) then there's no room left
         # to recurse on the strategy. Simply allocate the minimum
-        # inflow/outflow for each remaining accounts and terminate:
-        if (
-                total > 0 > remaining_total
-                or total < 0 < remaining_total
-                or remaining_total == 0
-        ):
-            if total > 0:  # Inflows
-                override_transactions.update({
-                    account: account.min_inflows()
-                    for account in remaining_accounts})
-            else:  # Outflows
-                override_transactions.update({
-                    account: account.min_outflows()
-                    for account in remaining_accounts})
+        # inflow/outflow for each remaining account and terminate:
+        # NOTE: Consider whether this behaviour should be deactivatable.
+        # It's not necessarily desirable to allocate more than `total`,
+        # even if required by the chosen minimum transactions.
+        if (is_min and (remaining_total == 0 or total / remaining_total < 0)):
+            for account in remaining_accounts:
+                limit_method = getattr(account, method_name)
+                override_transactions[account] = limit_method()
             return override_transactions
 
         # Otherwise, if there's still money to be allocated,
@@ -398,49 +430,30 @@ class AccountTransactionStrategy(Strategy):
         override_transactions.update(remaining_transactions)
         return override_transactions
 
+
+    def _recurse_min(
+            self, total, accounts, transactions, *args, **kwargs):
+        """ Recursively assigns minimum inflows/outflows to accounts. """
+        if total >= 0:
+            method_name = "min_inflows"
+        else:
+            method_name = "min_outflows"
+        return self._recurse_limit(
+            total, accounts, transactions,
+            method_name=method_name, is_min=True,
+            *args, **kwargs)
+
     def _recurse_max(
             self, total, accounts, transactions, *args, **kwargs):
         """ Recursively assigns minimum inflows/outflows to accounts. """
-        # Check to see whether any accounts have minimum inflows or
-        # outflows that aren't met by the allocation in `transactions`.
-        if total > 0:  # For inflows, check max_inflows
-            max_inflows = {
-                account: account.max_inflows() for account in accounts}
-            override_transactions = {
-                account: max_inflows[account] for account in transactions
-                if sum(max_inflows[account].values()) <
-                sum(transactions[account].values())}
+        if total >= 0:
+            method_name = "max_inflows"
         else:
-            # For outflows, check max_outflows.
-            # (Recall that outflows are negative-valued)
-            max_outflows = {
-                account: account.max_outflows() for account in accounts}
-            override_transactions = {
-                account: max_outflows[account] for account in transactions
-                if sum(max_outflows[account].values()) >
-                sum(transactions[account].values())}
-
-        # If there are no accounts that need to be tweaked, we're done.
-        if not override_transactions:
-            return transactions
-
-        # Identify all accounts that haven't been manually set yet:
-        remaining_accounts = accounts.difference(override_transactions)
-
-        # Determine the amount to be allocated to the non-maxed accounts:
-        remaining_total = total - sum(
-            sum(override_transactions[account].values())
-            for account in override_transactions)
-
-        # Reassign money to non-maxed accounts according to the selected
-        # strategy.
-        remaining_transactions = self.__call__(
-            total=remaining_total,
-            accounts=remaining_accounts,
+            method_name = "max_outflows"
+        return self._recurse_limit(
+            total, accounts, transactions,
+            method_name=method_name, is_min=False,
             *args, **kwargs)
-
-        override_transactions.update(remaining_transactions)
-        return override_transactions
 
     def _group_by_contribution_group(self, accounts):
         """ Groups together accounts belonging to a contribution group.
