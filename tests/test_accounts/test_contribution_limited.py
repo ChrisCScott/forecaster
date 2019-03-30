@@ -94,7 +94,7 @@ class TestContributionLimitAccountMethods(TestAccountMethods):
         account = self.AccountType(
             self.owner, *args,
             contribution_room=self.contribution_room, **kwargs)
-        self.assertEqual(account.max_inflow, self.contribution_room)
+        self.assertEqual(account.max_inflow_limit, self.contribution_room)
 
     def test_max_outflows_negative(self, *args, **kwargs):
         """ Test max_outflows with negative-balance account. """

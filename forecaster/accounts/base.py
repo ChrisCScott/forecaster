@@ -361,7 +361,7 @@ class Account(TaxSource):
         self._transactions = defaultdict(lambda: Money(0))
 
     @property
-    def max_outflow(self):
+    def max_outflow_limit(self):
         """ The maximum amount that can be withdrawn from the account.
 
         This property provides a scalar value representing the largest
@@ -380,7 +380,7 @@ class Account(TaxSource):
         return Money('-Infinity')
 
     @property
-    def max_inflow(self):
+    def max_inflow_limit(self):
         """ The maximum amount that can be contributed to the account.
 
         This method uses the same semantics as `max_outflow`, except
@@ -390,7 +390,7 @@ class Account(TaxSource):
         return Money('Infinity')
 
     @property
-    def min_outflow(self):
+    def min_outflow_limit(self):
         """ The minimum amount to be withdrawn from the account.
 
         This method uses the same semantics as `max_outflow`, except
@@ -400,7 +400,7 @@ class Account(TaxSource):
         return Money('0')
 
     @property
-    def min_inflow(self):
+    def min_inflow_limit(self):
         """ The minimum amount to be contributed to the account.
 
         This method uses the same semantics as `max_outflow`, except
@@ -408,6 +408,32 @@ class Account(TaxSource):
         """
         # For an ordinary Account, there is no minimum contribution.
         return Money('0')
+
+    def max_inflow(self, when="end"):
+        """ The maximum amount that can be contributed at `when`. """
+        # The `when` arg is provided for subclasses to use.
+        # pylint: disable=unused-argument
+        return self.max_inflow_limit
+
+    def min_inflow(self, when="end"):
+        """ The minimum amount that can be contributed at `when`. """
+        # The `when` arg is provided for subclasses to use.
+        # pylint: disable=unused-argument
+        return self.min_inflow_limit
+
+    def max_outflow(self, when="end"):
+        """ The maximum amount that can be withdrawn at `when`. """
+        return max(
+            # Withdraw everything (or none if the balance is negative)
+            min(-self.balance_at_time(when), Money(0)),
+            # But no more than the maximum outflow:
+            self.max_outflow_limit)
+
+    def min_outflow(self, when="end"):
+        """ The minimum amount that can be withdrawn at `when`. """
+        # The `when` arg is provided for subclasses to use.
+        # pylint: disable=unused-argument
+        return self.min_outflow_limit
 
     def transactions_to_balance(
             self, balance, timing=None,
@@ -554,7 +580,7 @@ class Account(TaxSource):
             # Limit to max total outflows, accounting for any existing
             # inflows already recorded as transactions:
             transaction_limit = min(
-                self.max_outflow - self.outflows,
+                self.max_outflow_limit - self.outflows,
                 # Don't allow positive lower bounds:
                 Money(0))
         # Ensure that only negative amounts are returned:
@@ -596,7 +622,7 @@ class Account(TaxSource):
         # inflows already recorded as transactions:
         if transaction_limit is None:
             transaction_limit = max(
-                self.max_inflow - self.inflows,
+                self.max_inflow_limit - self.inflows,
                 # Don't allow negative upper bound:
                 Money(0))
         # Ensure that only non-negative amounts are returned:
@@ -637,7 +663,7 @@ class Account(TaxSource):
         if transaction_limit is None:
             # Ensure that the largest possible outflow is non-positive:
             transaction_limit = min(
-                self.min_outflow - self.outflows,
+                self.min_outflow_limit - self.outflows,
                 # Don't allow positive lower bounds:
                 Money(0))
         # Ensure that only negative amounts are returned:
@@ -679,7 +705,7 @@ class Account(TaxSource):
         # inflows already recorded as transactions:
         if transaction_limit is None:
             transaction_limit = max(
-                self.min_inflow - self.inflows,
+                self.min_inflow_limit - self.inflows,
                 # Don't allow negative upper bound:
                 Money(0))
         # Ensure that only non-negative amounts are returned:

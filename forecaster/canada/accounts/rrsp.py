@@ -142,7 +142,7 @@ class RRSP(RegisteredAccount):
         else:
             # Only withdrawals in excess of the minimum RRIF withdrawal
             # are hit by the withholding tax.
-            taxable_income = self.taxable_income - self.min_outflow
+            taxable_income = self.taxable_income - self.min_outflow_limit
 
         year = nearest_year(
             constants.RRSP_WITHHOLDING_TAX_RATE,
@@ -208,7 +208,7 @@ class RRSP(RegisteredAccount):
             return min(accrual, Money(max_accrual)) + rollover
 
     @property
-    def min_outflow(self):
+    def min_outflow_limit(self):
         """ Minimum annual RRSP/RRIF withdrawal """
         # Minimum withdrawals are required the year after converting to
         # an RRIF. How it is calculated depends on the person's age.

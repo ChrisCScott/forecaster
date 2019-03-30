@@ -152,6 +152,6 @@ class ContributionLimitAccount(Account):
             + 'Subclasses must override this method.')
 
     @property
-    def max_inflow(self):
+    def max_inflow_limit(self):
         """ Limits outflows based on contribution room for the year. """
         return self.contribution_room

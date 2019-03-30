@@ -426,7 +426,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
             # If this isn't an RRIF yet, there's no min. outflow.
             else:
                 min_outflow = 0
-            self.assertEqual(account.min_outflow(), min_outflow)
+            self.assertEqual(account.min_outflow_limit(), min_outflow)
             # Advance the account and test again on the next year:
             account.next_year()
 
@@ -525,11 +525,11 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         # should equal the annual accrual for `self.owner` (without
         # carryover, since we used up all contribution room last year):
         self.assertEqual(
-            spousal_account.max_inflow,
+            spousal_account.max_inflow_limit,
             Money(10000) * constants.RRSP_ACCRUAL_RATE)
         self.assertEqual(
-            regular_account.max_inflow,
-            spousal_account.max_inflow)
+            regular_account.max_inflow_limit,
+            spousal_account.max_inflow_limit)
 
 if __name__ == '__main__':
     # NOTE: BasicContext is useful for debugging, as most errors are treated

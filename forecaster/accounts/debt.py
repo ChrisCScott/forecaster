@@ -114,19 +114,34 @@ class Debt(Account):
         self._accelerated_payment = Money(val)
 
     @property
-    def min_inflow(self):
+    def min_inflow_limit(self):
         """ The minimum annual payment on the debt. """
+        # Must make at least the minimum payment
         return self.minimum_payment
 
     @property
-    def max_inflow(self):
+    def max_inflow_limit(self):
         """ The maximum annual payment on the debt. """
+        # Largest payment exceeds minimum only by `accelerated_payment`
         return self.minimum_payment + self.accelerated_payment
 
     @property
-    def max_outflow(self):
+    def max_outflow_limit(self):
         """ The maximum annual withdrawals from the debt account. """
+        # No outflows permitted
         return Money(0)
+
+    # No need to override min_outflow_limit - still $0.
+
+    def max_inflow(self, when="end"):
+        """ The maximum amount that can be contributed at `when`. """
+        # Max you can contribute is the lesser of: the limit and the
+        # remaining balance.
+        return min(
+            # Repay the whole balance (or none if positive)
+            max(-self.balance_at_time(when), Money(0)),
+            # But no more than the maximum outflow:
+            self.max_inflow_limit)
 
     def max_inflows(
             self, timing=None, balance_limit=None, transaction_limit=None):
