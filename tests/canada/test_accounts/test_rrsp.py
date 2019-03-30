@@ -525,11 +525,11 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         # should equal the annual accrual for `self.owner` (without
         # carryover, since we used up all contribution room last year):
         self.assertEqual(
-            spousal_account.max_inflow(),
+            spousal_account.max_inflow,
             Money(10000) * constants.RRSP_ACCRUAL_RATE)
         self.assertEqual(
-            regular_account.max_inflow(),
-            spousal_account.max_inflow())
+            regular_account.max_inflow,
+            spousal_account.max_inflow)
 
 if __name__ == '__main__':
     # NOTE: BasicContext is useful for debugging, as most errors are treated

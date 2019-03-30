@@ -68,10 +68,10 @@ class TestContributionForecast(unittest.TestCase):
         # pylint: disable=unsubscriptable-object
         # These properties return dicts, but pylint has trouble
         # inferring that.
-        account_contribution = (
-            self.forecast.account_transactions[self.account])
-        limit_account_contribution = (
-            self.forecast.account_transactions[self.limit_account])
+        account_contribution = sum(
+            self.forecast.account_transactions[self.account].values())
+        limit_account_contribution = sum(
+            self.forecast.account_transactions[self.limit_account].values())
         # We have $3000 available to contribute. We contribute the
         # first $1000 to `limit_account` and the balance to `account`
         self.assertEqual(
@@ -94,10 +94,10 @@ class TestContributionForecast(unittest.TestCase):
         # pylint: disable=unsubscriptable-object
         # These properties return dicts, but pylint has trouble
         # inferring that.
-        account_contribution = (
-            self.forecast.account_transactions[self.account])
-        limit_account_contribution = (
-            self.forecast.account_transactions[self.limit_account])
+        account_contribution = sum(
+            self.forecast.account_transactions[self.account].values())
+        limit_account_contribution = sum(
+            self.forecast.account_transactions[self.limit_account].values())
         # We have $3000 available to contribute. We contribute $500
         # to `limit_account` and the rest to `account`.
         self.assertEqual(
