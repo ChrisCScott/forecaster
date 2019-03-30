@@ -128,7 +128,8 @@ class Debt(Account):
         """ The maximum annual withdrawals from the debt account. """
         return Money(0)
 
-    def max_inflows(self, timing=None, balance_limit=None, inflow_limit=None):
+    def max_inflows(
+            self, timing=None, balance_limit=None, transaction_limit=None):
         """ The maximum amounts that can be contributed at `timing`.
 
         The output transaction values will be proportionate to the
@@ -142,8 +143,8 @@ class Debt(Account):
                 Optional. Uses default_timing if not provided.
             balance_limit (Money): This balance, if provided, will not
                 be exceeded at year-end. Optional.
-            inflow_limit (Money): Total inflows will not exceed this
-                amount (not including any inflows already recorded
+            transaction_limit (Money): Total inflows will not exceed
+                this amount (not including any inflows already recorded
                 against this `Account`). Optional.
 
         Returns:
@@ -158,9 +159,10 @@ class Debt(Account):
         return super().max_inflows(
             timing=timing,
             balance_limit=balance_limit,
-            inflow_limit=inflow_limit)
+            transaction_limit=transaction_limit)
 
-    def min_inflows(self, timing=None, balance_limit=None, inflow_limit=None):
+    def min_inflows(
+            self, timing=None, balance_limit=None, transaction_limit=None):
         """ The minimum amounts that must be contributed at `timing`.
 
         The output transaction values will be proportionate to the
@@ -174,8 +176,8 @@ class Debt(Account):
                 Optional. Uses default_timing if not provided.
             balance_limit (Money): This balance, if provided, will not
                 be exceeded at year-end. Optional.
-            inflow_limit (Money): Total inflows will not exceed this
-                amount (not including any inflows already recorded
+            transaction_limit (Money): Total inflows will not exceed
+                this amount (not including any inflows already recorded
                 against this `Account`). Optional.
 
         Returns:
@@ -190,7 +192,7 @@ class Debt(Account):
         return super().min_inflows(
             timing=timing,
             balance_limit=balance_limit,
-            inflow_limit=inflow_limit)
+            transaction_limit=transaction_limit)
 
     def max_payment(
             self, savings_available=Money(0),
