@@ -215,6 +215,37 @@ class SubForecast(Ledger):
         # the cache so they can be re-calculated based on the new input:
         self.clear_cache()
 
+    def add_transactions(
+            self, transactions,
+            from_account=None, to_account=None,
+            strict_timing=False):
+        """ Records a group of transactions between accounts.
+
+        This is a convenience method that takes in some transactions
+        (as `when: value` pairs) and adds each one as a transaction from
+        `from_account` to `to_account` using the same semantics as
+        `add_transaction`.
+
+        Args:
+            transactions (dict[Decimal, Money]): The timings and values
+                of the transactions. Positive for inflows, negative for
+                outflows.
+            from_account (Account, dict[Decimal, Money]): An account
+                (or dict of transactions) from which the transaction
+                originates. Optional.
+            from_account (Account, dict[Decimal, Money]): An account
+                (or dict of transactions) to which the transaction
+                is being sent. Optional.
+            strict_timing (bool): If False, transactions may be added
+                later than `when` if this avoids putting accounts in
+                a negative balance. If True, `when` is always used.
+        """
+        for when, value in transactions.items():
+            self.add_transaction(
+                value=value, timing=when,
+                from_account=from_account, to_account=to_account,
+                strict_timing=strict_timing)
+
     def add_transaction(
             self, value, timing=None,
             from_account=None, to_account=None,
@@ -244,11 +275,6 @@ class SubForecast(Ledger):
         transaction values) or anything with similar semantics will
         also work.
 
-        If `frequency` is provided, then `transaction` is split
-        up into `frequency` equal amounts over `frequency` equally-
-        spaced payment periods. The `when` parameter determines
-        when in each payment period the transactions are made.
-
         Args:
             value (Money): The value of the transaction.
                 Positive for inflows, negative for outflows.
@@ -257,8 +283,6 @@ class SubForecast(Ledger):
                 converted to a Timing object (e.g. a dict of
                 {timing: weight} pairs, a `when` value as a float or
                 string, etc.). Optional; defaults to `default_timing`.
-            frequency (int): The number of transactions made in the
-                year. Must be positive. Optional.
             from_account (Account, dict[Decimal, Money]): An account
                 (or dict of transactions) from which the transaction
                 originates. Optional.
@@ -431,5 +455,5 @@ class SubForecast(Ledger):
                     # If that time falls within the period
                     # (earlier, later), then add it!
                     if time > earlier and time < later:
-                        accum[time] = -account.max_outflow[time]
+                        accum[time] = -sum(account.max_outflows(time).values())
         return accum
