@@ -94,13 +94,12 @@ class TestSubForecast(unittest.TestCase):
         self.subforecast.add_transaction(
             value=100, timing='start',
             from_account=self.available_acct, to_account=self.account2)
+        result = self.subforecast.transactions
+        target = {
+            self.available_acct: {Decimal(0.5): Money(-100)},
+            self.account2: {Decimal(0.5): Money(100)}}
         # Transaction should be delayed until mid-year:
-        self.assertEqual(
-            self.subforecast.transactions,
-            {
-                self.available_acct: {Decimal(0.5): Money(-100)},
-                self.account2: {Decimal(0.5): Money(100)}
-            })
+        self.assertEqual(result, target)
 
     def test_transaction_none(self):
         """ Tests that transactions against None are saved correctly. """
