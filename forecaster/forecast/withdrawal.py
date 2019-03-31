@@ -64,9 +64,24 @@ class WithdrawalForecast(SubForecast):
         # negative, but we shouldn't be _increasing_ withdrawals as
         # default behaviour (though maybe we can do it if a flag is set)
 
+        # HACK: This whole method needs a redesign.
+        # Right now the strategy object returns a set of transactions
+        # for each account. We're flattening that here into totals for
+        # each account and then redetermining timing based on the
+        # `available` flows.
+        # The problem is that `account_transactions_strategy` receives
+        # a scalar (`total`) as an argument when it _should_ receive
+        # the `available` dict (or something similar) so that the
+        # output already respects `available`'s timings.
+        # TODO: Redesign `AccountTransactionsStrategy` to take timing-
+        # aware args, then simplify this method to rely directly on the
+        # resulting output.
+
         # Set up variables to track progress as we make withdrawals:
         accum = Money(0)
-        transactions_total = sum(self.account_transactions.values())
+        transactions_total = sum(
+            sum(transactions.values())
+            for transactions in self.account_transactions.values())
         tax_withheld = {
             account: account.tax_withheld
             for account in self.account_transactions}
@@ -78,11 +93,11 @@ class WithdrawalForecast(SubForecast):
             if accum < 0:  # negative balance - time to withdraw!
                 # Withdraw however much we're short by:
                 withdrawal = -accum
-                for account in self.account_transactions:
+                for account, transactions in self.account_transactions.items():
                     # Withdraw from each account proportionately to
                     # the total amounts withdrawn from each account:
                     account_transaction = withdrawal * (
-                        self.account_transactions[account]
+                        sum(transactions.values())
                         / transactions_total)
                     # Add the gross transaction from the account
                     # (not accounting for withholdings):

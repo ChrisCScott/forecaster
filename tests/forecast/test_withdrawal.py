@@ -70,10 +70,10 @@ class TestWithdrawalForecast(unittest.TestCase):
         # pylint: disable=unsubscriptable-object
         # These properties return dicts, but pylint has trouble
         # inferring that.
-        account_withdrawal = (
-            self.forecast.account_transactions[self.account])
-        limit_account_withdrawal = (
-            self.forecast.account_transactions[self.limit_account])
+        account_withdrawal = sum(
+            self.forecast.account_transactions[self.account].values())
+        limit_account_withdrawal = sum(
+            self.forecast.account_transactions[self.limit_account].values())
         # We are withdrawing $20,000. We'll withdraw the whole balance
         # of `limit_account` ($6000), with the rest from `account`:
         self.assertEqual(
@@ -96,10 +96,10 @@ class TestWithdrawalForecast(unittest.TestCase):
         # pylint: disable=unsubscriptable-object
         # These properties return dicts, but pylint has trouble
         # inferring that.
-        account_withdrawal = (
-            self.forecast.account_transactions[self.account])
-        limit_account_withdrawal = (
-            self.forecast.account_transactions[self.limit_account])
+        account_withdrawal = sum(
+            self.forecast.account_transactions[self.account].values())
+        limit_account_withdrawal = sum(
+            self.forecast.account_transactions[self.limit_account].values())
         # We are withdrawing $20,000. We'll withdraw $3000 from
         # `limit_account`, with the rest from `account`:
         self.assertEqual(
