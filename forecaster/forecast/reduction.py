@@ -106,7 +106,10 @@ class ReductionForecast(SubForecast):
                 base=debt.inflows)
             # Turn these into weights so that we can multiply each
             # transaction in `account_transactions` by it:
-            savings_weight = savings_total / total_payment
+            if total_payment != 0:
+                savings_weight = savings_total / total_payment
+            else:
+                savings_weight = 0
             payments[debt] = {
                 when: value * savings_weight
                 for when, value in transactions.items()}
