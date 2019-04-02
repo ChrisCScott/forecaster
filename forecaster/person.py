@@ -6,13 +6,48 @@ from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
 from forecaster.ledger import (
     Money, TaxSource, recorded_property, recorded_property_cached)
-from forecaster.utility import frequency_conv
+from forecaster.utility import Timing
 
 
 class Person(TaxSource):
     """ Represents a person's basic information: age and retirement age.
 
+    Arguments:
+        name (str): The person's name. No specific form is required;
+            this is only used for display, not any computations.
+        birth_date (datetime, str, int): The person's birth date.
+            May be passed as an int (interpreted as the birth year) or
+            as a datetime-convertible value (e.g. a string in a
+            suitable format)
+        retirement_date (datetime, str, int): The person's retirement
+            date. Optional.
+            May be passed as an int (interpreted as the birth year) or
+            as a datetime-convertible value (e.g. a string in a
+            suitable format)
+        gross_income (Money): Annual gross income for the initial year.
+        raise_rate (Decimal, Callable): The person's raise in gross
+            income for each year relative to the previous year.
+        payment_timing (Timing, dict[float, float]): The timings of
+            payments mapped to the weight of each payment. Optional.
+        spouse (Person): The person's spouse. This linkage is
+            one-to-one; the spouse's `spouse` attribute points back to
+            this Person.
+        tax_treatment (Tax): The tax treatment of the person. A callable
+            object; see documentation for `Tax` for more information.
+        inputs (dict[str, dict[int, Any]]): `{attr: {year: val}}`
+            pairs, where `attr` is any one of `Person`'s recorded
+            propertes, namely:
+
+            * taxable_income
+            * tax_withheld
+            * tax_credit
+            * tax_deduction
+            * gross_income
+            * net_income
+            * raise_rate
+
     Attributes:
+        accounts (set): All accounts naming this Person as an owner.
         name (str): The person's name. No specific form is required;
             this is only used for display, not any computations.
         birth_date (datetime): The person's birth date.
@@ -37,16 +72,21 @@ class Person(TaxSource):
             year relative to last year.
         raise_rate_history (dict[int, Decimal]): Raises for all years
             on record.
-        payment_frequency (int): The number of times each year that
-            the Person is paid. Uses the same syntax as
-            `forecaster.utility.frequency_conv` (e.g. 'M' or 12
-            for monthly payments).
-            Optional; defaults to biweekly payments.
+        payment_timing (Timing, dict[float, float]): The timings of
+            payments and the weight of each payment timing. Optional.
         spouse (Person): The person's spouse. This linkage is
             one-to-one; the spouse's `spouse` attribute points back to
             this Person.
         tax_treatment (Tax): The tax treatment of the person. A callable
             object; see documentation for `Tax` for more information.
+
+    Raises:
+        TypeError: birth_date or retirement_date are not parseable
+            as datetimes due to an unexpected type.
+        ValueError: birth_date or retirement_date are not parseable
+            as datetimes due to an unexpected value.
+        ValueError: retirement_date precedes birth_date
+        OverflowError: birth_date or retirement_date are too large.
     """
 
     # This class has a lot of members in large part because every
@@ -73,88 +113,33 @@ class Person(TaxSource):
     def __init__(
             self, initial_year, name, birth_date, retirement_date=None,
             gross_income=0, raise_rate=0, spouse=None, tax_treatment=None,
-            payment_frequency='BW', inputs=None):
-        """ Constructor for `Person`.
-
-        Attributes:
-            accounts (set): All accounts naming this Person as an owner.
-
-        Args:
-            initial_year (int): The first year of recorded data.
-            name (str): The person's name.
-            birth_date (datetime): The person's date of birth.
-                May be passed as any value that can be cast to str and
-                converted to datetime by python-dateutils.parse().
-            retirement_date (datetime): The person's retirement date.
-                May be passed as any value that can be cast to str and
-                converted to datetime by python-dateutils.parse().
-                Optional.
-            gross_income (Money): The person's gross income in
-                `initial_year`.
-            raise_rate (dict[int, Decimal], callable): The person's
-                raise for each year, as a callable object with the
-                signature `raise_rate(year)` or a dict of
-                `{year: raise}` pairs. The raise is a Decimal
-                interpreted as a percentage (e.g. `Decimal('0.03')`
-                indicates a 3% raise).
-            spouse (Person): The person's spouse. Optional.
-                In ordinary use, the first person of the couple is
-                constructed with `spouse=None`, and the second person is
-                constructed with `spouse=person1`. Both persons will
-                automatically have their spouse attribute updated to
-                point at each other.
-            tax_treatment (Tax): The person's tax treatment. Optional.
-                This can be any callable object that accepts the form
-                `tax_treatment(taxable_income, year)` and returns a
-                Money object (which corresponds to total taxes payable
-                on `taxable_income`).
-            payment_frequency (str, int): The frequency with which
-                `Person` is paid. Uses the same syntax as
-                `forecaster.utility.frequency_conv` (e.g. 'M' or 12
-                for monthly payments).
-                Optional; defaults to biweekly payments.
-            inputs (dict[str, dict[int, Any]]): `{attr: {year: val}}`
-                pairs, where `attr` is any one of `Person`'s recorded
-                propertes, namely:
-
-                * taxable_income
-                * tax_withheld
-                * tax_credit
-                * tax_deduction
-                * gross_income
-                * net_income
-                * raise_rate
-
-        Returns:
-            An instance of class `Person`
-
-        Raises:
-            ValueError: birth_date or retirement_date are not parseable
-                as dates.
-            ValueError: retirement_date precedes birth_date
-            OverflowError: birth_date or retirement_date are too large.
-
-        """
+            payment_timing=None, inputs=None):
+        """ Initializes a `Person` object. """
         super().__init__(initial_year=initial_year, inputs=inputs)
+
+        # For simple, non-property-wrapped attributes, assign directly:
+        self.name = name
+        if payment_timing is None:
+            # Timing is technically mutable, so init it here rather than
+            # using "Timing()" as a default value.
+            self.payment_timing = Timing()
+        else:
+            self.payment_timing = Timing(payment_timing)
 
         # For attributes wrapped by ordinary properties, create hidden
         # attributes and assign to them using the properties:
-        self._name = None
         self._birth_date = None
         self._retirement_date = None
-        self._raise_rate_function = None
+        self._raise_rate_callable = None
         self._spouse = None
         self._tax_treatment = None
-        self._payment_frequency = None
         self._contribution_room = {}
         self._contribution_groups = {}
-        self.name = name
         self.birth_date = birth_date
         self.retirement_date = retirement_date
         self.raise_rate_callable = raise_rate
         self.spouse = spouse
         self.tax_treatment = tax_treatment
-        self.payment_frequency = payment_frequency
 
         # Now provide initial-year values for recorded properties:
         # NOTE: Be sure to do type-checking here.
@@ -166,23 +151,20 @@ class Person(TaxSource):
         self.accounts = set()
 
     @property
-    def name(self):
-        """ The name of the Person. """
-        return self._name
-
-    @name.setter
-    def name(self, val):
-        """ Sets the Person's name. """
-        self._name = str(val)
-
-    @property
     def birth_date(self):
         """ The birth date of the Person. """
         return self._birth_date
 
     @birth_date.setter
     def birth_date(self, val):
-        """ Sets the birth date of the Person. """
+        """ Sets the birth date of the Person.
+
+        Raises:
+            TypeError: `val` could not be parsed as a datetime due to
+                an unexpected type.
+            ValueError: `val` could not be parsed as a datetime due to
+                an unexpected value.
+        """
         # If `birth_date` is not a `datetime`, attempt to parse
         if not isinstance(val, datetime):
             # Parsing will fail if it can't generate a year, month, and
@@ -203,7 +185,10 @@ class Person(TaxSource):
         """ Sets both retirement_date and retirement_age.
 
         Raises:
-            ValueError: retirement_date precedes birth_date.
+            ValueError: retirement_date precedes birth_date or could
+                not be parsed as a datetime due to an unexpected value.
+            TypeError: retirement_date could not be parsed as a datetime
+                due to an unexpected type.
             NotImplementedError: retirement_date must not be None.
                 Floating retirement dates are not yet implemented.
         """
@@ -253,7 +238,7 @@ class Person(TaxSource):
             callable: A function with signature
             `raise_rate(year) -> Decimal`.
         """
-        return self._raise_rate_function
+        return self._raise_rate_callable
 
     @raise_rate_callable.setter
     def raise_rate_callable(self, val):
@@ -276,10 +261,10 @@ class Person(TaxSource):
                 def func(_=None):
                     """ Wraps value in a function with an optional arg. """
                     return val
-            self._raise_rate_function = func
+            self._raise_rate_callable = func
         else:
             # If the input is callable, use it without modification.
-            self._raise_rate_function = val
+            self._raise_rate_callable = val
 
     @property
     def spouse(self):
@@ -325,16 +310,6 @@ class Person(TaxSource):
         else:
             raise TypeError('Person: tax_treatment must be callable or None.')
 
-    @property
-    def payment_frequency(self):
-        """ The number of times a year that Person is paid. """
-        return self._payment_frequency
-
-    @payment_frequency.setter
-    def payment_frequency(self, val):
-        """ Sets the Person's payment frequency. """
-        self._payment_frequency = frequency_conv(val)
-
     # pylint: disable=method-hidden
     # Pylint gets confused by attributes added by metaclass.
     # This method isn't hidden in __init__; it's assigned to (by a
@@ -369,7 +344,7 @@ class Person(TaxSource):
     @recorded_property_cached
     def raise_rate(self):
         """ The `Person`'s raise for the current year. """
-        return self._raise_rate_function(self.this_year)
+        return self._raise_rate_callable(self.this_year)
 
     def contribution_room(self, account):
         """ The contribution room for the given account.

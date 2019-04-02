@@ -59,12 +59,10 @@ DEFAULTVALUES = {
         "inflation_adjust": "scenario.inflation_adjust"},
     str(Parameter.CONTRIBUTION_STRATEGY): {
         "strategy": "settings.contribution_strategy",
-        "weights": "settings.contribution_weights",
-        "timing": "settings.contribution_timing"},
+        "weights": "settings.contribution_weights"},
     str(Parameter.WITHDRAWAL_STRATEGY): {
         "strategy": "settings.withdrawal_strategy",
-        "weights": "settings.withdrawal_weights",
-        "timing": "settings.withdrawal_timing"},
+        "weights": "settings.withdrawal_weights"},
     str(Parameter.ALLOCATION_STRATEGY): {
         "strategy": "settings.allocation_strategy",
         "target": "settings.allocation_target",
@@ -74,8 +72,7 @@ DEFAULTVALUES = {
         "risk_transition_period": "settings.allocation_risk_trans_period",
         "adjust_for_retirement_plan": "settings.allocation_adjust_retirement"},
     str(Parameter.DEBT_PAYMENT_STRATEGY): {
-        "strategy": "settings.debt_payment_strategy",
-        "timing": "settings.debt_payment_timing"},
+        "strategy": "settings.debt_payment_strategy"},
     str(Parameter.TAX_TREATMENT): {
         "tax_brackets": "settings.tax_brackets",
         "personal_deduction": "settings.tax_personal_deduction",

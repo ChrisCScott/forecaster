@@ -117,10 +117,8 @@ class TestRegisteredAccountMethods(TestContributionLimitAccountMethods):
         self.assertEqual(account.inflation_adjust(2003), Decimal(1.75))
         self.assertEqual(account.inflation_adjust(2017), Decimal(2))
 
-    def test_init_invalid(self, *args, **kwargs):
-        """ Test calling __init__ with invalid inputs. """
-        super().test_init_invalid(*args, **kwargs)
-        # Try invalid inflation_adjustments.
+    def test_init_invalid_infl_adj(self, *args, **kwargs):
+        """ Test calling __init__ with invalid inflation_adjustment. """
         # First, pass in a non-dict
         with self.assertRaises(TypeError):
             self.AccountType(

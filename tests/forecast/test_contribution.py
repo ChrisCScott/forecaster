@@ -6,7 +6,7 @@ from collections import defaultdict
 from forecaster import (
     Money, Person, Tax,
     ContributionForecast, AccountTransactionStrategy,
-    Account, ContributionLimitAccount)
+    Account, ContributionLimitAccount, Timing)
 
 
 class TestContributionForecast(unittest.TestCase):
@@ -19,6 +19,7 @@ class TestContributionForecast(unittest.TestCase):
         tax = Tax(tax_brackets={
             self.initial_year: {Money(0): Decimal(0.5)}})
         # Accounts need an owner:
+        timing = Timing(frequency='BW')
         self.person = Person(
             initial_year=self.initial_year,
             name="Test",
@@ -26,7 +27,7 @@ class TestContributionForecast(unittest.TestCase):
             retirement_date="31 December 2045",
             gross_income=Money(5200),
             tax_treatment=tax,
-            payment_frequency='BW')
+            payment_timing=timing)
         # We want at least two accounts which are contributed to
         # in different orders depending on the strategy.
         self.account = Account(
@@ -67,10 +68,10 @@ class TestContributionForecast(unittest.TestCase):
         # pylint: disable=unsubscriptable-object
         # These properties return dicts, but pylint has trouble
         # inferring that.
-        account_contribution = (
-            self.forecast.account_transactions[self.account])
-        limit_account_contribution = (
-            self.forecast.account_transactions[self.limit_account])
+        account_contribution = sum(
+            self.forecast.account_transactions[self.account].values())
+        limit_account_contribution = sum(
+            self.forecast.account_transactions[self.limit_account].values())
         # We have $3000 available to contribute. We contribute the
         # first $1000 to `limit_account` and the balance to `account`
         self.assertEqual(
@@ -93,10 +94,10 @@ class TestContributionForecast(unittest.TestCase):
         # pylint: disable=unsubscriptable-object
         # These properties return dicts, but pylint has trouble
         # inferring that.
-        account_contribution = (
-            self.forecast.account_transactions[self.account])
-        limit_account_contribution = (
-            self.forecast.account_transactions[self.limit_account])
+        account_contribution = sum(
+            self.forecast.account_transactions[self.account].values())
+        limit_account_contribution = sum(
+            self.forecast.account_transactions[self.limit_account].values())
         # We have $3000 available to contribute. We contribute $500
         # to `limit_account` and the rest to `account`.
         self.assertEqual(

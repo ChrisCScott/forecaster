@@ -4,7 +4,7 @@ import unittest
 from decimal import Decimal
 from forecaster import (
     Money, Person, LivingExpensesForecast,
-    LivingExpensesStrategy, Tax)
+    LivingExpensesStrategy, Tax, Timing)
 
 
 class TestLivingExpensesForecast(unittest.TestCase):
@@ -17,6 +17,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
         tax = Tax(tax_brackets={
             self.initial_year: {Money(0): Decimal(0.5)}})
         # A person who is paid $200 gross ($100 net) every 2 weeks:
+        timing = Timing(frequency='BW')
         self.person1 = Person(
             initial_year=self.initial_year,
             name="Test 1",
@@ -24,7 +25,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
             retirement_date="31 December 2045",
             gross_income=Money(5200),
             tax_treatment=tax,
-            payment_frequency='BW')
+            payment_timing=timing)
         # A person who is paid $100 gross ($50 net) every 2 weeks:
         self.person2 = Person(
             initial_year=self.initial_year,
@@ -33,7 +34,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
             retirement_date="31 December 2047",
             gross_income=Money(2600),
             tax_treatment=tax,
-            payment_frequency='BW')
+            payment_timing=timing)
         # Track inflows from employment:
         self.available = {
             Decimal(0.5 + i) / 26: Money(150)
@@ -149,9 +150,10 @@ class TestLivingExpensesForecast(unittest.TestCase):
         self.forecast.update_available(self.available)
         # There should $3900 in living expenses deducted from $7800 in
         # net income, for net available of $3900.
-        self.assertEqual(
+        self.assertAlmostEqual(
             sum(self.forecast.transactions[self.available].values()),
-            Money(-3900))
+            Money(-3900),
+            places=2)
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(

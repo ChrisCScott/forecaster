@@ -1,11 +1,11 @@
-""" TODO """
+""" A module providing a base class for SubForecast objects. """
 
 from collections import defaultdict
 from collections.abc import Hashable
 from decimal import Decimal
 from forecaster.ledger import Ledger, Money, recorded_property
 from forecaster.accounts import Account
-from forecaster.utility import when_conv
+from forecaster.utility import Timing
 
 class TransactionDict(defaultdict):
     """ A defaultdict that accepts unhashable keys.
@@ -110,6 +110,8 @@ class SubForecast(Ledger):
     Args:
         initial_year (int): The first year of the forecast.
             NOTE: Issue #53 removes the requirement for initial_year.
+        default_timing (Timing): The timing of transactions to use if
+            none is explicitly given to `add_transactions`.
 
     Attributes:
         transactions (TransactionDict[
@@ -126,11 +128,17 @@ class SubForecast(Ledger):
             This dict includes transactions made to/from `available`.
     """
 
-    def __init__(self, initial_year):
+    def __init__(self, initial_year, default_timing=None):
         """ Initializes an instance of SubForecast. """
         # Invoke Ledger's __init__ or pay the price!
         # NOTE Issue #53 removes this requirement
         super().__init__(initial_year)
+        # Use default Timing (i.e. lump sum contributions at the
+        # midpoint of the year) if none is explicitly provided:
+        if default_timing is None:
+            self.default_timing = Timing()
+        else:
+            self.default_timing = default_timing
         # We store transactions to/from each account so that we can
         # unwind or inspect transactions caused by this subforecast
         # later. So we store it as `{account: {when: value}}`.
@@ -178,16 +186,16 @@ class SubForecast(Ledger):
         # is available for use by the Forecast in the year. Track
         # that here.
         if isinstance(available, Account):
-            # For accounts, use the amount available at the _end_
-            # of the year - after all transactions.
+            # For accounts, use the amount available at the _end_ of the
+            # year - after all transactions.
             # NOTE: This will give a figure that includes interest,
-            # meaning that if you withdrawl amounts from
-            # `available` at an earlier time it's possible that
-            # a lesser amount will be available for withdrawal in
-            # total.
-            # TODO: Consider whether we should instead sum over
-            # transactions (for dicts and Accounts) and add
-            # the account opening balance (only for Accounts).
+            # meaning that if you withdrawl amounts from `available` at
+            # an earlier time it's possible that a lesser amount will be
+            # available for withdrawal in total.
+            # TODO: Harmonize dict- and Account-based transaction logic.
+            # Consider whether we should instead sum over transactions
+            # (for dicts and Accounts) and then add the account opening
+            # balance (only for Accounts).
             self.total_available = available.max_outflow(1)
         else:
             self.total_available = sum(available.values())
@@ -207,9 +215,41 @@ class SubForecast(Ledger):
         # the cache so they can be re-calculated based on the new input:
         self.clear_cache()
 
+    def add_transactions(
+            self, transactions,
+            from_account=None, to_account=None,
+            strict_timing=False):
+        """ Records a group of transactions between accounts.
+
+        This is a convenience method that takes in some transactions
+        (as `when: value` pairs) and adds each one as a transaction from
+        `from_account` to `to_account` using the same semantics as
+        `add_transaction`.
+
+        Args:
+            transactions (dict[Decimal, Money]): The timings and values
+                of the transactions. Positive for inflows, negative for
+                outflows.
+            from_account (Account, dict[Decimal, Money]): An account
+                (or dict of transactions) from which the transaction
+                originates. Optional.
+            from_account (Account, dict[Decimal, Money]): An account
+                (or dict of transactions) to which the transaction
+                is being sent. Optional.
+            strict_timing (bool): If False, transactions may be added
+                later than `when` if this avoids putting accounts in
+                a negative balance. If True, `when` is always used.
+        """
+        for when, value in transactions.items():
+            self.add_transaction(
+                value=value, timing=when,
+                from_account=from_account, to_account=to_account,
+                strict_timing=strict_timing)
+
     def add_transaction(
-            self, value, when=Decimal(0.5), frequency=None,
-            from_account=None, to_account=None, strict_timing=False):
+            self, value, timing=None,
+            from_account=None, to_account=None,
+            strict_timing=False):
         """ Records a transaction at a time that balances the books.
 
         This method will always add the transaction at or after `when`
@@ -235,18 +275,14 @@ class SubForecast(Ledger):
         transaction values) or anything with similar semantics will
         also work.
 
-        If `frequency` is provided, then `transaction` is split
-        up into `frequency` equal amounts over `frequency` equally-
-        spaced payment periods. The `when` parameter determines
-        when in each payment period the transactions are made.
-
         Args:
             value (Money): The value of the transaction.
                 Positive for inflows, negative for outflows.
-            when (Decimal): The time at which the transaction occurs.
-                Expressed as a value in [0,1]. Optional.
-            frequency (int): The number of transactions made in the
-                year. Must be positive. Optional.
+            timing (Timing, dict[float, float], float, str):
+                This is either a Timing object or a value that can be
+                converted to a Timing object (e.g. a dict of
+                {timing: weight} pairs, a `when` value as a float or
+                string, etc.). Optional; defaults to `default_timing`.
             from_account (Account, dict[Decimal, Money]): An account
                 (or dict of transactions) from which the transaction
                 originates. Optional.
@@ -258,9 +294,17 @@ class SubForecast(Ledger):
                 a negative balance. If True, `when` is always used.
         """
         # Sanitize input:
-        when = when_conv(when)
         if not isinstance(value, Money):
             value = Money(value)
+        if timing is None:
+            # Rather than build a new Timing object here, we'll use
+            # the default timing for this SubForecast.
+            timing = self.default_timing
+        elif not isinstance(timing, Timing):
+            # This allows users to pass `when` inputs and have them
+            # parse correctly, since `Timing(when)` converts to
+            # {when: 1}, i.e. a lump-sum occuring at `when`.
+            timing = Timing(timing)
 
         # For convenience, ensure that we're withdrawing from
         # from_account and depositing to to_account:
@@ -268,21 +312,15 @@ class SubForecast(Ledger):
             from_account, to_account = to_account, from_account
             value = -value
 
-        # If a `frequency` has been passed, split up the transaction
-        # into several equal-value and equally-spaced transactions.
-        if frequency is not None:
-            value = value / frequency
-            for timing in range(0, frequency):
-                # Note that `when` is still used to determine the
-                # timing of each transaction within its sub-period.
-                self._add_transaction(
-                    value=value, when=(timing+when)/frequency,
-                    from_account=from_account, to_account=to_account,
-                    strict_timing=strict_timing)
-        # Otherwise, just add a single transaction:
-        else:
+        # (Normalize weights just in case client code was naughty and
+        # didn't do that for us...)
+        total_weight = sum(timing.values())
+        # Add a transaction at each timing, with a transaction value
+        # proportionate to the (normalized) weight for its timing:
+        for when, weight in timing.items():
+            weighted_value = value * Decimal(weight / total_weight)
             self._add_transaction(
-                value=value, when=when,
+                value=weighted_value, when=when,
                 from_account=from_account, to_account=to_account,
                 strict_timing=strict_timing)
 
@@ -360,10 +398,10 @@ class SubForecast(Ledger):
         available to be withdrawn from the account at the time of each
         existing transaction and also at `when`.
 
-        The method also attemptes to interpolate additional times between
+        The method also attempts to interpolate additional times between
         the existing transactions where the amount available to be
         withdrawn is equal to `target_value`. Due to implementation
-        limitations, the exact timing is not guaranteed to ne found
+        limitations, the exact timing is not guaranteed to be found
         (but for most Account types it will be found exactly.)
 
         Returns:
@@ -417,5 +455,5 @@ class SubForecast(Ledger):
                     # If that time falls within the period
                     # (earlier, later), then add it!
                     if time > earlier and time < later:
-                        accum[time] = -account.max_outflow[time]
+                        accum[time] = -sum(account.max_outflows(time).values())
         return accum

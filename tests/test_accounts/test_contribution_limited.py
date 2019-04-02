@@ -50,18 +50,17 @@ class TestContributionLimitAccountMethods(TestAccountMethods):
             self.owner, *args, contribution_room=Money(100), **kwargs)
         self.assertEqual(account.contribution_room, Money(100))
 
-    def test_init_invalid(self, *args, **kwargs):
-        """ Test ContributionLimitAccount.__init__ with invalid inputs. """
-        super().test_init_invalid(
-            *args, contribution_room=self.contribution_room, **kwargs)
-
+    def test_init_invalid_contriburor(self, *args, **kwargs):
+        """ Test invalid contributor at init. """
         # Test invalid `person` input
         with self.assertRaises(TypeError):
             self.AccountType(
                 self.owner, contributor='invalid person',
                 *args, **kwargs)
 
-        # Finally, test a non-Money-convertible contribution_room:
+    def test_init_invalid_room(self, *args, **kwargs):
+        """ Test invalid contribution_room at init. """
+        # Test a non-Money-convertible contribution_room:
         with self.assertRaises(decimal.InvalidOperation):
             self.AccountType(
                 self.owner, *args,
@@ -76,14 +75,32 @@ class TestContributionLimitAccountMethods(TestAccountMethods):
         self.assertEqual(account.contribution_room,
                          self.contribution_room)
 
+    def test_max_inflows_pos(self, *args, **kwargs):
+        """ Test max_inflows with positive balance """
+        # Need to pass the superclass a suitable `contribution_room`
+        super().test_max_outflows_negative(
+            contribution_room=self.contribution_room)
+
+    def test_max_inflows_neg(self, *args, **kwargs):
+        """ Test max_inflows with negative balance """
+        # Need to pass the superclass a suitable `contribution_room`
+        super().test_max_outflows_negative(
+            contribution_room=self.contribution_room)
+
     def test_max_inflow(self, *args, **kwargs):
-        """ Test ContributionLimitAccount.max_inflow. """
+        """ Test max_inflow matches contribution room. """
         # Init an account with standard parameters, confirm that
         # max_inflow corresponds to contribution_room.
         account = self.AccountType(
             self.owner, *args,
             contribution_room=self.contribution_room, **kwargs)
-        self.assertEqual(account.max_inflow(), self.contribution_room)
+        self.assertEqual(account.max_inflow_limit, self.contribution_room)
+
+    def test_max_outflows_negative(self, *args, **kwargs):
+        """ Test max_outflows with negative-balance account. """
+        # Need to pass the superclass a suitable `contribution_room`
+        super().test_max_outflows_negative(
+            contribution_room=self.contribution_room)
 
     def test_contribution_room_basic(self, *args, **kwargs):
         """ Test sharing of contribution room between accounts. """

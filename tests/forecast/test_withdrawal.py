@@ -3,7 +3,7 @@
 import unittest
 from decimal import Decimal
 from forecaster import (
-    Money, Person, Tax,
+    Money, Person, Tax, Timing,
     WithdrawalForecast,
     AccountTransactionStrategy,
     Account, ContributionLimitAccount)
@@ -19,6 +19,7 @@ class TestWithdrawalForecast(unittest.TestCase):
         tax = Tax(tax_brackets={
             self.initial_year: {Money(0): Decimal(0.5)}})
         # Accounts need an owner:
+        timing = Timing(frequency='BW')
         self.person = Person(
             initial_year=self.initial_year,
             name="Test",
@@ -26,7 +27,7 @@ class TestWithdrawalForecast(unittest.TestCase):
             retirement_date="31 December 1999",  # last year
             gross_income=Money(5200),
             tax_treatment=tax,
-            payment_frequency='BW')
+            payment_timing=timing)
         # We want at least two accounts which are withdrawn from
         # in different orders depending on the strategy.
         self.account = Account(
@@ -69,10 +70,10 @@ class TestWithdrawalForecast(unittest.TestCase):
         # pylint: disable=unsubscriptable-object
         # These properties return dicts, but pylint has trouble
         # inferring that.
-        account_withdrawal = (
-            self.forecast.account_transactions[self.account])
-        limit_account_withdrawal = (
-            self.forecast.account_transactions[self.limit_account])
+        account_withdrawal = sum(
+            self.forecast.account_transactions[self.account].values())
+        limit_account_withdrawal = sum(
+            self.forecast.account_transactions[self.limit_account].values())
         # We are withdrawing $20,000. We'll withdraw the whole balance
         # of `limit_account` ($6000), with the rest from `account`:
         self.assertEqual(
@@ -95,10 +96,10 @@ class TestWithdrawalForecast(unittest.TestCase):
         # pylint: disable=unsubscriptable-object
         # These properties return dicts, but pylint has trouble
         # inferring that.
-        account_withdrawal = (
-            self.forecast.account_transactions[self.account])
-        limit_account_withdrawal = (
-            self.forecast.account_transactions[self.limit_account])
+        account_withdrawal = sum(
+            self.forecast.account_transactions[self.account].values())
+        limit_account_withdrawal = sum(
+            self.forecast.account_transactions[self.limit_account].values())
         # We are withdrawing $20,000. We'll withdraw $3000 from
         # `limit_account`, with the rest from `account`:
         self.assertEqual(

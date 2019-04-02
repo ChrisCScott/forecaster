@@ -123,20 +123,27 @@ class TestPersonMethods(unittest.TestCase):
         self.assertEqual(person.birth_date.day, birth_date.day)
         self.assertEqual(person.retirement_date.day, retirement_date.day)
 
-    def test_init_invalid(self):
-        """ Test Person.__init__ with invalid args. """
-        # Should fail if retirement_date precedes birth_date
+    def test_init_invalid_order(self):
+        """ Test Person.__init__ with retirement_date before birth_date. """
         with self.assertRaises(ValueError):
             Person(
                 self.initial_year, self.name, self.birth_date,
                 retirement_date=self.birth_date - relativedelta(days=1))
 
-        # Should fail if a string is not parseable to a date
-        with self.assertRaises(ValueError):
+    def test_init_invalid_birth_date(self):
+        """ Test Person.__init__ with invalid birth_date string. """
+        # Whether this raises a ValueError or TypeError is an
+        # implementation detail delegated to `datetime`
+        with self.assertRaises((ValueError, TypeError)):
             Person(
                 self.initial_year, self.name, 'invalid',
                 retirement_date=self.retirement_date)
-        with self.assertRaises(ValueError):
+
+    def test_init_invalid_retire_date(self):
+        """ Test Person.__init__ with invalid retirement_date string. """
+        # Whether this raises a ValueError or TypeError is an
+        # implementation detail delegated to `datetime`
+        with self.assertRaises((ValueError, TypeError)):
             Person(
                 self.initial_year, self.name, self.birth_date,
                 retirement_date='invalid')

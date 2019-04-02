@@ -50,12 +50,10 @@ class TestForecaster(unittest.TestCase):
             inflation_adjust=self.scenario.inflation_adjust)
         self.contribution_strategy = AccountTransactionStrategy(
             strategy=self.settings.contribution_strategy,
-            weights=self.settings.contribution_weights,
-            timing=self.settings.contribution_timing)
+            weights=self.settings.contribution_weights)
         self.withdrawal_strategy = AccountTransactionStrategy(
             strategy=self.settings.withdrawal_strategy,
-            weights=self.settings.withdrawal_weights,
-            timing=self.settings.withdrawal_timing)
+            weights=self.settings.withdrawal_weights)
         self.allocation_strategy = AllocationStrategy(
             strategy=self.settings.allocation_strategy,
             min_equity=self.settings.allocation_min_equity,
@@ -67,8 +65,7 @@ class TestForecaster(unittest.TestCase):
             adjust_for_retirement_plan=(
                 self.settings.allocation_adjust_retirement))
         self.debt_payment_strategy = DebtPaymentStrategy(
-            strategy=self.settings.debt_payment_strategy,
-            timing=self.settings.debt_payment_timing)
+            strategy=self.settings.debt_payment_strategy)
         self.tax_treatment = Tax(
             tax_brackets=self.settings.tax_brackets,
             personal_deduction=self.settings.tax_personal_deduction,

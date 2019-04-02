@@ -3,6 +3,7 @@
 from forecaster.ledger import (
     Money, recorded_property, recorded_property_cached)
 from forecaster.forecast.subforecast import SubForecast
+from forecaster.utility import Timing
 
 class WithdrawalForecast(SubForecast):
     """ A forecast of withdrawals from a portfolio over time.
@@ -63,9 +64,24 @@ class WithdrawalForecast(SubForecast):
         # negative, but we shouldn't be _increasing_ withdrawals as
         # default behaviour (though maybe we can do it if a flag is set)
 
+        # HACK: This whole method needs a redesign.
+        # Right now the strategy object returns a set of transactions
+        # for each account. We're flattening that here into totals for
+        # each account and then redetermining timing based on the
+        # `available` flows.
+        # The problem is that `account_transactions_strategy` receives
+        # a scalar (`total`) as an argument when it _should_ receive
+        # the `available` dict (or something similar) so that the
+        # output already respects `available`'s timings.
+        # TODO: Redesign `AccountTransactionsStrategy` to take timing-
+        # aware args, then simplify this method to rely directly on the
+        # resulting output.
+
         # Set up variables to track progress as we make withdrawals:
         accum = Money(0)
-        transactions_total = sum(self.account_transactions.values())
+        transactions_total = sum(
+            sum(transactions.values())
+            for transactions in self.account_transactions.values())
         tax_withheld = {
             account: account.tax_withheld
             for account in self.account_transactions}
@@ -73,20 +89,21 @@ class WithdrawalForecast(SubForecast):
         # and withdraw whenever we dip into negative balance.
         for when in sorted(available.keys()):
             accum += available[when]
+            timing = Timing(when=when)
             if accum < 0:  # negative balance - time to withdraw!
                 # Withdraw however much we're short by:
                 withdrawal = -accum
-                for account in self.account_transactions:
+                for account, transactions in self.account_transactions.items():
                     # Withdraw from each account proportionately to
                     # the total amounts withdrawn from each account:
                     account_transaction = withdrawal * (
-                        self.account_transactions[account]
+                        sum(transactions.values())
                         / transactions_total)
                     # Add the gross transaction from the account
                     # (not accounting for withholdings):
                     self.add_transaction(
                         value=account_transaction,
-                        when=when,
+                        timing=timing,
                         from_account=account,
                         to_account=available,
                         strict_timing=True
@@ -99,7 +116,7 @@ class WithdrawalForecast(SubForecast):
                     if new_withholding > 0:
                         self.add_transaction(
                             value=new_withholding,
-                            when=when,
+                            timing=timing,
                             from_account=available,
                             to_account=None,
                             strict_timing=True
@@ -142,9 +159,8 @@ class WithdrawalForecast(SubForecast):
         """ Total gross withdrawals for the year. """
         # The amount withdrawn is simply the shortfall in cashflow
         # over the course of the year.
-        # TODO: Incorporate some tax logic to increase gross
-        # withdrawals so that `net_withdrawals` approximates
-        # `total_available`?
+        # TODO: Increase gross withdrawals based on tax liability #34
+        # Aim is for `net_withdrawals` to approximate `total_available`.
         return -self.total_available
 
     @recorded_property

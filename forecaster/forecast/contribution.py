@@ -3,6 +3,7 @@
 from forecaster.ledger import (
     recorded_property, recorded_property_cached)
 from forecaster.forecast.subforecast import SubForecast
+from forecaster.utility import Timing
 
 class ContributionForecast(SubForecast):
     """ A forecast of each year's contributions to various accounts.
@@ -40,37 +41,38 @@ class ContributionForecast(SubForecast):
         # started on doing the updates:
         super().update_available(available)
 
-        # NOTE: We assume here contributions are made monthly.
-
+        # NOTE: We let the account_transactions_strategy determine
+        # timing. It will use each account's default timing. Consider
+        # whether we should set `strict_timing=True`
         # pylint: disable=not-an-iterable,unsubscriptable-object
         # pylint can't infer the type of account_transactions
         # because we don't import `AccountTransactionsStrategy`
         for account in self.account_transactions:
-            self.add_transaction(
-                value=self.account_transactions[account],
-                when=0.5,
-                frequency=12,
+            self.add_transactions(
+                transactions=self.account_transactions[account],
                 from_account=available,
-                to_account=account
-            )
+                to_account=account)
 
     @recorded_property_cached
     def account_transactions(self):
         """ Transactions for each account, according to the strategy.
 
         This is what `account_transaction_strategy` returns.
+
+        Returns:
+            dict[Account,dict[Decimal, Money]]: A mapping from
+                accounts to transactions (as a `when: value` mapping).
         """
         return self.account_transaction_strategy(
             total=self.total_available,
-            accounts=self.accounts
-        )
+            accounts=self.accounts)
 
-    @recorded_property
+    @recorded_property_cached
     def contributions(self):
         """ Contributions to retirement accounts for the year. """
         # pylint: disable=not-an-iterable,unsubscriptable-object
         # pylint can't infer the type of account_transactions
         # because we don't import `AccountTransactionsStrategy`
         return sum(
-            self.account_transactions[account]
+            sum(self.account_transactions[account].values())
             for account in self.account_transactions)

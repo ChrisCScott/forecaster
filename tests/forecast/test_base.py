@@ -4,7 +4,7 @@ import unittest
 from copy import copy
 from decimal import Decimal
 from forecaster import (
-    Money, Person, Forecast, Tax, Scenario,
+    Money, Person, Forecast, Tax, Scenario, Timing,
     Account, AccountTransactionStrategy, ContributionForecast)
 
 class DummyForecast(object):
@@ -84,6 +84,7 @@ class TestForecast(unittest.TestCase):
         tax = Tax(tax_brackets={
             self.initial_year: {Money(0): Decimal(0.5)}})
         # One person, to own the account:
+        timing = Timing(frequency='BW')
         self.person = Person(
             initial_year=self.initial_year,
             name="Test",
@@ -91,7 +92,7 @@ class TestForecast(unittest.TestCase):
             retirement_date="31 December 2045",
             gross_income=Money(5200),
             tax_treatment=tax,
-            payment_frequency='BW')
+            payment_timing=timing)
         # An account for savings to go to:
         self.account = Account(
             owner=self.person)
@@ -174,7 +175,8 @@ class TestForecast(unittest.TestCase):
             Money(0),
             Money(600),
             Money(600)]
-        self.assertEqual(results, target)
+        for first, second in zip(results, target):
+            self.assertAlmostEqual(first, second, places=2)
 
     def test_multi_year(self):
         """ Tests a multi-year forecast. """
@@ -202,7 +204,8 @@ class TestForecast(unittest.TestCase):
             Money(0),
             Money(360),
             Money(720)]
-        self.assertEqual(results, target)
+        for first, second in zip(results, target):
+            self.assertAlmostEqual(first, second, places=2)
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(

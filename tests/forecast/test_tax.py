@@ -3,7 +3,7 @@
 import unittest
 from decimal import Decimal
 from forecaster import (
-    Money, Person, TaxForecast, Tax, Account)
+    Money, Person, TaxForecast, Tax, Account, Timing)
 
 
 class TestTaxForecast(unittest.TestCase):
@@ -16,6 +16,7 @@ class TestTaxForecast(unittest.TestCase):
         tax = Tax(tax_brackets={
             self.initial_year: {Money(0): Decimal(0.5)}})
         # A person who is paid $1000 gross ($500 withheld):
+        timing = Timing(frequency='BW')
         self.person1 = Person(
             initial_year=self.initial_year,
             name="Test 1",
@@ -23,7 +24,7 @@ class TestTaxForecast(unittest.TestCase):
             retirement_date="31 December 2045",
             gross_income=Money(1000),
             tax_treatment=tax,
-            payment_frequency='BW')
+            payment_timing=timing)
         # A person who is paid $500 gross ($250 withheld):
         self.person2 = Person(
             initial_year=self.initial_year,
@@ -32,7 +33,7 @@ class TestTaxForecast(unittest.TestCase):
             retirement_date="31 December 2047",
             gross_income=Money(500),
             tax_treatment=tax,
-            payment_frequency='BW')
+            payment_timing=timing)
         # An account owned by person1 with $100 to withdraw
         self.account1 = Account(
             owner=self.person1,

@@ -1,8 +1,7 @@
 """ Provides a class for determining schedules of debt payments. """
 
-from decimal import Decimal
 from forecaster.strategy.base import Strategy, strategy_method
-from forecaster.ledger import Money
+from forecaster.utility import Timing
 
 class DebtPaymentStrategy(Strategy):
     """ Determines payments for a group of debts.
@@ -21,15 +20,12 @@ class DebtPaymentStrategy(Strategy):
             * "Snowball"
             * "Avalanche"
 
-        timing (str, Decimal): Transactions are modelled as lump sums
-            which take place at this time.
-
-            This is expressed according to the `when` convention
-            described in `ledger.Account`.
-
     Args:
-        available (Money): The total amount available for repayment
-            across all accounts.
+        available (Money, dict[float, Money]): The amounts available
+            for repayment across all accounts, either as a single
+            Money value (in which case accounts' default timings
+            are used) or as a mapping of {timing: value} pairs where
+            positive values are treated as inflows usable as repayments.
         debts (list): Debts to repay.
 
     Returns:
@@ -37,17 +33,6 @@ class DebtPaymentStrategy(Strategy):
         is one of the input accounts and each Money object is a
         transaction for that account.
     """
-
-    def __init__(self, strategy, timing='end'):
-        """ Constructor for DebtPaymentStrategy. """
-
-        super().__init__(strategy)
-
-        self.timing = timing
-
-        # NOTE: We leave it to calling code to interpret str-valued
-        # timing. (We could convert to `When` here - consider it.)
-        self._param_check(self.timing, 'timing', (Decimal, str))
 
     def _strategy_ordered(self, sorted_debts, available, assign_minimums=True):
         """ Proposes transactions based on an ordered list of debts.
@@ -65,47 +50,78 @@ class DebtPaymentStrategy(Strategy):
         Returns:
             dict[Debt, Money]: A mapping of debts to payments.
         """
-        # Start with a $0 transaction for each debt
-        transactions = {debt: Money(0) for debt in sorted_debts}
+        # We need to know the total amount available to contribute and
+        # also the timings of transactions. Depending on the structure
+        # of `available`, we determine these differently.
+        if isinstance(available, dict):
+            # It's easier to update the total amount available rather
+            # than track the time-series of data:
+            total_available = sum(available.values())
+            # `Timing` can ingest a Money-valued dict.
+            timing = Timing(available)
+        else:
+            total_available = available
+            timing = None  # Use default timing
 
-        # Ensure all minimum payments are made
+        # Start with no transactions for each debt
+        transactions = {}
+        transactions_total = {}
+
+        # Ensure all minimum payments are made, if requested:
         if assign_minimums:
             for debt in sorted_debts:
-                # Add the minimum payment (this method accounts for
+                # Add the minimum payments (this method accounts for
                 # any pre-existing inflows and only returns the
                 # minimum *additional* inflows)
-                transactions[debt] += debt.min_inflow(when=self.timing)
+                transactions[debt] = debt.min_inflows(timing)
+                transactions_total[debt] = sum(transactions[debt].values())
                 # And reduce the amount available for further payments
                 # based on this debt's savings/living expenses settings:
-                available -= debt.payment_from_savings(
-                    amount=transactions[debt],
+                total_available -= debt.payment_from_savings(
+                    amount=transactions_total[debt],
                     base=debt.inflows)
 
         # No need to continue if there's no money left:
-        if available <= 0:
+        if total_available <= 0:
             return transactions
 
         # Now add further payments in the order given by the sorted
         # list of debts:
         for debt in sorted_debts:
+            # Store the total amount of transactions we've allocated
+            # to this debt which haven't yet been recorded as inflows:
+            debt_transactions_total = sum(transactions[debt].values())
             # Determine the maximum payment we can make with what's
             # left:
-            payment = debt.payment(
-                savings_available=available,
-                other_payments=transactions[debt],
-                when=self.timing
-            )
+            max_payment = debt.max_payment(
+                savings_available=total_available,
+                other_payments=debt_transactions_total,
+                # TODO: Handle living expenses.
+                timing=timing)
 
             # Reduce the pool of money remaining for further
             # payments accordingly:
-            available -= debt.payment_from_savings(
-                amount=payment,
-                base=transactions[debt] + debt.inflows
-            )
+            total_available -= debt.payment_from_savings(
+                amount=max_payment,
+                base=debt_transactions_total + debt.inflows)
+
             # Note that we add the payment to `transactions` *after*
-            # decrementing `available`, which depends on the old
+            # decrementing `total_available`, which depends on the old
             # value for `transactions[debt]`
-            transactions[debt] += payment
+            # Use either the explicitly-provided timing or this debt's
+            # default timing for the transactions:
+            if timing is not None:
+                debt_timing = timing
+            else:
+                debt_timing = debt.default_timing
+            # Add a portion of `max_payment` at each timing in
+            # proportion to the corresponding weight for the timing:
+            for when, weight in debt_timing.items():
+                value = max_payment * weight
+                if when in transactions[debt]:
+                    transactions[debt][when] += value
+                else:
+                    transactions[debt][when] = value
 
         return transactions
 

@@ -14,6 +14,8 @@ class IncomeForecast(SubForecast):
 
             Note that all `Person` objects must have the same
             `this_year` attribute, as must their various accounts.
+        asset_sale_timing (Timing): The timing of asset sales.
+            Optional.
 
     Attributes:
         asset_sale (Money): The proceeds from a sale of property.
@@ -29,9 +31,9 @@ class IncomeForecast(SubForecast):
     """
 
     def __init__(
-            self, initial_year, people):
+            self, initial_year, people, asset_sale_timing=None):
         """ Initializes an instance of IncomeForecast. """
-        super().__init__(initial_year)
+        super().__init__(initial_year, default_timing=asset_sale_timing)
         # Invoke Ledger's __init__ or pay the price!
         # Store input values
         self.people = people
@@ -42,25 +44,18 @@ class IncomeForecast(SubForecast):
         # started on doing the updates:
         super().update_available(available)
 
-        # TODO: Determine timing of asset sale. (see #32)
-        # Also: should this receive an Account (e.g. other_assets)
-        # as the `from_account`?
+        # TODO: Move money into available from an `Asset` account  #32
         self.add_transaction(
             value=self.asset_sale,
-            when=0.5,  # TODO Determine timing of asset sale #32
             from_account=None,  # TODO Move money from asset account #32
             to_account=available
         )
 
-        # Record income monthly.
-        # NOTE: This code assumes income is received at the end of
-        # each payment period. Consider whether some cases (like
-        # biweekly payments) might justify using the midpoint of
-        # each period.
+        # Record income according to the Persons' payment schedules:
         for person in self.people:
             self.add_transaction(
-                person.net_income, when=0.5,
-                frequency=person.payment_frequency,
+                person.net_income,
+                timing=person.payment_timing,
                 from_account=None, to_account=available)
 
     @recorded_property

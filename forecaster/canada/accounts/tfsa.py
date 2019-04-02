@@ -1,4 +1,4 @@
-""" TODO """
+""" Provides a Canadian tax-free savings account. """
 
 from forecaster.canada.accounts.registered_account import RegisteredAccount
 from forecaster.ledger import Money, recorded_property
@@ -11,6 +11,7 @@ class TFSA(RegisteredAccount):
 
     def __init__(self, owner, balance=0, rate=0,
                  nper=1, inputs=None, initial_year=None,
+                 default_timing=None,
                  contribution_room=None, contributor=None,
                  inflation_adjust=None, **kwargs):
         """ Initializes a TFSA object.
@@ -32,6 +33,7 @@ class TFSA(RegisteredAccount):
         super().__init__(
             owner, balance=balance, rate=rate,
             nper=nper, inputs=inputs, initial_year=initial_year,
+            default_timing=default_timing,
             contribution_room=contribution_room, contributor=contributor,
             **kwargs)
 
