@@ -144,7 +144,7 @@ class Debt(Account):
             self.max_inflow_limit)
 
     def max_inflows(
-            self, timing=None, balance_limit=None, transaction_limit=None):
+            self, timing=None, transaction_limit=None, balance_limit=None):
         """ The maximum amounts that can be contributed at `timing`.
 
         The output transaction values will be proportionate to the
@@ -156,11 +156,11 @@ class Debt(Account):
         Args:
             timing (Timing): A mapping of `{when: weight}` pairs.
                 Optional. Uses default_timing if not provided.
-            balance_limit (Money): This balance, if provided, will not
-                be exceeded at year-end. Optional.
             transaction_limit (Money): Total inflows will not exceed
                 this amount (not including any inflows already recorded
                 against this `Account`). Optional.
+            balance_limit (Money): This balance, if provided, will not
+                be exceeded at year-end. Optional.
 
         Returns:
             dict[float, Money]: A mapping of `{when: value}` pairs where
@@ -173,11 +173,11 @@ class Debt(Account):
             balance_limit = Money(0)
         return super().max_inflows(
             timing=timing,
-            balance_limit=balance_limit,
-            transaction_limit=transaction_limit)
+            transaction_limit=transaction_limit,
+            balance_limit=balance_limit)
 
     def min_inflows(
-            self, timing=None, balance_limit=None, transaction_limit=None):
+            self, timing=None, transaction_limit=None, balance_limit=None):
         """ The minimum amounts that must be contributed at `timing`.
 
         The output transaction values will be proportionate to the
@@ -189,11 +189,11 @@ class Debt(Account):
         Args:
             timing (Timing): A mapping of `{when: weight}` pairs.
                 Optional. Uses default_timing if not provided.
-            balance_limit (Money): This balance, if provided, will not
-                be exceeded at year-end. Optional.
             transaction_limit (Money): Total inflows will not exceed
                 this amount (not including any inflows already recorded
                 against this `Account`). Optional.
+            balance_limit (Money): This balance, if provided, will not
+                be exceeded at year-end. Optional.
 
         Returns:
             dict[float, Money]: A mapping of `{when: value}` pairs where
@@ -206,8 +206,9 @@ class Debt(Account):
             balance_limit = Money(0)
         return super().min_inflows(
             timing=timing,
-            balance_limit=balance_limit,
-            transaction_limit=transaction_limit)
+
+            transaction_limit=transaction_limit,
+            balance_limit=balance_limit)
 
     def max_payment(
             self, savings_available=Money(0),

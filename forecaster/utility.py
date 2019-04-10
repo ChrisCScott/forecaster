@@ -211,6 +211,65 @@ def frequency_conv(nper):
             raise ValueError('Account: nper must be greater than 0')
         return int(nper)
 
+def add_transactions(base, added):
+    """ Combines the values of two dicts, summing values of shared keys.
+
+    This method mutates its first argument (base). If you don't want
+    that behaviour, copy your input dict before calling this method.
+
+    Example:
+        d1 = {1: 1, 2: 2}
+        d2 = {2: 2, 3: 3}
+        add_transactions(d1, d2)
+        // d1 == {1: 1, 2: 4, 3: 3}
+
+    Args:
+        base [dict[Any, Any]]: A dictionary, generally of transactions
+            (i.e. `Decimal: Money` pairs), but potentially of any types.
+            Mutated by this method.
+        added [dict[Any, Any]]: A dictionary whose values support
+            addition (via `+` operator) with the same-key values of
+            `base`. Not mutated by this method.
+
+    Returns:
+        None. Input `base` is mutated instead.
+    """
+    for key, value in added.items():
+        # Sum values if the key is in both inputs, insert otherwise:
+        if key in base:
+            base[key] += value
+        else:
+            base[key] = value
+
+def subtract_transactions(base, added):
+    """ Combines values of two dicts, subtracting values of shared keys.
+
+    This method mutates its first argument (base). If you don't want
+    that behaviour, copy your input dict before calling this method.
+    
+    The semantics of this method are the same as `add_transactions`,
+    except that the values of `added` are subtracted from those of
+    `base`. A consequence of this is that, unlike `add_transactions`,
+    `subtract_transactions` is not commutative.
+
+    Args:
+        base [dict[Any, Any]]: A dictionary, generally of transactions
+            (i.e. `Decimal: Money` pairs), but potentially of any types.
+            Mutated by this method.
+        added [dict[Any, Any]]: A dictionary whose values support
+            addition (via `+` operator) with the same-key values of
+            `base`. Not mutated by this method.
+
+    Returns:
+        None. Input `base` is mutated instead.
+    """
+    for key, value in added.items():
+        # Sum values if the key is in both inputs, insert otherwise:
+        if key in base:
+            base[key] -= value
+        else:
+            base[key] = -value
+
 def nearest_year(vals, year):
     """ Finds the nearest (past) year to `year` in `vals`.
 
