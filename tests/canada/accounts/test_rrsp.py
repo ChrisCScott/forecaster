@@ -5,7 +5,7 @@ import decimal
 from decimal import Decimal
 from forecaster import Person, Money
 from forecaster.canada import RRSP, constants
-from tests.canada.test_accounts.test_registered_account import (
+from tests.canada.accounts.test_registered_account import (
     TestRegisteredAccountMethods)
 
 class TestRRSPMethods(TestRegisteredAccountMethods):

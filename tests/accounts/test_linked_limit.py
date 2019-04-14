@@ -3,7 +3,7 @@
 import unittest
 import decimal
 from forecaster import (LinkedLimitAccount, Money)
-from tests.test_accounts.test_base import TestAccountMethods
+from tests.accounts.test_base import TestAccountMethods
 
 class TestLinkedLimitAccountMethods(TestAccountMethods):
     """ Tests LinkedLimitAccount. """

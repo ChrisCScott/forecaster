@@ -7,7 +7,7 @@ from decimal import Decimal
 from random import Random
 from forecaster import Money
 from forecaster.canada import RegisteredAccount
-from tests.test_accounts.test_contribution_limited import (
+from tests.accounts.test_contribution_limited import (
     TestLinkedLimitAccountMethods)
 
 class TestRegisteredAccountMethods(TestLinkedLimitAccountMethods):

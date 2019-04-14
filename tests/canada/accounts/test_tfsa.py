@@ -6,7 +6,7 @@ from decimal import Decimal
 from random import Random
 from forecaster import Person, Money
 from forecaster.canada import TFSA, constants
-from tests.canada.test_accounts.test_registered_account import (
+from tests.canada.accounts.test_registered_account import (
     TestRegisteredAccountMethods)
 
 class TestTFSAMethods(TestRegisteredAccountMethods):

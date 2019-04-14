@@ -4,7 +4,7 @@ import unittest
 import decimal
 from forecaster import Money
 from forecaster.canada import TaxableAccount
-from tests.test_accounts.test_base import TestAccountMethods
+from tests.accounts.test_base import TestAccountMethods
 
 class TestTaxableAccountMethods(TestAccountMethods):
     """ Test TaxableAccount """
