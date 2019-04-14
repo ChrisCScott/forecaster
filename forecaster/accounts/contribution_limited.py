@@ -1,15 +1,9 @@
 """ A module providing the LinkedLimitAccount class. """
 
-from dataclasses import dataclass, field
 from forecaster.accounts.base import Account
 from forecaster.accounts.link import AccountLink
 from forecaster.ledger import Money
 
-
-@dataclass
-class LimitRecord:
-    """ Stores a transaction limit for a group of linked accounts. """
-    limit: Money = field(default_factory=Money)
 
 class LinkedLimitAccount(Account):
     """ An account with inflow/outflow limits linked to other accounts.
@@ -61,16 +55,6 @@ class LinkedLimitAccount(Account):
         min_outflow_link ((Person, str)): An `(owner, token)` pair.
             Accounts which share the same `(owner, token)` pair
             will share the same `min_outflow_limit`.
-
-        default_factory (Callable): A callable object (e.g. a lambda
-            expression) which takes no arguments and returns an object
-            of any type. Inspired by `defaultdict`'s `default_factory`
-            argument. Optional.
-
-            The returned object is used to initialize the shared data
-            record when the link is first registered.
-            Defaults to `LimitRecord`. Whatever is returned, it should
-            have a Money-valued `limit` attribute.
     """
 
     def __init__(
@@ -79,7 +63,6 @@ class LinkedLimitAccount(Account):
             min_inflow_link=None, min_inflow_limit=None,
             max_outflow_link=None, max_outflow_limit=None,
             min_outflow_link=None, min_outflow_limit=None,
-            default_factory=LimitRecord,
             **kwargs):
         """ Initializes a LinkedLimitAccount object. """
         super().__init__(*args, **kwargs)
@@ -88,17 +71,13 @@ class LinkedLimitAccount(Account):
         # four types of inflow links repeatedly, so the bulk of __init__
         # logic is moved to _process_link and it's just repeated here.
         self.max_inflow_link = self._process_link(
-            max_inflow_link, limit=max_inflow_limit,
-            default_factory=default_factory)
+            max_inflow_link, limit=max_inflow_limit)
         self.min_inflow_link = self._process_link(
-            min_inflow_link, limit=min_inflow_limit,
-            default_factory=default_factory)
+            min_inflow_link, limit=min_inflow_limit)
         self.max_outflow_link = self._process_link(
-            max_outflow_link, limit=max_outflow_limit,
-            default_factory=default_factory)
+            max_outflow_link, limit=max_outflow_limit)
         self.min_outflow_link = self._process_link(
-            min_outflow_link, limit=min_outflow_limit,
-            default_factory=default_factory)
+            min_outflow_link, limit=min_outflow_limit)
 
     @property
     def max_inflow_limit(self):
@@ -147,7 +126,7 @@ class LinkedLimitAccount(Account):
     def _get_limit(self, link, default=None):
         """ TODO """
         if link is not None:
-            return link.data.limit
+            return link.data
         else:
             return default
 
@@ -155,12 +134,12 @@ class LinkedLimitAccount(Account):
         """ TODO """
         if link is not None:
             # Update centrally-managed record:
-            link.data.limit = value
+            link.data = value
         else:
             # Raises AttributeError:
             raise AttributeError('property does not provide setter')
 
-    def _process_link(self, link, limit=None, default_factory=LimitRecord):
+    def _process_link(self, link, limit=None, default_factory=Money):
         """ Convenience method for __init__ when processing inputs. """
         # Nothing to do if no link is provided:
         if link is None:
@@ -174,5 +153,5 @@ class LinkedLimitAccount(Account):
         link.link_account(self)
         # If `limit` is provided, overwrite any existing limit:
         if limit is not None:
-            link.data.limit = limit
+            link.data = limit
         return link

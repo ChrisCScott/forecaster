@@ -62,8 +62,6 @@ class AccountLink:
             `default_factory`. Defaults to an empty `dict`.
         group (set): The group of all accounts linked by this
             owner/token pair.
-        _record (LinkRecord): A (data, group) tuple, exposed here for
-            convenience in internal use.
     """
     def __init__(self, link, default_factory=None):
         """ Initializes `AccountLink`. """
@@ -96,6 +94,14 @@ class AccountLink:
             return self._record.data
         else:
             return None
+
+    @data.setter
+    def data(self, val):
+        """ Sets the link's data member. """
+        if self._record is not None:
+            self._record.data = val
+        else:
+            raise AttributeError("link's data member does not point anywhere.")
 
     @property
     def group(self):

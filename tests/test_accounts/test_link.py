@@ -110,6 +110,9 @@ class TestAccountLinkMethods(unittest.TestCase):
         # Modify link's data/group to ensure they're not linked to
         # self.link:
         link.link_account(self.account1)
+        # pylint: disable=unsupported-assignment-operation
+        # pylint gets confused by dataclass semantics.
+        # `data` supports assignment.
         link.data["test"] = "test"
         # self.link and link should point to different data/group
         self.assertNotEqual(self.link.data, link.data)
@@ -122,10 +125,21 @@ class TestAccountLinkMethods(unittest.TestCase):
         # Modify link's data/group to ensure they're not linked to
         # self.link:
         link.link_account(self.account1)
+        # pylint: disable=unsupported-assignment-operation
+        # pylint gets confused by dataclass semantics.
+        # `data` supports assignment.
         link.data["test"] = "test"
         # self.link and link should point to different data/group
         self.assertNotEqual(self.link.data, link.data)
         self.assertNotEqual(self.link.group, link.group)
+
+    def test_mutable_data(self):
+        """ Test that a link's `data` member is mutable. """
+        # Build a new link that stores a scalar (int, in this case):
+        link = AccountLink(
+            link=(self.person2, self.token2), default_factory=int)
+        # Set that shared scalar value. This should not raise an error:
+        link.data = 5
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(
