@@ -13,7 +13,7 @@ __license__ = 'All rights reserved'
 from forecaster.ledger import Money
 from forecaster.person import Person
 from forecaster.scenario import Scenario
-from forecaster.accounts import Account, ContributionLimitAccount, Debt
+from forecaster.accounts import Account, LinkedLimitAccount, Debt, AccountLink
 from forecaster.strategy import (
     LivingExpensesStrategy, LivingExpensesStrategySchedule,
     AccountTransactionStrategy, AllocationStrategy, DebtPaymentStrategy,

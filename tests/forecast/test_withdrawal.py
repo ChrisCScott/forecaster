@@ -6,7 +6,7 @@ from forecaster import (
     Money, Person, Tax, Timing,
     WithdrawalForecast,
     AccountTransactionStrategy,
-    Account, ContributionLimitAccount)
+    Account, canada)
 
 
 class TestWithdrawalForecast(unittest.TestCase):
@@ -33,7 +33,7 @@ class TestWithdrawalForecast(unittest.TestCase):
         self.account = Account(
             owner=self.person,
             balance=Money(60000))  # $60,000 <- BIGGER!
-        self.limit_account = ContributionLimitAccount(
+        self.rrsp = canada.accounts.RRSP(
             owner=self.person,
             contribution_room=Money(1000),
             balance=Money(6000))  # $6,000
@@ -50,11 +50,11 @@ class TestWithdrawalForecast(unittest.TestCase):
         # Now we can set up the big-ticket items:
         self.account_strategy = AccountTransactionStrategy(
             AccountTransactionStrategy.strategy_ordered,
-            {'ContributionLimitAccount': 1, 'Account': 2})
+            {'RRSP': 1, 'Account': 2})
         self.forecast = WithdrawalForecast(
             initial_year=self.initial_year,
             people={self.person},
-            accounts={self.account, self.limit_account},
+            accounts={self.account, self.rrsp},
             account_transaction_strategy=self.account_strategy)
 
     def test_account_trans_ordered(self):
@@ -72,12 +72,12 @@ class TestWithdrawalForecast(unittest.TestCase):
         # inferring that.
         account_withdrawal = sum(
             self.forecast.account_transactions[self.account].values())
-        limit_account_withdrawal = sum(
-            self.forecast.account_transactions[self.limit_account].values())
+        rrsp_withdrawal = sum(
+            self.forecast.account_transactions[self.rrsp].values())
         # We are withdrawing $20,000. We'll withdraw the whole balance
-        # of `limit_account` ($6000), with the rest from `account`:
+        # of `rrsp` ($6000), with the rest from `account`:
         self.assertEqual(
-            limit_account_withdrawal,
+            rrsp_withdrawal,
             Money(-6000))
         self.assertEqual(
             account_withdrawal,
@@ -98,12 +98,12 @@ class TestWithdrawalForecast(unittest.TestCase):
         # inferring that.
         account_withdrawal = sum(
             self.forecast.account_transactions[self.account].values())
-        limit_account_withdrawal = sum(
-            self.forecast.account_transactions[self.limit_account].values())
+        rrsp_withdrawal = sum(
+            self.forecast.account_transactions[self.rrsp].values())
         # We are withdrawing $20,000. We'll withdraw $3000 from
-        # `limit_account`, with the rest from `account`:
+        # `rrsp`, with the rest from `account`:
         self.assertEqual(
-            limit_account_withdrawal,
+            rrsp_withdrawal,
             Money(-3000))
         self.assertEqual(
             account_withdrawal,
@@ -124,7 +124,7 @@ class TestWithdrawalForecast(unittest.TestCase):
         """ Test tax withheld from accounts. """
         # Manually set tax withholdings:
         self.account.tax_withheld = Money(100)
-        self.limit_account.tax_withheld = Money(400)
+        self.rrsp.tax_withheld = Money(400)
         # Set up forecast:
         self.forecast.update_available(self.available)
 
@@ -137,7 +137,7 @@ class TestWithdrawalForecast(unittest.TestCase):
         """ Test total withdrawn from accounts, net of taxes. """
         # Manually set tax withholdings:
         self.account.tax_withheld = Money(100)
-        self.limit_account.tax_withheld = Money(400)
+        self.rrsp.tax_withheld = Money(400)
         # Set up forecast:
         self.forecast.update_available(self.available)
 

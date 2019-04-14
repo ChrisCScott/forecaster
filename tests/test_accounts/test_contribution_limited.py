@@ -1,236 +1,105 @@
-""" TODO """
+""" Unit tests for LinkedLimitAccount. """
 
 import unittest
 import decimal
-from forecaster import (
-    Person, ContributionLimitAccount, Money)
+from forecaster import (LinkedLimitAccount, Money)
 from tests.test_accounts.test_base import TestAccountMethods
 
-class TestContributionLimitAccountMethods(TestAccountMethods):
-    """ Tests ContributionLimitAccount. """
+class TestLinkedLimitAccountMethods(TestAccountMethods):
+    """ Tests LinkedLimitAccount. """
 
     def setUp(self):
-        """ Sets up variables for testing ContributionLimitAccount """
+        """ Sets up variables for testing LinkedLimitAccount """
         super().setUp()
 
-        self.AccountType = ContributionLimitAccount
-        self.contribution_room = 0
+        self.AccountType = LinkedLimitAccount
+        self.link = (self.owner, "test")
+        self.max_inflow_limit = Money(10)
+        self.min_inflow_limit = Money(10)
+        self.max_outflow_limit = Money(-10)
+        self.min_outflow_limit = Money(-10)
 
-    def test_init_basic(self, *args, **kwargs):
-        """ Test ContributionLimitAccount.__init__ """
-        super().test_init_basic(
-            *args, contribution_room=self.contribution_room, **kwargs)
-
-        # Basic init using pre-built ContributionLimitAccount-specific args
+    def test_init_max_inflow(self, *args, **kwargs):
+        """ Test LinkedLimitAccount.__init__ for max_inflow. """
+        # Basic init using pre-built LinkedLimitAccount-specific args
         # and default Account args
         account = self.AccountType(
             self.owner, *args,
-            contribution_room=self.contribution_room, **kwargs)
-        self.assertEqual(account.contributor, self.owner)
-        self.assertEqual(account.contribution_room, self.contribution_room)
+            max_inflow_link=self.link,
+            max_inflow_limit=self.max_inflow_limit,
+            **kwargs)
+        self.assertEqual(account.max_inflow_link.owner, self.owner)
+        self.assertEqual(account.max_inflow_limit, self.max_inflow_limit)
 
-    def test_init_contributor_implicit(self, *args, **kwargs):
-        """ Test implicit initialization of contributor parameter. """
-        account = self.AccountType(
-            self.owner, *args, **kwargs)
-        self.assertEqual(account.contributor, self.owner)
-
-    def test_init_contributor_explicit(self, *args, **kwargs):
-        """ Test explicit initialization of contributor parameter. """
-        contributor = Person(
-            self.initial_year, "Name", "1 January 2000",
-            retirement_date="1 January 2020")
-        account = self.AccountType(
-            self.owner, *args, contributor=contributor, **kwargs)
-        self.assertEqual(account.contributor, contributor)
-
-    def test_contribution_room(self, *args, **kwargs):
-        """ Test explicit initialization of contribution_room. """
-        account = self.AccountType(
-            self.owner, *args, contribution_room=Money(100), **kwargs)
-        self.assertEqual(account.contribution_room, Money(100))
-
-    def test_init_invalid_contriburor(self, *args, **kwargs):
-        """ Test invalid contributor at init. """
-        # Test invalid `person` input
-        with self.assertRaises(TypeError):
-            self.AccountType(
-                self.owner, contributor='invalid person',
-                *args, **kwargs)
-
-    def test_init_invalid_room(self, *args, **kwargs):
-        """ Test invalid contribution_room at init. """
-        # Test a non-Money-convertible contribution_room:
-        with self.assertRaises(decimal.InvalidOperation):
-            self.AccountType(
-                self.owner, *args,
-                contribution_room='invalid', **kwargs)
-
-    def test_properties(self, *args, **kwargs):
-        """ Test ContributionLimitAccount properties """
-        # Basic check: properties return scalars (current year's values)
+    def test_init_min_inflow(self, *args, **kwargs):
+        """ Test LinkedLimitAccount.__init__ for min_inflow. """
+        # Basic init using pre-built LinkedLimitAccount-specific args
+        # and default Account args
         account = self.AccountType(
             self.owner, *args,
-            contribution_room=self.contribution_room, **kwargs)
-        self.assertEqual(account.contribution_room,
-                         self.contribution_room)
+            min_inflow_link=self.link,
+            min_inflow_limit=self.min_inflow_limit,
+            **kwargs)
+        self.assertEqual(account.min_inflow_link.owner, self.owner)
+        self.assertEqual(account.min_inflow_limit, self.min_inflow_limit)
 
-    def test_max_inflows_pos(self, *args, **kwargs):
-        """ Test max_inflows with positive balance """
-        # Need to pass the superclass a suitable `contribution_room`
-        super().test_max_outflows_negative(
-            contribution_room=self.contribution_room)
-
-    def test_max_inflows_neg(self, *args, **kwargs):
-        """ Test max_inflows with negative balance """
-        # Need to pass the superclass a suitable `contribution_room`
-        super().test_max_outflows_negative(
-            contribution_room=self.contribution_room)
-
-    def test_max_inflow(self, *args, **kwargs):
-        """ Test max_inflow matches contribution room. """
-        # Init an account with standard parameters, confirm that
-        # max_inflow corresponds to contribution_room.
+    def test_init_max_outflow(self, *args, **kwargs):
+        """ Test LinkedLimitAccount.__init__ for max_outflow. """
+        # Basic init using pre-built LinkedLimitAccount-specific args
+        # and default Account args
         account = self.AccountType(
             self.owner, *args,
-            contribution_room=self.contribution_room, **kwargs)
-        self.assertEqual(account.max_inflow_limit, self.contribution_room)
+            max_outflow_link=self.link,
+            max_outflow_limit=self.max_outflow_limit,
+            **kwargs)
+        self.assertEqual(account.max_outflow_link.owner, self.owner)
+        self.assertEqual(account.max_outflow_limit, self.max_outflow_limit)
 
-    def test_max_outflows_negative(self, *args, **kwargs):
-        """ Test max_outflows with negative-balance account. """
-        # Need to pass the superclass a suitable `contribution_room`
-        super().test_max_outflows_negative(
-            contribution_room=self.contribution_room)
+    def test_init_min_outflow(self, *args, **kwargs):
+        """ Test LinkedLimitAccount.__init__ for min_outflow. """
+        # Basic init using pre-built LinkedLimitAccount-specific args
+        # and default Account args
+        account = self.AccountType(
+            self.owner, *args,
+            min_outflow_link=self.link,
+            min_outflow_limit=self.min_outflow_limit,
+            **kwargs)
+        self.assertEqual(account.min_outflow_link.owner, self.owner)
+        self.assertEqual(account.min_outflow_limit, self.min_outflow_limit)
 
-    def test_contribution_room_basic(self, *args, **kwargs):
-        """ Test sharing of contribution room between accounts. """
+    def test_max_inflow_limit_basic(self, *args, **kwargs):
+        """ Test sharing of max_inflow_limit between accounts. """
+        # Init a first account with a link and set a $100 limit:
         account1 = self.AccountType(
             self.owner, *args,
-            contribution_room=Money(100), **kwargs)
-        self.assertEqual(account1.contribution_room, Money(100))
-
-        # Don't set contribution_room explicitly for account2; it should
-        # automatically match account1's contribution_room amount.
+            max_inflow_link=self.link,
+            max_inflow_limit=Money(100), **kwargs)
+        # Init a second account without an explicit max_inflow_limit
+        # but with the same link as account1.
         account2 = self.AccountType(
-            self.owner, *args, **kwargs)
-        self.assertEqual(account2.contribution_room, Money(100))
+            self.owner, *args, max_inflow_link=self.link, **kwargs)
+        # account2's should max_inflow_limit should match account1's.
+        self.assertEqual(
+            account2.max_inflow_limit,
+            account1.max_inflow_limit)
 
-    def test_contribution_room_update(self, *args, **kwargs):
-        """ Test updating contribution room via second account's init. """
+    def test_max_inflow_limit_update(self, *args, **kwargs):
+        """ Test updating max_inflow_limit via second account's init. """
+        # Init a first account with a link and set a $100 limit:
         account1 = self.AccountType(
             self.owner, *args,
-            contribution_room=Money(100), **kwargs)
-        self.assertEqual(account1.contribution_room, Money(100))
-
-        # Set contribution_room explicitly for account2; it should
-        # override account1's contribution_room amount.
+            max_inflow_link=self.link,
+            max_inflow_limit=Money(100), **kwargs)
+        # Init a second account with a different max_inflow_limit and
+        # the same link as account1.
         account2 = self.AccountType(
             self.owner, *args,
-            contribution_room=Money(200), **kwargs)
-        self.assertEqual(account1.contribution_room, Money(200))
-        self.assertEqual(account2.contribution_room, Money(200))
+            max_inflow_link=self.link,
+            max_inflow_limit=Money(200), **kwargs)
+        # Both accounts should use the new $200 limit:
+        self.assertEqual(account1.max_inflow_limit, Money(200))
+        self.assertEqual(account2.max_inflow_limit, Money(200))
 
-    def test_contribution_group_basic(self, *args, **kwargs):
-        """ Test that contribution_group is set properly for 1 account. """
-        account = self.AccountType(
-            self.owner, *args,
-            contribution_room=Money(100), **kwargs)
-        self.assertEqual(account.contribution_group, {account})
-
-    def test_contribution_group_mult(self, *args, **kwargs):
-        """ Test that contribution_group is set properly for 2 accounts. """
-        account1 = self.AccountType(
-            self.owner, *args,
-            contribution_room=Money(100), **kwargs)
-        account2 = self.AccountType(
-            self.owner, *args, **kwargs)
-        self.assertEqual(account1.contribution_group, {account1, account2})
-        self.assertEqual(account2.contribution_group, {account1, account2})
-
-    # The following tests all call next_year(), which calls
-    # next_contribution_room(), which is not implemented for
-    # this class and certain subclasses. Don't run these tests for this class.
-    # Instead, allow subclasses to pass through.
-
-    def test_next(self, *args, **kwargs):
-        """ Test ContributionLimitAccount.next_year. """
-        # next_contribution_room is not implemented for
-        # ContributionLimitAccount, and it's required for next_year, so confirm
-        # that trying to call next_year() throws an appropriate error.
-        if self.AccountType == ContributionLimitAccount:
-            account = ContributionLimitAccount(self.owner)
-            with self.assertRaises(NotImplementedError):
-                account.next_year()
-        # For other account types, try a conventional next_year test
-        else:
-            try:
-                super().test_next(
-                    *args, **kwargs)
-            except NotImplementedError:
-                return  # this error is OK
-
-    def test_returns(self, *args, **kwargs):
-        """ Test ContributionLimitAccount.returns. """
-        try:
-            super().test_returns(*args, **kwargs)
-        except NotImplementedError:
-            return  # this error is OK
-
-    def test_returns_next_year(self, *args, **kwargs):
-        """ Test ContributionLimitAccount.returns after calling next_year. """
-        try:
-            super().test_returns_next_year(*args, **kwargs)
-        except NotImplementedError:
-            return  # this error is OK
-
-    def test_next_no_growth(self, *args, **kwargs):
-        """ Tests next_year with no growth. """
-        try:
-            super().test_next_no_growth(*args, **kwargs)
-        except NotImplementedError:
-            return  # this error is OK
-
-    def test_next_cont_growth(self, *args, **kwargs):
-        """ Tests next_year with continuous growth. """
-        try:
-            super().test_next_cont_growth(*args, **kwargs)
-        except NotImplementedError:
-            return  # this error is OK
-
-    def test_next_disc_growth(self, *args, **kwargs):
-        """ Tests next_year with discrete (monthly) growth. """
-        try:
-            super().test_next_disc_growth(*args, **kwargs)
-        except NotImplementedError:
-            return  # this error is OK
-
-    def test_next_basic_trans(self, *args, **kwargs):
-        """ Tests next_year with a mid-year transaction. """
-        try:
-            super().test_next_basic_trans(*args, **kwargs)
-        except NotImplementedError:
-            return  # this error is OK
-
-    def test_next_no_growth_trans(self, *args, **kwargs):
-        """ Tests next_year with no growth and a transaction. """
-        try:
-            super().test_next_no_growth_trans(*args, **kwargs)
-        except NotImplementedError:
-            return  # this error is OK
-
-    def test_next_cont_growth_trans(self, *args, **kwargs):
-        """ Tests next_year with continuous growth and transaction. """
-        try:
-            super().test_next_cont_growth_trans(*args, **kwargs)
-        except NotImplementedError:
-            return  # this error is OK
-
-    def test_next_disc_growth_trans(self, *args, **kwargs):
-        """ Tests next_year with discrete growth and a transaction. """
-        try:
-            super().test_next_disc_growth_trans(*args, **kwargs)
-        except NotImplementedError:
-            return  # this error is OK
 
 if __name__ == '__main__':
     # NOTE: BasicContext is useful for debugging, as most errors are treated

@@ -1,157 +1,178 @@
-""" A module providing the ContributionLimitAccount class. """
+""" A module providing the LinkedLimitAccount class. """
 
+from dataclasses import dataclass, field
 from forecaster.accounts.base import Account
-from forecaster.person import Person
+from forecaster.accounts.link import AccountLink
 from forecaster.ledger import Money
 
-class ContributionLimitAccount(Account):
-    """ An account with contribution limits.
 
-    The contribution room limit may be shared between accounts. Such
-    accounts should share a `contribution_token` value, which is
-    registered with the `contributor` (the owner, by default).
+@dataclass
+class LimitRecord:
+    """ Stores a transaction limit for a group of linked accounts. """
+    limit: Money = field(default_factory=Money)
 
-    If contribution room is defined per-account, assign a unique
-    contribution_token to the account (e.g. `id(self)`). By default,
-    all objects of the same subclass share a contribution_token. This
-    should be set by the subclass before invoking super().__init__.
+class LinkedLimitAccount(Account):
+    """ An account with inflow/outflow limits linked to other accounts.
+
+    Inflow and outflow limits may be shared between accounts. Such
+    accounts should share a token for the corresponding inflow/outflow
+    limit (e.g. `max_inflow_token`, `min_outflow_token`, etc.). This is
+    registered with the corresponding token owner (e.g.
+    `max_inflow_owner`, `min_outflow_owner`). By default, the account's
+    `owner` is used for each of these.
+
+    Accounts that this `LinkedLimitAccount` is linked to for a given
+    limit can be accessed via the corresponding `*_group` property (e.g.
+    `max_inflow_group` for the `max_inflow_limit` property).
 
     This is an abstract base class. Any subclass must implement the
     method `next_contribution_room`, which returns the contribution
     room for the following year.
 
-    Attributes:
-        contribution_room (Union[Money, None]): The amount of
-            contribution room available in the current year.
+    Example:
+        # All instances of this class with the same owner will share
+        # their contribution room (i.e. max_inflow limit):
+        class RegisteredAccount(LinkedLimitAccount):
+            def __init__(self):
+                token = type(self).__name__
+                super().__init__(max_inflow_token=token)
 
-            `None` if no contribution room has yet been recorded for
-            this year.
-        contributor (Union[Person, None]): The contributor to the
-            account. By default, this is the owner.
+    Attributes:
+        max_inflow_limit (Money): Inherited from `Account`. The max.
+            amount that may be contributed in the current year.
+        max_inflow_link ((Person, str)): An `(owner, token)` pair.
+            Accounts which share the same `(owner, token)` pair
+            will share the same `max_inflow_limit`.
+
+        min_inflow_limit (Money): Inherited from `Account`. The min.
+            amount that must be contributed in the current year.
+        min_inflow_link ((Person, str)): An `(owner, token)` pair.
+            Accounts which share the same `(owner, token)` pair
+            will share the same `min_inflow_limit`.
+
+        max_outflow_limit (Money): Inherited from `Account`. The max.
+            amount that may be withdrawn in the current year.
+        max_outflow_link ((Person, str)): An `(owner, token)` pair.
+            Accounts which share the same `(owner, token)` pair
+            will share the same `max_outflow_limit`.
+
+        min_outflow_limit (Money): Inherited from `Account`. The min.
+            amount that must be withdrawn in the current year.
+        min_outflow_link ((Person, str)): An `(owner, token)` pair.
+            Accounts which share the same `(owner, token)` pair
+            will share the same `min_outflow_limit`.
+
+        default_factory (Callable): A callable object (e.g. a lambda
+            expression) which takes no arguments and returns an object
+            of any type. Inspired by `defaultdict`'s `default_factory`
+            argument. Optional.
+
+            The returned object is used to initialize the shared data
+            record when the link is first registered.
+            Defaults to `LimitRecord`. Whatever is returned, it should
+            have a Money-valued `limit` attribute.
     """
 
     def __init__(
-            self, *args, contribution_room=None, contributor=None, **kwargs):
-        """ Initializes a ContributionLimitAccount object.
-
-        Args:
-            contribution_room (Money): The amount of contribution room
-                available in the first year. Optional.
-            contributor (Person): The contributor to the account. Optional.
-                If not provided, the contributor is assumed to be the same
-                as the annuitant (i.e. the owner.)
-        """
+            self, *args,
+            max_inflow_link=None, max_inflow_limit=None,
+            min_inflow_link=None, min_inflow_limit=None,
+            max_outflow_link=None, max_outflow_limit=None,
+            min_outflow_link=None, min_outflow_limit=None,
+            default_factory=LimitRecord,
+            **kwargs):
+        """ Initializes a LinkedLimitAccount object. """
         super().__init__(*args, **kwargs)
 
-        # If no contributor was provided, assume it's the owner.
-        self._contributor = None
-        if contributor is None:
-            self.contributor = self.owner
-        else:
-            self.contributor = contributor
-
-        # If `contribution_token` hasn't already been set, set
-        # `contribution_token` to a value that's the same for
-        # all instances of a subclass but differs between subclasses.
-        # By default, we'll use the type name, but it could be anything.
-
-        # We test for whether the member has been set before
-        # accessing it, so this pylint error is not appropriate here.
-        # pylint: disable=access-member-before-definition
-        if not (
-                hasattr(self, 'contribution_token')
-                and self.contribution_token is not None):
-            self.contribution_token = type(self).__name__
-        # pylint: enable=access-member-before-definition
-
-        # Prepare this account for having its contribution room tracked
-        self.contributor.register_shared_contribution(self)
-        # Contribution room is stored with the contributor and shared
-        # between accounts. Accordingly, only set contribution room if
-        # it's explicitly provided, to avoid overwriting previously-
-        # determined contribution room data with a default value.
-        if contribution_room is not None:
-            self.contribution_room = contribution_room
-
-    @property
-    def contributor(self):
-        """ The contributor to the account. """
-        return self._contributor
-
-    @contributor.setter
-    def contributor(self, val):
-        """ Sets the contributor to the account.
-
-        Raises:
-            TypeError: `person` must be of type `Person`.
-        """
-        if not isinstance(val, Person):
-            raise TypeError(
-                'RegisteredAccount: person must be of type Person.'
-            )
-        else:
-            self._contributor = val
-
-    @property
-    def contribution_group(self):
-        """ The accounts that share contribution room with this one. """
-        return self.contributor.contribution_groups(self)
-
-    @property
-    def contribution_room(self):
-        """ Contribution room available for the current year. """
-        contribution_room_history = self.contributor.contribution_room(self)
-        if self.this_year in contribution_room_history:
-            return contribution_room_history[self.this_year]
-        else:
-            return None
-
-    @contribution_room.setter
-    def contribution_room(self, val):
-        """ Updates contribution room for the current year. """
-        self.contributor.contribution_room(self)[self.this_year] = Money(val)
-
-    @property
-    def contribution_room_history(self):
-        """ A dict of `{year, contribution_room}` pairs. """
-        return self.contributor.contribution_room(self)
-
-    def next_year(self):
-        """ Confirms that the year is within the range of our data. """
-        # Calculate contribution room accrued based on this year's
-        # transaction/etc. information
-        if self.this_year + 1 not in self.contribution_room_history:
-            contribution_room = self.next_contribution_room()
-        # NOTE: Invoking super().next_year will increment self.this_year
-        super().next_year()
-
-        # Ensure that the contributor has advanced to this year.
-        while self.contributor.this_year < self.this_year:
-            self.contributor.next_year()
-
-        # The contribution room we accrued last year becomes available
-        # in the next year, so assign after calling `next_year`:
-        if self.this_year not in self.contribution_room_history:
-            self.contribution_room = contribution_room
-
-    def next_contribution_room(self):
-        """ Returns the contribution room for next year.
-
-        This method must be implemented by any subclass of
-        `RegisteredAccount`.
-
-        Returns:
-            Money: The contribution room for next year.
-
-        Raises:
-            NotImplementedError: Raised if this method is not overridden
-            by a subclass.
-        """
-        raise NotImplementedError(
-            'RegisteredAccount: next_contribution_room is not implemented. '
-            + 'Subclasses must override this method.')
+        # It's repetitive to clean, register, and assign each of the
+        # four types of inflow links repeatedly, so the bulk of __init__
+        # logic is moved to _process_link and it's just repeated here.
+        self.max_inflow_link = self._process_link(
+            max_inflow_link, limit=max_inflow_limit,
+            default_factory=default_factory)
+        self.min_inflow_link = self._process_link(
+            min_inflow_link, limit=min_inflow_limit,
+            default_factory=default_factory)
+        self.max_outflow_link = self._process_link(
+            max_outflow_link, limit=max_outflow_limit,
+            default_factory=default_factory)
+        self.min_outflow_link = self._process_link(
+            min_outflow_link, limit=min_outflow_limit,
+            default_factory=default_factory)
 
     @property
     def max_inflow_limit(self):
-        """ Limits outflows based on contribution room for the year. """
-        return self.contribution_room
+        """ The maximum amount that can be contributed to the account. """
+        return self._get_limit(
+            self.max_inflow_link, super().max_inflow_limit)
+
+    @max_inflow_limit.setter
+    def max_inflow_limit(self, value):
+        """ Sets max_inflow_limit. """
+        self._set_limit(self.max_inflow_link, value)
+
+    @property
+    def min_inflow_limit(self):
+        """ The minimum amount to be contributed to the account. """
+        return self._get_limit(
+            self.min_inflow_link, super().min_inflow_limit)
+
+    @min_inflow_limit.setter
+    def min_inflow_limit(self, value):
+        """ Sets min_inflow_limit. """
+        self._set_limit(self.min_inflow_link, value)
+
+    @property
+    def max_outflow_limit(self):
+        """ The maximum amount that can be withdrawn from the account. """
+        return self._get_limit(
+            self.max_outflow_link, super().max_outflow_limit)
+
+    @max_outflow_limit.setter
+    def max_outflow_limit(self, value):
+        """ Sets max_outflow_limit. """
+        self._set_limit(self.max_inflow_link, value)
+
+    @property
+    def min_outflow_limit(self):
+        """ The minimum amount to be withdrawn from the account. """
+        return self._get_limit(
+            self.min_outflow_link, super().min_outflow_limit)
+
+    @min_outflow_limit.setter
+    def min_outflow_limit(self, value):
+        """ Sets min_outflow_limit. """
+        self._set_limit(self.min_inflow_link, value)
+
+    def _get_limit(self, link, default=None):
+        """ TODO """
+        if link is not None:
+            return link.data.limit
+        else:
+            return default
+
+    def _set_limit(self, link, value):
+        """ TODO """
+        if link is not None:
+            # Update centrally-managed record:
+            link.data.limit = value
+        else:
+            # Raises AttributeError:
+            raise AttributeError('property does not provide setter')
+
+    def _process_link(self, link, limit=None, default_factory=LimitRecord):
+        """ Convenience method for __init__ when processing inputs. """
+        # Nothing to do if no link is provided:
+        if link is None:
+            return None
+        # Try to cast `link` to `AccountLink` if it isn't already:
+        if not isinstance(link, AccountLink):
+            # NOTE: This will generate a shared `LimitRecord` object
+            # that all linked accounts can access.
+            link = AccountLink(link, default_factory=default_factory)
+        # Add this account to the group of linked accounts:
+        link.link_account(self)
+        # If `limit` is provided, overwrite any existing limit:
+        if limit is not None:
+            link.data.limit = limit
+        return link

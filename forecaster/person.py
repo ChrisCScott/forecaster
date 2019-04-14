@@ -147,8 +147,10 @@ class Person(TaxSource):
         # NOTE: Be sure to set up tax_treatment before calling tax_withheld
         self.net_income = self.gross_income - self.tax_withheld
 
-        # Finally, build an empty set for accounts to add themselves to.
+        # Finally, build an empty set for accounts to add themselves to
+        # and a `data` dict for accounts to write unstructed data to.
         self.accounts = set()
+        self.data = {}
 
     @property
     def birth_date(self):

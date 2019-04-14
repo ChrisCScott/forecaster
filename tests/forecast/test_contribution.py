@@ -6,7 +6,7 @@ from collections import defaultdict
 from forecaster import (
     Money, Person, Tax,
     ContributionForecast, AccountTransactionStrategy,
-    Account, ContributionLimitAccount, Timing)
+    Account, LinkedLimitAccount, Timing, canada)
 
 
 class TestContributionForecast(unittest.TestCase):
@@ -32,7 +32,7 @@ class TestContributionForecast(unittest.TestCase):
         # in different orders depending on the strategy.
         self.account = Account(
             owner=self.person)
-        self.limit_account = ContributionLimitAccount(
+        self.rrsp = canada.accounts.RRSP(
             owner=self.person,
             contribution_room=Money(1000))
 
@@ -52,7 +52,7 @@ class TestContributionForecast(unittest.TestCase):
         )
         self.forecast = ContributionForecast(
             initial_year=self.initial_year,
-            accounts={self.account, self.limit_account},
+            accounts={self.account, self.rrsp},
             account_transaction_strategy=self.strategy)
 
     def test_account_trans_ordered(self):
@@ -71,12 +71,12 @@ class TestContributionForecast(unittest.TestCase):
         account_contribution = sum(
             self.forecast.account_transactions[self.account].values())
         limit_account_contribution = sum(
-            self.forecast.account_transactions[self.limit_account].values())
+            self.forecast.account_transactions[self.rrsp].values())
         # We have $3000 available to contribute. We contribute the
         # first $1000 to `limit_account` and the balance to `account`
         self.assertEqual(
             limit_account_contribution,
-            self.limit_account.contribution_room)
+            self.rrsp.contribution_room)
         self.assertEqual(
             account_contribution,
             self.total_available - limit_account_contribution)
@@ -97,7 +97,7 @@ class TestContributionForecast(unittest.TestCase):
         account_contribution = sum(
             self.forecast.account_transactions[self.account].values())
         limit_account_contribution = sum(
-            self.forecast.account_transactions[self.limit_account].values())
+            self.forecast.account_transactions[self.rrsp].values())
         # We have $3000 available to contribute. We contribute $500
         # to `limit_account` and the rest to `account`.
         self.assertEqual(
