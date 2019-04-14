@@ -1,6 +1,10 @@
-""" TODO """
+""" A Canadian registered account.
 
-from forecaster.accounts import LinkedLimitAccount, AccountLink
+These accounts come in various forms, but in general they have a
+contributor and finite contribution room that grows from year to year.
+"""
+
+from forecaster.accounts import LinkedLimitAccount
 from forecaster.ledger import recorded_property
 from forecaster.utility import build_inflation_adjust
 
@@ -152,6 +156,10 @@ class RegisteredAccount(LinkedLimitAccount):
         any superclass-named args into something recognized by
         RegisteredAccount.
 
+        This method mutates `kwargs` to remove any aliased arguments.
+        (Don't worry - values for those arguments are returned by this
+        method as well.)
+
         Returns:
             tuple[Any, Any]: A `(max_inflow_link, max_inflow_limit)`
                 tuple.
@@ -173,7 +181,9 @@ class RegisteredAccount(LinkedLimitAccount):
         elif 'max_inflow_limit' in kwargs:
             # If they passed the LinkedLimitAccount version, map it to
             # the RegisteredAccount name for convenience.
-            max_inflow_limit = kwargs['max_inflow_limit']
+            # (Also remove this element of `kwargs` to avoid duplicate
+            # arguments being passed)
+            max_inflow_limit = kwargs.pop('max_inflow_limit')
         else:
             # Only contribution_room was provided, so map it to the
             # superclass argument it aliases:
@@ -192,7 +202,9 @@ class RegisteredAccount(LinkedLimitAccount):
             # If the native LinkedLimitAccount arg was passed,
             # use that directly (to avoid stripping out any additional
             # information it holds with its attributes):
-            max_inflow_link = kwargs['max_inflow_link']
+            # (Also remove this element of `kwargs` to avoid duplicate
+            # arguments being passed)
+            max_inflow_link = kwargs.pop('max_inflow_link')
         else:
             # max_inflow_link was not provided, so we need to build it.
 

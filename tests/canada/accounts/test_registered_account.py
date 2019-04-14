@@ -7,8 +7,7 @@ from decimal import Decimal
 from random import Random
 from forecaster import Money
 from forecaster.canada import RegisteredAccount
-from tests.accounts.test_contribution_limited import (
-    TestLinkedLimitAccountMethods)
+from tests.accounts.test_linked_limit import TestLinkedLimitAccountMethods
 
 class TestRegisteredAccountMethods(TestLinkedLimitAccountMethods):
     """ Test RegisteredAccount. """
@@ -213,6 +212,24 @@ class TestRegisteredAccountMethods(TestLinkedLimitAccountMethods):
             super().test_next_disc_growth_trans(*args, **kwargs)
         except NotImplementedError:
             return  # this error is OK
+
+    def test_max_inflows_pos(self, *args, **kwargs):
+        """ Test max_inflows with positive balance """
+        # This method should always return the current contribution room
+        account = self.AccountType(
+            self.owner, *args, balance=100, **kwargs)
+        result = account.max_inflows(self.timing)
+        for value in result.values():
+            self.assertEqual(value, Money('0'))
+
+    def test_max_inflows_neg(self, *args, **kwargs):
+        """ Test max_inflows with negative balance """
+        # This method should always return the current contribution room
+        account = self.AccountType(
+            self.owner, *args, balance=-100, **kwargs)
+        result = account.max_inflows(self.timing)
+        for value in result.values():
+            self.assertEqual(value, Money('0'))
 
 if __name__ == '__main__':
     # NOTE: BasicContext is useful for debugging, as most errors are treated
