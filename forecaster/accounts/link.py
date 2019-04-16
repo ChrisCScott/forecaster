@@ -151,7 +151,7 @@ class AccountLink:
     def unregister(self):
         """ Deletes the shared data record for this `AccountLink`. """
         # If the link doesn't exist, there's nothing to do:
-        if self.is_registered():
+        if not self.is_registered():
             return
         # Otherwise, remove the link by deleting its record from the
         # owner's data repository:
@@ -177,3 +177,17 @@ class AccountLink:
         # pylint: disable=no-member
         # pylint gets confused by dataclass semantics; group is a set.
         self.group.remove(account)
+
+    # Allow AccountLink objects to be easily added to a set without
+    # duplication:
+
+    def __eq__(self, other):
+        """ Defines equality operation on AccountLink. """
+        # All AccountLink objects representing the same link should
+        # evaluate to equal (even if they have different default_factory
+        # attributes, which have no effect after initial registration.)
+        return (self.owner, self.token) == (other.owner, other.token)
+
+    def __hash__(self):
+        """ Hash method for AccountLink. """
+        return hash((self.owner, self.token))
