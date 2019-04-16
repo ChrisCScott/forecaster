@@ -520,7 +520,9 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         # Use up the contribution room in this year:
         spousal_account.add_transaction(1000)
         spousal_account.next_year()
-        regular_account.next_year()
+        if regular_account.this_year < spousal_account.this_year:
+            # Also advance regular account if not done automatically:
+            regular_account.next_year()
         # Contribution room for the accounts should be the same, and
         # should equal the annual accrual for `self.owner` (without
         # carryover, since we used up all contribution room last year):
