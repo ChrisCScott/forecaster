@@ -35,9 +35,8 @@ class TFSA(RegisteredAccount):
             nper=nper, inputs=inputs, initial_year=initial_year,
             default_timing=default_timing,
             contribution_room=contribution_room, contributor=contributor,
+            inflation_adjust=inflation_adjust,
             **kwargs)
-
-        self.inflation_adjust = build_inflation_adjust(inflation_adjust)
 
         # This is our baseline for estimating contribution room
         # (By law, inflation-adjustments are relative to 2009, the
@@ -51,38 +50,54 @@ class TFSA(RegisteredAccount):
         ) / constants.TFSA_ACCRUAL_ROUNDING_FACTOR) * \
             constants.TFSA_ACCRUAL_ROUNDING_FACTOR
 
-        # If contribution_room is not provided (and it's already known
-        # based on other TFSA accounts), infer it based on age.
-        if (
-                contribution_room is None and
-                self.initial_year not in self.contribution_room_history):
-            # We might already have set contribution room for years
-            # before this initial_year, in which case we should start
-            # extrapolate from the following year onwards:
-            if self.contribution_room_history:
-                start_year = max(
-                    year for year in self.contribution_room_history
-                    if year < self.initial_year
-                ) + 1
-                contribution_room = self.contribution_room_history[
-                    start_year - 1
-                ]
-            else:
-                # If there's no known contribution room, simply sum up
-                # all of the default accruals from the first year the
-                # owner was eligible:
-                start_year = max(
-                    self.initial_year -
-                    self.contributor.age(self.initial_year) +
-                    constants.TFSA_ELIGIBILITY_AGE,
-                    min(constants.TFSA_ANNUAL_ACCRUAL.keys())
-                )
-                contribution_room = 0
-            # Accumulate contribution room over applicable years
-            self.contribution_room = contribution_room + sum(
-                self._contribution_room_accrual(year)
-                for year in range(start_year, self.initial_year + 1)
-            )
+        # If contribution_room is not provided, infer it based on age.
+        if self.contribution_room is None:
+            self.contribution_room = self._infer_initial_contribution_rm()
+        # NOTE: We don't need an `else` branch; `contribution_room` will
+        # be set via superclass init if it is provided.
+
+    def _infer_initial_contribution_rm(self):
+        """ Infers initial contribution room for a new TFSA. """
+        # pylint: disable=no-member
+        # Pylint gets confused by attributes added by metaclass,
+        # including `contribution_room_history`. It's called a lot here.
+
+        # First thing's first: If there's already a value for this year
+        # in contribution_room_history, use that.
+        # NOTE: `this_year` is guaranteed to be in the dict returned
+        # by `contribution_room_history`, since it's added in by the
+        # property if it isn't already in the dict.
+        # Check the underlying dict to avoid this.
+        if self.this_year in self._contribution_room_history:
+            return self._contribution_room_history[self.this_year]
+
+        # We might already have set contribution room for years
+        # before this initial_year (e.g. due to `input`), in which
+        # case we should extrapolate from that year onwards:
+        # (See above note re: `_contribution_room_history`)
+        if self._contribution_room_history:
+            # Get the last year for which there is data and the
+            # contribution room recorded for that year:
+            last_year = max(
+                year for year in self._contribution_room_history
+                if year < self.initial_year)
+            contribution_room = self._contribution_room_history[last_year]
+            # We'll add up accruals starting the year after that:
+            start_year = last_year + 1
+        else:
+            # Otherwise, simply sum up all of the default accruals
+            # from the first year the owner was eligible:
+            start_year = max(
+                self.initial_year -
+                self.contributor.age(self.initial_year) +
+                constants.TFSA_ELIGIBILITY_AGE,
+                min(constants.TFSA_ANNUAL_ACCRUAL.keys()))
+            # The owner accumulated no room prior to eligibility:
+            contribution_room = 0
+        # Accumulate contribution room over applicable years
+        return contribution_room + sum(
+            self._contribution_room_accrual(year)
+            for year in range(start_year, self.initial_year + 1))
 
     def _contribution_room_accrual(self, year):
         """ The amount of contribution room accrued in a given year.
@@ -109,26 +124,10 @@ class TFSA(RegisteredAccount):
 
     def next_contribution_room(self):
         """ The amount of contribution room for next year. """
-        year = self.this_year
-
-        # If the contribution room for next year is already known, use
-        # that:
-        if year + 1 in self.contribution_room_history:
-            return self.contribution_room_history[year + 1]
-
-        contribution_room = self._contribution_room_accrual(year + 1)
+        contribution_room = self._contribution_room_accrual(self.this_year + 1)
         # On top of this year's accrual, roll over unused contribution
         # room, plus any withdrawals (less contributions) from last year
-        if year in self.contribution_room_history:
-            rollover = self.contribution_room_history[year] - (
-                # pylint: disable=no-member
-                # Pylint gets confused by attributes added by metaclass.
-                # recorded_property members always have a corresponding
-                # *_history member:
-                self.outflows_history[year] + self.inflows_history[year]
-            )
-        else:
-            rollover = 0
+        rollover = self.contribution_room - (self.outflows + self.inflows)
         return contribution_room + rollover
 
     @recorded_property
