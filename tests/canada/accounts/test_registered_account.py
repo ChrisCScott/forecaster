@@ -217,7 +217,7 @@ class TestRegisteredAccountMethods(TestLinkedLimitAccountMethods):
         """ Test max_inflows with positive balance """
         # This method should always return the current contribution room
         account = self.AccountType(
-            self.owner, *args, balance=100, **kwargs)
+            self.owner, *args, balance=100, contribution_room=0, **kwargs)
         result = account.max_inflows(self.timing)
         for value in result.values():
             self.assertEqual(value, Money('0'))
@@ -226,7 +226,7 @@ class TestRegisteredAccountMethods(TestLinkedLimitAccountMethods):
         """ Test max_inflows with negative balance """
         # This method should always return the current contribution room
         account = self.AccountType(
-            self.owner, *args, balance=-100, **kwargs)
+            self.owner, *args, balance=-100, contribution_room=0, **kwargs)
         result = account.max_inflows(self.timing)
         for value in result.values():
             self.assertEqual(value, Money('0'))
