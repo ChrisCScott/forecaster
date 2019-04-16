@@ -2,7 +2,6 @@
 
 from forecaster.accounts.base import Account
 from forecaster.accounts.link import AccountLink
-from forecaster.ledger import Money
 
 
 class LinkedLimitAccount(Account):
@@ -139,7 +138,7 @@ class LinkedLimitAccount(Account):
             # Raises AttributeError:
             raise AttributeError('property does not provide setter')
 
-    def _process_link(self, link, limit=None, default_factory=Money):
+    def _process_link(self, link, limit=None, default_factory=lambda: None):
         """ Convenience method for __init__ when processing inputs. """
         # Nothing to do if no link is provided:
         if link is None:
