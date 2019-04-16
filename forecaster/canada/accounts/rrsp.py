@@ -45,11 +45,8 @@ class RRSP(RegisteredAccount):
             self.initial_year
         )
 
-        # If no contribution room is provided and none is already known,
-        # set contribution_room to 0.
-        if (
-                'contribution_room' not in kwargs and
-                self.contribution_room is None):
+        # If no contribution room was provided, set it to $0.
+        if self.contribution_room is None:
             self.contribution_room = Money(0)
 
     def _rrif_max_conversion_year(self):
@@ -210,6 +207,13 @@ class RRSP(RegisteredAccount):
     @property
     def min_outflow_limit(self):
         """ Minimum annual RRSP/RRIF withdrawal """
+        # Return the larger (in terms of magnitude - recall outflows
+        # are negative!) of: the minimum required age-based distribution
+        # and any shared minimum (e.g. home-buyers' amounts):
+        return min(self.minimum_distribution(), super().min_outflow_limit)
+
+    def minimum_distribution(self):
+        """ A min. amount required by law to be withdrawn based on age. """
         # Minimum withdrawals are required the year after converting to
         # an RRIF. How it is calculated depends on the person's age.
         if self.rrif_conversion_year < self.this_year:
