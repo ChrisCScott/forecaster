@@ -26,6 +26,12 @@ class RegisteredAccount(LinkedLimitAccount):
             contribution_room (Money): The amount of contribution room
                 available in the first year. Optional.
 
+                If not provided, this value will default to `None`,
+                which makes it easier for subclasses to determine
+                whether it has been set but, if those subclasses don't
+                take care to set this manually, can lead to hard-to-
+                diagnose errors in client code.
+
             contributor (Person): The contributor to the account.
                 Optional.
 
@@ -56,9 +62,9 @@ class RegisteredAccount(LinkedLimitAccount):
         # they all share the same `max_inflow_link` (i.e. a contributor/
         # token pair). We'll use an explicitly-passed token if provided,
         # but in most cases we'll just link accounts with the same type.
-        # Append "max_inflow" to the type name so that we can decide
+        # Append ".max_inflow" to the type name so that we can decide
         # later to add different type-based tokens for "min_inflow"/etc.
-        max_inflow_token_default = type(self).__name__ + "max_inflow"
+        max_inflow_token_default = type(self).__name__ + ".max_inflow"
 
         # Avoid duplicate args to superclass init:
         max_inflow_link, max_inflow_limit = self._process_alias_args(
@@ -90,7 +96,14 @@ class RegisteredAccount(LinkedLimitAccount):
     @recorded_property
     def contribution_room(self):
         """ Contribution room available for the current year. """
+        # Wraps `max_inflow_limit`
         return self.max_inflow_limit
+
+    @contribution_room.setter
+    def contribution_room(self, val):
+        """ Sets contribution_room. """
+        # Wraps `max_inflow_limit`
+        self.max_inflow_limit = val
 
     def next_year(self):
         """ Confirms that the year is within the range of our data. """
@@ -109,19 +122,30 @@ class RegisteredAccount(LinkedLimitAccount):
         # Only call next_contribution_room once for the whole group
         # per year. We do this in the first account to be called.
         if first_account:
-            contribution_room = self.next_contribution_room()
+            # If the contribution room for next year is already known
+            # (e.g. via an `input` dict), use that:
+            # pylint: disable=no-member
+            # Pylint gets confused by attributes added by metaclass
+            next_year = self.this_year + 1
+            if next_year in self.contribution_room_history:
+                contribution_room = self.contribution_room_history[next_year]
+            else:
+                # Otherwise, generate it using the magic method:
+                contribution_room = self.next_contribution_room()
 
         # Advance this account's year first, _then_ the other linked
         # accounts (so that they each know they aren't `first_account`)
         super().next_year()
 
-        # Ensure that the contributor has advanced to this year.
-        while self.contributor.this_year < self.this_year:
-            self.contributor.next_year()
-        # Do the same for all linked accounts to keep them in sync:
+        # Ensure that all linked accounts have advanced to this year
+        # to ensure they remain in sync:
         for account in self.max_inflow_link.group:
             while account.this_year < self.this_year:
                 account.next_year()
+        # Ensure that the contributor has also advanced to this year
+        # (do this after advancing the linked accounts!)
+        while self.contributor.this_year < self.this_year:
+            self.contributor.next_year()
 
         # Now assign the contribution room we determined earlier to
         # the linked data store:
