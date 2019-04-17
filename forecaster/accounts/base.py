@@ -285,24 +285,6 @@ class Account(TaxSource):
 
         return returns
 
-    @property
-    def contribution_group(self):
-        """ The Accounts that share contribution room with this one.
-
-        For `Account`, this method returns a set containing only itself;
-        that is, it does not share contribution room with any other
-        `Account`s. However, subclasses (like `RegisteredAccount`) may
-        override this behaviour.
-
-        Returns:
-            set[Account]: The `Account` objects that should be considered
-            together with this `Account` when allocating contributions
-            between them.
-
-            Includes this `Account`.
-        """
-        return {self}
-
     def add_transaction(self, value, when='end'):
         """ Adds a transaction to the account.
 

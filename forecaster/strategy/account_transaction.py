@@ -12,6 +12,13 @@ from forecaster.ledger import Money
 from forecaster.strategy.base import Strategy, strategy_method
 
 
+def contribution_group(account):
+    """ Returns a set of accounts with shared contribution room. """
+    if hasattr(account, "max_inflow_link"):
+        return account.max_inflow_link.group
+    else:
+        return {account}
+
 class AccountGroup(object):
     """ Wraps one or more accounts and mimics the `Account` interface.
 
@@ -38,9 +45,9 @@ class AccountGroup(object):
         """ Inits `AccountGroup` with one or more accounts. """
         self.accounts = frozenset(*args)
         self.contribution_groups = frozenset(
-            frozenset(account.contribution_group.intersection(self.accounts))
-            for account in self
-        )
+            frozenset(
+                contribution_group(account).intersection(self.accounts))
+            for account in self)
 
     @property
     def balance(self):
@@ -475,11 +482,13 @@ class AccountTransactionStrategy(Strategy):
         # objects, but we want to limit those groups to accounts
         # included in `accounts`.
         for account in accounts:
-            contribution_group = frozenset(
-                account.contribution_group.intersection(accounts))
-            if len(contribution_group) > 1:
-                contribution_groups.add(contribution_group)
+            group = frozenset(contribution_group(account))
+            if len(group) > 1:
+                # If the account is linked to other accounts, record its
+                # group (to be agglomerated into an AccountGroup later):
+                contribution_groups.add(group)
             else:
+                # Otherwise just store the account on its own:
                 ungrouped_accounts.add(account)
         # The final set includes both contribution groups (bundled into
         # account-like `AccountGroup` objects) and unmodified `Account`
