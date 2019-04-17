@@ -7,6 +7,48 @@ import collections
 from copy import copy
 from forecaster.utility import add_transactions, subtract_transactions
 
+# Define helper functions for identifying an account's min/max
+
+def min_inflows_func_default(account):
+    """ Returns bound method for finding min. inflows. """
+    return account.min_inflows
+
+def min_inflow_group_func_default(account):
+    """ Returns bound method for finding min. inflow group. """
+    if hasattr(account, "min_inflow_link"):
+        return account.min_inflow_link.group
+    return None
+
+def max_inflows_func_default(account):
+    """ Returns bound method for finding max. inflows. """
+    return account.max_inflows
+
+def max_inflow_group_func_default(account):
+    """ Returns bound method for finding max. inflow group. """
+    if hasattr(account, "max_inflow_link"):
+        return account.max_inflow_link.group
+    return None
+
+def min_outflows_func_default(account):
+    """ Returns bound method for finding min. outflows. """
+    return account.min_outflows
+
+def min_outflow_group_func_default(account):
+    """ Returns bound method for finding min. outflow group. """
+    if hasattr(account, "min_outflow_link"):
+        return account.min_outflow_link.group
+    return None
+
+def max_outflows_func_default(account):
+    """ Returns bound method for finding max. outflows. """
+    return account.max_outflows
+
+def max_outflow_group_func_default(account):
+    """ Returns bound method for finding max. outflow group. """
+    if hasattr(account, "max_outflow_link"):
+        return account.max_outflow_link.group
+    return None
+
 class TransactionStrategy(object):
     """ Determines transactions to/from accounts based on a priority.
 
@@ -85,9 +127,15 @@ class TransactionStrategy(object):
         # Determine which methods of `Account` objects to call during
         # tree traversal:
         if total > 0:  # inflows
-            min_method, max_method = "min_inflows", "max_inflows"
+            min_trans_method = min_inflows_func_default
+            min_group_method = min_inflow_group_func_default
+            max_trans_method = max_inflows_func_default
+            max_group_method = max_inflow_group_func_default
         elif total < 0:  # outflows
-            min_method, max_method = "min_outflows", "max_outflows"
+            min_trans_method = min_outflows_func_default
+            min_group_method = min_outflow_group_func_default
+            max_trans_method = max_outflows_func_default
+            max_group_method = max_outflow_group_func_default
         else:  # No transactions
             return {}
         # Unless the user tells us not to assign minimums, we will
@@ -99,18 +147,19 @@ class TransactionStrategy(object):
         # First traverse to allocate mins (in priority order)
         if assign_min_first:
             min_transactions = self._process_node(
-                self.priority, available, total, transactions, min_method,
-                _memo=memo)
+                self.priority, available, total, transactions,
+                min_trans_method, min_group_method, _memo=memo)
             # Other arguments are mutated, but not total, so update here
             total -= sum(min_transactions.values())
         # Then traverse again to allocate remaining money:
         self._process_node(
-            self.priority, available, total, transactions, max_method,
-            _last_memo=memo)
+            self.priority, available, total, transactions,
+            max_trans_method, max_group_method, _last_memo=memo)
         return transactions
 
     def _process_node(
-            self, node, available, total, transactions, method_name,
+            self, node, available, total, transactions,
+            transaction_method, group_method,
             _memo=None, _last_memo=None, **kwargs):
         """ TODO """
         if _memo is None:
@@ -129,14 +178,16 @@ class TransactionStrategy(object):
             method = self._process_node_account
         # Determine the treatment of this node:
         node_transactions = method(
-            node, available, total, transactions, method_name,
+            node, available, total, transactions,
+            transaction_method, group_method,
             _memo=_memo, _last_memo=_last_memo, **kwargs)
         # Record the result of this traversal in `_memo`.
         _memo.append(node_transactions)
         return node_transactions
 
     def _process_node_list(
-            self, node, available, total, transactions, method_name, **kwargs):
+            self, node, available, total, transactions,
+            transaction_method, group_method, **kwargs):
         """ TODO """
         node_transactions = {}
         # Iterate over in order:
@@ -144,7 +195,8 @@ class TransactionStrategy(object):
             # Recurse onto each element to obtain the total transactions
             # to be added to it.
             child_transactions = self._process_node(
-                child, available, total, transactions, method_name, **kwargs)
+                child, available, total, transactions,
+                transaction_method, group_method, **kwargs)
             # Update `total` before recursing onto the next element.
             # (Note that `transactions` and `available` are mutated by
             # `_process_node_account` when transactions against specific
@@ -162,7 +214,8 @@ class TransactionStrategy(object):
         return node_transactions
 
     def _process_node_dict(
-            self, node, available, total, transactions, method_name, **kwargs):
+            self, node, available, total, transactions,
+            transaction_method, group_method, **kwargs):
         """ TODO """
         # Set up local variables:
         node_transactions = {}
@@ -177,8 +230,8 @@ class TransactionStrategy(object):
             # normalized weight of each element.
             child_total = total * (weight / total_weight)
             child_transactions = self._process_node(
-                child, available, child_total, transactions, method_name,
-                **kwargs)
+                child, available, child_total, transactions,
+                transaction_method, group_method, **kwargs)
             # If we weren't able to contribute the full amount available
             # the flag this account so that we can remove during recurse
             if sum(child_transactions.values()) != child_total:
@@ -202,8 +255,8 @@ class TransactionStrategy(object):
             for child in limited_accounts:
                 del node_copy[child]
             node_copy_transactions = self._process_node_dict(
-                node_copy, available, total, transactions, method_name,
-                **kwargs)
+                node_copy, available, total, transactions,
+                transaction_method, group_method, **kwargs)
 
             # Remember to add the recurse results to the return value!
             add_transactions(node_transactions, node_copy_transactions)
@@ -211,7 +264,8 @@ class TransactionStrategy(object):
         return node_transactions
 
     def _process_node_tuple(
-            self, node, available, total, transactions, method_name,
+            self, node, available, total, transactions,
+            transaction_method, group_method,
             _memo, _last_memo, **kwargs):
         """ TODO """
         # Tuples should be in (node, limit) form. Get each element now:
@@ -230,11 +284,13 @@ class TransactionStrategy(object):
             total = max(total, limit)
 
         return self._process_node(
-            node, available, total, transactions, method_name,
+            node, available, total, transactions,
+            transaction_method, group_method,
             _memo=_memo, _last_memo=_last_memo, **kwargs)
 
     def _process_node_account(
-            self, node, available, total, transactions, method_name, **kwargs):
+            self, node, available, total, transactions,
+            transaction_method, group_method, **kwargs):
         """ TODO """
         # pylint: disable=unused-argument
         # We provide the kwargs argument to enforce consistency between
@@ -243,7 +299,7 @@ class TransactionStrategy(object):
         # Get the bound method for `method_name` for this account:
         # NOTE: This can raise an exception if the account doesn't have
         # a method with that name. It should be handled by client code.
-        method = getattr(node, method_name)
+        method = transaction_method(node)
         # Get the transactions for the account:
         account_transactions = method(available, total)
 
