@@ -4,36 +4,36 @@ These transaction schedules determine when transactions occur, in what
 amounts, and to which accounts. """
 
 import collections
-from copy import copy
 from forecaster.utility import add_transactions, subtract_transactions
 from forecaster.strategy.util import (
     LimitTuple, transaction_default_methods, group_default_methods,
-    Annotation, merge_annotations, annotate_account)
+    TransactionNode, LIMIT_TUPLE_FIELD_NAMES, reduce_node)
 
-
-PARENT_NODE_TYPES = (list, dict, tuple)
-""" Types of nodes containing child nodes (i.e. not leaf/account nodes) """
 
 class TransactionStrategy(object):
     """ Determines transactions to/from accounts based on a priority.
 
     Instances of this class receive a structured collection of `Account`
-    objects and traverses them breadth-first to determine the
-    transactions for each account. The collection can be nested and may
-    involve several types.
+    objects and traverses them as a tree to determine the transactions
+    for each account. Each element of the collection is a node of the
+    tree and may be one of several types. Nodes need not be unique.
 
-    `dict` objects map accounts to weights (without any order between
-    accounts), whereas `list` objects provide an ordered sequence of
-    accounts. Accounts do not need to be unique between collections.
+    Nodes may be native `dict`, `list`, and `tuple` objects.
+    `dict` elements are unordered; each key is a child node and the
+    corresponding value is a weight. `list` or `tuple` objects provide
+    an ordered sequence of child nodes. (Tip: use `tuple` for nodes that
+    need to be stored as keys in a `dict`). `Account` objects (or
+    similar) are leaf nodes.
 
-    Each element or subelement of `priority` may be provided with a
-    maximum inflow/outflow limit which is enforced alongside each
-    Account's intrinsic limits. To do this, use a tuple of the
-    form `(node, limit)`. Example: `([account1, account2], Money(100))`
-    is an ordered list of accounts where the total to be contributed to
-    all accounts in the list will not exceed $100.
+    Nodes may be `TransactionNode` objects, which provide richer
+    semantics. For example, a `TransactionNode` can provide limits on
+    min/max in/outflows; these are enforced when assigning transactions
+    to leaf nodes if they are stricter than leaf nodes' own intrinsic
+    limits. See documentation for `TransactionNode` for more detail.
 
-    As with all `Strategy` objects, objects of this type are callable.
+    As with all `Strategy` objects, objects of this type are callable
+    and will return a result resulting from their various settings; in
+    this case, a mapping of `Account` objects to transaction objects.
 
     Examples:
         # Collections can be nested (note also that `account2` repeats):
@@ -44,12 +44,15 @@ class TransactionStrategy(object):
 
         # We can limit the total amount to contribute to `subgroup`
         # (i.e. the equal-weighted group of account1 and account2)
-        # by using a tuple, as follows:
-        priority = [(subgroup, Money(100)), account2]
+        # by using a single-element dict, as follows:
+        limit = LimitTuple(max_inflows=Money(100))
+        subgroup = TransactionNode(subgroup, limit=limit)
+        priority = [subgroup, account2]
         strategy = TransactionStrategy(priority)
         transactions = strategy(available)
-        # The result is that up to $100 will be contributed equally to
-        # `account1` and `account2`, with any excess going to `account2`
+        # The result, assuming available represents net inflows, is that
+        # up to $100 will be contributed equally to `account1` and
+        # `account2`, with any excess going to `account2`
 
     Args:
         priority [list[Any], dict[Any, Decimal]]: The (nested)
@@ -66,8 +69,8 @@ class TransactionStrategy(object):
             self, priority, transaction_methods=None, group_methods=None):
         """ TODO """
         # Set up data-holding attributes:
-        self._priority = {}
-        self._priority_annotated = {}
+        self._priority = None
+        self._priority_tree = None
         # Set up method-holding attributes:
         if transaction_methods is None:
             self.transaction_methods = transaction_default_methods()
@@ -91,33 +94,8 @@ class TransactionStrategy(object):
             # Take no action if `priority` is unchanged.
             return
         # Otherwise, rebuild the annotated priority tree:
-        self._priority_annotated = self._annotate(val)
+        self._priority_tree = TransactionNode(val)
         self._priority = val
-
-    def _annotate(self, node):
-        """ TODO """
-        if isinstance(node, PARENT_NODE_TYPES):
-            if isinstance(node, list):
-                # Node has children; recurse onto them:
-                children = list(self._annotate(child) for child in node)
-            elif isinstance(node, tuple):
-                # Node has children; recurse onto them:
-                children = tuple(self._annotate(child) for child in node)
-            elif isinstance(node, dict):
-                # Node has children and corresponding weights; recurse:
-                children = {
-                    self._annotate(child): node[child] for child in node}
-            # Merge the children's annotations to get the parent's:
-            annotation = merge_annotations(*(child[1] for child in children))
-        else:
-            # Node is a leaf node (i.e. an Account or similar), so
-            # simply get the annotation for the node; no recursion.
-            children = node
-            annotation = annotate_account(node, self.group_methods)
-        # We're building an annotated tree, so wrap this node (or,
-        # rather, a version of this node where all of its children are
-        # annotated) up with its annotation and return.
-        return (children, annotation)
 
     def __call__(self, available, total=None, assign_min_first=True):
         """ TODO """
@@ -131,29 +109,35 @@ class TransactionStrategy(object):
         # Determine which methods of `Account` objects to call during
         # tree traversal:
         if total > 0:  # inflows
-            min_limit = 'min_inflow'
-            max_limit = 'max_inflow'
+            min_limit = LIMIT_TUPLE_FIELD_NAMES.min_inflow
+            max_limit = LIMIT_TUPLE_FIELD_NAMES.max_inflow
         elif total < 0:  # outflows
-            min_limit = 'min_outflow'
-            max_limit = 'max_outflow'
-        else:  # No transactions
+            min_limit = LIMIT_TUPLE_FIELD_NAMES.min_outflow
+            max_limit = LIMIT_TUPLE_FIELD_NAMES.max_outflow
+        else:  # No transactions since total == 0
             return {}
         # Unless the user tells us not to assign minimums, we will
         # traverse the tree twice. To ensure that we respect per-node
         # limits, we will record all transactions to a memo:
         # NOTE: We use a list instead of a dict because nodes are not
-        # necessarily unique!
+        # necessarily unique. This requires that each traversal visit
+        # the same nodes in the same order, so avoid logic that
+        # terminates traversal early.
+        # Alternatively, wrap each node in a class structure (e.g.
+        # based on Annotation - AnnotatedNode?), ensure distinct nodes
+        # evaluate to not-equal, and map those to transactions. This
+        # would allow for early termination.
         memo = []
         # First traverse to allocate mins (in priority order)
         if assign_min_first:
             min_transactions = self._process_node(
-                self.priority, available, total, transactions,
+                self._priority_tree, available, total, transactions,
                 min_limit, _memo=memo)
             # Other arguments are mutated, but not total, so update here
             total -= sum(min_transactions.values())
         # Then traverse again to allocate remaining money:
         self._process_node(
-            self.priority, available, total, transactions,
+            self._priority_tree, available, total, transactions,
             max_limit, _last_memo=memo)
         return transactions
 
@@ -164,16 +148,14 @@ class TransactionStrategy(object):
         if _memo is None:
             _memo = []
 
-        if isinstance(node, list):
-            method = self._process_node_list
-        elif isinstance(node, dict):
-            method = self._process_node_dict
-        elif isinstance(node, tuple):
-            method = self._process_node_tuple
+        if node.is_ordered():
+            method = self._process_node_ordered
+        elif node.is_weighted():
+            method = self._process_node_weighted
         else:
             # Anything not recognized above will be treated as a leaf
             # node, i.e. an account. Such nodes should provide a method
-            # with name `method_name`!
+            # with a name provided by `transaction_methods`!
             method = self._process_node_account
         # Determine the treatment of this node:
         node_transactions = method(
@@ -183,13 +165,13 @@ class TransactionStrategy(object):
         _memo.append(node_transactions)
         return node_transactions
 
-    def _process_node_list(
+    def _process_node_ordered(
             self, node, available, total, transactions,
             limit_key, **kwargs):
         """ TODO """
         node_transactions = {}
         # Iterate over in order:
-        for child in node:
+        for child in node.children:
             # Recurse onto each element to obtain the total transactions
             # to be added to it.
             child_transactions = self._process_node(
@@ -211,18 +193,18 @@ class TransactionStrategy(object):
                 break
         return node_transactions
 
-    def _process_node_dict(
+    def _process_node_weighted(
             self, node, available, total, transactions,
             limit_key, **kwargs):
         """ TODO """
         # Set up local variables:
         node_transactions = {}
-        limited_accounts = set()
+        limited_accounts = {}
         # We'll want to normalize weights later, so sum weights now:
-        total_weight = sum(node.values())
+        total_weight = sum(node.children.values())
 
         # Iterate over each element in arbitrary order:
-        for child, weight in node.items():
+        for child, weight in node.children.items():
             # Recurse onto each element to obtain the total transactions
             # to be added to it, but reduce `total` according to the
             # normalized weight of each element.
@@ -233,7 +215,10 @@ class TransactionStrategy(object):
             # If we weren't able to contribute the full amount available
             # the flag this account so that we can remove during recurse
             if sum(child_transactions.values()) != child_total:
-                limited_accounts.add(child)
+                # We used to store these as a set of flagged children,
+                # but it's convenient to map them to their transactions
+                # so that we can pass those to `reduce_node` later.
+                limited_accounts[child] = child_transactions
             # Pool this child's transactions with the node's:
             add_transactions(node_transactions, child_transactions)
 
@@ -249,10 +234,13 @@ class TransactionStrategy(object):
             # Now that we have identified accounts that can't take any
             # more transactions, remove them from `node` (well, from a
             # copy of `node` to avoid mutation) and recurse:
-            node_copy = copy(node)
-            for child in limited_accounts:
-                del node_copy[child]
-            node_copy_transactions = self._process_node_dict(
+            node_copy = reduce_node(
+                node, limited_accounts, child_transactions=limited_accounts)
+            # Note that we recurse directly on `_process_node_weighted`
+            # and not to the generic `_process_node` so as to ensure
+            # that the history of nodes visited doesn't include these
+            # 'artificial' reduced nodes:
+            node_copy_transactions = self._process_node_weighted(
                 node_copy, available, total, transactions, limit_key, **kwargs)
 
             # Remember to add the recurse results to the return value!
@@ -260,10 +248,15 @@ class TransactionStrategy(object):
 
         return node_transactions
 
-    def _process_node_tuple(
+    def _process_node_limit(
             self, node, available, total, transactions,
             limit_key, _memo, _last_memo, **kwargs):
         """ TODO """
+        # TODO: Rather than processing a node here, have other
+        # processing methods call (a renamed version of) this method.
+        # It should probably return a scalar Money value to use as a
+        # limit.
+
         # Tuples should be in (node, limit) form. Get each element now:
         node, limit = node
 
@@ -290,12 +283,19 @@ class TransactionStrategy(object):
         # We provide the kwargs argument to enforce consistency between
         # _process_* methods.
 
+        # Extract the account itself from the node, since we want to
+        # return {account: transaction} pairs, not
+        # {TransactionNode: transaction} pairs. (The TransactionNodes
+        # of the priority tree should not be exposed to client code
+        # in the results of tree traversal.)
+        account = node.source
+
         # We need to get two methods. The first method takes one
         # argument (account) and returns a bound method that's
         # associated with `limit_key` (e.g. `max_inflows(...)`).
         binding_method = getattr(self.transaction_methods, limit_key)
         # Use the binding method to get the appropriate bound method:
-        bound_method = binding_method(node)
+        bound_method = binding_method(account)
         # Get the transactions for the account with the bound method:
         account_transactions = bound_method(available, total)
 
@@ -304,6 +304,6 @@ class TransactionStrategy(object):
         subtract_transactions(available, account_transactions)
         # Whereas it is added to the account's entry in `transactions`:
         # (It is a defaultdict, so there's no need to check keys)
-        add_transactions(transactions[node], account_transactions)
+        add_transactions(transactions[account], account_transactions)
 
         return account_transactions

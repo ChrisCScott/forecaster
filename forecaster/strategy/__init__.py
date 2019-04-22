@@ -14,4 +14,4 @@ from forecaster.strategy.transaction import TransactionStrategy
 from forecaster.strategy.debt_payment import DebtPaymentStrategy
 from forecaster.strategy.util import (
     LimitTuple, transaction_default_methods, group_default_methods,
-    Annotation, merge_annotations, annotate_account)
+    TransactionNode, reduce_node)

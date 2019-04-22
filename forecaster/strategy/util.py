@@ -1,90 +1,227 @@
 """ Helper methods and classes for TransactionStrategy. """
 
-from dataclasses import dataclass, field
 from collections import namedtuple, abc
+from copy import copy
 
 # Define helper classes for storing data:
 
 LIMIT_TUPLE_FIELDS = ['min_inflow', 'max_inflow', 'min_outflow', 'max_outflow']
-LimitTuple = namedtuple('LimitTuple', LIMIT_TUPLE_FIELDS)
+LimitTuple = namedtuple(
+    'LimitTuple', LIMIT_TUPLE_FIELDS,
+    defaults=(None,) * len(LIMIT_TUPLE_FIELDS))
 LimitTuple.__doc__ = (
     "A data container holding different values for min/max inflow/outfow")
 
-@dataclass
-class Annotation:
+# Parent nodes (i.e. non-leaf nodes) can be ordered or weighted. These
+# are distinguished by their types; represent those here for easy
+# extension/modification. (Use `tuple` to easier for `isinstance`)
+ORDERED_NODE_TYPES = (list, tuple)
+WEIGHTED_NODE_TYPES = (dict,)
+PARENT_NODE_TYPES = ORDERED_NODE_TYPES + WEIGHTED_NODE_TYPES
+
+class TransactionNode:
     """ A data container for notes about nodes of a priority tree.
 
     For use with TransactionStrategy.
     """
-    groups: LimitTuple = field(default=(None,) * len(LIMIT_TUPLE_FIELDS))
-    limits: LimitTuple = field(default=(None,) * len(LIMIT_TUPLE_FIELDS))
+    def __init__(self, source, limits=None, group_methods=None):
+        """ TODO """
+        if isinstance(source, type(self)):
+            # Copy initialization:
+            self.source = source.source
+            self.group_methods = source.group_methods
+            self.groups = source.groups
+            self.limits = source.limits
+            return
 
-def annotate_account(account, group_methods):
-    """ Generates an Annotation for an Account (or similar) object.
+        # Hold on to the original list/dict/whatever.
+        # (Consider copying it in case input `children` is mutated?)
+        self.source = source
 
-    Args:
-        account (Account, Any): An account which is to be passed as the
-            sole argument to each method in `group_methods`.
-        group_methods (LimitTuple[Callable]): A tuple of methods
-            (one for each min/max in/outflow `Account` method), each
-            of which takes one argument (`account`) and returns a set
-            of accounts.
-
-            One or more fields of `group_methods` may be None, in which
-            case the corresponding fields of the resulting Annotation
-            will also be None.
-
-    Returns:
-        Annotation: An annotation for `account`.
-    """
-    groups = []
-    # Rather than hard-code field names, simply iterate over each field
-    # of LimitTuple in order
-    for field_name in LIMIT_TUPLE_FIELDS:
-        # Get the appropriate group method for this min/max in/outflow:
-        method = getattr(group_methods, field_name)
-        # Use the method to get the appropriate group (or simply
-        # record `None` if there is no method to call for this limit):
-        if method is not None:
-            groups.append(method(account))
+        # Parse `limits` input:
+        if limits is not None:
+            # Cast to LimitTuple if not already in that format:
+            if not isinstance(limits, LimitTuple):
+                limits = LimitTuple(*limits)
+            self.limits = limits
         else:
-            # TODO: Do we want to allow `None` values for groups?
-            # Perhaps recording the empty set is more appropriate.
-            groups.append(None)
-    return Annotation(LimitTuple(*groups))
+            # To avoid testing for `self.limits is not None` elsewhere,
+            # assign an all-None-valued LimitTuple if `limits` was not
+            # provided.
+            self.limits = LimitTuple()
 
-def merge_annotations(*args):
-    """ Merges any number of Annotation objects into one. """
-    groups = []
-    # Iterate over each field of LimitTuple in order (this makes
-    # building a new LimitTuple of results easier):
-    for field_name in LIMIT_TUPLE_FIELDS:
-        # For the selected limit type (e.g. `max_inflow`), build up a
-        # set of linked accounts:
-        # TODO: Revise this logic to allow for nested sets?
-        # Right now it looks like we're adding accounts from different
-        # contribution groups to the same set (including accounts which
-        # aren't necessarily present in a given node's children.)
-        group = set()
-        # Take the union of groups for this limit type:
-        for annotation in args:
-            inner_group = getattr(annotation.groups, field_name)
-            if inner_group is not None:
-                group.update(inner_group)
-        # TODO: Do we want to allow `None` values for groups? Perhaps
-        # recording the empty set is more appropriate.
-        # (c.f. `annotate_account`)
-        if group:
+        # Parse `group_methods` inputs:
+        if group_methods is None:
+            group_methods = group_default_methods()
+        self.group_methods = group_methods
+
+        # Generate `children` attribute by recursively generating a
+        # TransactionNode instance for each child in `source`.
+        self.children = self._children_from_source()
+        # Generate `groups` attribute based on leaf nodes (by applying
+        # the methods of `group_methods`) and combining at parent nodes:
+        self.groups = self._groups_from_source()
+
+    def is_leaf_node(self):
+        """ TODO """
+        return not self.is_parent_node()
+
+    def is_parent_node(self):
+        """ TODO """
+        return isinstance(self.source, PARENT_NODE_TYPES)
+
+    def is_ordered(self):
+        """ TODO """
+        return (
+            isinstance(self.source, PARENT_NODE_TYPES)
+            and isinstance(self.source, abc.Sequence))
+
+    def is_weighted(self):
+        """ TODO """
+        return (
+            isinstance(self.source, PARENT_NODE_TYPES)
+            and isinstance(self.source, abc.Mapping))
+
+    def _children_from_source_ordered(self):
+        """ TODO """
+        children = []
+        # Convert each child to TransactionNode, if not already
+        # in that format, and store as a tuple with the same order
+        # as in `source`:
+        for child in self.source:
+            if isinstance(child, TransactionNode):
+                children.append(child)
+            else:
+                children.append(TransactionNode(
+                    child, group_methods=self.group_methods))
+        return tuple(children)
+
+    def _children_from_source_weighted(self):
+        """ TODO """
+        children = {}
+        # Convert each child to TransactionNode, if not already in
+        # that format, and store as a tuple with the same
+        for child, weight in self.source.items():
+            if not isinstance(child, TransactionNode):
+                child = TransactionNode(
+                    child, group_methods=self.group_methods)
+            children[child] = weight
+        return children
+
+    def _children_from_source(self):
+        """ TODO """
+        # Ordered and weighted nodes need to be handled differently:
+        if self.is_ordered():
+            return self._children_from_source_ordered()
+        elif self.is_weighted():
+            return self._children_from_source_weighted()
+        elif self.is_leaf_node():
+            # Leaf nodes have no children
+            return set()
+        else:
+            raise TypeError(
+                str(type(self.source)) + " is not a supported type.")
+
+    def _groups_from_source_parent(self):
+        """ TODO """
+        groups = []
+        # Iterate over each field of LimitTuple in order (this makes
+        # building a new LimitTuple of results easier):
+        for field_name in LIMIT_TUPLE_FIELDS:
+            group = set()
+            # For the selected limit type (e.g. `max_inflow`), collect
+            # all of the groups present in the children:
+            for child in self.children:
+                # Get each child's groups for this limit.
+                # If any are repeated between children, they'll only be
+                # added once (since sets guarantee uniqueness)
+                inner_group = getattr(child.groups, field_name)
+                if inner_group is not None:
+                    # `group` needs hashable members, so use frozenset:
+                    group.add(frozenset(inner_group))
             groups.append(group)
+        return LimitTuple(*groups)
+
+    def _groups_from_source_leaf(self):
+        """ TODO """
+        groups = []
+        # We want to build a LimitTuple (so that each kind of limit has
+        # its own groups). Rather than hard-code field names, iterate
+        # over each field of LimitTuple in order:
+        for field_name in LIMIT_TUPLE_FIELDS:
+            # Get the group method for this min/max in/outflow limit:
+            method = getattr(self.group_methods, field_name)
+            # Use the method to get the appropriate group:
+            if method is not None:
+                groups.append(method(self.source))
+            # (or simply use the empty set if there's no such method)
+            # NOTE: We don't return a set containing this account
+            # to make it easy for client code to skip over accounts
+            # which don't belong to groups, and we don't return None
+            # to spare client code from the hassle of sprinkling in
+            # tests for None.
+            else:
+                groups.append(set())
+        return LimitTuple(*groups)
+
+    def _groups_from_source(self):
+        """ TODO """
+        # Ordered and weighted nodes need to be handled differently:
+        if self.is_parent_node():
+            return self._groups_from_source_parent()
+        elif self.is_leaf_node():
+            return self._groups_from_source_leaf()
         else:
-            groups.append(None)
-    return Annotation(LimitTuple(*groups))
+            raise TypeError(
+                str(type(self.source)) + " is not a supported type.")
+
+def reduce_node(
+        node, remove_children,
+        child_transactions=None, _reduce_limit_methods=None):
+    """ TODO """
+    # At a basic level, we need to remove the children from `source`:
+    source = copy(node.source)
+    for child in remove_children:
+        del source[child]
+
+    # If transactions have been passed in, we should reduce any limits
+    # based on the values of those transactions:
+    if child_transactions is not None:
+        limits = []
+        # Determine the total transactions to children being removed:
+        transactions = sum(
+            sum(child_transactions[child].values())
+            for child in remove_children)
+        # We reduce limits differently for inflows and outflows; let
+        # the methods of reduce_limit_methods tell us how to handle that
+        if _reduce_limit_methods is None:
+            _reduce_limit_methods = reduce_limit_methods()
+        for field_name in LIMIT_TUPLE_FIELD_NAMES:
+            # Get each min/max in/outflow limit:
+            limit = getattr(node.limits, field_name)
+            # If this node has such a limit, reduce it based on the
+            # transactions against the accounts being removed:
+            if limit is not None:
+                reduce_limit_method = getattr(
+                    _reduce_limit_methods, field_name)
+                limit = reduce_limit_method(limit, transactions)
+            limits.append(limit)
+
+    # Groups will be updated automatically upon init:
+    return TransactionNode(
+        source, limits=limits, group_methods=node.group_methods)
 
 # Define helper functions for identifying an account's min/max:
 
+# Give an easy way for refactors to update references to LimitTuples:
+LIMIT_TUPLE_FIELD_NAMES = LimitTuple(*LIMIT_TUPLE_FIELDS)
+# Map LimitTuple fields to the names of AccountLink members of
+# LinkedLimitAccount objects:
 LINK_FIELD_NAMES = LimitTuple(
     'min_inflow_link', 'max_inflow_link',
     'min_outflow_link', 'max_outflow_link')
+# Map LimitTuple fields to the named of min/max inflow/outflow members
+# of Account objects:
 TRANSACTION_LIMIT_FIELD_NAMES = LimitTuple(
     'min_inflows', 'max_inflows', 'min_outflows', 'max_outflows')
 
@@ -131,17 +268,37 @@ def group_default_methods(field_names=LINK_FIELD_NAMES):
         methods.append(default_method)
     return LimitTuple(*methods)
 
+def reduce_limit_methods():
+    """ Returns methods for reducing limits based on transactions. """
+    def add_inflows(limit, transactions):
+        """ TODO """
+        # No change if there are no net inflows:
+        if transactions > 0:
+            # Limits on inflows must be non-negative:
+            limit = max(limit - transactions, 0)
+        return limit
+    def add_outflows(limit, transactions):
+        """ TODO """
+        # No change if there are no net outflows:
+        if transactions < 0:
+            # Limits on outflows must be non-positive:
+            limit = min(limit - transactions, 0)
+        return limit
+    return LimitTuple(
+        min_inflow=add_inflows, max_inflow=add_inflows,
+        min_outflow=add_outflows, max_outflow=add_outflows)
+
 # TODO: Sort out how to map nodes to Annotation objects.
 # The central issue is that mutable types (i.e. most nodes) are not
 # hashable, and thus not valid keys in a standard dict.
-# 
+#
 # We could generate a make_hashable method that cast each node of
 # `priority` to a hashable type (e.g. set -> frozenset, list -> tuple,
 # dict -> ??? (add the third-party frozendict library? create a custom
 # hashable_dict type? c.f. https://stackoverflow.com/a/1151705)).
 # This adds complexity by causing the internal `priority` tree to differ
 # from the tree provided - e.g. it would evaluate to not-equal.
-# 
+#
 # We could forego some efficiency and use a datastructure with slower
 # lookup (e.g. a list or set of (node, annotation) tuples). But we do
 # a lot of lookups - once per node, per traversal!
