@@ -179,10 +179,28 @@ def reduce_node(
         node, remove_children,
         child_transactions=None, _reduce_limit_methods=None):
     """ TODO """
-    # At a basic level, we need to remove the children from `source`:
-    source = copy(node.source)
-    for child in remove_children:
-        del source[child]
+    # At a basic level, we need to reduce `source` to exclude the items
+    # in `remove_children`, but `remove_children`'s elements are
+    # `TransactionNode` objects and `source`'s are not. So use
+    # `remove_children` to reduce `node.children` and then use the
+    # results of _that_ to reduce `source` (since each child contains
+    # a `source` attribute that should be present in `node.source`).
+    if node.is_ordered():
+        children = tuple(
+            child for child in node.children if child not in remove_children)
+        source = tuple(child.source for child in children)
+    elif node.is_weighted():
+        children = {
+            child: weight for child, weight in node.children.items()
+            if child not in remove_children}
+        source = {child.source: weight for child, weight in children.items()}
+    elif not node.children:
+        # Leaf nodes can't be reduced, so just return it as-is.
+        return node
+    else:
+        # If the node has children but isn't recognized by the above,
+        # there's a problem.
+        raise ValueError('node has children but is not supported.')
 
     # If transactions have been passed in, we should reduce any limits
     # based on the values of those transactions:

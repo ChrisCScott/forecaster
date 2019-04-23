@@ -2,7 +2,8 @@
 
 import unittest
 from decimal import Decimal
-from forecaster import Person, Money, TransactionStrategy, Debt
+from forecaster import (
+    Person, Money, TransactionStrategy, Debt, TransactionNode, LimitTuple)
 from forecaster.canada import RRSP, TFSA, TaxableAccount
 
 
@@ -201,7 +202,9 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         """ Limit contributions according to per-node limits. """
         # Limit debt contributions to $100
         # (rather than $1000 max. contribution)
-        priority = [self.rrsp, (self.debt, Money(100)), self.taxable_account]
+        limits = LimitTuple(max_inflow=Money(100))
+        limit_node = TransactionNode(self.debt, limits=limits)
+        priority = [self.rrsp, limit_node, self.taxable_account]
         strategy = TransactionStrategy(priority=priority)
         # Contribute $300 to the accounts:
         available = {Decimal(0.5): Money(300)}

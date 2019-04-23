@@ -118,15 +118,14 @@ class TransactionStrategy(object):
             return {}
         # Unless the user tells us not to assign minimums, we will
         # traverse the tree twice. To ensure that we respect per-node
-        # limits, we will record all transactions to a memo:
+        # limits, we will record all transactions in the first traveral
+        # (where minimums are assigned) to a memo, which will be passed
+        # to the second traversal (where maximums are assigned):
         # NOTE: We use a list instead of a dict because nodes are not
-        # necessarily unique. This requires that each traversal visit
-        # the same nodes in the same order, so avoid logic that
-        # terminates traversal early.
-        # Alternatively, wrap each node in a class structure (e.g.
-        # based on Annotation - AnnotatedNode?), ensure distinct nodes
-        # evaluate to not-equal, and map those to transactions. This
-        # would allow for early termination.
+        # necessarily unique and so can be visited multiple times, each
+        # time with different treatment.
+        # This requires that each traversal visit the same nodes in the
+        # same order, so avoid logic that terminates traversal early.
         memo = []
         # First traverse to allocate mins (in priority order)
         if assign_min_first:
@@ -148,6 +147,8 @@ class TransactionStrategy(object):
         if _memo is None:
             _memo = []
 
+        # Different kinds of nodes are processed differently, so grab
+        # the appropriate method (to be invoked later):
         if node.is_ordered():
             method = self._process_node_ordered
         elif node.is_weighted():
@@ -157,7 +158,12 @@ class TransactionStrategy(object):
             # node, i.e. an account. Such nodes should provide a method
             # with a name provided by `transaction_methods`!
             method = self._process_node_account
-        # Determine the treatment of this node:
+
+        # If this node has a per-node limit that applies to this
+        # traveral (as determined by `limit_key`), apply it:
+        _, total = self._limit_total(node, total, limit_key, _memo, _last_memo)
+
+        # Process the node:
         node_transactions = method(
             node, available, total, transactions, limit_key,
             _memo=_memo, _last_memo=_last_memo, **kwargs)
@@ -248,17 +254,15 @@ class TransactionStrategy(object):
 
         return node_transactions
 
-    def _process_node_limit(
-            self, node, available, total, transactions,
-            limit_key, _memo, _last_memo, **kwargs):
+    def _limit_total(
+            self, node, total, limit_key, _memo, _last_memo):
         """ TODO """
-        # TODO: Rather than processing a node here, have other
-        # processing methods call (a renamed version of) this method.
-        # It should probably return a scalar Money value to use as a
-        # limit.
+        # Get the custom limit for this node, if any:
+        limit = getattr(node.limits, limit_key)
 
-        # Tuples should be in (node, limit) form. Get each element now:
-        node, limit = node
+        # If there's no applicable limit, don't modify `total`:
+        if limit is None:
+            return (None, total)
 
         # Reduce `limit` by the sum of all transactions recorded against
         # this node during previous traversals:
@@ -272,9 +276,7 @@ class TransactionStrategy(object):
         elif total <= 0 and limit <= 0:
             total = max(total, limit)
 
-        return self._process_node(
-            node, available, total, transactions,
-            limit_key, _memo=_memo, _last_memo=_last_memo, **kwargs)
+        return (limit, total)
 
     def _process_node_account(
             self, node, available, total, transactions, limit_key, **kwargs):
