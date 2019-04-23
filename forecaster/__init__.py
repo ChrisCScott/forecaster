@@ -7,7 +7,7 @@ __all__ = [
 
 __version__ = '0.0.1'
 __author__ = 'Christopher Scott'
-__copyright__ = 'Copyright (C) 2017 Christopher Scott'
+__copyright__ = 'Copyright (C) 2019 Christopher Scott'
 __license__ = 'All rights reserved'
 
 from forecaster.ledger import Money
@@ -17,7 +17,7 @@ from forecaster.accounts import Account, LinkedLimitAccount, Debt, AccountLink
 from forecaster.strategy import (
     LivingExpensesStrategy, LivingExpensesStrategySchedule,
     AccountTransactionStrategy, AllocationStrategy, DebtPaymentStrategy,
-    TransactionStrategy)
+    TransactionStrategy, TransactionNode, LimitTuple)
 from forecaster.tax import Tax
 from forecaster.settings import Settings
 from forecaster.forecast import (
