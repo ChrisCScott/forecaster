@@ -10,7 +10,7 @@ from forecaster.strategy.util import (
     TransactionNode, LIMIT_TUPLE_FIELD_NAMES, reduce_node)
 
 
-class TransactionStrategy(object):
+class TransactionStrategy:
     """ Determines transactions to/from accounts based on a priority.
 
     Instances of this class receive a structured collection of `Account`
@@ -54,9 +54,41 @@ class TransactionStrategy(object):
         # up to $100 will be contributed equally to `account1` and
         # `account2`, with any excess going to `account2`
 
-    Args:
+    Attributes:
         priority [list[Any], dict[Any, Decimal]]: The (nested)
             collection of Accounts.
+        transaction_methods (LimitTuple[Callable]): A tuple of methods,
+            each taking one argument and returning a transactions object
+            (i.e. a `dict[Decimal, Money]` map of timings to values).
+            Each method of the tuple respects a different limit (e.g.
+            `min_inflows`, `max_outflows`).
+        group_methods (LimitTuple[Callable]): A tuple of methods,
+            each taking one argument and returning a group of linked
+            accounts (i.e. a `set[Account]` or, more generally, `set[T]`
+            where `T` is any valid type for a leaf node in `priority`).
+            Each method of the tuple corresponds to a different link
+            (e.g. `max_inflow_link`, `min_outflow_link`).
+
+    Args:
+        available (dict[Decimal, Money]): A time series of inflows
+            and outflows, where keys are timings and values are
+            inflows (positive) or outflows (negative).
+        total (Money): The total amount of inflows/outflows to be
+            allocated between the accounts represented in the
+            `priority` tree. Optional. If not provided, the sum
+            total of `available` will be allocated.
+        assign_min_first (Bool): If True, minimum inflows/outflows
+            will be assigned first (in `priority` order, so if
+            `total` is less than the sum of minimum inflows/outflows
+            then low-priority will not have transactions assigned).
+            Remaining money is then allocated in `priority` order,
+            up to any limits on maximum inflows/outflows.
+
+            If False, minimum inflows/outflows will not be assigned
+            and the strategy will move directly to assigning up to
+            the maximum inflows/outflows.
+
+            Optional. Defaults to True.
 
     Returns:
         dict[Account, dict[Decimal, Money]]: A mapping of accounts to
@@ -67,7 +99,7 @@ class TransactionStrategy(object):
     """
     def __init__(
             self, priority, transaction_methods=None, group_methods=None):
-        """ TODO """
+        """ Initializes TransactionNode """
         # Set up data-holding attributes:
         self._priority = None
         self._priority_tree = None
@@ -90,6 +122,7 @@ class TransactionStrategy(object):
 
     @priority.setter
     def priority(self, val):
+        """ Sets priority """
         if val == self._priority:
             # Take no action if `priority` is unchanged.
             return
@@ -98,7 +131,7 @@ class TransactionStrategy(object):
         self._priority = val
 
     def __call__(self, available, total=None, assign_min_first=True):
-        """ TODO """
+        """ Determines transactions to accounts based on `available`. """
         # We'll build of a dict of account: transactions pairs.
         # Initialize that here, to be populated during tree traversal:
         transactions = collections.defaultdict(dict)
@@ -121,31 +154,59 @@ class TransactionStrategy(object):
         # limits, we will record all transactions in the first traveral
         # (where minimums are assigned) to a memo, which will be passed
         # to the second traversal (where maximums are assigned):
-        # NOTE: We use a list instead of a dict because nodes are not
-        # necessarily unique and so can be visited multiple times, each
-        # time with different treatment.
-        # This requires that each traversal visit the same nodes in the
-        # same order, so avoid logic that terminates traversal early.
-        memo = []
+        memo = {}
         # First traverse to allocate mins (in priority order)
         if assign_min_first:
             min_transactions = self._process_node(
                 self._priority_tree, available, total, transactions,
-                min_limit, _memo=memo)
+                min_limit, memo=memo)
             # Other arguments are mutated, but not total, so update here
             total -= sum(min_transactions.values())
         # Then traverse again to allocate remaining money:
         self._process_node(
             self._priority_tree, available, total, transactions,
-            max_limit, _last_memo=memo)
+            max_limit, memo=memo)
         return transactions
 
     def _process_node(
             self, node, available, total, transactions,
-            limit_key, _memo=None, _last_memo=None, **kwargs):
-        """ TODO """
-        if _memo is None:
-            _memo = []
+            limit_key, memo=None, **kwargs):
+        """ Top-level method for processing nodes of all types.
+
+        Args:
+            node (TransactionNode): The node to be processed.
+            available (dict[Decimal, Money]): A mapping of timings to
+                transaction values. See top-level documentation for
+                `TransactionNode` for more information.
+            total (Money): The total amount to be allocated to leaves
+                under this node.
+            transactions (dict[Account, dict[Decimal, Money]]): A
+                mapping of accounts to transactions already assigned
+                during the traversal, where transactions use the same
+                style of timing-value mapping as `available`.
+
+                Only leaf-node `Account` objects of the `priority` tree
+                are used as keys here (i.e. no `TransactionNode`s).
+
+                *This argument is mutated when this method is called.*
+            limit_key (str): The name of a `LimitTuple` field. Used to
+                fetch the appropriate value from `transaction_methods`
+                and `group_methods`.
+            memo (dict[TransactionNode, dict[Decimal, Money]]): A
+                mapping of nodes to transactions already assigned during
+                the traversal, where transactions use the same style of
+                timing-value mapping as `available`.
+
+                Optional. If passed, this will be mutated. The result
+                can be used in subsequent traversals
+
+        Returns:
+            dict[Decimal, Money]: A transactions object which combines
+                all transactions to child nodes into one time series of
+                inflows and outflows.
+        """
+        if memo is None:
+            memo = {}
 
         # Different kinds of nodes are processed differently, so grab
         # the appropriate method (to be invoked later):
@@ -157,24 +218,71 @@ class TransactionStrategy(object):
             # Anything not recognized above will be treated as a leaf
             # node, i.e. an account. Such nodes should provide a method
             # with a name provided by `transaction_methods`!
-            method = self._process_node_account
+            method = self._process_node_leaf
 
         # If this node has a per-node limit that applies to this
         # traveral (as determined by `limit_key`), apply it:
-        _, total = self._limit_total(node, total, limit_key, _memo, _last_memo)
+        _, total = self._limit_total(node, total, limit_key, memo)
 
         # Process the node:
         node_transactions = method(
             node, available, total, transactions, limit_key,
-            _memo=_memo, _last_memo=_last_memo, **kwargs)
-        # Record the result of this traversal in `_memo`.
-        _memo.append(node_transactions)
+            memo=memo, **kwargs)
+
+        # Record the result of this traversal in `memo`.
+        if node in memo:
+            add_transactions(memo[node], node_transactions)
+        else:
+            memo[node] = node_transactions
+
         return node_transactions
+
+    def _limit_total(
+            self, node, total, limit_key, memo=None):
+        """ Limits inflows/outflows to the node based on its metadata.
+
+        Args:
+            node (TransactionNode): The node being traversed.
+            total (Money): The amount to be allocated to `node`,
+                subject to any applicable limits.
+            limit_key (str): A field name of `LimitTuple` specifying
+                which limit to apply (e.g. `min_inflow`, `max_outflow`)
+            memo (dict[TransactionNode, dict[Decimal, Money]]): A record
+                of all transactions assigned to nodes in this traversal.
+                See `_process_node` for more information.
+
+        Returns:
+            (Money, Money): A `(limit, total)` tuple where `limit` is
+            the applicable limit on `node` (`None` if there is no such
+            limit) and `total` is the maximum amount that may be
+            allocated to `node` (i.e. the lesser of the input `total`
+            and `limit`, if it exists.)
+        """
+        # Get the custom limit for this node, if any:
+        limit = getattr(node.limits, limit_key)
+
+        # If there's no applicable limit, don't modify `total`:
+        if limit is None:
+            return (None, total)
+
+        # Reduce `limit` by the sum of all transactions recorded against
+        # this node during previous traversals:
+        if memo is not None and node in memo:
+            limit -= sum(memo[node].values())
+
+        # Ensure that `total` is no larger than `limit`
+        # (but only if they have the same sign):
+        if total >= 0 and limit >= 0:
+            total = min(total, limit)
+        elif total <= 0 and limit <= 0:
+            total = max(total, limit)
+
+        return (limit, total)
 
     def _process_node_ordered(
             self, node, available, total, transactions,
             limit_key, **kwargs):
-        """ TODO """
+        """ Processes nodes with ordered children. """
         node_transactions = {}
         # Iterate over in order:
         for child in node.children:
@@ -202,7 +310,7 @@ class TransactionStrategy(object):
     def _process_node_weighted(
             self, node, available, total, transactions,
             limit_key, **kwargs):
-        """ TODO """
+        """ Processes nodes with unordered, weighted children. """
         # Set up local variables:
         node_transactions = {}
         limited_accounts = {}
@@ -254,33 +362,10 @@ class TransactionStrategy(object):
 
         return node_transactions
 
-    def _limit_total(
-            self, node, total, limit_key, _memo, _last_memo):
-        """ TODO """
-        # Get the custom limit for this node, if any:
-        limit = getattr(node.limits, limit_key)
-
-        # If there's no applicable limit, don't modify `total`:
-        if limit is None:
-            return (None, total)
-
-        # Reduce `limit` by the sum of all transactions recorded against
-        # this node during previous traversals:
-        if _last_memo is not None and len(_memo) < len(_last_memo):
-            limit -= sum(_last_memo[len(_memo)].values())
-
-        # Ensure that `total` is no larger than `limit`
-        # (but only if they have the same sign):
-        if total >= 0 and limit >= 0:
-            total = min(total, limit)
-        elif total <= 0 and limit <= 0:
-            total = max(total, limit)
-
-        return (limit, total)
-
-    def _process_node_account(
-            self, node, available, total, transactions, limit_key, **kwargs):
-        """ TODO """
+    def _process_node_leaf(
+            self, node, available, total, transactions, limit_key,
+            memo=None, **kwargs):
+        """ Processes leaf nodes. """
         # pylint: disable=unused-argument
         # We provide the kwargs argument to enforce consistency between
         # _process_* methods.

@@ -1,7 +1,6 @@
 """ Helper methods and classes for TransactionStrategy. """
 
 from collections import namedtuple, abc
-from copy import copy
 
 # Define helper classes for storing data:
 
@@ -22,10 +21,55 @@ PARENT_NODE_TYPES = ORDERED_NODE_TYPES + WEIGHTED_NODE_TYPES
 class TransactionNode:
     """ A data container for notes about nodes of a priority tree.
 
-    For use with TransactionStrategy.
+    This is intended for use with TransactionStrategy, which provides
+    traversal logic.
+
+    Attributes:
+        source (dict[Any, Decimal], list[Any], tuple[Any], Account): A
+            user-provided tree structure.
+
+            Nodes may be native `dict`, `list`, and `tuple` objects.
+            `dict` elements are unordered; each key is a child node and
+            the corresponding value is a weight. `list` or `tuple`
+            objects provide an ordered sequence of child nodes. (Tip:
+            use `tuple` for nodes that need to be stored as keys in a
+            `dict`). `Account` objects (or similar) are leaf nodes.
+
+            Nodes may optionally be `TransactionNode` objects, which
+            must provide their own non-`TransactionNode` `source`
+            attributes. These will not be wrapped in a further
+            `TransactionNode`.
+        limits (LimitTuple[Money]): Limits on min/max in/outflows for
+            this `TransactionNode`. These do not replace any limits on
+            leaf nodes' `Account` objects. The intention is that the
+            strictest limit will be enforced by traversing code.
+        group_methods (LimitTuple[Callable]): A tuple of methods,
+            each taking one argument and returning a group of linked
+            accounts (i.e. a `set[Account]` or, more generally, `set[T]`
+            where `T` is any valid type for a leaf node in `priority`).
+            Each method of the tuple corresponds to a different link
+            (e.g. `max_inflow_link`, `min_outflow_link`).
+        children (dict[TransactionNode: Decimal],
+            tuple(TransactionNode)): The children of this node, which
+            are `TransactionNode` objects encapulating the children
+            of the corresponding node in `source`. (If a child in
+            `source` is a `TransactionNode`, it is not re-encapsulated).
+
+            `children` is a dict if the node is weighted (i.e. if the
+            `source` version of the node is a dict) and a tuple if the
+            node is ordered (i.e. if the `source` version of the node
+            is a list or tuple).
+        groups (LimitTuple[set[set[Account]]]): A set of all
+            contribution groups present in this node or its children
+            (of any depth), for each type of limit in `LimitTuple`.
+
+            For example, `groups.max_inflow` could be
+            `{{account1, account2}, {account3, account4}}`, where the
+            max inflows of `account1` and `account2` are linked and the
+            max inflows of `account3` and `account4` are also linked.
     """
     def __init__(self, source, limits=None, group_methods=None):
-        """ TODO """
+        """ Initializes TransactionNode. """
         if isinstance(source, type(self)):
             # Copy initialization:
             self.source = source.source
@@ -57,128 +101,146 @@ class TransactionNode:
 
         # Generate `children` attribute by recursively generating a
         # TransactionNode instance for each child in `source`.
-        self.children = self._children_from_source()
+        self.children = _children_from_source(self)
         # Generate `groups` attribute based on leaf nodes (by applying
         # the methods of `group_methods`) and combining at parent nodes:
-        self.groups = self._groups_from_source()
+        self.groups = _groups_from_source(self)
 
     def is_leaf_node(self):
-        """ TODO """
+        """ Returns True if the node is a leaf node, False otherwise. """
         return not self.is_parent_node()
 
     def is_parent_node(self):
-        """ TODO """
+        """ Returns True if the node is a parent (non-leaf) node. """
         return isinstance(self.source, PARENT_NODE_TYPES)
 
     def is_ordered(self):
-        """ TODO """
+        """ Returns True if the node is an ordered parent node. """
         return (
             isinstance(self.source, PARENT_NODE_TYPES)
             and isinstance(self.source, abc.Sequence))
 
     def is_weighted(self):
-        """ TODO """
+        """ Returns True if the node is a weighted parent node. """
         return (
             isinstance(self.source, PARENT_NODE_TYPES)
             and isinstance(self.source, abc.Mapping))
 
-    def _children_from_source_ordered(self):
-        """ TODO """
-        children = []
-        # Convert each child to TransactionNode, if not already
-        # in that format, and store as a tuple with the same order
-        # as in `source`:
-        for child in self.source:
-            if isinstance(child, TransactionNode):
-                children.append(child)
-            else:
-                children.append(TransactionNode(
-                    child, group_methods=self.group_methods))
-        return tuple(children)
+def _children_from_source(node):
+    """ Converts children in `source` to `TransactionNode`s """
+    # Ordered and weighted nodes need to be handled differently:
+    if node.is_ordered():
+        return _children_from_source_ordered(node)
+    elif node.is_weighted():
+        return _children_from_source_weighted(node)
+    elif node.is_leaf_node():
+        # Leaf nodes have no children
+        return tuple()
+    else:
+        raise TypeError(
+            str(type(node.source)) + " is not a supported type.")
 
-    def _children_from_source_weighted(self):
-        """ TODO """
-        children = {}
-        # Convert each child to TransactionNode, if not already in
-        # that format, and store as a tuple with the same
-        for child, weight in self.source.items():
-            if not isinstance(child, TransactionNode):
-                child = TransactionNode(
-                    child, group_methods=self.group_methods)
-            children[child] = weight
-        return children
-
-    def _children_from_source(self):
-        """ TODO """
-        # Ordered and weighted nodes need to be handled differently:
-        if self.is_ordered():
-            return self._children_from_source_ordered()
-        elif self.is_weighted():
-            return self._children_from_source_weighted()
-        elif self.is_leaf_node():
-            # Leaf nodes have no children
-            return set()
+def _children_from_source_ordered(node):
+    """ Converts ordered children in `source` to `TransactionNode`s """
+    children = []
+    # Convert each child to TransactionNode, if not already
+    # in that format, and store as a tuple with the same order
+    # as in `source`:
+    for child in node.source:
+        if isinstance(child, TransactionNode):
+            children.append(child)
         else:
-            raise TypeError(
-                str(type(self.source)) + " is not a supported type.")
+            children.append(TransactionNode(
+                child, group_methods=node.group_methods))
+    return tuple(children)
 
-    def _groups_from_source_parent(self):
-        """ TODO """
-        groups = []
-        # Iterate over each field of LimitTuple in order (this makes
-        # building a new LimitTuple of results easier):
-        for field_name in LIMIT_TUPLE_FIELDS:
-            group = set()
-            # For the selected limit type (e.g. `max_inflow`), collect
-            # all of the groups present in the children:
-            for child in self.children:
-                # Get each child's groups for this limit.
-                # If any are repeated between children, they'll only be
-                # added once (since sets guarantee uniqueness)
-                inner_group = getattr(child.groups, field_name)
-                if inner_group is not None:
-                    # `group` needs hashable members, so use frozenset:
-                    group.add(frozenset(inner_group))
-            groups.append(group)
-        return LimitTuple(*groups)
+def _children_from_source_weighted(node):
+    """ Converts weighted children in `source` to `TransactionNode`s """
+    children = {}
+    # Convert each child to TransactionNode, if not already in
+    # that format, and store as a tuple with the same
+    for child, weight in node.source.items():
+        if not isinstance(child, TransactionNode):
+            child = TransactionNode(
+                child, group_methods=node.group_methods)
+        children[child] = weight
+    return children
 
-    def _groups_from_source_leaf(self):
-        """ TODO """
-        groups = []
-        # We want to build a LimitTuple (so that each kind of limit has
-        # its own groups). Rather than hard-code field names, iterate
-        # over each field of LimitTuple in order:
-        for field_name in LIMIT_TUPLE_FIELDS:
-            # Get the group method for this min/max in/outflow limit:
-            method = getattr(self.group_methods, field_name)
-            # Use the method to get the appropriate group:
-            if method is not None:
-                groups.append(method(self.source))
-            # (or simply use the empty set if there's no such method)
-            # NOTE: We don't return a set containing this account
-            # to make it easy for client code to skip over accounts
-            # which don't belong to groups, and we don't return None
-            # to spare client code from the hassle of sprinkling in
-            # tests for None.
-            else:
-                groups.append(set())
-        return LimitTuple(*groups)
+def _groups_from_source(node):
+    """ Determines groups of linked accounts for a node. """
+    # Ordered and weighted nodes need to be handled differently:
+    if node.is_parent_node():
+        return _groups_from_source_parent(node)
+    elif node.is_leaf_node():
+        return _groups_from_source_leaf(node)
+    else:
+        raise TypeError(
+            str(type(node.source)) + " is not a supported type.")
 
-    def _groups_from_source(self):
-        """ TODO """
-        # Ordered and weighted nodes need to be handled differently:
-        if self.is_parent_node():
-            return self._groups_from_source_parent()
-        elif self.is_leaf_node():
-            return self._groups_from_source_leaf()
+def _groups_from_source_parent(node):
+    """ Determines groups of linked accounts under a parent node. """
+    groups = []
+    # Iterate over each field of LimitTuple in order (this makes
+    # building a new LimitTuple of results easier):
+    for field_name in LIMIT_TUPLE_FIELDS:
+        group = set()
+        # For the selected limit type (e.g. `max_inflow`), collect
+        # all of the groups present in the children:
+        for child in node.children:
+            # Get each child's groups for this limit.
+            # If any are repeated between children, they'll only be
+            # added once (since sets guarantee uniqueness)
+            inner_group = getattr(child.groups, field_name)
+            if inner_group is not None:
+                # `group` needs hashable members, so use frozenset:
+                group.add(frozenset(inner_group))
+        groups.append(group)
+    return LimitTuple(*groups)
+
+def _groups_from_source_leaf(node):
+    """ Determines groups of linked accounts for a leaf node. """
+    groups = []
+    # We want to build a LimitTuple (so that each kind of limit has
+    # its own groups). Rather than hard-code field names, iterate
+    # over each field of LimitTuple in order:
+    for field_name in LIMIT_TUPLE_FIELDS:
+        # Get the group method for this min/max in/outflow limit:
+        method = getattr(node.group_methods, field_name)
+        # Use the method to get the appropriate group:
+        if method is not None:
+            groups.append(method(node.source))
+        # (or simply use the empty set if there's no such method)
+        # NOTE: We don't return a set containing this account
+        # to make it easy for client code to skip over accounts
+        # which don't belong to groups, and we don't return None
+        # to spare client code from the hassle of sprinkling in
+        # tests for None.
         else:
-            raise TypeError(
-                str(type(self.source)) + " is not a supported type.")
+            groups.append(set())
+    return LimitTuple(*groups)
 
 def reduce_node(
         node, remove_children,
         child_transactions=None, _reduce_limit_methods=None):
-    """ TODO """
+    """ Generates a tree with certain children removed.
+
+    Args:
+        node (TransactionNode): The node to be reduced.
+        remove_children (set[TransactionNode]): The children of `node`
+            to be removed.
+        child_transactions (dict[TransactionNode,
+            dict[Decimal, Money]]): A mapping of nodes to transactions.
+            Optional. If passed in, any limits on the reduced node will
+            be reduced by an amount equal to the sum of any transactions
+            already recorded against the children being removed.
+            Optional.
+        _reduce_limit_methods (LimitTuple[Callable]): Methods which
+            take two arguments: `limit` (a `Money` object) and
+            `transactions` (a `Money` object). The methods return a new
+            limit reduced based on `transactions`; the new limit is a
+            `Money` object. Optional; if not provided, the default
+            methods of `reduce_limit_default_methods()` are used.
+    """
     # At a basic level, we need to reduce `source` to exclude the items
     # in `remove_children`, but `remove_children`'s elements are
     # `TransactionNode` objects and `source`'s are not. So use
@@ -186,10 +248,14 @@ def reduce_node(
     # results of _that_ to reduce `source` (since each child contains
     # a `source` attribute that should be present in `node.source`).
     if node.is_ordered():
+        # For ordered nodes, generate a tuple with children in
+        # `remove_children` removed.
         children = tuple(
             child for child in node.children if child not in remove_children)
         source = tuple(child.source for child in children)
     elif node.is_weighted():
+        # For weighted nodes, generate a dict with children in
+        # `remove_children` removed. Copy weights of remaining children.
         children = {
             child: weight for child, weight in node.children.items()
             if child not in remove_children}
@@ -211,9 +277,10 @@ def reduce_node(
             sum(child_transactions[child].values())
             for child in remove_children)
         # We reduce limits differently for inflows and outflows; let
-        # the methods of reduce_limit_methods tell us how to handle that
+        # the methods of reduce_limit_default_methods tell us how to
+        # handle that:
         if _reduce_limit_methods is None:
-            _reduce_limit_methods = reduce_limit_methods()
+            _reduce_limit_methods = reduce_limit_default_methods()
         for field_name in LIMIT_TUPLE_FIELD_NAMES:
             # Get each min/max in/outflow limit:
             limit = getattr(node.limits, field_name)
@@ -286,17 +353,17 @@ def group_default_methods(field_names=LINK_FIELD_NAMES):
         methods.append(default_method)
     return LimitTuple(*methods)
 
-def reduce_limit_methods():
+def reduce_limit_default_methods():
     """ Returns methods for reducing limits based on transactions. """
     def add_inflows(limit, transactions):
-        """ TODO """
+        """ Reduces inflow limit based on transactions. """
         # No change if there are no net inflows:
         if transactions > 0:
             # Limits on inflows must be non-negative:
             limit = max(limit - transactions, 0)
         return limit
     def add_outflows(limit, transactions):
-        """ TODO """
+        """ Reduces outflow limit based on transactions. """
         # No change if there are no net outflows:
         if transactions < 0:
             # Limits on outflows must be non-positive:
@@ -305,28 +372,3 @@ def reduce_limit_methods():
     return LimitTuple(
         min_inflow=add_inflows, max_inflow=add_inflows,
         min_outflow=add_outflows, max_outflow=add_outflows)
-
-# TODO: Sort out how to map nodes to Annotation objects.
-# The central issue is that mutable types (i.e. most nodes) are not
-# hashable, and thus not valid keys in a standard dict.
-#
-# We could generate a make_hashable method that cast each node of
-# `priority` to a hashable type (e.g. set -> frozenset, list -> tuple,
-# dict -> ??? (add the third-party frozendict library? create a custom
-# hashable_dict type? c.f. https://stackoverflow.com/a/1151705)).
-# This adds complexity by causing the internal `priority` tree to differ
-# from the tree provided - e.g. it would evaluate to not-equal.
-#
-# We could forego some efficiency and use a datastructure with slower
-# lookup (e.g. a list or set of (node, annotation) tuples). But we do
-# a lot of lookups - once per node, per traversal!
-#
-# We could generate a whole annotated tree structure, rather than a
-# mapping. This loses out of the potential to avoid duplicate
-# annotations if a node happens to be repeated, but that is likely to be
-# rare (much rarer than traversals...). Consider building an
-# `_annotated_priority` tree where each node is a (node, annotation)
-# tuple (namedtuple?). It's easy enough to unpack each node at the start
-# of each `_process_*` method (e.g. change the arg to `annotated_node`
-# and add the new first line `node, annotation = annotated_node`).
-# This avoids hashing issues.
