@@ -16,7 +16,7 @@
             "envFile": "${workspaceRoot}/.env",
             "redirectOutput": true,
             "internalConsoleOptions": "openOnSessionStart",
-            "console": "none"
+            "console": "internalConsole"
         },
         {
             "name": "Python Module",
