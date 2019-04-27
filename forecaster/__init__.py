@@ -13,11 +13,13 @@ __license__ = 'All rights reserved'
 from forecaster.ledger import Money
 from forecaster.person import Person
 from forecaster.scenario import Scenario
-from forecaster.accounts import Account, LinkedLimitAccount, Debt, AccountLink
+from forecaster.accounts import (
+    Account, LinkedLimitAccount, Debt, AccountLink,
+    LimitTuple, LIMIT_TUPLE_FIELDS)
 from forecaster.strategy import (
     LivingExpensesStrategy, LivingExpensesStrategySchedule,
     AccountTransactionStrategy, AllocationStrategy, DebtPaymentStrategy,
-    TransactionStrategy, TransactionNode, LimitTuple)
+    TransactionStrategy, TransactionNode)
 from forecaster.tax import Tax
 from forecaster.settings import Settings
 from forecaster.forecast import (
