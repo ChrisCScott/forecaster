@@ -1,8 +1,9 @@
 """ A module providing the LinkedLimitAccount class. """
 
+from copy import copy
 from forecaster.accounts.base import Account
 from forecaster.accounts.link import AccountLink
-
+from forecaster.utility import add_transactions
 
 class LinkedLimitAccount(Account):
     """ An account with inflow/outflow limits linked to other accounts.
@@ -154,3 +155,88 @@ class LinkedLimitAccount(Account):
         if limit is not None:
             link.data = limit
         return link
+
+    def _merge_transactions(self, transactions, group_transactions):
+        """ TODO """
+        # For convenience, use an empty iterable rather than `None`:
+        if group_transactions is None:
+            group_transactions = set()
+
+        # We want to return `transactions`, but we don't want to mutate
+        # any of the inputs, so copy it first:
+        if transactions is not None:
+            transactions = copy(transactions)
+        elif self in group_transactions:
+            # If `transactions` isn't given, but this account is
+            # represented in `group_transactions`, use that:
+            transactions = copy(group_transactions[self])
+        else:
+            # Otherwise, just start with a empty dict to fill later:
+            transactions = {}
+
+        # Merge the transactions for each group member (other than this
+        # account, which is handled above):
+        group = self.max_inflow_link.group - {self}
+        for account in group:
+            # Add the transactions already recorded against the account:
+            add_transactions(transactions, account.transactions)
+            # And add any additional transactions, if present in
+            # `group_transactions`:
+            if account in group_transactions:
+                add_transactions(transactions, group_transactions[account])
+        return transactions
+
+    def max_inflows(
+            self, timing=None, transaction_limit=None, balance_limit=None,
+            transactions=None, group_transactions=None, **kwargs):
+        """ TODO """
+        # pylint: disable=too-many-arguments,arguments-differ
+        # This method just adds an extra optional argument.
+
+        # Merge `transactions` and `group_transactions`:
+        transactions = self._merge_transactions(
+            transactions, group_transactions)
+        return super().max_inflows(
+            timing=timing, transaction_limit=transaction_limit,
+            balance_limit=balance_limit, transactions=transactions, **kwargs)
+
+    def max_outflows(
+            self, timing=None, transaction_limit=None, balance_limit=None,
+            transactions=None, group_transactions=None, **kwargs):
+        """ TODO """
+        # pylint: disable=too-many-arguments,arguments-differ
+        # This method just adds an extra optional argument.
+
+        # Merge `transactions` and `group_transactions`:
+        transactions = self._merge_transactions(
+            transactions, group_transactions)
+        return super().max_outflows(
+            timing=timing, transaction_limit=transaction_limit,
+            balance_limit=balance_limit, transactions=transactions, **kwargs)
+
+    def min_inflows(
+            self, timing=None, transaction_limit=None, balance_limit=None,
+            transactions=None, group_transactions=None, **kwargs):
+        """ TODO """
+        # pylint: disable=too-many-arguments,arguments-differ
+        # This method just adds an extra optional argument.
+
+        # Merge `transactions` and `group_transactions`:
+        transactions = self._merge_transactions(
+            transactions, group_transactions)
+        return super().min_inflows(
+            timing=timing, transaction_limit=transaction_limit,
+            balance_limit=balance_limit, transactions=transactions, **kwargs)
+
+    def min_outflows(
+            self, timing=None, transaction_limit=None, balance_limit=None,
+            transactions=None, group_transactions=None, **kwargs):
+        # pylint: disable=too-many-arguments,arguments-differ
+        # This method just adds an extra optional argument.
+
+        # Merge `transactions` and `group_transactions`:
+        transactions = self._merge_transactions(
+            transactions, group_transactions)
+        return super().min_outflows(
+            timing=timing, transaction_limit=transaction_limit,
+            balance_limit=balance_limit, transactions=transactions, **kwargs)

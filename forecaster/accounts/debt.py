@@ -144,7 +144,8 @@ class Debt(Account):
             self.max_inflow_limit)
 
     def max_inflows(
-            self, timing=None, transaction_limit=None, balance_limit=None):
+            self, timing=None, transaction_limit=None, balance_limit=None,
+            transactions=None, **kwargs):
         """ The maximum amounts that can be contributed at `timing`.
 
         The output transaction values will be proportionate to the
@@ -177,7 +178,8 @@ class Debt(Account):
             balance_limit=balance_limit)
 
     def min_inflows(
-            self, timing=None, transaction_limit=None, balance_limit=None):
+            self, timing=None, transaction_limit=None, balance_limit=None,
+            transactions=None, **kwargs):
         """ The minimum amounts that must be contributed at `timing`.
 
         The output transaction values will be proportionate to the
@@ -206,9 +208,10 @@ class Debt(Account):
             balance_limit = Money(0)
         return super().min_inflows(
             timing=timing,
-
             transaction_limit=transaction_limit,
-            balance_limit=balance_limit)
+            balance_limit=balance_limit,
+            transactions=transactions,
+            **kwargs)
 
     def max_payment(
             self, savings_available=Money(0),
