@@ -4,10 +4,11 @@ These transaction schedules determine when transactions occur, in what
 amounts, and to which accounts. """
 
 import collections
+from copy import copy
 from forecaster.utility import add_transactions, subtract_transactions
 from forecaster.strategy.util import (
     LimitTuple, transaction_default_methods, group_default_methods,
-    TransactionNode, LIMIT_TUPLE_FIELD_NAMES, reduce_node)
+    TransactionNode, LIMIT_TUPLE_FIELDS, reduce_node)
 
 
 class TransactionStrategy:
@@ -142,11 +143,11 @@ class TransactionStrategy:
         # Determine which methods of `Account` objects to call during
         # tree traversal:
         if total > 0:  # inflows
-            min_limit = LIMIT_TUPLE_FIELD_NAMES.min_inflow
-            max_limit = LIMIT_TUPLE_FIELD_NAMES.max_inflow
+            min_limit = LIMIT_TUPLE_FIELDS.min_inflow
+            max_limit = LIMIT_TUPLE_FIELDS.max_inflow
         elif total < 0:  # outflows
-            min_limit = LIMIT_TUPLE_FIELD_NAMES.min_outflow
-            max_limit = LIMIT_TUPLE_FIELD_NAMES.max_outflow
+            min_limit = LIMIT_TUPLE_FIELDS.min_outflow
+            max_limit = LIMIT_TUPLE_FIELDS.max_outflow
         else:  # No transactions since total == 0
             return {}
         # Unless the user tells us not to assign minimums, we will
@@ -155,18 +156,60 @@ class TransactionStrategy:
         # (where minimums are assigned) to a memo, which will be passed
         # to the second traversal (where maximums are assigned):
         memo = {}
+        # It's also convenient to modify `available` during traversal,
+        # so copy it here to avoid modifying the calling code's vars.
+        available = copy(available)
         # First traverse to allocate mins (in priority order)
         if assign_min_first:
-            min_transactions = self._process_node(
-                self._priority_tree, available, total, transactions,
-                min_limit, memo=memo)
+            min_transactions = self._traverse_tree(
+                available, total, transactions, min_limit, memo=memo)
             # Other arguments are mutated, but not total, so update here
             total -= sum(min_transactions.values())
         # Then traverse again to allocate remaining money:
-        self._process_node(
-            self._priority_tree, available, total, transactions,
-            max_limit, memo=memo)
+        self._traverse_tree(
+            available, total, transactions, max_limit, memo=memo)
         return transactions
+
+    def _traverse_tree(self, available, total, transactions, limit, memo=None):
+        """ TODO """
+        # Set up vars for the while loop:
+        return_transactions = {}
+        threshold = self._priority_tree.transaction_threshold(
+            limit, timing=available, transactions=transactions,
+            transaction_methods=self.transaction_methods)
+        # We'll be allocated `threshold` dollars, which isn't based on
+        # `total`, so ensure that it isn't larger:
+        if abs(threshold) > abs(total):
+            threshold = total
+        # TODO: Test abs(threshold) < EPSILON, for some small EPSILON,
+        # to avoid infinite loops due to some tiny rounding error:
+        while threshold != 0:
+            # Instead of one tree traversal for the whole total,
+            # traverse the tree (up to) once for each set of linked
+            # accounts. Each traversal will "close out" at least one of
+            # those sets of accounts.
+            loop_transactions = self._process_node(
+                self._priority_tree, available, threshold, transactions,
+                limit, memo=memo)
+            # If we failed to add any new transactions, terminate loop:
+            loop_total = sum(loop_transactions.values())
+            if loop_total == 0:
+                return return_transactions
+
+            # Recordkeeping time!
+            # Merge the new transactions with the tally of transactions
+            # for all children of this node:
+            add_transactions(return_transactions, loop_transactions)
+            # Reduce `total` by the amount allocated:
+            total -= loop_total
+            # Figure out how much to allocate on the next iteration,
+            # using the same logic as above:
+            threshold = self._priority_tree.transaction_threshold(
+                limit, timing=available, transactions=transactions,
+                transaction_methods=self.transaction_methods)
+            if abs(threshold) > abs(total):
+                threshold = total
+        return return_transactions
 
     def _process_node(
             self, node, available, total, transactions,
@@ -351,9 +394,8 @@ class TransactionStrategy:
             node_copy = reduce_node(
                 node, limited_accounts, child_transactions=limited_accounts)
             # Note that we recurse directly on `_process_node_weighted`
-            # and not to the generic `_process_node` so as to ensure
-            # that the history of nodes visited doesn't include these
-            # 'artificial' reduced nodes:
+            # and not to the generic `_process_node` so as to avoid
+            # memoization of `node_copy`
             node_copy_transactions = self._process_node_weighted(
                 node_copy, available, total, transactions, limit_key, **kwargs)
 
@@ -384,7 +426,15 @@ class TransactionStrategy:
         # Use the binding method to get the appropriate bound method:
         bound_method = binding_method(account)
         # Get the transactions for the account with the bound method:
-        account_transactions = bound_method(available, total)
+        if account in transactions:
+            prior_transactions = transactions[account]
+        else:
+            prior_transactions = None
+        # Use the bound method to get the schedule for transactions for
+        # this account that respects the current limit:
+        account_transactions = bound_method(
+            available, total, transactions=prior_transactions,
+            group_transactions=transactions)
 
         # Add these new transactions to `available` and `transactions`:
         # Money added to the account is _removed_ from `available`:

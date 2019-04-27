@@ -1,15 +1,9 @@
 """ Helper methods and classes for TransactionStrategy. """
 
-from collections import namedtuple, abc
+from collections import abc
+from forecaster.accounts import LimitTuple, LIMIT_TUPLE_FIELDS
 
 # Define helper classes for storing data:
-
-LIMIT_TUPLE_FIELDS = ['min_inflow', 'max_inflow', 'min_outflow', 'max_outflow']
-LimitTuple = namedtuple(
-    'LimitTuple', LIMIT_TUPLE_FIELDS,
-    defaults=(None,) * len(LIMIT_TUPLE_FIELDS))
-LimitTuple.__doc__ = (
-    "A data container holding different values for min/max inflow/outfow")
 
 # Parent nodes (i.e. non-leaf nodes) can be ordered or weighted. These
 # are distinguished by their types; represent those here for easy
@@ -126,6 +120,138 @@ class TransactionNode:
             isinstance(self.source, PARENT_NODE_TYPES)
             and isinstance(self.source, abc.Mapping))
 
+    def weights_by_group(
+            self, limit_key, timing=None, transactions=None, memo=None,
+            is_done=None, transaction_methods=None):
+        """ Determines share of in/outflows allocated to each group.
+
+        This method operates on a _marginal_ (or infinitesimal) basis.
+        Assuming the total in/outflow is not large enough to change
+        any nodes' behaviour (e.g. to fill up an account/group), this
+        method _exactly_ predicts the proportion contributed to each
+        account/group.
+
+        Args:
+            limit_key (str): A name of a `LimitTuple` field
+                corresponding to the type of limit this method should
+                aim to respect.
+
+        Returns:
+            (dict[frozenset[Account], Money]): A mapping of transaction
+            groups to weights. The weights are normalized (i.e. they
+            sum to 1), so that each weight indicates the proportion
+            of the total allocation that will be allocated to the group
+            based on the current behaviour of accounts.
+        """
+        # Parse input args:
+        if is_done is None:
+            is_done = is_done_default
+        if transaction_methods is None:
+            transaction_methods = TRANSACTION_DEFAULT_METHODS
+
+        if self.is_ordered():
+            # Ordered nodes only contribute to the first node, so assign
+            # the first non-full node a weight of 100%
+            for child in self.children:
+                weights = child.weights_by_group(
+                    limit_key, timing=timing, transactions=transactions,
+                    memo=memo, is_done=is_done,
+                    transaction_methods=transaction_methods)
+                # Stop at the first child that returns non-empty weights
+                if weights:
+                    break
+            # No further processing; an ordered node's behaviour is
+            # precisely that of its first (non-done) child.
+            return weights
+
+        elif self.is_weighted():
+            # Weighted nodes are more complicated. Get the weights of
+            # each child's groups, scale them down by the weight
+            # associated with the child itself, and merge the weights of
+            # any groups represented by multiple children (by adding):
+            weights = {}
+            for child in self.children:
+                # Get the weights associated with the child's groups:
+                child_weights = child.weights_by_group(
+                    limit_key, timing=timing, transactions=transactions,
+                    memo=memo, is_done=is_done,
+                    transaction_methods=transaction_methods)
+                # Add those weights to the parent node's group-weights:
+                for group, weight in child_weights.items():
+                    # Scale down the added weights by the parent nodes'
+                    # weight on the child:
+                    weight *= self.children[child]
+                    if group in weights:
+                        # Add weights for groups also found in other
+                        # children:
+                        weights[group] += weight
+                    else:
+                        # If this is the first instance of seeing this
+                        # group, simply include it in the output:
+                        weights[group] = weight
+            return weights
+
+        else:
+            # Leaf node:
+            account = self.source
+            group_method = getattr(self.group_methods, limit_key)
+            group = group_method(account)
+            if group is None:
+                group = {account}
+            # cast to a hashable type:
+            group = frozenset(group)
+            if is_done(
+                    group, limit_key,
+                    timing=timing, transactions=transactions, memo=memo,
+                    transaction_methods=transaction_methods):
+                # No weights to return if the account won't receive
+                # any allocation:
+                return {}
+            # Otherwise, contribute 100% to this account:
+            return {group: 1}
+
+    def transaction_threshold(
+            self, limit_key, timing=None, transactions=None,
+            is_done=None, transaction_methods=None):
+        """ TODO
+
+        This method finds the largest amount that is guaranteed to be
+        allocatable by this node without exceeding any transaction
+        limits (of itself and/or its children).
+
+        Args:
+            limit_key (str): A name of a `LimitTuple` field
+                corresponding to the type of limit this method should
+                aim to respect.
+
+        Returns:
+            (Money, set[set[Account]]): The
+        """
+        memo = {}
+        # TODO: Sort out how to deal with per-node limits.
+        weights = self.weights_by_group(
+            limit_key, timing=timing, memo=memo, transactions=transactions,
+            is_done=is_done, transaction_methods=transaction_methods)
+        # If `weights` is empty, no accounts can be allocated to,
+        # so the threshold is $0:
+        if not weights:
+            return 0
+        # `memo[group]` stores the largest amount that can be allocated
+        # to `group`. We hit the threshold for `group` when the total
+        # amount being allocated exceeds that amount by a factor of
+        # `weights[group]` (which is normalized).
+        # So `memo[group] / weights[group]` gives us what we need!
+        thresholds = {
+            group: memo[group] / weights[group] for group in weights}
+        # Find the smallest (magnitude) value:
+        threshold_abs = min(
+            abs(threshold) for threshold in thresholds.values())
+        # If we flipped the sign in the previous step, flip it back:
+        if threshold_abs in thresholds.values():
+            return threshold_abs
+        else:
+            return -threshold_abs
+
 def _children_from_source(node):
     """ Converts children in `source` to `TransactionNode`s """
     # Ordered and weighted nodes need to be handled differently:
@@ -200,6 +326,7 @@ def _groups_from_source_parent(node):
 def _groups_from_source_leaf(node):
     """ Determines groups of linked accounts for a leaf node. """
     groups = []
+    account = node.source
     # We want to build a LimitTuple (so that each kind of limit has
     # its own groups). Rather than hard-code field names, iterate
     # over each field of LimitTuple in order:
@@ -208,15 +335,15 @@ def _groups_from_source_leaf(node):
         method = getattr(node.group_methods, field_name)
         # Use the method to get the appropriate group:
         if method is not None:
-            groups.append(method(node.source))
-        # (or simply use the empty set if there's no such method)
-        # NOTE: We don't return a set containing this account
-        # to make it easy for client code to skip over accounts
-        # which don't belong to groups, and we don't return None
-        # to spare client code from the hassle of sprinkling in
-        # tests for None.
+            group = method(account)
         else:
-            groups.append(set())
+            # The above branch can set `group=None`, so declare `group`
+            # here and set to None to make the next test easier.
+            group = None
+        # If we don't have a group, treat this as a group of one.
+        if group is None:
+            group = set(account)
+        groups.append(group)
     return LimitTuple(*groups)
 
 def reduce_node(
@@ -281,7 +408,7 @@ def reduce_node(
         # handle that:
         if _reduce_limit_methods is None:
             _reduce_limit_methods = reduce_limit_default_methods()
-        for field_name in LIMIT_TUPLE_FIELD_NAMES:
+        for field_name in LIMIT_TUPLE_FIELDS:
             # Get each min/max in/outflow limit:
             limit = getattr(node.limits, field_name)
             # If this node has such a limit, reduce it based on the
@@ -298,8 +425,12 @@ def reduce_node(
 
 # Define helper functions for identifying an account's min/max:
 
-# Give an easy way for refactors to update references to LimitTuples:
-LIMIT_TUPLE_FIELD_NAMES = LimitTuple(*LIMIT_TUPLE_FIELDS)
+# TODO: Move LimitTuple constants to forecaster.accounts module.
+# Consider going further and refactoring `Account` so that
+# `max_inflows`/etc and `max_inflow_link`/etc are held by LimitTuples
+# (e.g. so client code accesses `transaction_schedule.max_inflow`
+# or `link.max_inflow` instead). Is this pythonic?
+
 # Map LimitTuple fields to the names of AccountLink members of
 # LinkedLimitAccount objects:
 LINK_FIELD_NAMES = LimitTuple(
@@ -324,6 +455,8 @@ def transaction_default_methods(field_names=TRANSACTION_LIMIT_FIELD_NAMES):
         # The default value is locked in at definition time.
         methods.append(lambda account, name=field_name: getattr(account, name))
     return LimitTuple(*methods)
+
+TRANSACTION_DEFAULT_METHODS = transaction_default_methods()
 
 def group_default_methods(field_names=LINK_FIELD_NAMES):
     """ Returns methods returning sets of linked accts. as a LimitTuple. """
@@ -353,6 +486,8 @@ def group_default_methods(field_names=LINK_FIELD_NAMES):
         methods.append(default_method)
     return LimitTuple(*methods)
 
+GROUP_DEFAULT_METHODS = group_default_methods()
+
 def reduce_limit_default_methods():
     """ Returns methods for reducing limits based on transactions. """
     def add_inflows(limit, transactions):
@@ -372,3 +507,35 @@ def reduce_limit_default_methods():
     return LimitTuple(
         min_inflow=add_inflows, max_inflow=add_inflows,
         min_outflow=add_outflows, max_outflow=add_outflows)
+
+def is_done_default(
+        group, limit_key, timing=None, transactions=None, memo=None,
+        transaction_methods=None):
+    """ Returns True if the group cannot receive any more allocation. """
+    # If we've already determined whether this group is done, return now
+    if memo is not None and group in memo:
+        return memo[group] == 0
+
+    # Parse inputs:
+    if transaction_methods is None:
+        transaction_methods = TRANSACTION_DEFAULT_METHODS
+
+    # Grab a random account from the group:
+    account = next(iter(group))
+    # Grab the method for identifying the account's transaction method:
+    transaction_method = getattr(transaction_methods, limit_key)
+    # Get the method for allocating transactions:
+    method = transaction_method(account)
+    # Allocate the transactions (default args should be fine for this):
+    # TODO: Add `transactions` arg to `Account.max_inflows` and others.
+    # That arg receives as-yet-unrecorded transactions and reduces
+    # the results accordingly.
+    transactions = method(timing=timing)
+    # Sum up the total of the transactions:
+    total = sum(transactions.values())
+
+    # Record the result in memo, if provided:
+    if memo is not None:
+        memo[group] = total
+    # If no transactions could be allocated, this group is _done_:
+    return total == 0
