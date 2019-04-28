@@ -312,12 +312,6 @@ class Account(TaxSource):
         # Simultaneous transactions are modelled as one sum,
         self.transactions[when] += value
 
-    # TODO: Change `inflows` and `outflows` into methods.
-    # Let them take an (optional) `transactions` arg which is combined
-    # with `self.transactions` (temporarily) when determining results.
-    # Doesn't seem like there's any need for this to be a
-    # recorded_property, esp. since `self.transactions` is recorded.
-
     def inflows(self, transactions=None):
         """ The sum of all inflows to the account. """
         if transactions is not None:
@@ -825,6 +819,8 @@ class Account(TaxSource):
 
     # Finally, add some methods for calculating growth (i.e. balance
     # at a future time and time to get to a future balance.)
+
+    # TODO: Move accumulation_function (and _inverse) to `util.py`.
 
     @staticmethod
     def accumulation_function(t, rate, nper=1):
