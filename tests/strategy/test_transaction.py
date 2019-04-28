@@ -10,6 +10,12 @@ from forecaster.canada import RRSP, TFSA, TaxableAccount
 class TestTransactionStrategyMethods(unittest.TestCase):
     """ A test case for non-strategy method of TransactionStrategy. """
 
+    def assertTransactions(self, transactions, value):
+        """ Convenience method for testing transactions. """
+        # pylint: disable=invalid-name
+        # The naming here uses the style of unittest `assert*` methods.
+        self.assertAlmostEqual(sum(transactions.values()), value, places=4)
+
     def setUp(self):
         """ Sets up variables for testing. """
         self.initial_year = 2000
@@ -75,17 +81,12 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         available = {Decimal(0.5): Money(100)}
         transactions = strategy(available)
         # $100 will go to RRSP, $0 to TFSA, $0 to taxable:
-        self.assertAlmostEqual(
-            sum(transactions[self.rrsp].values()), Money(100))
-        # The taxable account doesn't need to be explicitly represented,
-        # but if it is then it should be $0:
+        self.assertTransactions(transactions[self.rrsp], Money(100))
         if self.tfsa in transactions:
-            self.assertAlmostEqual(
-                sum(transactions[self.tfsa].values()), Money(0))
+            self.assertTransactions(transactions[self.tfsa], Money(0))
         if self.taxable_account in transactions:
-            self.assertAlmostEqual(
-                sum(transactions[self.taxable_account].values()),
-                Money(0))
+            self.assertTransactions(
+                transactions[self.taxable_account], Money(0))
 
     def test_weighted_basic(self):
         """ Contribute to each account proportionate to its weight. """
@@ -94,13 +95,9 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         available = {Decimal(0.5): Money(100)}
         transactions = strategy(available)
         # $50 will go to RRSP, $25 to TFSA, $25 to taxable:
-        self.assertAlmostEqual(
-            sum(transactions[self.rrsp].values()), Money(50))
-        self.assertAlmostEqual(
-            sum(transactions[self.tfsa].values()), Money(25))
-        self.assertAlmostEqual(
-            sum(transactions[self.taxable_account].values()),
-            Money(25))
+        self.assertTransactions(transactions[self.rrsp], Money(50))
+        self.assertTransactions(transactions[self.tfsa], Money(25))
+        self.assertTransactions(transactions[self.taxable_account], Money(25))
 
     def test_nested_basic(self):
         """ Test with weighted dict nested in ordered list. """
@@ -109,14 +106,11 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         available = {Decimal(0.5): Money(100)}
         transactions = strategy(available)
         # $50 will go to RRSP, $50 to TFSA, $0 to taxable:
-        self.assertAlmostEqual(
-            sum(transactions[self.rrsp].values()), Money(50))
-        self.assertAlmostEqual(
-            sum(transactions[self.tfsa].values()), Money(50))
+        self.assertTransactions(transactions[self.rrsp], Money(50))
+        self.assertTransactions(transactions[self.tfsa], Money(50))
         if self.taxable_account in transactions:
-            self.assertAlmostEqual(
-                sum(transactions[self.taxable_account].values()),
-                Money(0))
+            self.assertTransactions(
+                transactions[self.taxable_account], Money(0))
 
     def test_ordered_overflow_partial(self):
         """ Contribute to first and second accounts of an ordered list. """
@@ -125,16 +119,11 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         available = {Decimal(0.5): Money(200)}
         transactions = strategy(available)
         # $100 will go to RRSP, $100 to TFSA, $0 to taxable:
-        self.assertAlmostEqual(
-            sum(transactions[self.rrsp].values()), Money(100))
-        self.assertAlmostEqual(
-            sum(transactions[self.tfsa].values()), Money(100))
-        # The taxable account doesn't need to be explicitly represented,
-        # but if it is then it should be $0:
+        self.assertTransactions(transactions[self.rrsp], Money(100))
+        self.assertTransactions(transactions[self.tfsa], Money(100))
         if self.taxable_account in transactions:
-            self.assertAlmostEqual(
-                sum(transactions[self.taxable_account].values()),
-                Money(0))
+            self.assertTransactions(
+                transactions[self.taxable_account], Money(0))
 
     def test_weighted_overflow_partial(self):
         """ Max out one weighted account, contribute overflow to others. """
@@ -143,13 +132,9 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         available = {Decimal(0.5): Money(400)}
         transactions = strategy(available)
         # $100 will go to RRSP (maxed), $150 to TFSA, $150 to taxable:
-        self.assertAlmostEqual(
-            sum(transactions[self.rrsp].values()), Money(100))
-        self.assertAlmostEqual(
-            sum(transactions[self.tfsa].values()), Money(150))
-        self.assertAlmostEqual(
-            sum(transactions[self.taxable_account].values()),
-            Money(150))
+        self.assertTransactions(transactions[self.rrsp], Money(100))
+        self.assertTransactions(transactions[self.tfsa], Money(150))
+        self.assertTransactions(transactions[self.taxable_account], Money(150))
 
     def test_nested_overflow_partial(self):
         """ Max out one nested account, contribute overflow to neighbor. """
@@ -158,14 +143,11 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         available = {Decimal(0.5): Money(400)}
         transactions = strategy(available)
         # $100 will go to RRSP (maxed), $300 to TFSA, $0 to taxable:
-        self.assertAlmostEqual(
-            sum(transactions[self.rrsp].values()), Money(100))
-        self.assertAlmostEqual(
-            sum(transactions[self.tfsa].values()), Money(300))
+        self.assertTransactions(transactions[self.rrsp], Money(100))
+        self.assertTransactions(transactions[self.tfsa], Money(300))
         if self.taxable_account in transactions:
-            self.assertAlmostEqual(
-                sum(transactions[self.taxable_account].values()),
-                Money(0))
+            self.assertTransactions(
+                transactions[self.taxable_account], Money(0))
 
     def test_contribution_group_ordered(self):
         """ Contribute to ordered accounts sharing contribution room. """
@@ -175,15 +157,10 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         available = {Decimal(0.5): Money(200)}
         transactions = strategy(available)
         # $100 will go to self.rrsp, $0 to rrsp2, and $100 to taxable:
-        self.assertAlmostEqual(
-            sum(transactions[self.rrsp].values()), Money(100))
+        self.assertTransactions(transactions[self.rrsp], Money(100))
         if self.rrsp2 in transactions:
-            # No further transactions to rrsp2 because all contribution
-            # room is consumed by transactions to self.rrsp
-            self.assertAlmostEqual(
-                sum(transactions[self.rrsp2].values()), Money(0))
-        self.assertAlmostEqual(
-            sum(transactions[self.taxable_account].values()), Money(100))
+            self.assertTransactions(transactions[self.rrsp2], Money(0))
+        self.assertTransactions(transactions[self.taxable_account], Money(100))
 
     def test_contribution_group_weight(self):
         """ Contribute to weighted accounts sharing contribution room. """
@@ -195,12 +172,9 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         available = {Decimal(0.5): Money(200)}
         transactions = strategy(available)
         # $50 will go to self.rrsp, $50 to rrsp2, and $100 to taxable:
-        self.assertAlmostEqual(
-            sum(transactions[self.rrsp].values()), Money(50))
-        self.assertAlmostEqual(
-            sum(transactions[self.rrsp2].values()), Money(50))
-        self.assertAlmostEqual(
-            sum(transactions[self.taxable_account].values()), Money(100))
+        self.assertTransactions(transactions[self.rrsp], Money(50))
+        self.assertTransactions(transactions[self.rrsp2], Money(50))
+        self.assertTransactions(transactions[self.taxable_account], Money(100))
 
     def test_limit_ordered(self):
         """ Limit contributions according to per-node limits. """
@@ -214,12 +188,9 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         available = {Decimal(0.5): Money(300)}
         transactions = strategy(available)
         # $100 will go to each account:
-        self.assertAlmostEqual(
-            sum(transactions[self.rrsp].values()), Money(100))
-        self.assertAlmostEqual(
-            sum(transactions[self.debt].values()), Money(100))
-        self.assertAlmostEqual(
-            sum(transactions[self.taxable_account].values()), Money(100))
+        self.assertTransactions(transactions[self.rrsp], Money(100))
+        self.assertTransactions(transactions[self.debt], Money(100))
+        self.assertTransactions(transactions[self.taxable_account], Money(100))
 
     def test_link_basic(self):
         """ A weighted root with two linked children. """
@@ -238,10 +209,8 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         available = {Decimal(0.5): Money(200)}
         transactions = strategy(available)
         # $50 should go to each account:
-        self.assertAlmostEqual(
-            sum(transactions[self.rrsp].values()), Money(50))
-        self.assertAlmostEqual(
-            sum(transactions[self.rrsp2].values()), Money(50))
+        self.assertTransactions(transactions[self.rrsp], Money(50))
+        self.assertTransactions(transactions[self.rrsp2], Money(50))
 
     def test_link_overflow(self):
         """ A weighted root with two linked children and one other. """
@@ -259,12 +228,9 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         available = {Decimal(0.5): Money(200)}
         transactions = strategy(available)
         # $50 should go to each RRSP, with remaining $100 to taxable:
-        self.assertAlmostEqual(
-            sum(transactions[self.rrsp].values()), Money(50))
-        self.assertAlmostEqual(
-            sum(transactions[self.rrsp2].values()), Money(50))
-        self.assertAlmostEqual(
-            sum(transactions[self.taxable_account].values()), Money(100))
+        self.assertTransactions(transactions[self.rrsp], Money(50))
+        self.assertTransactions(transactions[self.rrsp2], Money(50))
+        self.assertTransactions(transactions[self.taxable_account], Money(100))
 
     def test_link_order_equal(self):
         """ Two linked groups, each under both children of the root. """
@@ -288,14 +254,10 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         transactions = strategy(available)
         # $100 should go to each of rrsp and tfsa (which are 1st on each
         # side of the root node), with no more going to rrsp2 or tfsa2:
-        self.assertAlmostEqual(
-            sum(transactions[self.rrsp].values()), Money(100))
-        self.assertAlmostEqual(
-            sum(transactions[self.tfsa].values()), Money(100))
-        self.assertAlmostEqual(
-            sum(transactions[self.rrsp2].values()), Money(0))
-        self.assertAlmostEqual(
-            sum(transactions[self.tfsa2].values()), Money(0))
+        self.assertTransactions(transactions[self.rrsp], Money(100))
+        self.assertTransactions(transactions[self.tfsa], Money(100))
+        self.assertTransactions(transactions[self.rrsp2], Money(0))
+        self.assertTransactions(transactions[self.tfsa2], Money(0))
 
     def test_link_order_unequal(self):
         """ Two linked groups, each under both children of the root. """
@@ -318,14 +280,11 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         available = {Decimal(0.5): Money(150)}
         transactions = strategy(available)
         # $75 should go to rrsp, $50 to tfsa, and $25 to rrsp2:
-        self.assertAlmostEqual(
-            sum(transactions[self.rrsp].values()), Money(75))
-        self.assertAlmostEqual(
-            sum(transactions[self.tfsa].values()), Money(50))
-        self.assertAlmostEqual(
-            sum(transactions[self.rrsp2].values()), Money(25))
-        self.assertAlmostEqual(
-            sum(transactions[self.tfsa2].values()), Money(0))
+        self.assertTransactions(transactions[self.rrsp], Money(75))
+        self.assertTransactions(transactions[self.tfsa], Money(50))
+        self.assertTransactions(transactions[self.rrsp2], Money(25))
+        if self.tfsa2 in transactions:
+            self.assertTransactions(transactions[self.tfsa2], Money(0))
 
     def test_link_weighted_nested(self):
         """ A weighted root with weighted children with common groups. """
@@ -350,14 +309,10 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         available = {Decimal(0.5): Money(200)}
         transactions = strategy(available)
         # $50 should go to each account:
-        self.assertAlmostEqual(
-            sum(transactions[self.rrsp].values()), Money(50))
-        self.assertAlmostEqual(
-            sum(transactions[self.tfsa].values()), Money(50))
-        self.assertAlmostEqual(
-            sum(transactions[self.rrsp2].values()), Money(50))
-        self.assertAlmostEqual(
-            sum(transactions[self.tfsa2].values()), Money(50))
+        self.assertTransactions(transactions[self.rrsp], Money(50))
+        self.assertTransactions(transactions[self.tfsa], Money(50))
+        self.assertTransactions(transactions[self.rrsp2], Money(50))
+        self.assertTransactions(transactions[self.tfsa2], Money(50))
 
     def test_link_nested_basic(self):
         """ A weighted root with weighted children with common groups. """
@@ -383,12 +338,9 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         available = {Decimal(0.5): Money(200)}
         transactions = strategy(available)
         # $50 should go to each RRSP, with balance to taxable:
-        self.assertAlmostEqual(
-            sum(transactions[self.rrsp].values()), Money(50))
-        self.assertAlmostEqual(
-            sum(transactions[self.rrsp2].values()), Money(50))
-        self.assertAlmostEqual(
-            sum(transactions[self.taxable_account].values()), Money(100))
+        self.assertTransactions(transactions[self.rrsp], Money(50))
+        self.assertTransactions(transactions[self.rrsp2], Money(50))
+        self.assertTransactions(transactions[self.taxable_account], Money(100))
 
     def test_link_nested_hidden(self):
         """ A weighted root with weighted children with common groups. """
@@ -410,13 +362,10 @@ class TestTransactionStrategyMethods(unittest.TestCase):
         available = {Decimal(0.5): Money(200)}
         transactions = strategy(available)
         # $100 should go to rrsp, with balance to taxable:
-        self.assertAlmostEqual(
-            sum(transactions[self.rrsp].values()), Money(100))
+        self.assertTransactions(transactions[self.rrsp], Money(100))
         if self.rrsp2 in transactions:
-            self.assertAlmostEqual(
-                sum(transactions[self.rrsp2].values()), Money(0))
-        self.assertAlmostEqual(
-            sum(transactions[self.taxable_account].values()), Money(100))
+            self.assertTransactions(transactions[self.rrsp2], Money(0))
+        self.assertTransactions(transactions[self.taxable_account], Money(100))
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(
