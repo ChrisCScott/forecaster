@@ -79,7 +79,7 @@ class DebtPaymentStrategy(Strategy):
                 # based on this debt's savings/living expenses settings:
                 total_available -= debt.payment_from_savings(
                     amount=transactions_total[debt],
-                    base=debt.inflows)
+                    base=debt.inflows())
 
         # No need to continue if there's no money left:
         if total_available <= 0:
@@ -103,7 +103,7 @@ class DebtPaymentStrategy(Strategy):
             # payments accordingly:
             total_available -= debt.payment_from_savings(
                 amount=max_payment,
-                base=debt_transactions_total + debt.inflows)
+                base=debt_transactions_total + debt.inflows())
 
             # Note that we add the payment to `transactions` *after*
             # decrementing `total_available`, which depends on the old

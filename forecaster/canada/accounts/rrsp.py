@@ -122,7 +122,7 @@ class RRSP(RegisteredAccount):
         # pylint: disable=invalid-unary-operand-type
         # Pylint thinks this doesn't support negation via `-`, but it's
         # wrong - `outflows` returns `Money`, which supports `-`:
-        return -self.outflows
+        return -self.outflows()
 
     @recorded_property
     def tax_withheld(self):
@@ -163,7 +163,7 @@ class RRSP(RegisteredAccount):
 
         For RRSPs, this the amount contributed in the year.
         """
-        return self.inflows
+        return self.inflows()
 
     def next_contribution_room(self):
         """ Determines the amount of contribution room for next year.
@@ -201,7 +201,7 @@ class RRSP(RegisteredAccount):
                 year + 1
             )
             # Don't forget to add in any rollovers:
-            rollover = self.contribution_room - self.inflows
+            rollover = self.contribution_room - self.inflows()
             return min(accrual, Money(max_accrual)) + rollover
 
     @property

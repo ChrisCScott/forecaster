@@ -103,7 +103,7 @@ class ReductionForecast(SubForecast):
             total_payment = sum(transactions.values())
             savings_total = debt.payment_from_savings(
                 amount=total_payment,
-                base=debt.inflows)
+                base=debt.inflows())
             # Turn these into weights so that we can multiply each
             # transaction in `account_transactions` by it:
             if total_payment != 0:

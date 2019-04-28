@@ -253,7 +253,7 @@ class Debt(Account):
         # Set aside the base amount payable directly from living
         # expenses (i.e. before drawing down any savings)
         base_living_expense = max(
-            self.living_expense - (self.inflows + other_payments),
+            self.living_expense - (self.inflows() + other_payments),
             Money(0))
         # Apply the base living amount right up-front:
         payment = min(
@@ -311,7 +311,7 @@ class Debt(Account):
             Money: The amount paid from savings for the year.
         """
         if amount is None:
-            amount = self.inflows
+            amount = self.inflows()
         # Determine how much of this payment is eligible to be
         # wholly included in living expenses (after accounting
         # for past payments, i.e. `base`)

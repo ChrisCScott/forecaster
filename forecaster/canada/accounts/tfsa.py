@@ -127,7 +127,7 @@ class TFSA(RegisteredAccount):
         contribution_room = self._contribution_room_accrual(self.this_year + 1)
         # On top of this year's accrual, roll over unused contribution
         # room, plus any withdrawals (less contributions) from last year
-        rollover = self.contribution_room - (self.outflows + self.inflows)
+        rollover = self.contribution_room - (self.outflows() + self.inflows())
         return contribution_room + rollover
 
     @recorded_property
