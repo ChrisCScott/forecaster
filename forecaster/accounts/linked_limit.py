@@ -156,7 +156,7 @@ class LinkedLimitAccount(Account):
             link.data = limit
         return link
 
-    def _merge_transactions(self, transactions, group_transactions):
+    def _merge_transactions(self, transactions, group_transactions, link):
         """ TODO """
         # For convenience, use an empty iterable rather than `None`:
         if group_transactions is None:
@@ -174,9 +174,14 @@ class LinkedLimitAccount(Account):
             # Otherwise, just start with a empty dict to fill later:
             transactions = {}
 
-        # Merge the transactions for each group member (other than this
-        # account, which is handled above):
-        group = self.max_inflow_link.group - {self}
+        # If this account isn't linked (for this type of inflow/outflow,
+        # anyways), we're done:
+        if link is None:
+            return transactions
+
+        # Otherwise, merge the transactions for each other linked
+        # account in the group (note that this account is handled above)
+        group = link.group - {self}
         for account in group:
             # Add the transactions already recorded against the account:
             add_transactions(transactions, account.transactions)
@@ -195,7 +200,7 @@ class LinkedLimitAccount(Account):
 
         # Merge `transactions` and `group_transactions`:
         transactions = self._merge_transactions(
-            transactions, group_transactions)
+            transactions, group_transactions, self.max_inflow_link)
         return super().max_inflows(
             timing=timing, transaction_limit=transaction_limit,
             balance_limit=balance_limit, transactions=transactions, **kwargs)
@@ -209,7 +214,7 @@ class LinkedLimitAccount(Account):
 
         # Merge `transactions` and `group_transactions`:
         transactions = self._merge_transactions(
-            transactions, group_transactions)
+            transactions, group_transactions, self.max_outflow_link)
         return super().max_outflows(
             timing=timing, transaction_limit=transaction_limit,
             balance_limit=balance_limit, transactions=transactions, **kwargs)
@@ -223,7 +228,7 @@ class LinkedLimitAccount(Account):
 
         # Merge `transactions` and `group_transactions`:
         transactions = self._merge_transactions(
-            transactions, group_transactions)
+            transactions, group_transactions, self.min_inflow_link)
         return super().min_inflows(
             timing=timing, transaction_limit=transaction_limit,
             balance_limit=balance_limit, transactions=transactions, **kwargs)
@@ -236,7 +241,7 @@ class LinkedLimitAccount(Account):
 
         # Merge `transactions` and `group_transactions`:
         transactions = self._merge_transactions(
-            transactions, group_transactions)
+            transactions, group_transactions, self.min_outflow_link)
         return super().min_outflows(
             timing=timing, transaction_limit=transaction_limit,
             balance_limit=balance_limit, transactions=transactions, **kwargs)
