@@ -362,6 +362,33 @@ class TestTransactionStrategyMethods(TestCaseTransactions):
             self.assertTransactions(transactions[self.rrsp2], Money(0))
         self.assertTransactions(transactions[self.taxable_account], Money(100))
 
+    def test_assign_mins(self):
+        """ Assign minimum inflows without throwing off total inflows. """
+        # Simple scenario: One account that takes $10-$100 in inflows:
+        priority = [self.debt]
+        strategy = TransactionStrategy(priority=priority)
+        # Contribute more than the account can accept:
+        available = {Decimal(0.5): Money(200)}
+        transactions = strategy(available)
+        # Exactly $100 should go to the account:
+        self.assertTransactions(
+            transactions[self.debt], Money(100))
+
+    def test_assign_mins_out(self):
+        """ Assign minimum outflows without throwing off total outflows. """
+        # RRSPs have min outflows (if converted to an RRIF), so use
+        # one of those:
+        self.person.birth_date = self.initial_year - 72
+        self.rrsp.convert_to_rrif(year=self.initial_year - 1)
+        priority = [self.rrsp]
+        strategy = TransactionStrategy(priority=priority)
+        # Withdraw more than min_outflow_limit and less than balance:
+        total = (self.rrsp.min_outflow_limit - self.rrsp.balance) / 2
+        available = {Decimal(0.5): total}
+        transactions = strategy(available)
+        # Exactly the `total` amount should be withdrawn:
+        self.assertTransactions(transactions[self.rrsp], total)
+
 if __name__ == '__main__':
     unittest.TextTestRunner().run(
         unittest.TestLoader().loadTestsFromName(__name__))
