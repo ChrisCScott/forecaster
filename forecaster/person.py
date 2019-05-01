@@ -348,63 +348,6 @@ class Person(TaxSource):
         """ The `Person`'s raise for the current year. """
         return self._raise_rate_callable(self.this_year)
 
-    def contribution_room(self, account):
-        """ The contribution room for the given account.
-
-        The account must provide a `contribution_token` attribute.
-
-        Returns:
-            Union[dict[int, Money], None]: {year: contribution_room}
-                pairs for the account if it has been registered.
-
-                Returns None if `account` is not registered.
-        """
-        if account.contribution_token in self._contribution_room:
-            return self._contribution_room[account.contribution_token]
-        else:
-            return None
-
-    def contribution_groups(self, account):
-        """ The accounts sharing contribution room with `account`.
-
-        This method returns only accounts registered via
-        `register_shared_contribution`.
-
-        Returns:
-            Union[set[Account], None]: The `Account` objects sharing
-                contribution room with `account`. Includes this
-                `Account`.
-
-                Returns None if `account` is not registered.
-        """
-        if account in self._contribution_groups:
-            return self._contribution_groups[account]
-        else:
-            return None
-
-    def register_shared_contribution(self, account):
-        """ Prepares a Person to store contribution room for an account.
-
-        This method starts tracking contribution room for the account if
-        it isn't already and also keeps track of which accounts have
-        shared contribution room.
-        """
-        # Start tracking contribution room for this account if we aren't
-        # already.
-        if account.contribution_token not in self._contribution_room:
-            self._contribution_room[account.contribution_token] = {}
-        # Identify all accounts that share contribution room with this
-        # one
-        contribution_group = {
-            x for x in self.accounts
-            if hasattr(x, 'contribution_token') and
-            x.contribution_token == account.contribution_token}
-        # Store the contribution group for later recall. This also
-        # includes updating the stored contribution groups of other
-        # accounts in the group.
-        for account_in_group in contribution_group:
-            self._contribution_groups[account_in_group] = contribution_group
-
     def age(self, date):
         """ The age of the `Person` as of `date`.
 
