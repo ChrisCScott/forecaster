@@ -152,6 +152,7 @@ class TransactionNode:
         if self.is_ordered():
             # Ordered nodes only contribute to the first node, so assign
             # the first non-full node a weight of 100%
+            weights = tuple()
             for child in self.children:
                 weights = child.weights_by_group(
                     limit_key, timing=timing, transactions=transactions,
@@ -236,13 +237,14 @@ class TransactionNode:
         # so the threshold is $0:
         if not weights:
             return 0
+        total_weight = sum(weights.values())
         # `memo[group]` stores the largest amount that can be allocated
         # to `group`. We hit the threshold for `group` when the total
         # amount being allocated exceeds that amount by a factor of
-        # `weights[group]` (which is normalized).
-        # So `memo[group] / weights[group]` gives us what we need!
+        # `weights[group]` (normalized - so divide it by `total_weight`)
         thresholds = {
-            group: memo[group] / weights[group] for group in weights}
+            group: memo[group] / (weights[group] / total_weight)
+            for group in weights}
         # Find the smallest (magnitude) value:
         threshold_abs = min(
             abs(threshold) for threshold in thresholds.values())

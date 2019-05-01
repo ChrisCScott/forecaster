@@ -60,7 +60,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
         # It's not necessary to record inflows from employment,
         # but since this is usually how it'll be called we do
         # so here:
-        self.forecast.update_available(self.available)
+        self.forecast(self.available)
 
         # Calculate manually and compare results:
         living_expenses = (
@@ -80,7 +80,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
         # It's not necessary to record inflows from employment,
         # but since this is usually how it'll be called we do
         # so here:
-        self.forecast.update_available(self.available)
+        self.forecast(self.available)
 
         # Calculate manually and compare results:
         living_expenses = (
@@ -99,7 +99,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
 
         # It _is_ necessary to record inflows from employment
         # for this strategy:
-        self.forecast.update_available(self.available)
+        self.forecast(self.available)
 
         # Calculate manually and compare results:
         living_expenses = self.total_available - Money(100)
@@ -118,7 +118,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
         # It's not necessary to record inflows from employment,
         # but since this is usually how it'll be called we do
         # so here:
-        self.forecast.update_available(self.available)
+        self.forecast(self.available)
 
         # Calculate manually and compare results:
         living_expenses = Money(1200)
@@ -137,7 +137,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
         # It's not necessary to record inflows from employment,
         # but since this is usually how it'll be called we do
         # so here:
-        self.forecast.update_available(self.available)
+        self.forecast(self.available)
 
         # Calculate manually and compare results:
         living_expenses = Money(1200)
@@ -147,7 +147,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
 
     def test_update_available(self):
         """ Test recording of cash inflows from living expenses. """
-        self.forecast.update_available(self.available)
+        self.forecast(self.available)
         # There should $3900 in living expenses deducted from $7800 in
         # net income, for net available of $3900.
         self.assertAlmostEqual(

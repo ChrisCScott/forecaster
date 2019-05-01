@@ -1,6 +1,5 @@
 """ A module providing the base Account class. """
 
-import math
 from copy import copy
 from collections import defaultdict
 from decimal import Decimal
@@ -9,6 +8,8 @@ from forecaster.ledger import (
     Money, TaxSource, recorded_property, recorded_property_cached)
 from forecaster.utility import (
     Timing, when_conv, frequency_conv, add_transactions)
+from forecaster.accounts.util import (
+    accumulation_function, value_at_time, time_to_value)
 
 class Account(TaxSource):
     """ An account storing a `Money` balance.
@@ -194,10 +195,11 @@ class Account(TaxSource):
         # setter defined via metaclass)
 
         # First, grow last year's initial balance based on the rate:
-        balance = self.value_at_time(
+        balance = value_at_time(
             # pylint: disable=no-member
             # Pylint gets confused by attributes added by metaclass.
-            self._balance_history[self.this_year - 1], 'start', 'end')
+            self._balance_history[self.this_year - 1],
+            self.rate, 'start', 'end', nper=self.nper)
 
         # Then, grow each transactions and add it to the year-end total.
         # NOTE: This accounts for both inflows and outflows; outflows
@@ -206,7 +208,8 @@ class Account(TaxSource):
         # Pylint gets confused by attributes added by metaclass.
         transactions_history = self._transactions_history
         for when, value in transactions_history[self.this_year - 1].items():
-            balance += self.value_at_time(value, when, 'end')
+            balance += value_at_time(
+                value, self.rate, when, 'end', nper=self.nper)
 
         return balance
 
@@ -270,8 +273,7 @@ class Account(TaxSource):
         # This doesn't include any transactions or their growth.
         returns = (
             self.balance *
-            (self.accumulation_function(1, self.rate, self.nper) - 1)
-        )
+            (accumulation_function(1, self.rate, self.nper) - 1))
 
         # Add in the returns on each transaction.
         # (Withdrawals will generate returns with the opposite sign of
@@ -280,10 +282,7 @@ class Account(TaxSource):
         for when in self.transactions:
             returns += (
                 self.transactions[when] *
-                (self.accumulation_function(
-                    1 - when, self.rate, self.nper
-                ) - 1)
-            )
+                (accumulation_function(1 - when, self.rate, self.nper) - 1))
 
         return returns
 
@@ -476,9 +475,10 @@ class Account(TaxSource):
         # Clean inputs:
         if timing is None or not timing:
             # Use default timing if none was explicitly provided.
-            # TODO: Should we instead use whatever timing is naturally
-            # provided by the timings of account transactions? For
-            # example, if an account receives $50 at when=0.5 and a
+            # NOTE: Consider whether we should instead use whatever
+            # timing is naturally suggested by the timings of the
+            # current account transactions.
+            # For example, if an account receives $50 at when=0.5 and a
             # $25 withdrawal at when=1, then the maximum outflow would
             # occur at when=0.5 (and would have a value of $25, assuming
             # no growth).
@@ -499,11 +499,15 @@ class Account(TaxSource):
         # weights (i.e. values) but non-empty timings (i.e. keys),
         # assume uniform weights at those timings:
         if total_weight == 0:
-            timing = Timing({when: 1 for when in timing})
+            timing = Timing({when: 1 for when in timing.keys()})
             total_weight = len(timing)
+        # Normalize so that we can conveniently multiply weights by
+        # `total` to get that amount spread across all timings:
+        # (Exclude zero-valued weights for two reasons: we don't need
+        # them and they lead to errors when multipling by infinity)
         normalized_timing = {
             when: Decimal(weight) / total_weight
-            for when, weight in timing.items()}
+            for when, weight in timing.items() if weight != 0}
 
         # We want the value at each timing to be proportional to its
         # weight. This calls for math.
@@ -525,7 +529,7 @@ class Account(TaxSource):
         # Since s (the total) is the same for all values, find it first:
         weighted_accum = Decimal(0)
         for timing, weight in normalized_timing.items():
-            weighted_accum += weight * self.accumulation_function(
+            weighted_accum += weight * accumulation_function(
                 t=1-timing,
                 rate=self.rate,
                 nper=self.nper)
@@ -546,7 +550,7 @@ class Account(TaxSource):
 
     def max_outflows(
             self, timing=None, transaction_limit=None, balance_limit=None,
-            transactions=None):
+            transactions=None, **kwargs):
         """ The maximum amounts that can be withdrawn at `timings`.
 
         The output transaction values will be proportionate to the
@@ -577,27 +581,16 @@ class Account(TaxSource):
                 that time such that, by the end of the year, the
                 Account's balance is $0.
         """
-        # TODO: Add *args and **kwargs arguments to allow for subclasses
-        # to add arguments (e.g. for ContributionLimitAccount to take in
-        # proposed transactions to other accounts)
-        # TODO: Add argument (`proposed_transactions`?) to allow caller
-        # to pass in dict of transactions that haven't yet been recorded
-        # but should be counted against inflows/outflows. (Just for
-        # this account or also for other accounts?)
-        # TODO: offload `min_total` logic to separate method (e.g.
-        # min_inflow_total()) so that it can be easily overriden by
-        # subclasses without requiring them to rewrite this method.
-        # ContributionLimitAccount would be a likely user of this -
-        # consider letting min_inflow_total take *args and **kwargs
-        # arguments so that proposed transactions for other accounts
-        # in the group can be passed to it.
+        # pylint: disable=unused-argument
+        # `kwargs` is provided so that subclasses can expand the
+        # argument list without requiring client code to type-check.
+
         if balance_limit is None:
             # Outflows are limited by the account balance:
             balance_limit = Money(0)
 
         # Limit transactions to max total outflows, accounting for any
         # existing outflows already recorded as transactions:
-        # TODO: Incorporate outflows in `transactions` here too!
         min_total = self.max_outflow_limit - self.outflows(transactions)
         # If a smaller limit is passed in, use that.
         # (Recall that outflows are negative, so we use max, not min)
@@ -643,6 +636,10 @@ class Account(TaxSource):
                 `value` indicates the maximum amount that can be
                 contributed at that time.
         """
+        # pylint: disable=unused-argument
+        # `kwargs` is provided so that subclasses can expand the
+        # argument list without requiring client code to type-check.
+
         if balance_limit is None:
             # Inflows have no upper cap:
             balance_limit = Money('Infinity')
@@ -693,6 +690,10 @@ class Account(TaxSource):
                 `value` indicates the amount that should be withdrawn at
                 that time.
         """
+        # pylint: disable=unused-argument
+        # `kwargs` is provided so that subclasses can expand the
+        # argument list without requiring client code to type-check.
+
         if balance_limit is None:
             # Outflows are limited by the account balance:
             balance_limit = Money(0)
@@ -744,6 +745,10 @@ class Account(TaxSource):
                 `value` indicates the maximum amount that can be
                 contributed at that time.
         """
+        # pylint: disable=unused-argument
+        # `kwargs` is provided so that subclasses can expand the
+        # argument list without requiring client code to type-check.
+
         if balance_limit is None:
             # Inflows have no upper cap:
             balance_limit = Money('Infinity')
@@ -820,66 +825,6 @@ class Account(TaxSource):
     # Finally, add some methods for calculating growth (i.e. balance
     # at a future time and time to get to a future balance.)
 
-    # TODO: Move accumulation_function (and _inverse) to `util.py`.
-
-    @staticmethod
-    def accumulation_function(t, rate, nper=1):
-        """ The accumulation function, A(t), from interest theory.
-
-        A(t) provides the growth (or discount) factor over the period
-        [0, t]. If `t` is negative, this method returns the inverse
-        (i.e. `A(t)^-1`).
-
-        This method's output is not well-defined if `t` does not align
-        with the start/end of a compounding period. (It will produce
-        sensible output, but it might not correspond to how your bank
-        calculates interest).
-
-        Args:
-            t (float, Decimal): Defines the period [0,t] over which the
-                accumulation will be calculated.
-            rate (float, Decimal): The rate of return (or interest).
-            nper (int): The number of compounding periods per year.
-
-        Returns:
-            The accumulation A(t), as a Decimal.
-        """
-        # pylint: disable=invalid-name
-        # `t` is the usual name for the input to A(t) in interest theory.
-
-        # Convert t and rate to Decimal
-        t = Decimal(t)
-        rate = Decimal(rate)
-
-        # Use the exponential formula for continuous compounding: e^rt
-        if nper is None:
-            # math.exp(rate * t) throws a warning, since there's an
-            # implicit float-Decimal multiplication.
-            acc = Decimal(math.e) ** (rate * t)
-        # Otherwise use the discrete formula: (1+r/n)^nt
-        else:
-            acc = (1 + rate / nper) ** (nper * t)
-
-        return acc
-
-    def value_at_time(self, value, now='start', time='end'):
-        """ Returns the present (or future) value.
-
-        Args:
-            value (Money): The (nominal) value to be converted.
-            now (Decimal): The time associated with the nominal value.
-            time (Decimal): The time to which the nominal value is to
-                be converted.
-
-        Returns:
-            A Money object representing the present value
-            (if now > time) or the future value (if now < time) of
-            `value`.
-        """
-        return value * self.accumulation_function(
-            when_conv(time) - when_conv(now), self.rate, self.nper
-        )
-
     def balance_at_time(self, time, transactions=None):
         """ Returns the balance at a point in time.
 
@@ -896,7 +841,8 @@ class Account(TaxSource):
 
         # Find the future value (at t=time) of the initial balance.
         # This doesn't include any transactions of their growth.
-        balance = self.value_at_time(self.balance, 'start', time)
+        balance = value_at_time(
+            self.balance, self.rate, 'start', time, nper=self.nper)
 
         # Combine the recorded and input transactions, if provided:
         if transactions is not None:
@@ -908,75 +854,10 @@ class Account(TaxSource):
         # Add in the future value of each transaction (except that that
         # happen after `time`).
         for when in [w for w in transactions if w <= time]:
-            balance += self.value_at_time(transactions[when], when, time)
+            balance += value_at_time(
+                transactions[when], self.rate, when, time, nper=self.nper)
 
         return balance
-
-    @staticmethod
-    def accumulation_function_inverse(accum, rate, nper=1):
-        """ The inverse of the accumulation function, A^-1(a).
-
-        A^-1(a) provides the amount of time required to achieve a
-        certain growth (or discount) factor. If `accum` is less than
-        1, the result is negative. `accum` must be positive.
-
-        Args:
-            accum (float, Decimal): The accumulation factor.
-            rate (float, Decimal): The rate of return (or interest).
-            nper (int): The number of compounding periods per year.
-
-        Returns:
-            (float, Decimal): A value `t` defining the period [0,t]
-                or [t, 0] (if negative) over which the accumulation
-                would be reached.
-        """
-        # Convert accum and rate to Decimal
-        accum = Decimal(accum)
-        rate = Decimal(rate)
-
-        if accum < 0:
-            raise ValueError('accum must be positive.')
-
-        # The case where rate=0 results in divide-by-zero errors later
-        # on, so deal with it specifically here.
-        # If the rate is 0%, it will either take an infinite value
-        # (positive or negative, depending on the rate)
-        # or 0 (in the special case of accum=1)
-        if rate == 0:
-            if accum == 1:
-                return Decimal(0)
-            elif accum < 1:
-                return -Decimal('Infinity')
-            else:
-                return Decimal('Infinity')
-
-        # Use the exponential formula for continuous compounding: a=e^rt
-        # Derive from this t=ln(a)/r
-        if nper is None:
-            # math.exp(rate * t) throws a warning, since there's an
-            # implicit float-Decimal multiplication.
-            timing = math.log(accum, math.e) / rate
-        # Otherwise use the discrete formula: a=(1+r/n)^nt
-        # Derive from this t=log(a,1+r/n)/n
-        else:
-            timing = math.log(accum, 1 + rate / nper) / nper
-
-        return timing
-
-    def time_to_value(self, value_now, value_then):
-        """ The time required to grow from one value to another.
-
-        Args:
-            value_now (Money): The (nominal) value we start with.
-            value_then (Money): The (nominal) value we end with.
-
-        Returns:
-            A Decimal object representing the time required to
-            grow (or shrink) from `value_now` to `value_then`.
-        """
-        return self.accumulation_function_inverse(
-            accum=value_then/value_now, rate=self.rate, nper=self.nper
-        )
 
     def time_to_balance(self, value, when=Decimal(0)):
         """ Returns the time required to grow to a given balance.
@@ -1003,7 +884,7 @@ class Account(TaxSource):
 
         # Determine when we'll reach the desired amount, assuming
         # no further transactions:
-        time = when + self.time_to_value(balance, value)
+        time = when + time_to_value(self.rate, balance, value, nper=self.nper)
 
         # Now look ahead to the next transaction and, if it happens
         # before `time`, recurse onto that transaction's timing:

@@ -37,11 +37,11 @@ class LivingExpensesForecast(SubForecast):
         self.living_expenses_strategy = living_expenses_strategy
         self.people = people
 
-    def update_available(self, available):
+    def __call__(self, available):
         """ Records transactions against accounts; mutates `available`. """
         # The superclass has some book-keeping to do before we get
         # started on doing the updates:
-        super().update_available(available)
+        super().__call__(available)
 
         # Assume living expenses are incurred at the same time that
         # income is received. If there are multiple people, incur

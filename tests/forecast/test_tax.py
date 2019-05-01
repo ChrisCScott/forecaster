@@ -89,7 +89,7 @@ class TestTaxForecast(unittest.TestCase):
         # a copy to compare against after the method call:
         available = {Decimal(0.5): Money(100)}
         compare = dict(available)
-        self.forecast.update_available(available)
+        self.forecast.__call__(available)
         # Should be no change:
         self.assertEqual(
             available,

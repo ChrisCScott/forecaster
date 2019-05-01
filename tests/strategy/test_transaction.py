@@ -5,16 +5,11 @@ from decimal import Decimal
 from forecaster import (
     Person, Money, TransactionStrategy, Debt, TransactionNode, LimitTuple)
 from forecaster.canada import RRSP, TFSA, TaxableAccount
+from tests.util import TestCaseTransactions
 
 
-class TestTransactionStrategyMethods(unittest.TestCase):
+class TestTransactionStrategyMethods(TestCaseTransactions):
     """ A test case for non-strategy method of TransactionStrategy. """
-
-    def assertTransactions(self, transactions, value):
-        """ Convenience method for testing transactions. """
-        # pylint: disable=invalid-name
-        # The naming here uses the style of unittest `assert*` methods.
-        self.assertAlmostEqual(sum(transactions.values()), value, places=4)
 
     def setUp(self):
         """ Sets up variables for testing. """

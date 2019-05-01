@@ -18,13 +18,12 @@ from forecaster.accounts import (
     LimitTuple, LIMIT_TUPLE_FIELDS)
 from forecaster.strategy import (
     LivingExpensesStrategy, LivingExpensesStrategySchedule,
-    AccountTransactionStrategy, AllocationStrategy, DebtPaymentStrategy,
+    AllocationStrategy, DebtPaymentStrategy,
     TransactionStrategy, TransactionNode)
 from forecaster.tax import Tax
 from forecaster.settings import Settings
 from forecaster.forecast import (
     Forecast, SubForecast, IncomeForecast, LivingExpensesForecast,
-    ContributionForecast, ReductionForecast, WithdrawalForecast,
-    TaxForecast)
+    SavingForecast, WithdrawalForecast, TaxForecast)
 from forecaster.forecaster import Forecaster, Parameter
 from forecaster.utility import Timing

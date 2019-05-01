@@ -13,10 +13,10 @@ class WithdrawalForecast(SubForecast):
         people (Iterable[Person]): The plannees.
         accounts (Iterable[Account]): Retirement accounts of the
             `people`.
-        account_transaction_strategy (AccountTransactionStrategy):
+        transaction_strategy (TransactionStrategy):
             A callable object that determines the schedule of
             transactions for any contributions during the year.
-            See the documentation for `AccountTransactionStrategy`
+            See the documentation for `TransactionStrategy`
             for acceptable args when calling this object.
 
     Attributes:
@@ -35,7 +35,7 @@ class WithdrawalForecast(SubForecast):
     # or something (although it's not clear how this benefits the code.)
     def __init__(
             self, initial_year, people, accounts,
-            account_transaction_strategy):
+            transaction_strategy):
         """ Initializes an instance of WithdrawalForecast. """
         # Recall that, as a Ledger object, we need to call the
         # superclass initializer and let it know what the first
@@ -46,13 +46,17 @@ class WithdrawalForecast(SubForecast):
         # Store input values
         self.people = people
         self.accounts = accounts
-        self.account_transaction_strategy = account_transaction_strategy
+        self.transaction_strategy = transaction_strategy
 
-    def update_available(self, available):
+        self.account_transactions = {}
+
+    def __call__(self, available):
         """ Records transactions against accounts; mutates `available`. """
         # The superclass has some book-keeping to do before we get
         # started on doing the updates:
-        super().update_available(available)
+        super().__call__(available)
+
+        self.account_transactions = self.transaction_strategy(available)
 
         # pylint: disable=not-an-iterable,unsubscriptable-object,no-member
         # pylint can't infer the type of account_transactions
@@ -137,22 +141,6 @@ class WithdrawalForecast(SubForecast):
                 # `net_withdrawals` is set up-front.
                 # (Right now it's the reverse.)
                 accum += withdrawal
-
-    @recorded_property_cached
-    def account_transactions(self):
-        """ Transactions for each account, according to the strategy.
-
-        This is what `account_transaction_strategy` returns.
-        """
-        # NOTE: gross_withdrawals is positive, but
-        # AccountTransactionStrategy expects a negative value for
-        # withdrawals.
-
-        # pylint: disable=invalid-unary-operand-type
-        # gross_withdrawals returns Money, which accepts unary `-`
-        return self.account_transaction_strategy(
-            total=-self.gross_withdrawals,
-            accounts=self.accounts)
 
     @recorded_property_cached
     def gross_withdrawals(self):

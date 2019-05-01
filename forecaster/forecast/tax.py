@@ -37,6 +37,12 @@ class TaxForecast(SubForecast):
         self.people = people
         self.tax_treatment = tax_treatment
 
+    # TODO: Add __call__ method to apply tax_adjustment?
+    # One option would be to clear `available` and add
+    # appropriately-timed inflows/outflows for rebates/amounts owing,
+    # on the assumption that this is the last subforecast to be called.
+    # At present that doesn't seem necessary.
+
     @recorded_property_cached
     def tax_withheld(self):
         """ Total taxes withheld on income for the year. """

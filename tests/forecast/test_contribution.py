@@ -4,13 +4,14 @@ import unittest
 from decimal import Decimal
 from collections import defaultdict
 from forecaster import (
-    Money, Person, Tax,
-    ContributionForecast, AccountTransactionStrategy,
-    Account, LinkedLimitAccount, Timing, canada)
+    Money, Person, Tax, Account,
+    SavingForecast, TransactionStrategy,
+    Timing, canada)
+from tests.util import TestCaseTransactions
 
 
-class TestContributionForecast(unittest.TestCase):
-    """ Tests ContributionForecast. """
+class TestSavingForecast(TestCaseTransactions):
+    """ Tests SavingForecast. """
 
     def setUp(self):
         """ Builds stock variables to test with. """
@@ -46,79 +47,52 @@ class TestContributionForecast(unittest.TestCase):
         self.total_available = sum(self.available.values())
 
         # Now we can set up the big-ticket items:
-        self.strategy = AccountTransactionStrategy(
-            AccountTransactionStrategy.strategy_ordered,
-            {'ContributionLimitAccount': 1, 'Account': 2}
-        )
-        self.forecast = ContributionForecast(
+        # Use an ordered strategy by default:
+        self.strategy = TransactionStrategy([self.account, self.rrsp])
+        self.forecast = SavingForecast(
             initial_year=self.initial_year,
-            accounts={self.account, self.rrsp},
-            account_transaction_strategy=self.strategy)
+            retirement_accounts={self.account, self.rrsp},
+            debt_accounts=set(),
+            transaction_strategy=self.strategy)
 
-    def test_account_trans_ordered(self):
-        """ Test account transactions under ordered strategy. """
+    def test_ordered(self):
+        """ Test saving with an ordered strategy. """
         # Set up forecast:
-        self.strategy = AccountTransactionStrategy(
-            strategy=AccountTransactionStrategy.strategy_ordered,
-            weights={'ContributionLimitAccount': 1, 'Account': 2})
-        self.forecast.account_transaction_strategy = self.strategy
-        self.forecast.update_available(self.available)
-
-        # Track total contributions to each account for convenience:
-        # pylint: disable=unsubscriptable-object
-        # These properties return dicts, but pylint has trouble
-        # inferring that.
-        account_contribution = sum(
-            self.forecast.account_transactions[self.account].values())
-        limit_account_contribution = sum(
-            self.forecast.account_transactions[self.rrsp].values())
+        self.strategy.priority = [self.rrsp, self.account]
+        self.forecast(self.available)
         # We have $3000 available to contribute. We contribute the
-        # first $1000 to `limit_account` and the balance to `account`
-        self.assertEqual(
-            limit_account_contribution,
-            self.rrsp.contribution_room)
-        self.assertEqual(
-            account_contribution,
-            self.total_available - limit_account_contribution)
+        # first $1000 to `rrsp` and the balance to `account`
+        self.assertTransactions(
+            self.forecast.account_transactions[self.rrsp],
+            Money(1000))
+        self.assertTransactions(
+            self.forecast.account_transactions[self.account],
+            Money(2000))
 
-    def test_account_trans_weight(self):
-        """ Test account transactions under weighted strategy. """
+    def test_weighted(self):
+        """ Test saving with a weighted strategy. """
         # Set up forecast:
-        self.strategy = AccountTransactionStrategy(
-            strategy=AccountTransactionStrategy.strategy_weighted,
-            weights={'ContributionLimitAccount': 500, 'Account': 2500})
-        self.forecast.account_transaction_strategy = self.strategy
-        self.forecast.update_available(self.available)
-
-        # Track total contributions to each account for convenience:
-        # pylint: disable=unsubscriptable-object
-        # These properties return dicts, but pylint has trouble
-        # inferring that.
-        account_contribution = sum(
-            self.forecast.account_transactions[self.account].values())
-        limit_account_contribution = sum(
-            self.forecast.account_transactions[self.rrsp].values())
+        self.strategy.priority = {self.rrsp: 500, self.account: 2500}
+        self.forecast(self.available)
         # We have $3000 available to contribute. We contribute $500
-        # to `limit_account` and the rest to `account`.
-        self.assertEqual(
-            limit_account_contribution,
+        # to `rrsp` and the rest to `account`.
+        self.assertTransactions(
+            self.forecast.account_transactions[self.rrsp],
             Money(500))
-        self.assertEqual(
-            account_contribution,
-            self.total_available - limit_account_contribution)
+        self.assertTransactions(
+            self.forecast.account_transactions[self.account],
+            Money(2500))
 
-    def test_contributions(self):
+    def test_total(self):
         """ Test total contributed to accounts. """
-        # Set up forecast:
-        self.forecast.accounts = {self.account}
-        self.forecast.update_available(self.available)
+        # Run forecast:
+        self.forecast(self.available)
 
         # Regardless of setup, all available money (i.e. $3000)
         # should be contributed.
-        self.assertEqual(
-            self.forecast.contributions,
-            Money(3000))
+        self.assertAlmostEqual(self.forecast.total, Money(3000))
 
+    # TODO: Test retirement_savings and debt_repayment properties.
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(

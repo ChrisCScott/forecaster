@@ -5,7 +5,7 @@ from copy import copy
 from decimal import Decimal
 from forecaster import (
     Money, Person, Forecast, Tax, Scenario, Timing,
-    Account, AccountTransactionStrategy, ContributionForecast)
+    Account, TransactionStrategy, SavingForecast)
 
 class DummyForecast(object):
     """ Acts like a SubForecast but is easier to debug with. """
@@ -31,7 +31,7 @@ class DummyForecast(object):
         self.initial_year = initial_year
         self.this_year = initial_year
 
-    def update_available(self, available):
+    def __call__(self, available):
         """ Adds transactions to `available`. """
         self.available_in = copy(available)
         for when, value in self.transactions.items():
@@ -57,16 +57,12 @@ class TestForecast(unittest.TestCase):
             self.initial_year,
             {Decimal(when)/12: Money(100) for when in range(12)})
         self.income_forecast_dummy.people = None
-        # Spend $50 on living expenses at the start of each month
+        # Spend $70 on living expenses at the start of each month
         self.living_expenses_forecast_dummy = DummyForecast(
             self.initial_year,
-            {Decimal(when)/12: Money(-50) for when in range(12)})
-        # Another $20/mo on reductions, at the end of each month:
-        self.reduction_forecast_dummy = DummyForecast(
-            self.initial_year,
-            {Decimal(when+1)/12: Money(-20) for when in range(12)})
-        # Contribute the balance:
-        self.contribution_forecast_dummy = DummyForecast(
+            {Decimal(when)/12: Money(-70) for when in range(12)})
+        # Contribute the balance ($360):
+        self.saving_forecast_dummy = DummyForecast(
             self.initial_year,
             {Decimal(when+1)/12: Money(-30) for when in range(12)})
         # Withdraw $300 at the start and middle of the year:
@@ -94,37 +90,31 @@ class TestForecast(unittest.TestCase):
             tax_treatment=tax,
             payment_timing=timing)
         # An account for savings to go to:
-        self.account = Account(
-            owner=self.person)
+        self.account = Account(owner=self.person)
         # A strategy is required, but since there's only
         # one account the result will always be the same:
-        self.strategy = AccountTransactionStrategy(
-            AccountTransactionStrategy.strategy_ordered,
-            {'Account': 1})
-        self.contribution_forecast = ContributionForecast(
+        self.strategy = TransactionStrategy(priority=[self.account])
+        self.saving_forecast = SavingForecast(
             initial_year=self.initial_year,
-            accounts={self.account},
-            account_transaction_strategy=self.strategy)
+            retirement_accounts={self.account},
+            debt_accounts=set(),
+            transaction_strategy=self.strategy)
 
         # Now assign `people`, `accounts`, and `debts` attrs to
         # appropriate subforecasts so that Forecast can retrieve
         # them:
         self.income_forecast_dummy.people = {self.person}
         self.withdrawal_forecast_dummy.accounts = {self.account}
-        self.reduction_forecast_dummy.debts = {}
         # Also add these to the null forecast, since it could be
         # substituted for any of the above dummy forecasts:
         self.null_forecast.people = self.income_forecast_dummy.people
         self.null_forecast.accounts = self.withdrawal_forecast_dummy.accounts
-        self.null_forecast.debts = self.reduction_forecast_dummy.debts
         # Forecast depends on SubForecasts have certain properties,
         # so add those here:
         self.income_forecast_dummy.net_income = (
             sum(self.income_forecast_dummy.transactions.values()))
         self.living_expenses_forecast_dummy.living_expenses = (
             sum(self.living_expenses_forecast_dummy.transactions.values()))
-        self.reduction_forecast_dummy.reductions = (
-            sum(self.reduction_forecast_dummy.transactions.values()))
         self.withdrawal_forecast_dummy.gross_withdrawals = (
             sum(self.withdrawal_forecast_dummy.transactions.values()))
         self.tax_forecast_dummy.tax_owing = Money(600)
@@ -133,7 +123,6 @@ class TestForecast(unittest.TestCase):
         self.null_forecast.net_income = self.income_forecast_dummy.net_income
         self.null_forecast.living_expenses = (
             self.living_expenses_forecast_dummy.living_expenses)
-        self.null_forecast.reductions = self.reduction_forecast_dummy.reductions
         self.null_forecast.gross_withdrawals = (
             self.withdrawal_forecast_dummy.gross_withdrawals)
         self.null_forecast.tax_owing = self.tax_forecast_dummy.tax_owing
@@ -149,28 +138,25 @@ class TestForecast(unittest.TestCase):
         so just use end-to-end dummies.
         """
         # A 1-year forecast with no withdrawals. Should earn $1200
-        # in income, spend $600 on living expenses, $240 on
-        # reductions, save the remaining $360, and withdraw $600.
+        # in income, spend $840 on living expenses, save the remaining
+        # $360, and withdraw $600.
         forecast = Forecast(
             income_forecast=self.income_forecast_dummy,
             living_expenses_forecast=self.living_expenses_forecast_dummy,
-            contribution_forecast=self.contribution_forecast_dummy,
-            reduction_forecast=self.reduction_forecast_dummy,
+            saving_forecast=self.saving_forecast_dummy,
             withdrawal_forecast=self.withdrawal_forecast_dummy,
             tax_forecast=self.tax_forecast_dummy,
             scenario=self.scenario)
         results = [
             sum(forecast.income_forecast.available_in.values(), Money(0)),
             sum(forecast.living_expenses_forecast.available_in.values()),
-            sum(forecast.reduction_forecast.available_in.values()),
-            sum(forecast.contribution_forecast.available_in.values()),
+            sum(forecast.saving_forecast.available_in.values()),
             sum(forecast.withdrawal_forecast.available_in.values()),
             sum(forecast.tax_forecast.available_in.values()),
             sum(forecast.tax_forecast.available_out.values())]
         target = [
             Money(0),
             Money(1200),
-            Money(600),
             Money(360),
             Money(0),
             Money(600),
@@ -187,10 +173,9 @@ class TestForecast(unittest.TestCase):
         forecast = Forecast(
             income_forecast=self.income_forecast_dummy,
             living_expenses_forecast=self.living_expenses_forecast_dummy,
-            # NOTE: Contribution forecast is not a dummy because we
+            # NOTE: Saving forecast is not a dummy because we
             # want to actually contribute to savings accounts:
-            contribution_forecast=self.contribution_forecast,
-            reduction_forecast=self.reduction_forecast_dummy,
+            saving_forecast=self.saving_forecast,
             withdrawal_forecast=self.null_forecast,
             tax_forecast=self.tax_forecast_dummy,
             scenario=self.scenario)
