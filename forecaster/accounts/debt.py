@@ -175,7 +175,9 @@ class Debt(Account):
         return super().max_inflows(
             timing=timing,
             transaction_limit=transaction_limit,
-            balance_limit=balance_limit)
+            balance_limit=balance_limit,
+            transactions=transactions,
+            **kwargs)
 
     def min_inflows(
             self, timing=None, transaction_limit=None, balance_limit=None,

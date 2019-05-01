@@ -528,11 +528,18 @@ def is_done_default(
     transaction_method = getattr(transaction_methods, limit_key)
     # Get the method for allocating transactions:
     method = transaction_method(account)
-    # Allocate the transactions (default args should be fine for this):
-    # TODO: Add `transactions` arg to `Account.max_inflows` and others.
-    # That arg receives as-yet-unrecorded transactions and reduces
-    # the results accordingly.
-    transactions = method(timing=timing)
+    # Allocate the transactions.
+    # Pass in transactions already allocated to this account and
+    # transactions allocated against others in its group so that the
+    # method can reduce its allocation accordingly:
+    if account in transactions:
+        account_transactions = transactions[account]
+    else:
+        account_transactions = None
+    transactions = method(
+        timing=timing,
+        transactions=account_transactions,
+        group_transactions=transactions)
     # Sum up the total of the transactions:
     total = sum(transactions.values())
 

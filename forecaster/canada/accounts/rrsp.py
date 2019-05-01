@@ -210,7 +210,7 @@ class RRSP(RegisteredAccount):
         # Return the larger (in terms of magnitude - recall outflows
         # are negative!) of: the minimum required age-based distribution
         # and any shared minimum (e.g. home-buyers' amounts):
-        return min(self.minimum_distribution(), super().min_outflow_limit)
+        return min(-self.minimum_distribution(), super().min_outflow_limit)
 
     def minimum_distribution(self):
         """ A min. amount required by law to be withdrawn based on age. """
