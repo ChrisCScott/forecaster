@@ -38,50 +38,38 @@ class TestDebtMethods(unittest.TestCase):
             self.owner,
             balance=-1000,
             minimum_payment=Money(10),
-            living_expense=Money(0),
-            savings_rate=Decimal('0.5'),
-            accelerated_payment=Money('Infinity')
-        )
+            accelerated_payment=Money('Infinity'))
 
     def test_init_default(self):
         """ Test Debt.__init__ with default args. """
         account = self.AccountType(
             self.owner)
         self.assertEqual(account.minimum_payment, Money(0))
-        self.assertEqual(account.savings_rate, 1)
         self.assertEqual(account.accelerated_payment, Money('Infinity'))
 
     def test_init_explicit(self, *args, **kwargs):
         """ Test Debt.__init__ with explicit args of expected types. """
         minimum_payment = Money(100)
-        reduction_rate = Decimal(1)
         accelerated_payment = Money(0)
         account = self.AccountType(
             self.owner, *args,
-            minimum_payment=minimum_payment, savings_rate=reduction_rate,
+            minimum_payment=minimum_payment,
             accelerated_payment=accelerated_payment, **kwargs)
         self.assertEqual(account.minimum_payment, minimum_payment)
-        self.assertEqual(account.savings_rate, reduction_rate)
         self.assertEqual(account.accelerated_payment, accelerated_payment)
 
     def test_init_convert(self, *args, **kwargs):
         """ Test Debt.__init__ with args needing conversion. """
         minimum_payment = 100
-        reduction_rate = 1
         accelerated_payment = 10
-        living_expense = '1000'
         account = self.AccountType(
             self.owner, *args,
             minimum_payment=minimum_payment,
-            living_expense=living_expense,
-            savings_rate=reduction_rate,
             accelerated_payment=accelerated_payment,
             **kwargs)
         self.assertEqual(account.minimum_payment, minimum_payment)
-        self.assertEqual(account.savings_rate, reduction_rate)
         self.assertEqual(
             account.accelerated_payment, Money(accelerated_payment))
-        self.assertEqual(account.living_expense, Money(living_expense))
 
     def test_init_invalid(self, *args, **kwargs):
         """ Test Debt.__init__ with non-convertible args. """
@@ -92,15 +80,7 @@ class TestDebtMethods(unittest.TestCase):
         with self.assertRaises(decimal.InvalidOperation):
             _ = self.AccountType(
                 self.owner, *args,
-                savings_rate='invalid', **kwargs)
-        with self.assertRaises(decimal.InvalidOperation):
-            _ = self.AccountType(
-                self.owner, *args,
                 accelerated_payment='invalid', **kwargs)
-        with self.assertRaises(decimal.InvalidOperation):
-            _ = self.AccountType(
-                self.owner, *args,
-                living_expense='invalid', **kwargs)
 
     def test_max_inflows_large_balance(self):
         """ Test `max_inflows` with balance greater than min. payment. """
@@ -228,131 +208,6 @@ class TestDebtMethods(unittest.TestCase):
         result = self.debt.min_inflows(self.timing)
         # No need to add any more payments to reach the minimum:
         self.assertEqual(sum(result.values()), Money(0))
-
-    def test_payment_basic(self):
-        """ Test `payment` for account with only `savings_rate` set. """
-        payment = self.debt.max_payment(
-            savings_available=100,
-            living_expenses_available=100,
-            other_payments=0,
-            timing='end')
-        self.assertEqual(payment, Money(200))
-
-    def test_payment_savings_limited(self):
-        """ Test `payment` limited by available savings amounts. """
-        payment = self.debt.max_payment(
-            savings_available=50,
-            living_expenses_available=100,
-            other_payments=0,
-            timing='end')
-        self.assertEqual(payment, Money(100))
-
-    def test_payment_living_limited(self):
-        """ Test `payment` limited by available living amounts. """
-        payment = self.debt.max_payment(
-            savings_available=100,
-            living_expenses_available=50,
-            other_payments=0,
-            timing='end')
-        self.assertEqual(payment, Money(100))
-
-    def test_payment_accel_limited(self):
-        """ Test `payment` limited by `accelerated_payment`. """
-        self.debt.minimum_payment = 100
-        self.debt.accelerated_payment = 100
-        # Should be min + accel, so $200.
-        payment = self.debt.max_payment(
-            savings_available=1000,
-            living_expenses_available=1000,
-            other_payments=0,
-            timing='end')
-        self.assertEqual(payment, Money(200))
-
-    def test_payment_balance_limited(self):
-        """ Test `payment` limited by `balance`. """
-        self.debt.balance = Money(-100)
-        # Balance is $100, so that's the payment.
-        payment = self.debt.max_payment(
-            savings_available=1000,
-            living_expenses_available=1000,
-            other_payments=0,
-            timing='end')
-        self.assertEqual(payment, Money(100))
-
-    def test_payment_other_limited(self):
-        """ Test `payment` limited by `other_payment`. """
-        self.debt.minimum_payment = 100
-        self.debt.accelerated_payment = 100
-        # Max payment is $200, so we'll set $200 of other payments.
-        payment = self.debt.max_payment(
-            savings_available=1000,
-            living_expenses_available=1000,
-            other_payments=200,
-            timing='end')
-        self.assertEqual(payment, Money(0))
-
-    def test_payment_inflow_limited(self):
-        """ Test `payment` limited by `account.inflows`. """
-        self.debt.minimum_payment = 100
-        self.debt.accelerated_payment = 100
-        self.debt.add_transaction(Money(200), when='start')
-        # Max payment is $200, there should be $0 left of payments.
-        payment = self.debt.max_payment(
-            savings_available=1000,
-            living_expenses_available=1000,
-            other_payments=0,
-            timing='end')
-        self.assertEqual(payment, Money(0))
-
-    def test_payment_savings_only(self):
-        """ Test `payment` with `savings_rate=1`. """
-        self.debt.savings_rate = 1
-        payment = self.debt.max_payment(
-            savings_available=100,
-            living_expenses_available=100,
-            other_payments=0,
-            timing='end')
-        self.assertEqual(payment, Money(100))
-
-    def test_payment_living_only(self):
-        """ Test `payment` with `savings_rate=0`. """
-        self.debt.savings_rate = 0
-        payment = self.debt.max_payment(
-            savings_available=200,
-            living_expenses_available=100,
-            other_payments=0,
-            timing='end')
-        self.assertEqual(payment, Money(100))
-
-    def test_payment_complex(self):
-        """ Test `payment` with all args to non-default values. """
-        self.debt.minimum_payment = 100
-        self.debt.living_expense = 100
-        self.debt.savings_rate = Decimal('0.75')
-        self.debt.accelerated_payment = 500
-        self.debt.add_transaction(20)
-        # We'll use $30 of living expenses first (after accounting
-        # for $50 in other payments and $20 of inflows),
-        # then use $100 of living expenses and $300 of savings
-        # for a total of $430 in payments
-        payment = self.debt.max_payment(
-            savings_available=300,
-            living_expenses_available=250,
-            other_payments=50,
-            timing='end')
-        self.assertEqual(payment, Money(430))
-
-    def test_payment_from_savings(self):
-        """ Test `payment_from_savings`. """
-        self.debt.savings_rate = Decimal('0.5')
-        self.debt.living_expense = 100
-        # An existing payment consumes $60 of the living expense
-        # amount, so of this $200 payment $40 goes to living
-        # expenses and $160 is split 50-50, leaving $80 to come
-        # from savings
-        payment = self.debt.payment_from_savings(
-            amount=Money(200), base=Money(60))
-        self.assertEqual(payment, Money(80))
 
 
 if __name__ == '__main__':
