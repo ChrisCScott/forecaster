@@ -5,7 +5,7 @@ from copy import copy
 from decimal import Decimal
 from forecaster import (
     Money, Person, Forecast, Tax, Scenario, Timing,
-    Account, TransactionStrategy, SavingForecast)
+    Account, TransactionTraversal, SavingForecast)
 
 class DummyForecast(object):
     """ Acts like a SubForecast but is easier to debug with. """
@@ -93,7 +93,7 @@ class TestForecast(unittest.TestCase):
         self.account = Account(owner=self.person)
         # A strategy is required, but since there's only
         # one account the result will always be the same:
-        self.strategy = TransactionStrategy(priority=[self.account])
+        self.strategy = TransactionTraversal(priority=[self.account])
         self.saving_forecast = SavingForecast(
             initial_year=self.initial_year,
             retirement_accounts={self.account},

@@ -19,7 +19,7 @@ from forecaster.accounts import (
 from forecaster.strategy import (
     LivingExpensesStrategy, LivingExpensesStrategySchedule,
     AllocationStrategy, DebtPaymentStrategy,
-    TransactionStrategy, TransactionNode)
+    TransactionTraversal, TransactionNode)
 from forecaster.tax import Tax
 from forecaster.settings import Settings
 from forecaster.forecast import (

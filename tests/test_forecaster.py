@@ -6,7 +6,7 @@ from copy import copy, deepcopy
 from decimal import Decimal
 from forecaster import (
     Settings, Tax, Person, Money, Account, Debt, Scenario,
-    LivingExpensesStrategy, TransactionStrategy,
+    LivingExpensesStrategy, TransactionTraversal,
     AllocationStrategy, DebtPaymentStrategy, Forecaster, Parameter)
 
 
@@ -48,7 +48,7 @@ class TestForecaster(unittest.TestCase):
             base_amount=self.settings.living_expenses_base_amount,
             rate=self.settings.living_expenses_rate,
             inflation_adjust=self.scenario.inflation_adjust)
-        self.saving_strategy = TransactionStrategy(
+        self.saving_strategy = TransactionTraversal(
             # TODO: Sort out how to assign priority based on settings.
             # (Generate wrapper object that creates priority based on
             # account types? Based on defined strategies, with settings
@@ -56,7 +56,7 @@ class TestForecaster(unittest.TestCase):
             # e.g. "Debt > RRSP > TFSA > Taxable")
             priority=[]
         )
-        self.withdrawal_strategy = TransactionStrategy(
+        self.withdrawal_strategy = TransactionTraversal(
             # TODO: Sort out how to assign priority based on settings.
             # See above for more comments.
             priority=[]

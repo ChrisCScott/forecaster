@@ -1,17 +1,19 @@
 """ Provides a class for determining schedules of transactions.
 
 These transaction schedules determine when transactions occur, in what
-amounts, and to which accounts. """
+amounts, and to which accounts.
+"""
 
 import collections
 from copy import copy
 from forecaster.utility import add_transactions, subtract_transactions
-from forecaster.strategy.util import (
-    LimitTuple, transaction_default_methods, group_default_methods,
+from forecaster.strategy.transaction.util import (
+    LimitTuple, transaction_default_methods, group_default_methods)
+from forecaster.strategy.transaction.node import (
     TransactionNode, LIMIT_TUPLE_FIELDS, reduce_node)
 
 
-class TransactionStrategy:
+class TransactionTraversal:
     """ Determines transactions to/from accounts based on a priority.
 
     Instances of this class receive a structured collection of `Account`

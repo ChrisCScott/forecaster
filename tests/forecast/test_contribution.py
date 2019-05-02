@@ -5,7 +5,7 @@ from decimal import Decimal
 from collections import defaultdict
 from forecaster import (
     Money, Person, Tax, Account,
-    SavingForecast, TransactionStrategy,
+    SavingForecast, TransactionTraversal,
     Timing, canada)
 from tests.util import TestCaseTransactions
 
@@ -48,7 +48,7 @@ class TestSavingForecast(TestCaseTransactions):
 
         # Now we can set up the big-ticket items:
         # Use an ordered strategy by default:
-        self.strategy = TransactionStrategy([self.account, self.rrsp])
+        self.strategy = TransactionTraversal([self.account, self.rrsp])
         self.forecast = SavingForecast(
             initial_year=self.initial_year,
             retirement_accounts={self.account, self.rrsp},

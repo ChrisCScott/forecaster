@@ -5,7 +5,7 @@ from decimal import Decimal
 from forecaster import (
     Money, Person, Tax, Timing,
     WithdrawalForecast,
-    TransactionStrategy,
+    TransactionTraversal,
     Account, canada)
 from tests.util import TestCaseTransactions
 
@@ -48,7 +48,7 @@ class TestWithdrawalForecast(TestCaseTransactions):
         }
 
         # Now we can set up the big-ticket items:
-        self.strategy = TransactionStrategy(
+        self.strategy = TransactionTraversal(
             priority=[self.rrsp, self.account])
         self.forecast = WithdrawalForecast(
             initial_year=self.initial_year,
@@ -59,7 +59,7 @@ class TestWithdrawalForecast(TestCaseTransactions):
     def test_account_trans_ordered(self):
         """ Test account transactions under ordered strategy. """
         # Set up forecast:
-        self.strategy = TransactionStrategy(
+        self.strategy = TransactionTraversal(
             priority=[self.rrsp, self.account])
         self.forecast.transaction_strategy = self.strategy
         self.forecast(self.available)
@@ -75,7 +75,7 @@ class TestWithdrawalForecast(TestCaseTransactions):
     def test_account_trans_weighted(self):
         """ Test account transactions under weighted strategy. """
         # Set up forecast:
-        self.strategy = TransactionStrategy(
+        self.strategy = TransactionTraversal(
             priority={self.rrsp: 3000, self.account: 17000})
         self.forecast.transaction_strategy = self.strategy
         self.forecast(self.available)

@@ -1,7 +1,7 @@
 """ Provides a class for determining schedules of debt payments. """
 
 from forecaster.strategy.base import Strategy, strategy_method
-from forecaster.strategy.transaction import TransactionStrategy
+from forecaster.strategy.transaction import TransactionTraversal
 
 # Expose the logic for turning iterables of debts into priority trees
 # here so that, if client code wants, it can build a subtree for debts
@@ -86,7 +86,7 @@ class DebtPaymentStrategy(Strategy):
         Returns:
             dict[Debt, Money]: A mapping of debts to payments.
         """
-        strategy = TransactionStrategy(priority=sorted_debts)
+        strategy = TransactionTraversal(priority=sorted_debts)
         return strategy(available, assign_min_first=assign_minimums)
 
     # pylint: disable=W0613

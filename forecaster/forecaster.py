@@ -8,7 +8,7 @@ from forecaster.forecast import (
     SavingForecast, WithdrawalForecast, TaxForecast)
 from forecaster.tax import Tax
 from forecaster.strategy import (
-    LivingExpensesStrategy, TransactionStrategy, AllocationStrategy)
+    LivingExpensesStrategy, TransactionTraversal, AllocationStrategy)
 from forecaster.scenario import Scenario
 from forecaster.settings import Settings
 
@@ -81,8 +81,8 @@ DEFAULTVALUES = {
 DEFAULTTYPES = {
     str(Parameter.SCENARIO): Scenario,
     str(Parameter.LIVING_EXPENSES_STRATEGY): LivingExpensesStrategy,
-    str(Parameter.SAVING_STRATEGY): TransactionStrategy,
-    str(Parameter.WITHDRAWAL_STRATEGY): TransactionStrategy,
+    str(Parameter.SAVING_STRATEGY): TransactionTraversal,
+    str(Parameter.WITHDRAWAL_STRATEGY): TransactionTraversal,
     str(Parameter.ALLOCATION_STRATEGY): AllocationStrategy,
     str(Parameter.TAX_TREATMENT): Tax}
 

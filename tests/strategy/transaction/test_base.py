@@ -3,12 +3,12 @@
 import unittest
 from decimal import Decimal
 from forecaster import (
-    Person, Money, TransactionStrategy, Debt, TransactionNode, LimitTuple)
+    Person, Money, TransactionTraversal, Debt, TransactionNode, LimitTuple)
 from forecaster.canada import RRSP, TFSA, TaxableAccount
 from tests.util import TestCaseTransactions
 
 
-class TestTransactionStrategyMethods(TestCaseTransactions):
+class TestTransactionTraversalMethods(TestCaseTransactions):
     """ A test case for non-strategy method of TransactionStrategy. """
 
     def setUp(self):
@@ -66,13 +66,13 @@ class TestTransactionStrategyMethods(TestCaseTransactions):
 
     def test_init_basic(self):
         """ Test __init__ with explicit arguments. """
-        strategy = TransactionStrategy(priority=self.priority_ordered)
+        strategy = TransactionTraversal(priority=self.priority_ordered)
         self.assertEqual(strategy.priority, self.priority_ordered)
 
     def test_ordered_basic(self):
         """ Contribute to the first account of an ordered list. """
         # Contribute $100 to RRSP, then TFSA, then taxable.
-        strategy = TransactionStrategy(priority=self.priority_ordered)
+        strategy = TransactionTraversal(priority=self.priority_ordered)
         available = {Decimal(0.5): Money(100)}
         transactions = strategy(available)
         # $100 will go to RRSP, $0 to TFSA, $0 to taxable:
@@ -86,7 +86,7 @@ class TestTransactionStrategyMethods(TestCaseTransactions):
     def test_weighted_basic(self):
         """ Contribute to each account proportionate to its weight. """
         # Contribute $100 to the accounts.
-        strategy = TransactionStrategy(priority=self.priority_weighted)
+        strategy = TransactionTraversal(priority=self.priority_weighted)
         available = {Decimal(0.5): Money(100)}
         transactions = strategy(available)
         # $50 will go to RRSP, $25 to TFSA, $25 to taxable:
@@ -97,7 +97,7 @@ class TestTransactionStrategyMethods(TestCaseTransactions):
     def test_nested_basic(self):
         """ Test with weighted dict nested in ordered list. """
         # Contribute $100 to the accounts.
-        strategy = TransactionStrategy(priority=self.priority_nested)
+        strategy = TransactionTraversal(priority=self.priority_nested)
         available = {Decimal(0.5): Money(100)}
         transactions = strategy(available)
         # $50 will go to RRSP, $50 to TFSA, $0 to taxable:
@@ -110,7 +110,7 @@ class TestTransactionStrategyMethods(TestCaseTransactions):
     def test_ordered_overflow_partial(self):
         """ Contribute to first and second accounts of an ordered list. """
         # Contribute $200 to RRSP, then TFSA, then taxable.
-        strategy = TransactionStrategy(priority=self.priority_ordered)
+        strategy = TransactionTraversal(priority=self.priority_ordered)
         available = {Decimal(0.5): Money(200)}
         transactions = strategy(available)
         # $100 will go to RRSP, $100 to TFSA, $0 to taxable:
@@ -123,7 +123,7 @@ class TestTransactionStrategyMethods(TestCaseTransactions):
     def test_weighted_overflow_partial(self):
         """ Max out one weighted account, contribute overflow to others. """
         # Contribute $400 to the accounts.
-        strategy = TransactionStrategy(priority=self.priority_weighted)
+        strategy = TransactionTraversal(priority=self.priority_weighted)
         available = {Decimal(0.5): Money(400)}
         transactions = strategy(available)
         # $100 will go to RRSP (maxed), $150 to TFSA, $150 to taxable:
@@ -134,7 +134,7 @@ class TestTransactionStrategyMethods(TestCaseTransactions):
     def test_nested_overflow_partial(self):
         """ Max out one nested account, contribute overflow to neighbor. """
         # Contribute $400 to the accounts.
-        strategy = TransactionStrategy(priority=self.priority_nested)
+        strategy = TransactionTraversal(priority=self.priority_nested)
         available = {Decimal(0.5): Money(400)}
         transactions = strategy(available)
         # $100 will go to RRSP (maxed), $300 to TFSA, $0 to taxable:
@@ -147,7 +147,7 @@ class TestTransactionStrategyMethods(TestCaseTransactions):
     def test_contribution_group_ordered(self):
         """ Contribute to ordered accounts sharing contribution room. """
         priority = [self.rrsp, self.rrsp2, self.taxable_account]
-        strategy = TransactionStrategy(priority=priority)
+        strategy = TransactionTraversal(priority=priority)
         # Contribute $200 to the accounts:
         available = {Decimal(0.5): Money(200)}
         transactions = strategy(available)
@@ -162,7 +162,7 @@ class TestTransactionStrategyMethods(TestCaseTransactions):
         priority = [
             {self.rrsp: Decimal(0.5), self.rrsp2: Decimal(0.5)},
             self.taxable_account]
-        strategy = TransactionStrategy(priority=priority)
+        strategy = TransactionTraversal(priority=priority)
         # Contribute $200 to the accounts:
         available = {Decimal(0.5): Money(200)}
         transactions = strategy(available)
@@ -178,7 +178,7 @@ class TestTransactionStrategyMethods(TestCaseTransactions):
         limits = LimitTuple(max_inflow=Money(100))
         limit_node = TransactionNode(self.debt, limits=limits)
         priority = [self.rrsp, limit_node, self.taxable_account]
-        strategy = TransactionStrategy(priority=priority)
+        strategy = TransactionTraversal(priority=priority)
         # Contribute $300 to the accounts:
         available = {Decimal(0.5): Money(300)}
         transactions = strategy(available)
@@ -198,7 +198,7 @@ class TestTransactionStrategyMethods(TestCaseTransactions):
         # allows should result in only the total contribution room
         # being contributed across both accounts.
         priority = {self.rrsp: 0.5, self.rrsp2: 0.5}
-        strategy = TransactionStrategy(priority=priority)
+        strategy = TransactionTraversal(priority=priority)
         # Contribute $200 (i.e. more than the joint contribution room
         # of the two RRSPs, which is $100):
         available = {Decimal(0.5): Money(200)}
@@ -218,7 +218,7 @@ class TestTransactionStrategyMethods(TestCaseTransactions):
         # contributing more than the group can receive will send the
         # overflow to T.
         priority = {self.rrsp: 1, self.rrsp2: 1, self.taxable_account: 1}
-        strategy = TransactionStrategy(priority=priority)
+        strategy = TransactionTraversal(priority=priority)
         # Contribute $200:
         available = {Decimal(0.5): Money(200)}
         transactions = strategy(available)
@@ -243,7 +243,7 @@ class TestTransactionStrategyMethods(TestCaseTransactions):
             (self.tfsa, self.rrsp2): 1}
         # Ensure RRSP and TFSA have equal contribution room:
         self.tfsa.contribution_room = self.rrsp.contribution_room
-        strategy = TransactionStrategy(priority=priority)
+        strategy = TransactionTraversal(priority=priority)
         # Contribute $200 (enough to fill both groups):
         available = {Decimal(0.5): Money(200)}
         transactions = strategy(available)
@@ -270,7 +270,7 @@ class TestTransactionStrategyMethods(TestCaseTransactions):
             (self.tfsa, self.rrsp2): 1}
         # Ensure RRSP has more contribution room than TFSA:
         self.tfsa.contribution_room = Money(50)
-        strategy = TransactionStrategy(priority=priority)
+        strategy = TransactionTraversal(priority=priority)
         # Contribute $150 (enough to fill both groups):
         available = {Decimal(0.5): Money(150)}
         transactions = strategy(available)
@@ -299,7 +299,7 @@ class TestTransactionStrategyMethods(TestCaseTransactions):
         priority = {left_child: 1, right_child: 1}
         # Ensure RRSP has more contribution room than TFSA:
         self.tfsa.contribution_room = self.rrsp.contribution_room
-        strategy = TransactionStrategy(priority=priority)
+        strategy = TransactionTraversal(priority=priority)
         # Contribute $200 (enough to fill both groups):
         available = {Decimal(0.5): Money(200)}
         transactions = strategy(available)
@@ -328,7 +328,7 @@ class TestTransactionStrategyMethods(TestCaseTransactions):
         priority = {
             self.rrsp: 1,
             (self.rrsp2, self.taxable_account): 1}
-        strategy = TransactionStrategy(priority=priority)
+        strategy = TransactionTraversal(priority=priority)
         # Contribute $200 (enough to fill RRSPs with $100 left over):
         available = {Decimal(0.5): Money(200)}
         transactions = strategy(available)
@@ -352,7 +352,7 @@ class TestTransactionStrategyMethods(TestCaseTransactions):
         priority = {
             self.rrsp: 1,
             (self.taxable_account, self.rrsp2): 1}
-        strategy = TransactionStrategy(priority=priority)
+        strategy = TransactionTraversal(priority=priority)
         # Contribute $200 (enough to fill RRSPs with $100 left over):
         available = {Decimal(0.5): Money(200)}
         transactions = strategy(available)
@@ -366,7 +366,7 @@ class TestTransactionStrategyMethods(TestCaseTransactions):
         """ Assign minimum inflows without throwing off total inflows. """
         # Simple scenario: One account that takes $10-$100 in inflows:
         priority = [self.debt]
-        strategy = TransactionStrategy(priority=priority)
+        strategy = TransactionTraversal(priority=priority)
         # Contribute more than the account can accept:
         available = {Decimal(0.5): Money(200)}
         transactions = strategy(available)
@@ -381,7 +381,7 @@ class TestTransactionStrategyMethods(TestCaseTransactions):
         self.person.birth_date = self.initial_year - 72
         self.rrsp.convert_to_rrif(year=self.initial_year - 1)
         priority = [self.rrsp]
-        strategy = TransactionStrategy(priority=priority)
+        strategy = TransactionTraversal(priority=priority)
         # Withdraw more than min_outflow_limit and less than balance:
         total = (self.rrsp.min_outflow_limit - self.rrsp.balance) / 2
         available = {Decimal(0.5): total}

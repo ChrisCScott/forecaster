@@ -100,8 +100,8 @@ class Account(TaxSource):
 
     def __init__(
             self, owner=None,
-            balance=0, rate=0, nper=1,
-            inputs=None, initial_year=None, default_timing=None):
+            balance=0, rate=0, nper=1, default_timing=None,
+            inputs=None, initial_year=None):
         """ Constructor for `Account`.
 
         This constructor receives only values for the first year.
@@ -121,6 +121,9 @@ class Account(TaxSource):
                 these objects are stored in the context), otherwise
                 `Forecaster`'s object-substitution logic will not work.
             nper (int): The number of compounding periods per year.
+            default_timing (Timing): The usual schedule for transactions
+                to/from this account, used by various methods when no
+                `timing` arg is expressly provided. Optional.
             initial_year (int): The first year (e.g. 2000)
         """
         # Use the explicitly-provided initial year if available,
@@ -133,31 +136,22 @@ class Account(TaxSource):
                 initial_year = owner.initial_year
         super().__init__(initial_year=initial_year, inputs=inputs)
 
-        if default_timing is None:
-            # Use default timing if none was given (i.e. lump sum
-            # at when=0.5)
-            self.default_timing = Timing()
-        elif not isinstance(default_timing, Timing):
-            # If `Timing` wasn't provided, try to convert to Timing
-            # object (this will convert `when` strings and dicts)
-            self.default_timing = Timing(default_timing)
-        else:
-            # If Timing was passed in, just use that. This class will
-            # not mutate it. If someday we decide to mutate this attr,
-            # you can copy it with a simple `Timing(default_timing)`
-            self.default_timing = default_timing
-
         # Set hidden attributes to support properties that need them to
         # be set in advance:
         self._owner = None
         self._transactions = defaultdict(lambda: Money(0))
         self._rate_callable = None
+        self._default_timing = None
 
         # Set the various property values based on inputs:
         self.owner = owner
         self.balance = Money(balance)
         self.rate_callable = rate
         self.nper = frequency_conv(nper)
+        if default_timing is None:
+            self.default_timing = Timing()
+        else:
+            self.default_timing = default_timing
         # NOTE: returns is calculated lazily
 
     @property
@@ -181,6 +175,25 @@ class Account(TaxSource):
             val.accounts.add(self)
 
         self._owner = val
+
+    @property
+    def default_timing(self):
+        """ The usual timing for transactions to/from this account. """
+        return self._default_timing
+
+    @default_timing.setter
+    def default_timing(self, val):
+        """ Sets default_timing. """
+        # Cast to `Timing` type:
+        if not isinstance(val, Timing):
+            val = Timing(val)
+        self._default_timing = val
+
+    @default_timing.deleter
+    def default_timing(self):
+        """ Deletes default_timing. """
+        # Return default_timing to its default value:
+        self._default_timing = Timing()
 
     @recorded_property_cached
     def balance(self):
