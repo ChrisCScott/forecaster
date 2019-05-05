@@ -14,7 +14,7 @@ def avalanche_priority(debts):
     Under the avalanche strategy, accounts with the highest rates are
     repaid first, regardless of balance size.
 
-    This uses the priority tree pattern of `TransactionStrategy`; see
+    This uses the priority tree pattern of `TransactionTraversal`; see
     that class for more information.
 
     Returns:
@@ -29,7 +29,7 @@ def snowball_priority(debts):
     Under the avalanche strategy, accounts with the lowest balances are
     repaid first, regardless of their rates.
 
-    This uses the priority tree pattern of `TransactionStrategy`; see
+    This uses the priority tree pattern of `TransactionTraversal`; see
     that class for more information.
 
     Returns:
@@ -41,7 +41,7 @@ def snowball_priority(debts):
 class DebtPaymentStrategy(Strategy):
     """ Determines payments for a group of debts.
 
-    This is simply a convenient wrapper for `TransactionStrategy`.
+    This is simply a convenient wrapper for `TransactionTraversal`.
 
     Attributes:
         strategy (str, func): Either a string corresponding to a
@@ -89,19 +89,33 @@ class DebtPaymentStrategy(Strategy):
         strategy = TransactionTraversal(priority=sorted_debts)
         return strategy(available, assign_min_first=assign_minimums)
 
-    # pylint: disable=W0613
-    @strategy_method('Snowball')
+    @strategy_method(SNOWBALL_KEY)
     def strategy_snowball(self, debts, available, *args, **kwargs):
         """ Pays off the smallest debt first. """
+        # pylint: disable=unused-argument
         return self._strategy_ordered(snowball_priority(debts), available)
 
-    @strategy_method('Avalanche')
+    @strategy_method(AVALANCHE_KEY)
     def strategy_avalanche(self, debts, available, *args, **kwargs):
         """ Pays off the highest-interest debt first. """
+        # pylint: disable=unused-argument
         return self._strategy_ordered(avalanche_priority(debts), available)
 
-    # Overriding __call__ solely for intellisense purposes.
-    # pylint: disable=W0235
     def __call__(self, debts, available, *args, **kwargs):
         """ Returns a dict of {account, Money} pairs. """
+        # Overriding __call__ solely for intellisense purposes.
+        # pylint: disable=useless-super-delegation
         return super().__call__(debts, available, *args, **kwargs)
+
+# Make it easy for client code to find the keys for the available
+# strategies (and then use them with DebtPaymentStrategy or to look
+# up the appropriate priority-generating method):
+# pylint: disable=no-member
+# Pylint has trouble identifying members assigned by metaclass.
+AVALANCHE_KEY = DebtPaymentStrategy.strategy_avalanche.strategy_key
+SNOWBALL_KEY = DebtPaymentStrategy.strategy_snowball.strategy_key
+# pylint: enable=no-member
+
+PRIORITY_METHODS = {
+    AVALANCHE_KEY: avalanche_priority,
+    SNOWBALL_KEY: snowball_priority}
