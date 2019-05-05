@@ -2,8 +2,7 @@
 
 from forecaster.accounts.debt import Debt
 from forecaster.strategy.base import Strategy, strategy_method
-from forecaster.strategy.debt_payment import (
-    PRIORITY_METHODS, AVALANCHE_KEY)
+from forecaster.strategy.debt_payment import PRIORITY_METHODS, AVALANCHE_KEY
 from forecaster.strategy.transaction.base import TransactionTraversal
 
 class TransactionStrategy(Strategy):
@@ -49,57 +48,17 @@ class TransactionStrategy(Strategy):
         transactions.
     """
 
-    # TODO: Reimplement the interface of AccountTransactionStrategy,
-    # allowing user to provide a weighted list/dict of account types.
-    # This method can then turn each account type into an equal-weighted
-    # dict of accounts of that type.
-    # Examples:
-    #   in: [RRSP, TFSA, TaxableAccount]
-    #   out: [{rrsp2: 1, rrsp2: 1}, {tfsa1: 1, tfsa2: 1}, taxable_acct]
-    #
-    #   in: [{RRSP: 1, TFSA: 1}, TaxableAccount]
-    #   out: [{
-    #           {rrsp1: 1, rrsp2: 1}: 1,
-    #           {tfsa1: 1, tfsa2: 1}: 1},
-    #         taxable_acct]
-    # This mimics the behaviour of AccountGroups in the old
-    # AccountTransactionStrategy.
-    #
-    # AccountTransactionStrategy had two __init__ args:
-    #   - `strategy (str)` (only "Ordered" or "Weighted" were accepted)
-    #   - `weights` (dict[type, Decimal])`
-    # It had two __call__ args as well:
-    #   - `total (Money)`
-    #   - `accounts (Iterable[Account])`
-    #
-    # TransactionStrategy could use a similar set of signatures,
-    # although it would be preferable to swap `total` with
-    # `available (dict[Decimal, Money])` for consistency with other
-    # modules.
-    #
-    # Consider how to address the handling of Debt accounts. The old
-    # `AccountTransactionStrategy` wasn't designed for it, since `Debt`
-    # was assumed to be handled totally separately from other accounts.
-    # That's not a good assumption. But if an assumption of this class
-    # is that all accounts of the same type receive the same treatment,
-    # that's going to lead to issues as well. It's common to treat debts
-    # differently based on properties - for example, high-interest debts
-    # might be paid off first, with lower-interest debts being repaid
-    # after other investments or perhaps in weighted combination with
-    # those other investments.
-    #
-    # Consider providing an optional `high_interest_threshold` __init__
-    # arg. If provided, any Debt accounts with this interest rate or
-    # greater are repaid first (i.e. create a priority node of the form
-    # `[*high_interest_debts, other_accounts]`, where `other_accounts`
-    # is a priority tree constructed according to the selected strategy)
-    #
-    # Future revisions will need to consider the question of how to deal
-    # with, say, ordering contributions to RRSPs where plannees have
-    # different taxable income. That goes deeper into country-specific
-    # tax planning, though, and can likely be safely carved off into
-    # a submodule of `canada` (which probably won't even subclass this
-    # class)
+    # NOTE: Consider the question of how to deal with more complex
+    # priority structures, e.g. where you might want to contribute first
+    # to an RRSP and spousal RRSP with the same contributor (a
+    # higher-earner) before contributing to another RRSP and spousal
+    # RRSP with another contributor (a lower-earner).
+    # That goes deeper into country-specific tax planning. Should these
+    # country-specific scenarios be carved off into country-specific
+    # submodules? Is there a generic way to implement this class so that
+    # it allows for accounts of the same type to be divided up according
+    # to come criterion while still allowing it to be useful?
+    # In short: can we abandon type-based approaches entirely?
 
     def __init__(
             self, strategy, weights,
@@ -116,53 +75,72 @@ class TransactionStrategy(Strategy):
         self.debt_strategy = debt_strategy
         self.high_interest_threshold = high_interest_threshold
 
-        # Set up private vars for tracking cached priority trees:
-        # (This is some premature optimization which perhaps should
-        # be cut entirely in early versions...)
-        self._cache_keys = None
-        self._cached_traverse = None
-
     @strategy_method('Ordered')
     def strategy_ordered(
-            self, accounts, *args, priority=None, **kwargs):
+            self, accounts, *args, type_specific_weights=None, **kwargs):
         """ TODO """
-        # TODO: Build and return a priority tree
-        pass
+        # pylint: disable=unused-argument
+        # We provide *args and **kwargs in case a subclass wants to
+        # extend the signature for strategy methods.
 
-    # TODO: Decide on a name for this stragegy.
+        # Sort types according to the weight in `weights` and then
+        # swap in priority trees for each account type (either as
+        # provided in type_specific weights or according to a default
+        # scheme).
+        remaining_accounts = set(accounts)
+        ordered_accounts = list()
+        for account_type in sorted(self.weights, self.weights.get):
+            # Get all accounts of this type (which haven't already been
+            # assigned):
+            group = {
+                account for account in remaining_accounts
+                # TODO: This test needs to get refined.
+                # What are the keys of self.weights? Probably strs.
+                # Should this be `str(type(account)) == account_type`?
+                # Or should it be `isinstance(account, account_Type)`?
+                # Does isinstance accomplish what we want here, or
+                # should there be strict type-checking? E.g. What
+                # happens to an RRSP if "RRSP" and "Account" are both
+                # in `weights`? What if "Account" and
+                # "LinkedLimitAccount" are both in `weights`, but _not_
+                # "RRSP" - should it be lumped in with accounts of the
+                # closest type?
+                if str(type(account)) == account_type}
+            # If there aren't any, move along:
+            if not group:
+                continue
+            # If some type-specific treatment has been passed in for
+            # this type, use that:
+            if account_type in type_specific_weights:
+                # If the treatment is `None`, skip this type:
+                if type_specific_weights[account_type] is None:
+                    continue
+                # Otherwise, simply use whatever priority tree is given:
+                else:
+                    ordered_accounts.append(type_specific_weights[account_type])
+            else:
+                # If we don't have type-specific treatment, assume all
+                # accounts of this type are equal-weighted:
+                ordered_accounts.append({account: 1 for account in group})
+        return ordered_accounts
+
     @strategy_method('Weighted')
     def strategy_weighted(
-            self, accounts, *args, priority=None, **kwargs):
+            self, accounts, *args, type_specific_weights=None, **kwargs):
         """ TODO """
+        # pylint: disable=unused-argument
+        # We provide *args and **kwargs in case a subclass wants to
+        # extend the signature for strategy methods.
+
         # TODO: Build and return a priority tree
         pass
 
-    def _get_traverse(self, accounts, *args, **kwargs):
-        """ Returns a cached TransactionTraversal if it can be re-used. """
-        # Don't use the cached traverse if one isn't cached!
-        if self._cached_traverse is None:
-            return False
-        # Use the cache if the same accounts and strategy are being used
-        is_cache_valid = (accounts, self.strategy) == self._cache_keys
-        # If the cache is not valid, regenerate it:
-        if not is_cache_valid:
-            # Generate new TransactionTraverse:
-            priority = super().__call__(
-                accounts, priority=priority, *args, **kwargs)
-            self._cached_traverse = TransactionTraversal(priority=priority)
-            # Keep track of the values we used to generate it:
-            self._cache_keys = (accounts, self.strategy)
-        return self._cached_traverse
-
-    def debt_priorities(self, accounts):
+    def divide_debts(self, accounts):
         """ TODO """
         # Get all debts with balances owing:
         debts = {
             account for account in accounts
             if isinstance(account, Debt) and account.balance < 0}
-        # Get the method that turns a set of debts into an ordered
-        # list (or other priority tree):
-        priority_method = PRIORITY_METHODS[self.debt_strategy]
         # If we're distinguishing high-interest from low-interest debts,
         # separate them out here:
         if self.high_interest_threshold is not None:
@@ -171,30 +149,53 @@ class TransactionStrategy(Strategy):
                 if debt.rate < self.high_interest_threshold}
             high_interest_debts = {
                 debt for debt in debts if debt not in low_interest_debts}
-        # Otherwise, consider all debts to be high-interest:
+        # Otherwise, consider all debts to be low-interest:
         else:
-            low_interest_debts = set()
-            high_interest_debts = debts
+            low_interest_debts = debts
+            high_interest_debts = set()
+        return low_interest_debts, high_interest_debts
+
+    def debt_priority(self, debts):
+        """ TODO """
         # Convert the sets of debts into priority trees
         # (or assign None if there are no debts of a given type)
-        if high_interest_debts:
-            high_interest_priority = priority_method(high_interest_debts)
+        if debts is not None and debts:
+            # Get the method that turns a set of debts into an ordered
+            # list (or other priority tree):
+            priority_method = PRIORITY_METHODS[self.debt_strategy]
+            priority = priority_method(debts)
         else:
-            high_interest_priority = None
-        if low_interest_debts:
-            low_interest_priority = priority_method(low_interest_debts)
-        else:
-            low_interest_priority = None
-        return (high_interest_priority, low_interest_priority)
+            priority = None
+        return priority
 
     def __call__(self, available, accounts, *args, **kwargs):
         """ Returns a dict of account: transaction pairs. """
-        # If nothing has changed since last invocation, save some time
-        # by re-using the same TransactionTraverse:
-        traverse = self._get_traverse(accounts, *args, **kwargs)
-        # Prepend high-interest debt repayment:
-        high_interest_priority, low_interest_priority = self.debt_priorities(
-            accounts)
+        # Debts get special treatment, so separate them out here:
+        low_interest_debts, high_interest_debts = self.divide_debts(accounts)
+        regular_accounts = set(accounts) - high_interest_debts
+
+        # Get priority trees for each debt. These will be inserted into
+        # the final priority tree differently (in-place replacement for
+        # low-interest, prepending for high-interest.)
+        low_interest_priority = self.debt_priority(low_interest_debts)
+        high_interest_priority = self.debt_priority(high_interest_debts)
+
+        # Ensure that low-interest weights are properly ordered, rather
+        # than assigned some default order based on their common typing.
+        type_specific_weights = {Debt: low_interest_priority}
+
+        # Get the basic priority tree based on this strategy:
+        priority = super().__call__(
+            regular_accounts, *args,
+            type_specific_weights=type_specific_weights, **kwargs)
+
+        # Prioritize high-interest debts repayment, if provided:
         if high_interest_priority is not None and high_interest_priority:
-            pass # TODO
+            # Prepend the high-interest debts, so that they are repaid
+            # before any discretionary money is allocated to other
+            # accounts (i.e. money other than minimums):
+            priority = [high_interest_priority, priority]
+
+        # Traverse the tree and return the results:
+        traverse = TransactionTraversal(priority=priority)
         return traverse(available)
