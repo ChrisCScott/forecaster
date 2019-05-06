@@ -2,41 +2,9 @@
 
 from forecaster.strategy.base import Strategy, strategy_method
 from forecaster.strategy.transaction import TransactionTraversal
+from forecaster.strategy.debt_payment.util import (
+    avalanche_priority, snowball_priority, AVALANCHE_KEY, SNOWBALL_KEY)
 
-# Expose the logic for turning iterables of debts into priority trees
-# here so that, if client code wants, it can build a subtree for debts
-# and insert it into a larger tree for handling all contributions
-# to accounts (i.e. without invoking DebtPaymentStrategy at all.)
-
-def avalanche_priority(debts):
-    """ A priority tree of debts according to the avalanche strategy.
-
-    Under the avalanche strategy, accounts with the highest rates are
-    repaid first, regardless of balance size.
-
-    This uses the priority tree pattern of `TransactionTraversal`; see
-    that class for more information.
-
-    Returns:
-        list[Debt]: An ordered list of Debts.
-    """
-    return sorted(
-        debts, key=lambda account: account.rate, reverse=True)
-
-def snowball_priority(debts):
-    """ A priority tree of debts according to the snowball strategy.
-
-    Under the avalanche strategy, accounts with the lowest balances are
-    repaid first, regardless of their rates.
-
-    This uses the priority tree pattern of `TransactionTraversal`; see
-    that class for more information.
-
-    Returns:
-        list[Debt]: An ordered list of Debts.
-    """
-    return sorted(
-        debts, key=lambda account: abs(account.balance), reverse=False)
 
 class DebtPaymentStrategy(Strategy):
     """ Determines payments for a group of debts.
@@ -106,16 +74,3 @@ class DebtPaymentStrategy(Strategy):
         # Overriding __call__ solely for intellisense purposes.
         # pylint: disable=useless-super-delegation
         return super().__call__(debts, available, *args, **kwargs)
-
-# Make it easy for client code to find the keys for the available
-# strategies (and then use them with DebtPaymentStrategy or to look
-# up the appropriate priority-generating method):
-# pylint: disable=no-member
-# Pylint has trouble identifying members assigned by metaclass.
-AVALANCHE_KEY = DebtPaymentStrategy.strategy_avalanche.strategy_key
-SNOWBALL_KEY = DebtPaymentStrategy.strategy_snowball.strategy_key
-# pylint: enable=no-member
-
-PRIORITY_METHODS = {
-    AVALANCHE_KEY: avalanche_priority,
-    SNOWBALL_KEY: snowball_priority}

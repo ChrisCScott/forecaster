@@ -19,7 +19,8 @@ from forecaster.accounts import (
 from forecaster.strategy import (
     LivingExpensesStrategy, LivingExpensesStrategySchedule,
     AllocationStrategy, DebtPaymentStrategy,
-    TransactionTraversal, TransactionNode)
+    TransactionStrategy, TransactionTraversal, TransactionNode,
+    AVALANCHE_KEY, SNOWBALL_KEY, PRIORITY_METHODS)
 from forecaster.tax import Tax
 from forecaster.settings import Settings
 from forecaster.forecast import (

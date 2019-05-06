@@ -9,6 +9,8 @@ from forecaster.strategy.allocation import AllocationStrategy
 from forecaster.strategy.gross_transaction import (
     LivingExpensesStrategy, LivingExpensesStrategySchedule)
 from forecaster.strategy.debt_payment import (
-    DebtPaymentStrategy, avalanche_priority, snowball_priority)
+    DebtPaymentStrategy, avalanche_priority, snowball_priority,
+    PRIORITY_METHODS, AVALANCHE_KEY, SNOWBALL_KEY)
 from forecaster.strategy.transaction import (
-    TransactionTraversal, LimitTuple, TransactionNode, reduce_node)
+    TransactionStrategy, TransactionTraversal, TransactionNode,
+    LimitTuple, reduce_node)
