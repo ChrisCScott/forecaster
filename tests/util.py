@@ -22,3 +22,13 @@ class TestCaseTransactions(unittest.TestCase):
             places = PLACES_PRECISION
         super().assertAlmostEqual(
             first, second, places=places, msg=msg, delta=delta)
+
+def make_available(total, timing=None):
+    """ Generates an `available` dict of cashflows. """
+    if timing is None:
+        # Default timing: Everything contributed/withdrawn at t=0.5.
+        timing = {0.5: 1}
+    normalization = sum(timing.values())
+    return {
+        when: total * weight / normalization
+        for when, weight in timing.items()}
