@@ -69,7 +69,7 @@ class TestDebtPaymentStrategies(TestCaseTransactions):
         """ Generates an `available` dict of cashflows. """
         if timing is None:
             timing = self.timing
-        normalization = sum(self.timing.values())
+        normalization = sum(timing.values())
         return {
             when: total * weight / normalization
             for when, weight in timing.items()}
