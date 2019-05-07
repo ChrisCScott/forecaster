@@ -4,11 +4,10 @@ import unittest
 from decimal import Decimal
 from forecaster import Person, Money, TransactionStrategy
 from forecaster.canada import RRSP, TFSA, TaxableAccount
-from tests.util import (
-    make_available, TestCaseTransactions, PLACES_PRECISION)
+from tests.util import make_available, TestCaseTransactions
 
 
-class TestTransactionStrategyOrdered(unittest.TestCase):
+class TestTransactionStrategyOrdered(TestCaseTransactions):
     """ A test case for TransactionStrategy.strategy_ordered """
 
     def setUp(self):
@@ -54,17 +53,13 @@ class TestTransactionStrategyOrdered(unittest.TestCase):
         # contribution room in the top-weighted account type.
         available = make_available(Money(100), self.timing)
         results = self.strategy(available, self.accounts)
-        # Sum up results for each account for convenience:
-        results_totals = {
-            account: sum(transactions.values())
-            for account, transactions in results.items()}
-        self.assertEqual(results_totals[self.rrsp], Money(100))
+        self.assertTransactions(results[self.rrsp], Money(100))
         # Accounts with no transactions aren't guaranteed to be
         # included in the results dict:
-        if self.tfsa in results_totals:
-            self.assertEqual(results_totals[self.tfsa], Money(0))
-        if self.taxable_account in results_totals:
-            self.assertEqual(results_totals[self.taxable_account], Money(0))
+        if self.tfsa in results:
+            self.assertTransactions(results[self.tfsa], Money(0))
+        if self.taxable_account in results:
+            self.assertTransactions(results[self.taxable_account], Money(0))
 
     def test_in_fill_one(self):
         """ Test strategy_ordered with inflows to fill 1 account. """
@@ -72,14 +67,10 @@ class TestTransactionStrategyOrdered(unittest.TestCase):
         # The extra $50 should go to the tfsa, which is next in line.
         available = make_available(Money(250), self.timing)
         results = self.strategy(available, self.accounts)
-        # Sum up results for each account for convenience:
-        results_totals = {
-            account: sum(transactions.values())
-            for account, transactions in results.items()}
-        self.assertEqual(results_totals[self.rrsp], Money(200))
-        self.assertEqual(results_totals[self.tfsa], Money(50))
-        if self.taxable_account in results_totals:
-            self.assertEqual(results_totals[self.taxable_account], Money(0))
+        self.assertTransactions(results[self.rrsp], Money(200))
+        self.assertTransactions(results[self.tfsa], Money(50))
+        if self.taxable_account in results:
+            self.assertTransactions(results[self.taxable_account], Money(0))
 
     def test_in_fill_two(self):
         """ Test strategy_ordered with inflows to fill 2 accounts. """
@@ -87,13 +78,9 @@ class TestTransactionStrategyOrdered(unittest.TestCase):
         # the taxable account.
         available = make_available(Money(1000), self.timing)
         results = self.strategy(available, self.accounts)
-        # Sum up results for each account for convenience:
-        results_totals = {
-            account: sum(transactions.values())
-            for account, transactions in results.items()}
-        self.assertEqual(results_totals[self.rrsp], Money(200))
-        self.assertEqual(results_totals[self.tfsa], Money(100))
-        self.assertEqual(results_totals[self.taxable_account], Money(700))
+        self.assertTransactions(results[self.rrsp], Money(200))
+        self.assertTransactions(results[self.tfsa], Money(100))
+        self.assertTransactions(results[self.taxable_account], Money(700))
 
     # Test with outflows:
 
@@ -103,15 +90,11 @@ class TestTransactionStrategyOrdered(unittest.TestCase):
         # top-weighted account type.
         available = make_available(Money(-100), self.timing)
         results = self.strategy(available, self.accounts)
-        # Sum up results for each account for convenience:
-        results_totals = {
-            account: sum(transactions.values())
-            for account, transactions in results.items()}
-        self.assertEqual(results_totals[self.rrsp], Money(-100))
-        if self.tfsa in results_totals:
-            self.assertEqual(results_totals[self.tfsa], Money(0))
-        if self.taxable_account in results_totals:
-            self.assertEqual(results_totals[self.taxable_account], Money(0))
+        self.assertTransactions(results[self.rrsp], Money(-100))
+        if self.tfsa in results:
+            self.assertTransactions(results[self.tfsa], Money(0))
+        if self.taxable_account in results:
+            self.assertTransactions(results[self.taxable_account], Money(0))
 
     def test_out_empty_one(self):
         """ Test strategy_ordered with outflows to empty 1 account. """
@@ -119,14 +102,10 @@ class TestTransactionStrategyOrdered(unittest.TestCase):
         # should come from the tfsa, which is next in line.
         available = make_available(Money(-250), self.timing)
         results = self.strategy(available, self.accounts)
-        # Sum up results for each account for convenience:
-        results_totals = {
-            account: sum(transactions.values())
-            for account, transactions in results.items()}
-        self.assertEqual(results_totals[self.rrsp], Money(-200))
-        self.assertEqual(results_totals[self.tfsa], Money(-50))
-        if self.taxable_account in results_totals:
-            self.assertEqual(results_totals[self.taxable_account], Money(0))
+        self.assertTransactions(results[self.rrsp], Money(-200))
+        self.assertTransactions(results[self.tfsa], Money(-50))
+        if self.taxable_account in results:
+            self.assertTransactions(results[self.taxable_account], Money(0))
 
     def test_out_empty_two(self):
         """ Test strategy_ordered with outflows to empty 2 accounts. """
@@ -134,13 +113,9 @@ class TestTransactionStrategyOrdered(unittest.TestCase):
         # to the taxable account.
         available = make_available(Money(-1000), self.timing)
         results = self.strategy(available, self.accounts)
-        # Sum up results for each account for convenience:
-        results_totals = {
-            account: sum(transactions.values())
-            for account, transactions in results.items()}
-        self.assertEqual(results[self.rrsp], self.rrsp.max_outflows())
-        self.assertEqual(results[self.tfsa], self.tfsa.max_outflows())
-        self.assertEqual(results_totals[self.taxable_account], Money(-700))
+        self.assertTransactions(results[self.rrsp], self.rrsp.max_outflows())
+        self.assertTransactions(results[self.tfsa], self.tfsa.max_outflows())
+        self.assertTransactions(results[self.taxable_account], Money(-700))
 
     def test_out_empty_all(self):
         """ Test strategy_ordered with outflows to empty all account. """
@@ -151,13 +126,9 @@ class TestTransactionStrategyOrdered(unittest.TestCase):
         ) * 2
         available = make_available(Money(val), self.timing)
         results = self.strategy(available, self.accounts)
-        self.assertEqual(
-            results[self.rrsp],
-            self.rrsp.max_outflows())
-        self.assertEqual(
-            results[self.tfsa],
-            self.tfsa.max_outflows())
-        self.assertEqual(
+        self.assertTransactions(results[self.rrsp], self.rrsp.max_outflows())
+        self.assertTransactions(results[self.tfsa], self.tfsa.max_outflows())
+        self.assertTransactions(
             results[self.taxable_account],
             self.taxable_account.max_outflows())
 
@@ -167,20 +138,16 @@ class TestTransactionStrategyOrdered(unittest.TestCase):
         self.strategy.weights['TFSA'] = 1
         available = make_available(Money(100), self.timing)
         results = self.strategy(available, self.accounts)
-        # Sum up results for each account for convenience:
-        results_totals = {
-            account: sum(transactions.values())
-            for account, transactions in results.items()}
         # Contribute the full $100 to TFSA:
-        self.assertEqual(results[self.tfsa], self.tfsa.max_inflows())
+        self.assertTransactions(results[self.tfsa], self.tfsa.max_inflows())
         # Remaining accounts shouldn't be contributed to:
         if self.rrsp in results:
-            self.assertEqual(results_totals[self.rrsp], Money(0))
+            self.assertEqual(results[self.rrsp], Money(0))
         if self.taxable_account in results:
-            self.assertEqual(results_totals[self.taxable_account], Money(0))
+            self.assertEqual(results[self.taxable_account], Money(0))
 
 
-class TestTransactionStrategyOrderedMult(unittest.TestCase):
+class TestTransactionStrategyOrderedMult(TestCaseTransactions):
     """ Tests TransactionStrategy.strategy_ordered with account groups.
     In particular, this test case includes multiple accounts of the same
     type (e.g. two RRSPs) to ensure that accounts that share a weighting
@@ -229,32 +196,24 @@ class TestTransactionStrategyOrderedMult(unittest.TestCase):
         """ Test strategy_ordered with multiple RRSPs, small outflows. """
         available = make_available(Money(-150), self.timing)
         results = self.strategy(available, self.accounts)
-        # Sum up results for each account for convenience:
-        results_totals = {
-            account: sum(transactions.values())
-            for account, transactions in results.items()}
         # Confirm that the total of all outflows sums up to `-$150`,
         # which should be fully allocated to accounts:
+        self.assertAccountTransactionsTotal(results, Money(-150))
         self.assertAlmostEqual(
-            sum(results_totals.values()), Money(-150), places=5)
-        self.assertEqual(
-            results_totals[self.rrsp] + results_totals[self.rrsp2],
+            sum(results[self.rrsp].values())
+            + sum(results[self.rrsp2].values()),
             Money(-150))
 
     def test_out_empty_three(self):
         """ Test strategy_ordered with multiple RRSPs, empty 3 accounts. """
         available = make_available(Money(-400), self.timing)
         results = self.strategy(available, self.accounts)
-        # Sum up results for each account for convenience:
-        results_totals = {
-            account: sum(transactions.values())
-            for account, transactions in results.items()}
         # Confirm that the total of all outflows sums up to -$400, which
         # should be fully allocated to accounts:
-        self.assertEqual(sum(results_totals.values()), Money(-400))
-        self.assertEqual(results_totals[self.rrsp], Money(-200))
-        self.assertEqual(results_totals[self.rrsp2], Money(-100))
-        self.assertEqual(results_totals[self.tfsa], Money(-100))
+        self.assertAccountTransactionsTotal(results, Money(-400))
+        self.assertTransactions(results[self.rrsp], Money(-200))
+        self.assertTransactions(results[self.rrsp2], Money(-100))
+        self.assertTransactions(results[self.tfsa], Money(-100))
 
     def test_out_empty_all(self):
         """ Test strategy_ordered with multiple RRSPs, empty all accounts. """
@@ -262,21 +221,16 @@ class TestTransactionStrategyOrderedMult(unittest.TestCase):
         val = self.max_outflow * 2
         available = make_available(Money(val), self.timing)
         results = self.strategy(available, self.accounts)
-        # Sum up results for each account for convenience:
-        results_totals = {
-            account: sum(transactions.values())
-            for account, transactions in results.items()}
-        # Confirm that the total of all outflows sums up to the
-        # available balances:
-        self.assertAlmostEqual(
-            sum(results_totals.values()),
-            -sum(account.balance for account in self.accounts),
-            places=5)
+        # Ensure that the correct amount is withdrawn in total; should
+        # be the amount available in the accounts (i.e. their balances):
+        self.assertAccountTransactionsTotal(
+            results,
+            -sum(account.balance for account in self.accounts))
         # Confirm balances for each account:
-        self.assertEqual(results[self.rrsp], self.rrsp.max_outflows())
-        self.assertEqual(results[self.rrsp2], self.rrsp2.max_outflows())
-        self.assertEqual(results[self.tfsa], self.tfsa.max_outflows())
-        self.assertEqual(
+        self.assertTransactions(results[self.rrsp], self.rrsp.max_outflows())
+        self.assertTransactions(results[self.rrsp2], self.rrsp2.max_outflows())
+        self.assertTransactions(results[self.tfsa], self.tfsa.max_outflows())
+        self.assertTransactions(
             results[self.taxable_account], self.taxable_account.max_outflows())
 
     def test_in_basic(self):
@@ -290,17 +244,15 @@ class TestTransactionStrategyOrderedMult(unittest.TestCase):
         # equal to their (shared) contribution room.
         # If it exceeds that limit, then it's likely that their
         # contribution room sharing isn't being respected.
-        self.assertEqual(
+        self.assertAlmostEqual(
             sum(results[self.rrsp].values())
             + sum(results[self.rrsp2].values()),
             self.rrsp.contribution_room)
         # The remainder should be contributed to the TFSA:
-        self.assertEqual(
-            sum(results[self.tfsa].values()),
-            Money(50))
+        self.assertTransactions(results[self.tfsa], Money(50))
 
 
-class TestTransactionStrategyWeighted(unittest.TestCase):
+class TestTransactionStrategyWeighted(TestCaseTransactions):
     """ A test case for TransactionStrategy.strategy_weighted. """
 
     def setUp(self):
@@ -351,18 +303,15 @@ class TestTransactionStrategyWeighted(unittest.TestCase):
             for account in self.accounts)
         available = make_available(Money(val), self.timing)
         results = self.strategy(available, self.accounts)
-        # Sum up results for each account for convenience:
-        results_totals = {
-            account: sum(transactions.values())
-            for account, transactions in results.items()}
         # Confirm that the total of all outflows sums up to `val`, which
         # should be fully allocated to accounts:
-        self.assertAlmostEqual(sum(results_totals.values()), val, places=5)
+        self.assertAccountTransactionsTotal(results, val)
         # Confirm each account gets the expected total transactions:
-        self.assertEqual(results_totals[self.rrsp], val * self.weights['RRSP'])
-        self.assertEqual(results_totals[self.tfsa], val * self.weights['TFSA'])
-        self.assertEqual(results_totals[self.taxable_account],
-                         val * self.weights['TaxableAccount'])
+        self.assertTransactions(results[self.rrsp], val * self.weights['RRSP'])
+        self.assertTransactions(results[self.tfsa], val * self.weights['TFSA'])
+        self.assertTransactions(
+            results[self.taxable_account],
+            val * self.weights['TaxableAccount'])
 
     def test_out_one_empty(self):
         """ Test strategy_weighted with outflows to empty 1 account. """
@@ -379,14 +328,11 @@ class TestTransactionStrategyWeighted(unittest.TestCase):
             for account, transactions in results.items()}
         # Confirm that the total of all outflows sums up to `val`, which
         # should be fully allocated to accounts:
-        self.assertAlmostEqual(sum(results_totals.values()), val, places=5)
+        self.assertAccountTransactionsTotal(results, val)
         # Confirm each account gets the expected total transactions:
-        self.assertEqual(
-            results[self.tfsa],
-            self.tfsa.max_outflows())
+        self.assertTransactions(results[self.tfsa], self.tfsa.max_outflows())
         self.assertAlmostEqual(
-            results_totals[self.rrsp]
-            / self.weights['RRSP'],
+            results_totals[self.rrsp] / self.weights['RRSP'],
             results_totals[self.taxable_account]
             / self.weights['TaxableAccount'])
 
@@ -400,22 +346,14 @@ class TestTransactionStrategyWeighted(unittest.TestCase):
         ) + Money(50)
         available = make_available(Money(val), self.timing)
         results = self.strategy(available, self.accounts)
-        # Sum up results for each account for convenience:
-        results_totals = {
-            account: sum(transactions.values())
-            for account, transactions in results.items()}
         # Confirm that the total of all outflows sums up to `val`, which
         # should be fully allocated to accounts:
-        self.assertAlmostEqual(sum(results_totals.values()), val, places=5)
+        self.assertAccountTransactionsTotal(results, val)
         # Confirm each account gets the expected total transactions:
-        self.assertEqual(
-            results[self.rrsp],
-            self.rrsp.max_outflows())
-        self.assertEqual(
-            results[self.tfsa],
-            self.tfsa.max_outflows())
-        self.assertEqual(
-            results_totals[self.taxable_account],
+        self.assertTransactions(results[self.rrsp], self.rrsp.max_outflows())
+        self.assertTransactions(results[self.tfsa], self.tfsa.max_outflows())
+        self.assertTransactions(
+            results[self.taxable_account],
             sum(self.taxable_account.max_outflows().values())
             + Money(50))
 
@@ -429,13 +367,9 @@ class TestTransactionStrategyWeighted(unittest.TestCase):
         available = make_available(Money(val), self.timing)
         results = self.strategy(available, self.accounts)
         # Confirm each account gets the expected total transactions:
-        self.assertEqual(
-            results[self.rrsp],
-            self.rrsp.max_outflows())
-        self.assertEqual(
-            results[self.tfsa],
-            self.tfsa.max_outflows())
-        self.assertEqual(
+        self.assertTransactions(results[self.rrsp], self.rrsp.max_outflows())
+        self.assertTransactions(results[self.tfsa], self.tfsa.max_outflows())
+        self.assertTransactions(
             results[self.taxable_account],
             self.taxable_account.max_outflows())
 
@@ -448,18 +382,15 @@ class TestTransactionStrategyWeighted(unittest.TestCase):
             for account in self.accounts)
         available = make_available(Money(val), self.timing)
         results = self.strategy(available, self.accounts)
-        # Sum up results for each account for convenience:
-        results_totals = {
-            account: sum(transactions.values())
-            for account, transactions in results.items()}
         # Confirm that the total of all outflows sums up to `val`, which
         # should be fully allocated to accounts:
-        self.assertAlmostEqual(sum(results_totals.values()), val, places=5)
+        self.assertAccountTransactionsTotal(results, val)
         # Confirm accounts have separate total transaction values:
-        self.assertEqual(results_totals[self.rrsp], val * self.weights['RRSP'])
-        self.assertEqual(results_totals[self.tfsa], val * self.weights['TFSA'])
-        self.assertEqual(results_totals[self.taxable_account],
-                         val * self.weights['TaxableAccount'])
+        self.assertTransactions(results[self.rrsp], val * self.weights['RRSP'])
+        self.assertTransactions(results[self.tfsa], val * self.weights['TFSA'])
+        self.assertTransactions(
+            results[self.taxable_account],
+            val * self.weights['TaxableAccount'])
 
     def test_in_fill_one(self):
         """ Test strategy_weighted with inflows to fill 1 account. """
@@ -473,18 +404,14 @@ class TestTransactionStrategyWeighted(unittest.TestCase):
         val = Money(threshold + Money(50))
         available = make_available(Money(val), self.timing)
         results = self.strategy(available, self.accounts)
-        # Sum up results for each account for convenience:
-        results_totals = {
-            account: sum(transactions.values())
-            for account, transactions in results.items()}
         # Confirm that the total of all outflows sums up to `val`, which
         # should be fully allocated to accounts:
-        self.assertAlmostEqual(sum(results_totals.values()), val, places=5)
+        self.assertAccountTransactionsTotal(results, val)
 
-        self.assertEqual(results[self.tfsa], self.tfsa.max_inflows())
-        self.assertAlmostEqual(
-            results_totals[self.rrsp],
-            results_totals[self.taxable_account]
+        self.assertTransactions(results[self.tfsa], self.tfsa.max_inflows())
+        self.assertTransactions(
+            results[self.rrsp],
+            sum(results[self.taxable_account].values())
             * self.weights['RRSP'] / self.weights['TaxableAccount'])
 
     def test_in_fill_two(self):
@@ -497,18 +424,14 @@ class TestTransactionStrategyWeighted(unittest.TestCase):
         val = threshold + Money(50)
         available = make_available(Money(val), self.timing)
         results = self.strategy(available, self.accounts)
-        # Sum up results for each account for convenience:
-        results_totals = {
-            account: sum(transactions.values())
-            for account, transactions in results.items()}
         # Confirm that the total of all outflows sums up to `val`, which
         # should be fully allocated to accounts:
-        self.assertAlmostEqual(sum(results_totals.values()), val, places=5)
+        self.assertAccountTransactionsTotal(results, val)
         # Confirm accounts have expected transactions:
-        self.assertEqual(results[self.rrsp], self.rrsp.max_inflows())
-        self.assertEqual(results[self.tfsa], self.tfsa.max_inflows())
-        self.assertEqual(
-            results_totals[self.taxable_account],
+        self.assertTransactions(results[self.rrsp], self.rrsp.max_inflows())
+        self.assertTransactions(results[self.tfsa], self.tfsa.max_inflows())
+        self.assertTransactions(
+            results[self.taxable_account],
             val - (
                 sum(self.rrsp.max_inflows().values())
                 + sum(self.tfsa.max_inflows().values())))
@@ -568,9 +491,9 @@ class TestTransactionStrategyWeightedMult(TestCaseTransactions):
             for account, transactions in results.items()}
         # Confirm that the total of all outflows sums up to `val`, which
         # should be fully allocated to accounts:
-        self.assertAlmostEqual(sum(results_totals.values()), val, places=5)
+        self.assertAccountTransactionsTotal(results, val)
         # Confirm RRSPs' shared weight is respected:
-        self.assertEqual(
+        self.assertAlmostEqual(
             results_totals[self.rrsp] + results_totals[self.rrsp2],
             val * self.weights['RRSP'])
         # Confirm that money is withdrawn from each RRSP, but don't
@@ -578,11 +501,9 @@ class TestTransactionStrategyWeightedMult(TestCaseTransactions):
         self.assertLess(results_totals[self.rrsp], Money(0))
         self.assertLess(results_totals[self.rrsp2], Money(0))
         # Confirm that remaining accounts have expected amounts:
-        self.assertEqual(
-            results_totals[self.tfsa],
-            val * self.weights['TFSA'])
-        self.assertEqual(
-            results_totals[self.taxable_account],
+        self.assertTransactions(results[self.tfsa], val * self.weights['TFSA'])
+        self.assertTransactions(
+            results[self.taxable_account],
             val * self.weights['TaxableAccount'])
 
     def test_out_empty_one(self):
@@ -601,11 +522,9 @@ class TestTransactionStrategyWeightedMult(TestCaseTransactions):
             for account, transactions in results.items()}
         # Confirm that the total of all outflows sums up to `val`, which
         # should be fully allocated to accounts:
-        self.assertAlmostEqual(sum(results_totals.values()), val, places=5)
+        self.assertAccountTransactionsTotal(results, val)
         # Confirm each account has the expected set of transactions:
-        self.assertEqual(
-            results[self.tfsa],
-            self.tfsa.max_outflows())
+        self.assertTransactions(results[self.tfsa], self.tfsa.max_outflows())
         # The excess (i.e. the amount that would ordinarily be
         # contributed to the TFSA but can't due to contribution room
         # limits) should also be split between RRSPs and the TFSA
@@ -630,24 +549,15 @@ class TestTransactionStrategyWeightedMult(TestCaseTransactions):
         # Sum up results for each account for convenience:
         # Confirm that the total of all outflows sums up to `val`, which
         # should be fully allocated to accounts:
-        self.assertAlmostEqual(
-            sum(sum(result.values()) for result in results.values()),
-            val, places=PLACES_PRECISION)
+        self.assertAccountTransactionsTotal(results, val)
         # Also confirm that the smaller accounts get filled:
-        self.assertTransactions(
-            results[self.rrsp],
-            self.rrsp.max_outflows())
-        self.assertTransactions(
-            results[self.rrsp2],
-            self.rrsp2.max_outflows())
-        self.assertTransactions(
-            results[self.tfsa],
-            self.tfsa.max_outflows())
+        self.assertTransactions(results[self.rrsp], self.rrsp.max_outflows())
+        self.assertTransactions(results[self.rrsp2], self.rrsp2.max_outflows())
+        self.assertTransactions(results[self.tfsa], self.tfsa.max_outflows())
         # And confirm that the largest account is not-quite-filled:
-        self.assertAlmostEqual(
-            sum(results[self.taxable_account].values()),
-            sum(self.taxable_account.max_outflows().values())
-            + Money(50))
+        self.assertTransactions(
+            results[self.taxable_account],
+            sum(self.taxable_account.max_outflows().values()) + Money(50))
 
     def test_out_empty_all(self):
         """ Test strategy_weighted with mult. RRSPs, empty all accounts. """
@@ -659,13 +569,9 @@ class TestTransactionStrategyWeightedMult(TestCaseTransactions):
         available = make_available(Money(val), self.timing)
         results = self.strategy(available, self.accounts)
         # Confirm each account has the expected set of transactions:
-        self.assertEqual(
-            results[self.rrsp],
-            self.rrsp.max_outflows())
-        self.assertEqual(
-            results[self.tfsa],
-            self.tfsa.max_outflows())
-        self.assertEqual(
+        self.assertTransactions(results[self.rrsp], self.rrsp.max_outflows())
+        self.assertTransactions(results[self.tfsa], self.tfsa.max_outflows())
+        self.assertTransactions(
             results[self.taxable_account],
             self.taxable_account.max_outflows())
 
@@ -681,13 +587,13 @@ class TestTransactionStrategyWeightedMult(TestCaseTransactions):
             for account, transactions in results.items()}
         # Confirm that the total of all outflows sums up to `val`, which
         # should be fully allocated to accounts:
-        self.assertAlmostEqual(sum(results_totals.values()), val, places=5)
+        self.assertAccountTransactionsTotal(results, val)
 
         # Confirm that the total amount contributed to the RRSPs is
         # equal to their (shared) contribution room.
         # If it exceeds that limit, then it's likely that their
         # contribution room sharing isn't being respected.
-        self.assertEqual(
+        self.assertAlmostEqual(
             results_totals[self.rrsp] + results_totals[self.rrsp2],
             self.rrsp.contribution_room)
 
