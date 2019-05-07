@@ -17,7 +17,7 @@ class TestCaseTransactions(unittest.TestCase):
         as `first`) against either a dict of transactions or a total
         value of transactions. Uses `assertAlmostEqual` for all
         comparisons.
-        
+
         Args:
             first (dict[Decimal, Money]): A dict of transactions,
                 as when: value pairs.
@@ -39,6 +39,23 @@ class TestCaseTransactions(unittest.TestCase):
             self.assertAlmostEqual(
                 sum(first.values()), second,
                 places=places, msg=msg, delta=delta)
+
+    def assertAccountTransactionsTotal(
+            self, first, second, places=PLACES_PRECISION,
+            msg=None, delta=None):
+        """ Tests the total value of transactions across all accounts.
+
+        Args:
+            first (dict[Account, dict[Decimal, Money]]): A mapping of
+                accounts to transactions.
+            second (Money): The total value of all transactions in
+                `first`.
+        """
+        # pylint: disable=invalid-name
+        # The naming here uses the style of unittest `assert*` methods.
+        self.assertAlmostEqual(
+            sum(sum(transactions.values()) for transactions in first.values()),
+            second, places=places, msg=msg, delta=delta)
 
     def assertAlmostEqual(
             self, first, second, places=None, msg=None, delta=None):
