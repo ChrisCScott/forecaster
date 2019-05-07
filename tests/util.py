@@ -8,12 +8,37 @@ PLACES_PRECISION = 4
 class TestCaseTransactions(unittest.TestCase):
     """ A test case for non-strategy method of TransactionStrategy. """
 
-    def assertTransactions(self, transactions, value, places=PLACES_PRECISION):
-        """ Convenience method for testing transactions. """
+    def assertTransactions(
+            self, first, second, places=PLACES_PRECISION,
+            msg=None, delta=None):
+        """ Convenience method for testing transactions.
+
+        This method allows for testing a dict of transactions (passed
+        as `first`) against either a dict of transactions or a total
+        value of transactions. Uses `assertAlmostEqual` for all
+        comparisons.
+        
+        Args:
+            first (dict[Decimal, Money]): A dict of transactions,
+                as when: value pairs.
+            second (Money, dict[Decimal, Money]): Either a scala
+                `Money` value or a dict of transactions.
+        """
         # pylint: disable=invalid-name
         # The naming here uses the style of unittest `assert*` methods.
-        self.assertAlmostEqual(
-            sum(transactions.values()), value, places=places)
+        if isinstance(second, dict):
+            # Allow testing two transaction dicts against each other:
+            self.assertEqual(first.keys(), second.keys())
+            for key in first.keys():
+                self.assertAlmostEqual(
+                    first[key], second[key], places=places,
+                    msg=msg, delta=delta)
+        else:
+            # Allow testing a transaction dict against a scalar, which
+            # is interpreted as a total:
+            self.assertAlmostEqual(
+                sum(first.values()), second,
+                places=places, msg=msg, delta=delta)
 
     def assertAlmostEqual(
             self, first, second, places=None, msg=None, delta=None):

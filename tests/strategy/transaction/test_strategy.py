@@ -4,7 +4,8 @@ import unittest
 from decimal import Decimal
 from forecaster import Person, Money, TransactionStrategy
 from forecaster.canada import RRSP, TFSA, TaxableAccount
-from tests.util import make_available
+from tests.util import (
+    make_available, TestCaseTransactions, PLACES_PRECISION)
 
 
 class TestTransactionStrategyOrdered(unittest.TestCase):
@@ -513,7 +514,7 @@ class TestTransactionStrategyWeighted(unittest.TestCase):
                 + sum(self.tfsa.max_inflows().values())))
 
 
-class TestTransactionStrategyWeightedMult(unittest.TestCase):
+class TestTransactionStrategyWeightedMult(TestCaseTransactions):
     """ Tests TransactionStrategy.strategy_weighted with account groups.
     In particular, this test case includes multiple accounts of the same
     type (e.g. two RRSPs) to ensure that accounts that share a weighting
@@ -627,25 +628,24 @@ class TestTransactionStrategyWeightedMult(unittest.TestCase):
         available = make_available(Money(val), self.timing)
         results = self.strategy(available, self.accounts)
         # Sum up results for each account for convenience:
-        results_totals = {
-            account: sum(transactions.values())
-            for account, transactions in results.items()}
         # Confirm that the total of all outflows sums up to `val`, which
         # should be fully allocated to accounts:
-        self.assertAlmostEqual(sum(results_totals.values()), val, places=5)
+        self.assertAlmostEqual(
+            sum(sum(result.values()) for result in results.values()),
+            val, places=PLACES_PRECISION)
         # Also confirm that the smaller accounts get filled:
-        self.assertEqual(
+        self.assertTransactions(
             results[self.rrsp],
             self.rrsp.max_outflows())
-        self.assertEqual(
+        self.assertTransactions(
             results[self.rrsp2],
             self.rrsp2.max_outflows())
-        self.assertEqual(
+        self.assertTransactions(
             results[self.tfsa],
             self.tfsa.max_outflows())
         # And confirm that the largest account is not-quite-filled:
-        self.assertEqual(
-            results_totals[self.taxable_account],
+        self.assertAlmostEqual(
+            sum(results[self.taxable_account].values()),
             sum(self.taxable_account.max_outflows().values())
             + Money(50))
 
