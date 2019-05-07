@@ -1,6 +1,7 @@
 """ Helper methods and classes for TransactionStrategy. """
 
 from collections import abc
+from copy import copy
 from forecaster.accounts import LimitTuple, LIMIT_TUPLE_FIELDS
 from forecaster.strategy.transaction.util import (
     group_default_methods, TRANSACTION_DEFAULT_METHODS,
@@ -386,12 +387,21 @@ def reduce_node(
             child for child in node.children if child not in remove_children)
         source = tuple(child.source for child in children)
     elif node.is_weighted():
-        # For weighted nodes, generate a dict with children in
-        # `remove_children` removed. Copy weights of remaining children.
-        children = {
-            child: weight for child, weight in node.children.items()
-            if child not in remove_children}
-        source = {child.source: weight for child, weight in children.items()}
+        # For weighted nodes, generate copies of the node's `children`
+        # and `source` dicts, excluding children in `remove_children`.
+        children = copy(node.children)
+        source = copy(node.source)
+        for child in node.children:
+            if child in remove_children:
+                del children[child]
+                # For `source`, the child itself (which is a
+                # TransactionNode) will be an element if it was
+                # passed in as a TransactionNode in the first place,
+                # otherwise child.source will be in `source`:
+                if child in source:
+                    del source[child]
+                else:
+                    del source[child.source]
     elif not node.children:
         # Leaf nodes can't be reduced, so just return it as-is.
         return node
