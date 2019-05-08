@@ -3,7 +3,7 @@
 from forecaster.ledger import (
     Money, recorded_property, recorded_property_cached)
 from forecaster.forecast.subforecast import SubForecast
-from forecaster.utility import Timing
+from forecaster.utility import transactions_from_timing
 
 class WithdrawalForecast(SubForecast):
     """ A forecast of withdrawals from a portfolio over time.
@@ -49,6 +49,7 @@ class WithdrawalForecast(SubForecast):
         self.transaction_strategy = transaction_strategy
 
         self.account_transactions = {}
+        self.tax_withheld = Money(0)
 
     def __call__(self, available):
         """ Records transactions against accounts; mutates `available`. """
@@ -56,91 +57,55 @@ class WithdrawalForecast(SubForecast):
         # started on doing the updates:
         super().__call__(available)
 
-        self.account_transactions = self.transaction_strategy(available)
+        self.account_transactions = self.transaction_strategy(
+            available, accounts=self.accounts)
 
         # pylint: disable=not-an-iterable,unsubscriptable-object,no-member
         # pylint can't infer the type of account_transactions
-        # because we don't import `AccountTransactionsStrategy`
+        # because we don't import `TransactionsStrategy`
 
-        # TODO #59: Limit amount withdrawn to `account_transactions`
-        # for each account.
-        # It's fine to _prefer_ withdrawing at times when cashflow is
-        # negative, but we shouldn't be _increasing_ withdrawals as
-        # default behaviour (though maybe we can do it if a flag is set)
-
-        # HACK: This whole method needs a redesign.
-        # Right now the strategy object returns a set of transactions
-        # for each account. We're flattening that here into totals for
-        # each account and then redetermining timing based on the
-        # `available` flows.
-        # The problem is that `account_transactions_strategy` receives
-        # a scalar (`total`) as an argument when it _should_ receive
-        # the `available` dict (or something similar) so that the
-        # output already respects `available`'s timings.
-        # TODO: Redesign `AccountTransactionsStrategy` to take timing-
-        # aware args, then simplify this method to rely directly on the
-        # resulting output.
-
-        # Set up variables to track progress as we make withdrawals:
-        accum = Money(0)
-        transactions_total = sum(
-            sum(transactions.values())
-            for transactions in self.account_transactions.values())
+        # Keep track of tax withholdings before adding transactions to
+        # accounts so we can check later for changes.
         tax_withheld = {
-            account: account.tax_withheld
-            for account in self.account_transactions}
-        # We want to step through the time-series of transactions
-        # and withdraw whenever we dip into negative balance.
-        for when in sorted(available.keys()):
-            accum += available[when]
-            timing = Timing(when=when)
-            if accum < 0:  # negative balance - time to withdraw!
-                # Withdraw however much we're short by:
-                withdrawal = -accum
-                for account, transactions in self.account_transactions.items():
-                    # Withdraw from each account proportionately to
-                    # the total amounts withdrawn from each account:
-                    account_transaction = withdrawal * (
-                        sum(transactions.values())
-                        / transactions_total)
-                    # Add the gross transaction from the account
-                    # (not accounting for withholdings):
-                    self.add_transaction(
-                        value=account_transaction,
-                        timing=timing,
-                        from_account=account,
-                        to_account=available,
-                        strict_timing=True
-                    )
-                    # Now deduct any increased witholding tax
-                    # from the new `available` balance:
-                    new_withholding = (
-                        account.tax_withheld
-                        - tax_withheld[account])
-                    if new_withholding > 0:
-                        self.add_transaction(
-                            value=new_withholding,
-                            timing=timing,
-                            from_account=available,
-                            to_account=None,
-                            strict_timing=True
-                        )
-                    tax_withheld[account] += new_withholding
-                # NOTE: This essentially adds the *gross* withdrawals
-                # to `accum`, with the result being that any taxes
-                # withheld will result in a negative end-of-year
-                # balance.
-                # This can be partially addressed by only adding the
-                # *net* withdrawals, except that would result in
-                # larger amounts being withdrawn later in the year,
-                # and more being withdrawn than was anticipated by
-                # `account_transactions`.
-                # If we do move in this direction, we need to think
-                # carefully about how to redesign this class so that
-                # `gross_withdrawals` is determined dynamically and
-                # `net_withdrawals` is set up-front.
-                # (Right now it's the reverse.)
-                accum += withdrawal
+            account: account.tax_withheld for account in self.accounts}
+
+        # Record the transactions for each account as dictated by
+        # `transaction_strategy`:
+        for account in self.account_transactions:
+            # NOTE: `available` is used as the `from_account` because
+            # values returned by `transaction_strategy` are negative.
+            # Thus, money will flow _to_ `available` _from_ `account`.
+            self.add_transactions(
+                transactions=self.account_transactions[account],
+                from_account=available,
+                to_account=account)
+
+            # If the tax withholdings have changed (usually we'd expect
+            # an increase, but this code works for decreases too) then
+            # record a transaction out of the account:
+            if account.tax_withheld != tax_withheld[account]:
+                # Find the change in tax withholdings for the account
+                new_withholdings = account.tax_withheld - tax_withheld[account]
+                # Assume they're withheld with the same timing and
+                # weighting as the withdrawals themselves:
+                transactions = transactions_from_timing(
+                    self.account_transactions[account],
+                    new_withholdings)
+                # The withholdings come from money we've already
+                # withdrawn, so remove money from `available`.
+                # (transactions will be negative is there's an amount
+                # owing, so use `to_account`)
+                self.add_transactions(
+                    transactions=transactions,
+                    to_account=available)
+                # Keep track of total tax withheld:
+                self.tax_withheld += new_withholdings
+
+    def undo_transactions(self):
+        """ Reverses all transactions cause by this subforecast. """
+        super().undo_transactions()
+        # Reset tax_withheld:
+        self.tax_withheld = Money(0)
 
     @recorded_property_cached
     def gross_withdrawals(self):
@@ -152,13 +117,6 @@ class WithdrawalForecast(SubForecast):
         return -self.total_available
 
     @recorded_property
-    def tax_withheld(self):
-        """ Total tax withheld on withdrawals for the year. """
-        return sum(
-            (account.tax_withheld for account in self.accounts),
-            Money(0))
-
-    @recorded_property
     def net_withdrawals(self):
         """ Total withdrawals, net of withholding taxes, for the year. """
-        return self.gross_withdrawals - self.tax_withheld
+        return self.gross_withdrawals + self.tax_withheld
