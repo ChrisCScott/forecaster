@@ -389,6 +389,32 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         # Exactly the `total` amount should be withdrawn:
         self.assertTransactions(transactions[self.rrsp], total)
 
+    def test_assign_mins_out_overflow(self):
+        """ Assign minimum outflows without throwing off total outflows. """
+        # RRSPs have min outflows (if converted to an RRIF), so use
+        # one of those:
+        self.person.birth_date = self.initial_year - 72
+        self.rrsp.convert_to_rrif(year=self.initial_year - 1)
+        priority = [self.rrsp]
+        strategy = TransactionTraversal(priority=priority)
+        # Try to withdraw more than the account allows:
+        total = -2 * self.rrsp.balance
+        available = {Decimal(0.5): total}
+        transactions = strategy(available)
+        # Withdrawals should not exceed the RRSP's max outflows:
+        self.assertTransactions(
+            transactions[self.rrsp], self.rrsp.max_outflows(timing=available))
+
+    def test_special_1(self):
+        """ Test special case with an RRSP and Account in weighted tree.
+        
+        This example was part of an old test for WithdrawalForecast and
+        gave rise to unexpected results. Rather than test it indirectly
+        there, test for it explicitly here.
+        """
+        # TODO: Replicate old WithdrawalForecast test.
+        pass
+
 if __name__ == '__main__':
     unittest.TextTestRunner().run(
         unittest.TestLoader().loadTestsFromName(__name__))
