@@ -52,10 +52,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
             contribution_room=self.contribution_room, **kwargs)
         self.assertEqual(
             self.owner.age(account.rrif_conversion_year),
-            min(
-                constants.RRSP_RRIF_CONVERSION_AGE,
-                self.owner.retirement_age)
-        )
+            constants.RRSP_RRIF_CONVERSION_AGE)
 
     def test_taxable_income_gain(self, *args, **kwargs):
         """ Test taxable_income with no withdrawals or contributions. """
@@ -463,8 +460,8 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         with self.assertRaises(ValueError):
             account.rrif_conversion_year = 2100
 
-    def test_rrif_implicit_mandatory(self, *args, **kwargs):
-        """ Test RRSP.rrif_conversion_year, expecting the legal max. """
+    def test_rrif_implicit_retire_later(self, *args, **kwargs):
+        """ Test RRSP.rrif_conversion_year when retiring after 71. """
         account = self.AccountType(
             self.owner, *args,
             inflation_adjust=self.inflation_adjust,
@@ -477,7 +474,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         self.assertEqual(account.rrif_conversion_year, mandatory_year)
 
     def test_rrif_implicit_retirement(self, *args, **kwargs):
-        """ Test RRSP.rrif_conversion_year, expecting retirement year. """
+        """ Test RRSP.rrif_conversion_year when retiring before 71. """
         account = self.AccountType(
             self.owner, *args,
             inflation_adjust=self.inflation_adjust,
@@ -487,7 +484,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         mandatory_year = (
             account.owner.birth_date.year + constants.RRSP_RRIF_CONVERSION_AGE)
         account.owner.retirement_date = mandatory_year - 1
-        self.assertEqual(account.rrif_conversion_year, mandatory_year - 1)
+        self.assertEqual(account.rrif_conversion_year, mandatory_year)
 
     def test_rrif_unset(self, *args, **kwargs):
         """ Test setting and unsetting RRSP.rrif_conversion_year. """

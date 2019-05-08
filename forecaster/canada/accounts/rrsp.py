@@ -61,17 +61,13 @@ class RRSP(RegisteredAccount):
     def rrif_conversion_year(self):
         """ The year in which the RRSP is converted to an RRIF.
 
-        If not set explicitly, the owner's retirement year or year in
-        which conversion is required by law is returned (whichever
-        happens first).
+        If not set explicitly, the year in which conversion is required
+        by law is returned (whichever happens first).
         """
         if self._rrif_conversion_year is not None:
             return self._rrif_conversion_year
         else:
-            return min(
-                self.owner.retirement_date.year,
-                self._rrif_max_conversion_year()
-            )
+            return self._rrif_max_conversion_year()
 
     @rrif_conversion_year.setter
     def rrif_conversion_year(self, val):
