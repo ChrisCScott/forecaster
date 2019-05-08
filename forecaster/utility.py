@@ -156,6 +156,26 @@ class Timing(dict):
                         accum[key] -= max_transaction
         return result
 
+def transactions_from_timing(timing, total):
+    """ Generates a schedule of transactions based on a timing and total
+
+    Args:
+        timing (Timing): The timing of the transactions, each with a
+            corresponding weight.
+        total (Money): The sum of all transactions to be generated.
+
+    Returns:
+        dict[Decimal, Money]: A schedule of transactions, each
+        transaction having the relative weighting provided by `timing`
+        and the total value of the transactions summing to `total`.
+    """
+    if not isinstance(timing, Timing):
+        timing = Timing(timing)
+    normalization = sum(timing.values())
+    transactions = {
+        time: total * (weight / normalization)
+        for time, weight in timing.items()}
+    return transactions
 
 def when_conv(when):
     """ Converts various types of `when` inputs to Decimal.
