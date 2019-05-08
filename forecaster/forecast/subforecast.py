@@ -338,7 +338,14 @@ class SubForecast(Ledger):
             when = self._shift_when(
                 value=value, when=when, account=from_account)
 
-        # Record to from_account:
+        '''
+        # Keep track of any tax withholdings already assigned to the
+        # account:
+        if hasattr(from_account, 'tax_withheld'):
+            tax_withheld_before = from_account.tax_withheld
+        '''
+
+        # Record transaction to from_account:
         if from_account is not None:
             # Don't assume all objects provide defaultdict-like interface:
             if when in from_account:
@@ -347,7 +354,15 @@ class SubForecast(Ledger):
                 from_account[when] = -value
         self.transactions[from_account][when] += -value
 
-        # Record to to_account:
+        '''
+        # If tax withholdings have increased as a result of this
+        # transaction, reduce the amount that goes to `from_account`
+        # accordingly:
+        if hasattr(from_account, 'tax_withheld'):
+            value -= from_account.tax_withheld - tax_withheld_before
+        '''
+
+        # Record transaction to to_account:
         if to_account is not None:
             if when in to_account:
                 to_account[when] += value
