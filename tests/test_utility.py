@@ -4,8 +4,59 @@ import unittest
 import decimal
 from decimal import Decimal
 from forecaster.utility import (
+    Timing, transactions_from_timing,
     nearest_year, extend_inflation_adjusted,
     when_conv, frequency_conv)
+
+class TestTiming(unittest.TestCase):
+    """ A test case for Timing. """
+
+    # TODO: Test all four modes of Timing.__init__:
+    # 1) Init with two arguments: `when` and `frequency`
+    # 2) Init with dict of {when: value} pairs.
+    #    This has 3 major variations:
+    #    a) All values are non-negative (positive or 0)
+    #    b) All values are non-positive (negative or 0)
+    #    c) Values have varying sign (behaviour differs depending on
+    #       whether the sum is positive, negative, or 0).
+    # 3) Init with string denoting a frequency (e.g. `Timing('BW')`)
+    # 4) Init with `when`-convertible value (e.g. Timing('start'),
+    #    `Timing(1)`)
+
+    def test_init_when_freq(self):
+        """ TODO """
+        pass
+
+    def test_init_str_freq(self):
+        """ TODO """
+        pass
+
+    def test_init_str_when(self):
+        """ TODO """
+        pass
+
+    def test_init_dict_pos(self):
+        """ TODO """
+        pass
+
+    def test_init_dict_neg(self):
+        """ TODO """
+        pass
+
+    def test_init_dict_mixed(self):
+        """ TODO """
+        pass
+
+    def test_init_dict_money(self):
+        """ TODO """
+        pass
+
+    def test_init_dict_accum(self):
+        """ TODO """
+        available = {0: 1000, 0.25: -11000, 0.5: 1000, 0.75: -11000}
+        timing = Timing(available)
+        target = Timing({0.25: 10000, 0.75: 10000})
+        self.assertEqual(timing, target)
 
 class TestFreeMethods(unittest.TestCase):
     """ A test case for the free methods in the utility module. """

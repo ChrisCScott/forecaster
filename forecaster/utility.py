@@ -8,6 +8,8 @@ import collections
 from decimal import Decimal
 from forecaster.ledger import Money
 
+WHEN_DEFAULT = 0.5
+
 class Timing(dict):
     """ A dict of {timing: weight} pairs.
 
@@ -38,7 +40,7 @@ class Timing(dict):
             of transactions). Uses the same syntax as
             `forecaster.utility.frequency_conv`. Optional.
     """
-    def __init__(self, when=0.5, frequency=1):
+    def __init__(self, when=WHEN_DEFAULT, frequency=1):
         """ Initializes a Timing dict. """
         # We allow four forms of init call:
         # 1) Init with two arguments: `when` and `frequency`
@@ -61,14 +63,14 @@ class Timing(dict):
         # may or may not be explicitly Money-typed), so we need to deal
         # with negative values, and potentially with Money-typed values.
         elif isinstance(when, dict):
-            self.update(self._convert_dict(when))
+            self.update(_convert_dict(when))
             return
         else:
             # If we receive a frequency as the first argument, swap args
             # and use the default value for `when`:
             if isinstance(when, str) and when in FREQUENCY_MAPPING:
                 frequency = when
-                when = 0.5  # default value
+                when = WHEN_DEFAULT  # default value
             # Arguments might be str-valued; make them numeric:
             when = when_conv(when)
             frequency = frequency_conv(frequency)
@@ -80,81 +82,97 @@ class Timing(dict):
             for time in range(frequency):
                 self[(time + when) / frequency] = weight
 
-    def _convert_dict(self, when):
-        """ Copies """
-        # First, deal with empty dict or all-zero dict:
-        if not when:
-            # This dict has no meaningful timings, so return empty dict.
-            return {}
-        if all(value == 0 for value in when.values()):
-            # Use the timings provided by the dict and fill in uniform
-            # weights, since no non-zero weights were given:
-            return {key: Decimal(1) for key in when}
+def _convert_dict(when):
+    """ TODO """
+    # First, deal with empty dict or all-zero dict:
+    if not when:
+        # This dict has no meaningful timings, so return empty dict.
+        return {}
+    if all(value == 0 for value in when.values()):
+        # Use the timings provided by the dict and fill in uniform
+        # weights, since no non-zero weights were given:
+        return {key: Decimal(1) for key in when}
 
-        # If values are Money-types, convert to Decimal:
-        # Get a random element from `when` so we can check its type:
-        sample = next(iter(when.values()))
-        if isinstance(sample, Money):
-            # Convert the dict's values to Decimal (no mutation!):
-            when = {timing: value.amount for timing, value in when.items()}
+    # If values are Money-types, convert to Decimal:
+    # Get a random element from `when` so we can check its type:
+    sample = next(iter(when.values()))
+    if isinstance(sample, Money):
+        # Convert the dict's values to Decimal (no mutation!):
+        when = {timing: value.amount for timing, value in when.items()}
 
-        # OK, so the dict is non-empty, has a non-zero element, and
-        # doesn't have awkward `Money` semantics (i.e. is Decimal-like).
-        # If there are no negative values, the dict is useable as-is:
-        if all(value >= 0 for value in when.values()):
-            return when
-        # If all items are negative, flip the signs:
-        elif all(value <= 0 for value in when.values()):
-            return {time: -value for time, value in when.items()}
+    # OK, so the dict is non-empty, has a non-zero element, and
+    # doesn't have awkward `Money` semantics (i.e. is Decimal-like).
+    # If there are no negative values, the dict is useable as-is:
+    if all(value >= 0 for value in when.values()):
+        return when
+    # If all items are negative, flip the signs:
+    elif all(value <= 0 for value in when.values()):
+        return {time: -value for time, value in when.items()}
 
-        # If the dict has a mix of positive and negative values, treat
-        # it like an `available` dict of transactions. Use the
-        # timings for inflows if the total is positive and outflows if
-        # the total is negative (this way we reinforce inflows/outflows)
-        total = sum(when.values())
-        # First, deal with the case where the total is zero:
-        if total == 0:
-            # If the time-series is perfectly balanced between
-            # positive and negative, simply duplicate all timings
-            # (excluding zero-value transactions) and weight them based
-            # on the unsigned magnitudes of those transactions:
-            return {
-                key: abs(value) for key, value in when.items() if when != 0}
+    # If the dict has a mix of positive and negative values, treat
+    # it like an `available` dict of transactions. Use the
+    # timings for inflows if the total is positive and outflows if
+    # the total is negative (this way we reinforce inflows/outflows)
+    total = sum(when.values())
+    # First, deal with the case where the total is zero:
+    if total == 0:
+        # If the time-series is perfectly balanced between
+        # positive and negative, simply duplicate all timings
+        # (excluding zero-value transactions) and weight them based
+        # on the unsigned magnitudes of those transactions:
+        return {
+            key: abs(value) for key, value in when.items() if when != 0}
+    elif total > 0:
+        return _accum_inflows(when)
+    else:
+        return _accum_outflows(when)
 
-        # We do this in two stages.
-        # First, for each timing, determine the cumulative value of
-        # all transactions to date and store it in `accum`:
-        accum = {}
-        result = {}
-        tally = 0  # sum of transactions so far
-        for timing in sorted(when.keys()):
-            tally += when[timing]
-            accum[timing] = tally
-        # Second, iterate over the timings *again*, this time
-        # determining for each timing the maximum amount that can be
-        # withdrawn without changing the sign of any future timing:
-        tally = 0  # amounts withdrawn so far
-        for timing in sorted(when.keys()):
-            # Find the bottleneck: the future value with the
-            # smallest cumulative amount determines the maximum
-            # transaction we can make right now:
-            if total > 0:  # use min to find smallest inflow
-                max_transaction = min(
-                    value for key, value in accum.items() if key >= timing)
-            else:  # use max to find smallest outflow
-                max_transaction = max(
-                    value for key, value in accum.items() if key >= timing)
-            # Only record timings with the same sign as `total`:
-            if max_transaction / total > 0:
-                result[timing] = max_transaction
-                # Update loop variables to reflect that a transaction
-                # has been added: all future timings in accum should be
-                # modified accordingly.
-                tally += max_transaction
-                for key in accum:
-                    if key >= timing:
-                        accum[key] -= max_transaction
-        return result
+def _accum_inflows(when):
+    """ TODO """
+    # We do this in two stages.
+    # First, for each timing, determine the cumulative value of
+    # all transactions to date and store it in `accum`:
+    accum = {}
+    result = {}
+    tally = 0  # sum of transactions so far
+    for timing in sorted(when.keys()):
+        tally += when[timing]
+        accum[timing] = tally
+    # Second, iterate over the timings *again*, this time
+    # determining for each timing the maximum amount that can be
+    # withdrawn without changing the sign of any future timing:
+    tally = 0  # amounts withdrawn so far
+    for timing in sorted(when.keys()):
+        # Find the bottleneck: the future value with the
+        # smallest cumulative amount determines the maximum
+        # transaction we can make right now:
+        max_transaction = min(
+            value for key, value in accum.items() if key >= timing)
+        # Only record timings with positive sign:
+        if max_transaction > 0:
+            result[timing] = max_transaction
+            # Update loop variables to reflect that a transaction
+            # has been added: all future timings in accum should be
+            # modified accordingly.
+            tally += max_transaction
+            for key in accum:
+                if key >= timing:
+                    accum[key] -= max_transaction
+    return result
+
+def _accum_outflows(when):
+    """ TODO """
+    # Accumulate the various transactions in order. Every time the
+    # rolling accumulation dips negative, record an inflow that brings
+    # it back to 0:
+    accum = 0
+    result = {}
+    for timing in sorted(when.keys()):
+        accum += when[timing]
+        if accum < 0:
+            result[timing] = -accum
+            accum = 0
+    return result
 
 def transactions_from_timing(timing, total):
     """ Generates a schedule of transactions based on a timing and total
