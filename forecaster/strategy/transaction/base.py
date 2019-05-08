@@ -6,6 +6,7 @@ amounts, and to which accounts.
 
 import collections
 from copy import copy
+from forecaster.ledger import Money
 from forecaster.utility import add_transactions, subtract_transactions
 from forecaster.strategy.transaction.util import (
     LimitTuple, transaction_default_methods, group_default_methods)
@@ -147,9 +148,11 @@ class TransactionTraversal:
         if total > 0:  # inflows
             min_limit = LIMIT_TUPLE_FIELDS.min_inflow
             max_limit = LIMIT_TUPLE_FIELDS.max_inflow
+            min_total = total  # Do limit min. inflows.
         elif total < 0:  # outflows
             min_limit = LIMIT_TUPLE_FIELDS.min_outflow
             max_limit = LIMIT_TUPLE_FIELDS.max_outflow
+            min_total = Money('-Infinity')  # Don't limit min. outflows.
         else:  # No transactions since total == 0
             return {}
         # Unless the user tells us not to assign minimums, we will
@@ -163,8 +166,10 @@ class TransactionTraversal:
         available = copy(available)
         # First traverse to allocate mins (in priority order)
         if assign_min_first:
+            # NOTE: min_total is infinite for outflows, so min outflows
+            # will always be assigned even if `available` is smaller.
             min_transactions = self._traverse_tree(
-                available, total, transactions, min_limit, memo=memo)
+                available, min_total, transactions, min_limit, memo=memo)
             # Other arguments are mutated, but not total, so update here
             total -= sum(min_transactions.values())
         # Then traverse again to allocate remaining money:
