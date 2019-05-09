@@ -407,13 +407,37 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
 
     def test_special_1(self):
         """ Test special case with an RRSP and Account in weighted tree.
-        
+
         This example was part of an old test for WithdrawalForecast and
         gave rise to unexpected results. Rather than test it indirectly
         there, test for it explicitly here.
         """
-        # TODO: Replicate old WithdrawalForecast test.
-        pass
+        # Set up an RRSP that's been converted to an RRIF (so that it
+        # has minimum withdrawals).
+        self.person.birth_date = self.initial_year - 72
+        self.rrsp.convert_to_rrif(year=self.initial_year - 1)
+        # Use balances that were used by TestWithdrawalForecast:
+        self.rrsp.balance = Money(6000)
+        self.taxable_account.balance = Money(60000)
+        # We want to withdraw $20,000 from these accounts, with
+        # $3000 from the RRSP and $17000 from the taxable account.
+        priority = {
+            self.rrsp: Decimal(3000), self.taxable_account: Decimal(17000)}
+        # Use the same `available` dict as in TestWithdrawalForecast,
+        # with $2000 in inflows and $22,000 in outflows, for a net need
+        # of $20,000 in withdrawals to make up the shortfall:
+        available = {
+            Decimal(0.25): Money(1000),
+            Decimal(0.5): Money(-11000),
+            Decimal(0.75): Money(1000),
+            Decimal(1): Money(-11000)}
+        strategy = TransactionTraversal(priority=priority)
+        # Generate the transactions:
+        transactions = strategy(available)
+        # Confirm that the $20,000 is distributed as in `priority`:
+        self.assertTransactions(transactions[self.rrsp], Money(-3000))
+        self.assertTransactions(
+            transactions[self.taxable_account], Money(-17000))
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(
