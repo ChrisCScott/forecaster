@@ -7,11 +7,12 @@ amounts, and to which accounts.
 import collections
 from copy import copy
 from forecaster.ledger import Money
-from forecaster.utility import add_transactions, subtract_transactions
+from forecaster.utility import (
+    add_transactions, subtract_transactions, EPSILON_MONEY)
+from forecaster.accounts.util import LIMIT_TUPLE_FIELDS
 from forecaster.strategy.transaction.util import (
     LimitTuple, transaction_default_methods, group_default_methods)
-from forecaster.strategy.transaction.node import (
-    TransactionNode, LIMIT_TUPLE_FIELDS, reduce_node)
+from forecaster.strategy.transaction.node import TransactionNode
 
 
 class TransactionTraversal:
@@ -167,7 +168,7 @@ class TransactionTraversal:
         # First traverse to allocate mins (in priority order)
         if assign_min_first:
             # NOTE: min_total is infinite for outflows, so min outflows
-            # will always be assigned even if `available` is smaller.
+            # will not be limited to the shortfall in `available`.
             min_transactions = self._traverse_tree(
                 available, min_total, transactions, min_limit, memo=memo)
             # Other arguments are mutated, but not total, so update here
@@ -181,23 +182,22 @@ class TransactionTraversal:
         """ TODO """
         # Set up vars for the while loop:
         return_transactions = {}
-        threshold = self._priority_tree.transaction_threshold(
-            limit, timing=available, transactions=transactions,
-            transaction_methods=self.transaction_methods)
+        skip_nodes = set()
+        threshold = self.transaction_threshold(
+            self._priority_tree, total, limit,
+            timing=available, transactions=transactions, skip_nodes=skip_nodes)
         # We'll be allocated `threshold` dollars, which isn't based on
         # `total`, so ensure that it isn't larger:
         if abs(threshold) > abs(total):
             threshold = total
-        # TODO: Test abs(threshold) < EPSILON, for some small EPSILON,
-        # to avoid infinite loops due to some tiny rounding error:
-        while threshold != 0:
+        while abs(threshold) > EPSILON_MONEY:
             # Instead of one tree traversal for the whole total,
             # traverse the tree (up to) once for each set of linked
             # accounts. Each traversal will "close out" at least one of
             # those sets of accounts.
             loop_transactions = self._process_node(
                 self._priority_tree, available, threshold, transactions,
-                limit, memo=memo)
+                limit, memo=memo, skip_nodes=skip_nodes)
             # If we failed to add any new transactions, terminate loop:
             loop_total = sum(loop_transactions.values())
             if loop_total == 0:
@@ -211,16 +211,17 @@ class TransactionTraversal:
             total -= loop_total
             # Figure out how much to allocate on the next iteration,
             # using the same logic as above:
-            threshold = self._priority_tree.transaction_threshold(
-                limit, timing=available, transactions=transactions,
-                transaction_methods=self.transaction_methods)
+            threshold = self.transaction_threshold(
+                self._priority_tree, total, limit,
+                timing=available, transactions=transactions,
+                skip_nodes=skip_nodes)
             if abs(threshold) > abs(total):
                 threshold = total
         return return_transactions
 
     def _process_node(
             self, node, available, total, transactions,
-            limit_key, memo=None, **kwargs):
+            limit_key, memo=None, skip_nodes=None, **kwargs):
         """ Top-level method for processing nodes of all types.
 
         Args:
@@ -248,7 +249,15 @@ class TransactionTraversal:
                 timing-value mapping as `available`.
 
                 Optional. If passed, this will be mutated. The result
-                can be used in subsequent traversals
+                can be used in subsequent traversals, in which case
+                the transactions of prior traversals will be treated
+                as if they were assigned by this traversal.
+            skip_nodes (set[TransactionNode]): Nodes of the tree which
+                are we know cannot receive any further transactions.
+
+                Optional. If not passed, all nodes will be examined
+                for potential ability to receive transactions, which
+                can impact performance.
 
         Returns:
             dict[Decimal, Money]: A transactions object which combines
@@ -257,6 +266,12 @@ class TransactionTraversal:
         """
         if memo is None:
             memo = {}
+        if skip_nodes is None:
+            skip_nodes = set()
+        if node in skip_nodes:
+            # Don't process the node at all if we've previously decided
+            # to skip it:
+            return {}
 
         # Different kinds of nodes are processed differently, so grab
         # the appropriate method (to be invoked later):
@@ -272,18 +287,24 @@ class TransactionTraversal:
 
         # If this node has a per-node limit that applies to this
         # traveral (as determined by `limit_key`), apply it:
-        _, total = self._limit_total(node, total, limit_key, memo)
+        _, total = self._limit_total(node, total, limit_key, memo=memo)
 
         # Process the node:
         node_transactions = method(
             node, available, total, transactions, limit_key,
-            memo=memo, **kwargs)
+            memo=memo, skip_nodes=skip_nodes, **kwargs)
 
         # Record the result of this traversal in `memo`.
         if node in memo:
             add_transactions(memo[node], node_transactions)
         else:
             memo[node] = node_transactions
+
+        # If we weren't able to add the full amount of `total` to this
+        # node, that tells us that the node is exhausted and can be
+        # skipped in the future:
+        if abs(sum(node_transactions.values())) < abs(total) - EPSILON_MONEY:
+            skip_nodes.add(node)
 
         return node_transactions
 
@@ -358,31 +379,25 @@ class TransactionTraversal:
         return node_transactions
 
     def _process_node_weighted(
-            self, node, available, total, transactions,
-            limit_key, **kwargs):
+            self, node, available, total, transactions, limit_key,
+            skip_nodes=None, **kwargs):
         """ Processes nodes with unordered, weighted children. """
+        if skip_nodes is None:
+            skip_nodes = set()
         # Set up local variables:
         node_transactions = {}
-        limited_accounts = {}
-        # We'll want to normalize weights later, so sum weights now:
-        total_weight = sum(node.children.values())
+        # Reweight children to remove skipped nodes and account for
+        # pre-existing transactions for that node from prior traversals:
+        weights = self._reweight_children(
+            node, total, skip_nodes=skip_nodes, **kwargs)
 
         # Iterate over each element in arbitrary order:
-        for child, weight in node.children.items():
-            # Recurse onto each element to obtain the total transactions
-            # to be added to it, but reduce `total` according to the
-            # normalized weight of each element.
-            child_total = total * (weight / total_weight)
+        for child, weight in weights.items():
+            # Recurse onto each child, dividing up `total` according to
+            # each child's (already-normalized) weight:
             child_transactions = self._process_node(
-                child, available, child_total, transactions,
-                limit_key, **kwargs)
-            # If we weren't able to contribute the full amount available
-            # the flag this account so that we can remove during recurse
-            if sum(child_transactions.values()) != child_total:
-                # We used to store these as a set of flagged children,
-                # but it's convenient to map them to their transactions
-                # so that we can pass those to `reduce_node` later.
-                limited_accounts[child] = child_transactions
+                child, available, total * weight, transactions, limit_key,
+                skip_nodes=skip_nodes, **kwargs)
             # Pool this child's transactions with the node's:
             add_transactions(node_transactions, child_transactions)
 
@@ -390,24 +405,22 @@ class TransactionTraversal:
         # but we need to update `total` manually:
         total -= sum(node_transactions.values())
 
-        # If there's more money available and one or more of the
-        # accounts has hit its limit, but the remaining accounts might
-        # still have space. Remove any maxed-out accounts and recurse:
-        # TODO: Check for rounding errors.
-        if total != 0 and limited_accounts:
-            # Now that we have identified accounts that can't take any
-            # more transactions, remove them from `node` (well, from a
-            # copy of `node` to avoid mutation) and recurse:
-            node_copy = reduce_node(
-                node, limited_accounts, child_transactions=limited_accounts)
+        # If there's more money available and one or more children still
+        # might have room, recurse. (`skip_nodes` is updated
+        # automatically during the previous iteration, so this method
+        # will recurse onto a reduced set of child nodes):
+        if (
+                abs(total) > EPSILON_MONEY and
+                any(child not in skip_nodes for child in node.children)):
             # Note that we recurse directly on `_process_node_weighted`
             # and not to the generic `_process_node` so as to avoid
-            # memoization of `node_copy`
-            node_copy_transactions = self._process_node_weighted(
-                node_copy, available, total, transactions, limit_key, **kwargs)
+            # memoizing this node twice.
+            recurse_transactions = self._process_node_weighted(
+                node, available, total, transactions, limit_key,
+                skip_nodes=skip_nodes, **kwargs)
 
             # Remember to add the recurse results to the return value!
-            add_transactions(node_transactions, node_copy_transactions)
+            add_transactions(node_transactions, recurse_transactions)
 
         return node_transactions
 
@@ -451,3 +464,324 @@ class TransactionTraversal:
         add_transactions(transactions[account], account_transactions)
 
         return account_transactions
+
+    def _reweight_children(
+            self, node, total, memo=None, skip_nodes=None, **kwargs):
+        """ Processes nodes with unordered, weighted children. """
+        if memo is None:
+            memo = {}
+        if skip_nodes is None:
+            skip_nodes = set()
+        # Find the total weight of all nodes that we're contributing to
+        # (i.e. those not in skip_nodes) so we can normalize correctly:
+        total_weight = sum(
+            node.children[child] for child in node.children
+            if child not in skip_nodes)
+        # We can't assign any transactions if there are no weighted
+        # children still active:
+        if total_weight == 0 or total == 0:
+            return {}
+        # If we're transacting infinite money, ignore prior transactions
+        # and simply restrict to active children:
+        if abs(total) == Money("Infinity"):
+            active_children = {
+                child for child in node.children if child not in skip_nodes}
+            total_weight = sum(
+                node.children[child] for child in active_children)
+            return {
+                child: node.children[child] / total_weight
+                for child in active_children}
+        # Now we know that we're dealing with a non-zero, finite
+        # transaction amount, so we can safely do division later.
+
+        # Track the value of transactions previously allocated to
+        # children of this node to ensure that their weights are
+        # respected. (E.g. if a prior traversal allocated mins. to some
+        # children but not others then their weightings might be off;
+        # this method should fill in underweighted nodes first.)
+        if any(child in memo for child in node.children):
+            prior_transactions_total = sum(
+                sum(memo[child].values()) for child in node.children
+                if child in memo)
+        else:
+            prior_transactions_total = Money(0)
+        # Don't allow prior_transactions_total to have different sign
+        # than total (otherwise we might wind up assigning inflows
+        # when traversing for outflows or vice-versa):
+        if (
+                prior_transactions_total < 0 < total
+                or total < 0 < prior_transactions_total):
+            prior_transactions_total = Money(0)
+
+        # Generate weights for each child which are (a) normalized
+        # and (b) result in all active children receiving total
+        # transactions (inclusive of prior transactions!) in line with
+        # their weights if `total` is contributed:
+        weights = {}
+        for child, weight in node.children.items():
+            if child in skip_nodes:
+                continue
+            if child in memo:
+                prior_transactions_child = sum(memo[child].values())
+            else:
+                prior_transactions_child = Money(0)
+            # Recurse onto each element to obtain the total transactions
+            # to be added to it, but reduce `total` according to the
+            # normalized weight of each element.
+            child_total = (
+                (total + prior_transactions_total) * (weight / total_weight)
+                - prior_transactions_child)
+            # Ensure child_total has the same sign as total (reweighting
+            # can cause some children to require negative
+            # inflows/outflows to reach balance - which we won't do!)
+            if child_total < 0 < total or total < 0 < child_total:
+                child_total = Money(0)
+            weights[child] = child_total / total
+
+        # Normalize again, in case certain weights were set to 0 above:
+        total_weight = sum(weights.values())
+        return {
+            child: weight / total_weight for child, weight in weights.items()}
+
+    def weights_by_group(
+            self, node, total, limit_key,
+            timing=None, transactions=None, memo=None, skip_nodes=None):
+        """ Determines share of in/outflows allocated to each group.
+
+        This method operates on a _marginal_ (or infinitesimal) basis.
+        Assuming the total in/outflow is not large enough to change
+        any nodes' behaviour (e.g. to fill up an account/group), this
+        method _exactly_ predicts the proportion contributed to each
+        account/group.
+
+        Args:
+            limit_key (str): A name of a `LimitTuple` field
+                corresponding to the type of limit this method should
+                aim to respect.
+
+        Returns:
+            (dict[frozenset[Account], Money]): A mapping of transaction
+            groups to weights. The weights are normalized (i.e. they
+            sum to 1), so that each weight indicates the proportion
+            of the total allocation that will be allocated to the group
+            based on the current behaviour of accounts.
+        """
+        # Parse input args:
+        if skip_nodes is None:
+            skip_nodes = set()
+
+        # If this node is being excluded from traversals, then it has
+        # no groups to assign weights to.
+        if node in skip_nodes:
+            return {}
+
+        if node.is_ordered():
+            # Ordered nodes only contribute to the first node, so assign
+            # the first non-full node a weight of 100%
+            weights = tuple()
+            for child in node.children:
+                weights = self.weights_by_group(
+                    child, total, limit_key,
+                    timing=timing, transactions=transactions, memo=memo)
+                # Stop at the first child that returns non-empty weights
+                if weights:
+                    break
+            # No further processing; an ordered node's behaviour is
+            # precisely that of its first (non-done) child.
+            return weights
+
+        elif node.is_weighted():
+            # Weighted nodes are more complicated. Get the weights of
+            # each child's groups, scale them down by the weight
+            # associated with the child itnode, and merge the weights of
+            # any groups represented by multiple children (by adding):
+            weights = {}
+            node_weights = self._reweight_children(
+                node, total, memo=memo, skip_nodes=skip_nodes)
+            for child in node.children:
+                if child not in node_weights:
+                    continue
+                # Get the weights associated with the child's groups:
+                child_weights = self.weights_by_group(
+                    child, total * node_weights[child], limit_key,
+                    timing=timing, transactions=transactions, memo=memo)
+                # Add those weights to the parent node's group-weights,
+                # after reweighting:
+                for group, weight in child_weights.items():
+                    # Scale down the added weights by the parent nodes'
+                    # weight on the child:
+                    weight *= node_weights[child]
+                    if group in weights:
+                        # Add weights for groups also found in other
+                        # children:
+                        weights[group] += weight
+                    else:
+                        # If this is the first instance of seeing this
+                        # group, simply include it in the output:
+                        weights[group] = weight
+            return weights
+
+        else:
+            return self.weights_by_group_leaf(
+                node, total, limit_key,
+                timing=timing, transactions=transactions, memo=memo,
+                skip_nodes=skip_nodes)
+
+    def transaction_threshold(
+            self, node, total, limit_key,
+            timing=None, transactions=None, skip_nodes=None):
+        """ TODO
+
+        This method finds the largest amount that is guaranteed to be
+        allocatable by this node without exceeding any transaction
+        limits (of itnode and/or its children).
+
+        Args:
+            limit_key (str): A name of a `LimitTuple` field
+                corresponding to the type of limit this method should
+                aim to respect.
+
+        Returns:
+            (Money, set[set[Account]]): TODO
+        """
+        if skip_nodes is None:
+            skip_nodes = set()
+        memo = {}
+        # TODO: Sort out how to deal with per-node limits.
+        weights = self.weights_by_group(
+            node, total, limit_key,
+            timing=timing, memo=memo, transactions=transactions,
+            skip_nodes=skip_nodes)
+        # If `weights` is empty, no accounts can be allocated to,
+        # so the threshold is $0:
+        if not weights:
+            return 0
+        total_weight = sum(weights.values())
+        # `memo[group]` stores the largest amount that can be allocated
+        # to `group`. We hit the threshold for `group` when the total
+        # amount being allocated exceeds that amount by a factor of
+        # `weights[group]` (normalized - so divide it by `total_weight`)
+        thresholds = {
+            group: memo[group] / (weights[group] / total_weight)
+            for group in weights}
+        # Find the smallest (magnitude) value:
+        threshold_abs = min(
+            abs(threshold) for threshold in thresholds.values())
+        # If we flipped the sign in the previous step, flip it back:
+        if threshold_abs in thresholds.values():
+            return threshold_abs
+        else:
+            return -threshold_abs
+
+    def weights_by_group_leaf(
+            self, node, total, limit_key,
+            timing=None, transactions=None, memo=None, skip_nodes=None):
+        """ Returns weights for groups associated with a leaf node.
+
+        TODO
+        """
+        account = node.source
+        group_method = getattr(self.group_methods, limit_key)
+        group = group_method(account)
+        if group is None:
+            group = {account}
+        # cast to a hashable type:
+        group = frozenset(group)
+
+        # Shortcut for when we already know whether this group is done:
+        if memo is not None and group in memo:
+            # No weights to return if the account won't receive anything
+            if memo[group] == 0:
+                return {}
+            # Otherwise, weight this account's group 100%:
+            else:
+                return {group: 1}
+
+        # Grab the method for identifying the account's transaction method:
+        transaction_method = getattr(self.transaction_methods, limit_key)
+        # Get the method for allocating transactions:
+        method = transaction_method(account)
+
+        # Allocate the transactions.
+        # Pass in transactions already allocated to this account and
+        # transactions allocated against others in its group so that the
+        # method can reduce its allocation accordingly:
+        if account in transactions:
+            account_transactions = transactions[account]
+        else:
+            account_transactions = None
+        transactions = method(
+            timing=timing,
+            transactions=account_transactions,
+            group_transactions=transactions)
+        # Sum up the total of the transactions:
+        transactions_total = sum(transactions.values())
+
+        # Record the result in memo, if provided:
+        if memo is not None:
+            memo[group] = total
+        # Return no weights if there's no room for allocation, or
+        # the group weighted 100% if there is room:
+        if abs(transactions_total) < EPSILON_MONEY:
+            # While we're here, if we've tried to add money but weren't
+            # able to (i.e. if `total` is non-zero), add this node to
+            # skip_nodes:
+            if abs(total) < EPSILON_MONEY and skip_nodes is not None:
+                skip_nodes.add(node)
+            return {}
+        else:
+            return {group: 1}
+
+def _groups_from_source(node):
+    """ Determines groups of linked accounts for a node. """
+    # Ordered and weighted nodes need to be handled differently:
+    if node.is_parent_node():
+        return _groups_from_source_parent(node)
+    elif node.is_leaf_node():
+        return _groups_from_source_leaf(node)
+    else:
+        raise TypeError(
+            str(type(node.source)) + " is not a supported type.")
+
+def _groups_from_source_parent(node):
+    """ Determines groups of linked accounts under a parent node. """
+    groups = []
+    # Iterate over each field of LimitTuple in order (this makes
+    # building a new LimitTuple of results easier):
+    for field_name in LIMIT_TUPLE_FIELDS:
+        group = set()
+        # For the selected limit type (e.g. `max_inflow`), collect
+        # all of the groups present in the children:
+        for child in node.children:
+            # Get each child's groups for this limit.
+            # If any are repeated between children, they'll only be
+            # added once (since sets guarantee uniqueness)
+            inner_group = getattr(child.groups, field_name)
+            if inner_group is not None:
+                # `group` needs hashable members, so use frozenset:
+                group.add(frozenset(inner_group))
+        groups.append(group)
+    return LimitTuple(*groups)
+
+def _groups_from_source_leaf(node):
+    """ Determines groups of linked accounts for a leaf node. """
+    groups = []
+    account = node.source
+    # We want to build a LimitTuple (so that each kind of limit has
+    # its own groups). Rather than hard-code field names, iterate
+    # over each field of LimitTuple in order:
+    for field_name in LIMIT_TUPLE_FIELDS:
+        # Get the group method for this min/max in/outflow limit:
+        method = getattr(node.group_methods, field_name)
+        # Use the method to get the appropriate group:
+        if method is not None:
+            group = method(account)
+        else:
+            # The above branch can set `group=None`, so declare `group`
+            # here and set to None to make the next test easier.
+            group = None
+        # If we don't have a group, treat this as a group of one.
+        if group is None:
+            group = set(account)
+        groups.append(group)
+    return LimitTuple(*groups)
