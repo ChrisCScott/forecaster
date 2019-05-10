@@ -437,11 +437,11 @@ class TestTransactionStrategyWeighted(TestCaseTransactions):
                 + sum(self.tfsa.max_inflows().values())))
 
 
-class TestTransactionStrategyWeightedMult(TestCaseTransactions):
-    """ Tests TransactionStrategy.strategy_weighted with account groups.
-    In particular, this test case includes multiple accounts of the same
-    type (e.g. two RRSPs) to ensure that accounts that share a weighting
-    are handled properly.
+class TestTransactionStrategyWeightedLink(TestCaseTransactions):
+    """ Tests TransactionStrategy.strategy_weighted with linked accounts
+    
+    This test case includes multiple linked accounts (e.g. two RRSPs)
+    to ensure that accounts that share a weighting are handled properly.
     """
 
     def setUp(self):

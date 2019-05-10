@@ -144,8 +144,8 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
             self.assertTransactions(
                 transactions[self.taxable_account], Money(0))
 
-    def test_contribution_group_ordered(self):
-        """ Contribute to ordered accounts sharing contribution room. """
+    def test_link_group_ordered(self):
+        """ Contribute to ordered accounts sharing max inflow limit. """
         priority = [self.rrsp, self.rrsp2, self.taxable_account]
         strategy = TransactionTraversal(priority=priority)
         # Contribute $200 to the accounts:
@@ -157,8 +157,8 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
             self.assertTransactions(transactions[self.rrsp2], Money(0))
         self.assertTransactions(transactions[self.taxable_account], Money(100))
 
-    def test_contribution_group_weight(self):
-        """ Contribute to weighted accounts sharing contribution room. """
+    def test_link_weight(self):
+        """ Contribute to weighted accounts sharing max inflow limit. """
         priority = [
             {self.rrsp: Decimal(0.5), self.rrsp2: Decimal(0.5)},
             self.taxable_account]
@@ -172,7 +172,7 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         self.assertTransactions(transactions[self.taxable_account], Money(100))
 
     def test_limit_ordered(self):
-        """ Limit contributions according to per-node limits. """
+        """ Limit contributions with per-node limit in ordered tree. """
         # Limit debt contributions to $100
         # (rather than $1000 max. contribution)
         limits = LimitTuple(max_inflow=Money(100))
@@ -186,6 +186,38 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         self.assertTransactions(transactions[self.rrsp], Money(100))
         self.assertTransactions(transactions[self.debt], Money(100))
         self.assertTransactions(transactions[self.taxable_account], Money(100))
+
+    def test_limit_weighted(self):
+        """ Limit contributions with per-node limit in weighted tree. """
+        # TODO: Implement test
+        pass
+
+    def test_limit_weighted_link_1(self):
+        """ Use per-node limit in weighted tree with linked accounts. """
+        # This test looks at this structure:
+        #       {}
+        #      /| \
+        #     / |  \
+        #    R1 R2  A
+        # R1/R2 are a group. _R1_ has a per-node limit.
+        # This should result in any contributions over the limit being
+        # redistributed to R2 and A (up to the linked group limit, in
+        # the case of R2).
+        # TODO: Implement test
+        pass
+
+    def test_limit_weighted_link_2(self):
+        """ Use per-node limit in weighted tree with linked accounts. """
+        # This test looks at this structure:
+        #       {}
+        #      /| \
+        #     / |  \
+        #    R1 R2  A
+        # R1/R2 are a group. _A_ has a per-node limit.
+        # This should result in any contributions over the limit being
+        # redistributed to R1 and R2 (up to the linked group limit).
+        # TODO: Implement test
+        pass
 
     def test_link_basic(self):
         """ A weighted root with two linked children. """
@@ -326,8 +358,8 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         #    are balanced, with the excess to T.
         # The current implementation opts for #1, so test for that:
         priority = {
-            self.rrsp: 1,
-            (self.rrsp2, self.taxable_account): 1}
+            self.rrsp: Decimal(1),
+            (self.rrsp2, self.taxable_account): Decimal(1)}
         strategy = TransactionTraversal(priority=priority)
         # Contribute $200 (enough to fill RRSPs with $100 left over):
         available = {Decimal(0.5): Money(200)}
@@ -350,8 +382,8 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         # shared contribution room should result in R1 receiving all
         # of the group's contribution room, with the rest to T:
         priority = {
-            self.rrsp: 1,
-            (self.taxable_account, self.rrsp2): 1}
+            self.rrsp: Decimal(1),
+            (self.taxable_account, self.rrsp2): Decimal(1)}
         strategy = TransactionTraversal(priority=priority)
         # Contribute $200 (enough to fill RRSPs with $100 left over):
         available = {Decimal(0.5): Money(200)}
@@ -405,12 +437,20 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         self.assertTransactions(
             transactions[self.rrsp], self.rrsp.max_outflows(timing=available))
 
-    def test_special_1(self):
-        """ Test special case with an RRSP and Account in weighted tree.
+    def test_assign_mins_unbalanced(self):
+        """ Assign min inflows to some accounts and not to others.
 
         This example was part of an old test for WithdrawalForecast and
         gave rise to unexpected results. Rather than test it indirectly
         there, test for it explicitly here.
+
+        The basic problem we're checking for is where we have multiple
+        accounts with different min_inflow (or min_outflow) limits.
+        TransactionTraversal will assign those transactions first, which
+        don't necessarily align with the weights of a weighted node.
+        When going on to the second traversal (for max_inflow or
+        max_outflow), that imbalance in the prior transactions needs to
+        be accounted for.
         """
         # Set up an RRSP that's been converted to an RRIF (so that it
         # has minimum withdrawals).
@@ -435,6 +475,7 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         # Generate the transactions:
         transactions = strategy(available)
         # Confirm that the $20,000 is distributed as in `priority`:
+        self.assertAccountTransactionsTotal(transactions, Money(-20000))
         self.assertTransactions(transactions[self.rrsp], Money(-3000))
         self.assertTransactions(
             transactions[self.taxable_account], Money(-17000))
