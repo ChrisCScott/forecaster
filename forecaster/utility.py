@@ -8,6 +8,9 @@ import collections
 from decimal import Decimal
 from forecaster.ledger import Money
 
+EPSILON = Decimal("0.00001")
+EPSILON_MONEY = Money(EPSILON)
+
 WHEN_DEFAULT = 0.5
 
 class Timing(dict):
