@@ -12,5 +12,4 @@ from forecaster.strategy.debt_payment import (
     DebtPaymentStrategy, avalanche_priority, snowball_priority,
     PRIORITY_METHODS, AVALANCHE_KEY, SNOWBALL_KEY)
 from forecaster.strategy.transaction import (
-    TransactionStrategy, TransactionTraversal, TransactionNode,
-    LimitTuple, reduce_node)
+    TransactionStrategy, TransactionTraversal, TransactionNode, LimitTuple)

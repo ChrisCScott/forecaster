@@ -6,8 +6,7 @@ __all__ = [
     'node', 'base', 'strategy', 'util']
 
 from forecaster.strategy.transaction.base import TransactionTraversal
-from forecaster.strategy.transaction.node import (
-    TransactionNode, reduce_node)
+from forecaster.strategy.transaction.node import TransactionNode
 from forecaster.strategy.transaction.util import (
     LimitTuple, transaction_default_methods, group_default_methods)
 from forecaster.strategy.transaction.strategy import TransactionStrategy
