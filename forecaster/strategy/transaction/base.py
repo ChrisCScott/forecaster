@@ -6,9 +6,10 @@ amounts, and to which accounts.
 
 import collections
 from copy import copy
+from decimal import Decimal
 from forecaster.ledger import Money
 from forecaster.utility import (
-    add_transactions, subtract_transactions, EPSILON_MONEY)
+    add_transactions, subtract_transactions, EPSILON_MONEY, EPSILON)
 from forecaster.accounts.util import LIMIT_TUPLE_FIELDS
 from forecaster.strategy.transaction.util import (
     LimitTuple, transaction_default_methods, group_default_methods)
@@ -470,6 +471,126 @@ class TransactionTraversal:
         add_transactions(transactions[account], account_transactions)
 
         return account_transactions
+
+    def _underweighted_children(
+            self, node, memo=None, skip_nodes=None, **kwargs):
+        """ TODO """
+        if memo is None:
+            memo = {}
+        if skip_nodes is None:
+            skip_nodes = set()
+
+        # Determine the effective weights of each child based on
+        # pre-existing transactions:
+        # First determine the total transactions for each child:
+        transactions = collections.defaultdict(Money)
+        transactions.update(
+            (child, sum(memo[child].values()))
+            for child in node.children if child in memo)
+        # Then the total transactions across all children:
+        total_transactions = sum(transactions.values())
+        # We can end early if there are no transactions:
+        if total_transactions == 0:
+            return {}
+        # Then determine the effective weighting of each child:
+        weights = {
+            child: transactions[child] / total_transactions
+            for child in node.children}
+        # Return a mapping of children to the amounts of money necessary
+        # to transaction to return them to balance, assuming that the
+        # most-overweight node cannot receive any transactions:
+        ratio = {
+            child: weights[child] / node.children[child]
+            for child in node.children}
+        # Find the element with the largest ratio; this is the benchmark
+        # against which we'll determine how much each other node needs:
+        sorted_children = sorted(ratio, key=ratio.get)
+        max_child = sorted_children[-1]
+        # If the maximal node has the right ratio (i.e. 1), it's
+        # impossible for any other node to have an incorrect ratio.
+        # In that case, we can terminate early:
+        if abs(ratio[max_child] - 1) < EPSILON:
+            return {}
+
+        # OPTION 1: Ordered list of transactions:
+        rebalance = []
+        cumulative_weight = Decimal(0)
+        for index in len(sorted_children) - 1:
+            # Convenience references:
+            child = sorted_children[index]
+            next_child = sorted_children[index + 1]
+            # Rather than recalculate the sum of weights of all children
+            # we've seen so far, simply update it each iteration here:
+            cumulative_weight += node.children[child]
+            # Only consider children that are more out-of-balance than
+            # the next child (i.e. if there are several children in a
+            # row with the same level of imbalance, wait until we get
+            # to the last of them so we handle them all together)
+            if abs(ratio[child] - ratio[next_child]) > EPSILON:
+                # Figure out how much we'd need to add to this child
+                # and all previous children (which, if previous
+                # iterations of transactions have been added, are
+                # exactly as imbalanced as this child) to make it no
+                # more imbalanced than the next child:
+
+                # Suppose we have 4 nodes with weights w1-w4 and ratios
+                # r1-r4. We're on node 2; all previous nodes have ratio
+                # r2. We want to bring them up to ratio r3 (the next
+                # ratio in the sorted order). Note that adding
+                # transactions to nodes 1-2 shifts the ratio of nodes
+                # 3-4. The value of transactions to add is given by
+                # x = t(r3-r2)(w1+w2), where w1+w2 is the sum of all
+                # weights up to and including the current child's.
+                # shifts ratio r3.
+                # For the initial state of transactions (t):
+                # t1 = r2*w1*t, t2 = r2*w2*t, t3 = r3*w3*t, t4 = r4*w4*t
+                # t1 + t2 + t3 + t4 = t
+                # t + (w1/(w1+w2))*x + (w2/(w1+w2))*x = t + x
+                # r3' = (t3/(t+x))/w3
+                # r3' = r2' = ((t2 + w2/(w1+w2)*x) / (t + x)) / w2
+                # => t3/w3 = t2/w2 + x/(w1+w2)
+                # => x = (t3/w3 - t2/w2) * (w1+w2)
+                # => x = t*(r3-r2)*(w1+w2)
+
+                # We want to contribute to this node and all previous
+                # nodes, so generate a slice of them here:
+                process_children = sorted_children[:index + 1]
+                # Find total amount we need to add to `process_children`
+                # to bring them up to `next_child`'s level of imbalance:
+                increment = total_transactions * (
+                    (ratio[next_child] - ratio[child]) * cumulative_weight)
+                # Find the weighting with which we'll add `increment`.
+                # (We could instead simply record the slice and leave it
+                # to calling code to assign weights, but this is more
+                # convenient):
+                weights = {
+                    child: node.children[child] / cumulative_weight
+                    for child in process_children}
+                # Store the results as a (Money, dict) tuple:
+                rebalance.append((increment, weights))
+        return rebalance
+
+        # OPTION 2: Total amounts needed to rebalance each child
+        # (but no order of children based on which is most imbalanced):
+
+        # Otherwise, the ratios are off for some other nodes.
+        # Figure out the total value of transactions we'd need to reach
+        # to fully rebalance the children (including pre-existing
+        # transactions) and then determine how much needs to be added
+        # to each child to reach that:
+        target_transactions = (
+            transactions[max_child] / node.children[max_child])
+        rebalance = {}
+        for child in node.children:
+            # Ignore nodes that are just as out-of-sync as max_child:
+            if abs(ratio[child] - ratio[max_child]) > EPSILON:
+                # Each node needs its share of target_transactions (scaled
+                # by its weight), less pre-existing transactions:
+                rebalance[child] = (
+                    node.children[child] * target_transactions
+                    - total_transactions[child])
+        # And we're done!
+        return rebalance
 
     def _reweight_children(
             self, node, total, memo=None, skip_nodes=None, **kwargs):
