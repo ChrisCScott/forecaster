@@ -287,7 +287,7 @@ class TransactionTraversal:
 
         # If this node has a per-node limit that applies to this
         # traveral (as determined by `limit_key`), apply it:
-        _, total = self._limit_total(node, total, limit_key, memo=memo)
+        limit, total = self._limit_total(node, total, limit_key, memo=memo)
 
         # Process the node:
         node_transactions = method(
@@ -301,9 +301,15 @@ class TransactionTraversal:
             memo[node] = node_transactions
 
         # If we weren't able to add the full amount of `total` to this
-        # node, that tells us that the node is exhausted and can be
-        # skipped in the future:
-        if abs(sum(node_transactions.values())) < abs(total) - EPSILON_MONEY:
+        # node, or if we've reached the per-node limit, then the node is
+        # exhausted and can be skipped in the future:
+        transactions_total = sum(node_transactions.values())
+        limit_reached = (
+            limit is not None and
+            abs(transactions_total) >= abs(limit) - EPSILON_MONEY)
+        total_undershot = (
+            abs(transactions_total) < abs(total) - EPSILON_MONEY)
+        if limit_reached or total_undershot:
             skip_nodes.add(node)
 
         return node_transactions

@@ -189,25 +189,76 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
 
     def test_limit_weighted(self):
         """ Limit contributions with per-node limit in weighted tree. """
-        # TODO: Implement test
-        pass
+        # Limit debt contributions to $100
+        # (rather than $1000 max. contribution)
+        limits = LimitTuple(max_inflow=Money(100))
+        limit_node = TransactionNode(self.debt, limits=limits)
+        priority = {
+            self.rrsp: Decimal(1),
+            limit_node: Decimal(1),
+            self.taxable_account: Decimal(1)}
+        strategy = TransactionTraversal(priority=priority)
+        # Contribute $400 to the accounts:
+        available = {Decimal(0.5): Money(400)}
+        transactions = strategy(available)
+        # $100 will go to debt and RRSP and $200 taxable:
+        self.assertTransactions(transactions[self.rrsp], Money(100))
+        self.assertTransactions(transactions[self.debt], Money(100))
+        self.assertTransactions(transactions[self.taxable_account], Money(200))
 
-    def test_limit_weighted_link_1(self):
-        """ Use per-node limit in weighted tree with linked accounts. """
+    def test_limit_weight_link_1_small(self):
+        """ Linked account with limit in weighted tree; small inflow. """
         # This test looks at this structure:
         #       {}
         #      /| \
         #     / |  \
         #    R1 R2  A
-        # R1/R2 are a group. _R1_ has a per-node limit.
+        # R1/R2 are a group with a shared limit of $100.
+        # _R1_ has a per-node limit of $10. All nodes have equal weight.
         # This should result in any contributions over the limit being
         # redistributed to R2 and A (up to the linked group limit, in
         # the case of R2).
-        # TODO: Implement test
-        pass
+        limits = LimitTuple(max_inflow=Money(10))
+        limit_node = TransactionNode(self.rrsp, limits=limits)
+        priority = {
+            limit_node: Decimal(1),
+            self.rrsp2: Decimal(1),
+            self.taxable_account: Decimal(1)}
+        strategy = TransactionTraversal(priority=priority)
+        # Contribute $110 to the accounts:
+        available = {Decimal(0.5): Money(110)}
+        transactions = strategy(available)
+        # $10 will go to rrsp and $100 will be split equally between
+        # the two other accounts, for a total of $50 each:
+        self.assertTransactions(transactions[self.rrsp], Money(10))
+        self.assertTransactions(transactions[self.rrsp2], Money(50))
+        self.assertTransactions(transactions[self.taxable_account], Money(50))
 
-    def test_limit_weighted_link_2(self):
-        """ Use per-node limit in weighted tree with linked accounts. """
+    def test_limit_weight_link_1_large(self):
+        """ Linked account with limit in weighted tree; large inflow. """
+        # This test looks at the same structure as
+        # `test_limit_weighted_link_small`, except that enough money
+        # is contributed to hit the group limit for R2 (as well as the
+        # per-node limit for R1)
+        limits = LimitTuple(max_inflow=Money(10))
+        limit_node = TransactionNode(self.rrsp, limits=limits)
+        priority = {
+            limit_node: Decimal(1),
+            self.rrsp2: Decimal(1),
+            self.taxable_account: Decimal(1)}
+        strategy = TransactionTraversal(priority=priority)
+        # Contribute $210 to the accounts:
+        available = {Decimal(0.5): Money(210)}
+        transactions = strategy(available)
+        # $10 will go to rrsp and $200 will be split between the two
+        # other accounts - i.e. $90 to rrsp2 and $110 to taxable
+        # (because rrsp/rrsp2 share a $100 limit):
+        self.assertTransactions(transactions[self.rrsp], Money(10))
+        self.assertTransactions(transactions[self.rrsp2], Money(90))
+        self.assertTransactions(transactions[self.taxable_account], Money(110))
+
+    def test_limit_weight_link_2_small(self):
+        """ Limit in weighted tree with linked accounts; small inflow. """
         # This test looks at this structure:
         #       {}
         #      /| \
@@ -216,8 +267,43 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         # R1/R2 are a group. _A_ has a per-node limit.
         # This should result in any contributions over the limit being
         # redistributed to R1 and R2 (up to the linked group limit).
-        # TODO: Implement test
-        pass
+        limits = LimitTuple(max_inflow=Money(10))
+        limit_node = TransactionNode(self.taxable_account, limits=limits)
+        priority = {
+            self.rrsp: Decimal(1),
+            self.rrsp2: Decimal(1),
+            limit_node: Decimal(1)}
+        strategy = TransactionTraversal(priority=priority)
+        # Contribute $60 to the accounts:
+        available = {Decimal(0.5): Money(60)}
+        transactions = strategy(available)
+        # $10 will go to taxable and $50 will be split between the two
+        # linked accounts - i.e. $25 to each of rrsp and rrsp2:
+        self.assertTransactions(transactions[self.rrsp], Money(25))
+        self.assertTransactions(transactions[self.rrsp2], Money(25))
+        self.assertTransactions(transactions[self.taxable_account], Money(10))
+
+    def test_limit_weight_link_2_large(self):
+        """ Limit in weighted tree with linked accounts; large inflow. """
+        # This test looks at the same structure as
+        # `test_limit_weight_link_2_small`, except that enough money
+        # is contributed to hit the group limit for R1/R2
+        limits = LimitTuple(max_inflow=Money(10))
+        limit_node = TransactionNode(self.taxable_account, limits=limits)
+        priority = {
+            self.rrsp: Decimal(1),
+            self.rrsp2: Decimal(1),
+            limit_node: Decimal(1)}
+        strategy = TransactionTraversal(priority=priority)
+        # Contribute $300 to the accounts:
+        available = {Decimal(0.5): Money(300)}
+        transactions = strategy(available)
+        # $10 will go to taxable and $50 go to each of rrsp and rrsp2:
+        # (This is less than the full $300 because the various accounts
+        # hit their limits at $110 of inflows)
+        self.assertTransactions(transactions[self.rrsp], Money(50))
+        self.assertTransactions(transactions[self.rrsp2], Money(50))
+        self.assertTransactions(transactions[self.taxable_account], Money(10))
 
     def test_link_basic(self):
         """ A weighted root with two linked children. """
