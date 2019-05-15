@@ -38,11 +38,11 @@ class IncomeForecast(SubForecast):
         # Store input values
         self.people = people
 
-    def update_available(self, available):
+    def __call__(self, available):
         """ Records transactions against accounts; mutates `available`. """
         # The superclass has some book-keeping to do before we get
         # started on doing the updates:
-        super().update_available(available)
+        super().__call__(available)
 
         # TODO: Move money into available from an `Asset` account  #32
         self.add_transaction(

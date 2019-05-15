@@ -8,6 +8,11 @@ import collections
 from decimal import Decimal
 from forecaster.ledger import Money
 
+EPSILON = Decimal("0.00001")
+EPSILON_MONEY = Money(EPSILON)
+
+WHEN_DEFAULT = 0.5
+
 class Timing(dict):
     """ A dict of {timing: weight} pairs.
 
@@ -38,7 +43,7 @@ class Timing(dict):
             of transactions). Uses the same syntax as
             `forecaster.utility.frequency_conv`. Optional.
     """
-    def __init__(self, when=0.5, frequency=1):
+    def __init__(self, when=WHEN_DEFAULT, frequency=1):
         """ Initializes a Timing dict. """
         # We allow four forms of init call:
         # 1) Init with two arguments: `when` and `frequency`
@@ -61,57 +66,14 @@ class Timing(dict):
         # may or may not be explicitly Money-typed), so we need to deal
         # with negative values, and potentially with Money-typed values.
         elif isinstance(when, dict):
-            # First, deal with Money-typed values by converting Money
-            # values to Decimal values:
-            # Get a random element from `when` so we can check its type:
-            sample = next(iter(when.values()))
-            if isinstance(sample, Money):
-                # Convert the dict's values to Decimal (no mutation!):
-                when = {timing: value.amount for timing, value in when.items()}
-
-            # If there are no negative values, simply copy the dict:
-            if all(value >= 0 for value in when.values()):
-                self.update(when)
-                return
-            # If all items are negative, flip the signs and then copy:
-            elif all(value <= 0 for value in when.values()):
-                self.update({time: -value for time, value in when.items()})
-                return
-
-            # Otherwise, we need to account for sequences of inflows and
-            # outflows. We'll assume that positive net flows correspond
-            # to the amounts available at any given time and treat these
-            # as our weights; this lets us ingest an `available` dict.
-
-            # We do this in two stages.
-            # First, for each timing, determine the cumulative value of
-            # all transactions to date and store it in `accum`:
-            accum = {}
-            tally = 0  # sum of transactions so far
-            for timing in sorted(when.keys()):
-                tally += when[timing]
-                accum[timing] = tally
-            # Second, iterate over the timings *again*, this time
-            # determining for each timing the maximum amount that can be
-            # withdrawn without putting a future timing into negative
-            # balance:
-            tally = 0  # amounts withdrawn so far
-            for timing in sorted(when.keys()):
-                # Find the bottleneck: the future value with the
-                # smallest amount available to withdraw determines the
-                # maximum withdrawal we can make right now:
-                max_transaction = min({
-                    accum[key] - tally for key in accum if key >= timing})
-                # Only record timings with positive amounts available:
-                if max_transaction > 0:
-                    tally += max_transaction
-                    self[timing] = max_transaction
+            self.update(_convert_dict(when))
+            return
         else:
             # If we receive a frequency as the first argument, swap args
             # and use the default value for `when`:
             if isinstance(when, str) and when in FREQUENCY_MAPPING:
                 frequency = when
-                when = 0.5  # default value
+                when = WHEN_DEFAULT  # default value
             # Arguments might be str-valued; make them numeric:
             when = when_conv(when)
             frequency = frequency_conv(frequency)
@@ -123,6 +85,118 @@ class Timing(dict):
             for time in range(frequency):
                 self[(time + when) / frequency] = weight
 
+def _convert_dict(when):
+    """ TODO """
+    # First, deal with empty dict or all-zero dict:
+    if not when:
+        # This dict has no meaningful timings, so return empty dict.
+        return {}
+    if all(value == 0 for value in when.values()):
+        # Use the timings provided by the dict and fill in uniform
+        # weights, since no non-zero weights were given:
+        return {key: Decimal(1) for key in when}
+
+    # If values are Money-types, convert to Decimal:
+    # Get a random element from `when` so we can check its type:
+    sample = next(iter(when.values()))
+    if isinstance(sample, Money):
+        # Convert the dict's values to Decimal (no mutation!):
+        when = {timing: value.amount for timing, value in when.items()}
+
+    # OK, so the dict is non-empty, has a non-zero element, and
+    # doesn't have awkward `Money` semantics (i.e. is Decimal-like).
+    # If there are no negative values, the dict is useable as-is:
+    if all(value >= 0 for value in when.values()):
+        return when
+    # If all items are negative, flip the signs:
+    elif all(value <= 0 for value in when.values()):
+        return {time: -value for time, value in when.items()}
+
+    # If the dict has a mix of positive and negative values, treat
+    # it like an `available` dict of transactions. Use the
+    # timings for inflows if the total is positive and outflows if
+    # the total is negative (this way we reinforce inflows/outflows)
+    total = sum(when.values())
+    # First, deal with the case where the total is zero:
+    if total == 0:
+        # If the time-series is perfectly balanced between
+        # positive and negative, simply duplicate all timings
+        # (excluding zero-value transactions) and weight them based
+        # on the unsigned magnitudes of those transactions:
+        return {
+            key: abs(value) for key, value in when.items() if when != 0}
+    elif total > 0:
+        return _accum_inflows(when)
+    else:
+        return _accum_outflows(when)
+
+def _accum_inflows(when):
+    """ TODO """
+    # We do this in two stages.
+    # First, for each timing, determine the cumulative value of
+    # all transactions to date and store it in `accum`:
+    accum = {}
+    result = {}
+    tally = 0  # sum of transactions so far
+    for timing in sorted(when.keys()):
+        tally += when[timing]
+        accum[timing] = tally
+    # Second, iterate over the timings *again*, this time
+    # determining for each timing the maximum amount that can be
+    # withdrawn without changing the sign of any future timing:
+    tally = 0  # amounts withdrawn so far
+    for timing in sorted(when.keys()):
+        # Find the bottleneck: the future value with the
+        # smallest cumulative amount determines the maximum
+        # transaction we can make right now:
+        max_transaction = min(
+            value for key, value in accum.items() if key >= timing)
+        # Only record timings with positive sign:
+        if max_transaction > 0:
+            result[timing] = max_transaction
+            # Update loop variables to reflect that a transaction
+            # has been added: all future timings in accum should be
+            # modified accordingly.
+            tally += max_transaction
+            for key in accum:
+                if key >= timing:
+                    accum[key] -= max_transaction
+    return result
+
+def _accum_outflows(when):
+    """ TODO """
+    # Accumulate the various transactions in order. Every time the
+    # rolling accumulation dips negative, record an inflow that brings
+    # it back to 0:
+    accum = 0
+    result = {}
+    for timing in sorted(when.keys()):
+        accum += when[timing]
+        if accum < 0:
+            result[timing] = -accum
+            accum = 0
+    return result
+
+def transactions_from_timing(timing, total):
+    """ Generates a schedule of transactions based on a timing and total
+
+    Args:
+        timing (Timing): The timing of the transactions, each with a
+            corresponding weight.
+        total (Money): The sum of all transactions to be generated.
+
+    Returns:
+        dict[Decimal, Money]: A schedule of transactions, each
+        transaction having the relative weighting provided by `timing`
+        and the total value of the transactions summing to `total`.
+    """
+    if not isinstance(timing, Timing):
+        timing = Timing(timing)
+    normalization = sum(timing.values())
+    transactions = {
+        time: total * (weight / normalization)
+        for time, weight in timing.items()}
+    return transactions
 
 def when_conv(when):
     """ Converts various types of `when` inputs to Decimal.
@@ -210,6 +284,65 @@ def frequency_conv(nper):
         if nper <= 0:
             raise ValueError('Account: nper must be greater than 0')
         return int(nper)
+
+def add_transactions(base, added):
+    """ Combines the values of two dicts, summing values of shared keys.
+
+    This method mutates its first argument (base). If you don't want
+    that behaviour, copy your input dict before calling this method.
+
+    Example:
+        d1 = {1: 1, 2: 2}
+        d2 = {2: 2, 3: 3}
+        add_transactions(d1, d2)
+        // d1 == {1: 1, 2: 4, 3: 3}
+
+    Args:
+        base [dict[Any, Any]]: A dictionary, generally of transactions
+            (i.e. `Decimal: Money` pairs), but potentially of any types.
+            Mutated by this method.
+        added [dict[Any, Any]]: A dictionary whose values support
+            addition (via `+` operator) with the same-key values of
+            `base`. Not mutated by this method.
+
+    Returns:
+        None. Input `base` is mutated instead.
+    """
+    for key, value in added.items():
+        # Sum values if the key is in both inputs, insert otherwise:
+        if key in base:
+            base[key] += value
+        else:
+            base[key] = value
+
+def subtract_transactions(base, added):
+    """ Combines values of two dicts, subtracting values of shared keys.
+
+    This method mutates its first argument (base). If you don't want
+    that behaviour, copy your input dict before calling this method.
+
+    The semantics of this method are the same as `add_transactions`,
+    except that the values of `added` are subtracted from those of
+    `base`. A consequence of this is that, unlike `add_transactions`,
+    `subtract_transactions` is not commutative.
+
+    Args:
+        base [dict[Any, Any]]: A dictionary, generally of transactions
+            (i.e. `Decimal: Money` pairs), but potentially of any types.
+            Mutated by this method.
+        added [dict[Any, Any]]: A dictionary whose values support
+            addition (via `+` operator) with the same-key values of
+            `base`. Not mutated by this method.
+
+    Returns:
+        None. Input `base` is mutated instead.
+    """
+    for key, value in added.items():
+        # Sum values if the key is in both inputs, insert otherwise:
+        if key in base:
+            base[key] -= value
+        else:
+            base[key] = -value
 
 def nearest_year(vals, year):
     """ Finds the nearest (past) year to `year` in `vals`.

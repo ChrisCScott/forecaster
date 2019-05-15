@@ -23,7 +23,7 @@ class recorded_property(property):
     # `property` (i.e. lowercase)
     # pylint: disable=invalid-name
 
-    def __init__(self, fget=None, doc=None):
+    def __init__(self, fget=None, fset=None, fdel=None, doc=None):
         """ Init recorded_property.
 
         This wraps the getter received via the `@recorded_property`
@@ -33,7 +33,23 @@ class recorded_property(property):
         provided; this decorator automatically generates one based on
         this dict of recorded values.
         """
-        self.__name__ = fget.__name__
+        # `property` is weird in that its init seems to be called
+        # multiple times, one for each definition of `fget`, `fset`,
+        # and `fdel`. Only one of those methods will have the
+        # user-defined name (the others default to `getter`, `setter`,
+        # and `deleter`, respectively), and none are bound at decoration
+        # time! Try to determine which method has the correct name:
+        if fget is not None and fget.__name__ != "getter":
+            name_method = fget
+        elif fset is not None and fset.__name__ != "setter":
+            name_method = fset
+        elif fdel is not None and fdel.__name__ != "deleter":
+            name_method = fdel
+        else:
+            name_method = fget
+        self.__name__ = name_method.__name__
+        # We will name the corresponding history objects based on this
+        # object's name:
         self.history_prop_name = self.__name__ + '_history'
         self.history_dict_name = '_' + self.history_prop_name
 
@@ -51,21 +67,44 @@ class recorded_property(property):
         def setter(obj, val):
             """ Adds value to cache, without overwriting user input. """
             # Don't overwrite a value provided via an inputs dict:
-            if not (
+            if (
                     self.__name__ in obj.inputs and
                     obj.this_year in obj.inputs[self.__name__]):
-                history_dict = getattr(obj, self.history_dict_name)
+                return
+            # Otherwise, there are two possibilities. Both involve
+            # checking the history dict, so get that now:
+            history_dict = getattr(obj, self.history_dict_name)
+            # Option one: No custom setter provided.
+            if fset is None:
+                # Cache the value in the history dict
                 history_dict[obj.this_year] = val
+            # Option two: A custom setter was provided
+            else:
+                # Remove any cached value and call the custom setter:
+                if obj.this_year in history_dict:
+                    del history_dict[obj.this_year]
+                fset(obj, val)
+                # NOTE: We don't update the cache here; we leave it to
+                # the custom setter to ensure that subsequent calls to
+                # this property's `fget` will return an appropriately
+                # parsed form of `val`.
+                # (We *could* invoke `fget` here and cache its result,
+                # but this could lead to side-effects)
 
         def deleter(obj):
             """ Removes a cached value, without removing user input. """
             # Don't delete a value provided via an inputs dict:
-            if not (
+            if (
                     self.__name__ in obj.inputs and
                     obj.this_year in obj.inputs[self.__name__]):
-                history_dict = getattr(obj, self.history_dict_name)
-                if obj.this_year in history_dict:
-                    del history_dict[obj.this_year]
+                return
+            # Otherwise, delete the entry from `history_dict` and call
+            # `fdel` (if provided):
+            history_dict = getattr(obj, self.history_dict_name)
+            if obj.this_year in history_dict:
+                del history_dict[obj.this_year]
+            if fdel is not None:
+                fdel(obj)
 
         super().__init__(fget=getter, fset=setter, fdel=deleter, doc=doc)
 
@@ -73,18 +112,18 @@ class recorded_property(property):
             """ Returns history dict for the property. """
             # For non-cached properties, the history dict might
             # not include a property for the current year.
-            # NOTE: Consider building a new dict and adding the
-            # current year to that (if not already in the dict),
-            # so that *_history always contains the current year
             history_dict = getattr(obj, self.history_dict_name)
             if obj.this_year not in history_dict:
+                # Build a new dict and add the current year to that
+                # (if not already in the dict), so that *_history always
+                # contains the current year:
                 history_dict = dict(history_dict)  # copy dict
                 history_dict[obj.this_year] = fget(obj)  # add this year
             return history_dict
 
         history.__name__ = self.history_prop_name
 
-        # Cast history_function to a property with sane docstring.
+        # Cast `history` to a property with sane docstring.
         self.history_property = property(
             fget=history,
             doc='Record of ' + self.__name__ + ' over all past years.'
@@ -97,14 +136,15 @@ class recorded_property_cached(recorded_property):
     # `property` (i.e. lowercase)
     # pylint: disable=invalid-name
 
-    # NOTE: Due to how decorators' pie-notation works, this is much
-    # simpler than extending `recorded_property` to take a `cached`
-    # argument (since `@recorded_property` (with no args) calls only
-    # __init__ and `@recorded_property(cached=True)` calls __init__
-    # with the keyword arg `cached` and then `__call__` with the
-    # decorated method -- which makes `recorded_property` a much more
-    # complicated subclass of `property`.)
-    def __init__(self, fget=None, doc=None):
+    # NOTE: Due to how decorators' pie-notation works, adding this
+    # subclass is much simpler than extending `recorded_property` to
+    # take a `cached` argument. 
+    # `@recorded_property` (with no args) calls only __init__, whereas
+    # `@recorded_property(cached=True)` calls __init__ with the keyword
+    # arg `cached` and then `__call__` with the decorated method --
+    # which makes `recorded_property` a much more complicated subclass
+    # of `property`!
+    def __init__(self, fget=None, fset=None, fdel=None, doc=None):
         """ Overrides the property getter to cache on first call. """
 
         # Wrap the getter in a method that will cache the property the
@@ -116,11 +156,12 @@ class recorded_property_cached(recorded_property):
             history_dict[obj.this_year] = val
             return val
 
-        # Property needs the original name and docstring:
+        # The wrapping getter function should mimic the name and
+        # docstring of the `fget` argument:
         getter.__name__ = fget.__name__
         getter.__doc__ = fget.__doc__
 
-        super().__init__(fget=getter, doc=doc)
+        super().__init__(fget=getter, fset=fset, fdel=fdel, doc=doc)
 
         # Override history property with different method that adds the
         # current year's value to the cache if it isn't already there:

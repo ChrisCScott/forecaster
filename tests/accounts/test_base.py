@@ -326,7 +326,7 @@ class TestAccountMethods(unittest.TestCase):
                 1: Money(1)
             }})
         self.assertEqual(account.transactions, {1: Money(1)})
-        self.assertEqual(account.inflows, Money(1))
+        self.assertEqual(account.inflows(), Money(1))
 
     def test_add_trans_mult_diff_time(self, *args, **kwargs):
         """ Tests add_transaction with transactions at different times. """
@@ -337,8 +337,8 @@ class TestAccountMethods(unittest.TestCase):
         self.assertEqual(
             account.transactions,
             {0: Money(1), 1: Money(2)})
-        self.assertEqual(account.inflows, Money(3))
-        self.assertEqual(account.outflows, Money(0))
+        self.assertEqual(account.inflows(), Money(3))
+        self.assertEqual(account.outflows(), Money(0))
 
     def test_add_trans_mult_same_time(self, *args, **kwargs):
         """ Tests add_transaction with transactions at the same time. """
@@ -349,8 +349,8 @@ class TestAccountMethods(unittest.TestCase):
         self.assertEqual(
             account.transactions,
             {0: Money(2)})
-        self.assertEqual(account.inflows, Money(2))
-        self.assertEqual(account.outflows, Money(0))
+        self.assertEqual(account.inflows(), Money(2))
+        self.assertEqual(account.outflows(), Money(0))
 
     def test_add_trans_diff_in_out(self, *args, **kwargs):
         """ Tests add_transaction with in- and outflows at different times. """
@@ -361,8 +361,8 @@ class TestAccountMethods(unittest.TestCase):
         self.assertEqual(
             account.transactions,
             {0: Money(1), 1: Money(-2)})
-        self.assertEqual(account.inflows, Money(1))
-        self.assertEqual(account.outflows, Money(-2))
+        self.assertEqual(account.inflows(), Money(1))
+        self.assertEqual(account.outflows(), Money(-2))
 
     def test_add_trans_same_in_out(self, *args, **kwargs):
         """ Tests add_transaction with simultaneous inflows and outflows. """
@@ -375,8 +375,8 @@ class TestAccountMethods(unittest.TestCase):
         self.assertEqual(
             account.transactions,
             {0: Money(-1)})
-        self.assertEqual(account.inflows, 0)
-        self.assertEqual(account.outflows, Money(-1))
+        self.assertEqual(account.inflows(), 0)
+        self.assertEqual(account.outflows(), Money(-1))
 
         # TODO: Test add_transactions again after performing next_year
         # (do this recursively?)

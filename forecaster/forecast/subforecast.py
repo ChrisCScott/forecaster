@@ -80,12 +80,12 @@ class SubForecast(Ledger):
     """ Generic class for implementing part of a financial forecast.
 
     `SubForecast` instances are managed by a `Forecast` object. Each
-    `SubForecast` instance receives a dict of cashflows (via
-    `update_available`) and mutates it by adding or substracting from
-    the cashflows. The mutated dict can then be passed to another
-    `SubForecast` for further processing. The dict is called
-    `available` and represents the amount of money available for use
-    by subsequent `SubForecast` instances.
+    `SubForecast` instance receives a dict of cashflows when called
+    and mutates it by adding or substracting from the cashflows.
+    The mutated dict can then be passed to another `SubForecast` for
+    further processing. The dict is called `available` and represents
+    the amount of money available for use by subsequent `SubForecast`
+    instances.
 
     In general, positive values indicate additions/deposits to the
     pool of money available for use, and negative values are
@@ -147,10 +147,10 @@ class SubForecast(Ledger):
         # non-hashable keys.
         self._transactions = TransactionDict(
             lambda: defaultdict(lambda: Money(0)))
-        # If update_available is called more than once, we
+        # If the subforecast is called more than once, we
         # may want to do some unwinding. Use this to track
-        # whether update_available has been called before:
-        self._update_available_called = False
+        # whether this subforecast has been called before:
+        self._call_invoked = False
         self.total_available = Money(0)
 
     @recorded_property
@@ -171,16 +171,16 @@ class SubForecast(Ledger):
         super().next_year()
         # There are no existing transactions at the start of the year:
         self.transactions.clear()
-        self._update_available_called = False
+        self._call_invoked = False
 
-    def update_available(self, available):
+    def __call__(self, available):
         """ Records transactions against accounts; mutates `available`. """
         # If this isn't the first time calling this method this year,
         # under whatever was done previously:
-        if self._update_available_called:
+        if self._call_invoked:
             self.undo_transactions()
         # Keep track of the fact that this method has been called again:
-        self._update_available_called = True
+        self._call_invoked = True
 
         # It's often useful to know (in scalar terms) how much money
         # is available for use by the Forecast in the year. Track
@@ -207,9 +207,9 @@ class SubForecast(Ledger):
             if account is not None:
                 for when, value in self.transactions[account].items():
                     account[when] -= value
-        # This undoes the effect of update_available, so treat that
+        # This undoes the effect of __call__, so treat that
         # method as if it was never called:
-        self._update_available_called = False
+        self._call_invoked = False
 
         # If we've cached any recorded_property_cached values, invalidate
         # the cache so they can be re-calculated based on the new input:
@@ -338,7 +338,14 @@ class SubForecast(Ledger):
             when = self._shift_when(
                 value=value, when=when, account=from_account)
 
-        # Record to from_account:
+        '''
+        # Keep track of any tax withholdings already assigned to the
+        # account:
+        if hasattr(from_account, 'tax_withheld'):
+            tax_withheld_before = from_account.tax_withheld
+        '''
+
+        # Record transaction to from_account:
         if from_account is not None:
             # Don't assume all objects provide defaultdict-like interface:
             if when in from_account:
@@ -347,7 +354,15 @@ class SubForecast(Ledger):
                 from_account[when] = -value
         self.transactions[from_account][when] += -value
 
-        # Record to to_account:
+        '''
+        # If tax withholdings have increased as a result of this
+        # transaction, reduce the amount that goes to `from_account`
+        # accordingly:
+        if hasattr(from_account, 'tax_withheld'):
+            value -= from_account.tax_withheld - tax_withheld_before
+        '''
+
+        # Record transaction to to_account:
         if to_account is not None:
             if when in to_account:
                 to_account[when] += value

@@ -60,7 +60,7 @@ class TestIncomeForecast(unittest.TestCase):
         """ Test an amount carried over from previous year. """
         carryover = Money(100)
         available = {Decimal(0.5): carryover}
-        self.forecast.update_available(available)
+        self.forecast(available)
         self.assertEqual(
             self.forecast.carryover,
             carryover)
@@ -68,7 +68,7 @@ class TestIncomeForecast(unittest.TestCase):
     def test_update_available(self):
         """ Test recording of cash inflows from employment. """
         available = {}
-        self.forecast.update_available(available)
+        self.forecast(available)
         # There should be at least 26 inflows for the 26 biweekly
         # pay periods:
         self.assertGreaterEqual(

@@ -45,11 +45,8 @@ class RRSP(RegisteredAccount):
             self.initial_year
         )
 
-        # If no contribution room is provided and none is already known,
-        # set contribution_room to 0.
-        if (
-                'contribution_room' not in kwargs and
-                self.contribution_room is None):
+        # If no contribution room was provided, set it to $0.
+        if self.contribution_room is None:
             self.contribution_room = Money(0)
 
     def _rrif_max_conversion_year(self):
@@ -64,17 +61,13 @@ class RRSP(RegisteredAccount):
     def rrif_conversion_year(self):
         """ The year in which the RRSP is converted to an RRIF.
 
-        If not set explicitly, the owner's retirement year or year in
-        which conversion is required by law is returned (whichever
-        happens first).
+        If not set explicitly, the year in which conversion is required
+        by law is returned (whichever happens first).
         """
         if self._rrif_conversion_year is not None:
             return self._rrif_conversion_year
         else:
-            return min(
-                self.owner.retirement_date.year,
-                self._rrif_max_conversion_year()
-            )
+            return self._rrif_max_conversion_year()
 
     @rrif_conversion_year.setter
     def rrif_conversion_year(self, val):
@@ -125,7 +118,7 @@ class RRSP(RegisteredAccount):
         # pylint: disable=invalid-unary-operand-type
         # Pylint thinks this doesn't support negation via `-`, but it's
         # wrong - `outflows` returns `Money`, which supports `-`:
-        return -self.outflows
+        return -self.outflows()
 
     @recorded_property
     def tax_withheld(self):
@@ -166,7 +159,7 @@ class RRSP(RegisteredAccount):
 
         For RRSPs, this the amount contributed in the year.
         """
-        return self.inflows
+        return self.inflows()
 
     def next_contribution_room(self):
         """ Determines the amount of contribution room for next year.
@@ -204,12 +197,19 @@ class RRSP(RegisteredAccount):
                 year + 1
             )
             # Don't forget to add in any rollovers:
-            rollover = self.contribution_room - self.inflows
+            rollover = self.contribution_room - self.inflows()
             return min(accrual, Money(max_accrual)) + rollover
 
     @property
     def min_outflow_limit(self):
         """ Minimum annual RRSP/RRIF withdrawal """
+        # Return the larger (in terms of magnitude - recall outflows
+        # are negative!) of: the minimum required age-based distribution
+        # and any shared minimum (e.g. home-buyers' amounts):
+        return min(-self.minimum_distribution(), super().min_outflow_limit)
+
+    def minimum_distribution(self):
+        """ A min. amount required by law to be withdrawn based on age. """
         # Minimum withdrawals are required the year after converting to
         # an RRIF. How it is calculated depends on the person's age.
         if self.rrif_conversion_year < self.this_year:

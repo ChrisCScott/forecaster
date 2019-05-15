@@ -6,7 +6,7 @@ from decimal import Decimal
 from random import Random
 from forecaster import Person, Money
 from forecaster.canada import TFSA, constants
-from tests.canada.test_accounts.test_registered_account import (
+from tests.canada.accounts.test_registered_account import (
     TestRegisteredAccountMethods)
 
 class TestTFSAMethods(TestRegisteredAccountMethods):
@@ -56,11 +56,14 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
                 owner, *args,
                 inflation_adjust=self.inflation_adjust,
                 initial_year=year, **kwargs)
-            self.assertEqual(
-                account.contribution_room,
-                Money(
-                    sum([
-                        accruals[i] for i in range(min(accruals), year + 1)])))
+            target = Money(sum([
+                accruals[i] for i in range(min(accruals), year + 1)]))
+            self.assertEqual(account.contribution_room, target)
+            # We're starting each TFSA in a different year, which can
+            # confuse the linked-account recordkeeping (later-year
+            # accounts will default to using the contribution room
+            # of the first account). Destroy the link to simplify this.
+            account.max_inflow_link.unregister()
 
     def test_init_inflation_adjust(self, *args, **kwargs):
         """ Init TFSA with explicit inflation_adjust. """
@@ -128,11 +131,9 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
             # Confirm that contribution room is the same as accruals,
             # less any net transactions
             accrual = sum(
-                [accruals[i] for i in range(min(accruals), year + 1)]
-            )
-            self.assertEqual(
-                account.contribution_room, Money(accrual) - transactions
-            )
+                [accruals[i] for i in range(min(accruals), year + 1)])
+            target = Money(accrual) - transactions
+            self.assertEqual(account.contribution_room, target)
             # Confirm that balance is equal to the sum of transactions
             # over the previous years (note that this is a no-growth
             # scenario, since rate=0)

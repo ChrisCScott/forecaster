@@ -6,7 +6,7 @@ from copy import copy, deepcopy
 from decimal import Decimal
 from forecaster import (
     Settings, Tax, Person, Money, Account, Debt, Scenario,
-    LivingExpensesStrategy, AccountTransactionStrategy,
+    LivingExpensesStrategy, TransactionStrategy,
     AllocationStrategy, DebtPaymentStrategy, Forecaster, Parameter)
 
 
@@ -48,10 +48,10 @@ class TestForecaster(unittest.TestCase):
             base_amount=self.settings.living_expenses_base_amount,
             rate=self.settings.living_expenses_rate,
             inflation_adjust=self.scenario.inflation_adjust)
-        self.contribution_strategy = AccountTransactionStrategy(
-            strategy=self.settings.contribution_strategy,
-            weights=self.settings.contribution_weights)
-        self.withdrawal_strategy = AccountTransactionStrategy(
+        self.saving_strategy = TransactionStrategy(
+            strategy=self.settings.saving_strategy,
+            weights=self.settings.saving_weights)
+        self.withdrawal_strategy = TransactionStrategy(
             strategy=self.settings.withdrawal_strategy,
             weights=self.settings.withdrawal_weights)
         self.allocation_strategy = AllocationStrategy(
@@ -260,13 +260,11 @@ class TestForecaster(unittest.TestCase):
         self.assertEqual(
             self.forecaster.living_expenses_strategy, None)
         self.assertEqual(
-            self.forecaster.contribution_strategy, None)
+            self.forecaster.saving_strategy, None)
         self.assertEqual(
             self.forecaster.withdrawal_strategy, None)
         self.assertEqual(
             self.forecaster.allocation_strategy, None)
-        self.assertEqual(
-            self.forecaster.debt_payment_strategy, None)
         # For two of the params, they should be initialized to whatever
         # is provided by default by the Settings class:
         self.assertEqual(self.forecaster.settings, Settings())
@@ -276,15 +274,10 @@ class TestForecaster(unittest.TestCase):
         param = self.forecaster.get_param(Parameter.LIVING_EXPENSES_STRATEGY)
         self.assertEqual(param, self.living_expenses_strategy)
 
-    def test_build_debt_pay_strat(self):
-        """ Test Forecaster.build_param for debt_payment_strategy. """
-        param = self.forecaster.get_param(Parameter.DEBT_PAYMENT_STRATEGY)
-        self.assertEqual(param, self.debt_payment_strategy)
-
-    def test_build_contrib_strat(self):
+    def test_build_saving_strat(self):
         """ Test Forecaster.build_param for contribution_strategy. """
-        param = self.forecaster.get_param(Parameter.CONTRIBUTION_STRATEGY)
-        self.assertEqual(param, self.contribution_strategy)
+        param = self.forecaster.get_param(Parameter.SAVING_STRATEGY)
+        self.assertEqual(param, self.saving_strategy)
 
     def test_build_withdraw_strat(self):
         """ Test Forecaster.build_param for withdrawal_strategy. """

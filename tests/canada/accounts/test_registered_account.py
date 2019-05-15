@@ -1,4 +1,4 @@
-""" TODO """
+""" Unit tests for RegisteredAccount. """
 
 import unittest
 import inspect
@@ -7,10 +7,9 @@ from decimal import Decimal
 from random import Random
 from forecaster import Money
 from forecaster.canada import RegisteredAccount
-from tests.test_accounts.test_contribution_limited import (
-    TestContributionLimitAccountMethods)
+from tests.accounts.test_linked_limit import TestLinkedLimitAccountMethods
 
-class TestRegisteredAccountMethods(TestContributionLimitAccountMethods):
+class TestRegisteredAccountMethods(TestLinkedLimitAccountMethods):
     """ Test RegisteredAccount. """
 
     def setUp(self):
@@ -31,6 +30,9 @@ class TestRegisteredAccountMethods(TestContributionLimitAccountMethods):
                 self.inflation_adjustments[base_year]
             )
         self.inflation_adjust = inflation_adjust
+
+        # Use a convenient default for contribution room:
+        self.contribution_room = Money(0)
 
     def set_initial_year(self, initial_year):
         """ Sets initial_year for all relevant objects. """
@@ -126,6 +128,108 @@ class TestRegisteredAccountMethods(TestContributionLimitAccountMethods):
                 inflation_adjust='invalid',
                 contribution_room=self.contribution_room, **kwargs)
 
+    # The following tests all call next_year(), which calls
+    # next_contribution_room(), which is not implemented for
+    # this class and certain subclasses. Don't run these tests for this
+    # class. Instead, allow subclasses to pass through.
+
+    def test_next(self, *args, **kwargs):
+        """ Test LinkedLimitAccount.next_year. """
+        # next_contribution_room is not implemented for
+        # LinkedLimitAccount, and it's required for next_year, so confirm
+        # that trying to call next_year() throws an appropriate error.
+        if self.AccountType == RegisteredAccount:
+            account = RegisteredAccount(self.owner)
+            with self.assertRaises(NotImplementedError):
+                account.next_year()
+        # For other account types, try a conventional next_year test
+        else:
+            try:
+                super().test_next(
+                    *args, **kwargs)
+            except NotImplementedError:
+                return  # this error is OK
+
+    def test_returns(self, *args, **kwargs):
+        """ Test LinkedLimitAccount.returns. """
+        try:
+            super().test_returns(*args, **kwargs)
+        except NotImplementedError:
+            return  # this error is OK
+
+    def test_returns_next_year(self, *args, **kwargs):
+        """ Test LinkedLimitAccount.returns after calling next_year. """
+        try:
+            super().test_returns_next_year(*args, **kwargs)
+        except NotImplementedError:
+            return  # this error is OK
+
+    def test_next_no_growth(self, *args, **kwargs):
+        """ Tests next_year with no growth. """
+        try:
+            super().test_next_no_growth(*args, **kwargs)
+        except NotImplementedError:
+            return  # this error is OK
+
+    def test_next_cont_growth(self, *args, **kwargs):
+        """ Tests next_year with continuous growth. """
+        try:
+            super().test_next_cont_growth(*args, **kwargs)
+        except NotImplementedError:
+            return  # this error is OK
+
+    def test_next_disc_growth(self, *args, **kwargs):
+        """ Tests next_year with discrete (monthly) growth. """
+        try:
+            super().test_next_disc_growth(*args, **kwargs)
+        except NotImplementedError:
+            return  # this error is OK
+
+    def test_next_basic_trans(self, *args, **kwargs):
+        """ Tests next_year with a mid-year transaction. """
+        try:
+            super().test_next_basic_trans(*args, **kwargs)
+        except NotImplementedError:
+            return  # this error is OK
+
+    def test_next_no_growth_trans(self, *args, **kwargs):
+        """ Tests next_year with no growth and a transaction. """
+        try:
+            super().test_next_no_growth_trans(*args, **kwargs)
+        except NotImplementedError:
+            return  # this error is OK
+
+    def test_next_cont_growth_trans(self, *args, **kwargs):
+        """ Tests next_year with continuous growth and transaction. """
+        try:
+            super().test_next_cont_growth_trans(*args, **kwargs)
+        except NotImplementedError:
+            return  # this error is OK
+
+    def test_next_disc_growth_trans(self, *args, **kwargs):
+        """ Tests next_year with discrete growth and a transaction. """
+        try:
+            super().test_next_disc_growth_trans(*args, **kwargs)
+        except NotImplementedError:
+            return  # this error is OK
+
+    def test_max_inflows_pos(self, *args, **kwargs):
+        """ Test max_inflows with positive balance """
+        # This method should always return the current contribution room
+        account = self.AccountType(
+            self.owner, *args, balance=100, contribution_room=0, **kwargs)
+        result = account.max_inflows(self.timing)
+        for value in result.values():
+            self.assertEqual(value, Money('0'))
+
+    def test_max_inflows_neg(self, *args, **kwargs):
+        """ Test max_inflows with negative balance """
+        # This method should always return the current contribution room
+        account = self.AccountType(
+            self.owner, *args, balance=-100, contribution_room=0, **kwargs)
+        result = account.max_inflows(self.timing)
+        for value in result.values():
+            self.assertEqual(value, Money('0'))
 
 if __name__ == '__main__':
     # NOTE: BasicContext is useful for debugging, as most errors are treated

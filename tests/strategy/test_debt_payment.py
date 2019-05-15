@@ -2,10 +2,11 @@
 
 import unittest
 from decimal import Decimal
-from forecaster import Person, Debt, Money, DebtPaymentStrategy
+from forecaster import Person, Debt, Money, DebtPaymentStrategy, Timing
+from tests.util import TestCaseTransactions
 
 
-class TestDebtPaymentStrategies(unittest.TestCase):
+class TestDebtPaymentStrategies(TestCaseTransactions):
     """ Tests the strategies of the `DebtPaymentStrategy` class.
 
     In particular, this class tests various payments using various
@@ -17,28 +18,31 @@ class TestDebtPaymentStrategies(unittest.TestCase):
         person = Person(
             initial_year, 'Testy McTesterson', 1980, retirement_date=2045)
 
+        self.timing = Timing({Decimal(0.5): 1})
+
         # These accounts have different rates:
         self.debt_big_high_interest = Debt(
             person,
             balance=Money(1000), rate=1, minimum_payment=Money(100),
-            savings_rate=1, accelerated_payment=Money('Infinity')
-        )
+            accelerated_payment=Money('Infinity'))
         self.debt_small_low_interest = Debt(
             person,
             balance=Money(100), rate=0, minimum_payment=Money(10),
-            savings_rate=1, accelerated_payment=Money('Infinity')
-        )
+            accelerated_payment=Money('Infinity'))
         self.debt_medium = Debt(
             person,
             balance=Money(500), rate=0.5, minimum_payment=Money(50),
-            savings_rate=1, accelerated_payment=Money('Infinity')
-        )
+            accelerated_payment=Money('Infinity'))
 
         self.debts = {
             self.debt_big_high_interest,
             self.debt_medium,
-            self.debt_small_low_interest
-        }
+            self.debt_small_low_interest}
+
+        self.max_payments = {
+            debt: self.max_payment({debt}) for debt in self.debts}
+        self.min_payments = {
+            debt: self.min_payment({debt}) for debt in self.debts}
 
         self.strategy_avalanche = DebtPaymentStrategy(
             DebtPaymentStrategy.strategy_avalanche)
@@ -47,318 +51,276 @@ class TestDebtPaymentStrategies(unittest.TestCase):
 
         self.excess = Money(10)
 
-    @staticmethod
-    def min_payment(debts):
+    def min_payment(self, debts, timing=None):
         """ Finds the minimum payment *from savings* for `accounts`. """
-        payment = Money(0)
-        for debt in debts:
-            # This used to be a genexp, but it's been split up to allow
-            # for easier inspection.
-            inflows = debt.min_inflows()
-            inflows_non_living = sum(inflows.values()) - debt.living_expense
-            inflows_savings = inflows_non_living * debt.savings_rate
-            payment += max(inflows_savings, Money(0))
-        return payment
+        if timing is None:
+            timing = self.timing
+        return sum(
+            sum(debt.min_inflows(timing=timing).values()) for debt in debts)
 
-    @staticmethod
-    def max_payment(debts):
+    def max_payment(self, debts, timing=None):
         """ Finds the maximum payment *from savings* for `debts`. """
-        payment = Money(0)
-        for debt in debts:
-            # This used to be a genexp, but it's been split up to allow
-            # for easier inspection.
-            inflows = debt.max_inflows()
-            inflows_non_living = sum(inflows.values()) - debt.living_expense
-            inflows_savings = inflows_non_living * debt.savings_rate
-            payment += max(inflows_savings, Money(0))
-        return payment
+        if timing is None:
+            timing = self.timing
+        return sum(
+            sum(debt.max_inflows(timing=timing).values()) for debt in debts)
+
+    def make_available(self, total, timing=None):
+        """ Generates an `available` dict of cashflows. """
+        if timing is None:
+            timing = self.timing
+        normalization = sum(timing.values())
+        return {
+            when: total * weight / normalization
+            for when, weight in timing.items()}
 
     def test_snowball_min_payment(self):
         """ Test strategy_snowball with the minimum payment only. """
         # Inflows will exactly match minimum payments:
-        payment = self.min_payment(self.debts)
-        results = self.strategy_snowball(self.debts, payment)
+        total = self.min_payment(self.debts)
+        available = self.make_available(total)
+        results = self.strategy_snowball(self.debts, available)
         for debt in self.debts:
-            self.assertAlmostEqual(
-                sum(results[debt].values()),
-                debt.minimum_payment,
-                places=4)
+            self.assertTransactions(results[debt], debt.minimum_payment)
 
     def test_snowball_less_than_min(self):
         """ Test strategy_snowball with less than the minimum payments. """
-        # Minimum should still be paid
-        payment = Money(0)
-        results = self.strategy_snowball(self.debts, payment)
-        for debt in self.debts:
-            self.assertAlmostEqual(
-                sum(results[debt].values()),
-                debt.minimum_payment,
-                places=4)
+        # DebtPaymentStrategy (like TransactionStrategy) always
+        # allocates no more than the amount available.
+        # This test confirms that:
+        # 1)    The sum of amounts allocated is equal to `total`
+        # 2)    The order of accounts is maintained (i.e. smallest
+        #       debts repaid first)
+        # To do this, we set `total` to a non-zero smaller than the
+        # smallest debt's minimum payment.
+        total = self.min_payments[self.debt_small_low_interest] / 2
+        available = self.make_available(total)
+        results = self.strategy_snowball(self.debts, available)
+        # Entire repayment should go to the smallest debt:
+        self.assertTransactions(
+            results[self.debt_small_low_interest], total)
+        # Remaining debts should receive no payments:
+        if self.debt_medium in results:
+            self.assertTransactions(results[self.debt_medium], Money(0))
+        if self.debt_medium in results:
+            self.assertTransactions(
+                results[self.debt_big_high_interest], Money(0))
 
     def test_snowball_basic(self):
         """ Test strategy_snowball with a little more than min payments. """
         # The smallest debt should be paid first.
-        payment = self.min_payment(self.debts) + self.excess
-        results = self.strategy_snowball(self.debts, payment)
+        total = self.min_payment(self.debts) + self.excess
+        available = self.make_available(total)
+        results = self.strategy_snowball(self.debts, available)
         # The smallest debt should be partially repaid:
-        self.assertAlmostEqual(
-            sum(results[self.debt_small_low_interest].values()),
-            self.debt_small_low_interest.minimum_payment + self.excess,
-            places=4)
+        self.assertTransactions(
+            results[self.debt_small_low_interest],
+            self.debt_small_low_interest.minimum_payment + self.excess)
         # The medium-sized debt should get its minimum payments:
-        self.assertEqual(
+        self.assertTransactions(
             results[self.debt_medium],
-            self.debt_medium.min_inflows())
+            self.min_payments[self.debt_medium])
         # The largest debt should get its minimum payments:
-        self.assertEqual(
+        self.assertTransactions(
             results[self.debt_big_high_interest],
-            self.debt_big_high_interest.min_inflows())
+            self.min_payments[self.debt_big_high_interest])
 
     def test_snowball_close_one(self):
         """ Test strategy_snowball payments to close one debt. """
         # Pay more than the first-paid debt will accomodate.
         # The excess should go to the next-paid debt (medium).
-        payment = self.min_payment(
+        total = self.min_payment(
             self.debts - {self.debt_small_low_interest})
-        payment += self.max_payment({self.debt_small_low_interest})
-        payment += self.excess
-
-        results = self.strategy_snowball(self.debts, payment)
+        total += self.max_payment({self.debt_small_low_interest})
+        total += self.excess
+        available = self.make_available(total)
+        results = self.strategy_snowball(self.debts, available)
         # The smallest debt should be fully repaid:
-        self.assertEqual(
+        self.assertTransactions(
             results[self.debt_small_low_interest],
-            self.debt_small_low_interest.max_inflows())
+            self.max_payments[self.debt_small_low_interest])
         # The medium-sized debt should be partially repaid:
-        self.assertAlmostEqual(
-            sum(results[self.debt_medium].values()),
-            self.debt_medium.minimum_payment + self.excess,
-            places=4)
+        self.assertTransactions(
+            results[self.debt_medium],
+            self.debt_medium.minimum_payment + self.excess)
         # The largest debt should get its minimum payments:
-        self.assertEqual(
+        self.assertTransactions(
             results[self.debt_big_high_interest],
-            self.debt_big_high_interest.min_inflows())
+            self.min_payments[self.debt_big_high_interest])
 
     def test_snowball_close_two(self):
         """ Test strategy_snowball with payments to close 2 debts. """
         # Pay more than the first and second-paid debts will accomodate.
         # The self.excess should go to the next-paid debt.
-        payment = self.min_payment({self.debt_big_high_interest})
-        payment += self.max_payment(
+        total = self.min_payment({self.debt_big_high_interest})
+        total += self.max_payment(
             self.debts - {self.debt_big_high_interest})
-        payment += self.excess
-
-        results = self.strategy_snowball(self.debts, payment)
+        total += self.excess
+        available = self.make_available(total)
+        results = self.strategy_snowball(self.debts, available)
         # The smallest debt should be fully repaid:
-        self.assertEqual(
+        self.assertTransactions(
             results[self.debt_small_low_interest],
-            self.debt_small_low_interest.max_inflows())
+            self.max_payments[self.debt_small_low_interest])
         # The medium-size debt should be fully repaid:
-        self.assertEqual(
+        self.assertTransactions(
             results[self.debt_medium],
-            self.debt_medium.max_inflows())
+            self.max_payments[self.debt_medium])
         # The largest debt should be partially repaid:
-        self.assertAlmostEqual(
-            sum(results[self.debt_big_high_interest].values()),
-            self.debt_big_high_interest.minimum_payment + self.excess,
-            places=4)
+        self.assertTransactions(
+            results[self.debt_big_high_interest],
+            self.debt_big_high_interest.minimum_payment + self.excess)
 
     def test_snowball_close_all(self):
         """ Test strategy_snowball with payments to close all debts. """
         # Contribute more than the total max.
-        payment = self.max_payment(self.debts) + self.excess
-        results = self.strategy_snowball(self.debts, payment)
+        total = self.max_payment(self.debts) + self.excess
+        available = self.make_available(total)
+        results = self.strategy_snowball(self.debts, available)
         # Each debt should be fully repaid:
         for debt in self.debts:
-            self.assertEqual(
-                results[debt],
-                debt.max_inflows())
+            self.assertTransactions(
+                results[debt], self.max_payments[debt])
 
     def test_avalanche_min_payment(self):
         """ Test strategy_avalanche with minimum payments only. """
-        payment = self.min_payment(self.debts)
-        results = self.strategy_avalanche(self.debts, payment)
+        total = self.min_payment(self.debts)
+        available = self.make_available(total)
+        results = self.strategy_avalanche(self.debts, available)
         for debt in self.debts:
-            self.assertAlmostEqual(
-                sum(results[debt].values()),
-                debt.minimum_payment,
-                places=4)
+            self.assertTransactions(results[debt], debt.minimum_payment)
 
     def test_avalanche_less_than_min(self):
         """ Test strategy_avalanche with less than the minimum payments. """
-        # Minimum should still be paid
-        payment = Money(0)
-        results = self.strategy_avalanche(self.debts, payment)
-        for debt in self.debts:
-            self.assertAlmostEqual(
-                sum(results[debt].values()),
-                debt.minimum_payment,
-                places=4)
+        # DebtPaymentStrategy (like TransactionStrategy) always
+        # allocates no more than the amount available.
+        # This test confirms that:
+        # 1)    The sum of amounts allocated is equal to `total`
+        # 2)    The order of accounts is maintained (i.e.
+        #       highest-interest debts repaid first)
+        # To do this, we set `total` to a non-zero smaller than the
+        # highest-interest debt's minimum payment.
+        total = self.min_payments[self.debt_big_high_interest] / 2
+        available = self.make_available(total)
+        results = self.strategy_avalanche(self.debts, available)
+        # Entire repayment should go to the highest-interest debt:
+        self.assertTransactions(
+            results[self.debt_big_high_interest], total)
+        # Remaining debts should receive no payments:
+        if self.debt_medium in results:
+            self.assertTransactions(results[self.debt_medium], Money(0))
+        if self.debt_medium in results:
+            self.assertTransactions(
+                results[self.debt_small_low_interest], Money(0))
 
     def test_avalanche_basic(self):
         """ Test strategy_avalanche with a bit more than min payments. """
         # The highest-interest debt should be paid first.
-        payment = self.min_payment(self.debts) + self.excess
-        results = self.strategy_avalanche(self.debts, payment)
-        self.assertAlmostEqual(
-            sum(results[self.debt_big_high_interest].values()),
-            self.debt_big_high_interest.minimum_payment + self.excess,
-            places=4)
-        self.assertAlmostEqual(
-            sum(results[self.debt_medium].values()),
-            self.debt_medium.minimum_payment,
-            places=4)
-        self.assertAlmostEqual(
-            sum(results[self.debt_small_low_interest].values()),
-            self.debt_small_low_interest.minimum_payment,
-            places=4)
+        total = self.min_payment(self.debts) + self.excess
+        available = self.make_available(total)
+        results = self.strategy_avalanche(self.debts, available)
+        self.assertTransactions(
+            results[self.debt_big_high_interest],
+            self.debt_big_high_interest.minimum_payment + self.excess)
+        self.assertTransactions(
+            results[self.debt_medium],
+            self.debt_medium.minimum_payment)
+        self.assertTransactions(
+            results[self.debt_small_low_interest],
+            self.debt_small_low_interest.minimum_payment)
 
     def test_avalanche_close_one(self):
         """ Test strategy_avalanche with payments to close one debt. """
         # Pay more than the first-paid debt will accomodate.
         # The excess should go to the next-paid debt (medium).
-        payment = self.min_payment(self.debts - {self.debt_big_high_interest})
-        payment += self.max_payment({self.debt_big_high_interest})
-        payment += self.excess
-
-        results = self.strategy_avalanche(self.debts, payment)
+        total = self.min_payment(self.debts - {self.debt_big_high_interest})
+        total += self.max_payment({self.debt_big_high_interest})
+        total += self.excess
+        available = self.make_available(total)
+        results = self.strategy_avalanche(self.debts, available)
         # The high interest debt should be fully repaid:
-        self.assertEqual(
+        self.assertTransactions(
             results[self.debt_big_high_interest],
-            self.debt_big_high_interest.max_inflows())
+            self.max_payments[self.debt_big_high_interest])
         # The medium-interest debt should be partially repaid:
-        self.assertAlmostEqual(
-            sum(results[self.debt_medium].values()),
-            self.debt_medium.minimum_payment + self.excess,
-            places=4)
+        self.assertTransactions(
+            results[self.debt_medium],
+            self.debt_medium.minimum_payment + self.excess)
         # The low-interest debt should receive the minimum payment:
-        self.assertAlmostEqual(
-            sum(results[self.debt_small_low_interest].values()),
-            self.debt_small_low_interest.minimum_payment,
-            places=4)
+        self.assertTransactions(
+            results[self.debt_small_low_interest],
+            self.debt_small_low_interest.minimum_payment)
 
     def test_avalanche_close_two(self):
         """ Test strategy_avalanche with payments to close two debts. """
         # Pay more than the first and second-paid debts will accomodate.
         # The excess should go to the next-paid debt.
-        payment = self.min_payment({self.debt_small_low_interest})
-        payment += self.max_payment(
+        total = self.min_payment({self.debt_small_low_interest})
+        total += self.max_payment(
             self.debts - {self.debt_small_low_interest})
-        payment += self.excess
-
-        results = self.strategy_avalanche(self.debts, payment)
+        total += self.excess
+        available = self.make_available(total)
+        results = self.strategy_avalanche(self.debts, available)
         # The high interest debt should be fully repaid:
-        self.assertEqual(
+        self.assertTransactions(
             results[self.debt_big_high_interest],
-            self.debt_big_high_interest.max_inflows())
+            self.max_payments[self.debt_big_high_interest])
         # The medium interest debt should be fully repaid:
-        self.assertEqual(
+        self.assertTransactions(
             results[self.debt_medium],
-            self.debt_medium.max_inflows())
+            self.max_payments[self.debt_medium])
         # The low interest debt should be partially repaid:
-        self.assertAlmostEqual(
-            sum(results[self.debt_small_low_interest].values()),
-            self.debt_small_low_interest.minimum_payment + self.excess,
-            places=4)
+        self.assertTransactions(
+            results[self.debt_small_low_interest],
+            self.debt_small_low_interest.minimum_payment + self.excess)
 
     def test_avalanche_close_all(self):
         """ Test strategy_avalanche with payments to close all debts. """
         # Contribute more than the total max.
-        payment = self.max_payment(self.debts) + self.excess
-        results = self.strategy_avalanche(self.debts, payment)
+        total = self.max_payment(self.debts) + self.excess
+        available = self.make_available(total)
+        results = self.strategy_avalanche(self.debts, available)
         # All debts should be fully repaid:
         for debt in self.debts:
-            self.assertEqual(
-                results[debt],
-                debt.max_inflows())
-
-
-class TestDebtPaymentStrategyAttributes(unittest.TestCase):
-    """ Tests DebtPaymentStrategy's handling of Debt attributes.
-
-    In particular, this class tests payments against one debt at a time
-    and confirms that the result is consistent with the attributes of
-    the Debt (i.e. `accelerate_payment`, `savings_rate`, and
-    `minimum_payment`).
-    """
-
-    def setUp(self):
-        """ Sets up vars for testing. """
-        person = Person(
-            2000, 'Testy McTesterson', 1980, retirement_date=2045)
-        self.strategy = DebtPaymentStrategy(
-            DebtPaymentStrategy.strategy_avalanche
-        )
-        self.debt = Debt(
-            person,
-            balance=Money(100), rate=0, minimum_payment=Money(10),
-            savings_rate=1, accelerated_payment=Money('Infinity')
-        )
+            self.assertTransactions(
+                results[debt], self.max_payments[debt])
 
     def test_accel_payment_none(self):
         """ Tests payments where `accelerate_payment=Money(0)`. """
-        self.debt.accelerated_payment = Money(0)
-        results = self.strategy({self.debt}, Money(100))
+        # Don't allow accelerated payments and try to contribute more
+        # than the minimum.
+        self.debt_medium.accelerated_payment = Money(0)
+        available = self.make_available(self.debt_medium.minimum_payment * 2)
+        results = self.strategy_avalanche({self.debt_medium}, available)
         # If there's no acceleration, only the minimum is paid.
-        self.assertEqual(results[self.debt], self.debt.min_inflows())
+        self.assertTransactions(
+            results[self.debt_medium], self.debt_medium.minimum_payment)
 
-    def test_accel_payment_partial(self):
+    def test_accel_payment_finite(self):
         """ Tests payments with finite, non-zero `accelerate_payment`. """
-        self.debt.accelerated_payment = Money(20)
-        results = self.strategy({self.debt}, Money(100))
+        # Allow only $20 in accelerated payments and try to contribute
+        # even more than that.
+        self.debt_medium.accelerated_payment = Money(20)
+        available = self.make_available(
+            self.debt_medium.minimum_payment + Money(40))
+        results = self.strategy_avalanche({self.debt_medium}, available)
         # Payment should be $20 more than the minimum:
-        self.assertAlmostEqual(
-            sum(results[self.debt].values()),
-            self.debt.minimum_payment + Money(20),
-            places=4)
+        self.assertTransactions(
+            results[self.debt_medium],
+            self.debt_medium.minimum_payment + Money(20))
 
     def test_accel_payment_infinity(self):
         """ Tests payments where `accelerate_payment=Money('Infinity')`. """
-        self.debt.accelerated_payment = Money('Infinity')
-        results = self.strategy({self.debt}, Money(50))
-        self.assertAlmostEqual(
-            sum(results[self.debt].values()),
-            Money(50),
-            places=4)
-
-    def test_savings_rate_none(self):
-        """ Tests payments where `savings_rate=0`. """
-        self.debt.savings_rate = 0
-        results = self.strategy({self.debt}, Money(50))
-        # If savings_rate is 0, we repay the whole debt immediately.
-        # TODO: Limit repayments in case where savings_rate=0
-        self.assertAlmostEqual(
-            sum(results[self.debt].values()),
-            Money(100),
-            places=4)
-
-    def test_savings_rate_half(self):
-        """ Tests payments where `savings_rate=0.5`. """
-        self.debt.savings_rate = Decimal(0.5)
-        results = self.strategy({self.debt}, Money(25))
-        # If savings_rate is 50%, we can double the payment:
-        self.assertAlmostEqual(
-            sum(results[self.debt].values()),
-            Money(50),
-            places=4)
-
-    def test_savings_rate_full(self):
-        """ Tests payments where `savings_rate=1`. """
-        self.debt.savings_rate = 1
-        results = self.strategy({self.debt}, Money(50))
-        # If savings_rate is 50%, we can double the payment:
-        self.assertAlmostEqual(
-            sum(results[self.debt].values()),
-            Money(50),
-            places=4)
-
-    def test_minimum_payment(self):
-        """ Tests payments of less than `minimum_payment`. """
-        self.debt.minimum_payment = Money(10)
-        results = self.strategy({self.debt}, Money(0))
-        self.assertAlmostEqual(
-            sum(results[self.debt].values()),
-            Money(10),
-            places=4)
+        # No limit on accelerated payments. Try to contribute more than
+        # the debt requires to be fully repaid:
+        self.debt_medium.accelerated_payment = Money("Infinity")
+        available = self.make_available(
+            2 * sum(self.debt_medium.max_inflows().values()))
+        results = self.strategy_avalanche({self.debt_medium}, available)
+        # Payments should max out money available:
+        self.assertTransactions(
+            results[self.debt_medium],
+            self.max_payments[self.debt_medium])
 
 
 if __name__ == '__main__':

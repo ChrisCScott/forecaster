@@ -4,12 +4,11 @@ from copy import copy, deepcopy
 from functools import reduce
 from enum import Enum
 from forecaster.forecast import (
-    Forecast, IncomeForecast, LivingExpensesForecast, ReductionForecast,
-    ContributionForecast, WithdrawalForecast, TaxForecast)
+    Forecast, IncomeForecast, LivingExpensesForecast,
+    SavingForecast, WithdrawalForecast, TaxForecast)
 from forecaster.tax import Tax
 from forecaster.strategy import (
-    LivingExpensesStrategy, AccountTransactionStrategy,
-    DebtPaymentStrategy, AllocationStrategy)
+    LivingExpensesStrategy, TransactionStrategy, AllocationStrategy)
 from forecaster.scenario import Scenario
 from forecaster.settings import Settings
 
@@ -21,8 +20,7 @@ class Parameter(Enum):
     """ TODO """
     SCENARIO = "scenario"
     LIVING_EXPENSES_STRATEGY = "living_expenses_strategy"
-    DEBT_PAYMENT_STRATEGY = "debt_payment_strategy"
-    CONTRIBUTION_STRATEGY = "contribution_strategy"
+    SAVING_STRATEGY = "saving_strategy"
     WITHDRAWAL_STRATEGY = "withdrawal_strategy"
     ALLOCATION_STRATEGY = "allocation_strategy"
     TAX_TREATMENT = "tax_treatment"
@@ -57,9 +55,9 @@ DEFAULTVALUES = {
         "base_amount": "settings.living_expenses_base_amount",
         "rate": "settings.living_expenses_rate",
         "inflation_adjust": "scenario.inflation_adjust"},
-    str(Parameter.CONTRIBUTION_STRATEGY): {
-        "strategy": "settings.contribution_strategy",
-        "weights": "settings.contribution_weights"},
+    str(Parameter.SAVING_STRATEGY): {
+        "strategy": "settings.saving_strategy",
+        "weights": "settings.saving_weights"},
     str(Parameter.WITHDRAWAL_STRATEGY): {
         "strategy": "settings.withdrawal_strategy",
         "weights": "settings.withdrawal_weights"},
@@ -71,8 +69,6 @@ DEFAULTVALUES = {
         "standard_retirement_age": "settings.allocation_std_retirement_age",
         "risk_transition_period": "settings.allocation_risk_trans_period",
         "adjust_for_retirement_plan": "settings.allocation_adjust_retirement"},
-    str(Parameter.DEBT_PAYMENT_STRATEGY): {
-        "strategy": "settings.debt_payment_strategy"},
     str(Parameter.TAX_TREATMENT): {
         "tax_brackets": "settings.tax_brackets",
         "personal_deduction": "settings.tax_personal_deduction",
@@ -85,9 +81,8 @@ DEFAULTVALUES = {
 DEFAULTTYPES = {
     str(Parameter.SCENARIO): Scenario,
     str(Parameter.LIVING_EXPENSES_STRATEGY): LivingExpensesStrategy,
-    str(Parameter.DEBT_PAYMENT_STRATEGY): DebtPaymentStrategy,
-    str(Parameter.CONTRIBUTION_STRATEGY): AccountTransactionStrategy,
-    str(Parameter.WITHDRAWAL_STRATEGY): AccountTransactionStrategy,
+    str(Parameter.SAVING_STRATEGY): TransactionStrategy,
+    str(Parameter.WITHDRAWAL_STRATEGY): TransactionStrategy,
     str(Parameter.ALLOCATION_STRATEGY): AllocationStrategy,
     str(Parameter.TAX_TREATMENT): Tax}
 
@@ -131,8 +126,7 @@ class Forecaster(object):
             settings=None,
             scenario=None,
             living_expenses_strategy=None,
-            debt_payment_strategy=None,
-            contribution_strategy=None,
+            saving_strategy=None,
             withdrawal_strategy=None,
             tax_treatment=None
     ):
@@ -152,8 +146,7 @@ class Forecaster(object):
         # For the rest, None is allowed:
         self.scenario = scenario
         self.living_expenses_strategy = living_expenses_strategy
-        self.debt_payment_strategy = debt_payment_strategy
-        self.contribution_strategy = contribution_strategy
+        self.saving_strategy = saving_strategy
         self.withdrawal_strategy = withdrawal_strategy
         self.tax_treatment = tax_treatment
         # Some params aren't used to build Forecast and so are not
@@ -235,10 +228,8 @@ class Forecaster(object):
         # Retrieve the necessary strategies for building SubForecasts:
         living_expenses_strategy = self.get_param(
             Parameter.LIVING_EXPENSES_STRATEGY, memo=memo)
-        debt_payment_strategy = self.get_param(
-            Parameter.DEBT_PAYMENT_STRATEGY, memo=memo)
-        contribution_strategy = self.get_param(
-            Parameter.CONTRIBUTION_STRATEGY, memo=memo)
+        saving_strategy = self.get_param(
+            Parameter.SAVING_STRATEGY, memo=memo)
         withdrawal_strategy = self.get_param(
             Parameter.WITHDRAWAL_STRATEGY, memo=memo)
         tax_treatment = self.get_param(
@@ -252,19 +243,16 @@ class Forecaster(object):
             initial_year=initial_year,
             people=people,
             living_expenses_strategy=living_expenses_strategy)
-        reduction_forecast = ReductionForecast(
+        saving_forecast = SavingForecast(
             initial_year=initial_year,
-            debts=debts,
-            debt_payment_strategy=debt_payment_strategy)
-        contribution_forecast = ContributionForecast(
-            initial_year=initial_year,
-            accounts=accounts,
-            account_transaction_strategy=contribution_strategy)
+            retirement_accounts=accounts,
+            debt_accounts=debts,
+            transaction_strategy=saving_strategy)
         withdrawal_forecast = WithdrawalForecast(
             initial_year=initial_year,
             people=people,
             accounts=accounts,
-            account_transaction_strategy=withdrawal_strategy)
+            transaction_strategy=withdrawal_strategy)
         tax_forecast = TaxForecast(
             initial_year=initial_year,
             people=people,
@@ -274,8 +262,7 @@ class Forecaster(object):
         forecast = Forecast(
             income_forecast=income_forecast,
             living_expenses_forecast=living_expenses_forecast,
-            reduction_forecast=reduction_forecast,
-            contribution_forecast=contribution_forecast,
+            saving_forecast=saving_forecast,
             withdrawal_forecast=withdrawal_forecast,
             tax_forecast=tax_forecast,
             scenario=scenario)

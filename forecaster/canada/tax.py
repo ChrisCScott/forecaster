@@ -65,7 +65,7 @@ class TaxCanadaJurisdiction(Tax):
             Money: The amount of the credit claimable by person in year.
         """
         pension_income = abs(sum(
-            account.outflows for account in person.accounts
+            account.outflows() for account in person.accounts
             if isinstance(account, RRSP)
             # NOTE: Other qualified pension income sources can be
             # added here

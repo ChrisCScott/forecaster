@@ -67,23 +67,25 @@ class Forecast(Ledger):
     `income_history[2001]` gives the value of `income` for year `2001`.
 
     Attributes:
-        income_forecast (IncomeForecast):
-            A callable object that returns the net income for each
-            year.
-        living_expenses_forecast (LivingExpensesForecast):
-            A callable object that returns the amount spent on living
+        income_forecast (IncomeForecast): A callable object that takes
+            a cashflow time series (called `available`) and mutates it
+            to include net income for each year.
+        living_expenses_forecast (LivingExpensesForecast): A callable
+            object that takes a cashflow time series (called
+            `available`) and mutates it to include  ordinary living
             expenses for each year.
-        reduction_forecast (ReductionForecast): A callable object that
-            returns the contribution reductions for each year.
-        contribution_forecast (ContributionForecast): A callable
-            object that returns the amount contributed to savings for
-            each year.
-        withdrawal_forecast (WithdrawalForecast):
-            A callable object that returns the total withdrawals for
-            each year.
-        tax_forecast (TaxForecast):
-            A callable object that returns the total taxes owed for
-            each year.
+        saving_forecast (SavingForecast): A callable object that takes
+            a cashflow time series (called `available`) and mutates it
+            to include amounts contributed to savings for each year.
+        withdrawal_forecast (WithdrawalForecast): A callable object that
+            takes a cashflow time series (called `available`) and
+            mutates it to include total withdrawals for each year.
+        tax_forecast (TaxForecast): A callable object that takes
+            a cashflow time series (called `available`) and mutates it
+            to include total taxes owed within the each year, if any.
+            It also provides attributes which help `Forecast` to
+            determine whether any tax liability should be reflected in
+            next year's cashflow.
 
         scenario (Scenario): Economic information for the forecast
             (e.g. inflation and stock market returns for each year)
@@ -112,9 +114,8 @@ class Forecast(Ledger):
 
     def __init__(
             self, income_forecast, living_expenses_forecast,
-            reduction_forecast, contribution_forecast,
-            withdrawal_forecast, tax_forecast, scenario
-    ):
+            saving_forecast, withdrawal_forecast,
+            tax_forecast, scenario):
         """ Constructs an instance of class Forecast.
 
         Args:
@@ -122,17 +123,14 @@ class Forecast(Ledger):
                 Determines net income for each year.
             living_expenses_forecast (LivingExpensesForecast):
                 Determines the living expenses for each year.
-            reduction_forecast (ReductionForecast):
-                Determines the contribution reductions for each year.
-            contribution_forecast (ContributionForecast):
-                Determines the contributions for each year.
+            saving_forecast (SavingForecast):
+                Determines the savings for each year.
             withdrawal_forecast (WithdrawalForecast):
-                A callable object that returns the total withdrawals for
-                each year.
+                Determines the total withdrawals for each year.
             tax_forecast (TaxForecast):
                 Determines taxes owed for the year.
-            scenario (Scenario): Provides an `initial_year` and a
-                `num_year` property.
+            scenario (Scenario): Provides `initial_year` and `num_year`
+                properties.
         """
         # Recall that, as a Ledger object, we need to call the
         # superclass initializer and let it know what the first
@@ -143,8 +141,7 @@ class Forecast(Ledger):
         # Store input values
         self.income_forecast = income_forecast
         self.living_expenses_forecast = living_expenses_forecast
-        self.reduction_forecast = reduction_forecast
-        self.contribution_forecast = contribution_forecast
+        self.saving_forecast = saving_forecast
         self.withdrawal_forecast = withdrawal_forecast
         self.tax_forecast = tax_forecast
         self.scenario = scenario
@@ -158,19 +155,17 @@ class Forecast(Ledger):
         self.forecasts = [
             self.income_forecast,
             self.living_expenses_forecast,
-            self.reduction_forecast,
-            self.contribution_forecast,
+            self.saving_forecast,
             self.withdrawal_forecast,
-            self.tax_forecast
-        ]
+            self.tax_forecast]
 
         # Use the `Scenario` object to determine the range of years
         # to iterate over.
         last_year = max(self.scenario)
         while self.this_year < last_year:
-            self.update_subforecasts()
+            self.call_subforecasts()
             self.next_year()
-        self.update_subforecasts()
+        self.call_subforecasts()
 
     @property
     def people(self):
@@ -179,18 +174,18 @@ class Forecast(Ledger):
 
     @property
     def assets(self):
-        """ A set of `Asset` objects for the forecast, excluding debts. """
+        """ A set of non-Debt `Account` objects for the forecast. """
         return self.withdrawal_forecast.accounts
 
     @property
     def debts(self):
         """ A set of `Debt` objects for the forecast. """
-        return self.reduction_forecast.debts
+        return self.saving_forecast.debt_accounts
 
-    def update_subforecasts(self):
+    def call_subforecasts(self):
         """ Calls each SubForecast in order. """
         for forecast in self.forecasts:
-            forecast.update_available(self.available)
+            forecast(self.available)
 
     def next_year(self):
         """ Adds a year to the forecast. """
@@ -240,25 +235,14 @@ class Forecast(Ledger):
 
     @recorded_property_cached
     def living_expenses(self):
-        """ Gross contributions for the year, before reductions. """
+        """ Total amount spent on living expenses for the year. """
         return self.living_expenses_forecast.living_expenses
 
     @recorded_property_cached
-    def gross_contributions(self):
-        """ Gross contributions for the year, before reductions. """
-        return self.income - self.living_expenses
-
-    @recorded_property_cached
-    def contribution_reductions(self):
-        """ Total contribution reductions for the year. """
-        return self.reduction_forecast.reductions
-
-    @recorded_property_cached
-    def net_contributions(self):
+    def savings(self):
         """ Contributions to savings for the year. """
         # Never contribute a negative amount:
-        contributions = self.gross_contributions - self.contribution_reductions
-        return max(contributions, Money(0))
+        return max(self.income - self.living_expenses, Money(0))
 
     @recorded_property_cached
     def principal(self):

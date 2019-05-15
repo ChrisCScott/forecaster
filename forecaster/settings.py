@@ -48,13 +48,13 @@ class Settings:
     living_expenses_rate = Decimal('0.2')
     living_expenses_inflation_adjust = True
 
-    ''' ContributionStrategy defaults '''
-    contribution_strategy = 'Ordered'
-    contribution_weights = {'Account': 1}
+    ''' SavingStrategy defaults '''
+    saving_strategy = "Ordered"
+    saving_weights = {"Account": 1}
 
     ''' WithdrawalStrategy defaults '''
-    withdrawal_strategy = 'Ordered'
-    withdrawal_weights = {'Account': 1}
+    withdrawal_strategy = "Ordered"
+    withdrawal_weights = {"Account": 1}
 
     ''' AllocationStrategy defaults '''
     allocation_strategy = 'n-age'

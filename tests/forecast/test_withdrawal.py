@@ -5,11 +5,20 @@ from decimal import Decimal
 from forecaster import (
     Money, Person, Tax, Timing,
     WithdrawalForecast,
-    AccountTransactionStrategy,
-    Account, ContributionLimitAccount)
+    TransactionStrategy,
+    Account, canada,
+    recorded_property)
+from tests.util import TestCaseTransactions
 
+class WithholdingAccount(Account):
+    """ Testing account. 50% of withdrawals withheld. """
 
-class TestWithdrawalForecast(unittest.TestCase):
+    @recorded_property
+    def tax_withheld(self):
+        """ Always withhold 50% """
+        return self.outflows() / 2
+
+class TestWithdrawalForecast(TestCaseTransactions):
     """ Tests WithdrawalForecast. """
 
     def setUp(self):
@@ -33,7 +42,7 @@ class TestWithdrawalForecast(unittest.TestCase):
         self.account = Account(
             owner=self.person,
             balance=Money(60000))  # $60,000 <- BIGGER!
-        self.limit_account = ContributionLimitAccount(
+        self.rrsp = canada.accounts.RRSP(
             owner=self.person,
             contribution_room=Money(1000),
             balance=Money(6000))  # $6,000
@@ -48,72 +57,64 @@ class TestWithdrawalForecast(unittest.TestCase):
         }
 
         # Now we can set up the big-ticket items:
-        self.account_strategy = AccountTransactionStrategy(
-            AccountTransactionStrategy.strategy_ordered,
-            {'ContributionLimitAccount': 1, 'Account': 2})
+        self.strategy = TransactionStrategy(
+            strategy=TransactionStrategy.strategy_ordered,
+            weights={"RRSP": 1, "Account": 2})
         self.forecast = WithdrawalForecast(
             initial_year=self.initial_year,
             people={self.person},
-            accounts={self.account, self.limit_account},
-            account_transaction_strategy=self.account_strategy)
+            accounts={self.account, self.rrsp},
+            transaction_strategy=self.strategy)
+
+        # Set up another forecast for testing withholding behaviour:
+        self.withholding_account = WithholdingAccount(
+            owner=self.person,
+            balance=Money(100000))
+        self.withholding_strategy = TransactionStrategy(
+            strategy=TransactionStrategy.strategy_ordered,
+            weights={"WithholdingAccount": 1})
+        self.withholding_forecast = WithdrawalForecast(
+            initial_year=self.initial_year,
+            people={self.person},
+            accounts={self.withholding_account},
+            transaction_strategy=self.withholding_strategy)
 
     def test_account_trans_ordered(self):
         """ Test account transactions under ordered strategy. """
         # Set up forecast:
-        self.account_strategy = AccountTransactionStrategy(
-            strategy=AccountTransactionStrategy.strategy_ordered,
-            weights={'ContributionLimitAccount': 1, 'Account': 2})
-        self.forecast.account_transaction_strategy = self.account_strategy
-        self.forecast.update_available(self.available)
-
-        # Track total withdrawals from each account for convenience:
-        # pylint: disable=unsubscriptable-object
-        # These properties return dicts, but pylint has trouble
-        # inferring that.
-        account_withdrawal = sum(
-            self.forecast.account_transactions[self.account].values())
-        limit_account_withdrawal = sum(
-            self.forecast.account_transactions[self.limit_account].values())
+        self.forecast.transaction_strategy = TransactionStrategy(
+            strategy=TransactionStrategy.strategy_ordered,
+            weights={"RRSP": 1, "Account": 2})
+        self.forecast(self.available)
         # We are withdrawing $20,000. We'll withdraw the whole balance
-        # of `limit_account` ($6000), with the rest from `account`:
-        self.assertEqual(
-            limit_account_withdrawal,
+        # of `rrsp` ($6000), with the rest from `account`:
+        self.assertTransactions(
+            self.forecast.account_transactions[self.rrsp],
             Money(-6000))
-        self.assertEqual(
-            account_withdrawal,
+        self.assertTransactions(
+            self.forecast.account_transactions[self.account],
             Money(-14000))
 
     def test_account_trans_weighted(self):
         """ Test account transactions under weighted strategy. """
         # Set up forecast:
-        self.account_strategy = AccountTransactionStrategy(
-            strategy=AccountTransactionStrategy.strategy_weighted,
-            weights={'ContributionLimitAccount': 3000, 'Account': 17000})
-        self.forecast.account_transaction_strategy = self.account_strategy
-        self.forecast.update_available(self.available)
-
-        # Track total withdrawals from each account for convenience:
-        # pylint: disable=unsubscriptable-object
-        # These properties return dicts, but pylint has trouble
-        # inferring that.
-        account_withdrawal = sum(
-            self.forecast.account_transactions[self.account].values())
-        limit_account_withdrawal = sum(
-            self.forecast.account_transactions[self.limit_account].values())
+        self.forecast.transaction_strategy = TransactionStrategy(
+            strategy=TransactionStrategy.strategy_weighted,
+            weights={"RRSP": 3000, "Account": 17000})
+        self.forecast(self.available)
         # We are withdrawing $20,000. We'll withdraw $3000 from
-        # `limit_account`, with the rest from `account`:
-        self.assertEqual(
-            limit_account_withdrawal,
+        # `rrsp`, with the rest from `account`:
+        self.assertTransactions(
+            self.forecast.account_transactions[self.rrsp],
             Money(-3000))
-        self.assertEqual(
-            account_withdrawal,
+        self.assertTransactions(
+            self.forecast.account_transactions[self.account],
             Money(-17000))
 
     def test_gross_withdrawals(self):
         """ Test total withdrawn from accounts. """
         # Set up forecast:
-        self.forecast.accounts = {self.account}
-        self.forecast.update_available(self.available)
+        self.forecast(self.available)
 
         # For default `available`, should withdraw $20,000.
         self.assertEqual(
@@ -122,42 +123,34 @@ class TestWithdrawalForecast(unittest.TestCase):
 
     def test_tax_withheld(self):
         """ Test tax withheld from accounts. """
-        # Manually set tax withholdings:
-        self.account.tax_withheld = Money(100)
-        self.limit_account.tax_withheld = Money(400)
         # Set up forecast:
-        self.forecast.update_available(self.available)
+        self.withholding_forecast(self.available)
 
-        # Total withholdings are $500
+        # Total withholdings are $10000 (half of $20,000 withdrawn)
         self.assertEqual(
-            self.forecast.tax_withheld,
-            Money(500))
+            self.withholding_forecast.tax_withheld,
+            Money(-10000))
 
     def test_net_withdrawals(self):
         """ Test total withdrawn from accounts, net of taxes. """
-        # Manually set tax withholdings:
-        self.account.tax_withheld = Money(100)
-        self.limit_account.tax_withheld = Money(400)
         # Set up forecast:
-        self.forecast.update_available(self.available)
+        self.withholding_forecast(self.available)
 
-        # Total withdrawals are $20,000 and total withheld is $500,
-        # for total of $19,500 in net withdrawals:
+        # Total withdrawals are $20,000 and total withheld is $10,000,
+        # for total of $10,000 in net withdrawals:
         self.assertEqual(
-            self.forecast.net_withdrawals,
-            Money(19500))
+            self.withholding_forecast.net_withdrawals,
+            Money(10000))
 
-    def test_update_available(self):
-        """ Test total withdrawn from accounts. """
-        # Set up forecast:
-        self.forecast.accounts = {self.account}
-        self.forecast.update_available(self.available)
+    def test_mutate_available(self):
+        """ Invoke __call__ on `available`. """
+        # Invoke __call__:
+        self.withholding_forecast(self.available)
 
         # The amount withdrawn should zero out `available`,
-        # subject to any withholding taxes:
-        self.assertEqual(
-            sum(self.available.values()),
-            -self.forecast.tax_withheld)
+        # subject to 50% withholding taxes (i.e. `available` should
+        # only be reduced to -$10,000):
+        self.assertTransactions(self.available, Money(-10000))
 
 
 
