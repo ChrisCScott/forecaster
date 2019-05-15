@@ -49,10 +49,12 @@ class Settings:
     living_expenses_inflation_adjust = True
 
     ''' SavingStrategy defaults '''
-    saving_strategy = []
+    saving_strategy = "Ordered"
+    saving_weights = {"Account": 1}
 
     ''' WithdrawalStrategy defaults '''
-    withdrawal_strategy = []
+    withdrawal_strategy = "Ordered"
+    withdrawal_weights = {"Account": 1}
 
     ''' AllocationStrategy defaults '''
     allocation_strategy = 'n-age'

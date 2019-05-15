@@ -8,7 +8,7 @@ from forecaster.forecast import (
     SavingForecast, WithdrawalForecast, TaxForecast)
 from forecaster.tax import Tax
 from forecaster.strategy import (
-    LivingExpensesStrategy, TransactionTraversal, AllocationStrategy)
+    LivingExpensesStrategy, TransactionStrategy, AllocationStrategy)
 from forecaster.scenario import Scenario
 from forecaster.settings import Settings
 
@@ -56,11 +56,11 @@ DEFAULTVALUES = {
         "rate": "settings.living_expenses_rate",
         "inflation_adjust": "scenario.inflation_adjust"},
     str(Parameter.SAVING_STRATEGY): {
-        # TODO: Sort out how to assign priority based on settings.
-        "priority": "settings.saving_strategy"},
+        "strategy": "settings.saving_strategy",
+        "weights": "settings.saving_weights"},
     str(Parameter.WITHDRAWAL_STRATEGY): {
-        # TODO: Sort out how to assign priority based on settings.
-        "priority": "settings.withdrawal_strategy"},
+        "strategy": "settings.withdrawal_strategy",
+        "weights": "settings.withdrawal_weights"},
     str(Parameter.ALLOCATION_STRATEGY): {
         "strategy": "settings.allocation_strategy",
         "target": "settings.allocation_target",
@@ -81,8 +81,8 @@ DEFAULTVALUES = {
 DEFAULTTYPES = {
     str(Parameter.SCENARIO): Scenario,
     str(Parameter.LIVING_EXPENSES_STRATEGY): LivingExpensesStrategy,
-    str(Parameter.SAVING_STRATEGY): TransactionTraversal,
-    str(Parameter.WITHDRAWAL_STRATEGY): TransactionTraversal,
+    str(Parameter.SAVING_STRATEGY): TransactionStrategy,
+    str(Parameter.WITHDRAWAL_STRATEGY): TransactionStrategy,
     str(Parameter.ALLOCATION_STRATEGY): AllocationStrategy,
     str(Parameter.TAX_TREATMENT): Tax}
 

@@ -49,7 +49,9 @@ class SavingForecast(SubForecast):
         # started on doing the updates:
         super().__call__(available)
 
-        self.account_transactions = self.transaction_strategy(available)
+        accounts = set(self.retirement_accounts).union(self.debt_accounts)
+        self.account_transactions = self.transaction_strategy(
+            available, accounts=accounts)
 
         # NOTE: We let the transactions_strategy determine
         # timing. It will use each account's default timing. Consider
