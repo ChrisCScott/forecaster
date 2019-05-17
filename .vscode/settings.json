@@ -13,6 +13,6 @@
     "python.linting.enabled": true,
     "python.linting.pylintEnabled": true,
     "python.linting.pep8Enabled": false,
-    "python.pythonPath": "${workspaceFolder}\\venv\\Scripts\\python.exe",
+    "python.pythonPath": "${workspaceFolder}/venv/",
     "terminal.integrated.shellArgs.windows": ["-ExecutionPolicy", "Bypass"]
 }
