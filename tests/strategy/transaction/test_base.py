@@ -69,6 +69,14 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         strategy = TransactionTraversal(priority=self.priority_ordered)
         self.assertEqual(strategy.priority, self.priority_ordered)
 
+    def test_call_basic(self):
+        """ Test __call__ with a one-node priority tree. """
+        strategy = TransactionTraversal(priority=self.taxable_account)
+        available = {Decimal(0.5): Money(100)}
+        transactions = strategy(available)
+        # All $100 will go to the single account:
+        self.assertTransactions(transactions[self.taxable_account], Money(100))
+
     def test_ordered_basic(self):
         """ Contribute to the first account of an ordered list. """
         # Contribute $100 to RRSP, then TFSA, then taxable.
