@@ -181,7 +181,7 @@ class TransactionTraversal:
         total_flows, flows = self._generate_flows(graph, source, sink)
         accounts = self._get_accounts()
         transactions = self._convert_flows_to_transactions(
-            graph, flows, timing, limit, accounts)
+            flows, timing, limit, accounts)
         # If we couldn't generate any flows, there's no need to recurse:
         if abs(total_flows) < EPSILON:
             return transactions
@@ -190,7 +190,8 @@ class TransactionTraversal:
         # out at least one edge) and recurse.
         shortfall = total - total_flows
         if abs(shortfall) > EPSILON:
-            graph = self._reduce_graph(graph, flows)
+            graph = self._reduce_graph(
+                graph, flows, timing, limit, source, sink)
             loop_transactions = self._traverse_priority(
                 timing, shortfall, limit,
                 graph=graph, source=source, sink=sink)
@@ -239,6 +240,12 @@ class TransactionTraversal:
     def _add_node(
             self, graph, node, timing, limit, sink=None):
         """ TODO """
+        # TODO: Embed nodes with applicable limits here
+        # This will likely require that we redesign `_add_node_\*` to
+        # receive an arbitrary value as the origin of edges to children
+        # (this could be a dummy node) and passing `node.children`
+        # separately.
+
         # Anything that isn't a TransactionNode gets treated as an
         # account:
         if not isinstance(node, TransactionNode):
@@ -274,13 +281,9 @@ class TransactionTraversal:
                 children.
             timing (Timing): The timing of transactions to be assigned
                 to nodes.
-            max_limit (str): The name of the method used by leaf nodes
+            limit (str): The name of the method used by leaf nodes
                 to determine the maximal sequence of transactions for
                 given timing. The method must take `timing` as a kwarg.
-            min_limit (str): The name of the method used by leaf nodes
-                to determine the minimal sequence of transactions for a
-                given timing. The method must take `timing` as a kwarg.
-                Optional.
             sink (str): All leaf nodes will be neighbours of this node.
                 Optional; no edges will be created from leaf nodes if
                 not provided.
@@ -358,21 +361,92 @@ class TransactionTraversal:
         group = self._get_group(node, limit)
         if group is not None:
             group_node = frozenset(group)  # make hashable
-            graph.add_edge(node, group_node, capacity=capacity, weight=0)
+            # TODO: Assign limit in separate method that's called once
+            # for each type of limit (i.e. not called again by
+            # `_reduce_graph`)
+            graph.add_edge(
+                node, group_node, capacity=capacity, weight=0, limit=capacity)
             # We're done with the original node; all future edges will
             # be from the group node.
             node = group_node
 
         # Send an edge from the node to the sink, if provided:
         if sink is not None:
-            graph.add_edge(node, sink, capacity=capacity, weight=0)
+            # TODO: Assign limit in separate method that's called once
+            # for each type of limit (i.e. not called again by
+            # `_reduce_graph`)
+            graph.add_edge(
+                node, sink, capacity=capacity, weight=0, limit=capacity)
 
-    def _reduce_graph(self, graph, flows):
+    def _reduce_graph(self, graph, flows, timing, limit, source, sink):
         """ TODO """
-        # TODO: Implement _reduce_graph
-        # (Currently this returns an empty graph - which is reduced,
-        # but not quite as usefully as we'd like!)
-        return networkx.DiGraph()
+        # Sometimes a node's successors can't accept all the flow that
+        # the node wants to send their way. This method aims to:
+        # (1) reduce capacities and limits by existing flows;
+        # (2) identify the successors that can't accept more flows;
+        # (3) shift excess capacity from exhausted successor's inbound
+        #     edges to the edges of other successors.
+        #     (This is trivial for ordered nodes, but requires some
+        #     reweighting for weighted nodes).
+
+        # Reduce capacity and limit by any flows through the edge:
+        for parent, child, edge_data in graph.edges_iter(date=True):
+            edge_data["capacity"] -= flows[parent][child]
+            if "limit" in edge_data:
+                edge_data["limit"] -= flows[parent][child]
+
+        # It's easiest to recursively identify exhausted successors,
+        # starting from the sink's predecessors and moving on up:
+        skip_nodes = self._skip_nodes(graph, sink)
+
+        # If we're skipping source, that means we've added all we can.
+        # Return a graph with only the source and sink nodes.
+        if source in skip_nodes:
+            graph = networkx.DiGraph()
+            graph.add_edge(source, sink, capacity=0, weight=0, limit=0)
+            return graph
+
+        # Now re-assign weights and capacities for the various nodes.
+        self._add_node(graph, self._priority_tree, timing, limit, sink=sink)
+
+        return graph
+
+    def _skip_nodes(self, graph, sink, node=None, skip_nodes=None):
+        """ TODO """
+        if skip_nodes is None:
+            skip_nodes = set()
+
+        # Figure out whether this node should be skipped.
+        # It should be skipped if each of its successors is:
+        #   (1) in skip_nodes; or
+        #   (2) linked to this node by an outbound edge that's hit its
+        #       limit.
+        # (We don't do this on the first iteration, which we expect to
+        # be `sink`, which we never add to `skip_nodes`)
+        if node is not None:
+            successors = graph.successors(node)
+            # Find all nodes linked by edges that have hit their limits:
+            limit_nodes = set()
+            for successor in successors:
+                if (
+                        "limit" in graph[node][successor]
+                        and graph[node][successor]["limit"] < EPSILON):
+                    limit_nodes.add(successor)
+            # Figure out whether all successors should be skipped:
+            # (We could do a union, but using an `or` should be faster)
+            if all(
+                    successor in skip_nodes or successor in limit_nodes
+                    for successor in successors):
+                skip_nodes.add(node)
+
+        # Recurse onto predecessors.
+        # (This will cause us to visit some nodes multiple times, which
+        # is OK; we may need to visit from each of its children before
+        # we can figure out that it needs to be skipped.)
+        for node in graph.predecessors(node):
+            self._skip_nodes(graph, sink, node, skip_nodes)
+
+        return skip_nodes
 
     def _generate_flows(self, graph, source, sink):
         """ TODO """
@@ -388,7 +462,7 @@ class TransactionTraversal:
         return total, flows
 
     def _convert_flows_to_transactions(
-            self, graph, flows, timing, limit, accounts):
+            self, flows, timing, limit, accounts):
         """ TODO """
         # TODO: Reduce this to a dict comprehension after debugging.
         transactions = {}
