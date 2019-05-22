@@ -323,7 +323,7 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         # R1/R2 are a group. Trying to contribute more than the group
         # allows should result in only the total contribution room
         # being contributed across both accounts.
-        priority = {self.rrsp: 0.5, self.rrsp2: 0.5}
+        priority = {self.rrsp: Decimal(0.5), self.rrsp2: Decimal(0.5)}
         strategy = TransactionTraversal(priority=priority)
         # Contribute $200 (i.e. more than the joint contribution room
         # of the two RRSPs, which is $100):
