@@ -5,6 +5,7 @@ amounts, and to which accounts.
 """
 
 from decimal import Decimal
+from queue import SimpleQueue
 import networkx
 from forecaster.ledger import Money
 from forecaster.utility import EPSILON_MONEY
@@ -217,17 +218,18 @@ class TransactionTraversal:
 
         # Recursively build out the group from the root down:
         self._add_successors(
-            graph, self._priority_tree, timing, limit, sink=sink)
+            graph, self._priority_tree, timing, limit,
+            source=source, sink=sink)
 
-        # TODO: Pass over weighted nodes and limit inbound capacity
-        # to actual maximum possible flows (see comment at end of
-        # `_add_node_weighted`). Probably best to push this off to
-        # a new (recursive) method.
+        # This first pass results in weighted nodes providing too much
+        # outbound capacity to their children. Pass over weighted nodes
+        # and limit outbound capacity to actual maximum possible flows.
+        self._restrict_weighted_underflows(graph, timing, limit, source, sink)
 
         return (graph, source, sink)
 
     def _add_successors(
-            self, graph, node, timing, limit, *, sink=None):
+            self, graph, node, timing, limit, **kwargs):
         """ TODO """
         # If `node` has an applicable limit, embed it as two nodes:
         #       N --> L
@@ -273,8 +275,7 @@ class TransactionTraversal:
             raise ValueError("Unrecognized node type for node " + str(node))
 
         method(
-            graph, node, timing, limit,
-            sink=sink, outbound_node=outbound_node)
+            graph, node, timing, limit, outbound_node=outbound_node, **kwargs)
 
     def _add_node_weighted(
             self, graph, node, timing, limit,
@@ -299,15 +300,12 @@ class TransactionTraversal:
             limit (str): The name of the method used by leaf nodes
                 to determine the maximal sequence of transactions for
                 given timing. The method must take `timing` as a kwarg.
-            sink (str): All leaf nodes will be neighbours of this node.
-                Optional; no edges will be created from leaf nodes if
-                not provided.
         """
         if outbound_node is None:
             outbound_node = node
         # Calculate the total capacity of inbound edges.
         # This will be distributed to outbound edges.
-        capacity = _inbound_capacity(graph, node)
+        capacity = _inbound_capacity(graph, outbound_node)
 
         # For weighted nodes, we want to prioritize assigning flows
         # as dictated by the nodes' weights, while still allowing flows
@@ -320,23 +318,19 @@ class TransactionTraversal:
         # children. If added directly between children, the number of
         # edges would be `n^2`.)
         overflow_node = (node, "overflow")
+        # Add an edge from `node` to `overflow_node` and from
+        # `overflow_node` to each child. This enables shifting flow
+        # between children. (We'll add weight to the node-overflow_node
+        # edge later, once we know the weights of all paths to `sink`):
+        graph.add_edge(node, overflow_node, capacity=capacity)
+        for child in node.children:
+            graph.add_edge(
+                overflow_node, child, capacity=capacity)
 
-        # Weighted nodes assign flows proportionately to weights.
-        # Proportionality is easier to calculate with normalized weights
-        # so determine that first:
-        normalization = sum(node.children.values())
-        # Add an edge to each child (this adds both edge and child).
-        for child, weight in node.children.items():
-            child_total = capacity * weight / normalization
-            graph.add_edge(
-                outbound_node, child, capacity=child_total)
-            # Add edges to and from `overflow_node` to allow shifting
-            # flow between children:
-            graph.add_edge(
-                overflow_node, child, capacity=capacity-child_total)
-            # Recurse onto the child:
-            self._add_successors(
-                graph, child, timing, limit, **kwargs)
+        # Recursively add successor nodes:
+        self._add_weighted_children(
+            graph, outbound_node, node.children, capacity, timing, limit,
+            **kwargs)
 
         # We want the flow through each child to be as close as possible
         # to the capacity assigned above (i.e. we want to move as little
@@ -345,37 +339,78 @@ class TransactionTraversal:
         # `overflow_node`. It should be preferable to shift flow between
         # _any_ successor path before routing it through `overflow_node`
         weight = max(_sum_weight(graph, child) for child in node.children) + 1
-        graph.add_edge(node, overflow_node, capacity=capacity, weight=weight)
-        # NOTE: This isn't enough, since if the inbound capacity exceeds
-        # the maximum flow possible through all of the node's children,
-        # then the weight on overflows doesn't affect underflows (which
-        # will be distributed unpredictably).
-        # We probably need to do a subsequent pass of all weighted nodes
-        # to limit inbound and outbound capacity to the actual max flow
-        # possible through successors. (We can probably check for flows
-        # through `overflow_node` at the same time, reify them as
-        # increased/decreased capacity on edges to various children,
-        # and set capacity of the edge to `overflow_node` to 0.)
-        # This should probably proceed depth-first from `source`, so
-        # that the truest weighting of the highest-level nodes' children
-        # is reified first, with lower-level nodes being considered
-        # later. (Each weighted node will likely require a full
-        # min-cost-max-flow iteration over the whole graph to determine
-        # its max flows, since its successors may share capacity with
-        # non-successors elsewhere in the tree.)
-        # One benefit of this is that we can probably reinstate the
-        # `_sum_weight` logic of `_add_ordered_node` (and thus assign
-        # non-zero capacity to each child of an ordered node) since
-        # we'll ensure that the maximum amount of flow is forced through
-        # each weighted node on the first "real" traversal.
-        # (This doesn't save on algorithmic complexity, sadly - we'll do
-        # just as many flow-assigning traversals, but this way we do
-        # them during graph-building time, with the benefit that we
-        # deal with overflow in a more rigorous way than earlier
-        # implementations where we simply assign capacity, try to find
-        # the max flow, determine which nodes were the bottleneck,
-        # reassign weights by skipping bottlenecked nodes, and reattempt
-        # finding the max flow.)
+        graph.add_edge(node, overflow_node, weight=weight)
+
+        # This deals with overflows, but not underflows - which are
+        # basically guaranteed, since each child node has more inbound
+        # capacity than is needed to achieve its weighted flows (thanks
+        # to the extra capacity from overflow_node).
+        # We'll need to solve this after the first complete iteration
+        # of the graph has been built.
+
+    def _add_weighted_children(
+            self, graph, node, children, capacity, timing, limit, **kwargs):
+        """ TODO """
+        # Weighted nodes assign flows proportionately to weights.
+        # Proportionality is easier to calculate with normalized weights
+        # so determine that first:
+        normalization = sum(children.values())
+        # Add an edge to each child (this adds both edge and child).
+        for child, weight in children.items():
+            child_total = capacity * weight / normalization
+            graph.add_edge(
+                node, child, capacity=child_total)
+            # Recurse onto the child:
+            self._add_successors(
+                graph, child, timing, limit, **kwargs)
+
+    def _restrict_weighted_underflows(
+            self, graph, timing, limit, source, sink):
+        """ TODO """
+        # We want to ensure that higher-order weighted nodes are
+        # prioritized (i.e. skew their flows to the most limited degree
+        # possible), so we'll use _breadth-first_ traversal.
+        # It's best to do that traversal on `_priority_tree`, since the
+        # graph itself can have dummy nodes that cause two weighted
+        # nodes with equal height in the tree to have unequal distance
+        # from `source` in the graph.
+        weighted_nodes = SimpleQueue()
+        traverse_nodes = SimpleQueue()
+        traverse_nodes.put(self._priority_tree)
+        while not traverse_nodes.empty():
+            # Get the node at the front of the queue:
+            node = traverse_nodes.get()
+            # Store weighted nodes for later traversal:
+            if node.is_weighted():
+                weighted_nodes.put(node)
+            # Traverse children breadth-first:
+            for child in node.children:
+                traverse_nodes.put(child)
+
+        # Now we can traverse weighted nodes in breadth-first order.
+        while not weighted_nodes.empty():
+            node = weighted_nodes.get()
+            # Try to generate flows through the graph. If the total flows
+            # through this node are less than its outbound capacity, reduce
+            # its outbound capacity to match.
+            _, flows = self._generate_flows(graph, source, sink)
+            total_flows = sum(flows[node].values())
+            capacity = _outbound_capacity(graph, node)
+            # We only need to restrict capacity if there's an underflow:
+            if total_flows < capacity:
+                # Eliminate the underflow by limiting each edge along
+                # every path from `node` to `node.children` to the
+                # actual flows through that edge:
+                nbunch = (node, *_nodes_between(graph, node, node.children))
+                for parent, child, data in graph.out_edges(
+                        nbunch=nbunch, data=True):
+                    data["capacity"] = flows[parent][child]
+                # Now update all of the node's children based on their
+                # new (reduced) inbound capacity:
+                for child in node.children:
+                    self._add_successors(
+                        graph, child, timing, limit,
+                        source=source, sink=sink)
 
     def _add_node_ordered(
             self, graph, node, timing, limit,
@@ -385,7 +420,7 @@ class TransactionTraversal:
             outbound_node = node
         # Calculate the total capacity of inbound edges.
         # This will be distributed to outbound edges.
-        capacity = _inbound_capacity(graph, node)
+        capacity = _inbound_capacity(graph, outbound_node)
 
         # Add an edge to each child (this adds both edge and child).
         # The first live (i.e. non-skipped) child gets all the capacity.
@@ -409,7 +444,7 @@ class TransactionTraversal:
             outbound_node = node
         # Calculate the total capacity of inbound edges.
         # This will be distributed to outbound edges.
-        capacity = _inbound_capacity(graph, node)
+        capacity = _inbound_capacity(graph, outbound_node)
 
         # Add an edge to the (single) child:
         child = node.source
@@ -450,9 +485,6 @@ class TransactionTraversal:
         group = self._get_group(node, limit)
         if group is not None:
             group_node = frozenset(group)  # make hashable
-            # TODO: Assign limit in separate method that's called once
-            # for each type of limit (i.e. not called again by
-            # `_reduce_graph`)
             graph.add_edge(outbound_node, group_node, **edge_data)
             # We're done with the original outbound node; all further
             # edges will be from the group node.
@@ -460,9 +492,6 @@ class TransactionTraversal:
 
         # Send an edge from the node to the sink, if provided:
         if sink is not None:
-            # TODO: Assign limit in separate method that's called once
-            # for each type of limit (i.e. not called again by
-            # `_reduce_graph`)
             graph.add_edge(outbound_node, sink, **edge_data)
 
     def _generate_flows(self, graph, source, sink):
@@ -535,6 +564,30 @@ def _inbound_capacity(graph, node):
     # between outbound edges can change during recursion.)
     return sum(
         graph[parent][node]["capacity"] for parent in graph.predecessors(node))
+
+def _outbound_capacity(graph, node):
+    """ Calculates the total capacity of outbound edges. """
+    return sum(
+        graph[node][child]["capacity"] for child in graph.successors(node))
+
+def _nodes_between(graph, start, end_nbunch):
+    """ Finds all nodes on a path between `start` and `end_nbunch`.
+    
+    `end_nbunch` is expected to be an iterable of nodes.
+    """
+    # We could find all nodes between `start` and `end_nbunch` by
+    # calling `networkx.algorithms.simple_paths`, but that has fairly
+    # high algorithmic complexity for out purposes.
+    # If we assume that all outbound paths from `start` are acyclic and
+    # end at (or pass through) `end_nbunch` then it's more
+    # straightforward to recursively add all successors of `start`
+    # until we hit a node in `end_nbunch`:
+    nodes = set()
+    for node in graph.successors(start):
+        if node not in end_nbunch:
+            nodes.add(node)
+            nodes.update(_nodes_between(graph, node, end_nbunch))
+    return nodes
 
 def _sum_weight(graph, node):
     """ TODO """
