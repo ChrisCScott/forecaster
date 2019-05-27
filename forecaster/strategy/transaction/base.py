@@ -214,7 +214,7 @@ class TransactionTraversal:
         # an edge to the root with capacity `total`, unless calling
         # code explicitly requests the root node:
         if source is not self._priority_tree:
-            self._add_edge(graph, source, self._priority_tree, capacity=total)
+            _add_edge(graph, source, self._priority_tree, capacity=total)
 
         # Recursively build out the group from the root down:
         self._add_successors(
@@ -229,7 +229,7 @@ class TransactionTraversal:
         return (graph, source, sink)
 
     def _add_successors(
-            self, graph, node, timing, limit, **kwargs):
+            self, graph, node, timing, limit, capacity=None, **kwargs):
         """ TODO """
         # Anything that isn't a TransactionNode gets treated as an
         # account:
@@ -245,12 +245,14 @@ class TransactionTraversal:
         else:
             raise ValueError("Unrecognized node type for node " + str(node))
 
-        outbound_node = self._embed_limit(graph, node, limit)
+        outbound_node, capacity = self._embed_limit(
+            graph, node, limit, capacity=capacity)
 
         method(
-            graph, node, timing, limit, outbound_node=outbound_node, **kwargs)
+            graph, node, timing, limit,
+            capacity=capacity, outbound_node=outbound_node, **kwargs)
 
-    def _embed_limit(self, graph, node, limit):
+    def _embed_limit(self, graph, node, limit, capacity=None):
         """ TODO """
         # If we don't wind up doing any embedding, just return `node`:
         outbound_node = node
@@ -279,14 +281,16 @@ class TransactionTraversal:
                 # If the inbound capacity is less than the limit value,
                 # use that, since many successors will use this to
                 # determine their own edge capacities:
-                capacity = min(_inbound_capacity(graph, node), limit_value)
-                self._add_edge(graph, node, outbound_node, capacity=capacity)
+                if capacity is None:
+                    capacity = _inbound_capacity(graph, node)
+                capacity = min(capacity, limit_value)
+                _add_edge(graph, node, outbound_node, capacity=capacity)
 
-        return outbound_node
+        return outbound_node, capacity
 
     def _add_node_weighted(
             self, graph, node, timing, limit,
-            *, outbound_node=None, **kwargs):
+            *, capacity=None, outbound_node=None, **kwargs):
         """ Adds a weighted node's children to the graph.
 
         The input `node` should already be a node of `graph` with at
@@ -310,9 +314,10 @@ class TransactionTraversal:
         """
         if outbound_node is None:
             outbound_node = node
-        # Calculate the total capacity of inbound edges.
-        # This will be distributed to outbound edges.
-        capacity = _inbound_capacity(graph, outbound_node)
+        if capacity is None:
+            # Calculate the total capacity of inbound edges.
+            # This will be distributed to outbound edges.
+            capacity = _inbound_capacity(graph, outbound_node)
 
         # For weighted nodes, we want to prioritize assigning flows
         # as dictated by the nodes' weights, while still allowing flows
@@ -329,9 +334,9 @@ class TransactionTraversal:
         # `overflow_node` to each child. This enables shifting flow
         # between children. (We'll add weight to the node-overflow_node
         # edge later, once we know the weights of all paths to `sink`):
-        self._add_edge(graph, node, overflow_node, capacity=capacity)
+        _add_edge(graph, node, overflow_node, capacity=capacity)
         for child in node.children:
-            self._add_edge(graph, overflow_node, child, capacity=capacity)
+            _add_edge(graph, overflow_node, child, capacity=capacity)
 
         # Recursively add successor nodes:
         self._add_weighted_children(
@@ -345,7 +350,7 @@ class TransactionTraversal:
         # `overflow_node`. It should be preferable to shift flow between
         # _any_ successor path before routing it through `overflow_node`
         weight = max(_sum_weight(graph, child) for child in node.children) + 1
-        self._add_edge(graph, node, overflow_node, weight=weight)
+        _add_edge(graph, node, overflow_node, weight=weight)
 
         # This deals with overflows, but not underflows - which are
         # basically guaranteed, since each child node has more inbound
@@ -364,7 +369,7 @@ class TransactionTraversal:
         # Add an edge to each child (this adds both edge and child).
         for child, weight in children.items():
             child_total = capacity * weight / normalization
-            self._add_edge(graph, node, child, capacity=child_total)
+            _add_edge(graph, node, child, capacity=child_total)
             # Recurse onto the child:
             self._add_successors(
                 graph, child, timing, limit, **kwargs)
@@ -395,43 +400,76 @@ class TransactionTraversal:
         # Now we can traverse weighted nodes in breadth-first order.
         while not weighted_nodes.empty():
             node = weighted_nodes.get()
-            # Try to generate flows through the graph. If the total flows
-            # through this node are less than its outbound capacity, reduce
-            # its outbound capacity to match.
-            _, flows = self._generate_flows(graph, source, sink)
-            total_flows = sum(flows[node].values())
-            capacity = _outbound_capacity(graph, node)
-            # We only need to restrict capacity if there's an underflow:
-            if total_flows < capacity:
-                # Eliminate the underflow by limiting each edge along
-                # every path from `node` to `node.children` to the
-                # actual flows through that edge:
-                nbunch = (node, *_nodes_between(graph, node, node.children))
-                for parent, child, data in graph.out_edges(
-                        nbunch=nbunch, data=True):
-                    data[CAPACITY_KEY] = flows[parent][child]
-                # Now update all of the node's children based on their
-                # new (reduced) inbound capacity:
-                for child in node.children:
-                    self._add_successors(
-                        graph, child, timing, limit,
-                        source=source, sink=sink)
+            # It's helpful to separate out this next part into a
+            # separate method to enable recursion on this node
+            # (without repeating the foregoing BFS traversals).
+            self._restrict_node_underflows(
+                graph, node, timing, limit, source, sink)
+
+    def _restrict_node_underflows(
+            self, graph, node, timing, limit, source, sink):
+        """ TODO """
+        # Try to generate flows through the graph.
+        _, flows = self._generate_flows(graph, source, sink)
+        total_flows = sum(flows[node].values())
+        # Check for two kinds of underflows:
+        #   (1) total flows through this node are less than its
+        #       _outbound_ capacity; and/or
+        #   (2) total flows through this node are less than its
+        #       _inbound_ capacity.
+        # We want to reduce outbound capacity to match those flows, and
+        # if there's an underflow relative to _inbound_ capacity then we
+        # want to regenerate the 0-weight edges to the node's children
+        # to ensure that we prioritize the correct weighting.
+        outbound_capacity = _outbound_capacity(graph, node)
+        inbound_capacity = _inbound_capacity(graph, node)
+        # Deal with inbound underflows first, then recurse and try again
+        if total_flows < inbound_capacity:
+            # Force recalculation of 0-weight edges' capacity based on
+            # the actual sum of flows through this node:
+            self._add_successors(
+                graph, node, timing, limit,
+                source=source, sink=sink, capacity=total_flows)
+            # Recurse and terminate, since the previously-assigned flows
+            # (to children) may deviate more than necessary from weights
+            self._restrict_node_underflows(
+                graph, node, timing, limit, source, sink)
+            return
+
+        # If there's only an outbound overflow, restrict capacity along
+        # the various outbound edges to match those flows and then
+        # update the children:
+        if total_flows < outbound_capacity:
+            # Eliminate the underflow by limiting each edge along
+            # every path from `node` to `node.children` to the
+            # actual flows through that edge:
+            nbunch = (node, *_nodes_between(graph, node, node.children))
+            for parent, child, data in graph.out_edges(
+                    nbunch=nbunch, data=True):
+                data[CAPACITY_KEY] = flows[parent][child]
+            # Now update all of the node's children based on their
+            # new (reduced) inbound capacity:
+            for child in node.children:
+                self._add_successors(
+                    graph, child, timing, limit,
+                    source=source, sink=sink)
 
     def _add_node_ordered(
             self, graph, node, timing, limit,
-            *, outbound_node=None, **kwargs):
+            *, capacity=None, outbound_node=None, **kwargs):
         """ TODO """
         if outbound_node is None:
             outbound_node = node
-        # Calculate the total capacity of inbound edges.
-        # This will be distributed to outbound edges.
-        capacity = _inbound_capacity(graph, outbound_node)
+        if capacity is None:
+            # Calculate the total capacity of inbound edges.
+            # This will be distributed to outbound edges.
+            capacity = _inbound_capacity(graph, outbound_node)
 
         # Add an edge to each child (this adds both edge and child).
         # The first live (i.e. non-skipped) child gets all the capacity.
         weight = 0
         for child in node.children:
-            self._add_edge(
+            _add_edge(
                 graph, outbound_node, child, capacity=capacity, weight=weight)
             # Recurse onto the child:
             self._add_successors(
@@ -443,39 +481,40 @@ class TransactionTraversal:
 
     def _add_node_leaf(
             self, graph, node, timing, limit,
-            *, outbound_node=None, **kwargs):
+            *, capacity=None, outbound_node=None, **kwargs):
         """ TODO """
         if outbound_node is None:
             outbound_node = node
-        # Calculate the total capacity of inbound edges.
-        # This will be distributed to outbound edges.
-        capacity = _inbound_capacity(graph, outbound_node)
+        if capacity is None:
+            # Calculate the total capacity of inbound edges.
+            # This will be distributed to outbound edges.
+            capacity = _inbound_capacity(graph, outbound_node)
 
         # Add an edge to the (single) child:
         child = node.source
-        self._add_edge(graph, outbound_node, child, capacity=capacity)
+        _add_edge(graph, outbound_node, child, capacity=capacity)
 
         # Recurse onto the child:
         self._add_successors(graph, child, timing, limit, **kwargs)
 
     def _add_node_account(
             self, graph, node, timing, limit,
-            *, sink=None, outbound_node=None, **kwargs):
+            *, sink=None, capacity=None, outbound_node=None, **kwargs):
         """ TODO """
         if outbound_node is None:
             outbound_node = node
-
-        # The capacity of an account is not a function of its inbound
-        # edges - it's just the most that an account can receive.
-        transaction_limit = self._get_transactions(node, limit, timing)
-        capacity = sum(transaction_limit.values())
+        if capacity is None:
+            # The capacity of an account is not a function of its
+            # inbound edges. It's the most that an account can receive.
+            transaction_limit = self._get_transactions(node, limit, timing)
+            capacity = sum(transaction_limit.values())
 
         # Most accounts add an edge straight to `sink`, but accounts
         # that have shared transaction limits have special treatment:
         group = self._get_group(node, limit)
         if group is not None:
             group_node = frozenset(group)  # make hashable
-            self._add_edge(
+            _add_edge(
                 graph, outbound_node, group_node,
                 capacity=capacity, limit=capacity)
             # We're done with the original outbound node; all further
@@ -484,7 +523,7 @@ class TransactionTraversal:
 
         # Send an edge from the node to the sink, if provided:
         if sink is not None:
-            self._add_edge(
+            _add_edge(
                 graph, outbound_node, sink,
                 capacity=capacity, limit=capacity)
 
@@ -502,15 +541,15 @@ class TransactionTraversal:
     def _convert_flows_to_transactions(
             self, flows, timing, limit, accounts, total=None):
         """ TODO """
-        # If `total` is negative, all flows need to be flipped to
-        # negative sign.
-        negative_sign = total is not None and total < 0
+        # If `total` is negative, all flows should be outflows
+        # (and thus need to be flipped to negative sign).
+        is_outflows = total is not None and total < 0
         # TODO: Reduce this to a dict comprehension after debugging.
         transactions = {}
         for account in accounts:
             if account in flows:
                 total_flows = Money(sum(flows[account].values()))
-                if negative_sign:
+                if is_outflows:
                     total_flows = -total_flows
                 transactions[account] = self._get_transactions(
                     account, limit, timing, total=total_flows)
@@ -547,49 +586,6 @@ class TransactionTraversal:
         """ TODO """
         group_method = getattr(self.group_methods, limit)
         return group_method(account)
-
-    def _add_edge(
-            self, graph, from_node, to_node,
-            capacity=None, weight=None, limit=None, **kwargs):
-        """ TODO """
-        # We allow the input of arbitrary input args (via kwargs), but
-        # specific attrs with custom names are processed explicitly.
-        if capacity is not None:
-            # Ensure all capacity attrs use the same typing to avoid
-            # `unsupported operand type` errors.
-            if hasattr(capacity, "amount"):
-                # Convert Money-valued `capacity` to Decimal:
-                capacity = capacity.amount
-            if not isinstance(capacity, Decimal):
-                # Cast non-Decimal to Decimal:
-                capacity = Decimal(capacity)
-            # Capacity must be non-negative (we might receive negative
-            # values if capacity is drawn from outflow transactions)
-            capacity = abs(capacity)
-            # Only assign `capacity` as an edge value if it is finite.
-            # (networkx doesn't deal well with Decimal('Infinity'). The
-            # "capacity" attr should be absent if capacity is unbounded.)
-            if capacity < Decimal('Infinity'):
-                # Round `capacity` to an int (recommended by networkx):
-                # https://networkx.github.io/documentation/stable/reference/algorithms/generated/networkx.algorithms.flow.max_flow_min_cost.html#networkx.algorithms.flow.max_flow_min_cost
-                # (See `Notes`: "This algorithm is not guaranteed to
-                # work if edge weights or demands [capacities] are
-                # floating point numbers.")
-                kwargs[CAPACITY_KEY] = int(capacity)
-
-        if weight is not None:
-            # We never add non-floating-point weight, but just in case
-            # we round it as well:
-            # (No need to worry about infinite-value weights)
-            kwargs[WEIGHT_KEY] = int(weight)
-
-        if limit is not None:
-            # We don't really need to process `limit` here, since
-            # `networkx` assigns no semantic value to it.
-            # But we assign a custom key to it, so assign that here:
-            kwargs[LIMIT_KEY] = limit
-
-        graph.add_edge(from_node, to_node, **kwargs)
 
 def _inbound_capacity(graph, node):
     """ Calculates the total capacity of inbound edges. """
@@ -650,3 +646,46 @@ def _sum_weight(graph, node):
         # And also on those children's descendants:
         weight += _sum_weight(graph, child)
     return weight
+
+def _add_edge(
+        graph, from_node, to_node,
+        capacity=None, weight=None, limit=None, **kwargs):
+    """ TODO """
+    # We allow the input of arbitrary input args (via kwargs), but
+    # specific attrs with custom names are processed explicitly.
+    if capacity is not None:
+        # Ensure all capacity attrs use the same typing to avoid
+        # `unsupported operand type` errors.
+        if hasattr(capacity, "amount"):
+            # Convert Money-valued `capacity` to Decimal:
+            capacity = capacity.amount
+        if not isinstance(capacity, Decimal):
+            # Cast non-Decimal to Decimal:
+            capacity = Decimal(capacity)
+        # Capacity must be non-negative (we might receive negative
+        # values if capacity is drawn from outflow transactions)
+        capacity = abs(capacity)
+        # Only assign `capacity` as an edge value if it is finite.
+        # (networkx doesn't deal well with Decimal('Infinity'). The
+        # "capacity" attr should be absent if capacity is unbounded.)
+        if capacity < Decimal('Infinity'):
+            # Round `capacity` to an int (recommended by networkx):
+            # https://networkx.github.io/documentation/stable/reference/algorithms/generated/networkx.algorithms.flow.max_flow_min_cost.html#networkx.algorithms.flow.max_flow_min_cost
+            # (See `Notes`: "This algorithm is not guaranteed to
+            # work if edge weights or demands [capacities] are
+            # floating point numbers.")
+            kwargs[CAPACITY_KEY] = int(capacity)
+
+    if weight is not None:
+        # We never add non-floating-point weight, but just in case
+        # we round it as well:
+        # (No need to worry about infinite-value weights)
+        kwargs[WEIGHT_KEY] = int(weight)
+
+    if limit is not None:
+        # We don't really need to process `limit` here, since
+        # `networkx` assigns no semantic value to it.
+        # But we assign a custom key to it, so assign that here:
+        kwargs[LIMIT_KEY] = limit
+
+    graph.add_edge(from_node, to_node, **kwargs)
