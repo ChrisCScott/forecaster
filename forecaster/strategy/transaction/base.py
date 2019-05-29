@@ -400,46 +400,56 @@ class TransactionTraversal:
         # Now we can traverse weighted nodes in breadth-first order.
         while not weighted_nodes.empty():
             node = weighted_nodes.get()
-            # It's helpful to separate out this next part into a
-            # separate method to enable recursion on this node
-            # (without repeating the foregoing BFS traversals).
-            self._restrict_node_underflows(
+            # TODO: Redesign this to recursively reweight children.
+            # Instead of restricting based on inbound capacity and
+            # outbound capacity at most once each, we should:
+            #   (1) restrict based on inbound capacity first (once),
+            #   (2) restrict based on outbound capacity recursively,
+            #       so that all children with less than their target
+            #       weight are excluded and other children have their
+            #       capacities re-calculated (i.e. increased
+            #       proportionately to their weights based on the total
+            #       flow going through overflow_node).
+            # This should deal with the scenario where we max out one
+            # account and the excess is randomly allocated entirely to
+            # one of the other nodes, without regard to weight (which is
+            # the current behaviour).
+            # NOTE: It will likely help to know what the node's
+            # corresponding `outbound_node` is (since it's convenient to
+            # simply recalculate the weights from that node to
+            # `overflow_node` and to children, without messing with any
+            # edges between `node` and `outbound_node`).
+            self._restrict_node_underflows_in(
+                graph, node, timing, limit, source, sink)
+            self._restrict_node_underflows_out(
                 graph, node, timing, limit, source, sink)
 
-    def _restrict_node_underflows(
+    def _restrict_node_underflows_in(
             self, graph, node, timing, limit, source, sink):
         """ TODO """
         # Try to generate flows through the graph.
         _, flows = self._generate_flows(graph, source, sink)
         total_flows = sum(flows[node].values())
-        # Check for two kinds of underflows:
-        #   (1) total flows through this node are less than its
-        #       _outbound_ capacity; and/or
-        #   (2) total flows through this node are less than its
-        #       _inbound_ capacity.
-        # We want to reduce outbound capacity to match those flows, and
-        # if there's an underflow relative to _inbound_ capacity then we
-        # want to regenerate the 0-weight edges to the node's children
-        # to ensure that we prioritize the correct weighting.
-        outbound_capacity = _outbound_capacity(graph, node)
-        inbound_capacity = _inbound_capacity(graph, node)
-        # Deal with inbound underflows first, then recurse and try again
-        if total_flows < inbound_capacity:
+        # Check for whether total flows through this node are less than
+        # its inbound capacity. If so, regenerate the 0-weight edges to
+        # the node's children based on the actual inbound flows.
+        if total_flows < _inbound_capacity(graph, node):
             # Force recalculation of 0-weight edges' capacity based on
             # the actual sum of flows through this node:
             self._add_successors(
                 graph, node, timing, limit,
                 source=source, sink=sink, capacity=total_flows)
-            # Recurse and terminate, since the previously-assigned flows
-            # (to children) may deviate more than necessary from weights
-            self._restrict_node_underflows(
-                graph, node, timing, limit, source, sink)
-            return
 
-        # If there's only an outbound overflow, restrict capacity along
-        # the various outbound edges to match those flows and then
-        # update the children:
-        if total_flows < outbound_capacity:
+    def _restrict_node_underflows_out(
+            self, graph, node, timing, limit, source, sink):
+        """ TODO """
+        # Try to generate flows through the graph.
+        _, flows = self._generate_flows(graph, source, sink)
+        total_flows = sum(flows[node].values())
+        # Check whether total flows through this node are less than its
+        # outbound capacity. If so, reduce outbound capacity to match
+        # those flows.
+        if total_flows < _outbound_capacity(graph, node):
             # Eliminate the underflow by limiting each edge along
             # every path from `node` to `node.children` to the
             # actual flows through that edge:
