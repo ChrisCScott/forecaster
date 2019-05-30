@@ -192,7 +192,8 @@ class TransactionTraversal:
         return transactions
 
     def _build_graph(
-            self, timing, total, limit, *, source=None, sink=None):
+            self, timing, total, limit,
+            *, source=None, sink=None, precision=EPSILON):
         """ TODO """
         # The sink and source nodes are each unique dummy objects.
         # Some algorithms don't require a unique sink (e.g. accounts
@@ -205,6 +206,10 @@ class TransactionTraversal:
             source = 0
         if sink is None:
             sink = 1
+
+        # networkx has unexpected behaviour for non-int edge capacities,
+        # so inflate total based on the EPSILON precision constant:
+        total = int(total / precision)
 
         # Create an empty graph:
         graph = networkx.DiGraph()
@@ -222,7 +227,8 @@ class TransactionTraversal:
         # Recursively build out the group from the root down:
         self._add_successors(
             graph, self._priority_tree, timing, limit,
-            source=source, sink=sink, outbound_nodes=outbound_nodes)
+            source=source, sink=sink, outbound_nodes=outbound_nodes,
+            precision=precision)
 
         # This first pass results in weighted nodes providing too much
         # outbound capacity to their children. Pass over weighted nodes
@@ -385,6 +391,10 @@ class TransactionTraversal:
         # Proportionality is easier to calculate with normalized weights
         # so determine that first:
         normalization = sum(children.values())
+        # TODO: Implement version of `add_edges_from` to ensure that
+        # total capacity across all edges is (approx.) equal to the sum
+        # of children's capacities prior to rounding.
+
         # Add an edge to each child (this adds both edge and child).
         for child, weight in children.items():
             child_total = capacity * weight / normalization
@@ -562,7 +572,7 @@ class TransactionTraversal:
 
     def _add_node_account(
             self, graph, node, child, timing, limit,
-            *, sink=None, capacity=None, **kwargs):
+            *, sink=None, capacity=None, precision=EPSILON, **kwargs):
         """ TODO """
         # pylint: disable=unused-argument
         # `child` isn't used by this method, but it needs to provide the
@@ -573,7 +583,11 @@ class TransactionTraversal:
             # The capacity of an account is not a function of its
             # inbound edges. It's the most that an account can receive.
             transaction_limit = self._get_transactions(node, limit, timing)
-            capacity = sum(transaction_limit.values())
+            # NOTE: We scale up based on the precision here because
+            # _get_transactions returns results in `Money` terms, but
+            # we want to use it to generate an edge capacity. All edge
+            # capacities are scaled up this way.
+            capacity = sum(transaction_limit.values()) / precision
 
         # Most accounts add an edge straight to `sink`, but accounts
         # that have shared transaction limits have special treatment:
@@ -605,7 +619,8 @@ class TransactionTraversal:
         return total, flows
 
     def _convert_flows_to_transactions(
-            self, flows, timing, limit, accounts, total=None):
+            self, flows, timing, limit, accounts,
+            total=None, precision=EPSILON):
         """ TODO """
         # If `total` is negative, all flows should be outflows
         # (and thus need to be flipped to negative sign).
@@ -614,7 +629,10 @@ class TransactionTraversal:
         transactions = {}
         for account in accounts:
             if account in flows:
-                total_flows = Money(sum(flows[account].values()))
+                # NOTE: We scale down the flows to the account by a
+                # factor of `precision` because all flows/capacities
+                # are automatically inflated to avoid rounding errors.
+                total_flows = Money(sum(flows[account].values())) * precision
                 if is_outflows:
                     total_flows = -total_flows
                 transactions[account] = self._get_transactions(
