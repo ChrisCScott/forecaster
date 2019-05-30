@@ -450,7 +450,8 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         # 1) R1 and R2 are contributed to equally, with the excess to T.
         # 2) R1 receives more than R2 so that both children of the root
         #    are balanced, with the excess to T.
-        # The current implementation opts for #1, so test for that:
+        # Past implementations opted for #1, but current implementations
+        # achieve the (preferred) behaviour of #2. Test for that:
         priority = {
             self.rrsp: Decimal(1),
             (self.rrsp2, self.taxable_account): Decimal(1)}
@@ -458,9 +459,10 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         # Contribute $200 (enough to fill RRSPs with $100 left over):
         available = {Decimal(0.5): Money(200)}
         transactions = strategy(available)
-        # $50 should go to each RRSP, with balance to taxable:
-        self.assertTransactions(transactions[self.rrsp], Money(50))
-        self.assertTransactions(transactions[self.rrsp2], Money(50))
+        # $100 should go to rrsp, none to rrsp2, and balance to taxable:
+        self.assertTransactions(transactions[self.rrsp], Money(100))
+        if self.rrsp2 in transactions:
+            self.assertTransactions(transactions[self.rrsp2], Money(0))
         self.assertTransactions(transactions[self.taxable_account], Money(100))
 
     def test_link_nested_hidden(self):
