@@ -429,19 +429,22 @@ class TransactionTraversal:
         """ TODO """
         # First, restrict based on inbound capacity (once).
         # Second, restrict based on outbound capacity recursively,
-        # so that all children with less than their target weight
+        # so that all children with less than their target flow
         # are excluded and other children have their capacities
-        # re-calculated (i.e. increased proportionately to their
-        # weights based on the total flow through overflow_node).
+        # re-calculated based on the remaining flow.
         if active_children is None:
             active_children = copy(node.children)
         if exclude_children is None:
             exclude_children = set()
 
+        # If `node` channels all its flow through some network that
+        # terminates with `outbound_node`, replace `node` with
+        # `outbound_node` (but save the original node for the final
+        # _add_successors call, since it doesn't support receiving
+        # an `outbound_node` as input)
+        base_node = node
         if outbound_nodes is not None and node in outbound_nodes:
-            outbound_node = outbound_nodes[node]
-        else:
-            outbound_node = node
+            node = outbound_nodes[node]
 
         # Try to generate flows through the graph.
         _, flows = self._generate_flows(graph, source, sink)
@@ -473,8 +476,8 @@ class TransactionTraversal:
         # `exclude_children`, since they're definitely saturated:
         newly_excluded = set()
         for child in active_children:
-            flow = flows[outbound_node][child]
-            capacity = graph[outbound_node][child][CAPACITY_KEY]
+            flow = flows[node][child]
+            capacity = graph[node][child][CAPACITY_KEY]
             if flow < capacity:
                 newly_excluded.add(child)
 
@@ -500,12 +503,13 @@ class TransactionTraversal:
                     + ' Expected dict, set, or list. Got '
                     + str(type(active_children)))
 
-        # Lock in flows to excluded children and re-assign capacities of
-        # edges to `active_children` based on the remaining flows:
-        excluded_capacity = sum(
-            graph[outbound_node][child][CAPACITY_KEY]
-            for child in exclude_children)
-        capacity = total_flows - excluded_capacity
+        # Lock in flows to excluded children:
+        for child in exclude_children:
+            _add_edge(graph, node, child, capacity=flows[node][child])
+        # Re-assign capacities of  edges to `active_children` based on
+        # the remaining flows:
+        excluded_flow = sum(flows[node][child] for child in exclude_children)
+        capacity = total_flows - excluded_flow
         self._add_successors(
             graph, node, timing, limit,
             capacity=capacity, outbound_nodes=outbound_nodes,
@@ -513,7 +517,7 @@ class TransactionTraversal:
         # Then recurse, since reassignment may have revealed certain
         # active children which reach saturation with greater capacity:
         self._restrict_node_underflows(
-            graph, node, timing, limit, source, sink,
+            graph, base_node, timing, limit, source, sink,
             outbound_nodes=outbound_nodes,
             exclude_children=exclude_children,
             active_children=active_children)
