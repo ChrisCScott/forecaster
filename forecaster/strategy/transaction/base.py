@@ -396,10 +396,15 @@ class TransactionTraversal:
         # of children's capacities prior to rounding.
 
         # Add an edge to each child (this adds both edge and child).
+        ebunch = []
         for child, weight in children.items():
             child_total = capacity * weight / normalization
-            _add_edge(graph, node, child, capacity=child_total)
-            # Recurse onto the child:
+            ebunch.append([node, child, {CAPACITY_KEY: child_total}])
+        # Add the edges all at once; this method allows us to limit the
+        # effect of rounding across multiple edges:
+        _add_edges_from(graph, ebunch)
+        # Then fill in each child's successors:
+        for child in children:
             self._add_successors(
                 graph, child, timing, limit, **kwargs)
 
@@ -749,20 +754,17 @@ def _sum_weight(graph, node):
     return weight
 
 def _add_edge(
-        graph, from_node, to_node,
-        capacity=None, weight=None, limit=None, **kwargs):
+        graph, from_node, to_node, **kwargs):
     """ TODO """
     # We allow the input of arbitrary input args (via kwargs), but
     # specific attrs with custom names are processed explicitly.
-    if capacity is not None:
+    if CAPACITY_KEY in kwargs:
+        capacity = kwargs[CAPACITY_KEY]
         # Ensure all capacity attrs use the same typing to avoid
         # `unsupported operand type` errors.
         if hasattr(capacity, "amount"):
             # Convert Money-valued `capacity` to Decimal:
             capacity = capacity.amount
-        if not isinstance(capacity, Decimal):
-            # Cast non-Decimal to Decimal:
-            capacity = Decimal(capacity)
         # Capacity must be non-negative (we might receive negative
         # values if capacity is drawn from outflow transactions)
         capacity = abs(capacity)
@@ -776,17 +778,66 @@ def _add_edge(
             # work if edge weights or demands [capacities] are
             # floating point numbers.")
             kwargs[CAPACITY_KEY] = int(capacity)
+        else:
+            del kwargs[CAPACITY_KEY]
 
-    if weight is not None:
-        # We never add non-floating-point weight, but just in case
-        # we round it as well:
-        # (No need to worry about infinite-value weights)
-        kwargs[WEIGHT_KEY] = int(weight)
-
-    if limit is not None:
-        # We don't really need to process `limit` here, since
-        # `networkx` assigns no semantic value to it.
-        # But we assign a custom key to it, so assign that here:
-        kwargs[LIMIT_KEY] = limit
+    if WEIGHT_KEY in kwargs:
+        # We shouldn't ever add non-floating-point weight, but just in
+        # case we'll round it as well:
+        # NOTE: No need to worry about infinite-value weights.
+        kwargs[WEIGHT_KEY] = int(kwargs[WEIGHT_KEY])
 
     graph.add_edge(from_node, to_node, **kwargs)
+
+def _add_edges_from(graph, ebunch, **attrs):
+    """ TODO """
+    capacity_raw = Decimal(0)
+    capacity_rounded = Decimal(0)
+    edge_variances = {}
+    for edge in ebunch:
+        # ebunch can have 2 or 3 elements; extract them here:
+        if len(edge) == 2:
+            u, v = edge
+            edge_data = {}
+        else:
+            u, v, edge_data = edge
+        _add_edge(
+            graph, u, v, **edge_data,
+            # Avoid passing the same keyword twice:
+            **{
+                key: value for key, value in attrs.items()
+                if key not in edge_data})
+        # Sum together all of the capacities of the various edges.
+        # We'll use this later to check for rounding errors:
+        if CAPACITY_KEY in edge_data:
+            capacity_raw += edge_data[CAPACITY_KEY]
+            capacity_rounded += graph[u][v][CAPACITY_KEY]
+            edge_variances[(u, v)] = (
+                graph[u][v][CAPACITY_KEY] - edge_data[CAPACITY_KEY])
+        else:
+            capacity_raw = Decimal('Infinity')
+            capacity_rounded = capacity_raw
+
+    # If rounding can't be improved on, terminate:
+    if (
+            # Deal with exact matches or infinite values:
+            capacity_raw == capacity_rounded or
+            # And deal with cases where the rounding is as good as
+            # possible, given integer precision:
+            abs(capacity_raw - capacity_rounded) < 0.5):
+        return
+
+    shortfall = int(capacity_raw - capacity_rounded)
+    # 1 if we need to add capacity, -1 if we need to reduce capacity:
+    increment = int(shortfall / abs(shortfall))
+    # Now iterate over the edges, with the edges that are farthest from
+    # their target allocation first, and add (or subtract) 1 to them
+    # in order until the total capacity of the edges no longer has a
+    # shortfall (in integer terms).
+    edges_sorted = sorted(
+        edge_variances, key=edge_variances.get, reverse=increment < 0)
+    edges_iter = iter(edges_sorted)
+    while shortfall != 0:
+        u, v = next(edges_iter)
+        graph[u][v][CAPACITY_KEY] += increment
+        shortfall -= increment
