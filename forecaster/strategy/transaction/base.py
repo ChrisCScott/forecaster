@@ -240,7 +240,8 @@ class TransactionTraversal:
 
     def _add_successors(
             self, graph, node, timing, limit,
-            capacity=None, children=None, outbound_nodes=None, **kwargs):
+            capacity=None, children=None, outbound_nodes=None,
+            precision=EPSILON, **kwargs):
         """ TODO """
         # Anything that isn't a TransactionNode gets treated as an
         # account:
@@ -270,7 +271,7 @@ class TransactionTraversal:
         # `outbound_node` and restricting capacity on the edge from
         # `node` to `outbound_node`:
         outbound_node, capacity = self._embed_limit(
-            graph, node, limit, capacity=capacity)
+            graph, node, limit, capacity=capacity, precision=precision)
 
         # Record the outbound node if the calling method wants us to:
         if outbound_nodes is not None:
@@ -278,9 +279,11 @@ class TransactionTraversal:
 
         method(
             graph, outbound_node, children, timing, limit,
-            capacity=capacity, outbound_nodes=outbound_nodes, **kwargs)
+            capacity=capacity, outbound_nodes=outbound_nodes,
+            precision=precision, **kwargs)
 
-    def _embed_limit(self, graph, node, limit, capacity=None):
+    def _embed_limit(
+            self, graph, node, limit, capacity=None, precision=EPSILON):
         """ TODO """
         # If we don't wind up doing any embedding, just return `node`:
         outbound_node = node
@@ -295,6 +298,9 @@ class TransactionTraversal:
             if hasattr(limit_value, "amount"):
                 limit_value = limit_value.amount
             if limit_value is not None:
+                # Scale up the limit value by `precision` to avoid
+                # rounding issues:
+                limit_value /= precision
                 # NOTE: We create a hashable object based on `node` and
                 # `limit`, the applicable limit key. Consider whether we
                 # want to use a const value so that all limit keys map
@@ -396,15 +402,10 @@ class TransactionTraversal:
         # of children's capacities prior to rounding.
 
         # Add an edge to each child (this adds both edge and child).
-        ebunch = []
         for child, weight in children.items():
             child_total = capacity * weight / normalization
-            ebunch.append([node, child, {CAPACITY_KEY: child_total}])
-        # Add the edges all at once; this method allows us to limit the
-        # effect of rounding across multiple edges:
-        _add_edges_from(graph, ebunch)
-        # Then fill in each child's successors:
-        for child in children:
+            _add_edge(graph, node, child, capacity=child_total)
+            # Then recurse onto the child:
             self._add_successors(
                 graph, child, timing, limit, **kwargs)
 
@@ -440,22 +441,12 @@ class TransactionTraversal:
 
     def _restrict_node_underflows(
             self, graph, node, timing, limit, source, sink,
-            outbound_nodes=None, exclude_children=None, active_children=None):
+            outbound_nodes=None):
         """ TODO """
-        # First, restrict based on inbound capacity (once).
-        # Second, restrict based on outbound capacity recursively,
-        # so that all children with less than their target flow
-        # are excluded and other children have their capacities
-        # re-calculated based on the remaining flow.
-        if active_children is None:
-            active_children = copy(node.children)
-        if exclude_children is None:
-            exclude_children = set()
-
         # If `node` channels all its flow through some network that
         # terminates with `outbound_node`, replace `node` with
-        # `outbound_node` (but save the original node for the final
-        # _add_successors call, since it doesn't support receiving
+        # `outbound_node` (but save the original node for any later
+        # _add_successors calls, since it doesn't support receiving
         # an `outbound_node` as input)
         base_node = node
         if outbound_nodes is not None and node in outbound_nodes:
@@ -464,6 +455,7 @@ class TransactionTraversal:
         # Try to generate flows through the graph.
         _, flows = self._generate_flows(graph, source, sink)
         total_flows = sum(flows[node].values())
+        flow_data = total_flows, flows
 
         # For the following recursion on outbound capacity to work,
         # we need to ensure that the total 0-weight capacity to children
@@ -475,16 +467,43 @@ class TransactionTraversal:
             # Force recalculation of 0-weight edges' capacity based on
             # the actual sum of flows through this node:
             self._add_successors(
-                graph, node, timing, limit,
+                graph, base_node, timing, limit,
                 source=source, sink=sink, capacity=total_flows)
-            # Now recurse onto this method, which should result in
-            # this branch not executing.
-            self._restrict_node_underflows(
-                graph, node, timing, limit, source, sink,
-                outbound_nodes=outbound_nodes,
-                exclude_children=exclude_children,
-                active_children=active_children)
-            return
+            # Force `_restrict_node_underflows_rec` to recalculate flows
+            flow_data = None
+
+        # This method only executes once, but 
+        # `_restrict_node_underflows_rec` executes recursively. Set up
+        # its first iteration here (reuse flow data if we didn't
+        # reassign any weights above):
+        self._restrict_node_underflows_rec(
+            graph, node, timing, limit, source, sink,
+            base_node=base_node, flow_data=flow_data)
+
+    def _restrict_node_underflows_rec(
+            self, graph, node, timing, limit, source, sink,
+            base_node=None, flow_data=None,
+            exclude_children=None, active_children=None):
+        """ TODO """
+        # First, restrict based on inbound capacity (once).
+        # Second, restrict based on outbound capacity recursively,
+        # so that all children with less than their target flow
+        # are excluded and other children have their capacities
+        # re-calculated based on the remaining flow.
+        if active_children is None:
+            active_children = copy(node.children)
+        if exclude_children is None:
+            exclude_children = set()
+        if base_node is None:
+            base_node = node
+
+        # Reuse flow data from the calling method if provided, otherwise
+        # try to generate flows anew:
+        if flow_data is None:
+            _, flows = self._generate_flows(graph, source, sink)
+            total_flows = sum(flows[node].values())
+        else:
+            total_flows, flows = flow_data
 
         # Identify which children have received less flow than their
         # 0-weight edges provide capacity for. These are added to
@@ -502,21 +521,9 @@ class TransactionTraversal:
         if not newly_excluded:
             return
 
-        # Otherwise, update `exclude_children` and `active_children`:
-        for child in newly_excluded:
-            # Add to exclude_children and remove from active_children:
-            exclude_children.add(child)
-            # Nodes use various container classes to store children.
-            # Use the appropriate removal method for active_children:
-            if isinstance(active_children, dict):
-                del active_children[child]
-            elif isinstance(active_children, (set, list)):
-                active_children.remove(child)
-            else:
-                raise TypeError(
-                    'node.children is not of recognized type.'
-                    + ' Expected dict, set, or list. Got '
-                    + str(type(active_children)))
+        # Move newly excluded children from active to excluded:
+        _add_excluded_children(
+            newly_excluded, exclude_children, active_children)
 
         # Lock in flows to excluded children:
         for child in exclude_children:
@@ -526,15 +533,14 @@ class TransactionTraversal:
         excluded_flow = sum(flows[node][child] for child in exclude_children)
         capacity = total_flows - excluded_flow
         self._add_successors(
-            graph, node, timing, limit,
-            capacity=capacity, outbound_nodes=outbound_nodes,
-            children=active_children)
+            graph, base_node, timing, limit,
+            capacity=capacity, children=active_children)
+
         # Then recurse, since reassignment may have revealed certain
         # active children which reach saturation with greater capacity:
-        self._restrict_node_underflows(
+        self._restrict_node_underflows_rec(
             graph, base_node, timing, limit, source, sink,
-            outbound_nodes=outbound_nodes,
-            exclude_children=exclude_children,
+            base_node=base_node, exclude_children=exclude_children,
             active_children=active_children)
 
     def _add_node_ordered(
@@ -789,55 +795,19 @@ def _add_edge(
 
     graph.add_edge(from_node, to_node, **kwargs)
 
-def _add_edges_from(graph, ebunch, **attrs):
+def _add_excluded_children(newly_excluded, exclude_children, active_children):
     """ TODO """
-    capacity_raw = Decimal(0)
-    capacity_rounded = Decimal(0)
-    edge_variances = {}
-    for edge in ebunch:
-        # ebunch can have 2 or 3 elements; extract them here:
-        if len(edge) == 2:
-            u, v = edge
-            edge_data = {}
+    for child in newly_excluded:
+        # Add to exclude_children and remove from active_children:
+        exclude_children.add(child)
+        # Nodes use various container classes to store children.
+        # Use the appropriate removal method for active_children:
+        if isinstance(active_children, dict):
+            del active_children[child]
+        elif isinstance(active_children, (set, list)):
+            active_children.remove(child)
         else:
-            u, v, edge_data = edge
-        _add_edge(
-            graph, u, v, **edge_data,
-            # Avoid passing the same keyword twice:
-            **{
-                key: value for key, value in attrs.items()
-                if key not in edge_data})
-        # Sum together all of the capacities of the various edges.
-        # We'll use this later to check for rounding errors:
-        if CAPACITY_KEY in edge_data:
-            capacity_raw += edge_data[CAPACITY_KEY]
-            capacity_rounded += graph[u][v][CAPACITY_KEY]
-            edge_variances[(u, v)] = (
-                graph[u][v][CAPACITY_KEY] - edge_data[CAPACITY_KEY])
-        else:
-            capacity_raw = Decimal('Infinity')
-            capacity_rounded = capacity_raw
-
-    # If rounding can't be improved on, terminate:
-    if (
-            # Deal with exact matches or infinite values:
-            capacity_raw == capacity_rounded or
-            # And deal with cases where the rounding is as good as
-            # possible, given integer precision:
-            abs(capacity_raw - capacity_rounded) < 0.5):
-        return
-
-    shortfall = int(capacity_raw - capacity_rounded)
-    # 1 if we need to add capacity, -1 if we need to reduce capacity:
-    increment = int(shortfall / abs(shortfall))
-    # Now iterate over the edges, with the edges that are farthest from
-    # their target allocation first, and add (or subtract) 1 to them
-    # in order until the total capacity of the edges no longer has a
-    # shortfall (in integer terms).
-    edges_sorted = sorted(
-        edge_variances, key=edge_variances.get, reverse=increment < 0)
-    edges_iter = iter(edges_sorted)
-    while shortfall != 0:
-        u, v = next(edges_iter)
-        graph[u][v][CAPACITY_KEY] += increment
-        shortfall -= increment
+            raise TypeError(
+                'active_children is not of recognized type.'
+                + ' Expected dict, set, or list. Got '
+                + str(type(active_children)))
