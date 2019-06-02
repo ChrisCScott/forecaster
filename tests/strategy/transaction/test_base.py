@@ -165,7 +165,7 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
             self.assertTransactions(transactions[self.rrsp2], Money(0))
         self.assertTransactions(transactions[self.taxable_account], Money(100))
 
-    def test_link_weight(self):
+    def test_link_weighted_nested_1(self):
         """ Contribute to weighted accounts sharing max inflow limit. """
         priority = [
             {self.rrsp: Decimal(0.5), self.rrsp2: Decimal(0.5)},
@@ -333,7 +333,7 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         self.assertTransactions(transactions[self.rrsp], Money(50))
         self.assertTransactions(transactions[self.rrsp2], Money(50))
 
-    def test_link_overflow(self):
+    def test_link_weighted_overflow(self):
         """ A weighted root with two linked children and one other. """
         # This test looks at this structure:
         #       {}
@@ -352,6 +352,25 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         self.assertTransactions(transactions[self.rrsp], Money(50))
         self.assertTransactions(transactions[self.rrsp2], Money(50))
         self.assertTransactions(transactions[self.taxable_account], Money(100))
+
+    def test_link_weighted_max(self):
+        """ A weighted root with two linked children and one other. """
+        # This test looks at this structure:
+        #       {}
+        #      /  \
+        #     /    \
+        #    R1     R2
+        # If R1/R2 are a group (and R1 and R2 have equal weights) then
+        # contributing more than the group can receive should result
+        # in R1 and R2 getting equal inflows.
+        priority = {self.rrsp: 1, self.rrsp2: 1}
+        strategy = TransactionTraversal(priority=priority)
+        # Contribute $200:
+        available = {Decimal(0.5): Money(200)}
+        transactions = strategy(available)
+        # $50 should go to each RRSP:
+        self.assertTransactions(transactions[self.rrsp], Money(50))
+        self.assertTransactions(transactions[self.rrsp2], Money(50))
 
     def test_link_order_equal(self):
         """ Two linked groups, each under both children of the root. """
@@ -407,7 +426,7 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         if self.tfsa2 in transactions:
             self.assertTransactions(transactions[self.tfsa2], Money(0))
 
-    def test_link_weighted_nested(self):
+    def test_link_weighted_nested_2(self):
         """ A weighted root with weighted children with common groups. """
         # This test looks at this structure:
         #       {}
