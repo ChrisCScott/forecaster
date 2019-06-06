@@ -5,7 +5,6 @@ amounts, and to which accounts.
 """
 
 from decimal import Decimal
-from copy import copy
 from queue import SimpleQueue
 import networkx
 from forecaster.ledger import Money
@@ -223,18 +222,20 @@ class TransactionTraversal:
             _add_edge(graph, source, self._priority_tree, capacity=total)
 
         outbound_nodes = {}
+        overflow_nodes = {}
 
         # Recursively build out the group from the root down:
         self._add_successors(
             graph, self._priority_tree, timing, limit,
-            source=source, sink=sink, outbound_nodes=outbound_nodes,
-            precision=precision)
+            source=source, sink=sink, precision=precision,
+            outbound_nodes=outbound_nodes, overflow_nodes=overflow_nodes)
 
         # This first pass results in weighted nodes providing too much
         # outbound capacity to their children. Pass over weighted nodes
         # and limit outbound capacity to actual maximum possible flows.
         self._balance_weighted_flows(
-            graph, timing, limit, source, sink, outbound_nodes=outbound_nodes)
+            graph, timing, limit, source, sink,
+            outbound_nodes=outbound_nodes, overflow_nodes=overflow_nodes)
 
         return (graph, source, sink)
 
@@ -412,7 +413,8 @@ class TransactionTraversal:
                 graph, child, timing, limit, **kwargs)
 
     def _balance_weighted_flows(
-            self, graph, timing, limit, source, sink, outbound_nodes=None):
+            self, graph, timing, limit, source, sink,
+            outbound_nodes=None, overflow_nodes=None):
         """ TODO """
         # We want to ensure that higher-order weighted nodes are
         # prioritized (i.e. skew their flows to the most limited degree
@@ -439,32 +441,21 @@ class TransactionTraversal:
             node = weighted_nodes.get()
             self._restrict_node_underflows(
                 graph, node, timing, limit, source, sink,
-                outbound_nodes=outbound_nodes)
+                outbound_nodes=outbound_nodes,
+                overflow_nodes=overflow_nodes)
 
     def _restrict_node_underflows(
             self, graph, node, timing, limit, source, sink,
-            outbound_nodes=None, overflow_nodes=None):
+            outbound_nodes=None, overflow_nodes=None, children=None,
+            rebalance_all=True):
         """ TODO """
-        # If `node` channels all its flow through some network that
-        # terminates with `outbound_node`, replace `node` with
-        # `outbound_node` (but save the original node for any later
-        # _add_successors calls, since it doesn't support receiving
-        # an `outbound_node` as input)
-        base_node = node
-        if outbound_nodes is not None and node in outbound_nodes:
-            outbound_node = outbound_nodes[node]
-        else:
-            outbound_node = node
-        if overflow_nodes is not None and node in overflow_nodes:
-            overflow_node = overflow_nodes[node]
-        else:
-            overflow_node = None
+        if children is None:
+            children = node.children
 
         # Try to generate flows through the graph.
         _, flows = self._generate_flows(graph, source, sink)
         # Identify flows through `node` specifically:
         total_flows = sum(flows[node].values())
-        flow_data = total_flows, flows
 
         # Based on the flows, we can identify 3 sets of nodes:
         #
@@ -496,8 +487,8 @@ class TransactionTraversal:
         # like the solution is to treat saturated nodes as underflow
         # nodes when recursing on those, and as overflow nodes when
         # recursing on those.
-        underflow, overflow, saturated = _classify_nodes_by_flows(
-             graph, node.children, flows, outbound_node, overflow_node)
+        underflow, overflow, saturated = _classify_children_by_flows(
+            graph, node, children, flows, outbound_nodes, overflow_nodes)
 
         # Terminate if all nodes are saturated. This means we found
         # a perfect proportion of flows to satisfy the source node's
@@ -506,121 +497,80 @@ class TransactionTraversal:
             return
         # If only _one_ of those two is empty, then we have an imbalance
         # in capacity; need to reassign capacities to match flows:
-        elif not underflow and overflow:
-            # TODO: Ensure that we recurse here at most once.
-            # It's possible to get stuck recursing on this due to
-            # rounding errors (e.g. we might have flows of 10000 but are
-            # only able to assign outbound capacity of 9999).
-
-            # Force recalculation of 0-weight edges' capacity based on
-            # the actual sum of flows through this node:
-            self._add_successors(
-                graph, base_node, timing, limit,
-                source=source, sink=sink, capacity=total_flows)
-            # Try again with new capacities; recurse:
-            self._restrict_node_underflows(
-                graph, node, timing, limit, source, sink,
-                outbound_nodes=outbound_nodes, overflow_nodes=overflow_nodes)
-            return
+        elif bool(underflow) != bool(overflow):
+            # Recurse here *at most once* for each instance of children.
+            # This avoids infinite recursion due to rounding errors
+            # (e.g. we might have flows of 10000 but are only able to
+            # assign outbound capacity of 9999)
+            if rebalance_all:
+                # Force recalculation of 0-weight edges' capacity based on
+                # the actual sum of flows through this node:
+                self._restrict_node_underflows_rec(
+                    graph, node, timing, limit, source, sink,
+                    children=children,
+                    outbound_nodes=outbound_nodes,
+                    overflow_nodes=overflow_nodes,
+                    capacity=total_flows, rebalance_all=False)
+                # Don't proceed on, since the old `flows` is based on bad
+                # capacity data.
+                return
+            # If we've already recursed on this node, then the children
+            # are as rebalanced as they can get.
+            # TODO: Figure out what to do on second recursion.
 
         # We are now guaranteed to have overflow _and_ underflow nodes.
-        # Attempt to reallocate capacity among non-overflow nodes based
-        # on the parent node's weights. (It's OK to include saturated
-        # nodes; if they share capacity with underflow nodes then
-        # capacity should be shifted away from them, and if they don't
-        # then they'll become overflow nodes when rebalanced and will
-        # get shifted back to their current allocation on recursion.)
-        pass  # TODO: Recurse on non-overflow nodes.
+        non_overflow = underflow.union(saturated)
+        self._restrict_node_underflows_rec(
+            graph, node, timing, limit, source, sink, children=non_overflow,
+            outbound_nodes=outbound_nodes, overflow_nodes=overflow_nodes)
+
+        # Re-calculate membership of `saturated` based on the
+        # reallocation of capacity between underflow/saturated nodes:
+        _restrict_saturated(
+            saturated, node, children, graph, flows,
+            outbound_nodes=outbound_nodes)
 
         # Now do the same thing, but for non-underflow nodes.
-        # TODO: Figure out whether we should re-identify saturated nodes
-        pass  # TODO: Recurse on non-underflow nodes.
-
-        # For the following recursion on outbound capacity to work,
-        # we need to ensure that the total 0-weight capacity to children
-        # is the same as total flows through this node. If not,
-        # regenerate the 0-weight edges to the node's children based on
-        # the actual flows.
-        zero_weight_capacity = _outbound_capacity(graph, node, weight=0)
-        if abs(total_flows - zero_weight_capacity) > EPSILON:
-            # Force recalculation of 0-weight edges' capacity based on
-            # the actual sum of flows through this node:
-            self._add_successors(
-                graph, base_node, timing, limit,
-                source=source, sink=sink, capacity=total_flows)
-            # Force `_restrict_node_underflows_rec` to recalculate flows
-            flow_data = None
-
-        # This method only executes once, but
-        # `_restrict_node_underflows_rec` executes recursively. Set up
-        # its first iteration here (reuse flow data if we didn't
-        # reassign any weights above):
+        non_underflow = overflow.union(saturated)
         self._restrict_node_underflows_rec(
-            graph, node, timing, limit, source, sink,
-            base_node=base_node, flow_data=flow_data)
+            graph, node, timing, limit, source, sink, children=non_underflow,
+            outbound_nodes=outbound_nodes, overflow_nodes=overflow_nodes)
 
     def _restrict_node_underflows_rec(
             self, graph, node, timing, limit, source, sink,
-            base_node=None, flow_data=None,
-            exclude_children=None, active_children=None):
+            outbound_nodes=None, overflow_nodes=None,
+            children=None, capacity=None, **kwargs):
         """ TODO """
-        # First, restrict based on inbound capacity (once).
-        # Second, restrict based on outbound capacity recursively,
-        # so that all children with less than their target flow
-        # are excluded and other children have their capacities
-        # re-calculated based on the remaining flow.
-        if active_children is None:
-            active_children = copy(node.children)
-        if exclude_children is None:
-            exclude_children = set()
-        if base_node is None:
-            base_node = node
+        # Process input:
+        if capacity is None:
+            # Calling code can provide `capacity`, in which case edges
+            # to children will be re-allocated based on that. Otherwise
+            # use the existing (0-weight) capacity of childrens' edges.
+            # First, determine the node from which 0-weight edges to
+            # children are sent:
+            if outbound_nodes is not None and node in outbound_nodes:
+                outbound_node = outbound_nodes[node]
+            else:
+                outbound_node = node
+            # Then find the total capacity of 0-weight edges from
+            # outbound_node to the children:
+            capacity = _outbound_capacity(
+                graph, outbound_node, weight=0, children=children)
 
-        # Reuse flow data from the calling method if provided, otherwise
-        # try to generate flows anew:
-        if flow_data is None:
-            _, flows = self._generate_flows(graph, source, sink)
-            total_flows = sum(flows[node].values())
-        else:
-            total_flows, flows = flow_data
-
-        # Identify which children have received less flow than their
-        # 0-weight edges provide capacity for. These are added to
-        # `exclude_children`, since they're definitely saturated:
-        newly_excluded = set()
-        for child in active_children:
-            flow = flows[node][child]
-            capacity = graph[node][child][CAPACITY_KEY]
-            if flow < capacity:
-                newly_excluded.add(child)
-
-        # If no new children are excluded, that means that no nodes
-        # have underflows, which means they must all have saturated
-        # their 0-weight edges - which is what we want, so we're done.
-        if not newly_excluded:
-            return
-
-        # Move newly excluded children from active to excluded:
-        _add_excluded_children(
-            newly_excluded, exclude_children, active_children)
-
-        # Lock in flows to excluded children:
-        for child in exclude_children:
-            _add_edge(graph, node, child, capacity=flows[node][child])
-        # Re-assign capacities of  edges to `active_children` based on
-        # the remaining flows:
-        excluded_flow = sum(flows[node][child] for child in exclude_children)
-        capacity = total_flows - excluded_flow
+        # _add_successors expects `children` to have the appropriate
+        # typing for this kind of node, so enforce that here:
+        children_subset = node.children_subset(children)
+        # Attempt to reallocate capacity among children based on the
+        # parent node's weights.
         self._add_successors(
-            graph, base_node, timing, limit,
-            capacity=capacity, children=active_children)
-
-        # Then recurse, since reassignment may have revealed certain
-        # active children which reach saturation with greater capacity:
-        self._restrict_node_underflows_rec(
-            graph, base_node, timing, limit, source, sink,
-            base_node=base_node, exclude_children=exclude_children,
-            active_children=active_children)
+            graph, node, timing, limit,
+            capacity=capacity, children=children_subset,
+            outbound_nodes=outbound_nodes, overflow_nodes=overflow_nodes)
+        # Recurse onto the children:
+        self._restrict_node_underflows(
+            graph, node, timing, limit, source, sink,
+            outbound_nodes=outbound_nodes, overflow_nodes=overflow_nodes,
+            children=children, **kwargs)
 
     def _add_node_ordered(
             self, graph, node, children, timing, limit,
@@ -777,11 +727,13 @@ def _inbound_capacity(graph, node):
         capacity = Decimal(capacity)
     return capacity
 
-def _outbound_capacity(graph, node, weight=None):
-    """ Calculates the total capacity of outbound edges. """
+def _outbound_capacity(graph, node, weight=None, children=None):
+    """ Calculates the total capacity of outbound edges to children. """
+    if children is None:
+        children = graph.successors(node)
     capacity = 0
     # Add up the capacities of all outbound edges:
-    for child in graph.successors(node):
+    for child in children:
         # `edge` is a dict with str-valued keys.
         edge = graph[node][child]
         if CAPACITY_KEY in edge:
@@ -803,25 +755,6 @@ def _outbound_capacity(graph, node, weight=None):
             # If capacity is not explicitly provided, it's infinite:
             capacity = Decimal('Infinity')
     return capacity
-
-def _nodes_between(graph, start, end_nbunch):
-    """ Finds all nodes on a path between `start` and `end_nbunch`.
-
-    `end_nbunch` is expected to be an iterable of nodes.
-    """
-    # We could find all nodes between `start` and `end_nbunch` by
-    # calling `networkx.algorithms.simple_paths`, but that has fairly
-    # high algorithmic complexity for out purposes.
-    # If we assume that all outbound paths from `start` are acyclic and
-    # end at (or pass through) `end_nbunch` then it's more
-    # straightforward to recursively add all successors of `start`
-    # until we hit a node in `end_nbunch`:
-    nodes = set()
-    for node in graph.successors(start):
-        if node not in end_nbunch:
-            nodes.add(node)
-            nodes.update(_nodes_between(graph, node, end_nbunch))
-    return nodes
 
 def _sum_weight(graph, node):
     """ TODO """
@@ -874,36 +807,64 @@ def _add_edge(
 
     graph.add_edge(from_node, to_node, **kwargs)
 
-def _add_excluded_children(newly_excluded, exclude_children, active_children):
+def _classify_children_by_flows(
+        graph, node, children, flows,
+        outbound_nodes=None, overflow_nodes=None):
     """ TODO """
-    for child in newly_excluded:
-        # Add to exclude_children and remove from active_children:
-        exclude_children.add(child)
-        # Nodes use various container classes to store children.
-        # Use the appropriate removal method for active_children:
-        if isinstance(active_children, dict):
-            del active_children[child]
-        elif isinstance(active_children, (set, list)):
-            active_children.remove(child)
-        else:
-            raise TypeError(
-                'active_children is not of recognized type.'
-                + ' Expected dict, set, or list. Got '
-                + str(type(active_children)))
+    # Process input:
+    if outbound_nodes is not None and node in outbound_nodes:
+        outbound_node = outbound_nodes[node]
+    else:
+        outbound_node = node
+    if overflow_nodes is not None and node in overflow_nodes:
+        overflow_node = overflow_nodes[node]
+    else:
+        overflow_node = None
 
-def _classify_nodes_by_flows(
-        graph, nodes, flows, outbound_node, overflow_node):
-    """ TODO """
+    # Define some sets to contain each group of children:
     underflow_nodes = set()
     overflow_nodes = set()
     saturated_nodes = set()
-    for node in nodes:
+    # Add each node to exactly one of those sets:
+    for child in children:
+        # Nodes with flows that are less than their max. 0-weight
+        # capacity are underflow nodes:
         if (
-            graph[outbound_node][node][CAPACITY_KEY]
-            > flows[outbound_node][node]):
-            underflow_nodes.add(node)
-        elif flows[overflow_node][node] > 0:
-            overflow_node.add(node)
+                graph[outbound_node][child][CAPACITY_KEY]
+                > flows[outbound_node][child]):
+            underflow_nodes.add(child)
+        # Nodes that receive flow via overflow_node must be receiving
+        # more than their max. 0-weight capacity, and are overflow nodes
+        elif overflow_node is not None and flows[overflow_node][child] > 0:
+            overflow_nodes.add(child)
+        # Any other node is receiving exactly its 0-weight capacity, and
+        # is a saturated node:
         else:
-            saturated_nodes.add(node)
+            saturated_nodes.add(child)
     return underflow_nodes, overflow_nodes, saturated_nodes
+
+def _restrict_saturated(
+        saturated, node, children, graph, flows,
+        outbound_nodes=None, restrict_underflows=True):
+    """ TODO """
+    # Process input:
+    if outbound_nodes is not None and node in outbound_nodes:
+        outbound_node = outbound_nodes[node]
+
+    # Re-calculate membership of `saturated`. This is intended to be
+    # called after reallocation of capacity between nodes based on
+    # previously-identified underflows or overflows:
+    for child in children:
+        # Iterate over `children` instead of `saturated` because we
+        # want to mutate `saturated`:
+        if child in saturated:
+            new_capacity = graph[outbound_node][child][CAPACITY_KEY]
+            old_capacity = flows[outbound_node]
+            # Remove any children that have had their capacity
+            # reduced as part of the underflow rebalancing:
+            if restrict_underflows and old_capacity > new_capacity:
+                saturated.remove(child)
+            # (If we're calling after rebalancing overflows, check to
+            # see if the child has _increased_ its capacity instead)
+            elif not restrict_underflows and old_capacity > new_capacity:
+                saturated.remove(child)
