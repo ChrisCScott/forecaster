@@ -325,7 +325,8 @@ class TransactionTraversal:
 
     def _add_node_weighted(
             self, graph, node, children, timing, limit,
-            *, capacity=None, overflow_nodes=None, **kwargs):
+            *, capacity=None, overflow_nodes=None, add_overflow=True,
+            **kwargs):
         """ Adds a weighted node's children to the graph.
 
         The input `node` should already be a node of `graph` with at
@@ -352,39 +353,44 @@ class TransactionTraversal:
             # This will be distributed to outbound edges.
             capacity = _inbound_capacity(graph, node)
 
-        # For weighted nodes, we want to prioritize assigning flows
-        # as dictated by the nodes' weights, while still allowing flows
-        # to be shifted between children if some children can't receive
-        # the full amount dictated by their weight.
-        # We accomplish this by adding weighted edges between children
-        # that allow (but penalize) flows between children.
-        # (We route all these edges through `overflow_node` so that the
-        # number of edges added is `n+1`, where `n` is the number of
-        # children. If added directly between children, the number of
-        # edges would be `n^2`.)
-        overflow_node = (node, "overflow")
-        if overflow_nodes is not None:
-            overflow_nodes[node] = overflow_node
-        # Add an edge from `node` to `overflow_node` and from
-        # `overflow_node` to each child. This enables shifting flow
-        # between children. (We'll add weight to the node-overflow_node
-        # edge later, once we know the weights of all paths to `sink`):
-        _add_edge(graph, node, overflow_node, capacity=capacity)
-        for child in children:
-            _add_edge(graph, overflow_node, child, capacity=capacity)
+        if add_overflow:
+            # For weighted nodes, we want to prioritize assigning flows
+            # as dictated by the nodes' weights, while still allowing
+            # flows to be shifted between children if some children
+            # can't receive the full amount dictated by their weight.
+            # We accomplish this by adding weighted edges between
+            # children that allow (but penalize) flows between children.
+            # (We route all these edges through `overflow_node` so that
+            # the number of edges added is `n+1`, where `n` is the
+            # number of children. If added directly between children,
+            # the number of edges would be `n^2`.)
+            overflow_node = (node, "overflow")
+            if overflow_nodes is not None:
+                overflow_nodes[node] = overflow_node
+            # Add an edge from `node` to `overflow_node` and from
+            # `overflow_node` to each child. This enables shifting flow
+            # between children. (We'll add weight to the
+            # node->overflow_node edge later, once we know the weights
+            # of all paths to `sink`):
+            _add_edge(graph, node, overflow_node, capacity=capacity)
+            for child in children:
+                _add_edge(graph, overflow_node, child, capacity=capacity)
 
         # Recursively add successor nodes:
         self._add_weighted_children(
-            graph, node, children, capacity, timing, limit, **kwargs)
+            graph, node, children, capacity, timing, limit,
+            add_overflow=add_overflow, **kwargs)
 
-        # We want the flow through each child to be as close as possible
-        # to the capacity assigned above (i.e. we want to move as little
-        # flow as possible between children.)
-        # Accomplish this by heavily penalizing flows through
-        # `overflow_node`. It should be preferable to shift flow between
-        # _any_ successor path before routing it through `overflow_node`
-        weight = max(_sum_weight(graph, child) for child in children) + 1
-        _add_edge(graph, node, overflow_node, weight=weight)
+        if add_overflow:
+            # We want the flow through each child to be as close as
+            # possible to the capacity assigned above (i.e. we want to
+            # move as little flow as possible between children.)
+            # Accomplish this by heavily penalizing flows through
+            # `overflow_node`.
+            # It should be preferable to shift flow between _any_
+            # successor path before routing it through `overflow_node`.
+            weight = max(_sum_weight(graph, child) for child in children) + 1
+            _add_edge(graph, node, overflow_node, weight=weight)
 
         # This deals with overflows, but not underflows - which are
         # basically guaranteed, since each child node has more inbound
@@ -593,7 +599,9 @@ class TransactionTraversal:
         self._add_successors(
             graph, node, timing, limit,
             capacity=capacity, children=children_subset,
-            outbound_nodes=outbound_nodes, overflow_nodes=overflow_nodes)
+            outbound_nodes=outbound_nodes, overflow_nodes=overflow_nodes,
+            # (Don't mess with overflow nodes at this stage)
+            add_overflow=False)
         # If there are multiple children, recurse onto them to ensure
         # that they are balanced relative to each other:
         if len(children) > 1:
