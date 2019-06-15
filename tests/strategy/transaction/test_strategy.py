@@ -142,9 +142,9 @@ class TestTransactionStrategyOrdered(TestCaseTransactions):
         self.assertTransactions(results[self.tfsa], self.tfsa.max_inflows())
         # Remaining accounts shouldn't be contributed to:
         if self.rrsp in results:
-            self.assertEqual(results[self.rrsp], Money(0))
+            self.assertTransactions(results[self.rrsp], Money(0))
         if self.taxable_account in results:
-            self.assertEqual(results[self.taxable_account], Money(0))
+            self.assertTransactions(results[self.taxable_account], Money(0))
 
 
 class TestTransactionStrategyOrderedMult(TestCaseTransactions):
@@ -550,7 +550,7 @@ class TestTransactionStrategyWeightedLink(TestCaseTransactions):
         # Confirm that the total of all outflows sums up to `val`, which
         # should be fully allocated to accounts:
         self.assertAccountTransactionsTotal(results, val)
-        # Also confirm that the smaller accounts get filled:
+        # Also confirm that the smaller accounts get emptied:
         self.assertTransactions(results[self.rrsp], self.rrsp.max_outflows())
         self.assertTransactions(results[self.rrsp2], self.rrsp2.max_outflows())
         self.assertTransactions(results[self.tfsa], self.tfsa.max_outflows())
