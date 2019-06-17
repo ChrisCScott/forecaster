@@ -168,6 +168,29 @@ class TransactionTraversal:
 
         # Build and traverse a graph based on `priority`:
         # TODO: Traverse for `min_limit` as well:
+        # We can do this in either of two ways.
+        #
+        # 1. Traverse twice, once for each limit, with the second
+        # traversal (on max_limit) receiving information about flows
+        # on the min_limit traversal and acting accordingly.
+        #
+        # 2. Traverse once, with a modified graph that prioritizes
+        # min_limit flows over max_limit flows.
+        # This would likely involve adding a `min_limit` arg (or
+        # wrapping min_limit and max_limit into one arg - but this may
+        # make some logic more complicated below) and expanding the
+        # logic of _embed_limit (if both limits apply, add two limit
+        # nodes, with the min_limit node getting a 0-weight edge and
+        # `min_limit` capacity and the max_limit node getting a 1-weight
+        # edge with `total-min_limit` capacity?) and `_add_node_account`
+        # (need to call _embed_limit, and make multiple calls to
+        # _get_transactions?)
+        #
+        # Option 2 is preferable, insofar as it halves the number of
+        # traversals, provided that it only requires minor additions to
+        # the graph (e.g. adding one node and two edges for each limited
+        # node). If it requires duplicating the graph entirely, might
+        # as well simply perform two separate traversals.
         return self._traverse_priority(available, total, max_limit)
 
     def _traverse_priority(
@@ -406,9 +429,6 @@ class TransactionTraversal:
         # Proportionality is easier to calculate with normalized weights
         # so determine that first:
         normalization = sum(children.values())
-        # TODO: Implement version of `add_edges_from` to ensure that
-        # total capacity across all edges is (approx.) equal to the sum
-        # of children's capacities prior to rounding.
 
         # Add an edge to each child (this adds both edge and child).
         for child, weight in children.items():
@@ -697,7 +717,6 @@ class TransactionTraversal:
         """ TODO """
         # For more on this networkx algoritm, see:
         # https://networkx.github.io/documentation/networkx-1.10/reference/generated/networkx.algorithms.flow.max_flow_min_cost.html#networkx.algorithms.flow.max_flow_min_cost
-        # TODO: Use capacity and weight constants (not str literals)
         flows = networkx.algorithms.flow.max_flow_min_cost(
             graph, source, sink, capacity=CAPACITY_KEY, weight=WEIGHT_KEY)
         # Total flow is equal to whatever's flowing out of `source`:

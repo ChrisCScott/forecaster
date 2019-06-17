@@ -511,6 +511,10 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
 
     def test_assign_mins(self):
         """ Assign minimum inflows without throwing off total inflows. """
+        # TODO: Rewrite test so that we're ensuring that the minimum
+        # is actually being assigned in a way different that what would
+        # be assigned if respecting only the max. limit.
+
         # Simple scenario: One account that takes $10-$100 in inflows:
         priority = [self.debt]
         strategy = TransactionTraversal(priority=priority)
