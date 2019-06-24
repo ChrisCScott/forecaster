@@ -448,24 +448,50 @@ class TransactionTraversal:
         # its corresponding outbound node) to any of `children`, account
         # for that by increasing `capacity` here and decrementing that
         # flow from the child's proportionate capacity later on:
-        if memo is not None:
-            outbound_node = _get_outbound_node(node, outbound_nodes)
-            if outbound_node in memo:
-                capacity += _memoized_flows(
-                    outbound_node, memo=memo, children=children)
+        outbound_node = _get_outbound_node(node, outbound_nodes)
+        flows = _memoized_flows(outbound_node, memo=memo, children=children)
+        capacity += flows
 
-        # Add an edge to each child (this adds both edge and child).
+        # Generate a proportionate weighting for each child:
+        totals = {}
         for child, weight in children.items():
-            # Each child receives a directed edge with `capacity`
-            # scaled down proportionately to the child's weight in
-            # `children`.
+            # Each child is allocated a slice of `capacity`
+            # proportionate to its weight in `children`:
             child_total = capacity * weight / normalization
-            # Reduce this capacity to account for any
-            # previously-assigned flows:
+            # Reduce this capacity to account for any memoized flows:
             child_total -= _memoized_flows(outbound_node, child, memo=memo)
+            # Save this allocation:
+            totals[child] = child_total
+
+        # Deal with the scenario where some children have been assigned
+        # negative capacity (i.e. memoized flows are greater than the
+        # total amount that would ordinarily be assigned here):
+        if any(total < 0 for total in totals.values()):
+            # Recurse on any children which have not previously been
+            # allocated more flows than their weight dictates:
+            recurse_children = {
+                child: weight for child, weight in children.items()
+                if totals[child] > 0}
+            # Capacity should be restored to its original value...
+            capacity -= flows
+            # ... and further reduced by the amount of excess flows
+            # previously allocated to some children:
+            capacity += sum(total for total in totals.values() if total < 0)
+            self._add_weighted_children(
+                graph, node, recurse_children, capacity, timing, limit,
+                memo=memo, outbound_nodes=outbound_nodes, **kwargs)
+            # As for the children that have been over-allocated flow,
+            # give them 0-capacity edges (since negative capacity is
+            # not allowed):
+            totals = {
+                child: 0 for child, total in totals.items() if total <= 0}
+
+        # Generate edges for `children` (or, if we recursed onto a
+        # subset, onto the remainder that wasn't recursed on):
+        for child, child_total in totals.items():
             # Add the edge (this implicitly adds the child to the
             # graph if it hasn't already been added)
-            _add_edge(graph, node, child, capacity=child_total)
+            _add_edge(graph, outbound_node, child, capacity=child_total)
             # Then recurse onto the child:
             self._add_successors(
                 graph, child, timing, limit,
