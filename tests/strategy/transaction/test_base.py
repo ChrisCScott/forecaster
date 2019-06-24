@@ -197,22 +197,20 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
 
     def test_limit_weighted(self):
         """ Limit contributions with per-node limit in weighted tree. """
-        # Limit debt contributions to $100
+        # Limit debt contributions to $50
         # (rather than $1000 max. contribution)
-        limits = LimitTuple(max_inflow=Money(100))
+        limits = LimitTuple(max_inflow=Money(50))
         limit_node = TransactionNode(self.debt, limits=limits)
         priority = {
             self.rrsp: Decimal(1),
-            limit_node: Decimal(1),
-            self.taxable_account: Decimal(1)}
+            limit_node: Decimal(1)}
         strategy = TransactionTraversal(priority=priority)
-        # Contribute $400 to the accounts:
-        available = {Decimal(0.5): Money(400)}
+        # Contribute $150 to the accounts:
+        available = {Decimal(0.5): Money(150)}
         transactions = strategy(available)
-        # $100 will go to debt and RRSP and $200 taxable:
+        # $50 will go to debt. Remaining $100 will go to RRSP:
+        self.assertTransactions(transactions[self.debt], Money(50))
         self.assertTransactions(transactions[self.rrsp], Money(100))
-        self.assertTransactions(transactions[self.debt], Money(100))
-        self.assertTransactions(transactions[self.taxable_account], Money(200))
 
     def test_limit_weight_link_1_small(self):
         """ Linked account with limit in weighted tree; small inflow. """
@@ -511,19 +509,19 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
 
     def test_assign_mins(self):
         """ Assign minimum inflows without throwing off total inflows. """
-        # TODO: Rewrite test so that we're ensuring that the minimum
-        # is actually being assigned in a way different that what would
-        # be assigned if respecting only the max. limit.
-
-        # Simple scenario: One account that takes $10-$100 in inflows:
-        priority = [self.debt]
+        # Simple scenario: two accounts that take $10 in min. inflows:
+        priority = [self.rrsp, self.debt]
         strategy = TransactionTraversal(priority=priority)
-        # Contribute more than the account can accept:
-        available = {Decimal(0.5): Money(200)}
+        # Contribute the debt's minimum payment ($10):
+        available = {Decimal(0.5): Money(10)}
         transactions = strategy(available)
-        # Exactly $100 should go to the account:
+        # Exactly $10 should go to `debt`, with none going to `rrsp`,
+        # even though `rrsp` comes first in the priority tree:
         self.assertTransactions(
-            transactions[self.debt], Money(100))
+            transactions[self.debt], Money(10))
+        if self.rrsp in transactions:
+            self.assertTransactions(
+                transactions[self.rrsp], Money(0))
 
     def test_assign_mins_out(self):
         """ Assign minimum outflows without throwing off total outflows. """
