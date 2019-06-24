@@ -7,6 +7,7 @@
         "-p",
         "test_*.py"
     ],
+    "editor.rulers": [72, 80],
     "python.testing.pyTestEnabled": false,
     "python.testing.nosetestsEnabled": false,
     "python.testing.unittestEnabled": true,
