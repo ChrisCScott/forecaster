@@ -263,7 +263,7 @@ class TransactionTraversal:
         self._balance_weighted_flows(
             graph, timing, limit, source, sink,
             outbound_nodes=outbound_nodes, overflow_nodes=overflow_nodes,
-            memo=memo)
+            memo=memo, precision=precision)
 
         return (graph, source, sink)
 
@@ -337,6 +337,7 @@ class TransactionTraversal:
         outbound_node = (node, "limit")
 
         # Figure out whether `node` has an applicable limit:
+        limit_value = None
         if hasattr(node, "limits") and hasattr(node.limits, limit):
             limit_value = getattr(node.limits, limit)
             # Convert from Money-like to Decimal, if applicable:
@@ -353,11 +354,19 @@ class TransactionTraversal:
                 # successors use this to determine their edge capacities
                 capacity = min(capacity, limit_value)
 
-        # Connect `node` and `outbound_node` via a directed edge with
-        # `capacity` capacity. If `node` had an applicable limit, this
-        # edge is the mechanism that enforces the limit.
-        _add_edge(graph, node, outbound_node, capacity=capacity)
+        # Connect `node` and `outbound_node` via a directed edge:
+        if limit_value is not None:
+             # If `node` had an applicable limit, the edge will have
+             # `limit_value` capacity. This enforces the limit!
+            _add_edge(graph, node, outbound_node, capacity=limit_value)
+        else:
+            # If there's no applicable limit, the edge has infinite
+            # capacity (represented by omitting the capacity argument)
+            _add_edge(graph, node, outbound_node)
 
+        # Return the new outbound node and the (potentially-reduced)
+        # capacity. Any children should receive edges from
+        # `outbound_node` instead of `node`.
         return outbound_node, capacity
 
     def _add_node_weighted(
@@ -416,7 +425,7 @@ class TransactionTraversal:
         # Recursively add successor nodes:
         self._add_weighted_children(
             graph, node, children, capacity, timing, limit,
-            add_overflow=add_overflow, memo=memo, **kwargs)
+            overflow_nodes=None, add_overflow=add_overflow, memo=memo, **kwargs)
 
         if add_overflow:
             # We want the flow through each child to be as close as
@@ -499,7 +508,8 @@ class TransactionTraversal:
 
     def _balance_weighted_flows(
             self, graph, timing, limit, source, sink,
-            outbound_nodes=None, overflow_nodes=None, memo=None):
+            outbound_nodes=None, overflow_nodes=None, memo=None,
+            precision=None):
         """ TODO """
         # We want to ensure that higher-order weighted nodes are
         # prioritized (i.e. skew their flows to the most limited degree
@@ -528,12 +538,12 @@ class TransactionTraversal:
                 graph, node, timing, limit, source, sink,
                 outbound_nodes=outbound_nodes,
                 overflow_nodes=overflow_nodes,
-                memo=memo)
+                memo=memo, precision=precision)
 
     def _balance_flows(
             self, graph, node, timing, limit, source, sink,
             outbound_nodes=None, overflow_nodes=None, children=None,
-            rebalance_all=True, memo=None):
+            rebalance_all=True, memo=None, precision=None):
         """ Attempts to shift flow between children to match weights.
 
         Based on the flows from `node` to `children`, we can identify 3
@@ -601,7 +611,7 @@ class TransactionTraversal:
                     children=children, flows=flows,
                     outbound_nodes=outbound_nodes,
                     overflow_nodes=overflow_nodes,
-                    rebalance_all=False, memo=memo)
+                    rebalance_all=False, memo=memo, precision=precision)
                 # Don't proceed on, since the old `flows` is based on
                 # unbalanced capacities.
                 return
@@ -626,7 +636,8 @@ class TransactionTraversal:
         self._balance_flows_recurse(
             graph, node, timing, limit, source, sink,
             children=underflow_expanded, flows=flows, memo=memo,
-            outbound_nodes=outbound_nodes, overflow_nodes=overflow_nodes)
+            outbound_nodes=outbound_nodes, overflow_nodes=overflow_nodes,
+            precision=precision)
 
         # Any saturated nodes that have changed capacity will
         # necessarily have had their capacity reduced; shift those
@@ -643,7 +654,8 @@ class TransactionTraversal:
         self._balance_flows_recurse(
             graph, node, timing, limit, source, sink,
             children=overflow_expanded, flows=flows, memo=memo,
-            outbound_nodes=outbound_nodes, overflow_nodes=overflow_nodes)
+            outbound_nodes=outbound_nodes, overflow_nodes=overflow_nodes,
+            precision=precision)
 
     def _balance_flows_recurse(
             self, graph, node, timing, limit, source, sink,
@@ -680,6 +692,7 @@ class TransactionTraversal:
             graph, node, timing, limit,
             capacity=capacity, children=children_subset, memo=memo,
             outbound_nodes=outbound_nodes, overflow_nodes=overflow_nodes,
+            source=source, sink=sink,
             # (Don't mess with overflow nodes at this stage)
             add_overflow=False)
         # If there are multiple children, recurse onto them to ensure
@@ -747,25 +760,24 @@ class TransactionTraversal:
         # methods, because `_add_successors` will provide a value (None,
         # in the case of this method).
 
-        # The capacity of an account is not a function of its inbound
-        # edges. It's dictated by the account itself. It's expensive
-        # to get this information from the account, so generate it once
-        # and each subsequent time just sum its existing outbound edges:
-        if not graph[node]:
-            # Get a time-series of transactions from the account
-            # defining its capacity for the given `limit`:
-            transactions = self._get_transactions(node, limit, timing)
-            transaction_limit = sum(transactions.values())
-            # Convert `transaction_limit` to a non-Money type (since
-            # Money is not convertible to int, which is a problem later)
-            if hasattr(transaction_limit, "amount"):
-                transaction_limit = transaction_limit.amount
-            # Scale up based on the precision (as we do with all edge
-            # capacities):
-            capacity = transaction_limit / precision
-        else:
-            # Re-use the previously-calculated value:
-            capacity = _outbound_capacity(graph, node)
+        # NOTE: It's expensive to query the account, and for a given
+        # `limit` the result shouldn't change. Consider caching the
+        # result on first invocation and reusing it on subsequent 
+        # invocations.
+
+        # The capacity of an account is not a function of its
+        # inbound edges. It's dictated by the account itself.
+        # Query the account for the time-series of transactions that
+        # defines its capacity for the given `limit`:
+        transactions = self._get_transactions(node, limit, timing)
+        transaction_limit = sum(transactions.values())
+        # Convert `transaction_limit` to a non-Money type (since
+        # Money is not convertible to int, which is a problem later)
+        if hasattr(transaction_limit, "amount"):
+            transaction_limit = transaction_limit.amount
+        # Scale up based on the precision (as we do with all edge
+        # capacities):
+        capacity = transaction_limit / precision
 
         # Most accounts add an edge straight to `sink`, but accounts
         # that have shared transaction limits have special treatment:
@@ -790,8 +802,7 @@ class TransactionTraversal:
         # Send an edge from the node to the sink, if provided:
         if sink is not None:
             _add_edge(
-                graph, node, sink,
-                capacity=capacity, limit=capacity)
+                graph, node, sink, capacity=capacity, limit=capacity)
 
     def _generate_flows(self, graph, source, sink):
         """ TODO """
