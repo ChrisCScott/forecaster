@@ -6,43 +6,66 @@ amounts, and to which accounts.
 
 from decimal import Decimal
 from queue import SimpleQueue
-import networkx
 from forecaster.ledger import Money
-from forecaster.utility import EPSILON_MONEY, EPSILON, add_transactions
+from forecaster.utility import EPSILON, add_transactions
 from forecaster.accounts.util import LIMIT_TUPLE_FIELDS
 from forecaster.strategy.transaction.util import (
-    LimitTuple, transaction_default_methods, group_default_methods)
+    LimitTuple, transaction_default_methods, group_default_methods,
+    _get_accounts, _get_group, _get_transactions,
+    _convert_flows_to_transactions)
 from forecaster.strategy.transaction.node import TransactionNode
-
-CAPACITY_KEY = "capacity"
-WEIGHT_KEY = "weight"
-LIMIT_KEY = "limit"
+from forecaster.strategy.transaction.graph import (
+    _get_empty_graph, _add_edge, _flows_through, _generate_flows,
+    _inbound_capacity, _merge_flows, _outbound_capacity, _sum_weight,
+    _get_outbound_node, _get_overflow_node, _classify_children_by_flows,
+    _swap_saturated, _restrict_overflow, _unrestrict_overflow)
 
 
 class TransactionTraversal:
     """ Determines transactions to/from accounts based on a priority.
 
-    Instances of this class receive a structured collection of `Account`
-    objects and traverses them as a tree to determine the transactions
-    for each account. Each element of the collection is a node of the
-    tree and may be one of several types. Nodes need not be unique.
+    Instances of this class, when initialized, receive a
+    `TransactionNode` (or a data structure that is convertible to
+    `TransactionNode`, e.g. `list`, `tuple`, `dict`, and/or `Account`).
+    This is usually expressible as a tree (and this documentation
+    usually describes it as as the "priority tree"), but a true tree
+    structure is not required; for example, nodes can share children
+    (even across levels).
+    In fact, it often is not semantically a tree in practice, since
+    leaf nodes (usually `Account`s) can share contribution room or have
+    other relationships not captured by the tree structure.
 
-    Nodes may be native `dict`, `list`, and `tuple` objects.
-    `dict` elements are unordered; each key is a child node and the
-    corresponding value is a weight. `list` or `tuple` objects provide
-    an ordered sequence of child nodes. (Tip: use `tuple` for nodes that
-    need to be stored as keys in a `dict`). `Account` objects (or
-    similar) are leaf nodes.
+    Instances of this class, when called, traverse a representation of
+    the priority tree to allocate transactions to the leaves (which are
+    assumed to be accounts, although as described below they do not need
+    to inherit from `Account`). The traversal is breadth-first, so that
+    higher-level relationships are enforced in preference to lower-level
+    relationships. For example:
 
-    Nodes may be `TransactionNode` objects, which provide richer
-    semantics. For example, a `TransactionNode` can provide limits on
-    min/max in/outflows; these are enforced when assigning transactions
-    to leaf nodes if they are stricter than leaf nodes' own intrinsic
-    limits. See documentation for `TransactionNode` for more detail.
+    *   all lower-level ordered nodes will be exhausted before
+        moving on to the next ordered node at a higher level; and
+    *   all lower-level weighted nodes will be forced to deviate from
+        their target allocation as much as necessary to minimize
+        deviations by higher-order weighted nodes.
+
+    This class generates a directed graph based on the input which
+    represents the  relationships between nodes. It finds a minimum-cost
+    maximum flow across the graph which it translates into transactions
+    for each leaf node (usually `Account`s). By default, it does this
+    twice, once to allocate minimum transactions and then again to
+    allocate maximum transactions.
+
+    The semantics of `TransactionNode` inputs are respected, including
+    limits on min/max in/outflows. See documentation for
+    `TransactionNode` for more detail.
 
     As with all `Strategy` objects, objects of this type are callable
     and will return a result resulting from their various settings; in
-    this case, a mapping of `Account` objects to transaction objects.
+    this case, a mapping of leaf nodes to transactions.
+
+    Usually leaf nodes are `Account` objects, but any type can be used.
+    If using another type, be sure to provide `transaction_methods`
+    and `group_methods` that support all of the leaf nodes' types.
 
     Examples:
         # Collections can be nested (note also that `account2` repeats):
@@ -64,19 +87,27 @@ class TransactionTraversal:
         # `account2`, with any excess going to `account2`
 
     Attributes:
-        priority [list[Any], dict[Any, Decimal]]: The (nested)
-            collection of Accounts.
+        priority [TransactionNode, list[Any], dict[Any, Decimal]],
+            tuple[Any]: The (nested) collection of `Account`s.
         transaction_methods (LimitTuple[Callable]): A tuple of methods,
-            each taking one argument and returning a transactions object
-            (i.e. a `dict[Decimal, Money]` map of timings to values).
+            each taking a leaf node as the sole argument and returning a
+            transactions object (i.e. a `dict[Decimal, Money]` map of
+            timings to values).
             Each method of the tuple respects a different limit (e.g.
             `min_inflows`, `max_outflows`).
+            Optional. If not provided, methods supporting `Account`-type
+            leaf nodes will be used.
         group_methods (LimitTuple[Callable]): A tuple of methods,
-            each taking one argument and returning a group of linked
-            accounts (i.e. a `set[Account]` or, more generally, `set[T]`
-            where `T` is any valid type for a leaf node in `priority`).
+            each taking a leaf node as the sole argument and returning a
+            group of linked accounts (i.e. a `set[Account]` or, more
+            generally, `set[T]` where `T` is any valid type for a leaf
+            node in `priority`).
             Each method of the tuple corresponds to a different link
             (e.g. `max_inflow_link`, `min_outflow_link`).
+            Optional. If not provided, methods supporting `Account`-type
+            leaf nodes will be used.
+        precision (float, Decimal): Results will be rounded to this
+            level of precision.
 
     Args:
         available (dict[Decimal, Money]): A time series of inflows
@@ -100,15 +131,16 @@ class TransactionTraversal:
             Optional. Defaults to True.
 
     Returns:
-        dict[Account, dict[Decimal, Money]]: A mapping of accounts to
+        dict[Hashable, dict[Decimal, Money]]: A mapping of accounts to
             transactions to (positive) or from (negative) those
             accounts. No `list`, `dict`, or other sub-collection is
             used as a key. Only the leaf node `Account`-like objects of
             the tree defined by `priority` are used as keys.
     """
     def __init__(
-            self, priority, transaction_methods=None, group_methods=None):
-        """ Initializes TransactionNode """
+            self, priority,
+            transaction_methods=None, group_methods=None, precision=EPSILON):
+        """ Initializes TransactionTraversal. """
         # Set up data-holding attributes:
         self._priority = None
         self._priority_tree = None
@@ -121,6 +153,11 @@ class TransactionTraversal:
             self.group_methods = group_default_methods()
         else:
             self.group_methods = LimitTuple(group_methods)
+        # Store args used by most class methods as attributes to
+        # simplify method calls:
+        # TODO: Add graph, timing, limit (?), source, sink, memo,
+        # outbound_nodes, and overflow_nodes
+        self.precision = precision
         # Use property setter to fill the data-holding attributes:
         self.priority = priority
 
@@ -151,18 +188,22 @@ class TransactionTraversal:
         if total is None:
             total = sum(available.values())
 
+        # Convert Money-typed `total` to Decimal:
+        if hasattr(total, "amount"):
+            total = total.amount
+
         # Determine which limits we need to respect during traversal.
-        if total > EPSILON_MONEY:  # inflows
+        if total > self.precision:  # inflows
             min_limit = LIMIT_TUPLE_FIELDS.min_inflow
             max_limit = LIMIT_TUPLE_FIELDS.max_inflow
             # Limit min. inflows to what's available:
             min_total = total
-        elif total < -EPSILON_MONEY:  # outflows
+        elif total < -self.precision:  # outflows
             min_limit = LIMIT_TUPLE_FIELDS.min_outflow
             max_limit = LIMIT_TUPLE_FIELDS.max_outflow
             # Limit min. outflows based on what's in the account, not
             # the shortfall we're trying to fill:
-            min_total = Money('-Infinity')
+            min_total = Decimal('-Infinity')
         else:  # No transactions since total ~= 0
             return {}
 
@@ -186,18 +227,49 @@ class TransactionTraversal:
 
     def _traverse_priority(
             self, timing, total, limit, source=None, sink=None, memo=None):
-        """ TODO """
-        # Convert Money-typed `total` to Decimal:
-        if hasattr(total, "amount"):
-            total = total.amount
+        """ Builds a graph and finds the min-cost max. flow through it.
 
+        This method translates `priority` into a graph (via
+        `_build_graph`), finds the min. cost max. flows through it
+        from root to leaves, and translates those flows to transactions.
+
+        If calling multiple times with different `limit` values, you
+        may want to pass `memo` at each invocation. This will ensure
+        that total flows allocated by this traversal will be reduced
+        to account for earlier-allocated flows. Where necessary,
+        weighted nodes will be re-weighted to reflect earlier flows.
+        This method mutates `memo` to include newly-allocated flows.
+        Only incremental transactions (beyond those allocated in earlier
+        invocations) are returned via the return value.
+
+        Args:
+            timing (Timing): The timing of account transactions. This is
+                used by leaf nodes to find their min/max transactions.
+            total (Decimal): The maximum amount of flow to allow through
+                the graph.
+            limit (str): The name for the appropriate attribute of
+                `LimitTuple` to use for this traversal (e.g.
+                "min_inflow", "max_outflow")
+            source (Hashable): The node to use as the source of all
+                flows. Optional.
+            sink (Hashable): The node to use as the destination of all
+                flows. Optional.
+            memo (dict[Hashable, dict[Hashable, int]]): A record of all
+                flows assigned by previous invocations of
+                `_traverse_priority`. Mutated to include any flows
+                allocated on this invocation. Optional.
+
+        Returns:
+            dict[Hashable, dict[Decimal, Money]]: A mapping of leaf
+                nodes to transactions.
+        """
         # Build a graph that can accept up to `total` flow at the
         # source and then find the maximum flow that can actually
         # get through to the sink:
         graph, source, sink = self._build_graph(
             timing, total, limit, source=source, sink=sink, memo=memo)
 
-        _, flows = self._generate_flows(graph, source, sink)
+        _, flows = _generate_flows(graph, source, sink)
 
         # Store `flows` in memo, so that a later call to this method
         # can reference this information:
@@ -206,16 +278,41 @@ class TransactionTraversal:
 
         # Generate transactions for the accounts based on the newly-
         # generated flows. (Note that memoized flows aren't included):
-        accounts = self._get_accounts()
-        transactions = self._convert_flows_to_transactions(
-            flows, timing, limit, accounts, total=total)
+        accounts = _get_accounts(self._priority_tree)
+        transactions = _convert_flows_to_transactions(
+            flows, timing, limit, accounts,
+            transaction_methods=self.transaction_methods, total=total,
+            transaction_type=Money, precision=self.precision)
 
         return transactions
 
     def _build_graph(
             self, timing, total, limit,
-            *, source=None, sink=None, precision=EPSILON, memo=None):
-        """ TODO """
+            *, source=None, sink=None, memo=None):
+        """ Converts `priority` to a graph.
+
+        Args:
+            timing (Timing): The timing of account transactions. This is
+                used by leaf nodes to find their min/max transactions.
+            total (Decimal): The maximum amount of flow to allow through
+                the graph.
+            limit (str): The name for the appropriate attribute of
+                `LimitTuple` to use for this traversal (e.g.
+                "min_inflow", "max_outflow")
+            source (Hashable): The node to use as the source of all
+                flows. Optional.
+            sink (Hashable): The node to use as the destination of all
+                flows. Optional.
+            memo (dict[Hashable, dict[Hashable, int]]): A record of all
+                flows assigned by previous invocations of
+                `_traverse_priority`. Mutated to include any flows
+                allocated on this invocation. Optional.
+
+        Returns:
+            tuple(networkx.DiGraph, Hashable, Hashable): A tuple of
+            `(graph, source, sink)`. `source` and `sink` are generated
+            if not provided as input.
+        """
         # The sink and source nodes are each unique dummy objects.
         # Some algorithms don't require a unique sink (e.g. accounts
         # could each be sinks), but it's actually helpful to set edges
@@ -233,10 +330,10 @@ class TransactionTraversal:
         if abs(total) < Decimal('Infinity'):
             # We can ignore infinite-valued `total`, which is dealt with
             # in `_add_edge` (and can't be cast to `int`)
-            total = int(total / precision)
+            total = int(total / self.precision)
 
         # Create an empty graph:
-        graph = networkx.DiGraph()
+        graph = _get_empty_graph()
         # We could use the root node of the tree as the graph's source
         # node, but it's convenient if each node can determine the
         # capacities of its outbound weights based on the capacities
@@ -254,7 +351,7 @@ class TransactionTraversal:
         # Recursively build out the group from the root down:
         self._add_successors(
             graph, self._priority_tree, timing, limit,
-            source=source, sink=sink, precision=precision, memo=memo,
+            source=source, sink=sink, memo=memo,
             outbound_nodes=outbound_nodes, overflow_nodes=overflow_nodes)
 
         # This first pass results in weighted nodes providing too much
@@ -263,15 +360,15 @@ class TransactionTraversal:
         self._balance_weighted_flows(
             graph, timing, limit, source, sink,
             outbound_nodes=outbound_nodes, overflow_nodes=overflow_nodes,
-            memo=memo, precision=precision)
+            memo=memo)
 
         return (graph, source, sink)
 
     def _add_successors(
             self, graph, node, timing, limit,
             capacity=None, children=None, outbound_nodes=None,
-            precision=EPSILON, memo=None, **kwargs):
-        """ TODO """
+            memo=None, **kwargs):
+        """ Adds the children of `node` to `graph`. """
         # Identify which method is used to add the node's children to
         # the graph:
         if not isinstance(node, TransactionNode):
@@ -302,7 +399,7 @@ class TransactionTraversal:
         # capacity on the edge from `node` to `outbound_node`:
         outbound_node, capacity = self._embed_limit(
             graph, node, limit,
-            capacity=capacity, precision=precision, memo=memo)
+            capacity=capacity, memo=memo)
 
         # Record the outbound node if the calling method wants us to:
         if outbound_nodes is not None:
@@ -311,11 +408,11 @@ class TransactionTraversal:
         method(
             graph, outbound_node, children, timing, limit,
             capacity=capacity, outbound_nodes=outbound_nodes,
-            precision=precision, memo=memo, **kwargs)
+            memo=memo, **kwargs)
 
     def _embed_limit(
             self, graph, node, limit,
-            *, capacity=None, precision=EPSILON, memo=None):
+            *, capacity=None, memo=None):
         """ TODO """
         # Process args:
         if capacity is None:
@@ -346,10 +443,10 @@ class TransactionTraversal:
             if limit_value is not None:
                 # Scale up the limit value by `precision` to avoid
                 # rounding issues:
-                limit_value /= precision
+                limit_value /= self.precision
                 # Reduce `limit_value` based on any memoized flows
                 # through `node`:
-                limit_value -= _memoized_flows(node, memo=memo)
+                limit_value -= _flows_through(node, flows=memo)
                 # Use the lesser of `capacity` and `limit_value`;
                 # successors use this to determine their edge capacities
                 capacity = min(capacity, limit_value)
@@ -458,7 +555,7 @@ class TransactionTraversal:
         # for that by increasing `capacity` here and decrementing that
         # flow from the child's proportionate capacity later on:
         outbound_node = _get_outbound_node(node, outbound_nodes)
-        flows = _memoized_flows(outbound_node, memo=memo, children=children)
+        flows = _flows_through(outbound_node, flows=memo, children=children)
         capacity += flows
 
         # Generate a proportionate weighting for each child:
@@ -468,7 +565,7 @@ class TransactionTraversal:
             # proportionate to its weight in `children`:
             child_total = capacity * weight / normalization
             # Reduce this capacity to account for any memoized flows:
-            child_total -= _memoized_flows(outbound_node, child, memo=memo)
+            child_total -= _flows_through(outbound_node, child, flows=memo)
             # Save this allocation:
             totals[child] = child_total
 
@@ -508,8 +605,7 @@ class TransactionTraversal:
 
     def _balance_weighted_flows(
             self, graph, timing, limit, source, sink,
-            outbound_nodes=None, overflow_nodes=None, memo=None,
-            precision=None):
+            outbound_nodes=None, overflow_nodes=None, memo=None):
         """ TODO """
         # We want to ensure that higher-order weighted nodes are
         # prioritized (i.e. skew their flows to the most limited degree
@@ -538,12 +634,12 @@ class TransactionTraversal:
                 graph, node, timing, limit, source, sink,
                 outbound_nodes=outbound_nodes,
                 overflow_nodes=overflow_nodes,
-                memo=memo, precision=precision)
+                memo=memo)
 
     def _balance_flows(
             self, graph, node, timing, limit, source, sink,
             outbound_nodes=None, overflow_nodes=None, children=None,
-            rebalance_all=True, memo=None, precision=None):
+            rebalance_all=True, memo=None):
         """ Attempts to shift flow between children to match weights.
 
         Based on the flows from `node` to `children`, we can identify 3
@@ -587,7 +683,7 @@ class TransactionTraversal:
             return
 
         # Try to generate flows through the graph.
-        _, flows = self._generate_flows(graph, source, sink)
+        _, flows = _generate_flows(graph, source, sink)
         # Divide nodes based on whether flows match their capacities:
         underflow, overflow, saturated = _classify_children_by_flows(
             graph, node, children, flows, outbound_nodes, overflow_nodes)
@@ -611,7 +707,7 @@ class TransactionTraversal:
                     children=children, flows=flows,
                     outbound_nodes=outbound_nodes,
                     overflow_nodes=overflow_nodes,
-                    rebalance_all=False, memo=memo, precision=precision)
+                    rebalance_all=False, memo=memo)
                 # Don't proceed on, since the old `flows` is based on
                 # unbalanced capacities.
                 return
@@ -636,8 +732,7 @@ class TransactionTraversal:
         self._balance_flows_recurse(
             graph, node, timing, limit, source, sink,
             children=underflow_expanded, flows=flows, memo=memo,
-            outbound_nodes=outbound_nodes, overflow_nodes=overflow_nodes,
-            precision=precision)
+            outbound_nodes=outbound_nodes, overflow_nodes=overflow_nodes)
 
         # Any saturated nodes that have changed capacity will
         # necessarily have had their capacity reduced; shift those
@@ -654,8 +749,7 @@ class TransactionTraversal:
         self._balance_flows_recurse(
             graph, node, timing, limit, source, sink,
             children=overflow_expanded, flows=flows, memo=memo,
-            outbound_nodes=outbound_nodes, overflow_nodes=overflow_nodes,
-            precision=precision)
+            outbound_nodes=outbound_nodes, overflow_nodes=overflow_nodes)
 
     def _balance_flows_recurse(
             self, graph, node, timing, limit, source, sink,
@@ -751,8 +845,7 @@ class TransactionTraversal:
 
     def _add_node_account(
             self, graph, node, child, timing, limit,
-            *, sink=None, capacity=None, precision=EPSILON,
-            memo=None, **kwargs):
+            *, sink=None, capacity=None, memo=None, **kwargs):
         """ TODO """
         # pylint: disable=unused-argument
         # `child` isn't used by this method, but it needs to provide the
@@ -762,14 +855,15 @@ class TransactionTraversal:
 
         # NOTE: It's expensive to query the account, and for a given
         # `limit` the result shouldn't change. Consider caching the
-        # result on first invocation and reusing it on subsequent 
+        # result on first invocation and reusing it on subsequent
         # invocations.
 
         # The capacity of an account is not a function of its
         # inbound edges. It's dictated by the account itself.
         # Query the account for the time-series of transactions that
         # defines its capacity for the given `limit`:
-        transactions = self._get_transactions(node, limit, timing)
+        transactions = _get_transactions(
+            node, limit, timing, transaction_methods=self.transaction_methods)
         transaction_limit = sum(transactions.values())
         # Convert `transaction_limit` to a non-Money type (since
         # Money is not convertible to int, which is a problem later)
@@ -777,18 +871,18 @@ class TransactionTraversal:
             transaction_limit = transaction_limit.amount
         # Scale up based on the precision (as we do with all edge
         # capacities):
-        capacity = transaction_limit / precision
+        capacity = transaction_limit / self.precision
 
         # Most accounts add an edge straight to `sink`, but accounts
         # that have shared transaction limits have special treatment:
-        group = self._get_group(node, limit)
+        group = _get_group(node, limit, group_methods=self.group_methods)
         if group is not None:
             group_node = frozenset(group)  # make hashable
             # Reduce capacity based on any memoized flows through
             # `group_node` (which accounts for all flows through all
             # of the linked nodes of the group)
             # This prevents inadvertent over-contribution/withdrawal:
-            capacity -= _memoized_flows(group_node, memo=memo)
+            capacity -= _flows_through(group_node, flows=memo)
             _add_edge(
                 graph, node, group_node,
                 capacity=capacity, limit=capacity)
@@ -797,328 +891,9 @@ class TransactionTraversal:
             node = group_node
         else:
             # Reduce capacity based on any memoized flows through `node`
-            capacity -= _memoized_flows(node, memo=memo)
+            capacity -= _flows_through(node, flows=memo)
 
         # Send an edge from the node to the sink, if provided:
         if sink is not None:
             _add_edge(
                 graph, node, sink, capacity=capacity, limit=capacity)
-
-    def _generate_flows(self, graph, source, sink):
-        """ TODO """
-        # For more on this networkx algoritm, see:
-        # https://networkx.github.io/documentation/networkx-1.10/reference/generated/networkx.algorithms.flow.max_flow_min_cost.html#networkx.algorithms.flow.max_flow_min_cost
-        flows = networkx.algorithms.flow.max_flow_min_cost(
-            graph, source, sink, capacity=CAPACITY_KEY, weight=WEIGHT_KEY)
-        # Total flow is equal to whatever's flowing out of `source`:
-        total = sum(flows[source].values())
-        return total, flows
-
-    def _convert_flows_to_transactions(
-            self, flows, timing, limit, accounts,
-            total=None, precision=EPSILON):
-        """ TODO """
-        # If `total` is negative, all flows should be outflows
-        # (and thus need to be flipped to negative sign).
-        is_outflows = total is not None and total < 0
-        # TODO: Reduce this to a dict comprehension after debugging.
-        transactions = {}
-        for account in accounts:
-            if account in flows:
-                # NOTE: We scale down the flows to the account by a
-                # factor of `precision` because all flows/capacities
-                # are automatically inflated to avoid rounding errors.
-                total_flows = Money(sum(flows[account].values())) * precision
-                if is_outflows:
-                    total_flows = -total_flows
-                transactions[account] = self._get_transactions(
-                    account, limit, timing, total=total_flows)
-        return transactions
-
-    def _get_accounts(self, node=None, accounts=None):
-        """ TODO """
-        # Assign defaults:
-        if accounts is None:
-            accounts = set()
-        if node is None:
-            node = self._priority_tree
-
-        # If this is a leaf, record its account:
-        if node.is_leaf_node():
-            accounts.add(node.source)
-        # Otherwise, recurse onto children:
-        else:
-            for child in node.children:
-                self._get_accounts(child, accounts)
-
-        return accounts
-
-    def _get_transactions(self, account, limit, timing, total=None):
-        """ TODO """
-        if limit is None:
-            return {}
-        # This is ugly, but it works. Someday we should refactor this:
-        selector_method = getattr(self.transaction_methods, limit)
-        transaction_method = selector_method(account)
-        return transaction_method(timing, transaction_limit=total)
-
-    def _get_group(self, account, limit):
-        """ TODO """
-        group_method = getattr(self.group_methods, limit)
-        return group_method(account)
-
-def _inbound_capacity(graph, node):
-    """ Calculates the total capacity of inbound edges. """
-    # For each node, we'll calculate this amount each time the node is
-    # encountered and distribute it between outbound edges.
-    # (We do it this way, rather than passing `capacity` in as an arg
-    # from the parent node during recursion, because `node` could be
-    # found at multiple spots in the tree, so the amount to distribute
-    # between outbound edges can change during recursion.)
-    capacity = sum(
-        graph[parent][node][CAPACITY_KEY]
-        for parent in graph.predecessors(node)
-        if CAPACITY_KEY in graph[parent][node])
-    # Avoid setting `capacity` to a non-Decimal value:
-    if not isinstance(capacity, Decimal):
-        capacity = Decimal(capacity)
-    return capacity
-
-def _outbound_capacity(graph, node, weight=None, children=None):
-    """ Calculates the total capacity of outbound edges to children. """
-    if children is None:
-        children = graph.successors(node)
-    capacity = 0
-    # Add up the capacities of all outbound edges:
-    for child in children:
-        # `edge` is a dict with str-valued keys.
-        edge = graph[node][child]
-        if CAPACITY_KEY in edge:
-            if (
-                    # If `weight` is not provided, add up all edges:
-                    weight is None or
-                    # If `weight` is provided, only add edges with that
-                    # specific weight (i.e. ignore other edges)
-                    (
-                        WEIGHT_KEY in edge and
-                        edge[WEIGHT_KEY] == weight) or
-                    # If an edge lacks a weight attribute, it is treated
-                    # as if it has 0 weight. If `weight` is 0, we should
-                    # include that edge's capacity:
-                    (WEIGHT_KEY not in edge and weight == 0)
-            ):
-                capacity += graph[node][child][CAPACITY_KEY]
-        else:
-            # If capacity is not explicitly provided, it's infinite:
-            capacity = Decimal('Infinity')
-    return capacity
-
-def _sum_weight(graph, node):
-    """ TODO """
-    # In principal, we only need to ensure that we return the maximum
-    # weight of any path from `node` to `sink`. But that problem is
-    # NP-hard, whereas just summing over all descendant edges can be
-    # done in linear time. Just be sure that there are no cycles!
-    weight = 0
-    for child in graph.successors(node):
-        # Find weights on this node's children:
-        if WEIGHT_KEY in graph[node][child]:
-            weight += graph[node][child][WEIGHT_KEY]
-        # And also on those children's descendants:
-        weight += _sum_weight(graph, child)
-    return weight
-
-def _add_edge(
-        graph, from_node, to_node, memo=None, **kwargs):
-    """ TODO """
-    # We allow the input of arbitrary input args (via kwargs), but
-    # specific attrs with custom names are processed explicitly.
-    if CAPACITY_KEY in kwargs:
-        capacity = kwargs[CAPACITY_KEY]
-        # Ensure all capacity attrs use the same typing to avoid
-        # `unsupported operand type` errors.
-        if hasattr(capacity, "amount"):
-            # Convert Money-valued `capacity` to Decimal:
-            capacity = capacity.amount
-        # Capacity must be non-negative (we might receive negative
-        # values if capacity is drawn from outflow transactions)
-        capacity = abs(capacity)
-
-        # Reduce capacity by any previously-allocated flows over this
-        # edge:
-        capacity -= _memoized_flows(from_node, to_node, memo=memo)
-        # Only assign `capacity` as an edge value if it is finite.
-        # (networkx doesn't deal well with Decimal('Infinity'). The
-        # "capacity" attr should be absent if capacity is unbounded.)
-        if capacity < Decimal('Infinity'):
-            # Round `capacity` to an int (recommended by networkx):
-            # https://networkx.github.io/documentation/stable/reference/algorithms/generated/networkx.algorithms.flow.max_flow_min_cost.html#networkx.algorithms.flow.max_flow_min_cost
-            # (See `Notes`: "This algorithm is not guaranteed to
-            # work if edge weights or demands [capacities] are
-            # floating point numbers.")
-            kwargs[CAPACITY_KEY] = int(capacity)
-        else:
-            del kwargs[CAPACITY_KEY]
-
-    if WEIGHT_KEY in kwargs:
-        # We shouldn't ever add non-floating-point weight, but just in
-        # case we'll round it as well:
-        # NOTE: No need to worry about infinite-value weights.
-        kwargs[WEIGHT_KEY] = int(kwargs[WEIGHT_KEY])
-
-    graph.add_edge(from_node, to_node, **kwargs)
-
-def _classify_children_by_flows(
-        graph, node, children, flows,
-        outbound_nodes=None, overflow_nodes=None):
-    """ TODO """
-    # Process input:
-    outbound_node = _get_outbound_node(node, outbound_nodes)
-    overflow_node = _get_overflow_node(
-        node, overflow_nodes, outbound_node=outbound_node)
-
-    # Define some sets to contain each group of children:
-    underflow_nodes = set()
-    overflow_nodes = set()
-    saturated_nodes = set()
-    # Add each node to exactly one of those sets:
-    for child in children:
-        # Nodes with flows that are less than their max. 0-weight
-        # capacity are underflow nodes:
-        if (
-                graph[outbound_node][child][CAPACITY_KEY]
-                > flows[outbound_node][child]):
-            underflow_nodes.add(child)
-        # Nodes that receive flow via overflow_node must be receiving
-        # more than their max. 0-weight capacity, and are overflow nodes
-        elif overflow_node is not None and flows[overflow_node][child] > 0:
-            overflow_nodes.add(child)
-        # Any other node is receiving exactly its 0-weight capacity, and
-        # is a saturated node:
-        else:
-            saturated_nodes.add(child)
-    return underflow_nodes, overflow_nodes, saturated_nodes
-
-def _restrict_overflow(
-        graph, node, children, flows, overflow_nodes, outbound_nodes=None):
-    """ TODO """
-    # Process input:
-    outbound_node = _get_outbound_node(node, outbound_nodes)
-    overflow_node = _get_overflow_node(
-        node, overflow_nodes, outbound_node=outbound_node)
-
-    if overflow_node is None:
-        # If there is no overflow node, there's nothing to do.
-        return
-
-    # Limit the capacity from `overflow_node` to each child of `node`
-    # which is _not_ in `children`. The goal here is to ensure that any
-    # changed in 0-weight capacity result in excess flow being forced
-    # through `children` (via `overflow_node`) and not other nodes.
-    for child in node.children:
-        if child not in children:
-            if overflow_node in flows and child in flows[overflow_node]:
-                capacity = flows[overflow_node][child]
-            else:
-                capacity = 0
-            edge_data = {CAPACITY_KEY: capacity}
-            graph.add_edge(overflow_node, child, **edge_data)
-
-def _unrestrict_overflow(
-        graph, node, overflow_nodes, outbound_nodes=None):
-    """ TODO """
-    # Process input:
-    outbound_node = _get_outbound_node(node, outbound_nodes)
-    overflow_node = _get_overflow_node(
-        node, overflow_nodes, outbound_node=outbound_node)
-
-    if overflow_node is None:
-        # If there is no overflow node, there's nothing to do.
-        return
-
-    # Restore plenty of capacity to each edge from `overflow_node` to
-    # each child:
-    capacity = _outbound_capacity(graph, outbound_node, weight=0)
-    for child in node.children:
-        edge_data = {CAPACITY_KEY: capacity}
-        graph.add_edge(overflow_node, child, **edge_data)
-
-def _swap_saturated(
-        saturated, non_saturated, node, children, graph, flows,
-        outbound_nodes=None):
-    """ TODO """
-    # Process input:
-    outbound_node = _get_outbound_node(node, outbound_nodes)
-
-    # Re-calculate membership of `saturated`. This is intended to be
-    # called after reallocation of capacity between nodes based on
-    # previously-identified underflows or overflows:
-    for child in children:
-        # Iterate over `children` instead of `saturated` because we
-        # want to mutate `saturated`:
-        if child in saturated:
-            new_capacity = graph[outbound_node][child][CAPACITY_KEY]
-            old_capacity = flows[outbound_node][child]
-            if new_capacity != old_capacity:
-                saturated.remove(child)
-                non_saturated.add(child)
-
-def _get_outbound_node(node, outbound_nodes):
-    """ TODO """
-    if outbound_nodes is not None and node in outbound_nodes:
-        return outbound_nodes[node]
-    return node
-
-def _get_overflow_node(node, overflow_nodes, outbound_node=None):
-    """ TODO """
-    if overflow_nodes is None:
-        return None
-    if outbound_node is not None and outbound_node in overflow_nodes:
-        return overflow_nodes[outbound_node]
-    if node in overflow_nodes:
-        return overflow_nodes[node]
-    return None
-
-def _merge_flows(first, second):
-    """ Merges flows in `second` into `first`. Mutates `first`. """
-    # Iterate over edges in `second` by iterating over pairs of nodes:
-    for from_node in second:
-        for to_node in second[from_node]:
-            # These aren't defaultdicts, so ensure there's a dict in
-            # first[from_node] for us to add to later:
-            if from_node not in first:
-                first[from_node] = {}
-            # If this edge is in `first`, mutate `first` by adding the
-            # value in `second`:
-            if to_node in first[from_node]:
-                first[from_node][to_node] += second[from_node][to_node]
-            # Otherwise insert the value from `second` into `first`:
-            else:
-                first[from_node][to_node] = second[from_node][to_node]
-
-def _memoized_flows(from_node, to_node=None, *, memo=None, children=None):
-    """ TODO """
-    # Find the total flows through `node` allocated during previous
-    # iterations of `_traverse_priority` (as recorded in `memo`):
-    if memo is None or from_node not in memo:
-        # If there are no applicable flows, return 0
-        return 0
-    if to_node is not None and children is not None:
-        raise ValueError('Cannot pass both `to_node` and `children` arguments')
-
-    # Deal with the four non-trivial cases:
-    if children is not None:
-        # Return flows from `from_node` to `children`
-        return sum(memo[from_node][child] for child in children)
-    elif to_node is None:
-        # If only `from_node` is provided, return the sum of all
-        # outbound flows.
-        return sum(memo[from_node].values())
-    elif to_node in memo[from_node]:
-        # If `from_node` is provided and there are flows between
-        # `from_node` and `to_node`, return those flows
-        return memo[from_node][to_node]
-    else:
-        # Otherwise, there are no flows from `from_node` to `to_node`,
-        # so return 0
-        return 0

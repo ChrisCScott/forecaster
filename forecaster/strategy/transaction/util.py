@@ -64,3 +64,64 @@ def group_default_methods(field_names=LINK_FIELD_NAMES):
     return LimitTuple(*methods)
 
 GROUP_DEFAULT_METHODS = group_default_methods()
+
+def _convert_flows_to_transactions(
+        flows, timing, limit, accounts, transaction_methods,
+        total=None, precision=1, transaction_type=None):
+    """ TODO """
+    if transaction_methods is None:
+        transaction_methods = transaction_default_methods()
+    # If `total` is negative, all flows should be outflows
+    # (and thus need to be flipped to negative sign).
+    is_outflows = total is not None and total < 0
+    transactions = {}
+    for account in accounts:
+        if account in flows:
+            # NOTE: We scale down the flows to the account by a
+            # factor of `precision` because all flows/capacities
+            # are automatically inflated to avoid rounding errors.
+            total_flows = precision * sum(flows[account].values())
+            if is_outflows:
+                total_flows = -total_flows
+            # Convert to `transaction_type`, if provided:
+            if transaction_type is not None:
+                total_flows = transaction_type(total_flows)
+            transactions[account] = _get_transactions(
+                account, limit, timing,
+                transaction_methods=transaction_methods, total=total_flows)
+    return transactions
+
+def _get_accounts(node, accounts=None):
+    """ TODO """
+    # Set defaults (for recursion)
+    if accounts is None:
+        accounts = set()
+
+    # If this is a leaf, record its account:
+    if node.is_leaf_node():
+        accounts.add(node.source)
+    # Otherwise, recurse onto children:
+    else:
+        for child in node.children:
+            _get_accounts(child, accounts)
+
+    return accounts
+
+def _get_transactions(
+        account, limit, timing, transaction_methods=None, total=None):
+    """ TODO """
+    if transaction_methods is None:
+        transaction_methods = transaction_default_methods()
+    if limit is None:
+        return {}
+    # This is ugly, but it works. Someday we should refactor this:
+    selector_method = getattr(transaction_methods, limit)
+    transaction_method = selector_method(account)
+    return transaction_method(timing, transaction_limit=total)
+
+def _get_group(account, limit, group_methods=None):
+    """ TODO """
+    if group_methods is None:
+        group_methods = group_default_methods()
+    group_method = getattr(group_methods, limit)
+    return group_method(account)
