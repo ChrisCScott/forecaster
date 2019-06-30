@@ -301,7 +301,102 @@ class TransactionTraversal:
         return transactions
 
     def _build_graph(self, total, **kwargs):
-        """ Generates a value for `graph` based on `priority`.
+        """ Generates a graph based on `priority`; assigns it to `graph`
+
+        The generated graph represents each node of `priority`, as well
+        as any accounts (stored in leaf nodes). The graph is directed
+        and acyclic, provided that `priority` is acyclic. This method
+        is not guaranteed to halt (and probably won't!) if `priority`
+        has a cycle.
+
+        This method also adds various nodes to support a network flow
+        algorithm, including:
+
+        *   a `source` node for flow to originate at and travel from;
+        *   a `sink` node for flow to travel to and terminate at;
+        *   limit nodes (if applicable) which allow for the addition of
+            an edge with limited capacity to be added between a node and
+            its children to enforce any per-node limit;
+        *   group nodes (if applicable) which several accounts in a
+            group may direct flow through to enforce shared group
+            limits; and
+        *   overflow nodes (if applicable) for weighted nodes which
+            allow for flows to children to be reallocated when the
+            default weighted allocation isn't possible.
+
+        Edges may be weighted or unweighted (in which case they are
+        treated as having 0 weight). Weighted edges are used to enforce
+        ordering of flow paths among ordered nodes' children, and to
+        disincentivize flow through overflow nodes (thus prioritizing
+        the default allocation).
+
+        To execute successfully, this method needs to receive any kwargs
+        required by any lower-level `_add_*` methods that are called
+        for each node in `priority`. This usually means that at least
+        `limit` and `timing` must be provided. (See the
+        `_traverse_priority` documentation.)
+
+        Examples:
+            ```
+                                       T1 -> L1 -> A1
+                N                     /              \\
+               / \\    -->  source -> N                sink
+              T1 T2                   \\              /
+                                       T2 -> L2 -> A2
+            ```
+            In this example, N is an ordered node with children T1 and
+            T2 which are leaf nodes wrapping accounts A1 and A2,
+            respectively. The `source -> N` edge has a capacity limited
+            to `total`. The `T1 -> L1` and `T2 -> L2` edges have
+            capacity limited to the applicable `limit` value for T1 and
+            T2, respectively. The capacity of the edges directed at
+            sink is limited to the applicable
+            min_inflow/max_outflow/etc. value for A1 and A2 for the
+            given `timing`. The `N -> T1` edge has 0 weight, whereas
+            the `N -> T2` weight is larger than any path flow can take
+            from T1 to sink (forcing flow to exhaust all such paths
+            first).
+
+            (In practice, N might have its own limit node, not shown
+            here.)
+
+            If the previous example is modified so that A1 and A2
+            are `LinkLimitAccount`s with shared `max_inflow` values
+            then the graph would look like this:
+            ```
+                                       T1 -> L1 -> A1
+                N                     /              \\
+               / \\    -->  source -> N                group -> sink
+              T1 T2                   \\              /
+                                       T2 -> L2 -> A2
+            ```
+            In this case, the `A1 -> group` edge has the same capacity
+            as the above `A1 -> sink` edge, but now the `group -> sink`
+            edge also has that capacity, so the total amount contributed
+            to A1 and A2 will not exceed their shared limit.
+
+            Weighted nodes are a little more complicated because they
+            add an overflow node:
+            ```
+                                        -> T1 -> L1 -> A1
+                                       /   |           \\
+                N                     /    |            \\
+               / \\    -->  source -> N -> O              group -> sink
+              T1 T2                   \\   |              /
+                                       \\  |             /
+                                        -> T2 -> L2 -> A2
+            ```
+            Here the `N -> O` edge is weighted with unlimited capacity
+            and the `N -> T1` and `N -> T2` edges are unweighted with
+            limited capacity. In particular, their capacity is
+            determined based on the weightings provided by `N.children`.
+
+            In practice, by the time this method completes no flow will
+            pass through overflow node O. This is because the capacities
+            of the `N -> T1` and `N -> T2` edges have been repeatedly
+            rebalanced to reallocate those overflows proportionately
+            to the weights of any children that can accept additional
+            flow.
 
         Args:
             total (Decimal): The maximum amount of flow to allow through
@@ -353,7 +448,31 @@ class TransactionTraversal:
     def _add_successors(
             self, node, capacity=None, children=None, limit=None, **kwargs):
         """ Adds the children of `node` to `graph`.
-        TODO
+
+        By the time this method is called, `node` should already be in
+        `self.graph`. It will probably still work if not (i.e. `node`
+        should be added), but this use case has not been tested for.
+
+        This method will wrap `node` with a limit node (if `node` has
+        an applicable limit, and potentially even if not) and calls the
+        appropriate `_add_*` method to add the node's children in
+        whichever way is appropriate for a `node` of its type. If
+        `node` was wrapped with a limit node, edges to children will
+        originate with the limit node instead of `node`.
+
+        Args:
+            node (Hashable): The node whose successors are being added.
+            capacity (int): The maximum flow that can pass through this
+                node. Optional.
+            children (Iterable[Hashable]): A subset of `node.children`
+                on which to recurse. Optional; if not provided, all
+                members of `node.children` are recursed on. If provided,
+                this arg should be the same type as `node.children`.
+            limit (str): The name for the appropriate attribute of
+                `LimitTuple` to use for this traversal (e.g.
+                "min_inflow", "max_outflow").
+            **kwargs: Arguments to pass to lower-level methods. Must
+                include at least a "timing" key.
         """
         # Identify which method is used to add the node's children to
         # the graph:
@@ -395,7 +514,26 @@ class TransactionTraversal:
 
     def _embed_limit(
             self, node, limit, *, capacity=None):
-        """ TODO """
+        """ Adds an capacity-limited edge from `node` to a limit node.
+
+        This method will add a limit node _at least_ when `node` has an
+        applicable limit, but may add limit nodes even when there is not
+        an applicable limit for this value of `limit`. For example, it
+        may add a limit node for every `TransactionNode`, or for
+        transaction nodes that have a limit for one of several limit
+        types (not just the one indicated by `limit`).
+
+        If `capacity` is provided, the capacity of the edge from `node`
+        to the limit node will not exceed `capacity`.
+
+        Args:
+            node (Hashable): The node whose successors are being added.
+            limit (str): The name for the appropriate attribute of
+                `LimitTuple` to use for this traversal (e.g.
+                "min_inflow", "max_outflow").
+            capacity (int): The maximum flow that can pass through this
+                node. Optional.
+        """
         # Process args:
         if capacity is None:
             capacity = _inbound_capacity(self.graph, node)
@@ -456,24 +594,29 @@ class TransactionTraversal:
             *, capacity=None, add_overflow=True, **kwargs):
         """ Adds a weighted node's children to the graph.
 
-        The input `node` should already be a node of `graph` with at
-        least one inbound edge. This method will add the node's children
-        to the graph (if not already present) and add edges from `node`
-        to each of its children.
+        Adds an edge from `node` to each child with 0 weight and
+        capacity equal to `node`'s total inbound capacity, scaled down
+        proportionately to the weight that `node` gives the child.
 
-        Each edge to a child has 0 weight and capacity equal to `node`'s
-        total inbound capacity, scaled down proportionately to the
-        weight that `node` gives the child.
+        If `add_overflow` is `True`, an overflow node is also added with
+        a weighted edge from `node` to the overflow node (and edges from
+        the overflow node to children which are unweighted and have
+        unlimited capacity). The weighted edge is guaranteed to have
+        a weight larger than the total weight of any path from any
+        member of `children` to `sink`.
 
         Args:
-            graph (Graph, DiGraph): A graph containing `node`.
             node (TransactionNode): A weighted node with one or more
                 children.
-            timing (Timing): The timing of transactions to be assigned
-                to nodes.
-            limit (str): The name of the method used by leaf nodes
-                to determine the maximal sequence of transactions for
-                given timing. The method must take `timing` as a kwarg.
+            children (dict[Hashable, Decimal]): The children to be
+                added to the graph, mapped to their relative weights.
+            capacity (int): The maximum flow that can pass through this
+                node. Optional.
+            add_overflow (bool): If True, adds an overflow node between
+                `node` and each member of `children`. Optional; defaults
+                to `True`.
+            **kwargs: Arguments to pass to lower-level methods. Must
+                include at least "timing" and "limit" keys.
         """
         if capacity is None:
             # Calculate the total capacity of inbound edges.
@@ -531,7 +674,38 @@ class TransactionTraversal:
 
     def _add_weighted_children(
             self, node, children, capacity, **kwargs):
-        """ TODO """
+        """ Helper method for `_add_node_weighted`.
+
+        This method does the actual calculating of child nodes'
+        capacities and adding of children to the graph. Unlike
+        `_add_node_weighted`, this method doesn't worry about overflow
+        nodes (which are handled by the parent method).
+
+        One important feature of this method is that it accounts for
+        any flows in `self.memo` so that the resulting capacities remain
+        true to the weights of `children` _after_ the flows in
+        `self.memo` are added in. This is essential for allowing
+        `_traverse_priority` to be called multiple times with different
+        limit values without introducing unbalanced flows among weighted
+        children.
+
+        If the flows in `self.memo` are greater than would otherwise be
+        allocated based on weights, this method distorts the children's
+        weights as little as possible to accomodate. In particular, it
+        sets those children to have 0 capacity and recurses on the
+        remaining children to allocate the remaining capacity
+        proportionately among them.
+
+        Args:
+            node (TransactionNode): A weighted node with one or more
+                children.
+            children (dict[Hashable, Decimal]): The children to be
+                added to the graph, mapped to their relative weights.
+            capacity (int): The maximum flow that can pass through this
+                node. Optional.
+            **kwargs: Arguments to pass to lower-level methods. Must
+                include at least "timing" and "limit" keys.
+        """
         # Weighted nodes assign flows proportionately to weights.
         # Proportionality is easier to calculate with normalized weights
         # so determine that first:
@@ -588,7 +762,15 @@ class TransactionTraversal:
             self._add_successors(child, **kwargs)
 
     def _balance_weighted_flows(self, **kwargs):
-        """ TODO """
+        """ Rebalances capacities of children of weighted nodes.
+
+        This method visits each weighted node in breadth-first order
+        and calls `_balance_flows` on each child.
+
+        Args:
+            **kwargs: Arguments to pass to lower-level methods. Must
+                include at least "timing" and "limit" keys.
+        """
         # We want to ensure that higher-order weighted nodes are
         # prioritized (i.e. skew their flows to the most limited degree
         # possible), so we'll use _breadth-first_ traversal.
@@ -650,6 +832,20 @@ class TransactionTraversal:
         nodes. It might be appropriate to reallocate capacity from a
         saturated node to an underflow node and/or to reallocate
         capacity from an overflow node to a saturated node.
+
+        Args:
+            node (Hashable): The node whose children are being
+                rebalanced.
+            children (dict[Hashable, Decimal]): The children to be
+                rebalanced, mapped to their relative weights. Optional.
+                If not provided, all children of `node` are rebalanced.
+            rebalance_all (bool): If `True`, this method will attempt to
+                reassign capacities if they don't match total flows.
+                It sets this to `False` on recursion to avoid infinite
+                recursion due to rounding error. Optional. Defaults to
+                `True`.
+            **kwargs: Arguments to pass to lower-level methods. Must
+                include at least "timing" and "limit" keys.
         """
         if children is None:
             children = node.children
@@ -723,7 +919,24 @@ class TransactionTraversal:
 
     def _balance_flows_recurse(
             self, node, children=None, flows=None, **kwargs):
-        """ TODO """
+        """ Helper method for `_balance_flows`.
+
+        Calls `_add_successors` on `children` to distribute capacity
+        between them to match the amount in `flows` and then recurses
+        onto `_balance_flows` to ensure that the new capacities of
+        `children` are distributed correctly.
+
+        Args:
+            node (Hashable): The node whose children are being
+                rebalanced.
+            children (dict[Hashable, Decimal]): The children to be
+                rebalanced, mapped to their relative weights. Optional.
+                If not provided, all children of `node` are rebalanced.
+            flows (dict[Hashable, dict[Hashable, int]]): Flows through
+                the graph, as `from_node: (to_node: flow)` triples.
+            **kwargs: Arguments to pass to lower-level methods. Must
+                include at least "timing" and "limit" keys.
+        """
         # Process input:
         if children is None:
             children = node.children
