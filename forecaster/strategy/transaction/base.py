@@ -4,6 +4,18 @@ These transaction schedules determine when transactions occur, in what
 amounts, and to which accounts.
 """
 
+# TODO: Reduce line length by moving `_build_graph` to another module?
+# Some of this class relates to generating the correct inputs for the
+# _build_graph algorithm and some relates to processing its output so
+# that it can return transaction data. Presumably `_build_graph` is
+# separable from this functionality. As a plus, it likely also makes it
+# easier to achieve the following todo!
+
+# TODO: Remove higher-level dependencies. Make this a microservice.
+# We should move all knowledge of `Money`, transactions, limit tuples,
+# and similar account/finance-specific concepts out of this class.
+# A wrapper class can provide that logic for client code.
+
 from decimal import Decimal
 from queue import SimpleQueue
 from forecaster.ledger import Money
@@ -606,8 +618,10 @@ class TransactionTraversal:
         member of `children` to `sink`.
 
         Args:
-            node (TransactionNode): A weighted node with one or more
-                children.
+            node (Hashable): A node that acts as the origin for
+                edges to the members of `children`. Need not be a
+                `TransactionNode`; e.g. can be a corresponding limit
+                node.
             children (dict[Hashable, Decimal]): The children to be
                 added to the graph, mapped to their relative weights.
             capacity (int): The maximum flow that can pass through this
@@ -982,7 +996,26 @@ class TransactionTraversal:
 
     def _add_node_ordered(
             self, node, children, *, capacity=None, **kwargs):
-        """ TODO """
+        """ Adds an ordered node's children to the graph.
+
+        Adds an edge from `node` to each child. The first child's edge
+        has 0 weight. Each subsequent child's edge has a weight that is
+        greater than any path from `node` through any previous child to
+        `sink`. The edges' capacities are either unlimited or set high
+        enough that they cannot constrain flows.
+
+        Args:
+            node (Hashable): A node that acts as the origin for
+                edges to the members of `children`. Need not be a
+                `TransactionNode`; e.g. can be a corresponding limit
+                node.
+            children (Sequence[Hashable, Decimal]): The children to be
+                added to the graph, as an ordered `tuple`/`list`/etc.
+            capacity (int): The maximum flow that can pass through this
+                node. Optional.
+            **kwargs: Arguments to pass to lower-level methods. Must
+                include at least "timing" and "limit" keys.
+        """
         if capacity is None:
             # Calculate the total capacity of inbound edges.
             # This will be distributed to outbound edges.
@@ -1003,7 +1036,34 @@ class TransactionTraversal:
 
     def _add_node_leaf(
             self, node, child, *, capacity=None, **kwargs):
-        """ TODO """
+        """ Adds a leaf node's wrapped account to the graph.
+
+        This method simply adds an edge from `node` to `child` to the
+        graph. The edge is unweighted and has a capacity that is either
+        unlimited or set high enough that it cannot constrain flows.
+
+        Although technically leaf `TransactionNode` objects have no
+        children, they do wrap accounts and can provide their own
+        metadata (e.g. per-node limits). Accordingly, it makes sense to
+        add them to `graph` independently of their wrapped accounts so
+        that appropriate limit nodes/etc. can be added.
+
+        It is expected that `child` is an account wrapped by a leaf
+        `TransactionNode`, although this is not enforced. This method
+        does not impose any constraints on the semantics of `child`
+        other than that it be addable to the graph.
+
+        Args:
+            node (Hashable): A node that acts as the origin for edges
+                to the members of `children`. Need not be a
+                `TransactionNode`; e.g. can be a corresponding limit
+                node.
+            child (Hashable): The child to be added to the graph.
+            capacity (int): The maximum flow that can pass through this
+                node. Optional.
+            **kwargs: Arguments to pass to lower-level methods. Must
+                include at least "timing" and "limit" keys.
+        """
         if capacity is None:
             # Calculate the total capacity of inbound edges.
             # This will be distributed to outbound edges.
@@ -1016,14 +1076,41 @@ class TransactionTraversal:
         self._add_successors(child, **kwargs)
 
     def _add_node_account(
-            self, node, child,
-            *, timing=None, limit=None, **kwargs):
-        """ TODO """
+            self, node, *args,
+            timing=None, limit=None, **kwargs):
+        """ Adds an account (of any type) to the graph.
+
+        This method determines the limit on transactions to this account
+        specified by `limit` (via `self.transaction_methods`) and adds
+        an edge from `node` to `sink` (or to a group node, described
+        below) with the transaction limit as the edge capacity.
+
+        If `node` is part of a group (as determined by
+        `self.group_methods`), then two edges are added: one from `node`
+        to a group node that's shared by all accounts of the group and
+        one from the group node to `sink`.
+
+        If any flows have been recorded through `node` and/or the group
+        node in `self.memo`, edge capacities for both are reduced
+        accordingly to avoid exceeding transaction limits.
+
+        Args:
+            node (Hashable): A node that acts as the origin for edges
+                to the members of `children`. Need not be a
+                `TransactionNode`; e.g. can be a corresponding limit
+                node.
+            timing (Timing): The timing of account transactions.
+            limit (str): The name for the appropriate attribute of
+                `LimitTuple` to use for this traversal (e.g.
+                "min_inflow", "max_outflow")
+            **kwargs: Arguments to pass to lower-level methods. Must
+                include at least "timing" and "limit" keys.
+        """
         # pylint: disable=unused-argument
-        # `child` isn't used by this method, but it needs to provide the
-        # same number sequence of positional args as other `_add_node_*`
-        # methods, because `_add_successors` will provide a value (None,
-        # in the case of this method).
+        # This method needs to provide the same number sequence of
+        # positional args as other `_add_node_*` methods.
+        # `_add_successors` will always pass a third value (None, in the
+        # case of this method).
 
         # NOTE: It's expensive to query the account, and for a given
         # `limit` the result shouldn't change. Consider caching the
