@@ -86,7 +86,31 @@ class Timing(dict):
                 self[(time + when) / frequency] = weight
 
 def _convert_dict(when):
-    """ TODO """
+    """ Converts `dict` input to `Timing`-style `when: weight` pairs.
+
+    If all values are positive, the dict is returned unchanged. If they
+    are all negative, they're flipped to positive and returned. (This
+    excludes 0-values, so technically "non-negative" and "non-positive"
+    are the correct terms.)
+
+    If there are both positive and negative values, `when` is assumed
+    to be a dict of transactions. If total flows are positive, this
+    method returns a mapping of timings to the largest amount at each
+    timing that can be withdrawn without causing the net flows at that
+    timing or any later timing to be negative. If the total flows are
+    negative, the method returns a mapping of timings to the smallest
+    amount that must be added to bring the net flows to zero balance
+    (without bringing the net transactions to positive balance).
+
+    Args:
+        when (dict[Number, Union[Money, Number]]): A mapping of timings
+            (in [0,1]) to values.
+            If the values are `Money`-typed, they are converted to
+            `Decimal`.
+
+    Returns:
+        dict[Decimal, Number]: A mapping of timings to weights.
+    """
     # First, deal with empty dict or all-zero dict:
     if not when:
         # This dict has no meaningful timings, so return empty dict.
@@ -131,7 +155,36 @@ def _convert_dict(when):
         return _accum_outflows(when)
 
 def _accum_inflows(when):
-    """ TODO """
+    """ Determines maximum withdrawable amount for each timing.
+
+    This method receives an input (`when`) with a mix of inflows and
+    outflows which sum up to a net inflow. It then determines, for each
+    timing in `when`, the largest amount that can be withdrawn at that
+    timing without causing the balance of transactions to go negative
+    (or, at least, any more negative than it already is) at any point in
+    time. The value for each timing assumes that all withdrawals for
+    previous timings have been made.
+
+    A simpler way to think about this: This is the time-series of
+    outflows which, when added to `when`, zeroes out the net
+    transactions by the end of the period and makes each outflow
+    as large and as early as possible while only using money that's
+    available (i.e. no overdraft/credit).
+
+    Example:
+        when = {0: 10, 0.5: -5, 1: 5}
+        outflows = _accum_inflows(when)
+        # outflows == {0: 5, 1: 5}
+
+    Args:
+        when (dict[Number, Union[Money, Number]]): A mapping of timings
+            (in [0,1]) to values. The values must sum to a positive
+            value. If the values are `Money`-typed, they are converted
+            to `Decimal`.
+
+    Returns:
+        dict[Decimal, Number]: A mapping of timings to weights.
+    """
     # We do this in two stages.
     # First, for each timing, determine the cumulative value of
     # all transactions to date and store it in `accum`:
@@ -164,7 +217,33 @@ def _accum_inflows(when):
     return result
 
 def _accum_outflows(when):
-    """ TODO """
+    """ Determines minimum necessary contribution for each timing.
+
+    This method receives an input (`when`) with a mix of inflows and
+    outflows which sum up to a net outflow. It then determines, for each
+    timing in `when`, the smallest amount that must be contributed at
+    that timing to bring the rolling total to zero balance.
+    The value for each timing assumes that all contributions for
+    previous timings have been made.
+
+    Note that, unlike `_accum_inflows`, this method does not guarantee
+    that the total net flows will be zero. Rather, the resulting time
+    series merely avoids a negative balance at any point in time.
+
+    Example:
+        when = {0: -10, 0.5: -5, 1: 5}
+        inflows = _accum_outflows(when)
+        # inflows == {0: 10, 0.5: 5}
+
+    Args:
+        when (dict[Number, Union[Money, Number]]): A mapping of timings
+            (in [0,1]) to values. The values must sum to a negative
+            value. If the values are `Money`-typed, they are converted
+            to `Decimal`.
+
+    Returns:
+        dict[Decimal, Number]: A mapping of timings to weights.
+    """
     # Accumulate the various transactions in order. Every time the
     # rolling accumulation dips negative, record an inflow that brings
     # it back to 0:

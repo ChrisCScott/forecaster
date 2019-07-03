@@ -68,7 +68,46 @@ GROUP_DEFAULT_METHODS = group_default_methods()
 def _convert_flows_to_transactions(
         flows, timing, limit, accounts, transaction_methods,
         total=None, precision=1, transaction_type=None):
-    """ TODO """
+    """ Converts network flows to a mapping of accounts to transactions.
+
+    Args:
+        flows (dict[Hashable, dict[Hashable, int]]): Flows across edges
+            between nodes, as `from_node: (to_node: flow_amount)`
+            triples.
+        timing (Timing): The timing with which transactions are made to
+            accounts.
+        limit (str): The name for the appropriate attribute of
+            `LimitTuple` to use for this traversal (e.g. "min_inflow",
+            "max_outflow")
+        accounts (Iterable[Hashable]): A collection of nodes in `flows`;
+            only these nodes will be used as keys in the return value.
+        transaction_methods (LimitTuple[Callable, Callable, Callable,
+            Callable]): A `namedtuple` that provides a `Callable` value
+            for the attribute with the name given by `limit`. That
+            function must take a single argument (an account from
+            `accounts`) and return a method which, when called, returns
+            a time-series of transactions
+            (as `dict[Number, Union[Number, Money]]`).
+        total (Union[Number, Money]): The total amount of inflows
+            (positive) or outflows (negative).
+            This method only uses this value for its sign.
+        precision (Number): Flows are *multiplied* by this factor prior
+            to being used to generate transaction values. Optional.
+            This makes it easy to scale down values that were inflated
+            to avoid rounding error when the graph was defined.
+        transaction_type (Callable): If provided, each flow value is
+            passed to `transaction_type` as its sole arg. It is expected
+            that `transaction_type` will wrap it in the appropriate type
+            for the applicable member of `transaction_methods`.
+            Optional.
+
+    Returns:
+        dict[Hashable, dict[Number, Any]]: A mapping of accounts to
+        transactions (as `dict[Number, Any]` time-series, where the
+        value type is determined by the account via
+        `transaction_methods` - usually `Money` for `Account` and its
+        subclasses).
+    """
     if transaction_methods is None:
         transaction_methods = transaction_default_methods()
     # If `total` is negative, all flows should be outflows
@@ -92,7 +131,18 @@ def _convert_flows_to_transactions(
     return transactions
 
 def _get_accounts(node, accounts=None):
-    """ TODO """
+    """ Returns the objects wrapped by all leaf nodes.
+
+    Args:
+        node (TransactionNode): The root of a (sub)tree.
+        accounts (set[Any]): The set of all accounts found so far.
+            Used by this method on recursion; if passed in by client
+            code, beware that it will be mutated!
+
+    Returns:
+        set[Any]: A collection of objects (which can be of any type)
+        wrapped by lead nodes under `node`.
+    """
     # Set defaults (for recursion)
     if accounts is None:
         accounts = set()
@@ -109,7 +159,41 @@ def _get_accounts(node, accounts=None):
 
 def _get_transactions(
         account, limit, timing, transaction_methods=None, total=None):
-    """ TODO """
+    """ Gets transactions for `account`.
+
+    This is a generic method that allows for any type to be wrapped by
+    a leaf node, not just `Account` and its subclasses. All that needs
+    to be done is to pass a `transaction_methods` with suitable
+    functions for the given type(s). See below for more details.
+
+    Args:
+        account (Any): The object based on which transactions will be
+            generated.
+        timing (Timing): The timings (and corresponding weights) with
+            which transactions are made to accounts.
+        limit (str): The name for the appropriate attribute of
+            `LimitTuple` to use for this traversal (e.g. "min_inflow",
+            "max_outflow")
+        transaction_methods (LimitTuple[Callable, Callable, Callable,
+            Callable]): A `namedtuple` that provides a `Callable` value
+            for the attribute with the name given by `limit`.
+
+            The given function must take a single argument: `account`.
+            It returns a `Callable` (usually a method bound to
+            `account`) which takes `timing` as a positional arg and
+            `total` as an (optional) keyword arg and returns a
+            time-series of transactions
+            (as `dict[Number, Union[Number, Money]]`).
+        total (Union[Number, Money]): The maximum amount of inflows
+            (positive) or outflows (negative) to transact.
+
+    Returns:
+        dict[Number, Union[Number, Money]]: A time-series that maps
+        timings to transaction amounts. The typing of transaction amount
+        values is determined by the account, via
+        `transaction_methods`. (This is usually `Money` for `Account`
+        and its subclasses).
+    """
     if transaction_methods is None:
         transaction_methods = transaction_default_methods()
     if limit is None:
@@ -120,7 +204,33 @@ def _get_transactions(
     return transaction_method(timing, transaction_limit=total)
 
 def _get_group(account, limit, group_methods=None):
-    """ TODO """
+    """ Gets a group of accounts related to `account` for a given limit.
+
+    This is a generic method that allows for any type to be wrapped by
+    a leaf node, not just `Account` and its subclasses. All that needs
+    to be done is to pass a `group_methods` with suitable
+    functions for the given type(s). See below for more details.
+
+    Args:
+        account (Any): The object based on which transactions will be
+            generated.
+        limit (str): The name for the appropriate attribute of
+            `LimitTuple` to use for this traversal (e.g. "min_inflow",
+            "max_outflow")
+        group_methods (LimitTuple[Callable, Callable, Callable,
+            Callable]): A `namedtuple` that provides a `Callable` value
+            for the attribute with the name given by `limit`.
+
+            The given function must take a single argument: `account`.
+            It returns a `Container` holding all accounts which are
+            related to `account` for the given `limit`. For example,
+            for `limit="max_inflow", this function might return a set of
+            all accounts which share contribution room with `account`.
+
+    Returns:
+        Container[Any]: A collection holding all accounts which are
+        related to `account` for the given `limit`.
+    """
     if group_methods is None:
         group_methods = group_default_methods()
     group_method = getattr(group_methods, limit)
