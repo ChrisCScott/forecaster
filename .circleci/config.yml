@@ -34,6 +34,11 @@ jobs:
             . venv/bin/activate
             pip install -r requirements.txt
 
+      - run:
+          name: install pytest
+          command: |
+            pip install pytest
+
       - save_cache:
           paths:
             - ./venv
@@ -43,7 +48,10 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            python -m unittest discover
+            py.test --junitxml test-reports
+
+      - store_test_results:
+          path: test-reports
 
       - store_artifacts:
           path: test-reports
