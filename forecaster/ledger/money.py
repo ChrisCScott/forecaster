@@ -1,4 +1,9 @@
-""" TODO """
+""" A module providing a `Money` class.
+
+`Money` is an extension of the `py-moneyed` `Money` class, with added
+methods for rounding, hashing, and comparison with non-`Money` zero
+values.
+"""
 
 from decimal import Decimal
 from moneyed import Money as PyMoney
