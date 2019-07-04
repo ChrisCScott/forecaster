@@ -48,14 +48,13 @@ jobs:
             . venv/bin/activate
             # Discover all tests, run them, and store the results in
             # JUnit-style XML readable by CircleCI.
-            nosetests --with-xunit --xunit-file=.circleci/test-results/main/results.xml
+            nosetests --with-xunit --xunit-file=./.circleci/test-results/main/results.xml
 
       # Tell CircleCI where JUnit-style XML files storing test results
       # are stored. This lets it show richer analytics.
       - store_test_results:
-          path: .circleci/test-results
+          path: ./.circleci/test-results
 
       # Store raw XML of test results as artifacts:
       - store_artifacts:
-          path: .circleci/test-results
-          destination: .circleci/test-results
+          path: ./.circleci/test-results
