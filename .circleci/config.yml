@@ -43,18 +43,24 @@ jobs:
           key: v1-dependencies-{{ checksum "requirements.txt" }}
 
       - run:
+          name: make test folder
+          command: |
+            mkdir test-results
+            mkdir test-results/main
+
+      - run:
           name: run tests
           command: |
             . venv/bin/activate
             # Discover all tests, run them, and store the results in
             # JUnit-style XML readable by CircleCI.
-            nosetests --with-xunit --xunit-file=./.circleci/test-results/main/results.xml
+            nosetests --with-xunit --xunit-file=test-results/main/results.xml
 
       # Tell CircleCI where JUnit-style XML files storing test results
       # are stored. This lets it show richer analytics.
       - store_test_results:
-          path: ./.circleci/test-results
+          path: test-results
 
       # Store raw XML of test results as artifacts:
       - store_artifacts:
-          path: ./.circleci/test-results
+          path: test-results
