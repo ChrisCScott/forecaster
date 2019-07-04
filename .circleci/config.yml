@@ -34,11 +34,6 @@ jobs:
             . venv/bin/activate
             pip install -r requirements.txt
 
-      - run:
-          name: install pytest
-          command: |
-            pip install pytest
-
       - save_cache:
           paths:
             - ./venv
@@ -48,11 +43,11 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            py.test --junitxml test-reports
+            nosetests --with-xunit
 
       - store_test_results:
-          path: test-reports
+          path: nosetests.xml
 
       - store_artifacts:
-          path: test-reports
-          destination: test-reports
+          path: nosetests.xml
+          destination: nosetests.xml
