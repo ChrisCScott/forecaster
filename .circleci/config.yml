@@ -33,6 +33,8 @@ jobs:
             python3 -m venv venv
             . venv/bin/activate
             pip install -r requirements.txt
+            # Also install CircleCI-specific testing requirements,
+            # like `nose`
             pip install -r .circleci/requirements_testing.txt
 
       - save_cache:
@@ -44,11 +46,16 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            nosetests --with-xunit
+            # Discover all tests, run them, and store the results in
+            # JUnit-style XML readable by CircleCI.
+            nosetests --with-xunit --xunit-file=.circleci/test-results/main/results.xml
 
+      # Tell CircleCI where JUnit-style XML files storing test results
+      # are stored. This lets it show richer analytics.
       - store_test_results:
-          path: nosetests.xml
+          path: .circleci/test-results
 
+      # Store raw XML of test results as artifacts:
       - store_artifacts:
-          path: nosetests.xml
-          destination: nosetests.xml
+          path: .circleci/test-results
+          destination: .circleci/test-results
