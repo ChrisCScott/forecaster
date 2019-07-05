@@ -151,7 +151,7 @@
 <span></span><span class="sd">&quot;&quot;&quot; Provides a TaxForecast class for use by Forecast. &quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">forecaster.forecast</span> <span class="k">import</span> <span class="n">SubForecast</span>
-<span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="n">Money</span><span class="p">,</span> <span class="n">recorded_property_cached</span>
+<span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="n">recorded_property_cached</span>
 
 <div class="viewcode-block" id="TaxForecast"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.tax.TaxForecast">[docs]</a><span class="k">class</span> <span class="nc">TaxForecast</span><span class="p">(</span><span class="n">SubForecast</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; A forecast of total tax owing for each year.</span>
@@ -179,14 +179,19 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="TaxForecast.__init__"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.tax.TaxForecast.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="n">tax_treatment</span>
-    <span class="p">):</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="n">tax_treatment</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Initializes an instance of TaxForecast. &quot;&quot;&quot;</span>
         <span class="c1"># Call the superclass method or suffer the consequences!</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">initial_year</span><span class="p">)</span>
         <span class="c1"># Store input values</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">people</span> <span class="o">=</span> <span class="n">people</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tax_treatment</span> <span class="o">=</span> <span class="n">tax_treatment</span></div>
+
+    <span class="c1"># TODO: Add __call__ method to apply tax_adjustment?</span>
+    <span class="c1"># One option would be to clear `available` and add</span>
+    <span class="c1"># appropriately-timed inflows/outflows for rebates/amounts owing,</span>
+    <span class="c1"># on the assumption that this is the last subforecast to be called.</span>
+    <span class="c1"># At present that doesn&#39;t seem necessary.</span>
 
     <span class="nd">@recorded_property_cached</span>
     <span class="k">def</span> <span class="nf">tax_withheld</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -208,7 +213,7 @@
     <span class="nd">@recorded_property_cached</span>
     <span class="k">def</span> <span class="nf">tax_adjustment</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Total amount owing or refunded at tax time next year.</span>
-<span class="sd">        </span>
+
 <span class="sd">        Negative values are amounts owing, positive are refunds.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_withheld</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_owing</span></div>

@@ -165,12 +165,15 @@
     <span class="c1"># pylint: disable=too-few-public-methods</span>
 
     <span class="sd">&quot;&quot;&quot; Override transaction strategy weights for Canadian accounts. &quot;&quot;&quot;</span>
-    <span class="n">transaction_in_weights</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">contribution_weights</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s1">&#39;RRSP&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;TFSA&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;TaxableAccount&#39;</span><span class="p">:</span> <span class="mi">3</span>
     <span class="p">}</span>
-    <span class="n">transaction_out_weights</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">withdrawal_weights</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s1">&#39;RRSP&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;TFSA&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;SavingsAccount&#39;</span><span class="p">:</span> <span class="mi">3</span>
     <span class="p">}</span>
+
+    <span class="sd">&quot;&quot;&quot; TaxCanada defaults &quot;&quot;&quot;</span>
+    <span class="n">tax_province</span> <span class="o">=</span> <span class="s2">&quot;BC&quot;</span>
 
     <span class="sd">&quot;&quot;&quot; RESP defaults &quot;&quot;&quot;</span>
     <span class="n">resp_child_other_income</span> <span class="o">=</span> <span class="mi">0</span>

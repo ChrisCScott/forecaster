@@ -35,6 +35,7 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="forecaster.strategy.debt_payment package" href="forecaster.strategy.debt_payment.html" />
     <link rel="prev" title="forecaster.ledger package" href="forecaster.ledger.html" /> 
 </head>
 
@@ -177,374 +178,101 @@
             
   <div class="section" id="forecaster-strategy-package">
 <h1>forecaster.strategy package<a class="headerlink" href="#forecaster-strategy-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="forecaster.strategy.debt_payment.html">forecaster.strategy.debt_payment package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.strategy.debt_payment.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.strategy.debt_payment.html#module-forecaster.strategy.debt_payment.base">forecaster.strategy.debt_payment.base module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.strategy.debt_payment.html#module-forecaster.strategy.debt_payment.util">forecaster.strategy.debt_payment.util module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.strategy.debt_payment.html#module-forecaster.strategy.debt_payment">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="forecaster.strategy.transaction.html">forecaster.strategy.transaction package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.strategy.transaction.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.strategy.transaction.html#module-forecaster.strategy.transaction.base">forecaster.strategy.transaction.base module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.strategy.transaction.html#module-forecaster.strategy.transaction.graph">forecaster.strategy.transaction.graph module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.strategy.transaction.html#module-forecaster.strategy.transaction.node">forecaster.strategy.transaction.node module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.strategy.transaction.html#module-forecaster.strategy.transaction.strategy">forecaster.strategy.transaction.strategy module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.strategy.transaction.html#module-forecaster.strategy.transaction.util">forecaster.strategy.transaction.util module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forecaster.strategy.transaction.html#module-forecaster.strategy.transaction">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
 <div class="section" id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="module-forecaster.strategy.account_transaction">
-<span id="forecaster-strategy-account-transaction-module"></span><h2>forecaster.strategy.account_transaction module<a class="headerlink" href="#module-forecaster.strategy.account_transaction" title="Permalink to this headline">¶</a></h2>
-<p>Provides a class for determining schedules of transactions.</p>
-<p>These transaction schedules determine when transactions occur, in what
-amounts, and to which accounts.</p>
-<p><cite>DebtPaymentStrategy</cite> is a related <cite>Debt</cite>-specific class.</p>
-<dl class="class">
-<dt id="forecaster.strategy.account_transaction.AccountGroup">
-<em class="property">class </em><code class="descclassname">forecaster.strategy.account_transaction.</code><code class="descname">AccountGroup</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/account_transaction.html#AccountGroup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.account_transaction.AccountGroup" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Wraps one or more accounts and mimics the <cite>Account</cite> interface.</p>
-<p>This is a utility class for <cite>TransactionStrategy</cite>. <cite>Accounts</cite> that
-share a weighting can be grouped into an <cite>AccountGroup</cite> by a high-
-level function (e.g. <cite>__call__</cite>) and then seamlessly treated as a
-single account by lower-level functions (e.g. <cite>strategy_*</cite>).</p>
-<p>Not every <cite>Account</cite> method and property is provided here. For
-example, <cite>rate</cite> and <cite>transactions</cite> are not provided, as all of the
-methods of this class are simply sums of the attributes of the
-contained accounts (and sum doesn’t apply sensibly to those
-attributes).</p>
-<dl class="attribute">
-<dt id="forecaster.strategy.account_transaction.AccountGroup.accounts">
-<code class="descname">accounts</code><a class="headerlink" href="#forecaster.strategy.account_transaction.AccountGroup.accounts" title="Permalink to this definition">¶</a></dt>
-<dd><p>The member accounts of the
-<cite>AccountGroup</cite>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">set[<a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.base.Account" title="forecaster.accounts.base.Account">Account</a>]</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.strategy.account_transaction.AccountGroup.contribution_groups">
-<code class="descname">contribution_groups</code><a class="headerlink" href="#forecaster.strategy.account_transaction.AccountGroup.contribution_groups" title="Permalink to this definition">¶</a></dt>
-<dd><p>The members of the
-<cite>AccountGroup</cite> reorganized into disjoint sets of
-contribution groups. Each contribution group shares common
-<cite>min_inflow</cite> and <cite>max_inflow</cite> properties.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">set[set[<a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.base.Account" title="forecaster.accounts.base.Account">Account</a>]]</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.strategy.account_transaction.AccountGroup.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/account_transaction.html#AccountGroup.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.account_transaction.AccountGroup.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Inits <cite>AccountGroup</cite> with one or more accounts.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.strategy.account_transaction.AccountGroup.__iter__">
-<code class="descname">__iter__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/account_transaction.html#AccountGroup.__iter__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.account_transaction.AccountGroup.__iter__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Iterates over accounts in the group.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.strategy.account_transaction.AccountGroup.balance">
-<code class="descname">balance</code><a class="headerlink" href="#forecaster.strategy.account_transaction.AccountGroup.balance" title="Permalink to this definition">¶</a></dt>
-<dd><p>The sum of account balances.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.strategy.account_transaction.AccountGroup.get_type">
-<code class="descname">get_type</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/account_transaction.html#AccountGroup.get_type"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.account_transaction.AccountGroup.get_type" title="Permalink to this definition">¶</a></dt>
-<dd><p>Gets the type of a random contained <cite>Account</cite>.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.strategy.account_transaction.AccountGroup.max_inflow">
-<code class="descname">max_inflow</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/account_transaction.html#AccountGroup.max_inflow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.account_transaction.AccountGroup.max_inflow" title="Permalink to this definition">¶</a></dt>
-<dd><p>The sum of account <cite>max_inflow</cite>.</p>
-<p>This method respects contribution groups, and will not double-
-count the contribution room of multiple accounts in the same
-contribution group.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.strategy.account_transaction.AccountGroup.max_outflow">
-<code class="descname">max_outflow</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/account_transaction.html#AccountGroup.max_outflow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.account_transaction.AccountGroup.max_outflow" title="Permalink to this definition">¶</a></dt>
-<dd><p>The sum of account <cite>max_outflow</cite>.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.strategy.account_transaction.AccountGroup.min_inflow">
-<code class="descname">min_inflow</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/account_transaction.html#AccountGroup.min_inflow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.account_transaction.AccountGroup.min_inflow" title="Permalink to this definition">¶</a></dt>
-<dd><p>The sum of account <cite>min_inflow</cite>.</p>
-<p>This method respects contribution groups, and will not double-
-count the contribution room of multiple accounts in the same
-contribution group.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.strategy.account_transaction.AccountGroup.min_outflow">
-<code class="descname">min_outflow</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/account_transaction.html#AccountGroup.min_outflow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.account_transaction.AccountGroup.min_outflow" title="Permalink to this definition">¶</a></dt>
-<dd><p>The sum of account <cite>min_outflow</cite>.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="forecaster.strategy.account_transaction.AccountTransactionStrategy">
-<em class="property">class </em><code class="descclassname">forecaster.strategy.account_transaction.</code><code class="descname">AccountTransactionStrategy</code><span class="sig-paren">(</span><em>strategy</em>, <em>weights</em>, <em>timing='end'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/account_transaction.html#AccountTransactionStrategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.account_transaction.AccountTransactionStrategy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#forecaster.strategy.base.Strategy" title="forecaster.strategy.base.Strategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">forecaster.strategy.base.Strategy</span></code></a></p>
-<p>Determines account-specific transactions.</p>
-<p>If there are multiple accounts of the same type, the behaviour
-of this class, when called, is undefined.</p>
-<p>If any account has a contribution limit that is lower than the
-weighted amount to be contributed, the excess contribution is
-redistributed to other accounts using the same strategy.</p>
-<dl class="attribute">
-<dt id="forecaster.strategy.account_transaction.AccountTransactionStrategy.strategy">
-<code class="descname">strategy</code><a class="headerlink" href="#forecaster.strategy.account_transaction.AccountTransactionStrategy.strategy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Either a string corresponding to a
-particular strategy or an instance of the strategy itself.
-See <cite>strategies</cite> for acceptable keys.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">str, func</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.strategy.account_transaction.AccountTransactionStrategy.strategies">
-<code class="descname">strategies</code><a class="headerlink" href="#forecaster.strategy.account_transaction.AccountTransactionStrategy.strategies" title="Permalink to this definition">¶</a></dt>
-<dd><p>{str, func} pairs where each key identifies
-a strategy (in human-readable text) and each value is a
-function with the same arguments and return value as
-transactions(). See its documentation for more info.</p>
-<p>Acceptable keys include:</p>
-<ul class="simple">
-<li>“Ordered”</li>
-<li>“Weighted”</li>
-</ul>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">dict</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.strategy.account_transaction.AccountTransactionStrategy.weights">
-<code class="descname">weights</code><a class="headerlink" href="#forecaster.strategy.account_transaction.AccountTransactionStrategy.weights" title="Permalink to this definition">¶</a></dt>
-<dd><p>{str, weight} pairs, where keys identify account
-types (as class names, e.g. ‘RRSP’, ‘SavingsAccount’) and
-weight values indicate how much to prioritize the
-corresponding account.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">dict</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.strategy.account_transaction.AccountTransactionStrategy.timing">
-<code class="descname">timing</code><a class="headerlink" href="#forecaster.strategy.account_transaction.AccountTransactionStrategy.timing" title="Permalink to this definition">¶</a></dt>
-<dd><p>Transactions are modelled as lump sums
-which take place at this time.</p>
-<p>This is expressed according to the <cite>when</cite> convention
-described in <cite>ledger.Account</cite>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">str, Decimal</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>total</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – The sum of transactions (positive, for
-contributions, or negative, for withdrawals) across
-all accounts.</li>
-<li><strong>weighted_accounts</strong> (<em>dict</em><em>[</em><em>Union</em><em>[</em><a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.base.Account" title="forecaster.accounts.base.Account"><em>Account</em></a><em>, </em><a class="reference internal" href="#forecaster.strategy.account_transaction.AccountGroup" title="forecaster.strategy.account_transaction.AccountGroup"><em>AccountGroup</em></a><em>]</em><em>, </em><em>Decimal</em><em>]</em>) – Accounts to contribute to/withdraw from mapped to weights.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">dict[Union[Account, AccountGroup], Money] pairs. The keys are
-a subset of the input <cite>accounts</cite> keys and the values are the
-corresponding transaction amount for that account.</p>
-</td>
-</tr>
-</tbody>
-</table>
-<dl class="method">
-<dt id="forecaster.strategy.account_transaction.AccountTransactionStrategy.__call__">
-<code class="descname">__call__</code><span class="sig-paren">(</span><em>total</em>, <em>accounts</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/account_transaction.html#AccountTransactionStrategy.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.account_transaction.AccountTransactionStrategy.__call__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a dict of accounts mapped to transactions.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.strategy.account_transaction.AccountTransactionStrategy.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>strategy</em>, <em>weights</em>, <em>timing='end'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/account_transaction.html#AccountTransactionStrategy.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.account_transaction.AccountTransactionStrategy.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Constructor for TransactionStrategy.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt>
-<code class="descname">strategies</code><em class="property"> = {'Ordered': &lt;function AccountTransactionStrategy.strategy_ordered&gt;, 'Weighted': &lt;function AccountTransactionStrategy.strategy_weighted&gt;}</em></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="forecaster.strategy.account_transaction.AccountTransactionStrategy.strategy_ordered">
-<code class="descname">strategy_ordered</code><span class="sig-paren">(</span><em>total</em>, <em>weighted_accounts</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/account_transaction.html#AccountTransactionStrategy.strategy_ordered"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.account_transaction.AccountTransactionStrategy.strategy_ordered" title="Permalink to this definition">¶</a></dt>
-<dd><p>Contributes/withdraws in order of account priority.</p>
-<p>The account with the lowest-valued priority is contributed to
-(or withdrawn from) first. Thus, if three accounts have weights
-1, 2, and 3, then account with weight 1 will go first, followed
-by 2, then 3.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>total</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – The sum of transactions (positive, for
-contributions, or negative, for withdrawals) across
-all accounts.</li>
-<li><strong>(</strong><strong>dict</strong><strong>[</strong><strong>Union</strong><strong>[</strong><strong>Account</strong><strong>, </strong><strong>AccountGroup</strong><strong>]</strong><strong>,</strong> (<em>weighted_accounts</em>) – Decimal]): Accounts to contribute to (or withdraw from)
-mapped to weights.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">dict[Union[Account, AccountGroup], Money] pairs. The keys
-are a subset of the input <cite>accounts</cite> keys and the values are
-the corresponding transaction amount for that account.</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.strategy.account_transaction.AccountTransactionStrategy.strategy_weighted">
-<code class="descname">strategy_weighted</code><span class="sig-paren">(</span><em>total</em>, <em>weighted_accounts</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/account_transaction.html#AccountTransactionStrategy.strategy_weighted"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.account_transaction.AccountTransactionStrategy.strategy_weighted" title="Permalink to this definition">¶</a></dt>
-<dd><p>Assigns transactions proportionately to accounts’ weights.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>total</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – The sum of transactions (positive, for
-contributions, or negative, for withdrawals) across
-all accounts.</li>
-<li><strong>(</strong><strong>dict</strong><strong>[</strong><strong>Union</strong><strong>[</strong><strong>Account</strong><strong>, </strong><strong>AccountGroup</strong><strong>]</strong><strong>,</strong> (<em>weighted_accounts</em>) – Decimal]): Accounts to contribute to (or withdraw from)
-mapped to weights.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">dict[Union[Account, AccountGroup], Money] pairs. The keys
-are a subset of the input <cite>accounts</cite> keys and the values are
-the corresponding transaction amount for that account.</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
 </div>
 <div class="section" id="module-forecaster.strategy.allocation">
 <span id="forecaster-strategy-allocation-module"></span><h2>forecaster.strategy.allocation module<a class="headerlink" href="#module-forecaster.strategy.allocation" title="Permalink to this headline">¶</a></h2>
 <p>Provides classes for determining asset allocation.</p>
 <dl class="class">
 <dt id="forecaster.strategy.allocation.AllocationStrategy">
-<em class="property">class </em><code class="descclassname">forecaster.strategy.allocation.</code><code class="descname">AllocationStrategy</code><span class="sig-paren">(</span><em>strategy</em>, <em>target</em>, <em>min_equity=0</em>, <em>max_equity=1</em>, <em>standard_retirement_age=65</em>, <em>risk_transition_period=20</em>, <em>adjust_for_retirement_plan=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/allocation.html#AllocationStrategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.strategy.allocation.</code><code class="sig-name descname">AllocationStrategy</code><span class="sig-paren">(</span><em class="sig-param">strategy</em>, <em class="sig-param">target</em>, <em class="sig-param">min_equity=0</em>, <em class="sig-param">max_equity=1</em>, <em class="sig-param">standard_retirement_age=65</em>, <em class="sig-param">risk_transition_period=20</em>, <em class="sig-param">adjust_for_retirement_plan=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/allocation.html#AllocationStrategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#forecaster.strategy.base.Strategy" title="forecaster.strategy.base.Strategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">forecaster.strategy.base.Strategy</span></code></a></p>
 <p>Generates an asset allocation for a point in time. Callable.</p>
 <dl class="attribute">
 <dt id="forecaster.strategy.allocation.AllocationStrategy.strategy">
-<code class="descname">strategy</code><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.strategy" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">strategy</code><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.strategy" title="Permalink to this definition">¶</a></dt>
 <dd><p>Either a string corresponding to a
 particular strategy or an instance of the strategy itself.
 See <cite>strategies</cite> for acceptable keys.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">str, func</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>str, func</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.strategy.allocation.AllocationStrategy.strategies">
-<code class="descname">strategies</code><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.strategies" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">strategies</code><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.strategies" title="Permalink to this definition">¶</a></dt>
 <dd><p>{str, func} pairs where each key identifies
 a strategy (in human-readable text) and each value is a
 function with the same arguments and return value as
 transactions(). See its documentation for more info.</p>
 <p>Acceptable keys include:</p>
 <ul class="simple">
-<li>“n-age”</li>
-<li>“Transition to constant”</li>
+<li><p>“n-age”</p></li>
+<li><p>“Transition to constant”</p></li>
 </ul>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">dict</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.strategy.allocation.AllocationStrategy.min_equity">
-<code class="descname">min_equity</code><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.min_equity" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">min_equity</code><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.min_equity" title="Permalink to this definition">¶</a></dt>
 <dd><p>The minimum percentage of a portfolio that
 may be invested in equities. (All non-equity investments
 are included in <cite>fixed_income</cite>)</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">Decimal</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Decimal</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.strategy.allocation.AllocationStrategy.max_equity">
-<code class="descname">max_equity</code><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.max_equity" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">max_equity</code><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.max_equity" title="Permalink to this definition">¶</a></dt>
 <dd><p>The maximum percentage of a portfolio that
 may be invested in equities.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">Decimal</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Decimal</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.strategy.allocation.AllocationStrategy.target">
-<code class="descname">target</code><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.target" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">target</code><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.target" title="Permalink to this definition">¶</a></dt>
 <dd><p>A target value used by strategies to affect
 their behaviour.</p>
 <p>For example, for the <cite>n-age</cite> strategy, this is the value <cite>n</cite>
@@ -552,151 +280,131 @@ their behaviour.</p>
 <p>For the <cite>Transition to constant</cite> strategy, this is the
 percentage of equities to transition to (e.g. for
 <cite>Transition to 50-50</cite>, use <cite>Decimal(‘0.5’)</cite>)</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">Decimal</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Decimal</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.strategy.allocation.AllocationStrategy.standard_retirement_age">
-<code class="descname">standard_retirement_age</code><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.standard_retirement_age" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">standard_retirement_age</code><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.standard_retirement_age" title="Permalink to this definition">¶</a></dt>
 <dd><p>The typical retirement age used
 in retirement planning.</p>
 <p>This is used if <cite>adjust_for_retirement_plan</cite> is False,
 otherwise the actual (or estimated) retirement age for the
 person is used.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">int</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.strategy.allocation.AllocationStrategy.risk_transition_period">
-<code class="descname">risk_transition_period</code><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.risk_transition_period" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">risk_transition_period</code><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.risk_transition_period" title="Permalink to this definition">¶</a></dt>
 <dd><p>The period of time over which the
 <cite>Transition to constant</cite> strategy transitions.</p>
 <p>For example, if set to 20, the strategy will transition
 from <cite>max_equity</cite> to <cite>transition_strategy_target</cite> over 20
 years, ending on the retirement date.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">int</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.strategy.allocation.AllocationStrategy.adjust_for_retirement_plan">
-<code class="descname">adjust_for_retirement_plan</code><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.adjust_for_retirement_plan" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">adjust_for_retirement_plan</code><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.adjust_for_retirement_plan" title="Permalink to this definition">¶</a></dt>
 <dd><p>If True, the allocation will
 be adjusted to increase risk for later retirement or
 decrease risk for later retirement. If False, the standard
 retirement age will be used.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">bool</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
 </dd></dl>
 
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>age</strong> (<em>int</em>) – The current age of the plannee.</li>
-<li><strong>retirement_age</strong> (<em>int</em>) – The (estimated) retirement age of the
-plannee.</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>age</strong> (<em>int</em>) – The current age of the plannee.</p></li>
+<li><p><strong>retirement_age</strong> (<em>int</em>) – The (estimated) retirement age of the
+plannee.</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><p>A <cite>namedtuple</cite> where each member is the
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p>A <cite>namedtuple</cite> where each member is the
 percentage of a portfolio that is made up of the named asset
 class.</p>
 <p>Allocations of the members sum to 1 (e.g. <cite>Decimal(0.03</cite> means
 3%).</p>
 </p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference internal" href="#forecaster.strategy.allocation.AssetAllocation" title="forecaster.strategy.allocation.AssetAllocation">AssetAllocation</a></p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – min_equity greater than max_equity.</p>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#forecaster.strategy.allocation.AssetAllocation" title="forecaster.strategy.allocation.AssetAllocation">AssetAllocation</a></p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>ValueError</strong> – min_equity greater than max_equity.</p>
+</dd>
+</dl>
 <dl class="method">
 <dt id="forecaster.strategy.allocation.AllocationStrategy.__call__">
-<code class="descname">__call__</code><span class="sig-paren">(</span><em>age</em>, <em>retirement_age=None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/allocation.html#AllocationStrategy.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.__call__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param">age</em>, <em class="sig-param">*args</em>, <em class="sig-param">retirement_age=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/allocation.html#AllocationStrategy.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.__call__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a dict of {account, Money} pairs.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.strategy.allocation.AllocationStrategy.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>strategy</em>, <em>target</em>, <em>min_equity=0</em>, <em>max_equity=1</em>, <em>standard_retirement_age=65</em>, <em>risk_transition_period=20</em>, <em>adjust_for_retirement_plan=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/allocation.html#AllocationStrategy.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.__init__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">strategy</em>, <em class="sig-param">target</em>, <em class="sig-param">min_equity=0</em>, <em class="sig-param">max_equity=1</em>, <em class="sig-param">standard_retirement_age=65</em>, <em class="sig-param">risk_transition_period=20</em>, <em class="sig-param">adjust_for_retirement_plan=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/allocation.html#AllocationStrategy.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Constructor for AllocationStrategy.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.strategy.allocation.AllocationStrategy.rate_function">
-<code class="descname">rate_function</code><span class="sig-paren">(</span><em>person</em>, <em>scenario</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/allocation.html#AllocationStrategy.rate_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.rate_function" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">rate_function</code><span class="sig-paren">(</span><em class="sig-param">person</em>, <em class="sig-param">scenario</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/allocation.html#AllocationStrategy.rate_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.rate_function" title="Permalink to this definition">¶</a></dt>
 <dd><p>A rate function usable by Person or Account objects.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>person</strong> (<a class="reference internal" href="forecaster.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a>) – A person. The method builds a portfolio for
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>person</strong> (<a class="reference internal" href="forecaster.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a>) – A person. The method builds a portfolio for
 the person based on this object’s allocation strategy
 (in particular, based on the person’s age and/or
-projected retirement date).</li>
-<li><strong>scenario</strong> (<a class="reference internal" href="forecaster.html#forecaster.scenario.Scenario" title="forecaster.scenario.Scenario"><em>Scenario</em></a>) – A <cite>Scenario</cite> providing information on
-returns on investment for stocks, bonds, etc.</li>
+projected retirement date).</p></li>
+<li><p><strong>scenario</strong> (<a class="reference internal" href="forecaster.html#forecaster.scenario.Scenario" title="forecaster.scenario.Scenario"><em>Scenario</em></a>) – A <cite>Scenario</cite> providing information on
+returns on investment for stocks, bonds, etc.</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">An object callable with the form
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An object callable with the form
 <cite>rate_function(year) -&gt; Decimal</cite> that provides a rate of
 return for a given year based on the person’s age and the
 investment returns for various asset classes provided by
 <cite>scenario</cite>.</p>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="attribute">
 <dt>
-<code class="descname">strategies</code><em class="property"> = {'Transition to constant': &lt;function AllocationStrategy.strategy_transition_to_const&gt;, 'n-age': &lt;function AllocationStrategy.strategy_n_minus_age&gt;}</em></dt>
+<code class="sig-name descname">strategies</code><em class="property"> = {'Transition to constant': &lt;function AllocationStrategy.strategy_transition_to_const&gt;, 'n-age': &lt;function AllocationStrategy.strategy_n_minus_age&gt;}</em></dt>
 <dd></dd></dl>
 
 <dl class="method">
 <dt id="forecaster.strategy.allocation.AllocationStrategy.strategy_n_minus_age">
-<code class="descname">strategy_n_minus_age</code><span class="sig-paren">(</span><em>age</em>, <em>retirement_age=None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/allocation.html#AllocationStrategy.strategy_n_minus_age"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.strategy_n_minus_age" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">strategy_n_minus_age</code><span class="sig-paren">(</span><em class="sig-param">age</em>, <em class="sig-param">*args</em>, <em class="sig-param">retirement_age=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/allocation.html#AllocationStrategy.strategy_n_minus_age"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.strategy_n_minus_age" title="Permalink to this definition">¶</a></dt>
 <dd><p>Used for 100-age, 110-age, 125-age, etc. strategies.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.strategy.allocation.AllocationStrategy.strategy_transition_to_const">
-<code class="descname">strategy_transition_to_const</code><span class="sig-paren">(</span><em>age</em>, <em>retirement_age=None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/allocation.html#AllocationStrategy.strategy_transition_to_const"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.strategy_transition_to_const" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">strategy_transition_to_const</code><span class="sig-paren">(</span><em class="sig-param">age</em>, <em class="sig-param">*args</em>, <em class="sig-param">retirement_age=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/allocation.html#AllocationStrategy.strategy_transition_to_const"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.strategy_transition_to_const" title="Permalink to this definition">¶</a></dt>
 <dd><p>Used for <cite>Transition to 50-50</cite>, <cite>Transition to 70-30</cite>, etc.</p>
 </dd></dl>
 
@@ -704,23 +412,23 @@ investment returns for various asset classes provided by
 
 <dl class="class">
 <dt id="forecaster.strategy.allocation.AssetAllocation">
-<em class="property">class </em><code class="descclassname">forecaster.strategy.allocation.</code><code class="descname">AssetAllocation</code><span class="sig-paren">(</span><em>stocks</em>, <em>bonds</em>, <em>other</em><span class="sig-paren">)</span><a class="headerlink" href="#forecaster.strategy.allocation.AssetAllocation" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.strategy.allocation.</code><code class="sig-name descname">AssetAllocation</code><span class="sig-paren">(</span><em class="sig-param">stocks</em>, <em class="sig-param">bonds</em>, <em class="sig-param">other</em><span class="sig-paren">)</span><a class="headerlink" href="#forecaster.strategy.allocation.AssetAllocation" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.strategy.allocation.AssetAllocation.bonds">
-<code class="descname">bonds</code><a class="headerlink" href="#forecaster.strategy.allocation.AssetAllocation.bonds" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">bonds</code><a class="headerlink" href="#forecaster.strategy.allocation.AssetAllocation.bonds" title="Permalink to this definition">¶</a></dt>
 <dd><p>Alias for field number 1</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.strategy.allocation.AssetAllocation.other">
-<code class="descname">other</code><a class="headerlink" href="#forecaster.strategy.allocation.AssetAllocation.other" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">other</code><a class="headerlink" href="#forecaster.strategy.allocation.AssetAllocation.other" title="Permalink to this definition">¶</a></dt>
 <dd><p>Alias for field number 2</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.strategy.allocation.AssetAllocation.stocks">
-<code class="descname">stocks</code><a class="headerlink" href="#forecaster.strategy.allocation.AssetAllocation.stocks" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">stocks</code><a class="headerlink" href="#forecaster.strategy.allocation.AssetAllocation.stocks" title="Permalink to this definition">¶</a></dt>
 <dd><p>Alias for field number 0</p>
 </dd></dl>
 
@@ -728,32 +436,31 @@ investment returns for various asset classes provided by
 
 <dl class="class">
 <dt id="forecaster.strategy.allocation.RateFunction">
-<em class="property">class </em><code class="descclassname">forecaster.strategy.allocation.</code><code class="descname">RateFunction</code><span class="sig-paren">(</span><em>scenario</em>, <em>person</em>, <em>allocation_strategy</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/allocation.html#RateFunction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.allocation.RateFunction" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.strategy.allocation.</code><code class="sig-name descname">RateFunction</code><span class="sig-paren">(</span><em class="sig-param">scenario</em>, <em class="sig-param">person</em>, <em class="sig-param">allocation_strategy</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/allocation.html#RateFunction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.allocation.RateFunction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>A callable object with accessible state attributes.</p>
 <dl class="method">
 <dt id="forecaster.strategy.allocation.RateFunction.__call__">
-<code class="descname">__call__</code><span class="sig-paren">(</span><em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/allocation.html#RateFunction.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.allocation.RateFunction.__call__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param">year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/allocation.html#RateFunction.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.allocation.RateFunction.__call__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Rate of return for <cite>year</cite> based on asset allocation.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>year</strong> (<em>int</em>) – The year for which the rate of return will be
-determined.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The rate of return. For example, <cite>Decimal(‘0.05’)</cite>
-means a 5% return.</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">Decimal</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>year</strong> (<em>int</em>) – The year for which the rate of return will be
+determined.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The rate of return. For example, <cite>Decimal(‘0.05’)</cite>
+means a 5% return.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Decimal</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.strategy.allocation.RateFunction.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>scenario</em>, <em>person</em>, <em>allocation_strategy</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/allocation.html#RateFunction.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.allocation.RateFunction.__init__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">scenario</em>, <em class="sig-param">person</em>, <em class="sig-param">allocation_strategy</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/allocation.html#RateFunction.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.allocation.RateFunction.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Inits the RateFunction object.</p>
 </dd></dl>
 
@@ -767,28 +474,25 @@ means a 5% return.</td>
 complementary <cite>&#64;strategy_method</cite> decorator for use by subclasses.</p>
 <dl class="class">
 <dt id="forecaster.strategy.base.Strategy">
-<em class="property">class </em><code class="descclassname">forecaster.strategy.base.</code><code class="descname">Strategy</code><span class="sig-paren">(</span><em>strategy</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/base.html#Strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.base.Strategy" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.strategy.base.</code><code class="sig-name descname">Strategy</code><span class="sig-paren">(</span><em class="sig-param">strategy</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/base.html#Strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.base.Strategy" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>An abstract callable class for determining a strategy.</p>
 <dl class="attribute">
 <dt id="forecaster.strategy.base.Strategy.strategy">
-<code class="descname">strategy</code><a class="headerlink" href="#forecaster.strategy.base.Strategy.strategy" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">strategy</code><a class="headerlink" href="#forecaster.strategy.base.Strategy.strategy" title="Permalink to this definition">¶</a></dt>
 <dd><p>Either a string corresponding to a
 particular strategy or an instance of the strategy itself.
 See <cite>strategies</cite> for acceptable keys.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">str, func</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>str, func</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.strategy.base.Strategy.strategies">
-<code class="descname">strategies</code><a class="headerlink" href="#forecaster.strategy.base.Strategy.strategies" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">strategies</code><a class="headerlink" href="#forecaster.strategy.base.Strategy.strategies" title="Permalink to this definition">¶</a></dt>
 <dd><p>{str, func} pairs where each key identifies
 a strategy (in human-readable text) and each value is a
 function. All functions have the same call signature and
@@ -796,32 +500,29 @@ return value; this is the call signature of the Strategy
 object.</p>
 <p>See each subclass’s documentation for more information on
 the call signature for the subclass.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">dict</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.strategy.base.Strategy.__call__">
-<code class="descname">__call__</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/base.html#Strategy.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.base.Strategy.__call__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/base.html#Strategy.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.base.Strategy.__call__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Makes the Strategy object callable.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt>
-<code class="descname">strategies</code><em class="property"> = {}</em></dt>
+<code class="sig-name descname">strategies</code><em class="property"> = {}</em></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="class">
 <dt id="forecaster.strategy.base.StrategyType">
-<em class="property">class </em><code class="descclassname">forecaster.strategy.base.</code><code class="descname">StrategyType</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/base.html#StrategyType"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.base.StrategyType" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.strategy.base.</code><code class="sig-name descname">StrategyType</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/base.html#StrategyType"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.base.StrategyType" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></p>
 <p>A metaclass for Strategy classes.</p>
 <p>This metaclass inspects the class for any <cite>&#64;strategy(key)</cite>-decorated
@@ -837,7 +538,7 @@ strategy methods? (consider using signature <cite>(func [, key])</cite>)</p>
 
 <dl class="function">
 <dt id="forecaster.strategy.base.strategy_method">
-<code class="descclassname">forecaster.strategy.base.</code><code class="descname">strategy_method</code><span class="sig-paren">(</span><em>key</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/base.html#strategy_method"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.base.strategy_method" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">forecaster.strategy.base.</code><code class="sig-name descname">strategy_method</code><span class="sig-paren">(</span><em class="sig-param">key</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/base.html#strategy_method"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.base.strategy_method" title="Permalink to this definition">¶</a></dt>
 <dd><p>A decorator for strategy methods, used by Strategy subclasses</p>
 <p>Methods decorated with this decorator will be automatically added
 to the dict <cite>strategies</cite>, which is an attribute of the subclass.
@@ -855,125 +556,12 @@ strategy methods that are added dynamically.</p>
 </dd></dl>
 
 </div>
-<div class="section" id="module-forecaster.strategy.debt_payment">
-<span id="forecaster-strategy-debt-payment-module"></span><h2>forecaster.strategy.debt_payment module<a class="headerlink" href="#module-forecaster.strategy.debt_payment" title="Permalink to this headline">¶</a></h2>
-<p>Provides a class for determining schedules of debt payments.</p>
-<dl class="class">
-<dt id="forecaster.strategy.debt_payment.DebtPaymentStrategy">
-<em class="property">class </em><code class="descclassname">forecaster.strategy.debt_payment.</code><code class="descname">DebtPaymentStrategy</code><span class="sig-paren">(</span><em>strategy</em>, <em>timing='end'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/debt_payment.html#DebtPaymentStrategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.debt_payment.DebtPaymentStrategy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#forecaster.strategy.base.Strategy" title="forecaster.strategy.base.Strategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">forecaster.strategy.base.Strategy</span></code></a></p>
-<p>Determines payments for a group of debts.</p>
-<dl class="attribute">
-<dt id="forecaster.strategy.debt_payment.DebtPaymentStrategy.strategy">
-<code class="descname">strategy</code><a class="headerlink" href="#forecaster.strategy.debt_payment.DebtPaymentStrategy.strategy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Either a string corresponding to a
-particular strategy or an instance of the strategy itself.
-See <cite>strategies</cite> for acceptable keys.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">str, func</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.strategy.debt_payment.DebtPaymentStrategy.strategies">
-<code class="descname">strategies</code><a class="headerlink" href="#forecaster.strategy.debt_payment.DebtPaymentStrategy.strategies" title="Permalink to this definition">¶</a></dt>
-<dd><p>{str, func} pairs where each key identifies
-a strategy (in human-readable text) and each value is a
-function with the same arguments and return value as
-transactions(). See its documentation for more info.</p>
-<p>Acceptable keys include:</p>
-<ul class="simple">
-<li>“Snowball”</li>
-<li>“Avalanche”</li>
-</ul>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">dict</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.strategy.debt_payment.DebtPaymentStrategy.timing">
-<code class="descname">timing</code><a class="headerlink" href="#forecaster.strategy.debt_payment.DebtPaymentStrategy.timing" title="Permalink to this definition">¶</a></dt>
-<dd><p>Transactions are modelled as lump sums
-which take place at this time.</p>
-<p>This is expressed according to the <cite>when</cite> convention
-described in <cite>ledger.Account</cite>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">str, Decimal</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>available</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – The total amount available for repayment
-across all accounts.</li>
-<li><strong>debts</strong> (<em>list</em>) – Debts to repay.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A dict of {Debt, Money} pairs where each Debt object
-is one of the input accounts and each Money object is a
-transaction for that account.</p>
-</td>
-</tr>
-</tbody>
-</table>
-<dl class="method">
-<dt id="forecaster.strategy.debt_payment.DebtPaymentStrategy.__call__">
-<code class="descname">__call__</code><span class="sig-paren">(</span><em>debts</em>, <em>available</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/debt_payment.html#DebtPaymentStrategy.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.debt_payment.DebtPaymentStrategy.__call__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a dict of {account, Money} pairs.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.strategy.debt_payment.DebtPaymentStrategy.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>strategy</em>, <em>timing='end'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/debt_payment.html#DebtPaymentStrategy.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.debt_payment.DebtPaymentStrategy.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Constructor for DebtPaymentStrategy.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt>
-<code class="descname">strategies</code><em class="property"> = {'Avalanche': &lt;function DebtPaymentStrategy.strategy_avalanche&gt;, 'Snowball': &lt;function DebtPaymentStrategy.strategy_snowball&gt;}</em></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="forecaster.strategy.debt_payment.DebtPaymentStrategy.strategy_avalanche">
-<code class="descname">strategy_avalanche</code><span class="sig-paren">(</span><em>debts</em>, <em>available</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/debt_payment.html#DebtPaymentStrategy.strategy_avalanche"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.debt_payment.DebtPaymentStrategy.strategy_avalanche" title="Permalink to this definition">¶</a></dt>
-<dd><p>Pays off the highest-interest debt first.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.strategy.debt_payment.DebtPaymentStrategy.strategy_snowball">
-<code class="descname">strategy_snowball</code><span class="sig-paren">(</span><em>debts</em>, <em>available</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/debt_payment.html#DebtPaymentStrategy.strategy_snowball"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.debt_payment.DebtPaymentStrategy.strategy_snowball" title="Permalink to this definition">¶</a></dt>
-<dd><p>Pays off the smallest debt first.</p>
-</dd></dl>
-
-</dd></dl>
-
-</div>
 <div class="section" id="module-forecaster.strategy.gross_transaction">
 <span id="forecaster-strategy-gross-transaction-module"></span><h2>forecaster.strategy.gross_transaction module<a class="headerlink" href="#module-forecaster.strategy.gross_transaction" title="Permalink to this headline">¶</a></h2>
 <p>Provides classes for determining the total sum of transactions.</p>
 <dl class="class">
 <dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy">
-<em class="property">class </em><code class="descclassname">forecaster.strategy.gross_transaction.</code><code class="descname">LivingExpensesStrategy</code><span class="sig-paren">(</span><em>strategy</em>, <em>base_amount=0</em>, <em>rate=0</em>, <em>inflation_adjust=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.strategy.gross_transaction.</code><code class="sig-name descname">LivingExpensesStrategy</code><span class="sig-paren">(</span><em class="sig-param">strategy</em>, <em class="sig-param">base_amount=0</em>, <em class="sig-param">rate=0</em>, <em class="sig-param">inflation_adjust=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#forecaster.strategy.base.Strategy" title="forecaster.strategy.base.Strategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">forecaster.strategy.base.Strategy</span></code></a></p>
 <p>Determines annual living expenses.</p>
 <p>This class is callable. Its call signature has this form:</p>
@@ -985,94 +573,79 @@ it; otherwise, an error is raised. All arguments are keyword
 arguments.</p>
 <dl class="attribute">
 <dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy">
-<code class="descname">strategy</code><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">strategy</code><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy" title="Permalink to this definition">¶</a></dt>
 <dd><p>A string corresponding to a particular
 contribution strategy. See <cite>strategies</cite> for acceptable keys.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">str</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategies">
-<code class="descname">strategies</code><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategies" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">strategies</code><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategies" title="Permalink to this definition">¶</a></dt>
 <dd><p>{str, func} pairs where each key identifies
 a strategy (in human-readable text) and each value is a
 function with the same arguments and return value as
 gross_contribution(). See its documentation for more info.</p>
 <p>Acceptable keys include:</p>
 <ul class="simple">
-<li>“Constant contribution”</li>
-<li>“Constant living expenses”</li>
-<li>“Percentage of gross income”</li>
-<li>“Percentage of net income”</li>
-<li>“Percentage of principal at retirement”</li>
-<li>“Percentage of gross income at retirement”</li>
-<li>“Percentage of net income at retirement”</li>
+<li><p>“Constant contribution”</p></li>
+<li><p>“Constant living expenses”</p></li>
+<li><p>“Percentage of gross income”</p></li>
+<li><p>“Percentage of net income”</p></li>
+<li><p>“Percentage of principal at retirement”</p></li>
+<li><p>“Percentage of gross income at retirement”</p></li>
+<li><p>“Percentage of net income at retirement”</p></li>
 </ul>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">dict</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.base_amount">
-<code class="descname">base_amount</code><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.base_amount" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">base_amount</code><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.base_amount" title="Permalink to this definition">¶</a></dt>
 <dd><p>A user-supplied amount of money, used in
 some strategies as a baseline for contributions.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.rate">
-<code class="descname">rate</code><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.rate" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">rate</code><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.rate" title="Permalink to this definition">¶</a></dt>
 <dd><p>A user-supplied contribution rate. Must be a
 percentage (e.g. Decimal(‘0.03’) means 3%).</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">Decimal</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Decimal</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.refund_reinvestment_rate">
-<code class="descname">refund_reinvestment_rate</code><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.refund_reinvestment_rate" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">refund_reinvestment_rate</code><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.refund_reinvestment_rate" title="Permalink to this definition">¶</a></dt>
 <dd><p>The percentage of each tax
 refund that is reinvested in the year it’s received.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">Decimal</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Decimal</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.inflation_adjust">
-<code class="descname">inflation_adjust</code><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.inflation_adjust" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">inflation_adjust</code><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.inflation_adjust" title="Permalink to this definition">¶</a></dt>
 <dd><p>If provided, <cite>base_amount</cite> is
 interpreted as a real (i.e. inflation-adjusted) currency
 value.</p>
@@ -1082,93 +655,89 @@ inflation-adjustment factor between real and nominal values
 for that year (relative to base_year, if provided).</p>
 <p>Optional. If not provided, <cite>base_amount</cite> is not
 inflation_adjusted.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">callable</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>callable</p>
+</dd>
+</dl>
 </dd></dl>
 
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>people</strong> (<em>set</em><em>[</em><a class="reference internal" href="forecaster.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>]</em>) – The plannees (one or more people) with
-at least <cite>net_income</cite> and <cite>gross_income</cite> attributes.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A Money object corresponding to the living expenses incurred
-by the plannees for the year.</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – A required value was not provided for the given
-strategy.</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>people</strong> (<em>set</em><em>[</em><a class="reference internal" href="forecaster.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>]</em>) – The plannees (one or more people) with
+at least <cite>net_income</cite> and <cite>gross_income</cite> attributes.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A Money object corresponding to the living expenses incurred
+by the plannees for the year.</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – A required value was not provided for the given
+    strategy.</p>
+</dd>
+</dl>
 <dl class="method">
 <dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.__call__">
-<code class="descname">__call__</code><span class="sig-paren">(</span><em>people=None</em>, <em>year=None</em>, <em>retirement_year=None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.__call__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">people=None</em>, <em class="sig-param">year=None</em>, <em class="sig-param">retirement_year=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.__call__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the living expenses for the year.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>strategy</em>, <em>base_amount=0</em>, <em>rate=0</em>, <em>inflation_adjust=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.__init__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">strategy</em>, <em class="sig-param">base_amount=0</em>, <em class="sig-param">rate=0</em>, <em class="sig-param">inflation_adjust=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Constructor for LivingExpensesStrategy.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt>
-<code class="descname">strategies</code><em class="property"> = {'Constant contribution': &lt;function LivingExpensesStrategy.strategy_const_contribution&gt;, 'Constant living expenses': &lt;function LivingExpensesStrategy.strategy_const_living_expenses&gt;, 'Percentage of earnings growth': &lt;function LivingExpensesStrategy.strategy_percent_over_base&gt;, 'Percentage of gross income': &lt;function LivingExpensesStrategy.strategy_gross_percent&gt;, 'Percentage of gross income at retirement': &lt;function LivingExpensesStrategy.strategy_gross_percent_retirement&gt;, 'Percentage of net income': &lt;function LivingExpensesStrategy.strategy_net_percent&gt;, 'Percentage of net income at retirement': &lt;function LivingExpensesStrategy.strategy_net_percent_retirement&gt;, 'Percentage of principal at retirement': &lt;function LivingExpensesStrategy.strategy_principal_percent_retirement&gt;}</em></dt>
+<code class="sig-name descname">strategies</code><em class="property"> = {'Constant contribution': &lt;function LivingExpensesStrategy.strategy_const_contribution&gt;, 'Constant living expenses': &lt;function LivingExpensesStrategy.strategy_const_living_expenses&gt;, 'Percentage of earnings growth': &lt;function LivingExpensesStrategy.strategy_percent_over_base&gt;, 'Percentage of gross income': &lt;function LivingExpensesStrategy.strategy_gross_percent&gt;, 'Percentage of gross income at retirement': &lt;function LivingExpensesStrategy.strategy_gross_percent_ret&gt;, 'Percentage of net income': &lt;function LivingExpensesStrategy.strategy_net_percent&gt;, 'Percentage of net income at retirement': &lt;function LivingExpensesStrategy.strategy_net_percent_ret&gt;, 'Percentage of principal at retirement': &lt;function LivingExpensesStrategy.strategy_principal_percent_ret&gt;}</em></dt>
 <dd></dd></dl>
 
 <dl class="method">
 <dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_const_contribution">
-<code class="descname">strategy_const_contribution</code><span class="sig-paren">(</span><em>people</em>, <em>year=None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.strategy_const_contribution"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_const_contribution" title="Permalink to this definition">¶</a></dt>
-<dd><p>Contribute a constant amount (in real terms) and live off the rest.</p>
+<code class="sig-name descname">strategy_const_contribution</code><span class="sig-paren">(</span><em class="sig-param">people</em>, <em class="sig-param">*args</em>, <em class="sig-param">year=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.strategy_const_contribution"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_const_contribution" title="Permalink to this definition">¶</a></dt>
+<dd><p>Contribute a constant (real) amount and live off the rest.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_const_living_expenses">
-<code class="descname">strategy_const_living_expenses</code><span class="sig-paren">(</span><em>year=None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.strategy_const_living_expenses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_const_living_expenses" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">strategy_const_living_expenses</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">year=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.strategy_const_living_expenses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_const_living_expenses" title="Permalink to this definition">¶</a></dt>
 <dd><p>Living expenses remain constant, in real terms.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_gross_percent">
-<code class="descname">strategy_gross_percent</code><span class="sig-paren">(</span><em>people</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.strategy_gross_percent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_gross_percent" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">strategy_gross_percent</code><span class="sig-paren">(</span><em class="sig-param">people</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.strategy_gross_percent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_gross_percent" title="Permalink to this definition">¶</a></dt>
 <dd><p>Live off a percentage of gross income.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_gross_percent_retirement">
-<code class="descname">strategy_gross_percent_retirement</code><span class="sig-paren">(</span><em>people</em>, <em>retirement_year</em>, <em>year=None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.strategy_gross_percent_retirement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_gross_percent_retirement" title="Permalink to this definition">¶</a></dt>
+<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_gross_percent_ret">
+<code class="sig-name descname">strategy_gross_percent_ret</code><span class="sig-paren">(</span><em class="sig-param">people</em>, <em class="sig-param">retirement_year</em>, <em class="sig-param">*args</em>, <em class="sig-param">year=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.strategy_gross_percent_ret"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_gross_percent_ret" title="Permalink to this definition">¶</a></dt>
 <dd><p>Withdraw a percentage of gross income.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_net_percent">
-<code class="descname">strategy_net_percent</code><span class="sig-paren">(</span><em>people</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.strategy_net_percent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_net_percent" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">strategy_net_percent</code><span class="sig-paren">(</span><em class="sig-param">people</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.strategy_net_percent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_net_percent" title="Permalink to this definition">¶</a></dt>
 <dd><p>Live off a percentage of net income.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_net_percent_retirement">
-<code class="descname">strategy_net_percent_retirement</code><span class="sig-paren">(</span><em>people</em>, <em>retirement_year</em>, <em>year=None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.strategy_net_percent_retirement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_net_percent_retirement" title="Permalink to this definition">¶</a></dt>
+<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_net_percent_ret">
+<code class="sig-name descname">strategy_net_percent_ret</code><span class="sig-paren">(</span><em class="sig-param">people</em>, <em class="sig-param">retirement_year</em>, <em class="sig-param">*args</em>, <em class="sig-param">year=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.strategy_net_percent_ret"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_net_percent_ret" title="Permalink to this definition">¶</a></dt>
 <dd><p>Withdraw a percentage of max. net income (as of retirement).</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_percent_over_base">
-<code class="descname">strategy_percent_over_base</code><span class="sig-paren">(</span><em>people</em>, <em>year=None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.strategy_percent_over_base"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_percent_over_base" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">strategy_percent_over_base</code><span class="sig-paren">(</span><em class="sig-param">people</em>, <em class="sig-param">*args</em>, <em class="sig-param">year=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.strategy_percent_over_base"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_percent_over_base" title="Permalink to this definition">¶</a></dt>
 <dd><p>Live off a base amount plus a percentage of earnings above it.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_principal_percent_retirement">
-<code class="descname">strategy_principal_percent_retirement</code><span class="sig-paren">(</span><em>accounts</em>, <em>retirement_year</em>, <em>year=None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.strategy_principal_percent_retirement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_principal_percent_retirement" title="Permalink to this definition">¶</a></dt>
+<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_principal_percent_ret">
+<code class="sig-name descname">strategy_principal_percent_ret</code><span class="sig-paren">(</span><em class="sig-param">accounts</em>, <em class="sig-param">retirement_year</em>, <em class="sig-param">*args</em>, <em class="sig-param">year=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.strategy_principal_percent_ret"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_principal_percent_ret" title="Permalink to this definition">¶</a></dt>
 <dd><p>Withdraw a percentage of principal (as of retirement).</p>
 </dd></dl>
 
@@ -1176,7 +745,7 @@ strategy.</td>
 
 <dl class="class">
 <dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule">
-<em class="property">class </em><code class="descclassname">forecaster.strategy.gross_transaction.</code><code class="descname">LivingExpensesStrategySchedule</code><span class="sig-paren">(</span><em>working</em>, <em>retirement</em>, <em>minimum=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategySchedule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.strategy.gross_transaction.</code><code class="sig-name descname">LivingExpensesStrategySchedule</code><span class="sig-paren">(</span><em class="sig-param">working</em>, <em class="sig-param">retirement</em>, <em class="sig-param">minimum=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategySchedule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Determines living expenses while working and retired.</p>
 <p>This class is callable, like <cite>LivingExpensesStrategy</cite>, and
@@ -1191,83 +760,70 @@ avoid perverse situations where annual fluctuations in
 income or assets reduce living expenses unacceptably low.</p>
 <dl class="attribute">
 <dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.working">
-<code class="descname">working</code><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.working" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">working</code><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.working" title="Permalink to this definition">¶</a></dt>
 <dd><p>The strategy to use
 during the plannees’ working life.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference internal" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy" title="forecaster.strategy.gross_transaction.LivingExpensesStrategy">LivingExpensesStrategy</a></td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy" title="forecaster.strategy.gross_transaction.LivingExpensesStrategy">LivingExpensesStrategy</a></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.retirement">
-<code class="descname">retirement</code><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.retirement" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">retirement</code><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.retirement" title="Permalink to this definition">¶</a></dt>
 <dd><p>The strategy to
 use during the plannees’ retirement.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference internal" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy" title="forecaster.strategy.gross_transaction.LivingExpensesStrategy">LivingExpensesStrategy</a></td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy" title="forecaster.strategy.gross_transaction.LivingExpensesStrategy">LivingExpensesStrategy</a></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.minimum">
-<code class="descname">minimum</code><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.minimum" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">minimum</code><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.minimum" title="Permalink to this definition">¶</a></dt>
 <dd><p>Provides a minimum
 living standard that must be met. Optional. May
 be a <cite>LivingExpensesStrategySchedule</cite> if you want
 to use different minima for working and retired
 phases of life.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference internal" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy" title="forecaster.strategy.gross_transaction.LivingExpensesStrategy">LivingExpensesStrategy</a></td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy" title="forecaster.strategy.gross_transaction.LivingExpensesStrategy">LivingExpensesStrategy</a></p>
+</dd>
+</dl>
 </dd></dl>
 
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>year</strong> (<em>int</em>) – The current year.</li>
-<li><strong>retirement_year</strong> (<em>int</em>) – The plannees’ retirement year.
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>year</strong> (<em>int</em>) – The current year.</p></li>
+<li><p><strong>retirement_year</strong> (<em>int</em>) – The plannees’ retirement year.
 Optional; if not provided, it’s assumed that the
-plannees are still working.</li>
+plannees are still working.</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A Money object corresponding to the living expenses incurred
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A Money object corresponding to the living expenses incurred
 by the plannees for the year.</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – A required value was not provided for the given
-strategy.</p>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – A required value was not provided for the given
+    strategy.</p>
+</dd>
+</dl>
 <dl class="method">
 <dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.__call__">
-<code class="descname">__call__</code><span class="sig-paren">(</span><em>year=None</em>, <em>retirement_year=None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategySchedule.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.__call__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">year=None</em>, <em class="sig-param">retirement_year=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategySchedule.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.__call__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the living expenses for the year.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>working</em>, <em>retirement</em>, <em>minimum=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategySchedule.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.__init__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">working</em>, <em class="sig-param">retirement</em>, <em class="sig-param">minimum=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategySchedule.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Inits LivingExpensesStrategySchedule.</p>
 </dd></dl>
 
@@ -1287,6 +843,8 @@ strategy.</p>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="forecaster.strategy.debt_payment.html" class="btn btn-neutral float-right" title="forecaster.strategy.debt_payment package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="forecaster.ledger.html" class="btn btn-neutral float-left" title="forecaster.ledger package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>

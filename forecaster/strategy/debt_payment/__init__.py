@@ -3,7 +3,7 @@
 # See forecaster.__init__.py for version, author, and licensing info.
 
 __all__ = [
-    'debt_payment', 'util']
+    'base', 'util']
 
 from forecaster.strategy.debt_payment.base import DebtPaymentStrategy
 from forecaster.strategy.debt_payment.util import (

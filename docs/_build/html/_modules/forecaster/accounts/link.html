@@ -1,0 +1,385 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.accounts.link &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">forecaster</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>forecaster.accounts.link</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for forecaster.accounts.link</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; A module providing a tool for linking accounts via an owner. &quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">namedtuple</span><span class="p">,</span> <span class="n">abc</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="k">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span>
+
+<span class="n">LinkTuple</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s1">&#39;LinkTuple&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;owner&#39;</span><span class="p">,</span> <span class="s1">&#39;token&#39;</span><span class="p">])</span>
+
+<span class="c1"># Use a dataclass instead of namedtuple to provide mutability of `data`:</span>
+<div class="viewcode-block" id="LinkRecord"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.link.LinkRecord">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">LinkRecord</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot; Stores a transaction limit for a group of linked accounts. &quot;&quot;&quot;</span>
+    <span class="c1"># By default, `LinkRecord` inits to (group=set(), data={})</span>
+    <span class="n">group</span><span class="p">:</span> <span class="nb">set</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">set</span><span class="p">)</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AccountLink"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.link.AccountLink">[docs]</a><span class="k">class</span> <span class="nc">AccountLink</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot; Links accounts via an owner so that they share a data record.</span>
+
+<span class="sd">    Accounts are linked based on a `link` parameter (which should be</span>
+<span class="sd">    interpretable as a `LinkTuple`, which has `owner` and `token`</span>
+<span class="sd">    attributes.) Accounts do not necessarily need to have access to the</span>
+<span class="sd">    same `AccountLink` object to be linked - `AccountLink` merely</span>
+<span class="sd">    provides an interface by which Accounts can get access to the</span>
+<span class="sd">    centrally-managed data record.</span>
+
+<span class="sd">    NOTE: This class is intended to provide immutable attributes, such</span>
+<span class="sd">    as `owner` and `token`. Immutability is not programmatically</span>
+<span class="sd">    enforced. Try not to get yourself in trouble.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        link (LinkTuple): A `(owner, token)` tuple (or anything</span>
+<span class="sd">            convertible to LinkTuple) that uniquely identifies a group</span>
+<span class="sd">            of linked accounts.</span>
+
+<span class="sd">            Most commonly of type `tuple[Person, str]`. The first</span>
+<span class="sd">            element (owner) must have a `data` attribute. The second</span>
+<span class="sd">            element (token) must be hashable.</span>
+<span class="sd">        default_factory (Callable): A callable object (e.g. a lambda</span>
+<span class="sd">            expression) which takes no arguments and returns an object</span>
+<span class="sd">            of any type. Inspired by `defaultdict`&#39;s `default_factory`</span>
+<span class="sd">            argument. Optional.</span>
+
+<span class="sd">            The returned object is used to initialize the shared data</span>
+<span class="sd">            record when the link is first registered.</span>
+<span class="sd">            Defaults to `dict`.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        owner (Person, Any): An object that holds the data shared by</span>
+<span class="sd">            the linked accounts.</span>
+<span class="sd">        token (str, Hashable): A value registered with `owner` which is</span>
+<span class="sd">            shared by all accounts in this link group with this owner.</span>
+<span class="sd">        default_factory (Callable): A callable object (e.g. a lambda</span>
+<span class="sd">            expression) which takes no arguments and returns an object</span>
+<span class="sd">            of any type. Inspired by `defaultdict`&#39;s `default_factory`</span>
+<span class="sd">            argument. Optional.</span>
+
+<span class="sd">            The returned object is used to initialize `data` when the</span>
+<span class="sd">            link is first registered. Defaults to `dict`.</span>
+<span class="sd">        data (Any): The centrally-managed data record shared by all</span>
+<span class="sd">            linked accounts. Can be of any type, which is determined by</span>
+<span class="sd">            `default_factory`. Defaults to an empty `dict`.</span>
+<span class="sd">        group (set): The group of all accounts linked by this</span>
+<span class="sd">            owner/token pair.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="AccountLink.__init__"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.link.AccountLink.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">link</span><span class="p">,</span> <span class="n">default_factory</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Initializes `AccountLink`. &quot;&quot;&quot;</span>
+        <span class="c1"># Process inputs:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">link</span><span class="p">,</span> <span class="p">(</span><span class="n">AccountLink</span><span class="p">,</span> <span class="n">LinkTuple</span><span class="p">)):</span>
+            <span class="c1"># Try to cast unrecognized sequence types to `LinkTuple`</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">link</span><span class="p">,</span> <span class="n">abc</span><span class="o">.</span><span class="n">Sequence</span><span class="p">):</span>
+                <span class="n">link</span> <span class="o">=</span> <span class="n">LinkTuple</span><span class="p">(</span><span class="o">*</span><span class="n">link</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;link must be convertible to a tuple&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">default_factory</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">link</span><span class="p">,</span> <span class="n">AccountLink</span><span class="p">):</span>
+            <span class="c1"># If we&#39;ve passed in an `AccountLink`, copy its</span>
+            <span class="c1"># default_factor (unless one&#39;s been explicitly passed in):</span>
+            <span class="n">default_factory</span> <span class="o">=</span> <span class="n">default_factory</span>
+
+        <span class="c1"># Proceed with the usual init actions:</span>
+        <span class="c1"># Store inputs:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">owner</span> <span class="o">=</span> <span class="n">link</span><span class="o">.</span><span class="n">owner</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">token</span> <span class="o">=</span> <span class="n">link</span><span class="o">.</span><span class="n">token</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default_factory</span> <span class="o">=</span> <span class="n">default_factory</span>
+
+        <span class="c1"># If this link is new, mutate `owner` as necessary:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_registered</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">register</span><span class="p">()</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; A shared record for a given link. &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_record</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_record</span><span class="o">.</span><span class="n">data</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="nd">@data</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Sets the link&#39;s data member. &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_record</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_record</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">val</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;link&#39;s data member does not point anywhere.&quot;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">group</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The group of accounts linked by this AccountLink. &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_record</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_record</span><span class="o">.</span><span class="n">group</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_record</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The LinkRecord shared by a group of linked accounts. &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_registered</span><span class="p">():</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">owner</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">token</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="nd">@_record</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">_record</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Sets _record. &quot;&quot;&quot;</span>
+        <span class="c1"># Raises KeyError if the link is not registered.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">owner</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">token</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+
+    <span class="nd">@_record</span><span class="o">.</span><span class="n">deleter</span>
+    <span class="k">def</span> <span class="nf">_record</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Deletes _record. &quot;&quot;&quot;</span>
+        <span class="c1"># Raises KeyError if the link is not registered</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">owner</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">token</span><span class="p">]</span>
+
+<div class="viewcode-block" id="AccountLink.is_registered"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.link.AccountLink.is_registered">[docs]</a>    <span class="k">def</span> <span class="nf">is_registered</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Returns whether the link has been registered with owner. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">token</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">owner</span><span class="o">.</span><span class="n">data</span></div>
+
+<div class="viewcode-block" id="AccountLink.register"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.link.AccountLink.register">[docs]</a>    <span class="k">def</span> <span class="nf">register</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Sets up the shared data record for this `AccountLink`. &quot;&quot;&quot;</span>
+        <span class="c1"># If the link already exists, there&#39;s nothing to do:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_registered</span><span class="p">():</span>
+            <span class="k">return</span>
+        <span class="c1"># Otherwise, create the link. Use the init logic of</span>
+        <span class="c1"># `LinkRecord`, except that if we have a `default_factory` use</span>
+        <span class="c1"># that to init the `data` attribute.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_factory</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_record</span> <span class="o">=</span> <span class="n">LinkRecord</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_record</span> <span class="o">=</span> <span class="n">LinkRecord</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">default_factory</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="AccountLink.unregister"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.link.AccountLink.unregister">[docs]</a>    <span class="k">def</span> <span class="nf">unregister</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Deletes the shared data record for this `AccountLink`. &quot;&quot;&quot;</span>
+        <span class="c1"># If the link doesn&#39;t exist, there&#39;s nothing to do:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_registered</span><span class="p">():</span>
+            <span class="k">return</span>
+        <span class="c1"># Otherwise, remove the link by deleting its record from the</span>
+        <span class="c1"># owner&#39;s data repository:</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_record</span></div>
+
+<div class="viewcode-block" id="AccountLink.is_linked"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.link.AccountLink.is_linked">[docs]</a>    <span class="k">def</span> <span class="nf">is_linked</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">account</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Returns whether an account has been linked. &quot;&quot;&quot;</span>
+        <span class="c1"># pylint: disable=unsupported-membership-test</span>
+        <span class="c1"># pylint gets confused by dataclass semantics; group is a set.</span>
+        <span class="k">return</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_record</span><span class="o">.</span><span class="n">group</span></div>
+
+<div class="viewcode-block" id="AccountLink.link_account"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.link.AccountLink.link_account">[docs]</a>    <span class="k">def</span> <span class="nf">link_account</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">account</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Links account to others linked by this `AccountLink`. &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_registered</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">&#39;cannot add account to unregistered link&#39;</span><span class="p">)</span>
+        <span class="c1"># Start tracking this account if we aren&#39;t already</span>
+        <span class="c1"># pylint: disable=no-member</span>
+        <span class="c1"># pylint gets confused by dataclass semantics; group is a set.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">account</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AccountLink.unlink_account"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.link.AccountLink.unlink_account">[docs]</a>    <span class="k">def</span> <span class="nf">unlink_account</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">account</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Unlinks account from others linked by this `AccountLink`. &quot;&quot;&quot;</span>
+        <span class="c1"># pylint: disable=no-member</span>
+        <span class="c1"># pylint gets confused by dataclass semantics; group is a set.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">account</span><span class="p">)</span></div>
+
+    <span class="c1"># Allow AccountLink objects to be easily added to a set without</span>
+    <span class="c1"># duplication:</span>
+
+<div class="viewcode-block" id="AccountLink.__eq__"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.link.AccountLink.__eq__">[docs]</a>    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Defines equality operation on AccountLink. &quot;&quot;&quot;</span>
+        <span class="c1"># All AccountLink objects representing the same link should</span>
+        <span class="c1"># evaluate to equal (even if they have different default_factory</span>
+        <span class="c1"># attributes, which have no effect after initial registration.)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">owner</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">token</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">owner</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">token</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AccountLink.__hash__"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.link.AccountLink.__hash__">[docs]</a>    <span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Hash method for AccountLink. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">owner</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">token</span><span class="p">))</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

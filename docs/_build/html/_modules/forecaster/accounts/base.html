@@ -150,13 +150,16 @@
   <h1>Source code for forecaster.accounts.base</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot; A module providing the base Account class. &quot;&quot;&quot;</span>
 
-<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="k">import</span> <span class="n">copy</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">defaultdict</span>
 <span class="kn">from</span> <span class="nn">decimal</span> <span class="k">import</span> <span class="n">Decimal</span>
 <span class="kn">from</span> <span class="nn">forecaster.person</span> <span class="k">import</span> <span class="n">Person</span>
 <span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="p">(</span>
     <span class="n">Money</span><span class="p">,</span> <span class="n">TaxSource</span><span class="p">,</span> <span class="n">recorded_property</span><span class="p">,</span> <span class="n">recorded_property_cached</span><span class="p">)</span>
-<span class="kn">from</span> <span class="nn">forecaster.utility</span> <span class="k">import</span> <span class="n">when_conv</span><span class="p">,</span> <span class="n">frequency_conv</span>
+<span class="kn">from</span> <span class="nn">forecaster.utility</span> <span class="k">import</span> <span class="p">(</span>
+    <span class="n">Timing</span><span class="p">,</span> <span class="n">when_conv</span><span class="p">,</span> <span class="n">frequency_conv</span><span class="p">,</span> <span class="n">add_transactions</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">forecaster.accounts.util</span> <span class="k">import</span> <span class="p">(</span>
+    <span class="n">accumulation_function</span><span class="p">,</span> <span class="n">value_at_time</span><span class="p">,</span> <span class="n">time_to_value</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Account"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account">[docs]</a><span class="k">class</span> <span class="nc">Account</span><span class="p">(</span><span class="n">TaxSource</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; An account storing a `Money` balance.</span>
@@ -246,9 +249,9 @@
     <span class="c1"># pylint: disable=too-many-instance-attributes</span>
 
 <div class="viewcode-block" id="Account.__init__"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">balance</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span>
-    <span class="p">):</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">balance</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">default_timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Constructor for `Account`.</span>
 
 <span class="sd">        This constructor receives only values for the first year.</span>
@@ -268,6 +271,9 @@
 <span class="sd">                these objects are stored in the context), otherwise</span>
 <span class="sd">                `Forecaster`&#39;s object-substitution logic will not work.</span>
 <span class="sd">            nper (int): The number of compounding periods per year.</span>
+<span class="sd">            default_timing (Timing): The usual schedule for transactions</span>
+<span class="sd">                to/from this account, used by various methods when no</span>
+<span class="sd">                `timing` arg is expressly provided. Optional.</span>
 <span class="sd">            initial_year (int): The first year (e.g. 2000)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Use the explicitly-provided initial year if available,</span>
@@ -285,12 +291,17 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_owner</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_transactions</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_rate_callable</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_default_timing</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="c1"># Set the various property values based on inputs:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">owner</span> <span class="o">=</span> <span class="n">owner</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">balance</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="n">balance</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">rate_callable</span> <span class="o">=</span> <span class="n">rate</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">nper</span> <span class="o">=</span> <span class="n">frequency_conv</span><span class="p">(</span><span class="n">nper</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nper</span> <span class="o">=</span> <span class="n">frequency_conv</span><span class="p">(</span><span class="n">nper</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">default_timing</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">default_timing</span> <span class="o">=</span> <span class="n">Timing</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">default_timing</span> <span class="o">=</span> <span class="n">default_timing</span></div>
         <span class="c1"># NOTE: returns is calculated lazily</span>
 
     <span class="nd">@property</span>
@@ -315,6 +326,25 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_owner</span> <span class="o">=</span> <span class="n">val</span>
 
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">default_timing</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The usual timing for transactions to/from this account. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_timing</span>
+
+    <span class="nd">@default_timing</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">default_timing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Sets default_timing. &quot;&quot;&quot;</span>
+        <span class="c1"># Cast to `Timing` type:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">Timing</span><span class="p">):</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">Timing</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_default_timing</span> <span class="o">=</span> <span class="n">val</span>
+
+    <span class="nd">@default_timing</span><span class="o">.</span><span class="n">deleter</span>
+    <span class="k">def</span> <span class="nf">default_timing</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Deletes default_timing. &quot;&quot;&quot;</span>
+        <span class="c1"># Return default_timing to its default value:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_default_timing</span> <span class="o">=</span> <span class="n">Timing</span><span class="p">()</span>
+
     <span class="nd">@recorded_property_cached</span>
     <span class="k">def</span> <span class="nf">balance</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The balance of the account for the current year (Money).</span>
@@ -328,10 +358,11 @@
         <span class="c1"># setter defined via metaclass)</span>
 
         <span class="c1"># First, grow last year&#39;s initial balance based on the rate:</span>
-        <span class="n">balance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value_at_time</span><span class="p">(</span>
+        <span class="n">balance</span> <span class="o">=</span> <span class="n">value_at_time</span><span class="p">(</span>
             <span class="c1"># pylint: disable=no-member</span>
             <span class="c1"># Pylint gets confused by attributes added by metaclass.</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_balance_history</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">this_year</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_balance_history</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">this_year</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rate</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nper</span><span class="p">)</span>
 
         <span class="c1"># Then, grow each transactions and add it to the year-end total.</span>
         <span class="c1"># NOTE: This accounts for both inflows and outflows; outflows</span>
@@ -340,7 +371,8 @@
         <span class="c1"># Pylint gets confused by attributes added by metaclass.</span>
         <span class="n">transactions_history</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transactions_history</span>
         <span class="k">for</span> <span class="n">when</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">transactions_history</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">this_year</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="n">balance</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value_at_time</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">when</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">)</span>
+            <span class="n">balance</span> <span class="o">+=</span> <span class="n">value_at_time</span><span class="p">(</span>
+                <span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rate</span><span class="p">,</span> <span class="n">when</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nper</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">balance</span>
 
@@ -404,8 +436,7 @@
         <span class="c1"># This doesn&#39;t include any transactions or their growth.</span>
         <span class="n">returns</span> <span class="o">=</span> <span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">balance</span> <span class="o">*</span>
-            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">accumulation_function</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rate</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nper</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-        <span class="p">)</span>
+            <span class="p">(</span><span class="n">accumulation_function</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rate</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nper</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
 
         <span class="c1"># Add in the returns on each transaction.</span>
         <span class="c1"># (Withdrawals will generate returns with the opposite sign of</span>
@@ -414,30 +445,9 @@
         <span class="k">for</span> <span class="n">when</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">transactions</span><span class="p">:</span>
             <span class="n">returns</span> <span class="o">+=</span> <span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">transactions</span><span class="p">[</span><span class="n">when</span><span class="p">]</span> <span class="o">*</span>
-                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">accumulation_function</span><span class="p">(</span>
-                    <span class="mi">1</span> <span class="o">-</span> <span class="n">when</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rate</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nper</span>
-                <span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-            <span class="p">)</span>
+                <span class="p">(</span><span class="n">accumulation_function</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">when</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rate</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nper</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">returns</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">contribution_group</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; The Accounts that share contribution room with this one.</span>
-
-<span class="sd">        For `Account`, this method returns a set containing only itself;</span>
-<span class="sd">        that is, it does not share contribution room with any other</span>
-<span class="sd">        `Account`s. However, subclasses (like `RegisteredAccount`) may</span>
-<span class="sd">        override this behaviour.</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            set[Account]: The `Account` objects that should be considered</span>
-<span class="sd">            together with this `Account` when allocating contributions</span>
-<span class="sd">            between them.</span>
-
-<span class="sd">            Includes this `Account`.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">{</span><span class="bp">self</span><span class="p">}</span>
 
 <div class="viewcode-block" id="Account.add_transaction"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.add_transaction">[docs]</a>    <span class="k">def</span> <span class="nf">add_transaction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Adds a transaction to the account.</span>
@@ -464,19 +474,23 @@
         <span class="c1"># Simultaneous transactions are modelled as one sum,</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">transactions</span><span class="p">[</span><span class="n">when</span><span class="p">]</span> <span class="o">+=</span> <span class="n">value</span></div>
 
-    <span class="nd">@recorded_property</span>
-    <span class="k">def</span> <span class="nf">inflows</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Account.inflows"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.inflows">[docs]</a>    <span class="k">def</span> <span class="nf">inflows</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The sum of all inflows to the account. &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span>
-            <span class="n">val</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">transactions</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">val</span><span class="o">.</span><span class="n">amount</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">transactions</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">val</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">transactions</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">val</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">+=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">val</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">transactions</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">val</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
 
-    <span class="nd">@recorded_property</span>
-    <span class="k">def</span> <span class="nf">outflows</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Account.outflows"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.outflows">[docs]</a>    <span class="k">def</span> <span class="nf">outflows</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The sum of all outflows from the account. &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span>
-            <span class="n">val</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">transactions</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">val</span><span class="o">.</span><span class="n">amount</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">transactions</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">val</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">transactions</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">val</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">+=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">val</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">transactions</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">val</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
 
 <div class="viewcode-block" id="Account.next_year"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.next_year">[docs]</a>    <span class="k">def</span> <span class="nf">next_year</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Adds another year to the account.</span>
@@ -498,48 +512,427 @@
         <span class="c1"># `clear` will affect past-year records.)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_transactions</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="Account.max_outflow"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.max_outflow">[docs]</a>    <span class="k">def</span> <span class="nf">max_outflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">):</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">max_outflow_limit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The maximum amount that can be withdrawn from the account.</span>
 
-<span class="sd">        Args:</span>
-<span class="sd">            when (When): The timing of the transaction.</span>
+<span class="sd">        This property provides a scalar value representing the largest</span>
+<span class="sd">        possible outflow for this account, ignoring timing or the</span>
+<span class="sd">        current balance. For example, if there is no limit on outflows,</span>
+<span class="sd">        this returns Money(&#39;Infinity&#39;), regardless of the balance.</span>
+
+<span class="sd">        In most cases you probably want to determine the maximum</span>
+<span class="sd">        amount that can actually be withdrawn at the current balance.</span>
+<span class="sd">        For that, use `max_outflows`.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            A value which, if withdrawn at time `when`, would make the</span>
-<span class="sd">            account balance 0 at the end of the year, after all</span>
-<span class="sd">            transactions are accounted for.</span>
+<span class="sd">            The maximum value that can be withdrawn from the account.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># If the balance is positive, the max outflow is simply the</span>
-        <span class="c1"># current balance (but negative). If the balance is negative,</span>
-        <span class="c1"># then there&#39;s no further outflows to be made.</span>
-        <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">balance_at_time</span><span class="p">(</span><span class="n">when</span><span class="p">),</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span></div>
+        <span class="c1"># For an ordinary Account, there is no limit on withdrawals.</span>
+        <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="s1">&#39;-Infinity&#39;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Account.max_inflow"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.max_inflow">[docs]</a>    <span class="k">def</span> <span class="nf">max_inflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; The maximum amount that can be contributed to the account. &quot;&quot;&quot;</span>
-        <span class="c1"># Subclasses may provide a `when` argument, so provide that here</span>
-        <span class="c1"># for consistency (even though it&#39;s unused):</span>
-        <span class="c1"># pylint: disable=unused-argument,no-self-use</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">max_inflow_limit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The maximum amount that can be contributed to the account.</span>
 
-        <span class="c1"># For non-registered accounts, there is no maximum</span>
-        <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="s1">&#39;Infinity&#39;</span><span class="p">)</span></div>
+<span class="sd">        This method uses the same semantics as `max_outflow`, except</span>
+<span class="sd">        for inflows.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># For an ordinary Account, there is no limit on contributions.</span>
+        <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="s1">&#39;Infinity&#39;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Account.min_outflow"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.min_outflow">[docs]</a>    <span class="k">def</span> <span class="nf">min_outflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; The minimum amount to be withdrawn from the account. &quot;&quot;&quot;</span>
-        <span class="c1"># Subclasses may provide a `when` argument, so provide that here</span>
-        <span class="c1"># for consistency (even though it&#39;s unused):</span>
-        <span class="c1"># pylint: disable=unused-argument,no-self-use</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">min_outflow_limit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The minimum amount to be withdrawn from the account.</span>
 
-        <span class="c1"># For non-registered accounts, there is no minimum</span>
-        <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="s1">&#39;0&#39;</span><span class="p">)</span></div>
+<span class="sd">        This method uses the same semantics as `max_outflow`, except</span>
+<span class="sd">        it provides the minimum.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># For an ordinary Account, there is no minimum withdrawal</span>
+        <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="s1">&#39;0&#39;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Account.min_inflow"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.min_inflow">[docs]</a>    <span class="k">def</span> <span class="nf">min_inflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; The minimum amount to be contributed to the account. &quot;&quot;&quot;</span>
-        <span class="c1"># Subclasses may provide a `when` argument, so provide that here</span>
-        <span class="c1"># for consistency (even though it&#39;s unused):</span>
-        <span class="c1"># pylint: disable=unused-argument,no-self-use</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">min_inflow_limit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The minimum amount to be contributed to the account.</span>
 
-        <span class="c1"># For non-registered accounts, there is no minimum</span>
-        <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="s1">&#39;0&#39;</span><span class="p">)</span></div>
+<span class="sd">        This method uses the same semantics as `max_outflow`, except</span>
+<span class="sd">        it provides the minimum for inflows.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># For an ordinary Account, there is no minimum contribution.</span>
+        <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="s1">&#39;0&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Account.max_inflow"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.max_inflow">[docs]</a>    <span class="k">def</span> <span class="nf">max_inflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s2">&quot;end&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The maximum amount that can be contributed at `when`. &quot;&quot;&quot;</span>
+        <span class="c1"># The `when` arg is provided for subclasses to use.</span>
+        <span class="c1"># pylint: disable=unused-argument</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_inflow_limit</span></div>
+
+<div class="viewcode-block" id="Account.min_inflow"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.min_inflow">[docs]</a>    <span class="k">def</span> <span class="nf">min_inflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s2">&quot;end&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The minimum amount that can be contributed at `when`. &quot;&quot;&quot;</span>
+        <span class="c1"># The `when` arg is provided for subclasses to use.</span>
+        <span class="c1"># pylint: disable=unused-argument</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_inflow_limit</span></div>
+
+<div class="viewcode-block" id="Account.max_outflow"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.max_outflow">[docs]</a>    <span class="k">def</span> <span class="nf">max_outflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s2">&quot;end&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The maximum amount that can be withdrawn at `when`. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span>
+            <span class="c1"># Withdraw everything (or none if the balance is negative)</span>
+            <span class="nb">min</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">balance_at_time</span><span class="p">(</span><span class="n">when</span><span class="p">),</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)),</span>
+            <span class="c1"># But no more than the maximum outflow:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">max_outflow_limit</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Account.min_outflow"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.min_outflow">[docs]</a>    <span class="k">def</span> <span class="nf">min_outflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s2">&quot;end&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The minimum amount that can be withdrawn at `when`. &quot;&quot;&quot;</span>
+        <span class="c1"># The `when` arg is provided for subclasses to use.</span>
+        <span class="c1"># pylint: disable=unused-argument</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_outflow_limit</span></div>
+
+<div class="viewcode-block" id="Account.transactions_to_balance"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.transactions_to_balance">[docs]</a>    <span class="k">def</span> <span class="nf">transactions_to_balance</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">balance</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">max_total</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">min_total</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The amounts to add/withdraw at `timing` to get `balance`.</span>
+
+<span class="sd">        The return value satisfies two criteria:</span>
+
+<span class="sd">        * If each `{when: value}` pair is added as a transaction</span>
+<span class="sd">          then `self.balance_at_time(&#39;end&#39;)` will return `balance`,</span>
+<span class="sd">          subject to precision-based error.</span>
+<span class="sd">        * Each `value` is proportionate to the corresponding</span>
+<span class="sd">          input `weight` for the given timing.</span>
+
+<span class="sd">        Note that this method does not guarantee that the Account will</span>
+<span class="sd">        not go into negative balance mid-year if the output is used to</span>
+<span class="sd">        apply transactions to the Account.</span>
+
+<span class="sd">        This method is transaction-aware in the sense that the resulting</span>
+<span class="sd">        transactions are additional to any transactions already added to</span>
+<span class="sd">        the account.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            timing (Timing): A mapping of `{when: weight}` pairs.</span>
+<span class="sd">            balance (Money): The balance of the Account would</span>
+<span class="sd">                have after applying the outflows.</span>
+<span class="sd">            max_total (Money): If provided, the resulting transactions</span>
+<span class="sd">                will not exceed this total value (even if this value is</span>
+<span class="sd">                not sufficient to achieve `balance`)</span>
+<span class="sd">            min_total (Money): If provided, the resulting transactions</span>
+<span class="sd">                will be at least this total value (even if this value is</span>
+<span class="sd">                larger than necessary to achieve `balance`)</span>
+<span class="sd">            transactions (dict[Decimal, Money]): If provided, the result</span>
+<span class="sd">                of this method will be determined as if the account</span>
+<span class="sd">                also had these transactions recorded against it.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[float, Money]: A mapping of `{when: value}` pairs where</span>
+<span class="sd">                value indicates the amount that can be withdrawn at that</span>
+<span class="sd">                time such that, by the end of the year, the Account&#39;s</span>
+<span class="sd">                balance is `balance`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Determine how much the end-of-year balance would change under</span>
+        <span class="c1"># these transactions. This accounts for any transactions already</span>
+        <span class="c1"># applied to the account (via balance_at_time):</span>
+        <span class="n">ref_balance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">balance_at_time</span><span class="p">(</span><span class="s1">&#39;end&#39;</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="n">transactions</span><span class="p">)</span>
+        <span class="n">change</span> <span class="o">=</span> <span class="n">balance</span> <span class="o">-</span> <span class="n">ref_balance</span>
+
+        <span class="c1"># Clean inputs:</span>
+        <span class="k">if</span> <span class="n">timing</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">timing</span><span class="p">:</span>
+            <span class="c1"># Use default timing if none was explicitly provided.</span>
+            <span class="c1"># NOTE: Consider whether we should instead use whatever</span>
+            <span class="c1"># timing is naturally suggested by the timings of the</span>
+            <span class="c1"># current account transactions.</span>
+            <span class="c1"># For example, if an account receives $50 at when=0.5 and a</span>
+            <span class="c1"># $25 withdrawal at when=1, then the maximum outflow would</span>
+            <span class="c1"># occur at when=0.5 (and would have a value of $25, assuming</span>
+            <span class="c1"># no growth).</span>
+            <span class="c1"># The benefit here is that we could provide a schedule of</span>
+            <span class="c1"># transactions which *does* guarantee that the account will</span>
+            <span class="c1"># not go into negative balance at any time!</span>
+            <span class="c1"># A side-effect is that we might move `default_timing` logic</span>
+            <span class="c1"># back to the classes that need it (i.e. Debt, Person).</span>
+            <span class="n">timing</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_timing</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">timing</span><span class="p">,</span> <span class="n">Timing</span><span class="p">):</span>
+            <span class="c1"># Convert timing from str or dict if appropriate:</span>
+            <span class="n">timing</span> <span class="o">=</span> <span class="n">Timing</span><span class="p">(</span><span class="n">timing</span><span class="p">)</span>
+        <span class="c1"># Weights aren&#39;t guaranteed to sum to 1, so normalize them so</span>
+        <span class="c1"># they do. This will help later.</span>
+        <span class="c1"># (Also convert to Decimal to avoid Decimal/float mismatch.)</span>
+        <span class="n">total_weight</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">timing</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+        <span class="c1"># If calling code has passed in a timing object with 0 net</span>
+        <span class="c1"># weights (i.e. values) but non-empty timings (i.e. keys),</span>
+        <span class="c1"># assume uniform weights at those timings:</span>
+        <span class="k">if</span> <span class="n">total_weight</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">timing</span> <span class="o">=</span> <span class="n">Timing</span><span class="p">({</span><span class="n">when</span><span class="p">:</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">when</span> <span class="ow">in</span> <span class="n">timing</span><span class="o">.</span><span class="n">keys</span><span class="p">()})</span>
+            <span class="n">total_weight</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">timing</span><span class="p">)</span>
+        <span class="c1"># Normalize so that we can conveniently multiply weights by</span>
+        <span class="c1"># `total` to get that amount spread across all timings:</span>
+        <span class="c1"># (Exclude zero-valued weights for two reasons: we don&#39;t need</span>
+        <span class="c1"># them and they lead to errors when multipling by infinity)</span>
+        <span class="n">normalized_timing</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">when</span><span class="p">:</span> <span class="n">Decimal</span><span class="p">(</span><span class="n">weight</span><span class="p">)</span> <span class="o">/</span> <span class="n">total_weight</span>
+            <span class="k">for</span> <span class="n">when</span><span class="p">,</span> <span class="n">weight</span> <span class="ow">in</span> <span class="n">timing</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">weight</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">}</span>
+
+        <span class="c1"># We want the value at each timing to be proportional to its</span>
+        <span class="c1"># weight. This calls for math.</span>
+        <span class="c1"># Consider this derivation, where:</span>
+        <span class="c1"># * A is the accumulation function using the current rate/nper</span>
+        <span class="c1"># * Each {timing: value} pair in output is abbreviated t_i: v_i</span>
+        <span class="c1"># * The sum total of all transaction values is denoted s</span>
+
+        <span class="c1"># change = A(1-t_1)*v_1 + A(1-t_2)*v_2 + ... + A(1-t_n)*v_n</span>
+        <span class="c1">#   (This is just the sum of future values of the transactions)</span>
+        <span class="c1"># v_j = sum(v_1 ... v_n) * w_j = s * w_j for all j in [1 .. n]</span>
+        <span class="c1">#   (This is the constraint that each v_j is proportional to its</span>
+        <span class="c1">#   weight w_j. Note that it assumes w_j is normalized!)</span>
+        <span class="c1"># change = A(1-t_1)*s*w_1 + ... + A(1-t_n)*s*w_n</span>
+        <span class="c1">#   (Obtain this by simple substitution of v_j = s * w_j)</span>
+        <span class="c1"># s = change / (A(1-t_1)*w_1 + ... + A(1-t_n)*w_n)</span>
+        <span class="c1">#   (We can use this to determine v_j)</span>
+
+        <span class="c1"># Since s (the total) is the same for all values, find it first:</span>
+        <span class="n">weighted_accum</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">timing</span><span class="p">,</span> <span class="n">weight</span> <span class="ow">in</span> <span class="n">normalized_timing</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">weighted_accum</span> <span class="o">+=</span> <span class="n">weight</span> <span class="o">*</span> <span class="n">accumulation_function</span><span class="p">(</span>
+                <span class="n">t</span><span class="o">=</span><span class="mi">1</span><span class="o">-</span><span class="n">timing</span><span class="p">,</span>
+                <span class="n">rate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rate</span><span class="p">,</span>
+                <span class="n">nper</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nper</span><span class="p">)</span>
+        <span class="n">total</span> <span class="o">=</span> <span class="n">change</span> <span class="o">/</span> <span class="n">weighted_accum</span>
+
+        <span class="c1"># Limit total transaction value based on args:</span>
+        <span class="k">if</span> <span class="n">max_total</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">total</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">total</span><span class="p">,</span> <span class="n">max_total</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">min_total</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">total</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">total</span><span class="p">,</span> <span class="n">min_total</span><span class="p">)</span>
+
+        <span class="c1"># Now find value (v_j) for each timing (t_j) by applying</span>
+        <span class="c1"># normalized weights to the total:</span>
+        <span class="n">result_transactions</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">timing</span><span class="p">:</span> <span class="n">total</span> <span class="o">*</span> <span class="n">weight</span>
+            <span class="k">for</span> <span class="n">timing</span><span class="p">,</span> <span class="n">weight</span> <span class="ow">in</span> <span class="n">normalized_timing</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">return</span> <span class="n">result_transactions</span></div>
+
+<div class="viewcode-block" id="Account.max_outflows"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.max_outflows">[docs]</a>    <span class="k">def</span> <span class="nf">max_outflows</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transaction_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">balance_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The maximum amounts that can be withdrawn at `timings`.</span>
+
+<span class="sd">        The output transaction values will be proportionate to the</span>
+<span class="sd">        values of `timings`, which are used as weights.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            Consider an account with 100% interest without compounding:</span>
+<span class="sd">            ``` account = Account(balance=100, rate=1, nper=1)</span>
+<span class="sd">            account.max_outflows({0: 1, 1: 1})</span>
+<span class="sd">            # Returns {0: Money(66.66...), 1: Money(66.66...)}</span>
+<span class="sd">            ```</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            timing (Timing): A mapping of `{when: weight}` pairs.</span>
+<span class="sd">                Optional. Uses default_timing if not provided.</span>
+<span class="sd">            transaction_limit (Money): Total outflows will not exceed</span>
+<span class="sd">                this amount (not including any outflows already recorded</span>
+<span class="sd">                against this `Account`). Optional.</span>
+<span class="sd">            balance_limit (Money): At least this balance, if provided,</span>
+<span class="sd">                will remain in the account at year-end. Optional.</span>
+<span class="sd">            transactions (dict[Decimal, Money]): If provided, the result</span>
+<span class="sd">                of this method will be determined as if the account</span>
+<span class="sd">                also had these transactions recorded against it.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[float, Money]: A mapping of `{when: value}` pairs where</span>
+<span class="sd">                `value` indicates the amount that can be withdrawn at</span>
+<span class="sd">                that time such that, by the end of the year, the</span>
+<span class="sd">                Account&#39;s balance is $0.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># pylint: disable=unused-argument</span>
+        <span class="c1"># `kwargs` is provided so that subclasses can expand the</span>
+        <span class="c1"># argument list without requiring client code to type-check.</span>
+
+        <span class="k">if</span> <span class="n">balance_limit</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Outflows are limited by the account balance:</span>
+            <span class="n">balance_limit</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># Limit transactions to max total outflows, accounting for any</span>
+        <span class="c1"># existing outflows already recorded as transactions:</span>
+        <span class="n">min_total</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_outflow_limit</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">outflows</span><span class="p">(</span><span class="n">transactions</span><span class="p">)</span>
+        <span class="c1"># If a smaller limit is passed in, use that.</span>
+        <span class="c1"># (Recall that outflows are negative, so we use max, not min)</span>
+        <span class="k">if</span> <span class="n">transaction_limit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">min_total</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">min_total</span><span class="p">,</span> <span class="n">transaction_limit</span><span class="p">)</span>
+        <span class="c1"># Don&#39;t allow positive lower bounds:</span>
+        <span class="n">min_total</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">min_total</span><span class="p">,</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+
+        <span class="c1"># Ensure that only negative amounts are returned:</span>
+        <span class="n">max_total</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">transactions_to_balance</span><span class="p">(</span>
+            <span class="n">balance_limit</span><span class="p">,</span>
+            <span class="n">timing</span><span class="o">=</span><span class="n">timing</span><span class="p">,</span>
+            <span class="n">max_total</span><span class="o">=</span><span class="n">max_total</span><span class="p">,</span>
+            <span class="n">min_total</span><span class="o">=</span><span class="n">min_total</span><span class="p">,</span>
+            <span class="n">transactions</span><span class="o">=</span><span class="n">transactions</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Account.max_inflows"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.max_inflows">[docs]</a>    <span class="k">def</span> <span class="nf">max_inflows</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transaction_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">balance_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The maximum amounts that can be contributed at `timing`.</span>
+
+<span class="sd">        The output transaction values will be proportionate to the</span>
+<span class="sd">        values of `timing`, which are used as weights.</span>
+
+<span class="sd">        For a simple `Account`, this will return `Infinity` for all</span>
+<span class="sd">        timings. Subclasses can override it as appropriate.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            timing (Timing): A mapping of `{when: weight}` pairs.</span>
+<span class="sd">                Optional. Uses default_timing if not provided.</span>
+<span class="sd">            transaction_limit (Money): Total inflows will not exceed</span>
+<span class="sd">                this amount (not including any inflows already recorded</span>
+<span class="sd">                against this `Account`). Optional.</span>
+<span class="sd">            balance_limit (Money): This balance, if provided, will not</span>
+<span class="sd">                be exceeded at year-end. Optional.</span>
+<span class="sd">            transactions (dict[Decimal, Money]): If provided, the result</span>
+<span class="sd">                of this method will be determined as if the account</span>
+<span class="sd">                also had these transactions recorded against it.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[float, Money]: A mapping of `{when: value}` pairs where</span>
+<span class="sd">                `value` indicates the maximum amount that can be</span>
+<span class="sd">                contributed at that time.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># pylint: disable=unused-argument</span>
+        <span class="c1"># `kwargs` is provided so that subclasses can expand the</span>
+        <span class="c1"># argument list without requiring client code to type-check.</span>
+
+        <span class="k">if</span> <span class="n">balance_limit</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Inflows have no upper cap:</span>
+            <span class="n">balance_limit</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="s1">&#39;Infinity&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Limit transactions to max total inflows, accounting for any</span>
+        <span class="c1"># existing inflows already recorded as transactions:</span>
+        <span class="n">max_total</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_inflow_limit</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflows</span><span class="p">(</span><span class="n">transactions</span><span class="p">)</span>
+        <span class="c1"># If a smaller limit is passed in, use that.</span>
+        <span class="k">if</span> <span class="n">transaction_limit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">max_total</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">max_total</span><span class="p">,</span> <span class="n">transaction_limit</span><span class="p">)</span>
+        <span class="c1"># Don&#39;t allow negative lower bounds:</span>
+        <span class="n">max_total</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_total</span><span class="p">,</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+
+        <span class="c1"># Ensure that only non-negative amounts are returned:</span>
+        <span class="n">min_total</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">transactions_to_balance</span><span class="p">(</span>
+            <span class="n">balance_limit</span><span class="p">,</span>
+            <span class="n">timing</span><span class="o">=</span><span class="n">timing</span><span class="p">,</span>
+            <span class="n">max_total</span><span class="o">=</span><span class="n">max_total</span><span class="p">,</span>
+            <span class="n">min_total</span><span class="o">=</span><span class="n">min_total</span><span class="p">,</span>
+            <span class="n">transactions</span><span class="o">=</span><span class="n">transactions</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Account.min_outflows"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.min_outflows">[docs]</a>    <span class="k">def</span> <span class="nf">min_outflows</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transaction_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">balance_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The minimum outflows that should be withdrawn at `timings`.</span>
+
+<span class="sd">        The output transaction values will be proportionate to the</span>
+<span class="sd">        values of `timings`, which are used as weights.</span>
+
+<span class="sd">        For a simple `Account`, this will return `Money(0)` for all</span>
+<span class="sd">        timings. Subclasses can override it as appropriate.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            timing (Timing): A mapping of `{when: weight}` pairs.</span>
+<span class="sd">                Optional. Uses default_timing if not provided.</span>
+<span class="sd">            transaction_limit (Money): Total outflows will not exceed</span>
+<span class="sd">                this amount (not including any outflows already recorded</span>
+<span class="sd">                against this `Account`). Optional.</span>
+<span class="sd">            balance_limit (Money): At least this balance, if provided,</span>
+<span class="sd">                will remain in the account at year-end. Optional.</span>
+<span class="sd">            transactions (dict[Decimal, Money]): If provided, the result</span>
+<span class="sd">                of this method will be determined as if the account</span>
+<span class="sd">                also had these transactions recorded against it.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[float, Money]: A mapping of `{when: value}` pairs where</span>
+<span class="sd">                `value` indicates the amount that should be withdrawn at</span>
+<span class="sd">                that time.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># pylint: disable=unused-argument</span>
+        <span class="c1"># `kwargs` is provided so that subclasses can expand the</span>
+        <span class="c1"># argument list without requiring client code to type-check.</span>
+
+        <span class="k">if</span> <span class="n">balance_limit</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Outflows are limited by the account balance:</span>
+            <span class="n">balance_limit</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># Limit transactions to min total outflows, accounting for any</span>
+        <span class="c1"># existing outflows already recorded as transactions:</span>
+        <span class="n">min_total</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_outflow_limit</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">outflows</span><span class="p">(</span><span class="n">transactions</span><span class="p">)</span>
+        <span class="c1"># If a smaller limit is passed in, use that.</span>
+        <span class="c1"># (Recall that outflows are negative, so we use max, not min)</span>
+        <span class="k">if</span> <span class="n">transaction_limit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">min_total</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">min_total</span><span class="p">,</span> <span class="n">transaction_limit</span><span class="p">)</span>
+        <span class="c1"># Don&#39;t allow positive lower bounds:</span>
+        <span class="n">min_total</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">min_total</span><span class="p">,</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+
+        <span class="c1"># Ensure that only negative amounts are returned:</span>
+        <span class="n">max_total</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">transactions_to_balance</span><span class="p">(</span>
+            <span class="n">balance_limit</span><span class="p">,</span>
+            <span class="n">timing</span><span class="o">=</span><span class="n">timing</span><span class="p">,</span>
+            <span class="n">max_total</span><span class="o">=</span><span class="n">max_total</span><span class="p">,</span>
+            <span class="n">min_total</span><span class="o">=</span><span class="n">min_total</span><span class="p">,</span>
+            <span class="n">transactions</span><span class="o">=</span><span class="n">transactions</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Account.min_inflows"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.min_inflows">[docs]</a>    <span class="k">def</span> <span class="nf">min_inflows</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transaction_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">balance_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The minimum amounts that should be contributed at `timing`.</span>
+
+<span class="sd">        The output transaction values will be proportionate to the</span>
+<span class="sd">        values of `timing`, which are used as weights.</span>
+
+<span class="sd">        For a simple `Account`, this will return `Money(0)` for all</span>
+<span class="sd">        timings. Subclasses can override it as appropriate.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            timing (Timing): A mapping of `{when: weight}` pairs.</span>
+<span class="sd">                Optional. Uses default_timing if not provided.</span>
+<span class="sd">            transaction_limit (Money): Total inflows will not exceed</span>
+<span class="sd">                this amount (not including any inflows already recorded</span>
+<span class="sd">                against this `Account`). Optional.</span>
+<span class="sd">            balance_limit (Money): This balance, if provided, will not</span>
+<span class="sd">                be exceeded at year-end. Optional.</span>
+<span class="sd">            transactions (dict[Decimal, Money]): If provided, the result</span>
+<span class="sd">                of this method will be determined as if the account</span>
+<span class="sd">                also had these transactions recorded against it.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[float, Money]: A mapping of `{when: value}` pairs where</span>
+<span class="sd">                `value` indicates the maximum amount that can be</span>
+<span class="sd">                contributed at that time.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># pylint: disable=unused-argument</span>
+        <span class="c1"># `kwargs` is provided so that subclasses can expand the</span>
+        <span class="c1"># argument list without requiring client code to type-check.</span>
+
+        <span class="k">if</span> <span class="n">balance_limit</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Inflows have no upper cap:</span>
+            <span class="n">balance_limit</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="s1">&#39;Infinity&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Limit transactions to min total inflows, accounting for any</span>
+        <span class="c1"># existing inflows already recorded as transactions:</span>
+        <span class="n">max_total</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_inflow_limit</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflows</span><span class="p">(</span><span class="n">transactions</span><span class="p">)</span>
+        <span class="c1"># If a smaller limit is passed in, use that.</span>
+        <span class="k">if</span> <span class="n">transaction_limit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">max_total</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">max_total</span><span class="p">,</span> <span class="n">transaction_limit</span><span class="p">)</span>
+        <span class="c1"># Don&#39;t allow negative lower bounds:</span>
+        <span class="n">max_total</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_total</span><span class="p">,</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+
+        <span class="c1"># Ensure that only non-negative amounts are returned:</span>
+        <span class="n">min_total</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">transactions_to_balance</span><span class="p">(</span>
+            <span class="n">balance_limit</span><span class="p">,</span>
+            <span class="n">timing</span><span class="o">=</span><span class="n">timing</span><span class="p">,</span>
+            <span class="n">max_total</span><span class="o">=</span><span class="n">max_total</span><span class="p">,</span>
+            <span class="n">min_total</span><span class="o">=</span><span class="n">min_total</span><span class="p">,</span>
+            <span class="n">transactions</span><span class="o">=</span><span class="n">transactions</span><span class="p">)</span></div>
 
     <span class="nd">@recorded_property</span>
     <span class="k">def</span> <span class="nf">taxable_income</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -573,86 +966,37 @@
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transactions</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
 
 <div class="viewcode-block" id="Account.keys"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.keys">[docs]</a>    <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The timings of the account&#39;s transactions. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transactions</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="Account.values"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.values">[docs]</a>    <span class="k">def</span> <span class="nf">values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The values of the account&#39;s transactions. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transactions</span><span class="o">.</span><span class="n">values</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="Account.items"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.items">[docs]</a>    <span class="k">def</span> <span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The account&#39;s transactions, as {when: value} pairs. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transactions</span><span class="o">.</span><span class="n">items</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="Account.get"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Gets the transaction value at a particular timing. &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_transactions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">default</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Account.clear"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.clear">[docs]</a>    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Clears all of the account&#39;s transactions. &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_transactions</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span></div>
 
     <span class="c1"># Finally, add some methods for calculating growth (i.e. balance</span>
     <span class="c1"># at a future time and time to get to a future balance.)</span>
 
-<div class="viewcode-block" id="Account.accumulation_function"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.accumulation_function">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">accumulation_function</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; The accumulation function, A(t), from interest theory.</span>
-
-<span class="sd">        A(t) provides the growth (or discount) factor over the period</span>
-<span class="sd">        [0, t]. If `t` is negative, this method returns the inverse</span>
-<span class="sd">        (i.e. `A(t)^-1`).</span>
-
-<span class="sd">        This method&#39;s output is not well-defined if `t` does not align</span>
-<span class="sd">        with the start/end of a compounding period. (It will produce</span>
-<span class="sd">        sensible output, but it might not correspond to how your bank</span>
-<span class="sd">        calculates interest).</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            t (float, Decimal): Defines the period [0,t] over which the</span>
-<span class="sd">                accumulation will be calculated.</span>
-<span class="sd">            rate (float, Decimal): The rate of return (or interest).</span>
-<span class="sd">            nper (int): The number of compounding periods per year.</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            The accumulation A(t), as a Decimal.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># pylint: disable=invalid-name</span>
-        <span class="c1"># `t` is the usual name for the input to A(t) in interest theory.</span>
-
-        <span class="c1"># Convert t and rate to Decimal</span>
-        <span class="n">t</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
-        <span class="n">rate</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="n">rate</span><span class="p">)</span>
-
-        <span class="c1"># Use the exponential formula for continuous compounding: e^rt</span>
-        <span class="k">if</span> <span class="n">nper</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="c1"># math.exp(rate * t) throws a warning, since there&#39;s an</span>
-            <span class="c1"># implicit float-Decimal multiplication.</span>
-            <span class="n">acc</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">e</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="n">rate</span> <span class="o">*</span> <span class="n">t</span><span class="p">)</span>
-        <span class="c1"># Otherwise use the discrete formula: (1+r/n)^nt</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">acc</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">rate</span> <span class="o">/</span> <span class="n">nper</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="n">nper</span> <span class="o">*</span> <span class="n">t</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">acc</span></div>
-
-<div class="viewcode-block" id="Account.value_at_time"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.value_at_time">[docs]</a>    <span class="k">def</span> <span class="nf">value_at_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">now</span><span class="o">=</span><span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Returns the present (or future) value.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            value (Money): The (nominal) value to be converted.</span>
-<span class="sd">            now (Decimal): The time associated with the nominal value.</span>
-<span class="sd">            time (Decimal): The time to which the nominal value is to</span>
-<span class="sd">                be converted.</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            A Money object representing the present value</span>
-<span class="sd">            (if now &gt; time) or the future value (if now &lt; time) of</span>
-<span class="sd">            `value`.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">value</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">accumulation_function</span><span class="p">(</span>
-            <span class="n">when_conv</span><span class="p">(</span><span class="n">time</span><span class="p">)</span> <span class="o">-</span> <span class="n">when_conv</span><span class="p">(</span><span class="n">now</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">rate</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nper</span>
-        <span class="p">)</span></div>
-
-<div class="viewcode-block" id="Account.balance_at_time"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.balance_at_time">[docs]</a>    <span class="k">def</span> <span class="nf">balance_at_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+<div class="viewcode-block" id="Account.balance_at_time"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.balance_at_time">[docs]</a>    <span class="k">def</span> <span class="nf">balance_at_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Returns the balance at a point in time.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            when (Decimal, str): The timing of the transaction.</span>
+<span class="sd">            when (Decimal, str): The time at which the account&#39;s balance</span>
+<span class="sd">                is to be determined.</span>
+<span class="sd">            transactions (dict[Decimal, Money]): If provided, the result</span>
+<span class="sd">                of this method will be determined as if the account</span>
+<span class="sd">                also had these transactions recorded against it.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># We need to convert `time` to enable the comparison in the dict</span>
         <span class="c1"># comprehension in the for loop below.</span>
@@ -660,84 +1004,23 @@
 
         <span class="c1"># Find the future value (at t=time) of the initial balance.</span>
         <span class="c1"># This doesn&#39;t include any transactions of their growth.</span>
-        <span class="n">balance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value_at_time</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">balance</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
+        <span class="n">balance</span> <span class="o">=</span> <span class="n">value_at_time</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">balance</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rate</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nper</span><span class="p">)</span>
 
+        <span class="c1"># Combine the recorded and input transactions, if provided:</span>
+        <span class="k">if</span> <span class="n">transactions</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">transactions</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="n">transactions</span><span class="p">)</span>
+            <span class="n">add_transactions</span><span class="p">(</span><span class="n">transactions</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">transactions</span><span class="p">)</span>
+        <span class="c1"># Otherwise simply use the account&#39;s recorded transactions:</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">transactions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transactions</span>
         <span class="c1"># Add in the future value of each transaction (except that that</span>
         <span class="c1"># happen after `time`).</span>
-        <span class="c1"># Pylint is confused; `transactions` is a dict</span>
-        <span class="c1"># pylint: disable=unsubscriptable-object,not-an-iterable</span>
-        <span class="k">for</span> <span class="n">when</span> <span class="ow">in</span> <span class="p">[</span><span class="n">w</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">transactions</span> <span class="k">if</span> <span class="n">w</span> <span class="o">&lt;=</span> <span class="n">time</span><span class="p">]:</span>
-            <span class="n">balance</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value_at_time</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">transactions</span><span class="p">[</span><span class="n">when</span><span class="p">],</span> <span class="n">when</span><span class="p">,</span> <span class="n">time</span>
-            <span class="p">)</span>
+        <span class="k">for</span> <span class="n">when</span> <span class="ow">in</span> <span class="p">[</span><span class="n">w</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">transactions</span> <span class="k">if</span> <span class="n">w</span> <span class="o">&lt;=</span> <span class="n">time</span><span class="p">]:</span>
+            <span class="n">balance</span> <span class="o">+=</span> <span class="n">value_at_time</span><span class="p">(</span>
+                <span class="n">transactions</span><span class="p">[</span><span class="n">when</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">rate</span><span class="p">,</span> <span class="n">when</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nper</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">balance</span></div>
-
-<div class="viewcode-block" id="Account.accumulation_function_inverse"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.accumulation_function_inverse">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">accumulation_function_inverse</span><span class="p">(</span><span class="n">accum</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; The inverse of the accumulation function, A^-1(a).</span>
-
-<span class="sd">        A^-1(a) provides the amount of time required to achieve a</span>
-<span class="sd">        certain growth (or discount) factor. If `accum` is less than</span>
-<span class="sd">        1, the result is negative. `accum` must be positive.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            accum (float, Decimal): The accumulation factor.</span>
-<span class="sd">            rate (float, Decimal): The rate of return (or interest).</span>
-<span class="sd">            nper (int): The number of compounding periods per year.</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            (float, Decimal): A value `t` defining the period [0,t]</span>
-<span class="sd">                or [t, 0] (if negative) over which the accumulation</span>
-<span class="sd">                would be reached.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Convert accum and rate to Decimal</span>
-        <span class="n">accum</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="n">accum</span><span class="p">)</span>
-        <span class="n">rate</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="n">rate</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">accum</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;accum must be positive.&#39;</span><span class="p">)</span>
-
-        <span class="c1"># The case where rate=0 results in divide-by-zero errors later</span>
-        <span class="c1"># on, so deal with it specifically here.</span>
-        <span class="c1"># If the rate is 0%, it will either take an infinite value</span>
-        <span class="c1"># (positive or negative, depending on the rate)</span>
-        <span class="c1"># or 0 (in the special case of accum=1)</span>
-        <span class="k">if</span> <span class="n">rate</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">accum</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">Decimal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">accum</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="k">return</span> <span class="o">-</span><span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;Infinity&#39;</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;Infinity&#39;</span><span class="p">)</span>
-
-        <span class="c1"># Use the exponential formula for continuous compounding: a=e^rt</span>
-        <span class="c1"># Derive from this t=ln(a)/r</span>
-        <span class="k">if</span> <span class="n">nper</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="c1"># math.exp(rate * t) throws a warning, since there&#39;s an</span>
-            <span class="c1"># implicit float-Decimal multiplication.</span>
-            <span class="n">timing</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">accum</span><span class="p">,</span> <span class="n">math</span><span class="o">.</span><span class="n">e</span><span class="p">)</span> <span class="o">/</span> <span class="n">rate</span>
-        <span class="c1"># Otherwise use the discrete formula: a=(1+r/n)^nt</span>
-        <span class="c1"># Derive from this t=log(a,1+r/n)/n</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">timing</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">accum</span><span class="p">,</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">rate</span> <span class="o">/</span> <span class="n">nper</span><span class="p">)</span> <span class="o">/</span> <span class="n">nper</span>
-
-        <span class="k">return</span> <span class="n">timing</span></div>
-
-<div class="viewcode-block" id="Account.time_to_value"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.time_to_value">[docs]</a>    <span class="k">def</span> <span class="nf">time_to_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value_now</span><span class="p">,</span> <span class="n">value_then</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; The time required to grow from one value to another.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            value_now (Money): The (nominal) value we start with.</span>
-<span class="sd">            value_then (Money): The (nominal) value we end with.</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            A Decimal object representing the time required to</span>
-<span class="sd">            grow (or shrink) from `value_now` to `value_then`.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">accumulation_function_inverse</span><span class="p">(</span>
-            <span class="n">accum</span><span class="o">=</span><span class="n">value_then</span><span class="o">/</span><span class="n">value_now</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rate</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nper</span>
-        <span class="p">)</span></div>
 
 <div class="viewcode-block" id="Account.time_to_balance"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.time_to_balance">[docs]</a>    <span class="k">def</span> <span class="nf">time_to_balance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="n">Decimal</span><span class="p">(</span><span class="mi">0</span><span class="p">)):</span>
         <span class="sd">&quot;&quot;&quot; Returns the time required to grow to a given balance.</span>
@@ -764,7 +1047,7 @@
 
         <span class="c1"># Determine when we&#39;ll reach the desired amount, assuming</span>
         <span class="c1"># no further transactions:</span>
-        <span class="n">time</span> <span class="o">=</span> <span class="n">when</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_to_value</span><span class="p">(</span><span class="n">balance</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="n">when</span> <span class="o">+</span> <span class="n">time_to_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rate</span><span class="p">,</span> <span class="n">balance</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nper</span><span class="p">)</span>
 
         <span class="c1"># Now look ahead to the next transaction and, if it happens</span>
         <span class="c1"># before `time`, recurse onto that transaction&#39;s timing:</span>

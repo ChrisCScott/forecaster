@@ -1,0 +1,363 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.strategy.transaction.node &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">forecaster</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+      <li>forecaster.strategy.transaction.node</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for forecaster.strategy.transaction.node</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; Helper methods and classes for TransactionStrategy. &quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">abc</span>
+<span class="kn">from</span> <span class="nn">forecaster.accounts</span> <span class="k">import</span> <span class="n">LimitTuple</span>
+
+<span class="c1"># Define helper classes for storing data:</span>
+
+<span class="c1"># Parent nodes (i.e. non-leaf nodes) can be ordered or weighted. These</span>
+<span class="c1"># are distinguished by their types; represent those here for easy</span>
+<span class="c1"># extension/modification. (Use `tuple` to easier for `isinstance`)</span>
+<span class="n">ORDERED_NODE_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span>
+<span class="n">WEIGHTED_NODE_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="nb">dict</span><span class="p">,)</span>
+<span class="n">PARENT_NODE_TYPES</span> <span class="o">=</span> <span class="n">ORDERED_NODE_TYPES</span> <span class="o">+</span> <span class="n">WEIGHTED_NODE_TYPES</span>
+
+<div class="viewcode-block" id="TransactionNode"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.node.TransactionNode">[docs]</a><span class="k">class</span> <span class="nc">TransactionNode</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot; A data container for notes about nodes of a priority tree.</span>
+
+<span class="sd">    This is intended for use with TransactionStrategy, which provides</span>
+<span class="sd">    traversal logic.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        source (dict[Any, Decimal], list[Any], tuple[Any], Account): A</span>
+<span class="sd">            user-provided tree structure.</span>
+
+<span class="sd">            Nodes may be native `dict`, `list`, and `tuple` objects.</span>
+<span class="sd">            `dict` elements are unordered; each key is a child node and</span>
+<span class="sd">            the corresponding value is a weight. `list` or `tuple`</span>
+<span class="sd">            objects provide an ordered sequence of child nodes. (Tip:</span>
+<span class="sd">            use `tuple` for nodes that need to be stored as keys in a</span>
+<span class="sd">            `dict`). `Account` objects (or similar) are leaf nodes.</span>
+
+<span class="sd">            Nodes may optionally be `TransactionNode` objects, which</span>
+<span class="sd">            must provide their own non-`TransactionNode` `source`</span>
+<span class="sd">            attributes. These will not be wrapped in a further</span>
+<span class="sd">            `TransactionNode`.</span>
+<span class="sd">        limits (LimitTuple[Money]): Limits on min/max in/outflows for</span>
+<span class="sd">            this `TransactionNode`. These do not replace any limits on</span>
+<span class="sd">            leaf nodes&#39; `Account` objects. The intention is that the</span>
+<span class="sd">            strictest limit will be enforced by traversing code.</span>
+<span class="sd">        children (dict[TransactionNode: Decimal],</span>
+<span class="sd">            tuple(TransactionNode)): The children of this node, which</span>
+<span class="sd">            are `TransactionNode` objects encapulating the children</span>
+<span class="sd">            of the corresponding node in `source`. (If a child in</span>
+<span class="sd">            `source` is a `TransactionNode`, it is not re-encapsulated).</span>
+
+<span class="sd">            `children` is a dict if the node is weighted (i.e. if the</span>
+<span class="sd">            `source` version of the node is a dict) and a tuple if the</span>
+<span class="sd">            node is ordered (i.e. if the `source` version of the node</span>
+<span class="sd">            is a list or tuple).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="TransactionNode.__init__"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.node.TransactionNode.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">limits</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Initializes TransactionNode. &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)):</span>
+            <span class="c1"># Copy initialization:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">source</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">limits</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">limits</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Hold on to the original list/dict/whatever.</span>
+        <span class="c1"># (Consider copying it in case input `children` is mutated?)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="n">source</span>
+
+        <span class="c1"># Parse `limits` input:</span>
+        <span class="k">if</span> <span class="n">limits</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Cast to LimitTuple if not already in that format:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">limits</span><span class="p">,</span> <span class="n">LimitTuple</span><span class="p">):</span>
+                <span class="n">limits</span> <span class="o">=</span> <span class="n">LimitTuple</span><span class="p">(</span><span class="o">*</span><span class="n">limits</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">limits</span> <span class="o">=</span> <span class="n">limits</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># To avoid testing for `self.limits is not None` elsewhere,</span>
+            <span class="c1"># assign an all-None-valued LimitTuple if `limits` was not</span>
+            <span class="c1"># provided.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">limits</span> <span class="o">=</span> <span class="n">LimitTuple</span><span class="p">()</span>
+
+        <span class="c1"># Generate `children` attribute by recursively generating a</span>
+        <span class="c1"># TransactionNode instance for each child in `source`.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">children</span> <span class="o">=</span> <span class="n">_children_from_source</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransactionNode.is_leaf_node"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.node.TransactionNode.is_leaf_node">[docs]</a>    <span class="k">def</span> <span class="nf">is_leaf_node</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Returns True if the node is a leaf node, False otherwise. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_parent_node</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="TransactionNode.is_parent_node"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.node.TransactionNode.is_parent_node">[docs]</a>    <span class="k">def</span> <span class="nf">is_parent_node</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Returns True if the node is a parent (non-leaf) node. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">PARENT_NODE_TYPES</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransactionNode.is_ordered"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.node.TransactionNode.is_ordered">[docs]</a>    <span class="k">def</span> <span class="nf">is_ordered</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Returns True if the node is an ordered parent node. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">PARENT_NODE_TYPES</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">abc</span><span class="o">.</span><span class="n">Sequence</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="TransactionNode.is_weighted"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.node.TransactionNode.is_weighted">[docs]</a>    <span class="k">def</span> <span class="nf">is_weighted</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Returns True if the node is a weighted parent node. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">PARENT_NODE_TYPES</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">abc</span><span class="o">.</span><span class="n">Mapping</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="TransactionNode.children_subset"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.node.TransactionNode.children_subset">[docs]</a>    <span class="k">def</span> <span class="nf">children_subset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subset</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Returns a reduced form of `children` based on `subset`.</span>
+
+<span class="sd">        The reduced form includes only children in `subset` but has the</span>
+<span class="sd">        same typing as `children`. So, for example, for a weighted node</span>
+<span class="sd">        `node.children_subset({child_node})` will return a dict of the</span>
+<span class="sd">        form `{child_node: weight}` where `weight` is equal to</span>
+<span class="sd">        `node.children[child_node]`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            subset (Container): An iterable container containing only</span>
+<span class="sd">                elements of `node.children`.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            KeyError: An element of `subset` is not present in</span>
+<span class="sd">                `self.children`.</span>
+<span class="sd">            NotImplementedError: `node.children` is of a type that this</span>
+<span class="sd">                class does not recognize.</span>
+<span class="sd">                This is most likely caused by implementing a subclass</span>
+<span class="sd">                that allows for a differently-typed `children` attribute</span>
+<span class="sd">                but which hasn&#39;t overloaded this method to deal with it.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="c1"># Preserve the weights (values) of `node.children`:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">child</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="n">child</span><span class="p">]</span> <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">subset</span><span class="p">}</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+            <span class="c1"># Preserve the ordering of `node.children`:</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">child</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span> <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">subset</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">&#39;subset contains element not in children.&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">)(</span>
+                <span class="n">child</span> <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span> <span class="k">if</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">subset</span><span class="p">)</span>
+        <span class="c1"># Type of `children` is determined by __init__, so if we get</span>
+        <span class="c1"># this far we&#39;re likely in a subclass that hasn&#39;t overloaded</span>
+        <span class="c1"># this method properly.</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot; is not a supported type for the &quot;</span>
+            <span class="s2">&quot;children attribute.&quot;</span><span class="p">)</span></div></div>
+
+<span class="k">def</span> <span class="nf">_children_from_source</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Converts children in `source` to `TransactionNode`s &quot;&quot;&quot;</span>
+    <span class="c1"># Ordered and weighted nodes need to be handled differently:</span>
+    <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">is_ordered</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">_children_from_source_ordered</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">node</span><span class="o">.</span><span class="n">is_weighted</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">_children_from_source_weighted</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">node</span><span class="o">.</span><span class="n">is_leaf_node</span><span class="p">():</span>
+        <span class="c1"># Leaf nodes have no children</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+            <span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">source</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot; is not a supported type.&quot;</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_children_from_source_ordered</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Converts ordered children in `source` to `TransactionNode`s &quot;&quot;&quot;</span>
+    <span class="n">children</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1"># Convert each child to TransactionNode, if not already in that</span>
+    <span class="c1"># format, and store as a tuple with the same order as in `source`:</span>
+    <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">source</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">TransactionNode</span><span class="p">):</span>
+            <span class="n">child</span> <span class="o">=</span> <span class="n">TransactionNode</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+        <span class="n">children</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">children</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_children_from_source_weighted</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Converts weighted children in `source` to `TransactionNode`s &quot;&quot;&quot;</span>
+    <span class="n">children</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="c1"># Convert each child to TransactionNode, if not already in</span>
+    <span class="c1"># that format, and store as a dict with the same weights (values):</span>
+    <span class="k">for</span> <span class="n">child</span><span class="p">,</span> <span class="n">weight</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">TransactionNode</span><span class="p">):</span>
+            <span class="n">child</span> <span class="o">=</span> <span class="n">TransactionNode</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+        <span class="n">children</span><span class="p">[</span><span class="n">child</span><span class="p">]</span> <span class="o">=</span> <span class="n">weight</span>
+    <span class="k">return</span> <span class="n">children</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

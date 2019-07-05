@@ -264,9 +264,8 @@
 <span class="sd">            Optional.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 <div class="viewcode-block" id="Tax.__init__"><a class="viewcode-back" href="../../forecaster.html#forecaster.tax.Tax.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">tax_brackets</span><span class="p">,</span> <span class="n">personal_deduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">credit_rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">payment_timing</span><span class="o">=</span><span class="s1">&#39;start&#39;</span>
-    <span class="p">):</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">tax_brackets</span><span class="p">,</span> <span class="n">personal_deduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">credit_rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">payment_timing</span><span class="o">=</span><span class="s1">&#39;start&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Initializes the Tax object.</span>
 
 <span class="sd">        Args:</span>
@@ -399,6 +398,10 @@
         <span class="n">deductions</span> <span class="o">+=</span> <span class="n">person</span><span class="o">.</span><span class="n">tax_deduction_history</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">deductions</span></div>
 
+    <span class="c1"># This method establishes a framework for subclasses to use.</span>
+    <span class="c1"># It&#39;s not necessary here to determine deductions, but it may</span>
+    <span class="c1"># be in a subclass, so we leave it in.</span>
+    <span class="c1"># pylint: disable=unused-argument</span>
 <div class="viewcode-block" id="Tax.credits"><a class="viewcode-back" href="../../forecaster.html#forecaster.tax.Tax.credits">[docs]</a>    <span class="k">def</span> <span class="nf">credits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">deductions</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The tax credits each person is eligible for.</span>
 
@@ -413,8 +416,10 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            Money: The credits for the person.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">credits</span> <span class="o">=</span> <span class="n">person</span><span class="o">.</span><span class="n">tax_credit_history</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">credits</span></div>
+        <span class="n">_credits</span> <span class="o">=</span> <span class="n">person</span><span class="o">.</span><span class="n">tax_credit_history</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">_credits</span></div>
+
+    <span class="c1"># pylint: enable=unused-argument</span>
 
 <div class="viewcode-block" id="Tax.credit_rate"><a class="viewcode-back" href="../../forecaster.html#forecaster.tax.Tax.credit_rate">[docs]</a>    <span class="k">def</span> <span class="nf">credit_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The credit rate for the given year. &quot;&quot;&quot;</span>
@@ -477,8 +482,7 @@
             <span class="n">prev</span> <span class="o">=</span> <span class="n">bracket</span>  <span class="c1"># Keep track of next-lowest bracket</span></div>
 
 <div class="viewcode-block" id="Tax.tax_money"><a class="viewcode-back" href="../../forecaster.html#forecaster.tax.Tax.tax_money">[docs]</a>    <span class="k">def</span> <span class="nf">tax_money</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">taxable_income</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">deduction</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">credit</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-    <span class="p">):</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">taxable_income</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">deduction</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">credit</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)):</span>
         <span class="sd">&quot;&quot;&quot; Returns taxes owing on a given amount of taxable income.</span>
 
 <span class="sd">        This method does not apply any deductions or credits other than</span>
@@ -526,8 +530,7 @@
         <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">net_tax</span><span class="p">,</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="Tax.tax_person"><a class="viewcode-back" href="../../forecaster.html#forecaster.tax.Tax.tax_person">[docs]</a>    <span class="k">def</span> <span class="nf">tax_person</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">deduction</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">credit</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-    <span class="p">):</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">deduction</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">credit</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)):</span>
         <span class="sd">&quot;&quot;&quot; Returns tax treatment for an individual person.</span>
 
 <span class="sd">        Args:</span>
@@ -553,7 +556,7 @@
             <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">deductions</span><span class="p">(</span><span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span>
             <span class="o">+</span> <span class="n">deduction</span>
         <span class="p">)</span>
-        <span class="n">credits</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">_credits</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">person</span><span class="o">.</span><span class="n">tax_credit_history</span><span class="p">[</span><span class="n">year</span><span class="p">]</span>
             <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">credits</span><span class="p">(</span><span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span>
             <span class="o">+</span> <span class="n">credit</span>
@@ -562,7 +565,7 @@
             <span class="n">taxable_income</span><span class="p">,</span>
             <span class="n">year</span><span class="p">,</span>
             <span class="n">deductions</span><span class="p">,</span>
-            <span class="n">credits</span>
+            <span class="n">_credits</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="Tax.tax_people"><a class="viewcode-back" href="../../forecaster.html#forecaster.tax.Tax.tax_people">[docs]</a>    <span class="k">def</span> <span class="nf">tax_people</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">deduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">credit</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>

@@ -44,8 +44,8 @@ class TransactionTraversal:
     structure is not required; for example, nodes can share children
     (even across levels).
     In fact, it often is not semantically a tree in practice, since
-    leaf nodes (usually `Account`s) can share contribution room or have
-    other relationships not captured by the tree structure.
+    leaf nodes (usually `Account` objects) can share contribution room
+    or have other relationships not captured by the tree structure.
 
     Instances of this class, when called, traverse a representation of
     the priority tree to allocate transactions to the leaves (which are
@@ -63,7 +63,7 @@ class TransactionTraversal:
     This class generates a directed graph based on the input which
     represents the  relationships between nodes. It finds a minimum-cost
     maximum flow across the graph which it translates into transactions
-    for each leaf node (usually `Account`s). By default, it does this
+    for each leaf node (usually `Account` objects). By default, it does this
     twice, once to allocate minimum transactions and then again to
     allocate maximum transactions.
 
@@ -80,27 +80,33 @@ class TransactionTraversal:
     and `group_methods` that support all of the leaf nodes' types.
 
     Examples:
-        # Collections can be nested (note also that `account2` repeats):
+        Collections can be nested (note also that `account2` repeats):
+        ```
         subgroup = {account1: 0.5, account2: 0.5}
         priority = [subgroup, account2]  # valid priority tree
         strategy = TransactionStrategy(priority)
         transactions = strategy(available)
 
-        # We can limit the total amount to contribute to `subgroup`
-        # (i.e. the equal-weighted group of account1 and account2)
-        # by using a single-element dict, as follows:
+        ```
+
+        We can limit the total amount to contribute to `subgroup`
+        (i.e. the equal-weighted group of account1 and account2)
+        by using a single-element dict, as follows:
+        ```
         limit = LimitTuple(max_inflows=Money(100))
         subgroup = TransactionNode(subgroup, limit=limit)
         priority = [subgroup, account2]
         strategy = TransactionStrategy(priority)
         transactions = strategy(available)
-        # The result, assuming available represents net inflows, is that
-        # up to $100 will be contributed equally to `account1` and
-        # `account2`, with any excess going to `account2`
+
+        ```
+        The result, assuming available represents net inflows, is that
+        up to $100 will be contributed equally to `account1` and
+        `account2`, with any excess going to `account2`
 
     Attributes:
         priority (TransactionNode, list[Any], dict[Any, Decimal],
-            tuple[Any]): The (nested) collection of `Account`s.
+            tuple[Any]): The (nested) collection of `Account` objects.
         graph (networkx.DiGraph): A directed graph representing all of
             the nodes from `priority`.
         source (Hashable): The node to use as the source of all flows.

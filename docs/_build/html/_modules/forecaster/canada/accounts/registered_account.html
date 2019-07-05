@@ -148,25 +148,46 @@
            <div itemprop="articleBody">
             
   <h1>Source code for forecaster.canada.accounts.registered_account</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot; TODO &quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot; A Canadian registered account.</span>
 
-<span class="kn">from</span> <span class="nn">forecaster.accounts</span> <span class="k">import</span> <span class="n">ContributionLimitAccount</span>
+<span class="sd">These accounts come in various forms, but in general they have a</span>
+<span class="sd">contributor and finite contribution room that grows from year to year.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">forecaster.accounts</span> <span class="k">import</span> <span class="n">LinkedLimitAccount</span>
+<span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="n">recorded_property</span>
 <span class="kn">from</span> <span class="nn">forecaster.utility</span> <span class="k">import</span> <span class="n">build_inflation_adjust</span>
 
-<div class="viewcode-block" id="RegisteredAccount"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount">[docs]</a><span class="k">class</span> <span class="nc">RegisteredAccount</span><span class="p">(</span><span class="n">ContributionLimitAccount</span><span class="p">):</span>
+<div class="viewcode-block" id="RegisteredAccount"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount">[docs]</a><span class="k">class</span> <span class="nc">RegisteredAccount</span><span class="p">(</span><span class="n">LinkedLimitAccount</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; An abstract base class for RRSPs, TFSAs, etc. &quot;&quot;&quot;</span>
 
-    <span class="c1"># This class is also abstract; it&#39;s up to subclasses to implement</span>
-    <span class="c1"># `next_contribution_room` concretely.</span>
-    <span class="c1"># pylint: disable=abstract-method</span>
-
-<div class="viewcode-block" id="RegisteredAccount.__init__"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="RegisteredAccount.__init__"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">contribution_room</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">contributor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_inflow_token</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Inits RegisteredAccount.</span>
 
-<span class="sd">        See documentation for `Account` and `ContributionLimitAccount`</span>
+<span class="sd">        See documentation for `Account` and `LinkedAccount`</span>
 <span class="sd">        for information on any args not listed below.</span>
 
 <span class="sd">        Args:</span>
+<span class="sd">            owner (Person): The person who owns the account. Some types</span>
+<span class="sd">                of accounts call this the &quot;annuitant&quot;.</span>
+
+<span class="sd">            contribution_room (Money): The amount of contribution room</span>
+<span class="sd">                available in the first year. Optional.</span>
+
+<span class="sd">                If not provided, this value will default to `None`,</span>
+<span class="sd">                which makes it easier for subclasses to determine</span>
+<span class="sd">                whether it has been set but, if those subclasses don&#39;t</span>
+<span class="sd">                take care to set this manually, can lead to hard-to-</span>
+<span class="sd">                diagnose errors in client code.</span>
+
+<span class="sd">            contributor (Person): The contributor to the account.</span>
+<span class="sd">                Optional.</span>
+
+<span class="sd">                If not provided, the contributor is assumed to be the</span>
+<span class="sd">                same as the annuitant (i.e. the owner.)</span>
+
 <span class="sd">            inflation_adjust: A method with the following form:</span>
 <span class="sd">                `inflation_adjust(val, this_year, target_year)`.</span>
 
@@ -175,9 +196,202 @@
 
 <span class="sd">                Optional. If not provided, all values are assumed to be</span>
 <span class="sd">                in real terms, so no inflation adjustment is performed.</span>
+
+<span class="sd">            max_inflow_token (str): A token that is used to link this</span>
+<span class="sd">                account to any other accounts with the same token and</span>
+<span class="sd">                contributor. Optional.</span>
+
+<span class="sd">                If not provided then by default the max inflows of this</span>
+<span class="sd">                account are linked with all other accounts of the same</span>
+<span class="sd">                type having the same contributor.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span> <span class="o">=</span> <span class="n">build_inflation_adjust</span><span class="p">(</span><span class="n">inflation_adjust</span><span class="p">)</span></div></div>
+
+        <span class="c1"># If not provided, we assume that the contributor is the owner:</span>
+        <span class="n">contributor_default</span> <span class="o">=</span> <span class="n">owner</span>
+        <span class="c1"># To link this account to other accounts, we need to ensure that</span>
+        <span class="c1"># they all share the same `max_inflow_link` (i.e. a contributor/</span>
+        <span class="c1"># token pair). We&#39;ll use an explicitly-passed token if provided,</span>
+        <span class="c1"># but in most cases we&#39;ll just link accounts with the same type.</span>
+        <span class="c1"># Append &quot;.max_inflow&quot; to the type name so that we can decide</span>
+        <span class="c1"># later to add different type-based tokens for &quot;min_inflow&quot;/etc.</span>
+        <span class="n">max_inflow_token_default</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s2">&quot;.max_inflow&quot;</span>
+
+        <span class="c1"># Avoid duplicate args to superclass init:</span>
+        <span class="n">max_inflow_link</span><span class="p">,</span> <span class="n">max_inflow_limit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_alias_args</span><span class="p">(</span>
+            <span class="n">contribution_room</span><span class="p">,</span> <span class="n">contributor</span><span class="p">,</span> <span class="n">max_inflow_token</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span>
+            <span class="n">contributor_default</span><span class="o">=</span><span class="n">contributor_default</span><span class="p">,</span>
+            <span class="n">max_inflow_token_default</span><span class="o">=</span><span class="n">max_inflow_token_default</span><span class="p">)</span>
+
+        <span class="c1"># Now pass the args and contructed token to the superclass:</span>
+        <span class="c1"># (We don&#39;t store contributor separately, since it&#39;s represented</span>
+        <span class="c1"># in max_inflow_link).</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="n">owner</span><span class="p">,</span> <span class="n">max_inflow_link</span><span class="o">=</span><span class="n">max_inflow_link</span><span class="p">,</span>
+            <span class="n">max_inflow_limit</span><span class="o">=</span><span class="n">max_inflow_limit</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># There&#39;s only one new attribute that&#39;s not handled by the</span>
+        <span class="c1"># superclass. Set it here:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span> <span class="o">=</span> <span class="n">build_inflation_adjust</span><span class="p">(</span><span class="n">inflation_adjust</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">contributor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The `Person` authorized to contribute to this account. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_inflow_link</span><span class="o">.</span><span class="n">owner</span>
+
+    <span class="nd">@contributor</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">contributor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Sets the `contributor` property. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_inflow_link</span><span class="o">.</span><span class="n">owner</span> <span class="o">=</span> <span class="n">val</span>
+
+    <span class="nd">@recorded_property</span>
+    <span class="k">def</span> <span class="nf">contribution_room</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Contribution room available for the current year. &quot;&quot;&quot;</span>
+        <span class="c1"># Wraps `max_inflow_limit`</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_inflow_limit</span>
+
+    <span class="nd">@contribution_room</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">contribution_room</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Sets contribution_room. &quot;&quot;&quot;</span>
+        <span class="c1"># Wraps `max_inflow_limit`</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_inflow_limit</span> <span class="o">=</span> <span class="n">val</span>
+
+<div class="viewcode-block" id="RegisteredAccount.next_year"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.next_year">[docs]</a>    <span class="k">def</span> <span class="nf">next_year</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Confirms that the year is within the range of our data. &quot;&quot;&quot;</span>
+        <span class="c1"># If this is the first of the linked accounts to get advanced,</span>
+        <span class="c1"># determine next_contribution_room, advance all the linked</span>
+        <span class="c1"># accounts&#39; to the next year (and also the contributor, if</span>
+        <span class="c1"># necessary), and then assign the new contribution_room.</span>
+        <span class="c1"># We do it like this to ensure that each linked account has</span>
+        <span class="c1"># a chance to record the previous year&#39;s contribution room</span>
+        <span class="c1"># before it&#39;s updated.</span>
+
+        <span class="c1"># Is this the first account in the linked group to be advanced?</span>
+        <span class="n">first_account</span> <span class="o">=</span> <span class="nb">all</span><span class="p">(</span>
+            <span class="n">account</span><span class="o">.</span><span class="n">this_year</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span>
+            <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_inflow_link</span><span class="o">.</span><span class="n">group</span><span class="p">)</span>
+        <span class="c1"># Only call next_contribution_room once for the whole group</span>
+        <span class="c1"># per year. We do this in the first account to be called.</span>
+        <span class="k">if</span> <span class="n">first_account</span><span class="p">:</span>
+            <span class="c1"># If the contribution room for next year is already known</span>
+            <span class="c1"># (e.g. via an `input` dict), use that:</span>
+            <span class="c1"># pylint: disable=no-member</span>
+            <span class="c1"># Pylint gets confused by attributes added by metaclass</span>
+            <span class="n">next_year</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">next_year</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room_history</span><span class="p">:</span>
+                <span class="n">contribution_room</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room_history</span><span class="p">[</span><span class="n">next_year</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Otherwise, generate it using the magic method:</span>
+                <span class="n">contribution_room</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">next_contribution_room</span><span class="p">()</span>
+
+        <span class="c1"># Advance this account&#39;s year first, _then_ the other linked</span>
+        <span class="c1"># accounts (so that they each know they aren&#39;t `first_account`)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">next_year</span><span class="p">()</span>
+
+        <span class="c1"># Ensure that all linked accounts have advanced to this year</span>
+        <span class="c1"># to ensure they remain in sync:</span>
+        <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_inflow_link</span><span class="o">.</span><span class="n">group</span><span class="p">:</span>
+            <span class="k">while</span> <span class="n">account</span><span class="o">.</span><span class="n">this_year</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span><span class="p">:</span>
+                <span class="n">account</span><span class="o">.</span><span class="n">next_year</span><span class="p">()</span>
+        <span class="c1"># Ensure that the contributor has also advanced to this year</span>
+        <span class="c1"># (do this after advancing the linked accounts!)</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">contributor</span><span class="o">.</span><span class="n">this_year</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">this_year</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">contributor</span><span class="o">.</span><span class="n">next_year</span><span class="p">()</span>
+
+        <span class="c1"># Now assign the contribution room we determined earlier to</span>
+        <span class="c1"># the linked data store:</span>
+        <span class="k">if</span> <span class="n">first_account</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room</span> <span class="o">=</span> <span class="n">contribution_room</span></div>
+
+<div class="viewcode-block" id="RegisteredAccount.next_contribution_room"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.next_contribution_room">[docs]</a>    <span class="k">def</span> <span class="nf">next_contribution_room</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Returns the contribution room for next year.</span>
+
+<span class="sd">        This method must be implemented by any subclass of</span>
+<span class="sd">        `RegisteredAccount`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Money: The contribution room for next year.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NotImplementedError: Raised if this method is not overridden</span>
+<span class="sd">            by a subclass.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="s1">&#39;RegisteredAccount: next_contribution_room is not implemented. &#39;</span>
+            <span class="o">+</span> <span class="s1">&#39;Subclasses must override this method.&#39;</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_process_alias_args</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">contribution_room</span><span class="p">,</span> <span class="n">contributor</span><span class="p">,</span> <span class="n">max_inflow_token</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span>
+            <span class="n">contributor_default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_inflow_token_default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Processes args. which alias superclass args.</span>
+
+<span class="sd">        Aliasing args run the risk of the same argument being passed</span>
+<span class="sd">        twice to the superclass `__init__` method. To avoid this,</span>
+<span class="sd">        perform checks to confirm which have been passed and transform</span>
+<span class="sd">        any superclass-named args into something recognized by</span>
+<span class="sd">        RegisteredAccount.</span>
+
+<span class="sd">        This method mutates `kwargs` to remove any aliased arguments.</span>
+<span class="sd">        (Don&#39;t worry - values for those arguments are returned by this</span>
+<span class="sd">        method as well.)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            tuple[Any, Any]: A `(max_inflow_link, max_inflow_limit)`</span>
+<span class="sd">                tuple.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: Both an aliasing RegisteredAccount arg (e.g.</span>
+<span class="sd">            `contribution_room`) and the LinkedLimitAccount arg it</span>
+<span class="sd">            aliases (e.g. `max_inflow_limit`) were passed explicitly.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># We need to pass`max_inflow_limit` to the superclass init.</span>
+        <span class="c1"># This can be provided in two ways: a RegisteredAccount-specific</span>
+        <span class="c1"># arg (i.e. `contribution_room`) or native `LinkedLimitAccount`</span>
+        <span class="c1"># arg names. Calling code may pass at most one of these!</span>
+        <span class="k">if</span> <span class="n">contribution_room</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="s1">&#39;max_inflow_limit&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="c1"># If both are provided, raise an error:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;cannot pass both `contribution_room` and &#39;</span>
+                <span class="o">+</span> <span class="s1">&#39;`max_inflow_limit explicitly&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="s1">&#39;max_inflow_limit&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="c1"># If they passed the LinkedLimitAccount version, map it to</span>
+            <span class="c1"># the RegisteredAccount name for convenience.</span>
+            <span class="c1"># (Also remove this element of `kwargs` to avoid duplicate</span>
+            <span class="c1"># arguments being passed)</span>
+            <span class="n">max_inflow_limit</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;max_inflow_limit&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Only contribution_room was provided, so map it to the</span>
+            <span class="c1"># superclass argument it aliases:</span>
+            <span class="n">max_inflow_limit</span> <span class="o">=</span> <span class="n">contribution_room</span>
+
+        <span class="c1"># Similarly, we need to pass `max_inflow_link`; `contributor`</span>
+        <span class="c1"># and `max_inflow_token` (in combination) alias this, so ensure</span>
+        <span class="c1"># that both are not provided explicitly.</span>
+        <span class="k">if</span> <span class="p">(</span>
+                <span class="p">(</span><span class="n">contributor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">max_inflow_token</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="s1">&#39;max_inflow_link&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;cannot pass `max_inflow_link` explicitly if either &#39;</span>
+                <span class="o">+</span> <span class="s1">&#39;`contributor` or `max_inflow_token` are provided.&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="s1">&#39;max_inflow_link&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="c1"># If the native LinkedLimitAccount arg was passed,</span>
+            <span class="c1"># use that directly (to avoid stripping out any additional</span>
+            <span class="c1"># information it holds with its attributes):</span>
+            <span class="c1"># (Also remove this element of `kwargs` to avoid duplicate</span>
+            <span class="c1"># arguments being passed)</span>
+            <span class="n">max_inflow_link</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;max_inflow_link&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># max_inflow_link was not provided, so we need to build it.</span>
+
+            <span class="c1"># If not provided, use the default value for contributor:</span>
+            <span class="k">if</span> <span class="n">contributor</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">contributor</span> <span class="o">=</span> <span class="n">contributor_default</span>
+            <span class="c1"># Same for max_inflow_token:</span>
+            <span class="k">if</span> <span class="n">max_inflow_token</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">max_inflow_token</span> <span class="o">=</span> <span class="n">max_inflow_token_default</span>
+            <span class="c1"># Build max_inflow_link via `contributor`/`max_inflow_token`</span>
+            <span class="n">max_inflow_link</span> <span class="o">=</span> <span class="p">(</span><span class="n">contributor</span><span class="p">,</span> <span class="n">max_inflow_token</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">max_inflow_link</span><span class="p">,</span> <span class="n">max_inflow_limit</span><span class="p">)</span></div>
 </pre></div>
 
            </div>

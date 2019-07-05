@@ -1,0 +1,286 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.forecast.saving &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">forecaster</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>forecaster.forecast.saving</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for forecaster.forecast.saving</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; Provides a SavingForecast class for use by Forecast. &quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="n">recorded_property_cached</span>
+<span class="kn">from</span> <span class="nn">forecaster.forecast.subforecast</span> <span class="k">import</span> <span class="n">SubForecast</span>
+
+<div class="viewcode-block" id="SavingForecast"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.saving.SavingForecast">[docs]</a><span class="k">class</span> <span class="nc">SavingForecast</span><span class="p">(</span><span class="n">SubForecast</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; A forecast of each year&#39;s contributions to various accounts.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        initial_year (int): The first year of the forecast.</span>
+<span class="sd">        retirement_accounts (Iterable[Account]): Retirement savings</span>
+<span class="sd">            accounts to be contributed to.</span>
+<span class="sd">        debt_accounts (Iterable[Debt]): Debt accounts to be repaid.</span>
+<span class="sd">        transaction_strategy (TransactionStrategy): A callable object</span>
+<span class="sd">            that determines the contributions to each of the plannees&#39;</span>
+<span class="sd">            accounts for the year.</span>
+<span class="sd">            See the documentation for `TransactionStrategy` for</span>
+<span class="sd">            acceptable args when calling this object.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        account_transactions (dict[Account, dict[Decimal, Money]]):</span>
+<span class="sd">            The allocation of transactions to accounts determined by</span>
+<span class="sd">            `transaction_strategy` for the current year.</span>
+<span class="sd">        debt_repayment (Money): The amount contributed to debts.</span>
+<span class="sd">        retirement_savings (Money): The amount contributed to</span>
+<span class="sd">            retirement savings accounts.</span>
+<span class="sd">        total (Money): The amount contributed to all accounts.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="SavingForecast.__init__"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.saving.SavingForecast.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">,</span> <span class="n">retirement_accounts</span><span class="p">,</span> <span class="n">debt_accounts</span><span class="p">,</span>
+            <span class="n">transaction_strategy</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Initializes an instance of SavingForecast. &quot;&quot;&quot;</span>
+        <span class="c1"># Recall that, as a Ledger object, we need to call the</span>
+        <span class="c1"># superclass initializer and let it know what the first</span>
+        <span class="c1"># year is so that `this_year` is usable.</span>
+        <span class="c1"># NOTE: Issue #53 removes this requirement.</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">initial_year</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">transaction_strategy</span> <span class="o">=</span> <span class="n">transaction_strategy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">retirement_accounts</span> <span class="o">=</span> <span class="n">retirement_accounts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">debt_accounts</span> <span class="o">=</span> <span class="n">debt_accounts</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">account_transactions</span> <span class="o">=</span> <span class="p">{}</span></div>
+
+<div class="viewcode-block" id="SavingForecast.__call__"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.saving.SavingForecast.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">available</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Records transactions against accounts; mutates `available`. &quot;&quot;&quot;</span>
+        <span class="c1"># The superclass has some book-keeping to do before we get</span>
+        <span class="c1"># started on doing the updates:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__call__</span><span class="p">(</span><span class="n">available</span><span class="p">)</span>
+
+        <span class="n">accounts</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">retirement_accounts</span><span class="p">)</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">debt_accounts</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">account_transactions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transaction_strategy</span><span class="p">(</span>
+            <span class="n">available</span><span class="p">,</span> <span class="n">accounts</span><span class="o">=</span><span class="n">accounts</span><span class="p">)</span>
+
+        <span class="c1"># NOTE: We let the transactions_strategy determine</span>
+        <span class="c1"># timing. It will use each account&#39;s default timing. Consider</span>
+        <span class="c1"># whether we should set `strict_timing=True`</span>
+        <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">account_transactions</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_transactions</span><span class="p">(</span>
+                <span class="n">transactions</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">account_transactions</span><span class="p">[</span><span class="n">account</span><span class="p">],</span>
+                <span class="n">from_account</span><span class="o">=</span><span class="n">available</span><span class="p">,</span>
+                <span class="n">to_account</span><span class="o">=</span><span class="n">account</span><span class="p">)</span></div>
+
+        <span class="c1"># TODO: Add transactions (with `from_account=None`) to Debt</span>
+        <span class="c1"># accounts based on how much of their repayments are drawn from</span>
+        <span class="c1"># living expenses. (See former `ReductionForecast` code for</span>
+        <span class="c1"># a related implementation of this.)</span>
+
+    <span class="nd">@recorded_property_cached</span>
+    <span class="k">def</span> <span class="nf">debt_repayment</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Total debt repaid for the year from savings. &quot;&quot;&quot;</span>
+        <span class="c1"># NOTE: We don&#39;t add in non-`available` contributions here.</span>
+        <span class="c1"># Those are considered living expenses, which is not what this</span>
+        <span class="c1"># class is all about.</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">account_transactions</span><span class="p">[</span><span class="n">account</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+            <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">retirement_accounts</span>
+            <span class="k">if</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">account_transactions</span><span class="p">)</span>
+
+    <span class="nd">@recorded_property_cached</span>
+    <span class="k">def</span> <span class="nf">retirement_savings</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Total amount saved for retirement for the year. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">account_transactions</span><span class="p">[</span><span class="n">account</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+            <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">retirement_accounts</span>
+            <span class="k">if</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">account_transactions</span><span class="p">)</span>
+
+    <span class="nd">@recorded_property_cached</span>
+    <span class="k">def</span> <span class="nf">total</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Contributions to accounts for the year. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">account_transactions</span><span class="p">[</span><span class="n">account</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+            <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">account_transactions</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

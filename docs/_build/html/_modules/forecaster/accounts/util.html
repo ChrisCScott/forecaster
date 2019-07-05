@@ -1,0 +1,335 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.accounts.util &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">forecaster</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>forecaster.accounts.util</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for forecaster.accounts.util</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; Helper classes and methods for Account. &quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">namedtuple</span>
+<span class="kn">from</span> <span class="nn">decimal</span> <span class="k">import</span> <span class="n">Decimal</span>
+<span class="kn">from</span> <span class="nn">forecaster.utility</span> <span class="k">import</span> <span class="n">when_conv</span>
+
+
+<span class="n">FIELDS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;min_inflow&#39;</span><span class="p">,</span> <span class="s1">&#39;max_inflow&#39;</span><span class="p">,</span> <span class="s1">&#39;min_outflow&#39;</span><span class="p">,</span> <span class="s1">&#39;max_outflow&#39;</span><span class="p">]</span>
+<span class="n">LimitTuple</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span>
+    <span class="s1">&#39;LimitTuple&#39;</span><span class="p">,</span> <span class="n">FIELDS</span><span class="p">,</span> <span class="n">defaults</span><span class="o">=</span><span class="p">(</span><span class="kc">None</span><span class="p">,)</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">FIELDS</span><span class="p">))</span>
+<span class="n">LimitTuple</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">&quot;A data container holding different values for min/max inflow/outfow&quot;</span><span class="p">)</span>
+
+<span class="c1"># Give an easy way for refactors to update references to LimitTuples:</span>
+<span class="n">LIMIT_TUPLE_FIELDS</span> <span class="o">=</span> <span class="n">LimitTuple</span><span class="p">(</span><span class="o">*</span><span class="n">FIELDS</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="accumulation_function"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.util.accumulation_function">[docs]</a><span class="k">def</span> <span class="nf">accumulation_function</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; The accumulation function, A(t), from interest theory.</span>
+
+<span class="sd">    A(t) provides the growth (or discount) factor over the period</span>
+<span class="sd">    [0, t]. If `t` is negative, this method returns the inverse</span>
+<span class="sd">    (i.e. `A(t)^-1`).</span>
+
+<span class="sd">    This method&#39;s output is not well-defined if `t` does not align</span>
+<span class="sd">    with the start/end of a compounding period. (It will produce</span>
+<span class="sd">    sensible output, but it might not correspond to how your bank</span>
+<span class="sd">    calculates interest).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        t (float, Decimal): Defines the period [0,t] over which the</span>
+<span class="sd">            accumulation will be calculated.</span>
+<span class="sd">        rate (float, Decimal): The rate of return (or interest).</span>
+<span class="sd">        nper (int): The number of compounding periods per year.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The accumulation A(t), as a Decimal.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># pylint: disable=invalid-name</span>
+    <span class="c1"># `t` is the usual name for the input to A(t) in interest theory.</span>
+
+    <span class="c1"># Convert t and rate to Decimal</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+    <span class="n">rate</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="n">rate</span><span class="p">)</span>
+
+    <span class="c1"># Use the exponential formula for continuous compounding: e^rt</span>
+    <span class="k">if</span> <span class="n">nper</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># math.exp(rate * t) throws a warning, since there&#39;s an</span>
+        <span class="c1"># implicit float-Decimal multiplication.</span>
+        <span class="n">acc</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">e</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="n">rate</span> <span class="o">*</span> <span class="n">t</span><span class="p">)</span>
+    <span class="c1"># Otherwise use the discrete formula: (1+r/n)^nt</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">acc</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">rate</span> <span class="o">/</span> <span class="n">nper</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="n">nper</span> <span class="o">*</span> <span class="n">t</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">acc</span></div>
+
+<div class="viewcode-block" id="accumulation_function_inverse"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.util.accumulation_function_inverse">[docs]</a><span class="k">def</span> <span class="nf">accumulation_function_inverse</span><span class="p">(</span><span class="n">accum</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; The inverse of the accumulation function, A^-1(a).</span>
+
+<span class="sd">    A^-1(a) provides the amount of time required to achieve a</span>
+<span class="sd">    certain growth (or discount) factor. If `accum` is less than</span>
+<span class="sd">    1, the result is negative. `accum` must be positive.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        accum (float, Decimal): The accumulation factor.</span>
+<span class="sd">        rate (float, Decimal): The rate of return (or interest).</span>
+<span class="sd">        nper (int): The number of compounding periods per year.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        (float, Decimal): A value `t` defining the period [0,t]</span>
+<span class="sd">            or [t, 0] (if negative) over which the accumulation</span>
+<span class="sd">            would be reached.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Convert accum and rate to Decimal</span>
+    <span class="n">accum</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="n">accum</span><span class="p">)</span>
+    <span class="n">rate</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="n">rate</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">accum</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;accum must be positive.&#39;</span><span class="p">)</span>
+
+    <span class="c1"># The case where rate=0 results in divide-by-zero errors later</span>
+    <span class="c1"># on, so deal with it specifically here.</span>
+    <span class="c1"># If the rate is 0%, it will either take an infinite value</span>
+    <span class="c1"># (positive or negative, depending on the rate)</span>
+    <span class="c1"># or 0 (in the special case of accum=1)</span>
+    <span class="k">if</span> <span class="n">rate</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">accum</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Decimal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">accum</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="o">-</span><span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;Infinity&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;Infinity&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Use the exponential formula for continuous compounding: a=e^rt</span>
+    <span class="c1"># Derive from this t=ln(a)/r</span>
+    <span class="k">if</span> <span class="n">nper</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># math.exp(rate * t) throws a warning, since there&#39;s an</span>
+        <span class="c1"># implicit float-Decimal multiplication.</span>
+        <span class="n">timing</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">accum</span><span class="p">,</span> <span class="n">math</span><span class="o">.</span><span class="n">e</span><span class="p">)</span> <span class="o">/</span> <span class="n">rate</span>
+    <span class="c1"># Otherwise use the discrete formula: a=(1+r/n)^nt</span>
+    <span class="c1"># Derive from this t=log(a,1+r/n)/n</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">timing</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">accum</span><span class="p">,</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">rate</span> <span class="o">/</span> <span class="n">nper</span><span class="p">)</span> <span class="o">/</span> <span class="n">nper</span>
+
+    <span class="k">return</span> <span class="n">timing</span></div>
+
+<div class="viewcode-block" id="value_at_time"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.util.value_at_time">[docs]</a><span class="k">def</span> <span class="nf">value_at_time</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">now</span><span class="o">=</span><span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Returns the present (or future) value.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        value (Money): The (nominal) value to be converted.</span>
+<span class="sd">        rate (Decimal): The rate of growth (e.g. inflation)</span>
+<span class="sd">        now (Decimal): The time associated with the nominal value,</span>
+<span class="sd">            expressed using `when_conv` syntax.</span>
+<span class="sd">        time (Decimal): The time to which the nominal value is to</span>
+<span class="sd">            be converted, expressed using `when_conv` syntax.</span>
+<span class="sd">        nper (Decimal): The number of compounding periods for growth.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A Money object representing the present value</span>
+<span class="sd">        (if now &gt; time) or the future value (if now &lt; time) of</span>
+<span class="sd">        `value`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">value</span> <span class="o">*</span> <span class="n">accumulation_function</span><span class="p">(</span>
+        <span class="n">when_conv</span><span class="p">(</span><span class="n">time</span><span class="p">)</span> <span class="o">-</span> <span class="n">when_conv</span><span class="p">(</span><span class="n">now</span><span class="p">),</span> <span class="n">rate</span><span class="p">,</span> <span class="n">nper</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="time_to_value"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.util.time_to_value">[docs]</a><span class="k">def</span> <span class="nf">time_to_value</span><span class="p">(</span><span class="n">rate</span><span class="p">,</span> <span class="n">value_now</span><span class="p">,</span> <span class="n">value_then</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; The time required to grow from one value to another.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        rate (Decimal): The rate of growth (e.g. inflation)</span>
+<span class="sd">        value_now (Money): The (nominal) value we start with.</span>
+<span class="sd">        value_then (Money): The (nominal) value we end with.</span>
+<span class="sd">        nper (Decimal): The number of compounding periods for growth.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A Decimal object representing the time required to</span>
+<span class="sd">        grow (or shrink) from `value_now` to `value_then`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">accumulation_function_inverse</span><span class="p">(</span>
+        <span class="n">accum</span><span class="o">=</span><span class="n">value_then</span><span class="o">/</span><span class="n">value_now</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="n">rate</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="n">nper</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

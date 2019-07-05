@@ -1,0 +1,576 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.accounts.linked_limit &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">forecaster</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>forecaster.accounts.linked_limit</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for forecaster.accounts.linked_limit</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; A module providing the LinkedLimitAccount class. &quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">copy</span> <span class="k">import</span> <span class="n">copy</span>
+<span class="kn">from</span> <span class="nn">forecaster.accounts.base</span> <span class="k">import</span> <span class="n">Account</span>
+<span class="kn">from</span> <span class="nn">forecaster.accounts.link</span> <span class="k">import</span> <span class="n">AccountLink</span>
+<span class="kn">from</span> <span class="nn">forecaster.utility</span> <span class="k">import</span> <span class="n">add_transactions</span>
+
+<div class="viewcode-block" id="LinkedLimitAccount"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount">[docs]</a><span class="k">class</span> <span class="nc">LinkedLimitAccount</span><span class="p">(</span><span class="n">Account</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; An account with inflow/outflow limits linked to other accounts.</span>
+
+<span class="sd">    Inflow and outflow limits may be shared between accounts. Such</span>
+<span class="sd">    accounts should share a token for the corresponding inflow/outflow</span>
+<span class="sd">    limit (e.g. `max_inflow_token`, `min_outflow_token`, etc.). This is</span>
+<span class="sd">    registered with the corresponding token owner (e.g.</span>
+<span class="sd">    `max_inflow_owner`, `min_outflow_owner`). By default, the account&#39;s</span>
+<span class="sd">    `owner` is used for each of these.</span>
+
+<span class="sd">    Accounts that this `LinkedLimitAccount` is linked to for a given</span>
+<span class="sd">    limit can be accessed via the corresponding `*_group` property (e.g.</span>
+<span class="sd">    `max_inflow_group` for the `max_inflow_limit` property).</span>
+
+<span class="sd">    This is an abstract base class. Any subclass must implement the</span>
+<span class="sd">    method `next_contribution_room`, which returns the contribution</span>
+<span class="sd">    room for the following year.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        All instances of this class with the same owner will share</span>
+<span class="sd">        their contribution room (i.e. max_inflow limit):</span>
+<span class="sd">        ```</span>
+<span class="sd">        class RegisteredAccount(LinkedLimitAccount):</span>
+<span class="sd">            def __init__(self):</span>
+<span class="sd">                token = type(self).__name__</span>
+<span class="sd">                super().__init__(max_inflow_token=token)</span>
+
+<span class="sd">        ```</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        max_inflow_limit (Money): Inherited from `Account`. The max.</span>
+<span class="sd">            amount that may be contributed in the current year.</span>
+<span class="sd">        max_inflow_link ((Person, str)): An `(owner, token)` pair.</span>
+<span class="sd">            Accounts which share the same `(owner, token)` pair</span>
+<span class="sd">            will share the same `max_inflow_limit`.</span>
+
+<span class="sd">        min_inflow_limit (Money): Inherited from `Account`. The min.</span>
+<span class="sd">            amount that must be contributed in the current year.</span>
+<span class="sd">        min_inflow_link ((Person, str)): An `(owner, token)` pair.</span>
+<span class="sd">            Accounts which share the same `(owner, token)` pair</span>
+<span class="sd">            will share the same `min_inflow_limit`.</span>
+
+<span class="sd">        max_outflow_limit (Money): Inherited from `Account`. The max.</span>
+<span class="sd">            amount that may be withdrawn in the current year.</span>
+<span class="sd">        max_outflow_link ((Person, str)): An `(owner, token)` pair.</span>
+<span class="sd">            Accounts which share the same `(owner, token)` pair</span>
+<span class="sd">            will share the same `max_outflow_limit`.</span>
+
+<span class="sd">        min_outflow_limit (Money): Inherited from `Account`. The min.</span>
+<span class="sd">            amount that must be withdrawn in the current year.</span>
+<span class="sd">        min_outflow_link ((Person, str)): An `(owner, token)` pair.</span>
+<span class="sd">            Accounts which share the same `(owner, token)` pair</span>
+<span class="sd">            will share the same `min_outflow_limit`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="LinkedLimitAccount.__init__"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+            <span class="n">max_inflow_link</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_inflow_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">min_inflow_link</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">min_inflow_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">max_outflow_link</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_outflow_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">min_outflow_link</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">min_outflow_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Initializes a LinkedLimitAccount object. &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># It&#39;s repetitive to clean, register, and assign each of the</span>
+        <span class="c1"># four types of inflow links repeatedly, so the bulk of __init__</span>
+        <span class="c1"># logic is moved to _process_link and it&#39;s just repeated here.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_inflow_link</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_link</span><span class="p">(</span>
+            <span class="n">max_inflow_link</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">max_inflow_limit</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_inflow_link</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_link</span><span class="p">(</span>
+            <span class="n">min_inflow_link</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">min_inflow_limit</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_outflow_link</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_link</span><span class="p">(</span>
+            <span class="n">max_outflow_link</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">max_outflow_limit</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_outflow_link</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_link</span><span class="p">(</span>
+            <span class="n">min_outflow_link</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">min_outflow_limit</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">max_inflow_limit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The maximum amount that can be contributed to the account. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_limit</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">max_inflow_link</span><span class="p">,</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">max_inflow_limit</span><span class="p">)</span>
+
+    <span class="nd">@max_inflow_limit</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">max_inflow_limit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Sets max_inflow_limit. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_limit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_inflow_link</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">min_inflow_limit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The minimum amount to be contributed to the account. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_limit</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">min_inflow_link</span><span class="p">,</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">min_inflow_limit</span><span class="p">)</span>
+
+    <span class="nd">@min_inflow_limit</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">min_inflow_limit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Sets min_inflow_limit. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_limit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">min_inflow_link</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">max_outflow_limit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The maximum amount that can be withdrawn from the account. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_limit</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">max_outflow_link</span><span class="p">,</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">max_outflow_limit</span><span class="p">)</span>
+
+    <span class="nd">@max_outflow_limit</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">max_outflow_limit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Sets max_outflow_limit. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_limit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_inflow_link</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">min_outflow_limit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The minimum amount to be withdrawn from the account. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_limit</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">min_outflow_link</span><span class="p">,</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">min_outflow_limit</span><span class="p">)</span>
+
+    <span class="nd">@min_outflow_limit</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">min_outflow_limit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Sets min_outflow_limit. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_limit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">min_inflow_link</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_limit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">link</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Gets the limit for a given linked group of accounts.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            link (AccountLink): A link object pointing to a record</span>
+<span class="sd">                shared by all accounts sharing `link`.</span>
+<span class="sd">            default (Any): The value to return if `link` is `None`.</span>
+<span class="sd">                Optional.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Money: The limit corresponding to `link`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">link</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">link</span><span class="o">.</span><span class="n">data</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">default</span>
+
+    <span class="k">def</span> <span class="nf">_set_limit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">link</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Sets the limit for a given linked group of accounts.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            link (AccountLink): A link object pointing to a record</span>
+<span class="sd">                shared by all accounts sharing `link`.</span>
+<span class="sd">            value (Any): The value to store in the shared record.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AttributeError: Cannot set limit if `link` is None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">link</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Update centrally-managed record:</span>
+            <span class="n">link</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># If there is no link, we cannot set its limit:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">&#39;Cannot set limit if link is None&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_process_link</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">link</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Convenience method for __init__ when processing inputs.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            link (Union[tuple[Person, str], AccountLink]): An</span>
+<span class="sd">                `AccountLink` or `AccountLink`-convertible value that</span>
+<span class="sd">                uniquely identifies the link between accounts.</span>
+<span class="sd">            limit (Any): The value all accounts sharing `link` should</span>
+<span class="sd">                share as a limit. If provided, overrides any value</span>
+<span class="sd">                provided by `default_factory`. Optional.</span>
+<span class="sd">            default_factory (Callable): If this method is creating a</span>
+<span class="sd">                new link (i.e. one which does not yet have a limit</span>
+<span class="sd">                value), then this 0-arg function will be called and its</span>
+<span class="sd">                return value will be used to populate the shared limit</span>
+<span class="sd">                value record. Optional.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            AccountLink: An object representing a link between accounts</span>
+<span class="sd">            and pointing to their shared limit record.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Nothing to do if no link is provided:</span>
+        <span class="k">if</span> <span class="n">link</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="c1"># Try to cast `link` to `AccountLink` if it isn&#39;t already:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">link</span><span class="p">,</span> <span class="n">AccountLink</span><span class="p">):</span>
+            <span class="c1"># NOTE: This will generate a shared `LimitRecord` object</span>
+            <span class="c1"># that all linked accounts can access.</span>
+            <span class="n">link</span> <span class="o">=</span> <span class="n">AccountLink</span><span class="p">(</span><span class="n">link</span><span class="p">,</span> <span class="n">default_factory</span><span class="o">=</span><span class="n">default_factory</span><span class="p">)</span>
+        <span class="c1"># Add this account to the group of linked accounts:</span>
+        <span class="n">link</span><span class="o">.</span><span class="n">link_account</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="c1"># If `limit` is provided, overwrite any existing limit:</span>
+        <span class="k">if</span> <span class="n">limit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">link</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">limit</span>
+        <span class="k">return</span> <span class="n">link</span>
+
+    <span class="k">def</span> <span class="nf">_merge_transactions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transactions</span><span class="p">,</span> <span class="n">group_transactions</span><span class="p">,</span> <span class="n">link</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Merges `group_transactions` and `transactions`.</span>
+
+<span class="sd">        Only linked accounts have their transactions in</span>
+<span class="sd">        `group_transactions` added to `transactions`. Any keys in</span>
+<span class="sd">        `group_transactions` which are not linked (per `link`) are</span>
+<span class="sd">        ignored.</span>
+
+<span class="sd">        If `transactions` is provided, any transactions for this account</span>
+<span class="sd">        in `group_transactions` are ignored.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            transactions (Union[dict[Number, Money], NoneType]): A</span>
+<span class="sd">                time-series of transactions for this account.</span>
+<span class="sd">                May be `None`.</span>
+<span class="sd">            group_transactions</span>
+<span class="sd">                (Union[dict[Account, dict[Number, Money]], NoneType]):</span>
+<span class="sd">                A mapping of `Account` keys to `transactions`-like</span>
+<span class="sd">                values. Keys not linked (according to `link`) are</span>
+<span class="sd">                ignored.</span>
+<span class="sd">            link (AccountLink): An object defining a collection of</span>
+<span class="sd">                linked accounts.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[Number, Money]: A time-series of transactions formed</span>
+<span class="sd">            by merging `transactions` (if provided) with the</span>
+<span class="sd">            transactions mapped by any accounts of `group_transactions`</span>
+<span class="sd">            (if provided) which are linked to this account.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># For convenience, use an empty iterable rather than `None`:</span>
+        <span class="k">if</span> <span class="n">group_transactions</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">group_transactions</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+        <span class="c1"># We want to return `transactions`, but we don&#39;t want to mutate</span>
+        <span class="c1"># any of the inputs, so copy it first:</span>
+        <span class="k">if</span> <span class="n">transactions</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">transactions</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="n">transactions</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span> <span class="ow">in</span> <span class="n">group_transactions</span><span class="p">:</span>
+            <span class="c1"># If `transactions` isn&#39;t given, but this account is</span>
+            <span class="c1"># represented in `group_transactions`, use that:</span>
+            <span class="n">transactions</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="n">group_transactions</span><span class="p">[</span><span class="bp">self</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Otherwise, just start with a empty dict to fill later:</span>
+            <span class="n">transactions</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># If this account isn&#39;t linked (for this type of inflow/outflow,</span>
+        <span class="c1"># anyways), we&#39;re done:</span>
+        <span class="k">if</span> <span class="n">link</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">transactions</span>
+
+        <span class="c1"># Otherwise, merge the transactions for each other linked</span>
+        <span class="c1"># account in the group (note that this account is handled above)</span>
+        <span class="n">group</span> <span class="o">=</span> <span class="n">link</span><span class="o">.</span><span class="n">group</span> <span class="o">-</span> <span class="p">{</span><span class="bp">self</span><span class="p">}</span>
+        <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">group</span><span class="p">:</span>
+            <span class="c1"># Add the transactions already recorded against the account:</span>
+            <span class="n">add_transactions</span><span class="p">(</span><span class="n">transactions</span><span class="p">,</span> <span class="n">account</span><span class="o">.</span><span class="n">transactions</span><span class="p">)</span>
+            <span class="c1"># And add any additional transactions, if present in</span>
+            <span class="c1"># `group_transactions`:</span>
+            <span class="k">if</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">group_transactions</span><span class="p">:</span>
+                <span class="n">add_transactions</span><span class="p">(</span><span class="n">transactions</span><span class="p">,</span> <span class="n">group_transactions</span><span class="p">[</span><span class="n">account</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">transactions</span>
+
+<div class="viewcode-block" id="LinkedLimitAccount.max_inflows"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.max_inflows">[docs]</a>    <span class="k">def</span> <span class="nf">max_inflows</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">group_transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The maximum amounts that can be contributed to the account.</span>
+
+<span class="sd">        This overloaded method simply provides a new argument</span>
+<span class="sd">        (`group_transactions`). See `Account.max_inflows` for</span>
+<span class="sd">        documentation of other arguments and method behaviour.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            transactions (dict[Decimal, Money]): If provided, the result</span>
+<span class="sd">                will be determined as if the account also had these</span>
+<span class="sd">                transactions recorded against it. Optional.</span>
+<span class="sd">            group_transactions (dict[Account, dict[Number, Money]]):</span>
+<span class="sd">                A mapping of `Account` keys to `transactions`-like</span>
+<span class="sd">                values. Any transactions mapped to accounts with a max</span>
+<span class="sd">                inflow limit linked to this one will be added to</span>
+<span class="sd">                `transactions` when determining the result. Optional.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[float, Money]: A mapping of `{when: value}` pairs where</span>
+<span class="sd">                `value` indicates the maximum inflow permitted.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># pylint: disable=too-many-arguments,arguments-differ</span>
+        <span class="c1"># This method just adds an extra optional argument.</span>
+
+        <span class="c1"># Merge `transactions` and `group_transactions`:</span>
+        <span class="n">transactions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_transactions</span><span class="p">(</span>
+            <span class="n">transactions</span><span class="p">,</span> <span class="n">group_transactions</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_inflow_link</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">max_inflows</span><span class="p">(</span>
+            <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="n">transactions</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="LinkedLimitAccount.max_outflows"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.max_outflows">[docs]</a>    <span class="k">def</span> <span class="nf">max_outflows</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">group_transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The maximum amounts that can be withdrawn from the account.</span>
+
+<span class="sd">        This overloaded method simply provides a new argument</span>
+<span class="sd">        (`group_transactions`). See `Account.max_outflows` for</span>
+<span class="sd">        documentation of other arguments and method behaviour.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            transactions (dict[Decimal, Money]): If provided, the result</span>
+<span class="sd">                will be determined as if the account also had these</span>
+<span class="sd">                transactions recorded against it. Optional.</span>
+<span class="sd">            group_transactions (dict[Account, dict[Number, Money]]):</span>
+<span class="sd">                A mapping of `Account` keys to `transactions`-like</span>
+<span class="sd">                values. Any transactions mapped to accounts with a max</span>
+<span class="sd">                outflow limit linked to this one will be added to</span>
+<span class="sd">                `transactions` when determining the result. Optional.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[float, Money]: A mapping of `{when: value}` pairs where</span>
+<span class="sd">                `value` indicates the maximum outflow permitted.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># pylint: disable=too-many-arguments,arguments-differ</span>
+        <span class="c1"># This method just adds an extra optional argument.</span>
+
+        <span class="c1"># Merge `transactions` and `group_transactions`:</span>
+        <span class="n">transactions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_transactions</span><span class="p">(</span>
+            <span class="n">transactions</span><span class="p">,</span> <span class="n">group_transactions</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_outflow_link</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">max_outflows</span><span class="p">(</span>
+            <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="n">transactions</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="LinkedLimitAccount.min_inflows"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.min_inflows">[docs]</a>    <span class="k">def</span> <span class="nf">min_inflows</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">group_transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The minimum amounts that must be contributed to the account.</span>
+
+<span class="sd">        This overloaded method simply provides a new argument</span>
+<span class="sd">        (`group_transactions`). See `Account.min_inflows` for</span>
+<span class="sd">        documentation of other arguments and method behaviour.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            transactions (dict[Decimal, Money]): If provided, the result</span>
+<span class="sd">                will be determined as if the account also had these</span>
+<span class="sd">                transactions recorded against it. Optional.</span>
+<span class="sd">            group_transactions (dict[Account, dict[Number, Money]]):</span>
+<span class="sd">                A mapping of `Account` keys to `transactions`-like</span>
+<span class="sd">                values. Any transactions mapped to accounts with a min</span>
+<span class="sd">                inflow limit linked to this one will be added to</span>
+<span class="sd">                `transactions` when determining the result. Optional.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[float, Money]: A mapping of `{when: value}` pairs where</span>
+<span class="sd">                `value` indicates the minimum inflow required.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># pylint: disable=too-many-arguments,arguments-differ</span>
+        <span class="c1"># This method just adds an extra optional argument.</span>
+
+        <span class="c1"># Merge `transactions` and `group_transactions`:</span>
+        <span class="n">transactions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_transactions</span><span class="p">(</span>
+            <span class="n">transactions</span><span class="p">,</span> <span class="n">group_transactions</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_inflow_link</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">min_inflows</span><span class="p">(</span>
+            <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="n">transactions</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="LinkedLimitAccount.min_outflows"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.min_outflows">[docs]</a>    <span class="k">def</span> <span class="nf">min_outflows</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">group_transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The minimum amounts that must be withdrawn from the account.</span>
+
+<span class="sd">        This overloaded method simply provides a new argument</span>
+<span class="sd">        (`group_transactions`). See `Account.min_outflows` for</span>
+<span class="sd">        documentation of other arguments and method behaviour.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            transactions (dict[Decimal, Money]): If provided, the result</span>
+<span class="sd">                will be determined as if the account also had these</span>
+<span class="sd">                transactions recorded against it. Optional.</span>
+<span class="sd">            group_transactions (dict[Account, dict[Number, Money]]):</span>
+<span class="sd">                A mapping of `Account` keys to `transactions`-like</span>
+<span class="sd">                values. Any transactions mapped to accounts with a min</span>
+<span class="sd">                outflow limit linked to this one will be added to</span>
+<span class="sd">                `transactions` when determining the result. Optional.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[float, Money]: A mapping of `{when: value}` pairs where</span>
+<span class="sd">                `value` indicates the minimum outflow required.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># pylint: disable=too-many-arguments,arguments-differ</span>
+        <span class="c1"># This method just adds an extra optional argument.</span>
+
+        <span class="c1"># Merge `transactions` and `group_transactions`:</span>
+        <span class="n">transactions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_transactions</span><span class="p">(</span>
+            <span class="n">transactions</span><span class="p">,</span> <span class="n">group_transactions</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_outflow_link</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">min_outflows</span><span class="p">(</span>
+            <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="n">transactions</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

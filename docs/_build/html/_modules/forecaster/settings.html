@@ -182,7 +182,6 @@
     <span class="sd">&quot;&quot;&quot; Application-level and UI defaults &quot;&quot;&quot;</span>
     <span class="n">initial_year</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">year</span>  <span class="c1"># Model starts with this year</span>
     <span class="n">display_year</span> <span class="o">=</span> <span class="n">initial_year</span>  <span class="c1"># Base year for displaying real-valued amounts</span>
-    <span class="n">num_children</span> <span class="o">=</span> <span class="mi">3</span>  <span class="c1"># How many children may be represented</span>
     <span class="n">currency</span> <span class="o">=</span> <span class="s1">&#39;CAD&#39;</span>  <span class="c1"># Use Canadian dollars as the default currency</span>
 
     <span class="sd">&quot;&quot;&quot; Defaults for `Scenario`  &quot;&quot;&quot;</span>
@@ -193,59 +192,37 @@
     <span class="n">management_fees</span> <span class="o">=</span> <span class="mf">0.005</span>
     <span class="n">num_years</span> <span class="o">=</span> <span class="mi">100</span>  <span class="c1"># Model this number of years from the initial_year</span>
 
-    <span class="sd">&quot;&quot;&quot; Defaults for `Person` instances. &quot;&quot;&quot;</span>
-    <span class="n">person1_name</span> <span class="o">=</span> <span class="s1">&#39;Person 1&#39;</span>
-    <span class="n">person1_birth_date</span> <span class="o">=</span> <span class="s1">&#39;1 January 1980&#39;</span>
-    <span class="n">person1_retirement_date</span> <span class="o">=</span> <span class="s1">&#39;31 December 2045&#39;</span>
-    <span class="n">person1_gross_income</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;50000&#39;</span><span class="p">)</span>
-    <span class="n">person1_raise_rate</span> <span class="o">=</span> <span class="n">inflation</span> <span class="o">+</span> <span class="mf">0.01</span>
-    <span class="n">person2_name</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">person2_birth_date</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">person2_retirement_date</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">person2_gross_income</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">person2_raise_rate</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="sd">&#39;&#39;&#39; LivingExpensesStrategy defaults &#39;&#39;&#39;</span>
+    <span class="n">living_expenses_strategy</span> <span class="o">=</span> <span class="s1">&#39;Constant living expenses&#39;</span>
+    <span class="n">living_expenses_base_amount</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;60000&#39;</span><span class="p">)</span>
+    <span class="n">living_expenses_rate</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;0.2&#39;</span><span class="p">)</span>
+    <span class="n">living_expenses_inflation_adjust</span> <span class="o">=</span> <span class="kc">True</span>
 
-    <span class="sd">&#39;&#39;&#39; ContributionStrategy defaults &#39;&#39;&#39;</span>
-    <span class="n">contribution_strategy</span> <span class="o">=</span> <span class="s1">&#39;Percentage of net income&#39;</span>
-    <span class="n">contribution_base_amount</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;20000&#39;</span><span class="p">)</span>
-    <span class="n">contribution_rate</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;0.2&#39;</span><span class="p">)</span>
-    <span class="n">contribution_reinvestment_rate</span> <span class="o">=</span> <span class="mi">1</span>
-    <span class="n">contribution_inflation_adjusted</span> <span class="o">=</span> <span class="kc">True</span>
-
-    <span class="sd">&#39;&#39;&#39; TransactionStrategy defaults for inflows/contributions &#39;&#39;&#39;</span>
-    <span class="n">transaction_in_strategy</span> <span class="o">=</span> <span class="s1">&#39;Ordered&#39;</span>
-    <span class="n">transaction_in_weights</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Account&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
-    <span class="n">transaction_in_timing</span> <span class="o">=</span> <span class="s1">&#39;end&#39;</span>
+    <span class="sd">&#39;&#39;&#39; SavingStrategy defaults &#39;&#39;&#39;</span>
+    <span class="n">saving_strategy</span> <span class="o">=</span> <span class="s2">&quot;Ordered&quot;</span>
+    <span class="n">saving_weights</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Account&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
 
     <span class="sd">&#39;&#39;&#39; WithdrawalStrategy defaults &#39;&#39;&#39;</span>
-    <span class="n">withdrawal_strategy</span> <span class="o">=</span> <span class="s1">&#39;Constant withdrawal&#39;</span>
-    <span class="n">withdrawal_base_amount</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;100000&#39;</span><span class="p">)</span>
-    <span class="n">withdrawal_rate</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;0.04&#39;</span><span class="p">)</span>
-    <span class="n">withdrawal_income_adjusted</span> <span class="o">=</span> <span class="kc">True</span>
-    <span class="n">withdrawal_inflation_adjusted</span> <span class="o">=</span> <span class="kc">True</span>
-
-    <span class="sd">&#39;&#39;&#39; TransactionStrategy defaults for outflows/withdrawals &#39;&#39;&#39;</span>
-    <span class="n">transaction_out_strategy</span> <span class="o">=</span> <span class="s1">&#39;Ordered&#39;</span>
-    <span class="n">transaction_out_weights</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Account&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
-    <span class="n">transaction_out_timing</span> <span class="o">=</span> <span class="s1">&#39;end&#39;</span>
+    <span class="n">withdrawal_strategy</span> <span class="o">=</span> <span class="s2">&quot;Ordered&quot;</span>
+    <span class="n">withdrawal_weights</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Account&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
 
     <span class="sd">&#39;&#39;&#39; AllocationStrategy defaults &#39;&#39;&#39;</span>
     <span class="n">allocation_strategy</span> <span class="o">=</span> <span class="s1">&#39;n-age&#39;</span>
     <span class="n">allocation_min_equity</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;0.3&#39;</span><span class="p">)</span>
     <span class="n">allocation_max_equity</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;0.3&#39;</span><span class="p">)</span>
     <span class="n">allocation_std_retirement_age</span> <span class="o">=</span> <span class="mi">65</span>
-    <span class="n">allocation_const_target</span> <span class="o">=</span> <span class="mi">65</span>
-    <span class="n">allocation_trans_target</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;0.5&#39;</span><span class="p">)</span>
+    <span class="n">allocation_target</span> <span class="o">=</span> <span class="mi">65</span>
     <span class="n">allocation_risk_trans_period</span> <span class="o">=</span> <span class="mi">20</span>
     <span class="n">allocation_adjust_retirement</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="sd">&#39;&#39;&#39; DebtPaymentStrategy defaults &#39;&#39;&#39;</span>
     <span class="n">debt_payment_strategy</span> <span class="o">=</span> <span class="s1">&#39;Avalanche&#39;</span>
-    <span class="n">debt_payment_timing</span> <span class="o">=</span> <span class="s1">&#39;end&#39;</span>
 
-    <span class="sd">&#39;&#39;&#39; Debt defaults &#39;&#39;&#39;</span>
-    <span class="n">debt_savings_rate</span> <span class="o">=</span> <span class="mi">1</span>
-    <span class="n">debt_accelerated_payment</span> <span class="o">=</span> <span class="mi">0</span></div>
+    <span class="sd">&#39;&#39;&#39; Tax defaults &#39;&#39;&#39;</span>
+    <span class="n">tax_brackets</span> <span class="o">=</span> <span class="p">{</span><span class="n">initial_year</span><span class="p">:</span> <span class="p">{</span><span class="n">Decimal</span><span class="p">(</span><span class="mi">0</span><span class="p">):</span> <span class="n">Decimal</span><span class="p">(</span><span class="mi">0</span><span class="p">)}}</span>
+    <span class="n">tax_personal_deduction</span> <span class="o">=</span> <span class="p">{</span><span class="n">initial_year</span><span class="p">:</span> <span class="n">Decimal</span><span class="p">(</span><span class="mi">0</span><span class="p">)}</span>
+    <span class="n">tax_credit_rate</span> <span class="o">=</span> <span class="p">{</span><span class="n">initial_year</span><span class="p">:</span> <span class="n">Decimal</span><span class="p">(</span><span class="mi">0</span><span class="p">)}</span>
+    <span class="n">tax_payment_timing</span> <span class="o">=</span> <span class="s1">&#39;start&#39;</span></div>
 </pre></div>
 
            </div>

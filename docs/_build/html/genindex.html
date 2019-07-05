@@ -160,6 +160,7 @@
  | <a href="#E"><strong>E</strong></a>
  | <a href="#F"><strong>F</strong></a>
  | <a href="#G"><strong>G</strong></a>
+ | <a href="#H"><strong>H</strong></a>
  | <a href="#I"><strong>I</strong></a>
  | <a href="#K"><strong>K</strong></a>
  | <a href="#L"><strong>L</strong></a>
@@ -181,9 +182,17 @@
       <li><a href="forecaster.canada.html#forecaster.canada.tax.TaxCanada.__call__">__call__() (forecaster.canada.tax.TaxCanada method)</a>
 
       <ul>
-        <li><a href="forecaster.html#forecaster.scenario.InflationAdjust.__call__">(forecaster.scenario.InflationAdjust method)</a>
+        <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.__call__">(forecaster.forecast.income.IncomeForecast method)</a>
 </li>
-        <li><a href="forecaster.strategy.html#forecaster.strategy.account_transaction.AccountTransactionStrategy.__call__">(forecaster.strategy.account_transaction.AccountTransactionStrategy method)</a>
+        <li><a href="forecaster.forecast.html#forecaster.forecast.living_expenses.LivingExpensesForecast.__call__">(forecaster.forecast.living_expenses.LivingExpensesForecast method)</a>
+</li>
+        <li><a href="forecaster.forecast.html#forecaster.forecast.saving.SavingForecast.__call__">(forecaster.forecast.saving.SavingForecast method)</a>
+</li>
+        <li><a href="forecaster.forecast.html#forecaster.forecast.subforecast.SubForecast.__call__">(forecaster.forecast.subforecast.SubForecast method)</a>
+</li>
+        <li><a href="forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.__call__">(forecaster.forecast.withdrawal.WithdrawalForecast method)</a>
+</li>
+        <li><a href="forecaster.html#forecaster.scenario.InflationAdjust.__call__">(forecaster.scenario.InflationAdjust method)</a>
 </li>
         <li><a href="forecaster.strategy.html#forecaster.strategy.allocation.AllocationStrategy.__call__">(forecaster.strategy.allocation.AllocationStrategy method)</a>
 </li>
@@ -191,17 +200,25 @@
 </li>
         <li><a href="forecaster.strategy.html#forecaster.strategy.base.Strategy.__call__">(forecaster.strategy.base.Strategy method)</a>
 </li>
-        <li><a href="forecaster.strategy.html#forecaster.strategy.debt_payment.DebtPaymentStrategy.__call__">(forecaster.strategy.debt_payment.DebtPaymentStrategy method)</a>
+        <li><a href="forecaster.strategy.debt_payment.html#forecaster.strategy.debt_payment.base.DebtPaymentStrategy.__call__">(forecaster.strategy.debt_payment.base.DebtPaymentStrategy method)</a>
 </li>
         <li><a href="forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.__call__">(forecaster.strategy.gross_transaction.LivingExpensesStrategy method)</a>
 </li>
         <li><a href="forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.__call__">(forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule method)</a>
 </li>
+        <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.base.TransactionTraversal.__call__">(forecaster.strategy.transaction.base.TransactionTraversal method)</a>
+</li>
+        <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.strategy.TransactionStrategy.__call__">(forecaster.strategy.transaction.strategy.TransactionStrategy method)</a>
+</li>
         <li><a href="forecaster.html#forecaster.tax.Tax.__call__">(forecaster.tax.Tax method)</a>
 </li>
       </ul></li>
-      <li><a href="forecaster.ledger.html#forecaster.ledger.money.Money.__eq__">__eq__() (forecaster.ledger.money.Money method)</a>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.link.AccountLink.__eq__">__eq__() (forecaster.accounts.link.AccountLink method)</a>
+
+      <ul>
+        <li><a href="forecaster.ledger.html#forecaster.ledger.money.Money.__eq__">(forecaster.ledger.money.Money method)</a>
 </li>
+      </ul></li>
       <li><a href="forecaster.forecast.html#forecaster.forecast.subforecast.TransactionDict.__getitem__">__getitem__() (forecaster.forecast.subforecast.TransactionDict method)</a>
 </li>
       <li><a href="forecaster.ledger.html#forecaster.ledger.money.Money.__gt__">__gt__() (forecaster.ledger.money.Money method)</a>
@@ -210,14 +227,20 @@
         <li><a href="forecaster.html#forecaster.person.Person.__gt__">(forecaster.person.Person method)</a>
 </li>
       </ul></li>
-      <li><a href="forecaster.ledger.html#forecaster.ledger.money.Money.__hash__">__hash__() (forecaster.ledger.money.Money method)</a>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.link.AccountLink.__hash__">__hash__() (forecaster.accounts.link.AccountLink method)</a>
+
+      <ul>
+        <li><a href="forecaster.ledger.html#forecaster.ledger.money.Money.__hash__">(forecaster.ledger.money.Money method)</a>
 </li>
+      </ul></li>
       <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.__init__">__init__() (forecaster.accounts.base.Account method)</a>
 
       <ul>
-        <li><a href="forecaster.accounts.html#forecaster.accounts.contribution_limited.ContributionLimitAccount.__init__">(forecaster.accounts.contribution_limited.ContributionLimitAccount method)</a>
-</li>
         <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.__init__">(forecaster.accounts.debt.Debt method)</a>
+</li>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.link.AccountLink.__init__">(forecaster.accounts.link.AccountLink method)</a>
+</li>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.__init__">(forecaster.accounts.linked_limit.LinkedLimitAccount method)</a>
 </li>
         <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.__init__">(forecaster.canada.accounts.registered_account.RegisteredAccount method)</a>
 </li>
@@ -233,13 +256,11 @@
 </li>
         <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.__init__">(forecaster.forecast.base.Forecast method)</a>
 </li>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.contribution.ContributionForecast.__init__">(forecaster.forecast.contribution.ContributionForecast method)</a>
-</li>
         <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.__init__">(forecaster.forecast.income.IncomeForecast method)</a>
 </li>
         <li><a href="forecaster.forecast.html#forecaster.forecast.living_expenses.LivingExpensesForecast.__init__">(forecaster.forecast.living_expenses.LivingExpensesForecast method)</a>
 </li>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.reduction.ReductionForecast.__init__">(forecaster.forecast.reduction.ReductionForecast method)</a>
+        <li><a href="forecaster.forecast.html#forecaster.forecast.saving.SavingForecast.__init__">(forecaster.forecast.saving.SavingForecast method)</a>
 </li>
         <li><a href="forecaster.forecast.html#forecaster.forecast.subforecast.SubForecast.__init__">(forecaster.forecast.subforecast.SubForecast method)</a>
 </li>
@@ -267,21 +288,23 @@
 </li>
         <li><a href="forecaster.html#forecaster.scenario.Scenario.__init__">(forecaster.scenario.Scenario method)</a>
 </li>
-        <li><a href="forecaster.strategy.html#forecaster.strategy.account_transaction.AccountGroup.__init__">(forecaster.strategy.account_transaction.AccountGroup method)</a>
-</li>
-        <li><a href="forecaster.strategy.html#forecaster.strategy.account_transaction.AccountTransactionStrategy.__init__">(forecaster.strategy.account_transaction.AccountTransactionStrategy method)</a>
-</li>
         <li><a href="forecaster.strategy.html#forecaster.strategy.allocation.AllocationStrategy.__init__">(forecaster.strategy.allocation.AllocationStrategy method)</a>
 </li>
         <li><a href="forecaster.strategy.html#forecaster.strategy.allocation.RateFunction.__init__">(forecaster.strategy.allocation.RateFunction method)</a>
-</li>
-        <li><a href="forecaster.strategy.html#forecaster.strategy.debt_payment.DebtPaymentStrategy.__init__">(forecaster.strategy.debt_payment.DebtPaymentStrategy method)</a>
 </li>
         <li><a href="forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.__init__">(forecaster.strategy.gross_transaction.LivingExpensesStrategy method)</a>
 </li>
         <li><a href="forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.__init__">(forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule method)</a>
 </li>
+        <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.base.TransactionTraversal.__init__">(forecaster.strategy.transaction.base.TransactionTraversal method)</a>
+</li>
+        <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.node.TransactionNode.__init__">(forecaster.strategy.transaction.node.TransactionNode method)</a>
+</li>
+        <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.strategy.TransactionStrategy.__init__">(forecaster.strategy.transaction.strategy.TransactionStrategy method)</a>
+</li>
         <li><a href="forecaster.html#forecaster.tax.Tax.__init__">(forecaster.tax.Tax method)</a>
+</li>
+        <li><a href="forecaster.html#forecaster.utility.Timing.__init__">(forecaster.utility.Timing method)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -290,8 +313,6 @@
 
       <ul>
         <li><a href="forecaster.html#forecaster.scenario.Scenario.__iter__">(forecaster.scenario.Scenario method)</a>
-</li>
-        <li><a href="forecaster.strategy.html#forecaster.strategy.account_transaction.AccountGroup.__iter__">(forecaster.strategy.account_transaction.AccountGroup method)</a>
 </li>
       </ul></li>
       <li><a href="forecaster.html#forecaster.scenario.Scenario.__len__">__len__() (forecaster.scenario.Scenario method)</a>
@@ -308,77 +329,41 @@
 <h2 id="A">A</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.acb">acb (forecaster.canada.accounts.taxable_account.TaxableAccount attribute)</a>, <a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.acb">[1]</a>
+      <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.acb">acb (forecaster.canada.accounts.taxable_account.TaxableAccount attribute)</a>
 </li>
-      <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.acb_history">acb_history (forecaster.canada.accounts.taxable_account.TaxableAccount attribute)</a>
+      <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.acb">acb() (forecaster.canada.accounts.taxable_account.TaxableAccount property)</a>
 </li>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.accelerated_payment">accelerated_payment (forecaster.accounts.debt.Debt attribute)</a>
+      <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.acb_history">acb_history() (forecaster.canada.accounts.taxable_account.TaxableAccount property)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.accelerated_payment">accelerated_payment() (forecaster.accounts.debt.Debt property)</a>
 </li>
       <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account">Account (class in forecaster.accounts.base)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.contribution.ContributionForecast.account_transactions">account_transactions (forecaster.forecast.contribution.ContributionForecast attribute)</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.saving.SavingForecast.account_transactions">account_transactions (forecaster.forecast.saving.SavingForecast attribute)</a>
 
       <ul>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.reduction.ReductionForecast.account_transactions">(forecaster.forecast.reduction.ReductionForecast attribute)</a>
-</li>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.account_transactions">(forecaster.forecast.withdrawal.WithdrawalForecast attribute)</a>, <a href="forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.account_transactions">[1]</a>
+        <li><a href="forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.account_transactions">(forecaster.forecast.withdrawal.WithdrawalForecast attribute)</a>
 </li>
       </ul></li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.reduction.ReductionForecast.account_transactions_from_available">account_transactions_from_available (forecaster.forecast.reduction.ReductionForecast attribute)</a>
-</li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.reduction.ReductionForecast.account_transactions_from_available_history">account_transactions_from_available_history (forecaster.forecast.reduction.ReductionForecast attribute)</a>
-</li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.contribution.ContributionForecast.account_transactions_history">account_transactions_history (forecaster.forecast.contribution.ContributionForecast attribute)</a>
-
-      <ul>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.reduction.ReductionForecast.account_transactions_history">(forecaster.forecast.reduction.ReductionForecast attribute)</a>
-</li>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.account_transactions_history">(forecaster.forecast.withdrawal.WithdrawalForecast attribute)</a>
-</li>
-      </ul></li>
-      <li><a href="forecaster.strategy.html#forecaster.strategy.account_transaction.AccountGroup">AccountGroup (class in forecaster.strategy.account_transaction)</a>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.link.AccountLink">AccountLink (class in forecaster.accounts.link)</a>
 </li>
       <li><a href="forecaster.html#forecaster.person.Person.accounts">accounts (forecaster.person.Person attribute)</a>
-
-      <ul>
-        <li><a href="forecaster.strategy.html#forecaster.strategy.account_transaction.AccountGroup.accounts">(forecaster.strategy.account_transaction.AccountGroup attribute)</a>
-</li>
-      </ul></li>
-      <li><a href="forecaster.strategy.html#forecaster.strategy.account_transaction.AccountTransactionStrategy">AccountTransactionStrategy (class in forecaster.strategy.account_transaction)</a>
 </li>
       <li><a href="forecaster.html#forecaster.tax.Tax.accum">accum (forecaster.tax.Tax attribute)</a>
 </li>
       <li><a href="forecaster.html#forecaster.tax.Tax.accum">accum() (forecaster.tax.Tax method)</a>
 </li>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.accumulation_function">accumulation_function() (forecaster.accounts.base.Account static method)</a>
+      <li><a href="forecaster.html#forecaster.scenario.Scenario.accumulation_function">accumulation_function() (forecaster.scenario.Scenario method)</a>
 
       <ul>
-        <li><a href="forecaster.html#forecaster.scenario.Scenario.accumulation_function">(forecaster.scenario.Scenario method)</a>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.util.accumulation_function">(in module forecaster.accounts.util)</a>
 </li>
       </ul></li>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.accumulation_function_inverse">accumulation_function_inverse() (forecaster.accounts.base.Account static method)</a>
-</li>
-      <li><a href="forecaster.html#forecaster.forecaster.Forecaster.add_account">add_account() (forecaster.forecaster.Forecaster method)</a>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.util.accumulation_function_inverse">accumulation_function_inverse() (in module forecaster.accounts.util)</a>
 </li>
       <li><a href="forecaster.html#forecaster.tax.Tax.add_accum">add_accum() (forecaster.tax.Tax method)</a>
 </li>
-      <li><a href="forecaster.html#forecaster.forecaster.Forecaster.add_asset">add_asset() (forecaster.forecaster.Forecaster method)</a>
-</li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="forecaster.html#forecaster.tax.Tax.add_brackets">add_brackets() (forecaster.tax.Tax method)</a>
-</li>
-      <li><a href="forecaster.html#forecaster.forecaster.Forecaster.add_contribution_limit_account">add_contribution_limit_account() (forecaster.forecaster.Forecaster method)</a>
-</li>
-      <li><a href="forecaster.html#forecaster.forecaster.Forecaster.add_debt">add_debt() (forecaster.forecaster.Forecaster method)</a>
-</li>
-      <li><a href="forecaster.html#forecaster.forecaster.Forecaster.add_person">add_person() (forecaster.forecaster.Forecaster method)</a>
-</li>
-      <li><a href="forecaster.canada.html#forecaster.canada.forecaster.ForecasterCanada.add_rrsp">add_rrsp() (forecaster.canada.forecaster.ForecasterCanada method)</a>
-</li>
-      <li><a href="forecaster.canada.html#forecaster.canada.forecaster.ForecasterCanada.add_taxable_account">add_taxable_account() (forecaster.canada.forecaster.ForecasterCanada method)</a>
-</li>
-      <li><a href="forecaster.canada.html#forecaster.canada.forecaster.ForecasterCanada.add_tfsa">add_tfsa() (forecaster.canada.forecaster.ForecasterCanada method)</a>
 </li>
       <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.add_transaction">add_transaction() (forecaster.accounts.base.Account method)</a>
 
@@ -388,13 +373,19 @@
         <li><a href="forecaster.forecast.html#forecaster.forecast.subforecast.SubForecast.add_transaction">(forecaster.forecast.subforecast.SubForecast method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.subforecast.SubForecast.add_transactions">add_transactions() (forecaster.forecast.subforecast.SubForecast method)</a>
+
+      <ul>
+        <li><a href="forecaster.html#forecaster.utility.add_transactions">(in module forecaster.utility)</a>
+</li>
+      </ul></li>
       <li><a href="forecaster.strategy.html#forecaster.strategy.allocation.AllocationStrategy.adjust_for_retirement_plan">adjust_for_retirement_plan (forecaster.strategy.allocation.AllocationStrategy attribute)</a>
 </li>
       <li><a href="forecaster.html#forecaster.person.Person.age">age() (forecaster.person.Person method)</a>
 </li>
       <li><a href="forecaster.html#forecaster.settings.Settings.allocation_adjust_retirement">allocation_adjust_retirement (forecaster.settings.Settings attribute)</a>
-</li>
-      <li><a href="forecaster.html#forecaster.settings.Settings.allocation_const_target">allocation_const_target (forecaster.settings.Settings attribute)</a>
 </li>
       <li><a href="forecaster.html#forecaster.settings.Settings.allocation_max_equity">allocation_max_equity (forecaster.settings.Settings attribute)</a>
 </li>
@@ -404,19 +395,25 @@
 </li>
       <li><a href="forecaster.html#forecaster.settings.Settings.allocation_std_retirement_age">allocation_std_retirement_age (forecaster.settings.Settings attribute)</a>
 </li>
+      <li><a href="forecaster.html#forecaster.forecaster.Parameter.ALLOCATION_STRATEGY">ALLOCATION_STRATEGY (forecaster.forecaster.Parameter attribute)</a>
+</li>
       <li><a href="forecaster.html#forecaster.settings.Settings.allocation_strategy">allocation_strategy (forecaster.settings.Settings attribute)</a>
 </li>
-      <li><a href="forecaster.html#forecaster.settings.Settings.allocation_trans_target">allocation_trans_target (forecaster.settings.Settings attribute)</a>
+      <li><a href="forecaster.html#forecaster.settings.Settings.allocation_target">allocation_target (forecaster.settings.Settings attribute)</a>
 </li>
       <li><a href="forecaster.strategy.html#forecaster.strategy.allocation.AllocationStrategy">AllocationStrategy (class in forecaster.strategy.allocation)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.asset_sale">asset_sale (forecaster.forecast.income.IncomeForecast attribute)</a>, <a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.asset_sale">[1]</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.asset_sale">asset_sale (forecaster.forecast.income.IncomeForecast attribute)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.asset_sale_history">asset_sale_history (forecaster.forecast.income.IncomeForecast attribute)</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.asset_sale">asset_sale() (forecaster.forecast.income.IncomeForecast property)</a>
+</li>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.asset_sale_history">asset_sale_history() (forecaster.forecast.income.IncomeForecast property)</a>
 </li>
       <li><a href="forecaster.strategy.html#forecaster.strategy.allocation.AssetAllocation">AssetAllocation (class in forecaster.strategy.allocation)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.assets">assets (forecaster.forecast.base.Forecast attribute)</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.assets">assets() (forecaster.forecast.base.Forecast property)</a>
+</li>
+      <li><a href="forecaster.strategy.debt_payment.html#forecaster.strategy.debt_payment.util.avalanche_priority">avalanche_priority() (in module forecaster.strategy.debt_payment.util)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -424,37 +421,39 @@
 <h2 id="B">B</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.balance">balance (forecaster.accounts.base.Account attribute)</a>, <a href="forecaster.accounts.html#forecaster.accounts.base.Account.balance">[1]</a>
-
-      <ul>
-        <li><a href="forecaster.strategy.html#forecaster.strategy.account_transaction.AccountGroup.balance">(forecaster.strategy.account_transaction.AccountGroup attribute)</a>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.balance">balance (forecaster.accounts.base.Account attribute)</a>
 </li>
-      </ul></li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.balance">balance() (forecaster.accounts.base.Account property)</a>
+</li>
       <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.balance_at_time">balance_at_time() (forecaster.accounts.base.Account method)</a>
 </li>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.balance_history">balance_history (forecaster.accounts.base.Account attribute)</a>, <a href="forecaster.accounts.html#forecaster.accounts.base.Account.balance_history">[1]</a>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.balance_history">balance_history (forecaster.accounts.base.Account attribute)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.balance_history">balance_history() (forecaster.accounts.base.Account property)</a>
 
       <ul>
-        <li><a href="forecaster.accounts.html#forecaster.accounts.contribution_limited.ContributionLimitAccount.balance_history">(forecaster.accounts.contribution_limited.ContributionLimitAccount attribute)</a>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.balance_history">(forecaster.accounts.debt.Debt property)</a>
 </li>
-        <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.balance_history">(forecaster.accounts.debt.Debt attribute)</a>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.balance_history">(forecaster.accounts.linked_limit.LinkedLimitAccount property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.principle_residence.PrincipleResidence.balance_history">(forecaster.canada.accounts.principle_residence.PrincipleResidence attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.principle_residence.PrincipleResidence.balance_history">(forecaster.canada.accounts.principle_residence.PrincipleResidence property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.balance_history">(forecaster.canada.accounts.registered_account.RegisteredAccount attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.balance_history">(forecaster.canada.accounts.registered_account.RegisteredAccount property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.balance_history">(forecaster.canada.accounts.rrsp.RRSP attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.balance_history">(forecaster.canada.accounts.rrsp.RRSP property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.balance_history">(forecaster.canada.accounts.taxable_account.TaxableAccount attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.balance_history">(forecaster.canada.accounts.taxable_account.TaxableAccount property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.tfsa.TFSA.balance_history">(forecaster.canada.accounts.tfsa.TFSA attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.tfsa.TFSA.balance_history">(forecaster.canada.accounts.tfsa.TFSA property)</a>
 </li>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.base_amount">base_amount (forecaster.strategy.gross_transaction.LivingExpensesStrategy attribute)</a>
 </li>
-      <li><a href="forecaster.html#forecaster.person.Person.birth_date">birth_date (forecaster.person.Person attribute)</a>, <a href="forecaster.html#forecaster.person.Person.birth_date">[1]</a>
+      <li><a href="forecaster.html#forecaster.person.Person.birth_date">birth_date (forecaster.person.Person attribute)</a>
+</li>
+      <li><a href="forecaster.html#forecaster.person.Person.birth_date">birth_date() (forecaster.person.Person property)</a>
 </li>
       <li><a href="forecaster.html#forecaster.scenario.Scenario.bond_return">bond_return (forecaster.scenario.Scenario attribute)</a>
 
@@ -462,9 +461,13 @@
         <li><a href="forecaster.html#forecaster.settings.Settings.bond_return">(forecaster.settings.Settings attribute)</a>
 </li>
       </ul></li>
-      <li><a href="forecaster.strategy.html#forecaster.strategy.allocation.AssetAllocation.bonds">bonds (forecaster.strategy.allocation.AssetAllocation attribute)</a>
+      <li><a href="forecaster.strategy.html#forecaster.strategy.allocation.AssetAllocation.bonds">bonds() (forecaster.strategy.allocation.AssetAllocation property)</a>
+</li>
+      <li><a href="forecaster.html#forecaster.forecaster.Forecaster.build_allocation_strategy">build_allocation_strategy() (forecaster.forecaster.Forecaster method)</a>
 </li>
       <li><a href="forecaster.html#forecaster.utility.build_inflation_adjust">build_inflation_adjust() (in module forecaster.utility)</a>
+</li>
+      <li><a href="forecaster.html#forecaster.forecaster.Forecaster.build_param">build_param() (forecaster.forecaster.Forecaster method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -472,61 +475,43 @@
 <h2 id="C">C</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.capital_gain">capital_gain (forecaster.canada.accounts.taxable_account.TaxableAccount attribute)</a>, <a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.capital_gain">[1]</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.call_subforecasts">call_subforecasts() (forecaster.forecast.base.Forecast method)</a>
 </li>
-      <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.capital_gain_history">capital_gain_history (forecaster.canada.accounts.taxable_account.TaxableAccount attribute)</a>
+      <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.capital_gain">capital_gain (forecaster.canada.accounts.taxable_account.TaxableAccount attribute)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.carryover">carryover (forecaster.forecast.income.IncomeForecast attribute)</a>, <a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.carryover">[1]</a>
+      <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.capital_gain">capital_gain() (forecaster.canada.accounts.taxable_account.TaxableAccount property)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.carryover_history">carryover_history (forecaster.forecast.income.IncomeForecast attribute)</a>
+      <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.capital_gain_history">capital_gain_history() (forecaster.canada.accounts.taxable_account.TaxableAccount property)</a>
+</li>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.carryover">carryover (forecaster.forecast.income.IncomeForecast attribute)</a>
+</li>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.carryover">carryover() (forecaster.forecast.income.IncomeForecast property)</a>
+</li>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.carryover_history">carryover_history() (forecaster.forecast.income.IncomeForecast property)</a>
+</li>
+      <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.node.TransactionNode.children_subset">children_subset() (forecaster.strategy.transaction.node.TransactionNode method)</a>
 </li>
       <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.clear">clear() (forecaster.accounts.base.Account method)</a>
 </li>
       <li><a href="forecaster.ledger.html#forecaster.ledger.base.Ledger.clear_cache">clear_cache() (forecaster.ledger.base.Ledger method)</a>
 </li>
-      <li><a href="forecaster.html#forecaster.settings.Settings.contribution_base_amount">contribution_base_amount (forecaster.settings.Settings attribute)</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.contribution_reductions">contribution_reductions (forecaster.forecast.base.Forecast attribute)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.contribution_forecast">contribution_forecast (forecaster.forecast.base.Forecast attribute)</a>
+      <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.contribution_room">contribution_room() (forecaster.canada.accounts.registered_account.RegisteredAccount property)</a>
 </li>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.contribution_group">contribution_group (forecaster.accounts.base.Account attribute)</a>
+      <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.contribution_room_history">contribution_room_history() (forecaster.canada.accounts.registered_account.RegisteredAccount property)</a>
 
       <ul>
-        <li><a href="forecaster.accounts.html#forecaster.accounts.contribution_limited.ContributionLimitAccount.contribution_group">(forecaster.accounts.contribution_limited.ContributionLimitAccount attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.contribution_room_history">(forecaster.canada.accounts.rrsp.RRSP property)</a>
+</li>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.tfsa.TFSA.contribution_room_history">(forecaster.canada.accounts.tfsa.TFSA property)</a>
 </li>
       </ul></li>
-      <li><a href="forecaster.strategy.html#forecaster.strategy.account_transaction.AccountGroup.contribution_groups">contribution_groups (forecaster.strategy.account_transaction.AccountGroup attribute)</a>
-</li>
-      <li><a href="forecaster.html#forecaster.person.Person.contribution_groups">contribution_groups() (forecaster.person.Person method)</a>
-</li>
-      <li><a href="forecaster.html#forecaster.settings.Settings.contribution_inflation_adjusted">contribution_inflation_adjusted (forecaster.settings.Settings attribute)</a>
-</li>
-      <li><a href="forecaster.html#forecaster.settings.Settings.contribution_rate">contribution_rate (forecaster.settings.Settings attribute)</a>
-</li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.contribution_reductions">contribution_reductions (forecaster.forecast.base.Forecast attribute)</a>, <a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.contribution_reductions">[1]</a>
-</li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.contribution_reductions_history">contribution_reductions_history (forecaster.forecast.base.Forecast attribute)</a>
-</li>
-      <li><a href="forecaster.html#forecaster.settings.Settings.contribution_reinvestment_rate">contribution_reinvestment_rate (forecaster.settings.Settings attribute)</a>
-</li>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.contribution_limited.ContributionLimitAccount.contribution_room">contribution_room (forecaster.accounts.contribution_limited.ContributionLimitAccount attribute)</a>, <a href="forecaster.accounts.html#forecaster.accounts.contribution_limited.ContributionLimitAccount.contribution_room">[1]</a>
-</li>
-      <li><a href="forecaster.html#forecaster.person.Person.contribution_room">contribution_room() (forecaster.person.Person method)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.contribution_limited.ContributionLimitAccount.contribution_room_history">contribution_room_history (forecaster.accounts.contribution_limited.ContributionLimitAccount attribute)</a>
+      <li><a href="forecaster.canada.html#forecaster.canada.settings.SettingsCanada.contribution_weights">contribution_weights (forecaster.canada.settings.SettingsCanada attribute)</a>
 </li>
-      <li><a href="forecaster.html#forecaster.settings.Settings.contribution_strategy">contribution_strategy (forecaster.settings.Settings attribute)</a>
-</li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.contribution.ContributionForecast">ContributionForecast (class in forecaster.forecast.contribution)</a>
-</li>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.contribution_limited.ContributionLimitAccount">ContributionLimitAccount (class in forecaster.accounts.contribution_limited)</a>
-</li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.contribution.ContributionForecast.contributions">contributions (forecaster.forecast.contribution.ContributionForecast attribute)</a>, <a href="forecaster.forecast.html#forecaster.forecast.contribution.ContributionForecast.contributions">[1]</a>
-</li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.contribution.ContributionForecast.contributions_history">contributions_history (forecaster.forecast.contribution.ContributionForecast attribute)</a>
-</li>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.contribution_limited.ContributionLimitAccount.contributor">contributor (forecaster.accounts.contribution_limited.ContributionLimitAccount attribute)</a>, <a href="forecaster.accounts.html#forecaster.accounts.contribution_limited.ContributionLimitAccount.contributor">[1]</a>
+      <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.contributor">contributor() (forecaster.canada.accounts.registered_account.RegisteredAccount property)</a>
 </li>
       <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.convert_to_rrif">convert_to_rrif() (forecaster.canada.accounts.rrsp.RRSP method)</a>
 </li>
@@ -562,29 +547,43 @@
 <h2 id="D">D</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt">Debt (class in forecaster.accounts.debt)</a>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.link.AccountLink.data">data (forecaster.accounts.link.AccountLink attribute)</a>
 </li>
-      <li><a href="forecaster.html#forecaster.settings.Settings.debt_accelerated_payment">debt_accelerated_payment (forecaster.settings.Settings attribute)</a>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.link.AccountLink.data">data() (forecaster.accounts.link.AccountLink property)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt">Debt (class in forecaster.accounts.debt)</a>
 </li>
       <li><a href="forecaster.html#forecaster.settings.Settings.debt_payment_strategy">debt_payment_strategy (forecaster.settings.Settings attribute)</a>
 </li>
-      <li><a href="forecaster.html#forecaster.settings.Settings.debt_payment_timing">debt_payment_timing (forecaster.settings.Settings attribute)</a>
+      <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.strategy.TransactionStrategy.debt_priority">debt_priority() (forecaster.strategy.transaction.strategy.TransactionStrategy method)</a>
 </li>
-      <li><a href="forecaster.html#forecaster.settings.Settings.debt_savings_rate">debt_savings_rate (forecaster.settings.Settings attribute)</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.saving.SavingForecast.debt_repayment">debt_repayment (forecaster.forecast.saving.SavingForecast attribute)</a>
+</li>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.saving.SavingForecast.debt_repayment">debt_repayment() (forecaster.forecast.saving.SavingForecast property)</a>
+</li>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.saving.SavingForecast.debt_repayment_history">debt_repayment_history() (forecaster.forecast.saving.SavingForecast property)</a>
+</li>
+      <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.strategy.TransactionStrategy.debt_strategy">debt_strategy (forecaster.strategy.transaction.strategy.TransactionStrategy attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="forecaster.strategy.html#forecaster.strategy.debt_payment.DebtPaymentStrategy">DebtPaymentStrategy (class in forecaster.strategy.debt_payment)</a>
+      <li><a href="forecaster.strategy.debt_payment.html#forecaster.strategy.debt_payment.base.DebtPaymentStrategy">DebtPaymentStrategy (class in forecaster.strategy.debt_payment.base)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.debts">debts (forecaster.forecast.base.Forecast attribute)</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.debts">debts() (forecaster.forecast.base.Forecast property)</a>
 </li>
       <li><a href="forecaster.html#forecaster.tax.Tax.deductions">deductions() (forecaster.tax.Tax method)</a>
 </li>
       <li><a href="forecaster.ledger.html#forecaster.ledger.money.Money.default_currency">default_currency (forecaster.ledger.money.Money attribute)</a>
 </li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.link.AccountLink.default_factory">default_factory (forecaster.accounts.link.AccountLink attribute)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.default_timing">default_timing() (forecaster.accounts.base.Account property)</a>
+</li>
       <li><a href="forecaster.html#forecaster.scenario.Scenario.discount_rate">discount_rate() (forecaster.scenario.Scenario method)</a>
 </li>
       <li><a href="forecaster.html#forecaster.settings.Settings.display_year">display_year (forecaster.settings.Settings attribute)</a>
+</li>
+      <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.strategy.TransactionStrategy.divide_debts">divide_debts() (forecaster.strategy.transaction.strategy.TransactionStrategy method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -602,8 +601,6 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast">Forecast (class in forecaster.forecast.base)</a>
 </li>
-      <li><a href="forecaster.html#forecaster.forecaster.Forecaster.forecast">forecast() (forecaster.forecaster.Forecaster method)</a>
-</li>
       <li><a href="forecaster.html#forecaster.forecaster.Forecaster">Forecaster (class in forecaster.forecaster)</a>
 </li>
       <li><a href="forecaster.html#module-forecaster">forecaster (module)</a>
@@ -612,9 +609,13 @@
 </li>
       <li><a href="forecaster.accounts.html#module-forecaster.accounts.base">forecaster.accounts.base (module)</a>
 </li>
-      <li><a href="forecaster.accounts.html#module-forecaster.accounts.contribution_limited">forecaster.accounts.contribution_limited (module)</a>
-</li>
       <li><a href="forecaster.accounts.html#module-forecaster.accounts.debt">forecaster.accounts.debt (module)</a>
+</li>
+      <li><a href="forecaster.accounts.html#module-forecaster.accounts.link">forecaster.accounts.link (module)</a>
+</li>
+      <li><a href="forecaster.accounts.html#module-forecaster.accounts.linked_limit">forecaster.accounts.linked_limit (module)</a>
+</li>
+      <li><a href="forecaster.accounts.html#module-forecaster.accounts.util">forecaster.accounts.util (module)</a>
 </li>
       <li><a href="forecaster.canada.html#module-forecaster.canada">forecaster.canada (module)</a>
 </li>
@@ -642,18 +643,16 @@
 </li>
       <li><a href="forecaster.forecast.html#module-forecaster.forecast.base">forecaster.forecast.base (module)</a>
 </li>
-      <li><a href="forecaster.forecast.html#module-forecaster.forecast.contribution">forecaster.forecast.contribution (module)</a>
-</li>
       <li><a href="forecaster.forecast.html#module-forecaster.forecast.income">forecaster.forecast.income (module)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="forecaster.forecast.html#module-forecaster.forecast.living_expenses">forecaster.forecast.living_expenses (module)</a>
 </li>
-      <li><a href="forecaster.forecast.html#module-forecaster.forecast.reduction">forecaster.forecast.reduction (module)</a>
+      <li><a href="forecaster.forecast.html#module-forecaster.forecast.saving">forecaster.forecast.saving (module)</a>
 </li>
       <li><a href="forecaster.forecast.html#module-forecaster.forecast.subforecast">forecaster.forecast.subforecast (module)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="forecaster.forecast.html#module-forecaster.forecast.tax">forecaster.forecast.tax (module)</a>
 </li>
       <li><a href="forecaster.forecast.html#module-forecaster.forecast.withdrawal">forecaster.forecast.withdrawal (module)</a>
@@ -676,15 +675,29 @@
 </li>
       <li><a href="forecaster.strategy.html#module-forecaster.strategy">forecaster.strategy (module)</a>
 </li>
-      <li><a href="forecaster.strategy.html#module-forecaster.strategy.account_transaction">forecaster.strategy.account_transaction (module)</a>
-</li>
       <li><a href="forecaster.strategy.html#module-forecaster.strategy.allocation">forecaster.strategy.allocation (module)</a>
 </li>
       <li><a href="forecaster.strategy.html#module-forecaster.strategy.base">forecaster.strategy.base (module)</a>
 </li>
-      <li><a href="forecaster.strategy.html#module-forecaster.strategy.debt_payment">forecaster.strategy.debt_payment (module)</a>
+      <li><a href="forecaster.strategy.debt_payment.html#module-forecaster.strategy.debt_payment">forecaster.strategy.debt_payment (module)</a>
+</li>
+      <li><a href="forecaster.strategy.debt_payment.html#module-forecaster.strategy.debt_payment.base">forecaster.strategy.debt_payment.base (module)</a>
+</li>
+      <li><a href="forecaster.strategy.debt_payment.html#module-forecaster.strategy.debt_payment.util">forecaster.strategy.debt_payment.util (module)</a>
 </li>
       <li><a href="forecaster.strategy.html#module-forecaster.strategy.gross_transaction">forecaster.strategy.gross_transaction (module)</a>
+</li>
+      <li><a href="forecaster.strategy.transaction.html#module-forecaster.strategy.transaction">forecaster.strategy.transaction (module)</a>
+</li>
+      <li><a href="forecaster.strategy.transaction.html#module-forecaster.strategy.transaction.base">forecaster.strategy.transaction.base (module)</a>
+</li>
+      <li><a href="forecaster.strategy.transaction.html#module-forecaster.strategy.transaction.graph">forecaster.strategy.transaction.graph (module)</a>
+</li>
+      <li><a href="forecaster.strategy.transaction.html#module-forecaster.strategy.transaction.node">forecaster.strategy.transaction.node (module)</a>
+</li>
+      <li><a href="forecaster.strategy.transaction.html#module-forecaster.strategy.transaction.strategy">forecaster.strategy.transaction.strategy (module)</a>
+</li>
+      <li><a href="forecaster.strategy.transaction.html#module-forecaster.strategy.transaction.util">forecaster.strategy.transaction.util (module)</a>
 </li>
       <li><a href="forecaster.html#module-forecaster.tax">forecaster.tax (module)</a>
 </li>
@@ -702,29 +715,55 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.get">get() (forecaster.accounts.base.Account method)</a>
 </li>
-      <li><a href="forecaster.strategy.html#forecaster.strategy.account_transaction.AccountGroup.get_type">get_type() (forecaster.strategy.account_transaction.AccountGroup method)</a>
+      <li><a href="forecaster.html#forecaster.forecaster.Forecaster.get_param">get_param() (forecaster.forecaster.Forecaster method)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.gross_contributions">gross_contributions (forecaster.forecast.base.Forecast attribute)</a>, <a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.gross_contributions">[1]</a>
+      <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.base.TransactionTraversal.graph">graph (forecaster.strategy.transaction.base.TransactionTraversal attribute)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.gross_contributions_history">gross_contributions_history (forecaster.forecast.base.Forecast attribute)</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.gross_contributions">gross_contributions (forecaster.forecast.base.Forecast attribute)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.gross_income">gross_income (forecaster.forecast.income.IncomeForecast attribute)</a>, <a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.gross_income">[1]</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.gross_income">gross_income (forecaster.forecast.income.IncomeForecast attribute)</a>
 
       <ul>
-        <li><a href="forecaster.html#forecaster.person.Person.gross_income">(forecaster.person.Person attribute)</a>, <a href="forecaster.html#forecaster.person.Person.gross_income">[1]</a>
+        <li><a href="forecaster.html#forecaster.person.Person.gross_income">(forecaster.person.Person attribute)</a>
 </li>
       </ul></li>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.gross_income">gross_income() (forecaster.forecast.income.IncomeForecast property)</a>
+
+      <ul>
+        <li><a href="forecaster.html#forecaster.person.Person.gross_income">(forecaster.person.Person property)</a>
+</li>
+      </ul></li>
+      <li><a href="forecaster.html#forecaster.person.Person.gross_income_history">gross_income_history (forecaster.person.Person attribute)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.gross_income_history">gross_income_history (forecaster.forecast.income.IncomeForecast attribute)</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.gross_income_history">gross_income_history() (forecaster.forecast.income.IncomeForecast property)</a>
 
       <ul>
-        <li><a href="forecaster.html#forecaster.person.Person.gross_income_history">(forecaster.person.Person attribute)</a>, <a href="forecaster.html#forecaster.person.Person.gross_income_history">[1]</a>
+        <li><a href="forecaster.html#forecaster.person.Person.gross_income_history">(forecaster.person.Person property)</a>
 </li>
       </ul></li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.gross_withdrawals">gross_withdrawals (forecaster.forecast.withdrawal.WithdrawalForecast attribute)</a>, <a href="forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.gross_withdrawals">[1]</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.gross_withdrawals">gross_withdrawals (forecaster.forecast.withdrawal.WithdrawalForecast attribute)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.gross_withdrawals_history">gross_withdrawals_history (forecaster.forecast.withdrawal.WithdrawalForecast attribute)</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.gross_withdrawals">gross_withdrawals() (forecaster.forecast.withdrawal.WithdrawalForecast property)</a>
+</li>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.gross_withdrawals_history">gross_withdrawals_history() (forecaster.forecast.withdrawal.WithdrawalForecast property)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.link.AccountLink.group">group (forecaster.accounts.link.AccountLink attribute)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.link.AccountLink.group">group() (forecaster.accounts.link.AccountLink property)</a>
+</li>
+      <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.util.group_default_methods">group_default_methods() (in module forecaster.strategy.transaction.util)</a>
+</li>
+      <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.base.TransactionTraversal.group_methods">group_methods (forecaster.strategy.transaction.base.TransactionTraversal attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="H">H</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.strategy.TransactionStrategy.high_interest_threshold">high_interest_threshold (forecaster.strategy.transaction.strategy.TransactionStrategy attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -732,11 +771,13 @@
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.income">income (forecaster.forecast.base.Forecast attribute)</a>, <a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.income">[1]</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.income">income (forecaster.forecast.base.Forecast attribute)</a>
+</li>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.income">income() (forecaster.forecast.base.Forecast property)</a>
 </li>
       <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.income_forecast">income_forecast (forecaster.forecast.base.Forecast attribute)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.income_history">income_history (forecaster.forecast.base.Forecast attribute)</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.income_history">income_history() (forecaster.forecast.base.Forecast property)</a>
 </li>
       <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast">IncomeForecast (class in forecaster.forecast.income)</a>
 </li>
@@ -749,39 +790,21 @@
       <li><a href="forecaster.canada.html#forecaster.canada.tax.TaxCanada.inflation_adjust">inflation_adjust (forecaster.canada.tax.TaxCanada attribute)</a>
 
       <ul>
-        <li><a href="forecaster.html#forecaster.scenario.Scenario.inflation_adjust">(forecaster.scenario.Scenario attribute)</a>
-</li>
         <li><a href="forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.inflation_adjust">(forecaster.strategy.gross_transaction.LivingExpensesStrategy attribute)</a>
 </li>
         <li><a href="forecaster.html#forecaster.tax.Tax.inflation_adjust">(forecaster.tax.Tax attribute)</a>
 </li>
       </ul></li>
+      <li><a href="forecaster.html#forecaster.scenario.Scenario.inflation_adjust">inflation_adjust() (forecaster.scenario.Scenario property)</a>
+</li>
       <li><a href="forecaster.html#forecaster.scenario.Scenario.inflation_adjustments">inflation_adjustments() (forecaster.scenario.Scenario method)</a>
-</li>
-      <li><a href="forecaster.html#forecaster.scenario.InflationAdjust">InflationAdjust (class in forecaster.scenario)</a>
-</li>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.inflows">inflows (forecaster.accounts.base.Account attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.inflows_history">inflows_history (forecaster.accounts.base.Account attribute)</a>
-
-      <ul>
-        <li><a href="forecaster.accounts.html#forecaster.accounts.contribution_limited.ContributionLimitAccount.inflows_history">(forecaster.accounts.contribution_limited.ContributionLimitAccount attribute)</a>
+      <li><a href="forecaster.html#forecaster.scenario.InflationAdjust">InflationAdjust (class in forecaster.scenario)</a>
 </li>
-        <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.inflows_history">(forecaster.accounts.debt.Debt attribute)</a>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.inflows">inflows() (forecaster.accounts.base.Account method)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.principle_residence.PrincipleResidence.inflows_history">(forecaster.canada.accounts.principle_residence.PrincipleResidence attribute)</a>
-</li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.inflows_history">(forecaster.canada.accounts.registered_account.RegisteredAccount attribute)</a>
-</li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.inflows_history">(forecaster.canada.accounts.rrsp.RRSP attribute)</a>
-</li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.inflows_history">(forecaster.canada.accounts.taxable_account.TaxableAccount attribute)</a>
-</li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.tfsa.TFSA.inflows_history">(forecaster.canada.accounts.tfsa.TFSA attribute)</a>
-</li>
-      </ul></li>
       <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.initial_year">initial_year (forecaster.accounts.base.Account attribute)</a>
 
       <ul>
@@ -792,6 +815,18 @@
         <li><a href="forecaster.html#forecaster.settings.Settings.initial_year">(forecaster.settings.Settings attribute)</a>
 </li>
       </ul></li>
+      <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.node.TransactionNode.is_leaf_node">is_leaf_node() (forecaster.strategy.transaction.node.TransactionNode method)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.link.AccountLink.is_linked">is_linked() (forecaster.accounts.link.AccountLink method)</a>
+</li>
+      <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.node.TransactionNode.is_ordered">is_ordered() (forecaster.strategy.transaction.node.TransactionNode method)</a>
+</li>
+      <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.node.TransactionNode.is_parent_node">is_parent_node() (forecaster.strategy.transaction.node.TransactionNode method)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.link.AccountLink.is_registered">is_registered() (forecaster.accounts.link.AccountLink method)</a>
+</li>
+      <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.node.TransactionNode.is_weighted">is_weighted() (forecaster.strategy.transaction.node.TransactionNode method)</a>
+</li>
       <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.items">items() (forecaster.accounts.base.Account method)</a>
 </li>
   </ul></td>
@@ -816,24 +851,50 @@
 </li>
       <li><a href="forecaster.ledger.html#forecaster.ledger.base.LedgerType">LedgerType (class in forecaster.ledger.base)</a>
 </li>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.living_expense">living_expense (forecaster.accounts.debt.Debt attribute)</a>
+      <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.node.TransactionNode.limits">limits (forecaster.strategy.transaction.node.TransactionNode attribute)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.living_expenses">living_expenses (forecaster.forecast.base.Forecast attribute)</a>, <a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.living_expenses">[1]</a>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.util.LimitTuple">LimitTuple (class in forecaster.accounts.util)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.link.AccountLink.link_account">link_account() (forecaster.accounts.link.AccountLink method)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount">LinkedLimitAccount (class in forecaster.accounts.linked_limit)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.link.LinkRecord">LinkRecord (class in forecaster.accounts.link)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.link.LinkTuple">LinkTuple (class in forecaster.accounts.link)</a>
+</li>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.living_expenses">living_expenses (forecaster.forecast.base.Forecast attribute)</a>
 
       <ul>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.living_expenses.LivingExpensesForecast.living_expenses">(forecaster.forecast.living_expenses.LivingExpensesForecast attribute)</a>, <a href="forecaster.forecast.html#forecaster.forecast.living_expenses.LivingExpensesForecast.living_expenses">[1]</a>
+        <li><a href="forecaster.forecast.html#forecaster.forecast.living_expenses.LivingExpensesForecast.living_expenses">(forecaster.forecast.living_expenses.LivingExpensesForecast attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.living_expenses">living_expenses() (forecaster.forecast.base.Forecast property)</a>
+
+      <ul>
+        <li><a href="forecaster.forecast.html#forecaster.forecast.living_expenses.LivingExpensesForecast.living_expenses">(forecaster.forecast.living_expenses.LivingExpensesForecast property)</a>
 </li>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="forecaster.html#forecaster.settings.Settings.living_expenses_base_amount">living_expenses_base_amount (forecaster.settings.Settings attribute)</a>
+</li>
       <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.living_expenses_forecast">living_expenses_forecast (forecaster.forecast.base.Forecast attribute)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.living_expenses_history">living_expenses_history (forecaster.forecast.base.Forecast attribute)</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.living_expenses_history">living_expenses_history() (forecaster.forecast.base.Forecast property)</a>
 
       <ul>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.living_expenses.LivingExpensesForecast.living_expenses_history">(forecaster.forecast.living_expenses.LivingExpensesForecast attribute)</a>
+        <li><a href="forecaster.forecast.html#forecaster.forecast.living_expenses.LivingExpensesForecast.living_expenses_history">(forecaster.forecast.living_expenses.LivingExpensesForecast property)</a>
 </li>
       </ul></li>
+      <li><a href="forecaster.html#forecaster.settings.Settings.living_expenses_inflation_adjust">living_expenses_inflation_adjust (forecaster.settings.Settings attribute)</a>
+</li>
+      <li><a href="forecaster.html#forecaster.settings.Settings.living_expenses_rate">living_expenses_rate (forecaster.settings.Settings attribute)</a>
+</li>
+      <li><a href="forecaster.html#forecaster.forecaster.Parameter.LIVING_EXPENSES_STRATEGY">LIVING_EXPENSES_STRATEGY (forecaster.forecaster.Parameter attribute)</a>
+</li>
+      <li><a href="forecaster.html#forecaster.settings.Settings.living_expenses_strategy">living_expenses_strategy (forecaster.settings.Settings attribute)</a>
+</li>
       <li><a href="forecaster.forecast.html#forecaster.forecast.living_expenses.LivingExpensesForecast">LivingExpensesForecast (class in forecaster.forecast.living_expenses)</a>
 </li>
       <li><a href="forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy">LivingExpensesStrategy (class in forecaster.strategy.gross_transaction)</a>
@@ -869,42 +930,116 @@
       <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.max_inflow">max_inflow() (forecaster.accounts.base.Account method)</a>
 
       <ul>
-        <li><a href="forecaster.accounts.html#forecaster.accounts.contribution_limited.ContributionLimitAccount.max_inflow">(forecaster.accounts.contribution_limited.ContributionLimitAccount method)</a>
-</li>
         <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.max_inflow">(forecaster.accounts.debt.Debt method)</a>
 </li>
-        <li><a href="forecaster.strategy.html#forecaster.strategy.account_transaction.AccountGroup.max_inflow">(forecaster.strategy.account_transaction.AccountGroup method)</a>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.util.LimitTuple.max_inflow">(forecaster.accounts.util.LimitTuple property)</a>
+</li>
+      </ul></li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.max_inflow_limit">max_inflow_limit (forecaster.accounts.linked_limit.LinkedLimitAccount attribute)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.max_inflow_limit">max_inflow_limit() (forecaster.accounts.base.Account property)</a>
+
+      <ul>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.max_inflow_limit">(forecaster.accounts.debt.Debt property)</a>
+</li>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.max_inflow_limit">(forecaster.accounts.linked_limit.LinkedLimitAccount property)</a>
+</li>
+      </ul></li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.max_inflow_link">max_inflow_link (forecaster.accounts.linked_limit.LinkedLimitAccount attribute)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.max_inflows">max_inflows() (forecaster.accounts.base.Account method)</a>
+
+      <ul>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.max_inflows">(forecaster.accounts.debt.Debt method)</a>
+</li>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.max_inflows">(forecaster.accounts.linked_limit.LinkedLimitAccount method)</a>
+</li>
+      </ul></li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.max_outflow">max_outflow() (forecaster.accounts.base.Account method)</a>
+
+      <ul>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.util.LimitTuple.max_outflow">(forecaster.accounts.util.LimitTuple property)</a>
+</li>
+      </ul></li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.max_outflow_limit">max_outflow_limit (forecaster.accounts.linked_limit.LinkedLimitAccount attribute)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.max_outflow_limit">max_outflow_limit() (forecaster.accounts.base.Account property)</a>
+
+      <ul>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.max_outflow_limit">(forecaster.accounts.debt.Debt property)</a>
+</li>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.max_outflow_limit">(forecaster.accounts.linked_limit.LinkedLimitAccount property)</a>
+</li>
+      </ul></li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.max_outflow_link">max_outflow_link (forecaster.accounts.linked_limit.LinkedLimitAccount attribute)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.max_outflows">max_outflows() (forecaster.accounts.base.Account method)</a>
+
+      <ul>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.max_outflows">(forecaster.accounts.linked_limit.LinkedLimitAccount method)</a>
 </li>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.max_outflow">max_outflow() (forecaster.accounts.base.Account method)</a>
-
-      <ul>
-        <li><a href="forecaster.strategy.html#forecaster.strategy.account_transaction.AccountGroup.max_outflow">(forecaster.strategy.account_transaction.AccountGroup method)</a>
+      <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.base.TransactionTraversal.memo">memo (forecaster.strategy.transaction.base.TransactionTraversal attribute)</a>
 </li>
-      </ul></li>
       <li><a href="forecaster.strategy.html#forecaster.strategy.allocation.AllocationStrategy.min_equity">min_equity (forecaster.strategy.allocation.AllocationStrategy attribute)</a>
 </li>
       <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.min_inflow">min_inflow() (forecaster.accounts.base.Account method)</a>
 
       <ul>
-        <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.min_inflow">(forecaster.accounts.debt.Debt method)</a>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.util.LimitTuple.min_inflow">(forecaster.accounts.util.LimitTuple property)</a>
 </li>
-        <li><a href="forecaster.strategy.html#forecaster.strategy.account_transaction.AccountGroup.min_inflow">(forecaster.strategy.account_transaction.AccountGroup method)</a>
+      </ul></li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.min_inflow_limit">min_inflow_limit (forecaster.accounts.linked_limit.LinkedLimitAccount attribute)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.min_inflow_limit">min_inflow_limit() (forecaster.accounts.base.Account property)</a>
+
+      <ul>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.min_inflow_limit">(forecaster.accounts.debt.Debt property)</a>
+</li>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.min_inflow_limit">(forecaster.accounts.linked_limit.LinkedLimitAccount property)</a>
+</li>
+      </ul></li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.min_inflow_link">min_inflow_link (forecaster.accounts.linked_limit.LinkedLimitAccount attribute)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.min_inflows">min_inflows() (forecaster.accounts.base.Account method)</a>
+
+      <ul>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.min_inflows">(forecaster.accounts.debt.Debt method)</a>
+</li>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.min_inflows">(forecaster.accounts.linked_limit.LinkedLimitAccount method)</a>
 </li>
       </ul></li>
       <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.min_outflow">min_outflow() (forecaster.accounts.base.Account method)</a>
 
       <ul>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.min_outflow">(forecaster.canada.accounts.rrsp.RRSP method)</a>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.util.LimitTuple.min_outflow">(forecaster.accounts.util.LimitTuple property)</a>
 </li>
-        <li><a href="forecaster.strategy.html#forecaster.strategy.account_transaction.AccountGroup.min_outflow">(forecaster.strategy.account_transaction.AccountGroup method)</a>
+      </ul></li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.min_outflow_limit">min_outflow_limit (forecaster.accounts.linked_limit.LinkedLimitAccount attribute)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.min_outflow_limit">min_outflow_limit() (forecaster.accounts.base.Account property)</a>
+
+      <ul>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.min_outflow_limit">(forecaster.accounts.linked_limit.LinkedLimitAccount property)</a>
+</li>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.min_outflow_limit">(forecaster.canada.accounts.rrsp.RRSP property)</a>
+</li>
+      </ul></li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.min_outflow_link">min_outflow_link (forecaster.accounts.linked_limit.LinkedLimitAccount attribute)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.min_outflows">min_outflows() (forecaster.accounts.base.Account method)</a>
+
+      <ul>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.min_outflows">(forecaster.accounts.linked_limit.LinkedLimitAccount method)</a>
 </li>
       </ul></li>
       <li><a href="forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.minimum">minimum (forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule attribute)</a>
 </li>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.minimum_payment">minimum_payment (forecaster.accounts.debt.Debt attribute)</a>
+      <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.minimum_distribution">minimum_distribution() (forecaster.canada.accounts.rrsp.RRSP method)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.minimum_payment">minimum_payment() (forecaster.accounts.debt.Debt property)</a>
 </li>
       <li><a href="forecaster.ledger.html#forecaster.ledger.money.Money">Money (class in forecaster.ledger.money)</a>
 </li>
@@ -914,37 +1049,41 @@
 <h2 id="N">N</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="forecaster.html#forecaster.person.Person.name">name (forecaster.person.Person attribute)</a>, <a href="forecaster.html#forecaster.person.Person.name">[1]</a>
+      <li><a href="forecaster.html#forecaster.person.Person.name">name (forecaster.person.Person attribute)</a>
 </li>
       <li><a href="forecaster.html#forecaster.utility.nearest_year">nearest_year() (in module forecaster.utility)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.net_contributions">net_contributions (forecaster.forecast.base.Forecast attribute)</a>, <a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.net_contributions">[1]</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.net_contributions">net_contributions (forecaster.forecast.base.Forecast attribute)</a>
+</li>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.net_income">net_income (forecaster.forecast.income.IncomeForecast attribute)</a>
 
       <ul>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.reduction.ReductionForecast.net_contributions">(forecaster.forecast.reduction.ReductionForecast attribute)</a>
+        <li><a href="forecaster.html#forecaster.person.Person.net_income">(forecaster.person.Person attribute)</a>
 </li>
       </ul></li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.net_contributions_history">net_contributions_history (forecaster.forecast.base.Forecast attribute)</a>
-</li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.net_income">net_income (forecaster.forecast.income.IncomeForecast attribute)</a>, <a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.net_income">[1]</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.net_income">net_income() (forecaster.forecast.income.IncomeForecast property)</a>
 
       <ul>
-        <li><a href="forecaster.html#forecaster.person.Person.net_income">(forecaster.person.Person attribute)</a>, <a href="forecaster.html#forecaster.person.Person.net_income">[1]</a>
+        <li><a href="forecaster.html#forecaster.person.Person.net_income">(forecaster.person.Person property)</a>
 </li>
       </ul></li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.net_income_history">net_income_history (forecaster.forecast.income.IncomeForecast attribute)</a>
+      <li><a href="forecaster.html#forecaster.person.Person.net_income_history">net_income_history (forecaster.person.Person attribute)</a>
+</li>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.net_income_history">net_income_history() (forecaster.forecast.income.IncomeForecast property)</a>
 
       <ul>
-        <li><a href="forecaster.html#forecaster.person.Person.net_income_history">(forecaster.person.Person attribute)</a>, <a href="forecaster.html#forecaster.person.Person.net_income_history">[1]</a>
+        <li><a href="forecaster.html#forecaster.person.Person.net_income_history">(forecaster.person.Person property)</a>
 </li>
       </ul></li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.net_withdrawals">net_withdrawals (forecaster.forecast.withdrawal.WithdrawalForecast attribute)</a>, <a href="forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.net_withdrawals">[1]</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.net_withdrawals">net_withdrawals (forecaster.forecast.withdrawal.WithdrawalForecast attribute)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.net_withdrawals_history">net_withdrawals_history (forecaster.forecast.withdrawal.WithdrawalForecast attribute)</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.net_withdrawals">net_withdrawals() (forecaster.forecast.withdrawal.WithdrawalForecast property)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.contribution_limited.ContributionLimitAccount.next_contribution_room">next_contribution_room() (forecaster.accounts.contribution_limited.ContributionLimitAccount method)</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.net_withdrawals_history">net_withdrawals_history() (forecaster.forecast.withdrawal.WithdrawalForecast property)</a>
+</li>
+      <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.next_contribution_room">next_contribution_room() (forecaster.canada.accounts.registered_account.RegisteredAccount method)</a>
 
       <ul>
         <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.next_contribution_room">(forecaster.canada.accounts.rrsp.RRSP method)</a>
@@ -955,7 +1094,7 @@
       <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.next_year">next_year() (forecaster.accounts.base.Account method)</a>
 
       <ul>
-        <li><a href="forecaster.accounts.html#forecaster.accounts.contribution_limited.ContributionLimitAccount.next_year">(forecaster.accounts.contribution_limited.ContributionLimitAccount method)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.next_year">(forecaster.canada.accounts.registered_account.RegisteredAccount method)</a>
 </li>
         <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.next_year">(forecaster.forecast.base.Forecast method)</a>
 </li>
@@ -965,8 +1104,6 @@
 </li>
       </ul></li>
       <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.nper">nper (forecaster.accounts.base.Account attribute)</a>
-</li>
-      <li><a href="forecaster.html#forecaster.settings.Settings.num_children">num_children (forecaster.settings.Settings attribute)</a>
 </li>
       <li><a href="forecaster.html#forecaster.scenario.Scenario.num_years">num_years (forecaster.scenario.Scenario attribute)</a>
 
@@ -982,7 +1119,7 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="forecaster.canada.html#forecaster.canada.constants.OAS_RECOVERY_TAX_RATE">OAS_RECOVERY_TAX_RATE (in module forecaster.canada.constants)</a>
 </li>
-      <li><a href="forecaster.strategy.html#forecaster.strategy.allocation.AssetAllocation.other">other (forecaster.strategy.allocation.AssetAllocation attribute)</a>
+      <li><a href="forecaster.strategy.html#forecaster.strategy.allocation.AssetAllocation.other">other() (forecaster.strategy.allocation.AssetAllocation property)</a>
 </li>
       <li><a href="forecaster.html#forecaster.scenario.Scenario.other_return">other_return (forecaster.scenario.Scenario attribute)</a>
 
@@ -990,87 +1127,59 @@
         <li><a href="forecaster.html#forecaster.settings.Settings.other_return">(forecaster.settings.Settings attribute)</a>
 </li>
       </ul></li>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.outflows">outflows (forecaster.accounts.base.Account attribute)</a>
+      <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.base.TransactionTraversal.outbound_nodes">outbound_nodes (forecaster.strategy.transaction.base.TransactionTraversal attribute)</a>
 </li>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.outflows_history">outflows_history (forecaster.accounts.base.Account attribute)</a>
-
-      <ul>
-        <li><a href="forecaster.accounts.html#forecaster.accounts.contribution_limited.ContributionLimitAccount.outflows_history">(forecaster.accounts.contribution_limited.ContributionLimitAccount attribute)</a>
-</li>
-        <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.outflows_history">(forecaster.accounts.debt.Debt attribute)</a>
-</li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.principle_residence.PrincipleResidence.outflows_history">(forecaster.canada.accounts.principle_residence.PrincipleResidence attribute)</a>
-</li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.outflows_history">(forecaster.canada.accounts.registered_account.RegisteredAccount attribute)</a>
-</li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.outflows_history">(forecaster.canada.accounts.rrsp.RRSP attribute)</a>
-</li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.outflows_history">(forecaster.canada.accounts.taxable_account.TaxableAccount attribute)</a>
-</li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.tfsa.TFSA.outflows_history">(forecaster.canada.accounts.tfsa.TFSA attribute)</a>
-</li>
-      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.owner">owner (forecaster.accounts.base.Account attribute)</a>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.outflows">outflows() (forecaster.accounts.base.Account method)</a>
 </li>
+      <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.base.TransactionTraversal.overflow_nodes">overflow_nodes (forecaster.strategy.transaction.base.TransactionTraversal attribute)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.link.AccountLink.owner">owner (forecaster.accounts.link.AccountLink attribute)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.owner">owner() (forecaster.accounts.base.Account property)</a>
+
+      <ul>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.link.LinkTuple.owner">(forecaster.accounts.link.LinkTuple property)</a>
+</li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.payment">payment() (forecaster.accounts.debt.Debt method)</a>
+      <li><a href="forecaster.html#forecaster.forecaster.Parameter">Parameter (class in forecaster.forecaster)</a>
 </li>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.payment_frequency">payment_frequency (forecaster.accounts.debt.Debt attribute)</a>
+      <li><a href="forecaster.html#forecaster.person.Person.payment_timing">payment_timing (forecaster.person.Person attribute)</a>
+</li>
+      <li><a href="forecaster.canada.html#forecaster.canada.tax.TaxCanada.payment_timing">payment_timing() (forecaster.canada.tax.TaxCanada property)</a>
 
       <ul>
-        <li><a href="forecaster.html#forecaster.person.Person.payment_frequency">(forecaster.person.Person attribute)</a>, <a href="forecaster.html#forecaster.person.Person.payment_frequency">[1]</a>
+        <li><a href="forecaster.html#forecaster.tax.Tax.payment_timing">(forecaster.tax.Tax property)</a>
 </li>
       </ul></li>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.payment_from_savings">payment_from_savings() (forecaster.accounts.debt.Debt method)</a>
-</li>
-      <li><a href="forecaster.canada.html#forecaster.canada.tax.TaxCanada.payment_timing">payment_timing (forecaster.canada.tax.TaxCanada attribute)</a>
-
-      <ul>
-        <li><a href="forecaster.html#forecaster.tax.Tax.payment_timing">(forecaster.tax.Tax attribute)</a>
-</li>
-      </ul></li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.people">people (forecaster.forecast.base.Forecast attribute)</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.people">people() (forecaster.forecast.base.Forecast property)</a>
 </li>
       <li><a href="forecaster.html#forecaster.person.Person">Person (class in forecaster.person)</a>
 </li>
-      <li><a href="forecaster.html#forecaster.settings.Settings.person1_birth_date">person1_birth_date (forecaster.settings.Settings attribute)</a>
-</li>
-      <li><a href="forecaster.html#forecaster.settings.Settings.person1_gross_income">person1_gross_income (forecaster.settings.Settings attribute)</a>
-</li>
-      <li><a href="forecaster.html#forecaster.settings.Settings.person1_name">person1_name (forecaster.settings.Settings attribute)</a>
-</li>
-      <li><a href="forecaster.html#forecaster.settings.Settings.person1_raise_rate">person1_raise_rate (forecaster.settings.Settings attribute)</a>
+      <li><a href="forecaster.html#forecaster.tax.Tax.personal_deduction">personal_deduction (forecaster.tax.Tax attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="forecaster.html#forecaster.settings.Settings.person1_retirement_date">person1_retirement_date (forecaster.settings.Settings attribute)</a>
-</li>
-      <li><a href="forecaster.html#forecaster.settings.Settings.person2_birth_date">person2_birth_date (forecaster.settings.Settings attribute)</a>
-</li>
-      <li><a href="forecaster.html#forecaster.settings.Settings.person2_gross_income">person2_gross_income (forecaster.settings.Settings attribute)</a>
-</li>
-      <li><a href="forecaster.html#forecaster.settings.Settings.person2_name">person2_name (forecaster.settings.Settings attribute)</a>
-</li>
-      <li><a href="forecaster.html#forecaster.settings.Settings.person2_raise_rate">person2_raise_rate (forecaster.settings.Settings attribute)</a>
-</li>
-      <li><a href="forecaster.html#forecaster.settings.Settings.person2_retirement_date">person2_retirement_date (forecaster.settings.Settings attribute)</a>
-</li>
-      <li><a href="forecaster.html#forecaster.tax.Tax.personal_deduction">personal_deduction (forecaster.tax.Tax attribute)</a>
-</li>
       <li><a href="forecaster.html#forecaster.tax.Tax.personal_deduction">personal_deduction() (forecaster.tax.Tax method)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.principal">principal (forecaster.forecast.base.Forecast attribute)</a>, <a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.principal">[1]</a>
+      <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.base.TransactionTraversal.precision">precision (forecaster.strategy.transaction.base.TransactionTraversal attribute)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.principal_history">principal_history (forecaster.forecast.base.Forecast attribute)</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.principal">principal (forecaster.forecast.base.Forecast attribute)</a>
+</li>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.principal">principal() (forecaster.forecast.base.Forecast property)</a>
+</li>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.principal_history">principal_history() (forecaster.forecast.base.Forecast property)</a>
 </li>
       <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.principle_residence.PrincipleResidence">PrincipleResidence (class in forecaster.canada.accounts.principle_residence)</a>
+</li>
+      <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.base.TransactionTraversal.priority">priority() (forecaster.strategy.transaction.base.TransactionTraversal property)</a>
 </li>
       <li><a href="forecaster.canada.html#forecaster.canada.tax.TaxCanada.province">province (forecaster.canada.tax.TaxCanada attribute)</a>
 </li>
@@ -1080,40 +1189,50 @@
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="forecaster.html#forecaster.person.Person.raise_rate">raise_rate (forecaster.person.Person attribute)</a>, <a href="forecaster.html#forecaster.person.Person.raise_rate">[1]</a>
+      <li><a href="forecaster.html#forecaster.person.Person.raise_rate">raise_rate (forecaster.person.Person attribute)</a>
 </li>
-      <li><a href="forecaster.html#forecaster.person.Person.raise_rate_callable">raise_rate_callable (forecaster.person.Person attribute)</a>, <a href="forecaster.html#forecaster.person.Person.raise_rate_callable">[1]</a>
+      <li><a href="forecaster.html#forecaster.person.Person.raise_rate">raise_rate() (forecaster.person.Person property)</a>
 </li>
-      <li><a href="forecaster.html#forecaster.person.Person.raise_rate_history">raise_rate_history (forecaster.person.Person attribute)</a>, <a href="forecaster.html#forecaster.person.Person.raise_rate_history">[1]</a>
+      <li><a href="forecaster.html#forecaster.person.Person.raise_rate_callable">raise_rate_callable (forecaster.person.Person attribute)</a>
 </li>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.rate">rate (forecaster.accounts.base.Account attribute)</a>, <a href="forecaster.accounts.html#forecaster.accounts.base.Account.rate">[1]</a>
+      <li><a href="forecaster.html#forecaster.person.Person.raise_rate_callable">raise_rate_callable() (forecaster.person.Person property)</a>
+</li>
+      <li><a href="forecaster.html#forecaster.person.Person.raise_rate_history">raise_rate_history (forecaster.person.Person attribute)</a>
+</li>
+      <li><a href="forecaster.html#forecaster.person.Person.raise_rate_history">raise_rate_history() (forecaster.person.Person property)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.rate">rate (forecaster.accounts.base.Account attribute)</a>
 
       <ul>
         <li><a href="forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.rate">(forecaster.strategy.gross_transaction.LivingExpensesStrategy attribute)</a>
 </li>
       </ul></li>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.rate_callable">rate_callable (forecaster.accounts.base.Account attribute)</a>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.rate">rate() (forecaster.accounts.base.Account property)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.rate_callable">rate_callable() (forecaster.accounts.base.Account property)</a>
 </li>
       <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.rate_function">rate_function (forecaster.accounts.base.Account attribute)</a>
 </li>
       <li><a href="forecaster.strategy.html#forecaster.strategy.allocation.AllocationStrategy.rate_function">rate_function() (forecaster.strategy.allocation.AllocationStrategy method)</a>
 </li>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.rate_history">rate_history (forecaster.accounts.base.Account attribute)</a>, <a href="forecaster.accounts.html#forecaster.accounts.base.Account.rate_history">[1]</a>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.rate_history">rate_history (forecaster.accounts.base.Account attribute)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.rate_history">rate_history() (forecaster.accounts.base.Account property)</a>
 
       <ul>
-        <li><a href="forecaster.accounts.html#forecaster.accounts.contribution_limited.ContributionLimitAccount.rate_history">(forecaster.accounts.contribution_limited.ContributionLimitAccount attribute)</a>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.rate_history">(forecaster.accounts.debt.Debt property)</a>
 </li>
-        <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.rate_history">(forecaster.accounts.debt.Debt attribute)</a>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.rate_history">(forecaster.accounts.linked_limit.LinkedLimitAccount property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.principle_residence.PrincipleResidence.rate_history">(forecaster.canada.accounts.principle_residence.PrincipleResidence attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.principle_residence.PrincipleResidence.rate_history">(forecaster.canada.accounts.principle_residence.PrincipleResidence property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.rate_history">(forecaster.canada.accounts.registered_account.RegisteredAccount attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.rate_history">(forecaster.canada.accounts.registered_account.RegisteredAccount property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.rate_history">(forecaster.canada.accounts.rrsp.RRSP attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.rate_history">(forecaster.canada.accounts.rrsp.RRSP property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.rate_history">(forecaster.canada.accounts.taxable_account.TaxableAccount attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.rate_history">(forecaster.canada.accounts.taxable_account.TaxableAccount property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.tfsa.TFSA.rate_history">(forecaster.canada.accounts.tfsa.TFSA attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.tfsa.TFSA.rate_history">(forecaster.canada.accounts.tfsa.TFSA property)</a>
 </li>
       </ul></li>
       <li><a href="forecaster.strategy.html#forecaster.strategy.allocation.RateFunction">RateFunction (class in forecaster.strategy.allocation)</a>
@@ -1126,30 +1245,14 @@
       </ul></li>
       <li><a href="forecaster.ledger.html#forecaster.ledger.recorded_property.recorded_property_cached">recorded_property_cached (class in forecaster.ledger.recorded_property)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.reduction_forecast">reduction_forecast (forecaster.forecast.base.Forecast attribute)</a>
-</li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.reduction.ReductionForecast.reduction_from_debt">reduction_from_debt (forecaster.forecast.reduction.ReductionForecast attribute)</a>, <a href="forecaster.forecast.html#forecaster.forecast.reduction.ReductionForecast.reduction_from_debt">[1]</a>
-</li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.reduction.ReductionForecast.reduction_from_debt_history">reduction_from_debt_history (forecaster.forecast.reduction.ReductionForecast attribute)</a>
-</li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.reduction.ReductionForecast.reduction_from_other">reduction_from_other (forecaster.forecast.reduction.ReductionForecast attribute)</a>, <a href="forecaster.forecast.html#forecaster.forecast.reduction.ReductionForecast.reduction_from_other">[1]</a>
-</li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.reduction.ReductionForecast.reduction_from_other_history">reduction_from_other_history (forecaster.forecast.reduction.ReductionForecast attribute)</a>
-</li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.reduction.ReductionForecast">ReductionForecast (class in forecaster.forecast.reduction)</a>
-</li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.reduction.ReductionForecast.reductions">reductions (forecaster.forecast.reduction.ReductionForecast attribute)</a>, <a href="forecaster.forecast.html#forecaster.forecast.reduction.ReductionForecast.reductions">[1]</a>
-</li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.reduction.ReductionForecast.reductions_history">reductions_history (forecaster.forecast.reduction.ReductionForecast attribute)</a>
-</li>
       <li><a href="forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.refund_reinvestment_rate">refund_reinvestment_rate (forecaster.strategy.gross_transaction.LivingExpensesStrategy attribute)</a>
 </li>
-      <li><a href="forecaster.html#forecaster.person.Person.register_shared_contribution">register_shared_contribution() (forecaster.person.Person method)</a>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.link.AccountLink.register">register() (forecaster.accounts.link.AccountLink method)</a>
 </li>
       <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount">RegisteredAccount (class in forecaster.canada.accounts.registered_account)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="forecaster.canada.html#forecaster.canada.constants.RESP_BCSTEG_AMOUNT">RESP_BCSTEG_AMOUNT (in module forecaster.canada.constants)</a>
 </li>
       <li><a href="forecaster.canada.html#forecaster.canada.settings.SettingsCanada.resp_child_other_income">resp_child_other_income (forecaster.canada.settings.SettingsCanada attribute)</a>
@@ -1160,39 +1263,53 @@
 </li>
       <li><a href="forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.retirement">retirement (forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule attribute)</a>
 </li>
-      <li><a href="forecaster.html#forecaster.person.Person.retirement_age">retirement_age (forecaster.person.Person attribute)</a>
+      <li><a href="forecaster.html#forecaster.person.Person.retirement_age">retirement_age() (forecaster.person.Person property)</a>
 </li>
-      <li><a href="forecaster.html#forecaster.person.Person.retirement_date">retirement_date (forecaster.person.Person attribute)</a>, <a href="forecaster.html#forecaster.person.Person.retirement_date">[1]</a>
+      <li><a href="forecaster.html#forecaster.person.Person.retirement_date">retirement_date (forecaster.person.Person attribute)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.retirement_year">retirement_year (forecaster.forecast.base.Forecast attribute)</a>
+      <li><a href="forecaster.html#forecaster.person.Person.retirement_date">retirement_date() (forecaster.person.Person property)</a>
 </li>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.returns">returns (forecaster.accounts.base.Account attribute)</a>, <a href="forecaster.accounts.html#forecaster.accounts.base.Account.returns">[1]</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.saving.SavingForecast.retirement_savings">retirement_savings (forecaster.forecast.saving.SavingForecast attribute)</a>
 </li>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.returns_history">returns_history (forecaster.accounts.base.Account attribute)</a>, <a href="forecaster.accounts.html#forecaster.accounts.base.Account.returns_history">[1]</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.saving.SavingForecast.retirement_savings">retirement_savings() (forecaster.forecast.saving.SavingForecast property)</a>
+</li>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.saving.SavingForecast.retirement_savings_history">retirement_savings_history() (forecaster.forecast.saving.SavingForecast property)</a>
+</li>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.retirement_year">retirement_year() (forecaster.forecast.base.Forecast property)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.returns">returns (forecaster.accounts.base.Account attribute)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.returns">returns() (forecaster.accounts.base.Account property)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.returns_history">returns_history (forecaster.accounts.base.Account attribute)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.returns_history">returns_history() (forecaster.accounts.base.Account property)</a>
 
       <ul>
-        <li><a href="forecaster.accounts.html#forecaster.accounts.contribution_limited.ContributionLimitAccount.returns_history">(forecaster.accounts.contribution_limited.ContributionLimitAccount attribute)</a>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.returns_history">(forecaster.accounts.debt.Debt property)</a>
 </li>
-        <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.returns_history">(forecaster.accounts.debt.Debt attribute)</a>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.returns_history">(forecaster.accounts.linked_limit.LinkedLimitAccount property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.principle_residence.PrincipleResidence.returns_history">(forecaster.canada.accounts.principle_residence.PrincipleResidence attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.principle_residence.PrincipleResidence.returns_history">(forecaster.canada.accounts.principle_residence.PrincipleResidence property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.returns_history">(forecaster.canada.accounts.registered_account.RegisteredAccount attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.returns_history">(forecaster.canada.accounts.registered_account.RegisteredAccount property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.returns_history">(forecaster.canada.accounts.rrsp.RRSP attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.returns_history">(forecaster.canada.accounts.rrsp.RRSP property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.returns_history">(forecaster.canada.accounts.taxable_account.TaxableAccount attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.returns_history">(forecaster.canada.accounts.taxable_account.TaxableAccount property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.tfsa.TFSA.returns_history">(forecaster.canada.accounts.tfsa.TFSA attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.tfsa.TFSA.returns_history">(forecaster.canada.accounts.tfsa.TFSA property)</a>
 </li>
       </ul></li>
       <li><a href="forecaster.strategy.html#forecaster.strategy.allocation.AllocationStrategy.risk_transition_period">risk_transition_period (forecaster.strategy.allocation.AllocationStrategy attribute)</a>
 </li>
-      <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.rrif_conversion_year">rrif_conversion_year (forecaster.canada.accounts.rrsp.RRSP attribute)</a>
+      <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.rrif_conversion_year">rrif_conversion_year() (forecaster.canada.accounts.rrsp.RRSP property)</a>
 </li>
       <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP">RRSP (class in forecaster.canada.accounts.rrsp)</a>
 </li>
       <li><a href="forecaster.canada.html#forecaster.canada.constants.RRSP_RRIF_WITHDRAWAL_MIN">RRSP_RRIF_WITHDRAWAL_MIN (in module forecaster.canada.constants)</a>
+</li>
+      <li><a href="forecaster.html#forecaster.forecaster.Forecaster.run_forecast">run_forecast() (forecaster.forecaster.Forecaster method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -1200,45 +1317,47 @@
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.savings_rate">savings_rate (forecaster.accounts.debt.Debt attribute)</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.saving_forecast">saving_forecast (forecaster.forecast.base.Forecast attribute)</a>
+</li>
+      <li><a href="forecaster.html#forecaster.forecaster.Parameter.SAVING_STRATEGY">SAVING_STRATEGY (forecaster.forecaster.Parameter attribute)</a>
+</li>
+      <li><a href="forecaster.html#forecaster.settings.Settings.saving_strategy">saving_strategy (forecaster.settings.Settings attribute)</a>
+</li>
+      <li><a href="forecaster.html#forecaster.settings.Settings.saving_weights">saving_weights (forecaster.settings.Settings attribute)</a>
+</li>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.saving.SavingForecast">SavingForecast (class in forecaster.forecast.saving)</a>
+</li>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.savings">savings() (forecaster.forecast.base.Forecast property)</a>
+</li>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.savings_history">savings_history() (forecaster.forecast.base.Forecast property)</a>
 </li>
       <li><a href="forecaster.html#forecaster.scenario.Scenario">Scenario (class in forecaster.scenario)</a>
 </li>
       <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.scenario">scenario (forecaster.forecast.base.Forecast attribute)</a>
-
-      <ul>
-        <li><a href="forecaster.html#forecaster.scenario.InflationAdjust.scenario">(forecaster.scenario.InflationAdjust attribute)</a>
 </li>
-      </ul></li>
-      <li><a href="forecaster.html#forecaster.forecaster.Forecaster.set_allocation_strategy">set_allocation_strategy() (forecaster.forecaster.Forecaster method)</a>
+      <li><a href="forecaster.html#forecaster.forecaster.Parameter.SCENARIO">SCENARIO (forecaster.forecaster.Parameter attribute)</a>
 </li>
-      <li><a href="forecaster.html#forecaster.forecaster.Forecaster.set_contribution_strategy">set_contribution_strategy() (forecaster.forecaster.Forecaster method)</a>
+      <li><a href="forecaster.html#forecaster.scenario.InflationAdjust.scenario">scenario (forecaster.scenario.InflationAdjust attribute)</a>
 </li>
-      <li><a href="forecaster.html#forecaster.forecaster.Forecaster.set_debt_payment_strategy">set_debt_payment_strategy() (forecaster.forecaster.Forecaster method)</a>
-</li>
-      <li><a href="forecaster.html#forecaster.forecaster.Forecaster.set_kwarg">set_kwarg() (forecaster.forecaster.Forecaster static method)</a>
-</li>
-      <li><a href="forecaster.html#forecaster.forecaster.Forecaster.set_person1">set_person1() (forecaster.forecaster.Forecaster method)</a>
-</li>
-      <li><a href="forecaster.html#forecaster.forecaster.Forecaster.set_person2">set_person2() (forecaster.forecaster.Forecaster method)</a>
-</li>
-      <li><a href="forecaster.html#forecaster.forecaster.Forecaster.set_scenario">set_scenario() (forecaster.forecaster.Forecaster method)</a>
-</li>
-      <li><a href="forecaster.canada.html#forecaster.canada.forecaster.ForecasterCanada.set_tax_treatment">set_tax_treatment() (forecaster.canada.forecaster.ForecasterCanada method)</a>
-
-      <ul>
-        <li><a href="forecaster.html#forecaster.forecaster.Forecaster.set_tax_treatment">(forecaster.forecaster.Forecaster method)</a>
-</li>
-      </ul></li>
-      <li><a href="forecaster.html#forecaster.forecaster.Forecaster.set_transaction_in_strategy">set_transaction_in_strategy() (forecaster.forecaster.Forecaster method)</a>
-</li>
-      <li><a href="forecaster.html#forecaster.forecaster.Forecaster.set_transaction_out_strategy">set_transaction_out_strategy() (forecaster.forecaster.Forecaster method)</a>
+      <li><a href="forecaster.html#forecaster.forecaster.Forecaster.set_param">set_param() (forecaster.forecaster.Forecaster method)</a>
 </li>
       <li><a href="forecaster.html#forecaster.settings.Settings">Settings (class in forecaster.settings)</a>
 </li>
       <li><a href="forecaster.canada.html#forecaster.canada.settings.SettingsCanada">SettingsCanada (class in forecaster.canada.settings)</a>
 </li>
-      <li><a href="forecaster.html#forecaster.person.Person.spouse">spouse (forecaster.person.Person attribute)</a>, <a href="forecaster.html#forecaster.person.Person.spouse">[1]</a>
+      <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.base.TransactionTraversal.sink">sink (forecaster.strategy.transaction.base.TransactionTraversal attribute)</a>
+</li>
+      <li><a href="forecaster.strategy.debt_payment.html#forecaster.strategy.debt_payment.util.snowball_priority">snowball_priority() (in module forecaster.strategy.debt_payment.util)</a>
+</li>
+      <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.base.TransactionTraversal.source">source (forecaster.strategy.transaction.base.TransactionTraversal attribute)</a>
+
+      <ul>
+        <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.node.TransactionNode.source">(forecaster.strategy.transaction.node.TransactionNode attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="forecaster.html#forecaster.person.Person.spouse">spouse (forecaster.person.Person attribute)</a>
+</li>
+      <li><a href="forecaster.html#forecaster.person.Person.spouse">spouse() (forecaster.person.Person property)</a>
 </li>
       <li><a href="forecaster.strategy.html#forecaster.strategy.allocation.AllocationStrategy.standard_retirement_age">standard_retirement_age (forecaster.strategy.allocation.AllocationStrategy attribute)</a>
 </li>
@@ -1248,37 +1367,37 @@
         <li><a href="forecaster.html#forecaster.settings.Settings.stock_return">(forecaster.settings.Settings attribute)</a>
 </li>
       </ul></li>
-      <li><a href="forecaster.strategy.html#forecaster.strategy.allocation.AssetAllocation.stocks">stocks (forecaster.strategy.allocation.AssetAllocation attribute)</a>
+      <li><a href="forecaster.strategy.html#forecaster.strategy.allocation.AssetAllocation.stocks">stocks() (forecaster.strategy.allocation.AssetAllocation property)</a>
 </li>
-      <li><a href="forecaster.strategy.html#forecaster.strategy.account_transaction.AccountTransactionStrategy.strategies">strategies (forecaster.strategy.account_transaction.AccountTransactionStrategy attribute)</a>, <a href="forecaster.strategy.html#forecaster.strategy.account_transaction.AccountTransactionStrategy.strategies">[1]</a>
+      <li><a href="forecaster.strategy.html#forecaster.strategy.allocation.AllocationStrategy.strategies">strategies (forecaster.strategy.allocation.AllocationStrategy attribute)</a>, <a href="forecaster.strategy.html#forecaster.strategy.allocation.AllocationStrategy.strategies">[1]</a>
 
       <ul>
-        <li><a href="forecaster.strategy.html#forecaster.strategy.allocation.AllocationStrategy.strategies">(forecaster.strategy.allocation.AllocationStrategy attribute)</a>, <a href="forecaster.strategy.html#forecaster.strategy.allocation.AllocationStrategy.strategies">[1]</a>
-</li>
         <li><a href="forecaster.strategy.html#forecaster.strategy.base.Strategy.strategies">(forecaster.strategy.base.Strategy attribute)</a>, <a href="forecaster.strategy.html#forecaster.strategy.base.Strategy.strategies">[1]</a>
 </li>
-        <li><a href="forecaster.strategy.html#forecaster.strategy.debt_payment.DebtPaymentStrategy.strategies">(forecaster.strategy.debt_payment.DebtPaymentStrategy attribute)</a>, <a href="forecaster.strategy.html#forecaster.strategy.debt_payment.DebtPaymentStrategy.strategies">[1]</a>
+        <li><a href="forecaster.strategy.debt_payment.html#forecaster.strategy.debt_payment.base.DebtPaymentStrategy.strategies">(forecaster.strategy.debt_payment.base.DebtPaymentStrategy attribute)</a>, <a href="forecaster.strategy.debt_payment.html#forecaster.strategy.debt_payment.base.DebtPaymentStrategy.strategies">[1]</a>
 </li>
         <li><a href="forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategies">(forecaster.strategy.gross_transaction.LivingExpensesStrategy attribute)</a>, <a href="forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategies">[1]</a>
+</li>
+        <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.strategy.TransactionStrategy.strategies">(forecaster.strategy.transaction.strategy.TransactionStrategy attribute)</a>, <a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.strategy.TransactionStrategy.strategies">[1]</a>
 </li>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="forecaster.strategy.html#forecaster.strategy.base.Strategy">Strategy (class in forecaster.strategy.base)</a>
 </li>
-      <li><a href="forecaster.strategy.html#forecaster.strategy.account_transaction.AccountTransactionStrategy.strategy">strategy (forecaster.strategy.account_transaction.AccountTransactionStrategy attribute)</a>
+      <li><a href="forecaster.strategy.html#forecaster.strategy.allocation.AllocationStrategy.strategy">strategy (forecaster.strategy.allocation.AllocationStrategy attribute)</a>
 
       <ul>
-        <li><a href="forecaster.strategy.html#forecaster.strategy.allocation.AllocationStrategy.strategy">(forecaster.strategy.allocation.AllocationStrategy attribute)</a>
-</li>
         <li><a href="forecaster.strategy.html#forecaster.strategy.base.Strategy.strategy">(forecaster.strategy.base.Strategy attribute)</a>
 </li>
-        <li><a href="forecaster.strategy.html#forecaster.strategy.debt_payment.DebtPaymentStrategy.strategy">(forecaster.strategy.debt_payment.DebtPaymentStrategy attribute)</a>
+        <li><a href="forecaster.strategy.debt_payment.html#forecaster.strategy.debt_payment.base.DebtPaymentStrategy.strategy">(forecaster.strategy.debt_payment.base.DebtPaymentStrategy attribute)</a>
 </li>
         <li><a href="forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy">(forecaster.strategy.gross_transaction.LivingExpensesStrategy attribute)</a>
 </li>
+        <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.strategy.TransactionStrategy.strategy">(forecaster.strategy.transaction.strategy.TransactionStrategy attribute)</a>
+</li>
       </ul></li>
-      <li><a href="forecaster.strategy.html#forecaster.strategy.debt_payment.DebtPaymentStrategy.strategy_avalanche">strategy_avalanche() (forecaster.strategy.debt_payment.DebtPaymentStrategy method)</a>
+      <li><a href="forecaster.strategy.debt_payment.html#forecaster.strategy.debt_payment.base.DebtPaymentStrategy.strategy_avalanche">strategy_avalanche() (forecaster.strategy.debt_payment.base.DebtPaymentStrategy method)</a>
 </li>
       <li><a href="forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_const_contribution">strategy_const_contribution() (forecaster.strategy.gross_transaction.LivingExpensesStrategy method)</a>
 </li>
@@ -1286,7 +1405,7 @@
 </li>
       <li><a href="forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_gross_percent">strategy_gross_percent() (forecaster.strategy.gross_transaction.LivingExpensesStrategy method)</a>
 </li>
-      <li><a href="forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_gross_percent_retirement">strategy_gross_percent_retirement() (forecaster.strategy.gross_transaction.LivingExpensesStrategy method)</a>
+      <li><a href="forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_gross_percent_ret">strategy_gross_percent_ret() (forecaster.strategy.gross_transaction.LivingExpensesStrategy method)</a>
 </li>
       <li><a href="forecaster.strategy.html#forecaster.strategy.base.strategy_method">strategy_method() (in module forecaster.strategy.base)</a>
 </li>
@@ -1294,23 +1413,25 @@
 </li>
       <li><a href="forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_net_percent">strategy_net_percent() (forecaster.strategy.gross_transaction.LivingExpensesStrategy method)</a>
 </li>
-      <li><a href="forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_net_percent_retirement">strategy_net_percent_retirement() (forecaster.strategy.gross_transaction.LivingExpensesStrategy method)</a>
+      <li><a href="forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_net_percent_ret">strategy_net_percent_ret() (forecaster.strategy.gross_transaction.LivingExpensesStrategy method)</a>
 </li>
-      <li><a href="forecaster.strategy.html#forecaster.strategy.account_transaction.AccountTransactionStrategy.strategy_ordered">strategy_ordered() (forecaster.strategy.account_transaction.AccountTransactionStrategy method)</a>
+      <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.strategy.TransactionStrategy.strategy_ordered">strategy_ordered() (forecaster.strategy.transaction.strategy.TransactionStrategy method)</a>
 </li>
       <li><a href="forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_percent_over_base">strategy_percent_over_base() (forecaster.strategy.gross_transaction.LivingExpensesStrategy method)</a>
 </li>
-      <li><a href="forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_principal_percent_retirement">strategy_principal_percent_retirement() (forecaster.strategy.gross_transaction.LivingExpensesStrategy method)</a>
+      <li><a href="forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_principal_percent_ret">strategy_principal_percent_ret() (forecaster.strategy.gross_transaction.LivingExpensesStrategy method)</a>
 </li>
-      <li><a href="forecaster.strategy.html#forecaster.strategy.debt_payment.DebtPaymentStrategy.strategy_snowball">strategy_snowball() (forecaster.strategy.debt_payment.DebtPaymentStrategy method)</a>
+      <li><a href="forecaster.strategy.debt_payment.html#forecaster.strategy.debt_payment.base.DebtPaymentStrategy.strategy_snowball">strategy_snowball() (forecaster.strategy.debt_payment.base.DebtPaymentStrategy method)</a>
 </li>
       <li><a href="forecaster.strategy.html#forecaster.strategy.allocation.AllocationStrategy.strategy_transition_to_const">strategy_transition_to_const() (forecaster.strategy.allocation.AllocationStrategy method)</a>
 </li>
-      <li><a href="forecaster.strategy.html#forecaster.strategy.account_transaction.AccountTransactionStrategy.strategy_weighted">strategy_weighted() (forecaster.strategy.account_transaction.AccountTransactionStrategy method)</a>
+      <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.strategy.TransactionStrategy.strategy_weighted">strategy_weighted() (forecaster.strategy.transaction.strategy.TransactionStrategy method)</a>
 </li>
       <li><a href="forecaster.strategy.html#forecaster.strategy.base.StrategyType">StrategyType (class in forecaster.strategy.base)</a>
 </li>
       <li><a href="forecaster.forecast.html#forecaster.forecast.subforecast.SubForecast">SubForecast (class in forecaster.forecast.subforecast)</a>
+</li>
+      <li><a href="forecaster.html#forecaster.utility.subtract_transactions">subtract_transactions() (in module forecaster.utility)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -1322,172 +1443,214 @@
 </li>
       <li><a href="forecaster.html#forecaster.tax.Tax">Tax (class in forecaster.tax)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.tax">tax (forecaster.forecast.base.Forecast attribute)</a>, <a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.tax">[1]</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.tax">tax (forecaster.forecast.base.Forecast attribute)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.tax.TaxForecast.tax_adjustment">tax_adjustment (forecaster.forecast.tax.TaxForecast attribute)</a>, <a href="forecaster.forecast.html#forecaster.forecast.tax.TaxForecast.tax_adjustment">[1]</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.tax">tax() (forecaster.forecast.base.Forecast property)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.tax.TaxForecast.tax_adjustment_history">tax_adjustment_history (forecaster.forecast.tax.TaxForecast attribute)</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.tax.TaxForecast.tax_adjustment">tax_adjustment (forecaster.forecast.tax.TaxForecast attribute)</a>
 </li>
-      <li><a href="forecaster.html#forecaster.tax.Tax.tax_brackets">tax_brackets (forecaster.tax.Tax attribute)</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.tax.TaxForecast.tax_adjustment">tax_adjustment() (forecaster.forecast.tax.TaxForecast property)</a>
 </li>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.tax.TaxForecast.tax_adjustment_history">tax_adjustment_history() (forecaster.forecast.tax.TaxForecast property)</a>
+</li>
+      <li><a href="forecaster.html#forecaster.settings.Settings.tax_brackets">tax_brackets (forecaster.settings.Settings attribute)</a>
+
+      <ul>
+        <li><a href="forecaster.html#forecaster.tax.Tax.tax_brackets">(forecaster.tax.Tax attribute)</a>
+</li>
+      </ul></li>
       <li><a href="forecaster.html#forecaster.tax.Tax.tax_brackets">tax_brackets() (forecaster.tax.Tax method)</a>
 </li>
-      <li><a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.tax_credit">tax_credit (forecaster.ledger.base.TaxSource attribute)</a>, <a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.tax_credit">[1]</a>
+      <li><a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.tax_credit">tax_credit (forecaster.ledger.base.TaxSource attribute)</a>
+</li>
+      <li><a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.tax_credit">tax_credit() (forecaster.ledger.base.TaxSource property)</a>
 
       <ul>
-        <li><a href="forecaster.html#forecaster.person.Person.tax_credit">(forecaster.person.Person attribute)</a>
+        <li><a href="forecaster.html#forecaster.person.Person.tax_credit">(forecaster.person.Person property)</a>
 </li>
       </ul></li>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.tax_credit_history">tax_credit_history (forecaster.accounts.base.Account attribute)</a>
+      <li><a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.tax_credit_history">tax_credit_history (forecaster.ledger.base.TaxSource attribute)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.tax_credit_history">tax_credit_history() (forecaster.accounts.base.Account property)</a>
 
       <ul>
-        <li><a href="forecaster.accounts.html#forecaster.accounts.contribution_limited.ContributionLimitAccount.tax_credit_history">(forecaster.accounts.contribution_limited.ContributionLimitAccount attribute)</a>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.tax_credit_history">(forecaster.accounts.debt.Debt property)</a>
 </li>
-        <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.tax_credit_history">(forecaster.accounts.debt.Debt attribute)</a>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.tax_credit_history">(forecaster.accounts.linked_limit.LinkedLimitAccount property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.principle_residence.PrincipleResidence.tax_credit_history">(forecaster.canada.accounts.principle_residence.PrincipleResidence attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.principle_residence.PrincipleResidence.tax_credit_history">(forecaster.canada.accounts.principle_residence.PrincipleResidence property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.tax_credit_history">(forecaster.canada.accounts.registered_account.RegisteredAccount attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.tax_credit_history">(forecaster.canada.accounts.registered_account.RegisteredAccount property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.tax_credit_history">(forecaster.canada.accounts.rrsp.RRSP attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.tax_credit_history">(forecaster.canada.accounts.rrsp.RRSP property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.tax_credit_history">(forecaster.canada.accounts.taxable_account.TaxableAccount attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.tax_credit_history">(forecaster.canada.accounts.taxable_account.TaxableAccount property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.tfsa.TFSA.tax_credit_history">(forecaster.canada.accounts.tfsa.TFSA attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.tfsa.TFSA.tax_credit_history">(forecaster.canada.accounts.tfsa.TFSA property)</a>
 </li>
-        <li><a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.tax_credit_history">(forecaster.ledger.base.TaxSource attribute)</a>, <a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.tax_credit_history">[1]</a>
+        <li><a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.tax_credit_history">(forecaster.ledger.base.TaxSource property)</a>
 </li>
-        <li><a href="forecaster.html#forecaster.person.Person.tax_credit_history">(forecaster.person.Person attribute)</a>
+        <li><a href="forecaster.html#forecaster.person.Person.tax_credit_history">(forecaster.person.Person property)</a>
 </li>
       </ul></li>
-      <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.tax_deduction">tax_deduction (forecaster.canada.accounts.rrsp.RRSP attribute)</a>
+      <li><a href="forecaster.html#forecaster.settings.Settings.tax_credit_rate">tax_credit_rate (forecaster.settings.Settings attribute)</a>
+</li>
+      <li><a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.tax_deduction">tax_deduction (forecaster.ledger.base.TaxSource attribute)</a>
+</li>
+      <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.tax_deduction">tax_deduction() (forecaster.canada.accounts.rrsp.RRSP property)</a>
 
       <ul>
-        <li><a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.tax_deduction">(forecaster.ledger.base.TaxSource attribute)</a>, <a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.tax_deduction">[1]</a>
+        <li><a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.tax_deduction">(forecaster.ledger.base.TaxSource property)</a>
 </li>
-        <li><a href="forecaster.html#forecaster.person.Person.tax_deduction">(forecaster.person.Person attribute)</a>
+        <li><a href="forecaster.html#forecaster.person.Person.tax_deduction">(forecaster.person.Person property)</a>
 </li>
       </ul></li>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.tax_deduction_history">tax_deduction_history (forecaster.accounts.base.Account attribute)</a>
+      <li><a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.tax_deduction_history">tax_deduction_history (forecaster.ledger.base.TaxSource attribute)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.tax_deduction_history">tax_deduction_history() (forecaster.accounts.base.Account property)</a>
 
       <ul>
-        <li><a href="forecaster.accounts.html#forecaster.accounts.contribution_limited.ContributionLimitAccount.tax_deduction_history">(forecaster.accounts.contribution_limited.ContributionLimitAccount attribute)</a>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.tax_deduction_history">(forecaster.accounts.debt.Debt property)</a>
 </li>
-        <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.tax_deduction_history">(forecaster.accounts.debt.Debt attribute)</a>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.tax_deduction_history">(forecaster.accounts.linked_limit.LinkedLimitAccount property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.principle_residence.PrincipleResidence.tax_deduction_history">(forecaster.canada.accounts.principle_residence.PrincipleResidence attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.principle_residence.PrincipleResidence.tax_deduction_history">(forecaster.canada.accounts.principle_residence.PrincipleResidence property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.tax_deduction_history">(forecaster.canada.accounts.registered_account.RegisteredAccount attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.tax_deduction_history">(forecaster.canada.accounts.registered_account.RegisteredAccount property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.tax_deduction_history">(forecaster.canada.accounts.rrsp.RRSP attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.tax_deduction_history">(forecaster.canada.accounts.rrsp.RRSP property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.tax_deduction_history">(forecaster.canada.accounts.taxable_account.TaxableAccount attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.tax_deduction_history">(forecaster.canada.accounts.taxable_account.TaxableAccount property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.tfsa.TFSA.tax_deduction_history">(forecaster.canada.accounts.tfsa.TFSA attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.tfsa.TFSA.tax_deduction_history">(forecaster.canada.accounts.tfsa.TFSA property)</a>
 </li>
-        <li><a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.tax_deduction_history">(forecaster.ledger.base.TaxSource attribute)</a>, <a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.tax_deduction_history">[1]</a>
+        <li><a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.tax_deduction_history">(forecaster.ledger.base.TaxSource property)</a>
 </li>
-        <li><a href="forecaster.html#forecaster.person.Person.tax_deduction_history">(forecaster.person.Person attribute)</a>
+        <li><a href="forecaster.html#forecaster.person.Person.tax_deduction_history">(forecaster.person.Person property)</a>
 </li>
       </ul></li>
       <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.tax_forecast">tax_forecast (forecaster.forecast.base.Forecast attribute)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.tax_history">tax_history (forecaster.forecast.base.Forecast attribute)</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.tax_history">tax_history() (forecaster.forecast.base.Forecast property)</a>
 </li>
       <li><a href="forecaster.html#forecaster.tax.Tax.tax_money">tax_money() (forecaster.tax.Tax method)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.tax.TaxForecast.tax_owing">tax_owing (forecaster.forecast.tax.TaxForecast attribute)</a>, <a href="forecaster.forecast.html#forecaster.forecast.tax.TaxForecast.tax_owing">[1]</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.tax.TaxForecast.tax_owing">tax_owing (forecaster.forecast.tax.TaxForecast attribute)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.tax.TaxForecast.tax_owing_history">tax_owing_history (forecaster.forecast.tax.TaxForecast attribute)</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.tax.TaxForecast.tax_owing">tax_owing() (forecaster.forecast.tax.TaxForecast property)</a>
+</li>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.tax.TaxForecast.tax_owing_history">tax_owing_history() (forecaster.forecast.tax.TaxForecast property)</a>
+</li>
+      <li><a href="forecaster.html#forecaster.settings.Settings.tax_payment_timing">tax_payment_timing (forecaster.settings.Settings attribute)</a>
 </li>
       <li><a href="forecaster.html#forecaster.tax.Tax.tax_people">tax_people() (forecaster.tax.Tax method)</a>
 </li>
       <li><a href="forecaster.html#forecaster.tax.Tax.tax_person">tax_person() (forecaster.tax.Tax method)</a>
 </li>
+      <li><a href="forecaster.html#forecaster.settings.Settings.tax_personal_deduction">tax_personal_deduction (forecaster.settings.Settings attribute)</a>
+</li>
+      <li><a href="forecaster.canada.html#forecaster.canada.settings.SettingsCanada.tax_province">tax_province (forecaster.canada.settings.SettingsCanada attribute)</a>
+</li>
       <li><a href="forecaster.html#forecaster.tax.Tax.tax_spouses">tax_spouses() (forecaster.tax.Tax method)</a>
 </li>
-      <li><a href="forecaster.html#forecaster.person.Person.tax_treatment">tax_treatment (forecaster.person.Person attribute)</a>, <a href="forecaster.html#forecaster.person.Person.tax_treatment">[1]</a>
+      <li><a href="forecaster.html#forecaster.forecaster.Parameter.TAX_TREATMENT">TAX_TREATMENT (forecaster.forecaster.Parameter attribute)</a>
 </li>
-      <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.tax_withheld">tax_withheld (forecaster.canada.accounts.rrsp.RRSP attribute)</a>
+      <li><a href="forecaster.html#forecaster.person.Person.tax_treatment">tax_treatment (forecaster.person.Person attribute)</a>
+</li>
+      <li><a href="forecaster.html#forecaster.person.Person.tax_treatment">tax_treatment() (forecaster.person.Person property)</a>
+</li>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.tax_withheld">tax_withheld (forecaster.forecast.income.IncomeForecast attribute)</a>
 
       <ul>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.tax_withheld">(forecaster.forecast.income.IncomeForecast attribute)</a>, <a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.tax_withheld">[1]</a>
+        <li><a href="forecaster.forecast.html#forecaster.forecast.tax.TaxForecast.tax_withheld">(forecaster.forecast.tax.TaxForecast attribute)</a>
 </li>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.tax.TaxForecast.tax_withheld">(forecaster.forecast.tax.TaxForecast attribute)</a>, <a href="forecaster.forecast.html#forecaster.forecast.tax.TaxForecast.tax_withheld">[1]</a>
+        <li><a href="forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.tax_withheld">(forecaster.forecast.withdrawal.WithdrawalForecast attribute)</a>
 </li>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.tax_withheld">(forecaster.forecast.withdrawal.WithdrawalForecast attribute)</a>, <a href="forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.tax_withheld">[1]</a>
-</li>
-        <li><a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.tax_withheld">(forecaster.ledger.base.TaxSource attribute)</a>, <a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.tax_withheld">[1]</a>
-</li>
-        <li><a href="forecaster.html#forecaster.person.Person.tax_withheld">(forecaster.person.Person attribute)</a>
+        <li><a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.tax_withheld">(forecaster.ledger.base.TaxSource attribute)</a>
 </li>
       </ul></li>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.tax_withheld_history">tax_withheld_history (forecaster.accounts.base.Account attribute)</a>
+      <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.tax_withheld">tax_withheld() (forecaster.canada.accounts.rrsp.RRSP property)</a>
 
       <ul>
-        <li><a href="forecaster.accounts.html#forecaster.accounts.contribution_limited.ContributionLimitAccount.tax_withheld_history">(forecaster.accounts.contribution_limited.ContributionLimitAccount attribute)</a>
+        <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.tax_withheld">(forecaster.forecast.income.IncomeForecast property)</a>
 </li>
-        <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.tax_withheld_history">(forecaster.accounts.debt.Debt attribute)</a>
+        <li><a href="forecaster.forecast.html#forecaster.forecast.tax.TaxForecast.tax_withheld">(forecaster.forecast.tax.TaxForecast property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.principle_residence.PrincipleResidence.tax_withheld_history">(forecaster.canada.accounts.principle_residence.PrincipleResidence attribute)</a>
+        <li><a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.tax_withheld">(forecaster.ledger.base.TaxSource property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.tax_withheld_history">(forecaster.canada.accounts.registered_account.RegisteredAccount attribute)</a>
+        <li><a href="forecaster.html#forecaster.person.Person.tax_withheld">(forecaster.person.Person property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.tax_withheld_history">(forecaster.canada.accounts.rrsp.RRSP attribute)</a>
+      </ul></li>
+      <li><a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.tax_withheld_history">tax_withheld_history (forecaster.ledger.base.TaxSource attribute)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.tax_withheld_history">(forecaster.canada.accounts.taxable_account.TaxableAccount attribute)</a>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.tax_withheld_history">tax_withheld_history() (forecaster.accounts.base.Account property)</a>
+
+      <ul>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.tax_withheld_history">(forecaster.accounts.debt.Debt property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.tfsa.TFSA.tax_withheld_history">(forecaster.canada.accounts.tfsa.TFSA attribute)</a>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.tax_withheld_history">(forecaster.accounts.linked_limit.LinkedLimitAccount property)</a>
 </li>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.tax_withheld_history">(forecaster.forecast.income.IncomeForecast attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.principle_residence.PrincipleResidence.tax_withheld_history">(forecaster.canada.accounts.principle_residence.PrincipleResidence property)</a>
 </li>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.tax.TaxForecast.tax_withheld_history">(forecaster.forecast.tax.TaxForecast attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.tax_withheld_history">(forecaster.canada.accounts.registered_account.RegisteredAccount property)</a>
 </li>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.tax_withheld_history">(forecaster.forecast.withdrawal.WithdrawalForecast attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.tax_withheld_history">(forecaster.canada.accounts.rrsp.RRSP property)</a>
 </li>
-        <li><a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.tax_withheld_history">(forecaster.ledger.base.TaxSource attribute)</a>, <a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.tax_withheld_history">[1]</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.tax_withheld_history">(forecaster.canada.accounts.taxable_account.TaxableAccount property)</a>
 </li>
-        <li><a href="forecaster.html#forecaster.person.Person.tax_withheld_history">(forecaster.person.Person attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.tfsa.TFSA.tax_withheld_history">(forecaster.canada.accounts.tfsa.TFSA property)</a>
+</li>
+        <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.tax_withheld_history">(forecaster.forecast.income.IncomeForecast property)</a>
+</li>
+        <li><a href="forecaster.forecast.html#forecaster.forecast.tax.TaxForecast.tax_withheld_history">(forecaster.forecast.tax.TaxForecast property)</a>
+</li>
+        <li><a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.tax_withheld_history">(forecaster.ledger.base.TaxSource property)</a>
+</li>
+        <li><a href="forecaster.html#forecaster.person.Person.tax_withheld_history">(forecaster.person.Person property)</a>
 </li>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.taxable_income">taxable_income (forecaster.accounts.base.Account attribute)</a>
+      <li><a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.taxable_income">taxable_income (forecaster.ledger.base.TaxSource attribute)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.taxable_income">taxable_income() (forecaster.accounts.base.Account property)</a>
 
       <ul>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.principle_residence.PrincipleResidence.taxable_income">(forecaster.canada.accounts.principle_residence.PrincipleResidence attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.principle_residence.PrincipleResidence.taxable_income">(forecaster.canada.accounts.principle_residence.PrincipleResidence property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.taxable_income">(forecaster.canada.accounts.rrsp.RRSP attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.taxable_income">(forecaster.canada.accounts.rrsp.RRSP property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.taxable_income">(forecaster.canada.accounts.taxable_account.TaxableAccount attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.taxable_income">(forecaster.canada.accounts.taxable_account.TaxableAccount property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.tfsa.TFSA.taxable_income">(forecaster.canada.accounts.tfsa.TFSA attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.tfsa.TFSA.taxable_income">(forecaster.canada.accounts.tfsa.TFSA property)</a>
 </li>
-        <li><a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.taxable_income">(forecaster.ledger.base.TaxSource attribute)</a>, <a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.taxable_income">[1]</a>
+        <li><a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.taxable_income">(forecaster.ledger.base.TaxSource property)</a>
 </li>
-        <li><a href="forecaster.html#forecaster.person.Person.taxable_income">(forecaster.person.Person attribute)</a>
+        <li><a href="forecaster.html#forecaster.person.Person.taxable_income">(forecaster.person.Person property)</a>
 </li>
       </ul></li>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.taxable_income_history">taxable_income_history (forecaster.accounts.base.Account attribute)</a>
+      <li><a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.taxable_income_history">taxable_income_history (forecaster.ledger.base.TaxSource attribute)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.taxable_income_history">taxable_income_history() (forecaster.accounts.base.Account property)</a>
 
       <ul>
-        <li><a href="forecaster.accounts.html#forecaster.accounts.contribution_limited.ContributionLimitAccount.taxable_income_history">(forecaster.accounts.contribution_limited.ContributionLimitAccount attribute)</a>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.taxable_income_history">(forecaster.accounts.debt.Debt property)</a>
 </li>
-        <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.taxable_income_history">(forecaster.accounts.debt.Debt attribute)</a>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.taxable_income_history">(forecaster.accounts.linked_limit.LinkedLimitAccount property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.principle_residence.PrincipleResidence.taxable_income_history">(forecaster.canada.accounts.principle_residence.PrincipleResidence attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.principle_residence.PrincipleResidence.taxable_income_history">(forecaster.canada.accounts.principle_residence.PrincipleResidence property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.taxable_income_history">(forecaster.canada.accounts.registered_account.RegisteredAccount attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.taxable_income_history">(forecaster.canada.accounts.registered_account.RegisteredAccount property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.taxable_income_history">(forecaster.canada.accounts.rrsp.RRSP attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.taxable_income_history">(forecaster.canada.accounts.rrsp.RRSP property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.taxable_income_history">(forecaster.canada.accounts.taxable_account.TaxableAccount attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.taxable_income_history">(forecaster.canada.accounts.taxable_account.TaxableAccount property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.tfsa.TFSA.taxable_income_history">(forecaster.canada.accounts.tfsa.TFSA attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.tfsa.TFSA.taxable_income_history">(forecaster.canada.accounts.tfsa.TFSA property)</a>
 </li>
-        <li><a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.taxable_income_history">(forecaster.ledger.base.TaxSource attribute)</a>, <a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.taxable_income_history">[1]</a>
+        <li><a href="forecaster.ledger.html#forecaster.ledger.base.TaxSource.taxable_income_history">(forecaster.ledger.base.TaxSource property)</a>
 </li>
-        <li><a href="forecaster.html#forecaster.person.Person.taxable_income_history">(forecaster.person.Person attribute)</a>
+        <li><a href="forecaster.html#forecaster.person.Person.taxable_income_history">(forecaster.person.Person property)</a>
 </li>
       </ul></li>
       <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount">TaxableAccount (class in forecaster.canada.accounts.taxable_account)</a>
@@ -1508,74 +1671,76 @@
 </li>
       <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.time_to_balance">time_to_balance() (forecaster.accounts.base.Account method)</a>
 </li>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.time_to_value">time_to_value() (forecaster.accounts.base.Account method)</a>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.util.time_to_value">time_to_value() (in module forecaster.accounts.util)</a>
 </li>
-      <li><a href="forecaster.strategy.html#forecaster.strategy.account_transaction.AccountTransactionStrategy.timing">timing (forecaster.strategy.account_transaction.AccountTransactionStrategy attribute)</a>
-
-      <ul>
-        <li><a href="forecaster.strategy.html#forecaster.strategy.debt_payment.DebtPaymentStrategy.timing">(forecaster.strategy.debt_payment.DebtPaymentStrategy attribute)</a>
+      <li><a href="forecaster.html#forecaster.utility.Timing">Timing (class in forecaster.utility)</a>
 </li>
-      </ul></li>
-      <li><a href="forecaster.html#forecaster.settings.Settings.transaction_in_strategy">transaction_in_strategy (forecaster.settings.Settings attribute)</a>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.link.AccountLink.token">token (forecaster.accounts.link.AccountLink attribute)</a>
 </li>
-      <li><a href="forecaster.html#forecaster.settings.Settings.transaction_in_timing">transaction_in_timing (forecaster.settings.Settings attribute)</a>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.link.LinkTuple.token">token() (forecaster.accounts.link.LinkTuple property)</a>
 </li>
-      <li><a href="forecaster.canada.html#forecaster.canada.settings.SettingsCanada.transaction_in_weights">transaction_in_weights (forecaster.canada.settings.SettingsCanada attribute)</a>
-
-      <ul>
-        <li><a href="forecaster.html#forecaster.settings.Settings.transaction_in_weights">(forecaster.settings.Settings attribute)</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.saving.SavingForecast.total">total (forecaster.forecast.saving.SavingForecast attribute)</a>
 </li>
-      </ul></li>
-      <li><a href="forecaster.html#forecaster.settings.Settings.transaction_out_strategy">transaction_out_strategy (forecaster.settings.Settings attribute)</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.saving.SavingForecast.total">total() (forecaster.forecast.saving.SavingForecast property)</a>
 </li>
-      <li><a href="forecaster.html#forecaster.settings.Settings.transaction_out_timing">transaction_out_timing (forecaster.settings.Settings attribute)</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.saving.SavingForecast.total_history">total_history() (forecaster.forecast.saving.SavingForecast property)</a>
 </li>
-      <li><a href="forecaster.canada.html#forecaster.canada.settings.SettingsCanada.transaction_out_weights">transaction_out_weights (forecaster.canada.settings.SettingsCanada attribute)</a>
-
-      <ul>
-        <li><a href="forecaster.html#forecaster.settings.Settings.transaction_out_weights">(forecaster.settings.Settings attribute)</a>
+      <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.util.transaction_default_methods">transaction_default_methods() (in module forecaster.strategy.transaction.util)</a>
 </li>
-      </ul></li>
+      <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.base.TransactionTraversal.transaction_methods">transaction_methods (forecaster.strategy.transaction.base.TransactionTraversal attribute)</a>
+</li>
       <li><a href="forecaster.forecast.html#forecaster.forecast.subforecast.TransactionDict">TransactionDict (class in forecaster.forecast.subforecast)</a>
 </li>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.transactions">transactions (forecaster.accounts.base.Account attribute)</a>, <a href="forecaster.accounts.html#forecaster.accounts.base.Account.transactions">[1]</a>
+      <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.node.TransactionNode">TransactionNode (class in forecaster.strategy.transaction.node)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.transactions">transactions (forecaster.accounts.base.Account attribute)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.transactions">transactions() (forecaster.accounts.base.Account property)</a>
 
       <ul>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.subforecast.SubForecast.transactions">(forecaster.forecast.subforecast.SubForecast attribute)</a>
+        <li><a href="forecaster.forecast.html#forecaster.forecast.subforecast.SubForecast.transactions">(forecaster.forecast.subforecast.SubForecast property)</a>
 </li>
       </ul></li>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.transactions_history">transactions_history (forecaster.accounts.base.Account attribute)</a>, <a href="forecaster.accounts.html#forecaster.accounts.base.Account.transactions_history">[1]</a>
+      <li><a href="forecaster.html#forecaster.utility.transactions_from_timing">transactions_from_timing() (in module forecaster.utility)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.transactions_history">transactions_history (forecaster.accounts.base.Account attribute)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.transactions_history">transactions_history() (forecaster.accounts.base.Account property)</a>
 
       <ul>
-        <li><a href="forecaster.accounts.html#forecaster.accounts.contribution_limited.ContributionLimitAccount.transactions_history">(forecaster.accounts.contribution_limited.ContributionLimitAccount attribute)</a>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.transactions_history">(forecaster.accounts.debt.Debt property)</a>
 </li>
-        <li><a href="forecaster.accounts.html#forecaster.accounts.debt.Debt.transactions_history">(forecaster.accounts.debt.Debt attribute)</a>
+        <li><a href="forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.transactions_history">(forecaster.accounts.linked_limit.LinkedLimitAccount property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.principle_residence.PrincipleResidence.transactions_history">(forecaster.canada.accounts.principle_residence.PrincipleResidence attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.principle_residence.PrincipleResidence.transactions_history">(forecaster.canada.accounts.principle_residence.PrincipleResidence property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.transactions_history">(forecaster.canada.accounts.registered_account.RegisteredAccount attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.transactions_history">(forecaster.canada.accounts.registered_account.RegisteredAccount property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.transactions_history">(forecaster.canada.accounts.rrsp.RRSP attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.rrsp.RRSP.transactions_history">(forecaster.canada.accounts.rrsp.RRSP property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.transactions_history">(forecaster.canada.accounts.taxable_account.TaxableAccount attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.transactions_history">(forecaster.canada.accounts.taxable_account.TaxableAccount property)</a>
 </li>
-        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.tfsa.TFSA.transactions_history">(forecaster.canada.accounts.tfsa.TFSA attribute)</a>
+        <li><a href="forecaster.canada.accounts.html#forecaster.canada.accounts.tfsa.TFSA.transactions_history">(forecaster.canada.accounts.tfsa.TFSA property)</a>
 </li>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.contribution.ContributionForecast.transactions_history">(forecaster.forecast.contribution.ContributionForecast attribute)</a>
+        <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.transactions_history">(forecaster.forecast.income.IncomeForecast property)</a>
 </li>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.transactions_history">(forecaster.forecast.income.IncomeForecast attribute)</a>
+        <li><a href="forecaster.forecast.html#forecaster.forecast.living_expenses.LivingExpensesForecast.transactions_history">(forecaster.forecast.living_expenses.LivingExpensesForecast property)</a>
 </li>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.living_expenses.LivingExpensesForecast.transactions_history">(forecaster.forecast.living_expenses.LivingExpensesForecast attribute)</a>
+        <li><a href="forecaster.forecast.html#forecaster.forecast.saving.SavingForecast.transactions_history">(forecaster.forecast.saving.SavingForecast property)</a>
 </li>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.reduction.ReductionForecast.transactions_history">(forecaster.forecast.reduction.ReductionForecast attribute)</a>
+        <li><a href="forecaster.forecast.html#forecaster.forecast.subforecast.SubForecast.transactions_history">(forecaster.forecast.subforecast.SubForecast property)</a>
 </li>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.subforecast.SubForecast.transactions_history">(forecaster.forecast.subforecast.SubForecast attribute)</a>
+        <li><a href="forecaster.forecast.html#forecaster.forecast.tax.TaxForecast.transactions_history">(forecaster.forecast.tax.TaxForecast property)</a>
 </li>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.tax.TaxForecast.transactions_history">(forecaster.forecast.tax.TaxForecast attribute)</a>
-</li>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.transactions_history">(forecaster.forecast.withdrawal.WithdrawalForecast attribute)</a>
+        <li><a href="forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.transactions_history">(forecaster.forecast.withdrawal.WithdrawalForecast property)</a>
 </li>
       </ul></li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.transactions_to_balance">transactions_to_balance() (forecaster.accounts.base.Account method)</a>
+</li>
+      <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.strategy.TransactionStrategy">TransactionStrategy (class in forecaster.strategy.transaction.strategy)</a>
+</li>
+      <li><a href="forecaster.strategy.transaction.html#forecaster.strategy.transaction.base.TransactionTraversal">TransactionTraversal (class in forecaster.strategy.transaction.base)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -1583,24 +1748,16 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="forecaster.forecast.html#forecaster.forecast.subforecast.SubForecast.undo_transactions">undo_transactions() (forecaster.forecast.subforecast.SubForecast method)</a>
-</li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.contribution.ContributionForecast.update_available">update_available() (forecaster.forecast.contribution.ContributionForecast method)</a>
 
       <ul>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.update_available">(forecaster.forecast.income.IncomeForecast method)</a>
-</li>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.living_expenses.LivingExpensesForecast.update_available">(forecaster.forecast.living_expenses.LivingExpensesForecast method)</a>
-</li>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.reduction.ReductionForecast.update_available">(forecaster.forecast.reduction.ReductionForecast method)</a>
-</li>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.subforecast.SubForecast.update_available">(forecaster.forecast.subforecast.SubForecast method)</a>
-</li>
-        <li><a href="forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.update_available">(forecaster.forecast.withdrawal.WithdrawalForecast method)</a>
+        <li><a href="forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.undo_transactions">(forecaster.forecast.withdrawal.WithdrawalForecast method)</a>
 </li>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.update_subforecasts">update_subforecasts() (forecaster.forecast.base.Forecast method)</a>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.link.AccountLink.unlink_account">unlink_account() (forecaster.accounts.link.AccountLink method)</a>
+</li>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.link.AccountLink.unregister">unregister() (forecaster.accounts.link.AccountLink method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -1608,7 +1765,7 @@
 <h2 id="V">V</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="forecaster.accounts.html#forecaster.accounts.base.Account.value_at_time">value_at_time() (forecaster.accounts.base.Account method)</a>
+      <li><a href="forecaster.accounts.html#forecaster.accounts.util.value_at_time">value_at_time() (in module forecaster.accounts.util)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -1620,29 +1777,29 @@
 <h2 id="W">W</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="forecaster.strategy.html#forecaster.strategy.account_transaction.AccountTransactionStrategy.weights">weights (forecaster.strategy.account_transaction.AccountTransactionStrategy attribute)</a>
-</li>
       <li><a href="forecaster.html#forecaster.utility.when_conv">when_conv() (in module forecaster.utility)</a>
-</li>
-      <li><a href="forecaster.html#forecaster.settings.Settings.withdrawal_base_amount">withdrawal_base_amount (forecaster.settings.Settings attribute)</a>
 </li>
       <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.withdrawal_forecast">withdrawal_forecast (forecaster.forecast.base.Forecast attribute)</a>
 </li>
-      <li><a href="forecaster.html#forecaster.settings.Settings.withdrawal_income_adjusted">withdrawal_income_adjusted (forecaster.settings.Settings attribute)</a>
-</li>
-      <li><a href="forecaster.html#forecaster.settings.Settings.withdrawal_inflation_adjusted">withdrawal_inflation_adjusted (forecaster.settings.Settings attribute)</a>
-</li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="forecaster.html#forecaster.settings.Settings.withdrawal_rate">withdrawal_rate (forecaster.settings.Settings attribute)</a>
+      <li><a href="forecaster.html#forecaster.forecaster.Parameter.WITHDRAWAL_STRATEGY">WITHDRAWAL_STRATEGY (forecaster.forecaster.Parameter attribute)</a>
 </li>
       <li><a href="forecaster.html#forecaster.settings.Settings.withdrawal_strategy">withdrawal_strategy (forecaster.settings.Settings attribute)</a>
 </li>
+      <li><a href="forecaster.canada.html#forecaster.canada.settings.SettingsCanada.withdrawal_weights">withdrawal_weights (forecaster.canada.settings.SettingsCanada attribute)</a>
+
+      <ul>
+        <li><a href="forecaster.html#forecaster.settings.Settings.withdrawal_weights">(forecaster.settings.Settings attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast">WithdrawalForecast (class in forecaster.forecast.withdrawal)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.withdrawals">withdrawals (forecaster.forecast.base.Forecast attribute)</a>, <a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.withdrawals">[1]</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.withdrawals">withdrawals (forecaster.forecast.base.Forecast attribute)</a>
 </li>
-      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.withdrawals_history">withdrawals_history (forecaster.forecast.base.Forecast attribute)</a>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.withdrawals">withdrawals() (forecaster.forecast.base.Forecast property)</a>
+</li>
+      <li><a href="forecaster.forecast.html#forecaster.forecast.base.Forecast.withdrawals_history">withdrawals_history() (forecaster.forecast.base.Forecast property)</a>
 </li>
       <li><a href="forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.working">working (forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule attribute)</a>
 </li>

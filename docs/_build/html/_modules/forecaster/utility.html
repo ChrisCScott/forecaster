@@ -156,6 +156,276 @@
 
 <span class="kn">import</span> <span class="nn">collections</span>
 <span class="kn">from</span> <span class="nn">decimal</span> <span class="k">import</span> <span class="n">Decimal</span>
+<span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="n">Money</span>
+
+<span class="n">EPSILON</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="s2">&quot;0.00001&quot;</span><span class="p">)</span>
+<span class="n">EPSILON_MONEY</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="n">EPSILON</span><span class="p">)</span>
+
+<span class="n">WHEN_DEFAULT</span> <span class="o">=</span> <span class="mf">0.5</span>
+
+<div class="viewcode-block" id="Timing"><a class="viewcode-back" href="../../forecaster.html#forecaster.utility.Timing">[docs]</a><span class="k">class</span> <span class="nc">Timing</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; A dict of {timing: weight} pairs.</span>
+
+<span class="sd">    This is really just a vanilla dict with a convenient init method.</span>
+<span class="sd">    It divides the interval [0,1] into a number of equal-length periods</span>
+<span class="sd">    equal to `frequency` and, within each period, assigns a timing at</span>
+<span class="sd">    `when`. The timings are equally-weighted.</span>
+
+<span class="sd">    This class provides a copy-constructor that can receive a dict of</span>
+<span class="sd">    {when: value} pairs. If a dict has Money-type values, these are</span>
+<span class="sd">    converted to Decimal to avoid arithmetic errors.</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        Timing()</span>
+<span class="sd">        # {0.5: 1}</span>
+<span class="sd">        Timing(when=1, frequency=4)</span>
+<span class="sd">        # {0.25: 0.25, 0.5: 0.25, 0.75: 0.25, 1: 0.25}</span>
+<span class="sd">        Timing(when=0, frequency=4)</span>
+<span class="sd">        # {0: 0.25, 0.25: 0.25, 0.5: 0.25, 0.75: 0.25}</span>
+<span class="sd">        Timing(when=0.5, frequency=2)</span>
+<span class="sd">        # {0.25: 0.5, 0.75: 0.5}</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        when (Number, str): When transactions occur in each period (e.g.</span>
+<span class="sd">            &#39;start&#39;, &#39;end&#39;, 0.5). Uses the same syntax as</span>
+<span class="sd">            `forecaster.utility.when_conv`. Optional.</span>
+<span class="sd">        frequency (str, int): The number of periods (and thus the number</span>
+<span class="sd">            of transactions). Uses the same syntax as</span>
+<span class="sd">            `forecaster.utility.frequency_conv`. Optional.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="Timing.__init__"><a class="viewcode-back" href="../../forecaster.html#forecaster.utility.Timing.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="n">WHEN_DEFAULT</span><span class="p">,</span> <span class="n">frequency</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Initializes a Timing dict. &quot;&quot;&quot;</span>
+        <span class="c1"># We allow four forms of init call:</span>
+        <span class="c1"># 1) Init with two arguments: `when` and `frequency`</span>
+        <span class="c1"># 2) Init with dict of {when: value} pairs (e.g. `Timing(d)`</span>
+        <span class="c1">#    where d is a dict)</span>
+        <span class="c1"># 3) Init with string denoting a frequency (e.g. `Timing(&#39;BW&#39;)`)</span>
+        <span class="c1"># 4) Init with `when`-convertible value (e.g. Timing(&#39;start&#39;),</span>
+        <span class="c1">#    `Timing(1)`)</span>
+
+        <span class="c1"># Set up the object by getting an empty dict:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="c1"># Provide a simple copy-constructor. We will assume that other</span>
+        <span class="c1"># Timing objects have nice values already:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">when</span><span class="p">,</span> <span class="n">Timing</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">when</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="c1"># If we call Timing(input) with dict-type `input` (that isn&#39;t</span>
+        <span class="c1"># already a Timing object), things get trickier. We want to</span>
+        <span class="c1"># be able to receive time-series data of transactions (which</span>
+        <span class="c1"># may or may not be explicitly Money-typed), so we need to deal</span>
+        <span class="c1"># with negative values, and potentially with Money-typed values.</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">when</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">_convert_dict</span><span class="p">(</span><span class="n">when</span><span class="p">))</span>
+            <span class="k">return</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># If we receive a frequency as the first argument, swap args</span>
+            <span class="c1"># and use the default value for `when`:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">when</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">when</span> <span class="ow">in</span> <span class="n">FREQUENCY_MAPPING</span><span class="p">:</span>
+                <span class="n">frequency</span> <span class="o">=</span> <span class="n">when</span>
+                <span class="n">when</span> <span class="o">=</span> <span class="n">WHEN_DEFAULT</span>  <span class="c1"># default value</span>
+            <span class="c1"># Arguments might be str-valued; make them numeric:</span>
+            <span class="n">when</span> <span class="o">=</span> <span class="n">when_conv</span><span class="p">(</span><span class="n">when</span><span class="p">)</span>
+            <span class="n">frequency</span> <span class="o">=</span> <span class="n">frequency_conv</span><span class="p">(</span><span class="n">frequency</span><span class="p">)</span>
+
+            <span class="c1"># Build out multiple timings based on scalar inputs.</span>
+            <span class="c1"># Each transaction has equal weight:</span>
+            <span class="n">weight</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">frequency</span>
+            <span class="c1"># Build the dict:</span>
+            <span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">frequency</span><span class="p">):</span>
+                <span class="bp">self</span><span class="p">[(</span><span class="n">time</span> <span class="o">+</span> <span class="n">when</span><span class="p">)</span> <span class="o">/</span> <span class="n">frequency</span><span class="p">]</span> <span class="o">=</span> <span class="n">weight</span></div></div>
+
+<span class="k">def</span> <span class="nf">_convert_dict</span><span class="p">(</span><span class="n">when</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Converts `dict` input to `Timing`-style `when: weight` pairs.</span>
+
+<span class="sd">    If all values are positive, the dict is returned unchanged. If they</span>
+<span class="sd">    are all negative, they&#39;re flipped to positive and returned. (This</span>
+<span class="sd">    excludes 0-values, so technically &quot;non-negative&quot; and &quot;non-positive&quot;</span>
+<span class="sd">    are the correct terms.)</span>
+
+<span class="sd">    If there are both positive and negative values, `when` is assumed</span>
+<span class="sd">    to be a dict of transactions. If total flows are positive, this</span>
+<span class="sd">    method returns a mapping of timings to the largest amount at each</span>
+<span class="sd">    timing that can be withdrawn without causing the net flows at that</span>
+<span class="sd">    timing or any later timing to be negative. If the total flows are</span>
+<span class="sd">    negative, the method returns a mapping of timings to the smallest</span>
+<span class="sd">    amount that must be added to bring the net flows to zero balance</span>
+<span class="sd">    (without bringing the net transactions to positive balance).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        when (dict[Number, Union[Money, Number]]): A mapping of timings</span>
+<span class="sd">            (in [0,1]) to values.</span>
+<span class="sd">            If the values are `Money`-typed, they are converted to</span>
+<span class="sd">            `Decimal`.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict[Decimal, Number]: A mapping of timings to weights.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># First, deal with empty dict or all-zero dict:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">when</span><span class="p">:</span>
+        <span class="c1"># This dict has no meaningful timings, so return empty dict.</span>
+        <span class="k">return</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">value</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">when</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+        <span class="c1"># Use the timings provided by the dict and fill in uniform</span>
+        <span class="c1"># weights, since no non-zero weights were given:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">Decimal</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">when</span><span class="p">}</span>
+
+    <span class="c1"># If values are Money-types, convert to Decimal:</span>
+    <span class="c1"># Get a random element from `when` so we can check its type:</span>
+    <span class="n">sample</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">when</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">Money</span><span class="p">):</span>
+        <span class="c1"># Convert the dict&#39;s values to Decimal (no mutation!):</span>
+        <span class="n">when</span> <span class="o">=</span> <span class="p">{</span><span class="n">timing</span><span class="p">:</span> <span class="n">value</span><span class="o">.</span><span class="n">amount</span> <span class="k">for</span> <span class="n">timing</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">when</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+    <span class="c1"># OK, so the dict is non-empty, has a non-zero element, and</span>
+    <span class="c1"># doesn&#39;t have awkward `Money` semantics (i.e. is Decimal-like).</span>
+    <span class="c1"># If there are no negative values, the dict is useable as-is:</span>
+    <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">value</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">when</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+        <span class="k">return</span> <span class="n">when</span>
+    <span class="c1"># If all items are negative, flip the signs:</span>
+    <span class="k">elif</span> <span class="nb">all</span><span class="p">(</span><span class="n">value</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">when</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">time</span><span class="p">:</span> <span class="o">-</span><span class="n">value</span> <span class="k">for</span> <span class="n">time</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">when</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+    <span class="c1"># If the dict has a mix of positive and negative values, treat</span>
+    <span class="c1"># it like an `available` dict of transactions. Use the</span>
+    <span class="c1"># timings for inflows if the total is positive and outflows if</span>
+    <span class="c1"># the total is negative (this way we reinforce inflows/outflows)</span>
+    <span class="n">total</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">when</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+    <span class="c1"># First, deal with the case where the total is zero:</span>
+    <span class="k">if</span> <span class="n">total</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c1"># If the time-series is perfectly balanced between</span>
+        <span class="c1"># positive and negative, simply duplicate all timings</span>
+        <span class="c1"># (excluding zero-value transactions) and weight them based</span>
+        <span class="c1"># on the unsigned magnitudes of those transactions:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="n">key</span><span class="p">:</span> <span class="nb">abs</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">when</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">when</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">}</span>
+    <span class="k">elif</span> <span class="n">total</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_accum_inflows</span><span class="p">(</span><span class="n">when</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_accum_outflows</span><span class="p">(</span><span class="n">when</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_accum_inflows</span><span class="p">(</span><span class="n">when</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Determines maximum withdrawable amount for each timing.</span>
+
+<span class="sd">    This method receives an input (`when`) with a mix of inflows and</span>
+<span class="sd">    outflows which sum up to a net inflow. It then determines, for each</span>
+<span class="sd">    timing in `when`, the largest amount that can be withdrawn at that</span>
+<span class="sd">    timing without causing the balance of transactions to go negative</span>
+<span class="sd">    (or, at least, any more negative than it already is) at any point in</span>
+<span class="sd">    time. The value for each timing assumes that all withdrawals for</span>
+<span class="sd">    previous timings have been made.</span>
+
+<span class="sd">    A simpler way to think about this: This is the time-series of</span>
+<span class="sd">    outflows which, when added to `when`, zeroes out the net</span>
+<span class="sd">    transactions by the end of the period and makes each outflow</span>
+<span class="sd">    as large and as early as possible while only using money that&#39;s</span>
+<span class="sd">    available (i.e. no overdraft/credit).</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        when = {0: 10, 0.5: -5, 1: 5}</span>
+<span class="sd">        outflows = _accum_inflows(when)</span>
+<span class="sd">        # outflows == {0: 5, 1: 5}</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        when (dict[Number, Union[Money, Number]]): A mapping of timings</span>
+<span class="sd">            (in [0,1]) to values. The values must sum to a positive</span>
+<span class="sd">            value. If the values are `Money`-typed, they are converted</span>
+<span class="sd">            to `Decimal`.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict[Decimal, Number]: A mapping of timings to weights.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># We do this in two stages.</span>
+    <span class="c1"># First, for each timing, determine the cumulative value of</span>
+    <span class="c1"># all transactions to date and store it in `accum`:</span>
+    <span class="n">accum</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">tally</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># sum of transactions so far</span>
+    <span class="k">for</span> <span class="n">timing</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">when</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+        <span class="n">tally</span> <span class="o">+=</span> <span class="n">when</span><span class="p">[</span><span class="n">timing</span><span class="p">]</span>
+        <span class="n">accum</span><span class="p">[</span><span class="n">timing</span><span class="p">]</span> <span class="o">=</span> <span class="n">tally</span>
+    <span class="c1"># Second, iterate over the timings *again*, this time</span>
+    <span class="c1"># determining for each timing the maximum amount that can be</span>
+    <span class="c1"># withdrawn without changing the sign of any future timing:</span>
+    <span class="n">tally</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># amounts withdrawn so far</span>
+    <span class="k">for</span> <span class="n">timing</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">when</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+        <span class="c1"># Find the bottleneck: the future value with the</span>
+        <span class="c1"># smallest cumulative amount determines the maximum</span>
+        <span class="c1"># transaction we can make right now:</span>
+        <span class="n">max_transaction</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+            <span class="n">value</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">accum</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">key</span> <span class="o">&gt;=</span> <span class="n">timing</span><span class="p">)</span>
+        <span class="c1"># Only record timings with positive sign:</span>
+        <span class="k">if</span> <span class="n">max_transaction</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">result</span><span class="p">[</span><span class="n">timing</span><span class="p">]</span> <span class="o">=</span> <span class="n">max_transaction</span>
+            <span class="c1"># Update loop variables to reflect that a transaction</span>
+            <span class="c1"># has been added: all future timings in accum should be</span>
+            <span class="c1"># modified accordingly.</span>
+            <span class="n">tally</span> <span class="o">+=</span> <span class="n">max_transaction</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">accum</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">key</span> <span class="o">&gt;=</span> <span class="n">timing</span><span class="p">:</span>
+                    <span class="n">accum</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">-=</span> <span class="n">max_transaction</span>
+    <span class="k">return</span> <span class="n">result</span>
+
+<span class="k">def</span> <span class="nf">_accum_outflows</span><span class="p">(</span><span class="n">when</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Determines minimum necessary contribution for each timing.</span>
+
+<span class="sd">    This method receives an input (`when`) with a mix of inflows and</span>
+<span class="sd">    outflows which sum up to a net outflow. It then determines, for each</span>
+<span class="sd">    timing in `when`, the smallest amount that must be contributed at</span>
+<span class="sd">    that timing to bring the rolling total to zero balance.</span>
+<span class="sd">    The value for each timing assumes that all contributions for</span>
+<span class="sd">    previous timings have been made.</span>
+
+<span class="sd">    Note that, unlike `_accum_inflows`, this method does not guarantee</span>
+<span class="sd">    that the total net flows will be zero. Rather, the resulting time</span>
+<span class="sd">    series merely avoids a negative balance at any point in time.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        when = {0: -10, 0.5: -5, 1: 5}</span>
+<span class="sd">        inflows = _accum_outflows(when)</span>
+<span class="sd">        # inflows == {0: 10, 0.5: 5}</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        when (dict[Number, Union[Money, Number]]): A mapping of timings</span>
+<span class="sd">            (in [0,1]) to values. The values must sum to a negative</span>
+<span class="sd">            value. If the values are `Money`-typed, they are converted</span>
+<span class="sd">            to `Decimal`.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict[Decimal, Number]: A mapping of timings to weights.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Accumulate the various transactions in order. Every time the</span>
+    <span class="c1"># rolling accumulation dips negative, record an inflow that brings</span>
+    <span class="c1"># it back to 0:</span>
+    <span class="n">accum</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">timing</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">when</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+        <span class="n">accum</span> <span class="o">+=</span> <span class="n">when</span><span class="p">[</span><span class="n">timing</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">accum</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">result</span><span class="p">[</span><span class="n">timing</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">accum</span>
+            <span class="n">accum</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">return</span> <span class="n">result</span>
+
+<div class="viewcode-block" id="transactions_from_timing"><a class="viewcode-back" href="../../forecaster.html#forecaster.utility.transactions_from_timing">[docs]</a><span class="k">def</span> <span class="nf">transactions_from_timing</span><span class="p">(</span><span class="n">timing</span><span class="p">,</span> <span class="n">total</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Generates a schedule of transactions based on a timing and total</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        timing (Timing): The timing of the transactions, each with a</span>
+<span class="sd">            corresponding weight.</span>
+<span class="sd">        total (Money): The sum of all transactions to be generated.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict[Decimal, Money]: A schedule of transactions, each</span>
+<span class="sd">        transaction having the relative weighting provided by `timing`</span>
+<span class="sd">        and the total value of the transactions summing to `total`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">timing</span><span class="p">,</span> <span class="n">Timing</span><span class="p">):</span>
+        <span class="n">timing</span> <span class="o">=</span> <span class="n">Timing</span><span class="p">(</span><span class="n">timing</span><span class="p">)</span>
+    <span class="n">normalization</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">timing</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+    <span class="n">transactions</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">time</span><span class="p">:</span> <span class="n">total</span> <span class="o">*</span> <span class="p">(</span><span class="n">weight</span> <span class="o">/</span> <span class="n">normalization</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">time</span><span class="p">,</span> <span class="n">weight</span> <span class="ow">in</span> <span class="n">timing</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="k">return</span> <span class="n">transactions</span></div>
 
 <div class="viewcode-block" id="when_conv"><a class="viewcode-back" href="../../forecaster.html#forecaster.utility.when_conv">[docs]</a><span class="k">def</span> <span class="nf">when_conv</span><span class="p">(</span><span class="n">when</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Converts various types of `when` inputs to Decimal.</span>
@@ -198,7 +468,7 @@
 
 <span class="c1"># String codes describing frequencies (e.g. annual, bimonthly)</span>
 <span class="c1"># mapped to ints giving the number of such periods in a year:</span>
-<span class="n">frequency_mapping</span> <span class="o">=</span> <span class="p">{</span>
+<span class="n">FREQUENCY_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s1">&#39;C&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
     <span class="s1">&#39;D&#39;</span><span class="p">:</span> <span class="mi">365</span><span class="p">,</span>
     <span class="s1">&#39;W&#39;</span><span class="p">:</span> <span class="mi">52</span><span class="p">,</span>
@@ -233,9 +503,9 @@
 
     <span class="c1"># Try to parse a string based on known compounding frequencies</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">nper</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">nper</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">frequency_mapping</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">nper</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">FREQUENCY_MAPPING</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Account: str nper must have a known value&#39;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">frequency_mapping</span><span class="p">[</span><span class="n">nper</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">FREQUENCY_MAPPING</span><span class="p">[</span><span class="n">nper</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>  <span class="c1"># Attempt to cast to int</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">nper</span> <span class="o">==</span> <span class="nb">int</span><span class="p">(</span><span class="n">nper</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
@@ -243,6 +513,65 @@
         <span class="k">if</span> <span class="n">nper</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Account: nper must be greater than 0&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">nper</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="add_transactions"><a class="viewcode-back" href="../../forecaster.html#forecaster.utility.add_transactions">[docs]</a><span class="k">def</span> <span class="nf">add_transactions</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">added</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Combines the values of two dicts, summing values of shared keys.</span>
+
+<span class="sd">    This method mutates its first argument (base). If you don&#39;t want</span>
+<span class="sd">    that behaviour, copy your input dict before calling this method.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        d1 = {1: 1, 2: 2}</span>
+<span class="sd">        d2 = {2: 2, 3: 3}</span>
+<span class="sd">        add_transactions(d1, d2)</span>
+<span class="sd">        // d1 == {1: 1, 2: 4, 3: 3}</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        base [dict[Any, Any]]: A dictionary, generally of transactions</span>
+<span class="sd">            (i.e. `Decimal: Money` pairs), but potentially of any types.</span>
+<span class="sd">            Mutated by this method.</span>
+<span class="sd">        added [dict[Any, Any]]: A dictionary whose values support</span>
+<span class="sd">            addition (via `+` operator) with the same-key values of</span>
+<span class="sd">            `base`. Not mutated by this method.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        None. Input `base` is mutated instead.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">added</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="c1"># Sum values if the key is in both inputs, insert otherwise:</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">base</span><span class="p">:</span>
+            <span class="n">base</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">+=</span> <span class="n">value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">base</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span></div>
+
+<div class="viewcode-block" id="subtract_transactions"><a class="viewcode-back" href="../../forecaster.html#forecaster.utility.subtract_transactions">[docs]</a><span class="k">def</span> <span class="nf">subtract_transactions</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">added</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Combines values of two dicts, subtracting values of shared keys.</span>
+
+<span class="sd">    This method mutates its first argument (base). If you don&#39;t want</span>
+<span class="sd">    that behaviour, copy your input dict before calling this method.</span>
+
+<span class="sd">    The semantics of this method are the same as `add_transactions`,</span>
+<span class="sd">    except that the values of `added` are subtracted from those of</span>
+<span class="sd">    `base`. A consequence of this is that, unlike `add_transactions`,</span>
+<span class="sd">    `subtract_transactions` is not commutative.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        base [dict[Any, Any]]: A dictionary, generally of transactions</span>
+<span class="sd">            (i.e. `Decimal: Money` pairs), but potentially of any types.</span>
+<span class="sd">            Mutated by this method.</span>
+<span class="sd">        added [dict[Any, Any]]: A dictionary whose values support</span>
+<span class="sd">            addition (via `+` operator) with the same-key values of</span>
+<span class="sd">            `base`. Not mutated by this method.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        None. Input `base` is mutated instead.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">added</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="c1"># Sum values if the key is in both inputs, insert otherwise:</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">base</span><span class="p">:</span>
+            <span class="n">base</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">-=</span> <span class="n">value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">base</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">value</span></div>
 
 <div class="viewcode-block" id="nearest_year"><a class="viewcode-back" href="../../forecaster.html#forecaster.utility.nearest_year">[docs]</a><span class="k">def</span> <span class="nf">nearest_year</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Finds the nearest (past) year to `year` in `vals`.</span>

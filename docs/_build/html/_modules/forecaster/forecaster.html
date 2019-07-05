@@ -150,38 +150,97 @@
   <h1>Source code for forecaster.forecaster</h1><div class="highlight"><pre>
 <span></span><span class="sd">&#39;&#39;&#39; This module provides classes for creating and managing Forecasts. &#39;&#39;&#39;</span>
 
-<span class="kn">from</span> <span class="nn">copy</span> <span class="k">import</span> <span class="n">deepcopy</span>
-<span class="kn">from</span> <span class="nn">forecaster.forecast</span> <span class="k">import</span> <span class="n">Forecast</span>
-<span class="kn">from</span> <span class="nn">forecaster.person</span> <span class="k">import</span> <span class="n">Person</span>
-<span class="kn">from</span> <span class="nn">forecaster.accounts</span> <span class="k">import</span> <span class="n">Account</span><span class="p">,</span> <span class="n">ContributionLimitAccount</span><span class="p">,</span> <span class="n">Debt</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="k">import</span> <span class="n">copy</span><span class="p">,</span> <span class="n">deepcopy</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">reduce</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="k">import</span> <span class="n">Enum</span>
+<span class="kn">from</span> <span class="nn">forecaster.forecast</span> <span class="k">import</span> <span class="p">(</span>
+    <span class="n">Forecast</span><span class="p">,</span> <span class="n">IncomeForecast</span><span class="p">,</span> <span class="n">LivingExpensesForecast</span><span class="p">,</span>
+    <span class="n">SavingForecast</span><span class="p">,</span> <span class="n">WithdrawalForecast</span><span class="p">,</span> <span class="n">TaxForecast</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">forecaster.tax</span> <span class="k">import</span> <span class="n">Tax</span>
 <span class="kn">from</span> <span class="nn">forecaster.strategy</span> <span class="k">import</span> <span class="p">(</span>
-    <span class="n">LivingExpensesStrategy</span><span class="p">,</span> <span class="n">LivingExpensesStrategySchedule</span><span class="p">,</span>
-    <span class="n">AccountTransactionStrategy</span><span class="p">,</span> <span class="n">DebtPaymentStrategy</span><span class="p">,</span> <span class="n">AllocationStrategy</span><span class="p">)</span>
+    <span class="n">LivingExpensesStrategy</span><span class="p">,</span> <span class="n">TransactionStrategy</span><span class="p">,</span> <span class="n">AllocationStrategy</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">forecaster.scenario</span> <span class="k">import</span> <span class="n">Scenario</span>
 <span class="kn">from</span> <span class="nn">forecaster.settings</span> <span class="k">import</span> <span class="n">Settings</span>
 
-<span class="c1"># TODO: See issue #19 for ideas on reimplementing this class.</span>
-<span class="c1"># It would be ideal to provide generic code that takes a mapping</span>
-<span class="c1"># (of class to {attribute_name: default_value} pairs) and</span>
-<span class="c1"># instantiates objects of each class based on explicitly-provided</span>
-<span class="c1"># values and then fills in any remaining values with whatever is</span>
-<span class="c1"># provided by the mapping.</span>
-<span class="c1"># This class would be greatly simplified, and could provide most of</span>
-<span class="c1"># its value by (1) reading in Settings objects from files, and</span>
-<span class="c1"># (2) building various SubForecast objects using the same</span>
-<span class="c1"># `people`, `accounts`, etc., where appropriate.</span>
 
-<span class="c1"># Forecaster wraps Forecast and its SubForecast children.</span>
-<span class="c1"># It replicates much of that complexity by necessity,</span>
-<span class="c1"># but it isn&#39;t necessary for client code to interact</span>
-<span class="c1"># with it - that&#39;s the whole point of this class. Its arguments are</span>
-<span class="c1"># optional and its attributes are unavoidable, so suppress Pylint&#39;s</span>
-<span class="c1"># concerns about numbers of arguments/attributes/variables</span>
-<span class="c1"># pylint: disable=too-many-arguments</span>
-<span class="c1"># pylint: disable=too-many-instance-attributes</span>
-<span class="c1"># pylint: disable=too-many-locals</span>
+<span class="c1"># The `Forecaster` class makes frequent reference to the names of</span>
+<span class="c1"># parameters. Rather than hard-code these strings, it&#39;s better practice</span>
+<span class="c1"># to define them here as an enum.</span>
+<div class="viewcode-block" id="Parameter"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Parameter">[docs]</a><span class="k">class</span> <span class="nc">Parameter</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Defines names of `Forecaster` parameters. &quot;&quot;&quot;</span>
+    <span class="n">SCENARIO</span> <span class="o">=</span> <span class="s2">&quot;scenario&quot;</span>
+    <span class="n">LIVING_EXPENSES_STRATEGY</span> <span class="o">=</span> <span class="s2">&quot;living_expenses_strategy&quot;</span>
+    <span class="n">SAVING_STRATEGY</span> <span class="o">=</span> <span class="s2">&quot;saving_strategy&quot;</span>
+    <span class="n">WITHDRAWAL_STRATEGY</span> <span class="o">=</span> <span class="s2">&quot;withdrawal_strategy&quot;</span>
+    <span class="n">ALLOCATION_STRATEGY</span> <span class="o">=</span> <span class="s2">&quot;allocation_strategy&quot;</span>
+    <span class="n">TAX_TREATMENT</span> <span class="o">=</span> <span class="s2">&quot;tax_treatment&quot;</span>
 
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Cast enum members directly to their string value. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span></div>
+
+<span class="c1"># This mapping has the following form:</span>
+<span class="c1">#   dict[str: dict[str, str]]</span>
+<span class="c1"># The key provides an attribute name (as a string).</span>
+<span class="c1"># The {str: str} value is a mapping from the name of an __init__</span>
+<span class="c1"># arg for attribute (see DEFAULTTYPES for each attribute&#39;s type) to the</span>
+<span class="c1"># name of the corresponding `Settings` attribute that provides its</span>
+<span class="c1"># default value.</span>
+<span class="c1"># EXAMPLE:</span>
+<span class="c1">#   `{&quot;scenario&quot;: {&quot;inflation&quot;: &quot;scenario_inflation&quot;}}`</span>
+<span class="c1">#   implies that `Forecaster.scenario` receives the parameter</span>
+<span class="c1">#   `inflation` when initialized and its default value is provided by</span>
+<span class="c1">#   `Forecaster.settings.scenario_inflation`.</span>
+<span class="n">DEFAULTVALUES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nb">str</span><span class="p">(</span><span class="n">Parameter</span><span class="o">.</span><span class="n">SCENARIO</span><span class="p">):</span> <span class="p">{</span>
+        <span class="s2">&quot;initial_year&quot;</span><span class="p">:</span> <span class="s2">&quot;settings.initial_year&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;inflation&quot;</span><span class="p">:</span> <span class="s2">&quot;settings.inflation&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;stock_return&quot;</span><span class="p">:</span> <span class="s2">&quot;settings.stock_return&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;bond_return&quot;</span><span class="p">:</span> <span class="s2">&quot;settings.bond_return&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;other_return&quot;</span><span class="p">:</span> <span class="s2">&quot;settings.other_return&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;management_fees&quot;</span><span class="p">:</span> <span class="s2">&quot;settings.management_fees&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;num_years&quot;</span><span class="p">:</span> <span class="s2">&quot;settings.num_years&quot;</span><span class="p">},</span>
+    <span class="nb">str</span><span class="p">(</span><span class="n">Parameter</span><span class="o">.</span><span class="n">LIVING_EXPENSES_STRATEGY</span><span class="p">):</span> <span class="p">{</span>
+        <span class="s2">&quot;strategy&quot;</span><span class="p">:</span> <span class="s2">&quot;settings.living_expenses_strategy&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;base_amount&quot;</span><span class="p">:</span> <span class="s2">&quot;settings.living_expenses_base_amount&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;rate&quot;</span><span class="p">:</span> <span class="s2">&quot;settings.living_expenses_rate&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;inflation_adjust&quot;</span><span class="p">:</span> <span class="s2">&quot;scenario.inflation_adjust&quot;</span><span class="p">},</span>
+    <span class="nb">str</span><span class="p">(</span><span class="n">Parameter</span><span class="o">.</span><span class="n">SAVING_STRATEGY</span><span class="p">):</span> <span class="p">{</span>
+        <span class="s2">&quot;strategy&quot;</span><span class="p">:</span> <span class="s2">&quot;settings.saving_strategy&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;weights&quot;</span><span class="p">:</span> <span class="s2">&quot;settings.saving_weights&quot;</span><span class="p">},</span>
+    <span class="nb">str</span><span class="p">(</span><span class="n">Parameter</span><span class="o">.</span><span class="n">WITHDRAWAL_STRATEGY</span><span class="p">):</span> <span class="p">{</span>
+        <span class="s2">&quot;strategy&quot;</span><span class="p">:</span> <span class="s2">&quot;settings.withdrawal_strategy&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;weights&quot;</span><span class="p">:</span> <span class="s2">&quot;settings.withdrawal_weights&quot;</span><span class="p">},</span>
+    <span class="nb">str</span><span class="p">(</span><span class="n">Parameter</span><span class="o">.</span><span class="n">ALLOCATION_STRATEGY</span><span class="p">):</span> <span class="p">{</span>
+        <span class="s2">&quot;strategy&quot;</span><span class="p">:</span> <span class="s2">&quot;settings.allocation_strategy&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;target&quot;</span><span class="p">:</span> <span class="s2">&quot;settings.allocation_target&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;min_equity&quot;</span><span class="p">:</span> <span class="s2">&quot;settings.allocation_min_equity&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;max_equity&quot;</span><span class="p">:</span> <span class="s2">&quot;settings.allocation_max_equity&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;standard_retirement_age&quot;</span><span class="p">:</span> <span class="s2">&quot;settings.allocation_std_retirement_age&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;risk_transition_period&quot;</span><span class="p">:</span> <span class="s2">&quot;settings.allocation_risk_trans_period&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;adjust_for_retirement_plan&quot;</span><span class="p">:</span> <span class="s2">&quot;settings.allocation_adjust_retirement&quot;</span><span class="p">},</span>
+    <span class="nb">str</span><span class="p">(</span><span class="n">Parameter</span><span class="o">.</span><span class="n">TAX_TREATMENT</span><span class="p">):</span> <span class="p">{</span>
+        <span class="s2">&quot;tax_brackets&quot;</span><span class="p">:</span> <span class="s2">&quot;settings.tax_brackets&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;personal_deduction&quot;</span><span class="p">:</span> <span class="s2">&quot;settings.tax_personal_deduction&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;credit_rate&quot;</span><span class="p">:</span> <span class="s2">&quot;settings.tax_credit_rate&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;inflation_adjust&quot;</span><span class="p">:</span> <span class="s2">&quot;scenario.inflation_adjust&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;payment_timing&quot;</span><span class="p">:</span> <span class="s2">&quot;settings.tax_payment_timing&quot;</span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1"># This maps each of the above parameters to a type:</span>
+<span class="n">DEFAULTTYPES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nb">str</span><span class="p">(</span><span class="n">Parameter</span><span class="o">.</span><span class="n">SCENARIO</span><span class="p">):</span> <span class="n">Scenario</span><span class="p">,</span>
+    <span class="nb">str</span><span class="p">(</span><span class="n">Parameter</span><span class="o">.</span><span class="n">LIVING_EXPENSES_STRATEGY</span><span class="p">):</span> <span class="n">LivingExpensesStrategy</span><span class="p">,</span>
+    <span class="nb">str</span><span class="p">(</span><span class="n">Parameter</span><span class="o">.</span><span class="n">SAVING_STRATEGY</span><span class="p">):</span> <span class="n">TransactionStrategy</span><span class="p">,</span>
+    <span class="nb">str</span><span class="p">(</span><span class="n">Parameter</span><span class="o">.</span><span class="n">WITHDRAWAL_STRATEGY</span><span class="p">):</span> <span class="n">TransactionStrategy</span><span class="p">,</span>
+    <span class="nb">str</span><span class="p">(</span><span class="n">Parameter</span><span class="o">.</span><span class="n">ALLOCATION_STRATEGY</span><span class="p">):</span> <span class="n">AllocationStrategy</span><span class="p">,</span>
+    <span class="nb">str</span><span class="p">(</span><span class="n">Parameter</span><span class="o">.</span><span class="n">TAX_TREATMENT</span><span class="p">):</span> <span class="n">Tax</span><span class="p">}</span>
+
+<span class="c1"># This maps certain parameters that need special init logic to</span>
+<span class="c1"># the method name that provides that logic.</span>
+<span class="n">DEFAULTBUILDERS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="c1"># str(Parameter.TAX_TREATMENT): &quot;build_tax_treatment&quot;</span>
+<span class="p">}</span>
 
 <div class="viewcode-block" id="Forecaster"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster">[docs]</a><span class="k">class</span> <span class="nc">Forecaster</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; A convenience class for building Forecasts based on settings.</span>
@@ -192,606 +251,341 @@
 <span class="sd">    information.</span>
 
 <span class="sd">    One of the purposes of this class is to enable building `Forecast`</span>
-<span class="sd">    objects solely from a `Settings` object and a set of `inputs` dicts.</span>
-<span class="sd">    Objects of this class can be initialized with any of the parameters</span>
-<span class="sd">    that can be provided to `Forecast` (as well as a `Settings` object).</span>
-<span class="sd">    Any parameters that are not provided at init time can be built</span>
-<span class="sd">    afterward via an `add_\\*` method. Each `add_\\*` method takes the</span>
-<span class="sd">    parameters of the corresponding object being built; e.g.</span>
-<span class="sd">    `add_person` takes the same parameters as `Person.__init__` (plus</span>
-<span class="sd">    a `cls` parameter -- see documentation for `add_person`).</span>
+<span class="sd">    objects solely from a `Settings` object and some `Ledger` objects</span>
+<span class="sd">    (i.e. people, assets, and debts.) Client code may optionally</span>
+<span class="sd">    provide certain parameters required by `Forecast` or its members,</span>
+<span class="sd">    which will be used as-is without values from `Settings`. Client</span>
+<span class="sd">    code may also (or alternatively) build parameters with partial</span>
+<span class="sd">    init args; `Forecaster` will fill in any remaining init args with</span>
+<span class="sd">    the appropriate values from `Settings`.</span>
 
-<span class="sd">    This behaviour can be particularly useful for `Ledger` objects like</span>
-<span class="sd">    `Person` or `Account`, which may have per-object historical</span>
-<span class="sd">    data that can&#39;t be inferred from a Settings object (represented by</span>
-<span class="sd">    an `inputs` dict for each such object).</span>
+<span class="sd">    `Forecaster` also can be used to build certain objects which</span>
+<span class="sd">    are used by `Ledger` arguments to `Forecaster.run_forecast()`,</span>
+<span class="sd">    such as `Tax` and `AllocationStrategy` objects (used</span>
+<span class="sd">    by `Person` and some `Account` objects, respectively.)</span>
 
-<span class="sd">    `Forecasts` may be generated based on varying `Scenario` object</span>
-<span class="sd">    (while retaining the same `Strategy`, `Person`, and `Account`</span>
-<span class="sd">    objects) to allow for comparison of an overarching strategy between</span>
-<span class="sd">    various future economic performance scenarios (e.g. as in Monte</span>
-<span class="sd">    Carlo analysis).</span>
+<span class="sd">    `Forecaster` does not mutate values provided to it. `Ledger`</span>
+<span class="sd">    objects passed by client code are copied (actually deepcopied, so</span>
+<span class="sd">    that relationships between them are preserved), and the copies are</span>
+<span class="sd">    mutated and returned. This makes it easy to tweak a few parameters</span>
+<span class="sd">    and run another forecast, e.g. via Monte Carlo sampling.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="Forecaster.__init__"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">person1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">person2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">people</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">assets</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">debts</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">scenario</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">contribution_strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">contribution_transaction_strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">withdrawal_transaction_strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">allocation_strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">debt_payment_strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">tax_treatment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="n">Settings</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">settings</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">scenario</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">living_expenses_strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">saving_strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">withdrawal_strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">tax_treatment</span><span class="o">=</span><span class="kc">None</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Inits an instance of `Forecaster`.</span>
-
-<span class="sd">        This method can receive any of the parameters that can be</span>
-<span class="sd">        provided to `Forecast`. Any parameters that are not provided at</span>
-<span class="sd">        init time can be provided afterward via an `add_*` method.</span>
-
-<span class="sd">        This method automatically builds `Scenario` and `Strategy`</span>
-<span class="sd">        objects from `Settings`, but not any `Ledger` (i.e. `Person`,</span>
-<span class="sd">        `Debt`, or `Account`) or `Tax` objects, which must be added by</span>
-<span class="sd">        the corresponding `add_\\*` method individually.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            settings (Settings): An object with settings values for the</span>
-<span class="sd">                `Forecaster` to pass to various `Account`, `Person`,</span>
-<span class="sd">                `Strategy`, and `Scenario` objects when explicit</span>
-<span class="sd">                arguments are not given.</span>
-<span class="sd">            initial_year (int): The initial year for the forecast.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># This method has very simple branches - just testing for None</span>
-        <span class="c1"># followed by a single statement. There&#39;s not much to be gained</span>
-        <span class="c1"># by splitting this method up more.</span>
-        <span class="c1"># pylint: disable=too-many-branches</span>
-
-        <span class="c1"># NOTE: Settings defines two named persons, so store them via</span>
-        <span class="c1"># their own named attributes (as well as in the `people` dict).</span>
-        <span class="c1"># TODO: Make person* properties that update `people` when set</span>
-        <span class="c1"># (or add add_person1 and add_person2 methods)?</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">person1</span> <span class="o">=</span> <span class="n">person1</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">person2</span> <span class="o">=</span> <span class="n">person2</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">people</span> <span class="o">=</span> <span class="n">people</span> <span class="k">if</span> <span class="n">people</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">set</span><span class="p">()</span>
-        <span class="c1"># Ensure that person1/person2 are in the `people` set:</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">person1</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">people</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">person1</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">person2</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">people</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">person2</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">assets</span> <span class="o">=</span> <span class="n">assets</span> <span class="k">if</span> <span class="n">assets</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">set</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">debts</span> <span class="o">=</span> <span class="n">debts</span> <span class="k">if</span> <span class="n">debts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">set</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">contribution_strategy</span> <span class="o">=</span> <span class="n">contribution_strategy</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">transaction_in_strategy</span> <span class="o">=</span> <span class="n">contribution_transaction_strategy</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">transaction_out_strategy</span> <span class="o">=</span> <span class="n">withdrawal_transaction_strategy</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">allocation_strategy</span> <span class="o">=</span> <span class="n">allocation_strategy</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">debt_payment_strategy</span> <span class="o">=</span> <span class="n">debt_payment_strategy</span>
+        <span class="sd">&quot;&quot;&quot; Inits an instance of `Forecaster`. &quot;&quot;&quot;</span>
+        <span class="c1"># Set up instance:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default_values</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="n">DEFAULTVALUES</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default_types</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="n">DEFAULTTYPES</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default_builders</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="n">DEFAULTBUILDERS</span><span class="p">)</span>
+        <span class="c1"># Store args as attributes:</span>
+        <span class="c1"># For `settings` specifically, use the default values provided</span>
+        <span class="c1"># by the class if none are provided explicitly.</span>
+        <span class="k">if</span> <span class="n">settings</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">settings</span> <span class="o">=</span> <span class="n">Settings</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">settings</span> <span class="o">=</span> <span class="n">settings</span>
+        <span class="c1"># For the rest, None is allowed:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span> <span class="o">=</span> <span class="n">scenario</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">living_expenses_strategy</span> <span class="o">=</span> <span class="n">living_expenses_strategy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">saving_strategy</span> <span class="o">=</span> <span class="n">saving_strategy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">withdrawal_strategy</span> <span class="o">=</span> <span class="n">withdrawal_strategy</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tax_treatment</span> <span class="o">=</span> <span class="n">tax_treatment</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">settings</span> <span class="o">=</span> <span class="n">settings</span>
+        <span class="c1"># Some params aren&#39;t used to build Forecast and so are not</span>
+        <span class="c1"># received as input to __init__. Create attrs for them here:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">allocation_strategy</span> <span class="o">=</span> <span class="kc">None</span></div>
 
-        <span class="c1"># Build any not-provided attributes based on Settings:</span>
+    <span class="k">def</span> <span class="nf">_get_attr_recursive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">memo</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Get an attribute based on a dot-delimited identifier.</span>
 
-        <span class="c1"># Everything takes `initial_year`, so set that first.</span>
-        <span class="c1"># If a `scenario` has been provided, use that rather than</span>
-        <span class="c1"># Settings, since `scenario` defines initial_year as well.</span>
-        <span class="k">if</span> <span class="n">initial_year</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span> <span class="o">=</span> <span class="n">initial_year</span>
+<span class="sd">        If the first element of `name` is an optional parameter</span>
+<span class="sd">        (e.g. `scenario`), then if that parameter hasn&#39;t been explicitly</span>
+<span class="sd">        provided this method will build the parameter via</span>
+<span class="sd">        `build_param`.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            `forecaster._get_attr_recursive(&#39;settings.initial_year&#39;)`</span>
+<span class="sd">            Returns the value of `forecaster.settings.initial_year`</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (Any) The value of the requested attribute.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AttributeError: The attribute does not exist.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># `name` is dot-delimited, so split it up into distinct names:</span>
+        <span class="n">name_list</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+        <span class="c1"># The first name has special treatment, since it might need to</span>
+        <span class="c1"># be dynamically built:</span>
+        <span class="n">top_attr_name</span> <span class="o">=</span> <span class="n">name_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c1"># NOTE: This raises AttributeError if the attribute doesn&#39;t</span>
+        <span class="c1"># exist. (Optional attributes should exist and be None-valued)</span>
+        <span class="n">attr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">top_attr_name</span><span class="p">)</span>
+        <span class="c1"># If this is an optional attribute and it hasn&#39;t been explicitly</span>
+        <span class="c1"># provided, build it dynamically:</span>
+        <span class="k">if</span> <span class="n">attr</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">top_attr_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_values</span><span class="p">:</span>
+            <span class="n">attr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_param</span><span class="p">(</span><span class="n">top_attr_name</span><span class="p">,</span> <span class="n">memo</span><span class="o">=</span><span class="n">memo</span><span class="p">)</span>
+        <span class="c1"># If there are no further identifiers, we&#39;re done!</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">name_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">attr</span>
+        <span class="c1"># Otherwise, recursively call getattr on each sub-identifier.</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">scenario</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span> <span class="o">=</span> <span class="n">scenario</span><span class="o">.</span><span class="n">initial_year</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">initial_year</span>
+            <span class="k">return</span> <span class="n">reduce</span><span class="p">(</span><span class="nb">getattr</span><span class="p">,</span> <span class="n">name_list</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">attr</span><span class="p">)</span>
 
-        <span class="c1"># Scenario has no dependencies on other classes, so build it</span>
-        <span class="c1"># first:</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">set_scenario</span><span class="p">()</span>
-        <span class="c1"># Strategies can depend on Scenario, but not on Person/Accounts,</span>
-        <span class="c1"># so build them next:</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_strategy</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">set_contribution_strategy</span><span class="p">()</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transaction_in_strategy</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">set_transaction_in_strategy</span><span class="p">()</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transaction_out_strategy</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">set_transaction_out_strategy</span><span class="p">()</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">allocation_strategy</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">set_allocation_strategy</span><span class="p">()</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">debt_payment_strategy</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">set_debt_payment_strategy</span><span class="p">()</span>
-        <span class="c1"># Tax treatment also depends on Scenario. Person depends on Tax,</span>
-        <span class="c1"># so build Tax first.</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_treatment</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">set_tax_treatment</span><span class="p">()</span>
-        <span class="c1"># Finally, set `Person` objects.</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">person1</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">set_person1</span><span class="p">()</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">person2</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">set_person2</span><span class="p">()</span></div>
-        <span class="c1"># Accounts will need to be set manually.</span>
+<div class="viewcode-block" id="Forecaster.run_forecast"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.run_forecast">[docs]</a>    <span class="k">def</span> <span class="nf">run_forecast</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="n">accounts</span><span class="p">,</span> <span class="n">debts</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Generates a `Forecast` object.</span>
 
-<div class="viewcode-block" id="Forecaster.forecast"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.forecast">[docs]</a>    <span class="k">def</span> <span class="nf">forecast</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; TODO &quot;&quot;&quot;</span>
+<span class="sd">        This method builds a `Forecast` based on any explicitly-provided</span>
+<span class="sd">        parameters (e.g. `scenario`, `living_expenses_strategy`) and</span>
+<span class="sd">        the applicable `settings`. Any parameters that have not been</span>
+<span class="sd">        explicitly provided are built dynamically.</span>
 
-        <span class="c1"># TODO: Divide these into various SubForecast objects and</span>
-        <span class="c1"># build a Forecast out of those:</span>
+<span class="sd">        Arguments (`people`, etc.) are copied. Copies are mutated, but</span>
+<span class="sd">        the objects passed as arguments are not so that they an be</span>
+<span class="sd">        re-used (and because mutating arguments is considered rude).</span>
+<span class="sd">        Relationships between arguments and their members are preserved</span>
+<span class="sd">        via `deepcopy`.</span>
 
-        <span class="c1"># Build a dict of args to pass to Forecast.__init__ based on</span>
-        <span class="c1"># the `Forecaster`&#39;s attributes:</span>
-        <span class="n">forecast_kwargs</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;scenario&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span><span class="p">,</span>
-            <span class="s1">&#39;people&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">people</span><span class="p">,</span>
-            <span class="s1">&#39;assets&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">assets</span><span class="p">,</span>
-            <span class="s1">&#39;debts&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">debts</span><span class="p">,</span>
-            <span class="s1">&#39;contribution_strategy&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_strategy</span><span class="p">,</span>
-            <span class="s1">&#39;contribution_trans_strategy&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">transaction_in_strategy</span><span class="p">,</span>
-            <span class="s1">&#39;withdrawal_trans_strategy&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">transaction_out_strategy</span><span class="p">,</span>
-            <span class="s1">&#39;debt_payment_strategy&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">debt_payment_strategy</span><span class="p">,</span>
-            <span class="s1">&#39;tax_treatment&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_treatment</span>
-        <span class="p">}</span>
-
-        <span class="c1"># This is the clever bit: `Forecast` mutates many of its</span>
-        <span class="c1"># arguments, so we need to deepcopy this arg list. We also</span>
-        <span class="c1"># want to allow the user to replace any arguments to `Forecast`</span>
-        <span class="c1"># so that they can test out different scenarios, account mixes,</span>
-        <span class="c1"># etc. We can do these both by using the deepcopy memo arg!</span>
-        <span class="c1"># This memo maps each of the forecast_kwarg values to the</span>
-        <span class="c1"># corresponding input kwarg; those values will be replaced with</span>
-        <span class="c1"># the input values when we pass `memo` to deepcopy.</span>
-        <span class="n">memo</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="nb">id</span><span class="p">(</span><span class="n">forecast_kwargs</span><span class="p">[</span><span class="n">key</span><span class="p">]):</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
-            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">forecast_kwargs</span>
-        <span class="p">}</span>
-        <span class="n">forecast_kwargs</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">forecast_kwargs</span><span class="p">,</span> <span class="n">memo</span><span class="o">=</span><span class="n">memo</span><span class="p">)</span>
-        <span class="c1"># If any of the input kwargs aren&#39;t in forecast_kwargs, add them</span>
-        <span class="n">forecast_kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
-            <span class="n">key</span><span class="p">:</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">forecast_kwargs</span>
-        <span class="p">})</span>
-
-        <span class="k">return</span> <span class="n">Forecast</span><span class="p">(</span><span class="o">**</span><span class="n">forecast_kwargs</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="Forecaster.set_kwarg"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.set_kwarg">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">arg</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">default</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Adds a keyword arg to a dict based on an input hierarchy.</span>
-
-<span class="sd">        Adds `arg` to the dict `kwargs` with value `val` (usually an</span>
-<span class="sd">        explicit argument to the calling method) or, if that&#39;s `None`,</span>
-<span class="sd">        `default` (usually a value from a Settings object).</span>
-
-<span class="sd">        If both of these values are None, or if `arg` is already in</span>
-<span class="sd">        `kwargs`, no value is added to `kwargs`.</span>
-<span class="sd">        This avoids overriding the relevant parameter defaults or</span>
-<span class="sd">        overriding args set by subclasses.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            kwargs (dict[str, Any]): A dict of keyword args to be passed</span>
-<span class="sd">                to an `__init__` method when initializing a Person,</span>
-<span class="sd">                Account, or other Forecast input object.</span>
-<span class="sd">            arg (str): The keyword arg being added to `kwargs`.</span>
-<span class="sd">            val (Any): An explicitly-passed value for `arg`.</span>
-<span class="sd">                May be None.</span>
-<span class="sd">            default (Any): A value from a Settings object</span>
-<span class="sd">                corresponding to `arg`. May be None.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># If the arg is already in kwargs, don&#39;t do anything:</span>
-        <span class="k">if</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
-            <span class="k">return</span>
-        <span class="c1"># If the arg was already set explicitly, add it to the dict:</span>
-        <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="n">arg</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
-        <span class="c1"># If the arg isn&#39;t set explicitly, use the default value:</span>
-        <span class="k">elif</span> <span class="n">default</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="n">arg</span><span class="p">]</span> <span class="o">=</span> <span class="n">default</span></div>
-        <span class="c1"># If there&#39;s no explicit val and no default, don&#39;t add anything.</span>
-
-<div class="viewcode-block" id="Forecaster.add_person"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.add_person">[docs]</a>    <span class="k">def</span> <span class="nf">add_person</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">birth_date</span><span class="p">,</span>
-        <span class="n">retirement_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gross_income</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">raise_rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">spouse</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tax_treatment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="bp">cls</span><span class="o">=</span><span class="n">Person</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Adds a Person to the forecast.</span>
-
-<span class="sd">        If `name` matches `person1_name` or `person2_name` in `settings`</span>
-<span class="sd">        then the default values for that person will be used, otherwise</span>
-<span class="sd">        no defaults will be used (be sure to provide any mandatory</span>
-<span class="sd">        arguments!)</span>
-
-<span class="sd">        Subclasses of Forecaster that build subclasses of Person can</span>
-<span class="sd">        make use of this method by passing in a suitable `cls`</span>
-<span class="sd">        argument along with any `kwargs` specific to that `cls`.</span>
-
-<span class="sd">        See `Person` for documentation on additional args.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            inputs (dict[str, dict[int, Any]]): `{arg: {year: val}}`</span>
-<span class="sd">                pairs, where `arg` is the name of a @recorded_property</span>
-<span class="sd">                of `Person` and `val` is the value of that property for</span>
-<span class="sd">                `year`.</span>
-<span class="sd">            cls (type): The class of `Person` being built by the</span>
-<span class="sd">                method. This class&#39;s `__init__` method must accept all</span>
-<span class="sd">                of the args of `Person`.</span>
+<span class="sd">        Arguments:</span>
+<span class="sd">            people (set[Person]): One or more people for whom a forecast</span>
+<span class="sd">                is being generated.</span>
+<span class="sd">            accounts (set[Account]): Accounts belonging to the plannees.</span>
+<span class="sd">            debts (set[Debt]): Debts owed by the plannees.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            `Person`: An object of type `cls` constructed with</span>
-<span class="sd">            the relevant args, inputs, settings, and default values.</span>
+<span class="sd">            Forecast: A forecast of the plannees income, savings,</span>
+<span class="sd">            and withdrawals over the years.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># NOTE: We don&#39;t actually need to list Person&#39;s various args</span>
-        <span class="c1"># in the call signature here; we could just use `inputs`,</span>
-        <span class="c1"># `cls` and `**kwargs`. Doing it that way would be less</span>
-        <span class="c1"># brittle, but not as convenient for Intellisense or for future</span>
-        <span class="c1"># folks looking to extend the code to incorporate additional</span>
-        <span class="c1"># settings defaults.</span>
+        <span class="c1"># We don&#39;t want to mutate the inputs, so create copies:</span>
+        <span class="n">memo</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">people</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">people</span><span class="p">,</span> <span class="n">memo</span><span class="o">=</span><span class="n">memo</span><span class="p">)</span>
+        <span class="n">accounts</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">accounts</span><span class="p">,</span> <span class="n">memo</span><span class="o">=</span><span class="n">memo</span><span class="p">)</span>
+        <span class="n">debts</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">debts</span><span class="p">,</span> <span class="n">memo</span><span class="o">=</span><span class="n">memo</span><span class="p">)</span>
 
-        <span class="c1"># There are no settings defaults for persons other than person1</span>
-        <span class="c1"># and person2.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;birth_date&#39;</span><span class="p">,</span> <span class="n">birth_date</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;retirement_date&#39;</span><span class="p">,</span> <span class="n">retirement_date</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;raise_rate&#39;</span><span class="p">,</span> <span class="n">raise_rate</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;gross_income&#39;</span><span class="p">,</span> <span class="n">gross_income</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;spouse&#39;</span><span class="p">,</span> <span class="n">spouse</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;tax_treatment&#39;</span><span class="p">,</span> <span class="n">tax_treatment</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">tax_treatment</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;inputs&#39;</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;initial_year&#39;</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span><span class="p">)</span>
+        <span class="c1"># Build Scenario first so that we have access to initial_year:</span>
+        <span class="n">memo</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">scenario</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_param</span><span class="p">(</span><span class="n">Parameter</span><span class="o">.</span><span class="n">SCENARIO</span><span class="p">,</span> <span class="n">memo</span><span class="o">=</span><span class="n">memo</span><span class="p">)</span>
+        <span class="n">initial_year</span> <span class="o">=</span> <span class="n">scenario</span><span class="o">.</span><span class="n">initial_year</span>  <span class="c1"># extract for convenience</span>
 
-        <span class="c1"># Construct a person with the keyword arguments we&#39;ve assembled:</span>
-        <span class="n">person</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">people</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">person</span><span class="p">)</span>
-        <span class="c1"># Return the Person so that subclass methods can do</span>
-        <span class="c1"># post-processing (if they need to)</span>
-        <span class="k">return</span> <span class="n">person</span></div>
+        <span class="c1"># Retrieve the necessary strategies for building SubForecasts:</span>
+        <span class="n">living_expenses_strategy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_param</span><span class="p">(</span>
+            <span class="n">Parameter</span><span class="o">.</span><span class="n">LIVING_EXPENSES_STRATEGY</span><span class="p">,</span> <span class="n">memo</span><span class="o">=</span><span class="n">memo</span><span class="p">)</span>
+        <span class="n">saving_strategy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_param</span><span class="p">(</span>
+            <span class="n">Parameter</span><span class="o">.</span><span class="n">SAVING_STRATEGY</span><span class="p">,</span> <span class="n">memo</span><span class="o">=</span><span class="n">memo</span><span class="p">)</span>
+        <span class="n">withdrawal_strategy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_param</span><span class="p">(</span>
+            <span class="n">Parameter</span><span class="o">.</span><span class="n">WITHDRAWAL_STRATEGY</span><span class="p">,</span> <span class="n">memo</span><span class="o">=</span><span class="n">memo</span><span class="p">)</span>
+        <span class="n">tax_treatment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_param</span><span class="p">(</span>
+            <span class="n">Parameter</span><span class="o">.</span><span class="n">TAX_TREATMENT</span><span class="p">,</span> <span class="n">memo</span><span class="o">=</span><span class="n">memo</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Forecaster.set_person1"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.set_person1">[docs]</a>    <span class="k">def</span> <span class="nf">set_person1</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">birth_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">retirement_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gross_income</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">raise_rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">spouse</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tax_treatment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="bp">cls</span><span class="o">=</span><span class="n">Person</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Adds a person to the forecast based on person1&#39;s settings.</span>
+        <span class="c1"># Now build each of the SubForecast objects required by Forecast</span>
+        <span class="n">income_forecast</span> <span class="o">=</span> <span class="n">IncomeForecast</span><span class="p">(</span>
+            <span class="n">initial_year</span><span class="o">=</span><span class="n">initial_year</span><span class="p">,</span>
+            <span class="n">people</span><span class="o">=</span><span class="n">people</span><span class="p">)</span>
+        <span class="n">living_expenses_forecast</span> <span class="o">=</span> <span class="n">LivingExpensesForecast</span><span class="p">(</span>
+            <span class="n">initial_year</span><span class="o">=</span><span class="n">initial_year</span><span class="p">,</span>
+            <span class="n">people</span><span class="o">=</span><span class="n">people</span><span class="p">,</span>
+            <span class="n">living_expenses_strategy</span><span class="o">=</span><span class="n">living_expenses_strategy</span><span class="p">)</span>
+        <span class="n">saving_forecast</span> <span class="o">=</span> <span class="n">SavingForecast</span><span class="p">(</span>
+            <span class="n">initial_year</span><span class="o">=</span><span class="n">initial_year</span><span class="p">,</span>
+            <span class="n">retirement_accounts</span><span class="o">=</span><span class="n">accounts</span><span class="p">,</span>
+            <span class="n">debt_accounts</span><span class="o">=</span><span class="n">debts</span><span class="p">,</span>
+            <span class="n">transaction_strategy</span><span class="o">=</span><span class="n">saving_strategy</span><span class="p">)</span>
+        <span class="n">withdrawal_forecast</span> <span class="o">=</span> <span class="n">WithdrawalForecast</span><span class="p">(</span>
+            <span class="n">initial_year</span><span class="o">=</span><span class="n">initial_year</span><span class="p">,</span>
+            <span class="n">people</span><span class="o">=</span><span class="n">people</span><span class="p">,</span>
+            <span class="n">accounts</span><span class="o">=</span><span class="n">accounts</span><span class="p">,</span>
+            <span class="n">transaction_strategy</span><span class="o">=</span><span class="n">withdrawal_strategy</span><span class="p">)</span>
+        <span class="n">tax_forecast</span> <span class="o">=</span> <span class="n">TaxForecast</span><span class="p">(</span>
+            <span class="n">initial_year</span><span class="o">=</span><span class="n">initial_year</span><span class="p">,</span>
+            <span class="n">people</span><span class="o">=</span><span class="n">people</span><span class="p">,</span>
+            <span class="n">tax_treatment</span><span class="o">=</span><span class="n">tax_treatment</span><span class="p">)</span>
 
-<span class="sd">        See `add_person` for documentation on the args and return type</span>
-<span class="sd">        of this method.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Remember to remove any previously-instantiated person1</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">person1</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">people</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">person1</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">person1_name</span><span class="p">)</span>
-        <span class="c1"># `Settings` defines a non-person by setting `name` to None</span>
-        <span class="k">if</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;birth_date&#39;</span><span class="p">,</span> <span class="n">birth_date</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">person1_birth_date</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;retirement_date&#39;</span><span class="p">,</span> <span class="n">retirement_date</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">person1_retirement_date</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;gross_income&#39;</span><span class="p">,</span> <span class="n">gross_income</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">person1_gross_income</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;raise_rate&#39;</span><span class="p">,</span> <span class="n">raise_rate</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">person1_raise_rate</span><span class="p">)</span>
-        <span class="c1"># There are no special person1-specific defaults for the</span>
-        <span class="c1"># remaining attributes (except that we assume that the spouse of</span>
-        <span class="c1"># person1 is person2)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;gross_income&#39;</span><span class="p">,</span> <span class="n">gross_income</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;spouse&#39;</span><span class="p">,</span> <span class="n">spouse</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">person2</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;tax_treatment&#39;</span><span class="p">,</span> <span class="n">tax_treatment</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">tax_treatment</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;inputs&#39;</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;initial_year&#39;</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span><span class="p">)</span>
+        <span class="c1"># With these SubForecasts defined, building Forecast is trivial:</span>
+        <span class="n">forecast</span> <span class="o">=</span> <span class="n">Forecast</span><span class="p">(</span>
+            <span class="n">income_forecast</span><span class="o">=</span><span class="n">income_forecast</span><span class="p">,</span>
+            <span class="n">living_expenses_forecast</span><span class="o">=</span><span class="n">living_expenses_forecast</span><span class="p">,</span>
+            <span class="n">saving_forecast</span><span class="o">=</span><span class="n">saving_forecast</span><span class="p">,</span>
+            <span class="n">withdrawal_forecast</span><span class="o">=</span><span class="n">withdrawal_forecast</span><span class="p">,</span>
+            <span class="n">tax_forecast</span><span class="o">=</span><span class="n">tax_forecast</span><span class="p">,</span>
+            <span class="n">scenario</span><span class="o">=</span><span class="n">scenario</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">person1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_person</span><span class="p">(</span><span class="bp">cls</span><span class="o">=</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">person1</span></div>
+        <span class="c1"># Forecasts run automatically on init, so we&#39;re done!</span>
+        <span class="k">return</span> <span class="n">forecast</span></div>
 
-<div class="viewcode-block" id="Forecaster.set_person2"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.set_person2">[docs]</a>    <span class="k">def</span> <span class="nf">set_person2</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">birth_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">retirement_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gross_income</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">raise_rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">spouse</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tax_treatment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="bp">cls</span><span class="o">=</span><span class="n">Person</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Adds a person to the forecast based on person2&#39;s settings.</span>
+<div class="viewcode-block" id="Forecaster.build_param"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.build_param">[docs]</a>    <span class="k">def</span> <span class="nf">build_param</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+            <span class="n">param_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">memo</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">_special_builder</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Builds a parameter based on settings and explicit args.</span>
 
-<span class="sd">        See `add_person` for documentation on the args and return type</span>
-<span class="sd">        of this method.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Remember to remove any previously-instantiated person2</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">person2</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">people</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">person2</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">person2_birth_date</span><span class="p">)</span>
-        <span class="c1"># `Settings` defines a non-person by setting `name` to None,</span>
-        <span class="c1"># which set_args interprets as not being set at all.</span>
-        <span class="k">if</span> <span class="s1">&#39;name&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;birth_date&#39;</span><span class="p">,</span> <span class="n">birth_date</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">person2_birth_date</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;retirement_date&#39;</span><span class="p">,</span> <span class="n">retirement_date</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">person2_retirement_date</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;gross_income&#39;</span><span class="p">,</span> <span class="n">gross_income</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">person2_gross_income</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;raise_rate&#39;</span><span class="p">,</span> <span class="n">raise_rate</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">person2_raise_rate</span><span class="p">)</span>
-        <span class="c1"># There are no special person2-specific defaults for the</span>
-        <span class="c1"># remaining attributes (except that we assume that the spouse</span>
-        <span class="c1"># of person2 is person1)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;gross_income&#39;</span><span class="p">,</span> <span class="n">gross_income</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;spouse&#39;</span><span class="p">,</span> <span class="n">spouse</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">person1</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;tax_treatment&#39;</span><span class="p">,</span> <span class="n">tax_treatment</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">tax_treatment</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;inputs&#39;</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;initial_year&#39;</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span><span class="p">)</span>
+<span class="sd">        This method does not set any attributes of `Forecaster`, it only</span>
+<span class="sd">        builds an object and returns it.</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">person2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_person</span><span class="p">(</span><span class="bp">cls</span><span class="o">=</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">person2</span></div>
-
-<div class="viewcode-block" id="Forecaster.add_account"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.add_account">[docs]</a>    <span class="k">def</span> <span class="nf">add_account</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">nper</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">Account</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Adds an account (asset, debt, etc.) to the forecast. &quot;&quot;&quot;</span>
-        <span class="c1"># NOTE: We don&#39;t actually need to list Account&#39;s various args</span>
-        <span class="c1"># in the call signature here; we could just use `inputs`,</span>
-        <span class="c1"># `cls` and `**kwargs`. Doing it that way would be less</span>
-        <span class="c1"># brittle, but not as convenient for Intellisense.</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;owner&#39;</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">person1</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;balance&#39;</span><span class="p">,</span> <span class="n">balance</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span>
-            <span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;rate&#39;</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">allocation_strategy</span><span class="o">.</span><span class="n">rate_function</span><span class="p">(</span>
-                <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;owner&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span><span class="p">)</span>
-        <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;transactions&#39;</span><span class="p">,</span> <span class="n">transactions</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;nper&#39;</span><span class="p">,</span> <span class="n">nper</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;inputs&#39;</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;initial_year&#39;</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span><span class="p">)</span>
-
-        <span class="n">account</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">account</span></div>
-
-<div class="viewcode-block" id="Forecaster.add_asset"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.add_asset">[docs]</a>    <span class="k">def</span> <span class="nf">add_asset</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">nper</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">Account</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Adds an asset to the forecast and to the `assets` set.</span>
-
-<span class="sd">        This method should be used instead of the generic method</span>
-<span class="sd">        `add_account` because, in addition to building an object of the</span>
-<span class="sd">        appropriate type, it also manages object membership in the</span>
-<span class="sd">        `assets` set.</span>
-
-<span class="sd">        See `add_account` for additional documentation.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            cls (type): The class of `Account` being built by</span>
-<span class="sd">                the method. This class&#39;s `__init__` method must accept</span>
-<span class="sd">                all of the args of `Account`.</span>
+<span class="sd">        Arguments:</span>
+<span class="sd">            param_name (str): The name of the parameter. This should</span>
+<span class="sd">                match a key value in `self.default_values`.</span>
+<span class="sd">            *args (Any): Positional arguments to be passed to the init</span>
+<span class="sd">                method of the object being built. Optional.</span>
+<span class="sd">            param_type (type): The type of the parameter. Optional.</span>
+<span class="sd">                Defaults to the type provided by `self.default_types`.</span>
+<span class="sd">            memo (dict[str, Any]): A mapping from parameter names to</span>
+<span class="sd">                objects. This is not generally needed by client code;</span>
+<span class="sd">                in cases where `build_param` needs to build other</span>
+<span class="sd">                parameters to build the requested parameter, this dict</span>
+<span class="sd">                is mutated to record already-built parameters. Optional.</span>
+<span class="sd">            _special_builder (Boolean): Parameters which require special</span>
+<span class="sd">                logic to init (as identified in `self.default_builders`)</span>
+<span class="sd">                will only have the corresponding special builder called</span>
+<span class="sd">                iff this value is True. Optional.</span>
+<span class="sd">            **kwargs (Any): Keyword arguments to be passed to the init</span>
+<span class="sd">                method of the object being built. Optional.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            `Account`: An object of type `cls` constructed with</span>
-<span class="sd">            the relevant args, inputs, settings, and default values.</span>
+<span class="sd">            An object of type `param_type`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">account</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_account</span><span class="p">(</span>
-            <span class="n">owner</span><span class="o">=</span><span class="n">owner</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="n">balance</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="n">rate</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="n">transactions</span><span class="p">,</span>
-            <span class="n">nper</span><span class="o">=</span><span class="n">nper</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="n">inputs</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="n">initial_year</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="bp">cls</span><span class="p">,</span>
-            <span class="o">**</span><span class="n">kwargs</span>
-        <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">assets</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">account</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">account</span></div>
+        <span class="c1"># Cast param_name to str once, for convenience:</span>
+        <span class="c1"># (This is needed because Parameter members are Enum objects,</span>
+        <span class="c1"># which can&#39;t be used in place of string-valued indexes)</span>
+        <span class="n">param_name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">param_name</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Forecaster.add_contribution_limit_account"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.add_contribution_limit_account">[docs]</a>    <span class="k">def</span> <span class="nf">add_contribution_limit_account</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">contribution_room</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">contributor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="bp">cls</span><span class="o">=</span><span class="n">ContributionLimitAccount</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Adds an asset to the forecast and to the `assets` set.</span>
+        <span class="c1"># build_param can recurse, either via default_builders methods</span>
+        <span class="c1"># or via _get_attr_recursive (e.g. fetching a kwarg might</span>
+        <span class="c1"># involve building an attribute from which this attribute</span>
+        <span class="c1"># depends). If this is the first call, set up a dict of</span>
+        <span class="c1"># parameters we&#39;ve tried to build already to keep track:</span>
+        <span class="k">if</span> <span class="n">memo</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">memo</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">elif</span> <span class="n">param_name</span> <span class="ow">in</span> <span class="n">memo</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">memo</span><span class="p">[</span><span class="n">param_name</span><span class="p">]</span>
 
-<span class="sd">        This method should be used instead of the generic method</span>
-<span class="sd">        `add_account` because, in addition to building an object of the</span>
-<span class="sd">        appropriate type, it also manages object membership in the</span>
-<span class="sd">        `assets` set.</span>
+        <span class="c1"># If there&#39;s special logic for this parameter, use that instead:</span>
+        <span class="c1"># (The special builder method can call this one by setting</span>
+        <span class="c1"># `_special_builder` to False.)</span>
+        <span class="k">if</span> <span class="n">_special_builder</span> <span class="ow">and</span> <span class="n">param_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_builders</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span>
+                <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_builders</span><span class="p">[</span><span class="n">param_name</span><span class="p">])(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="c1"># For everything else, use the user-provided defaults and fill</span>
+        <span class="c1"># in the gaps with the settings-provided defaults:</span>
+        <span class="k">if</span> <span class="n">param_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_values</span><span class="p">:</span>
+            <span class="c1"># Get the default mapping for this parameter:</span>
+            <span class="c1"># (We copy it to avoid mutating it)</span>
+            <span class="n">default_values</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">default_values</span><span class="p">[</span><span class="n">param_name</span><span class="p">])</span>
+            <span class="c1"># Replace each value with the value of the same-named</span>
+            <span class="c1"># attribute of the `Forecaster` object:</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">default_values</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">default_values</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_attr_recursive</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">memo</span><span class="o">=</span><span class="n">memo</span><span class="p">)</span>
+            <span class="c1"># If any values have been provided explicitly, override</span>
+            <span class="c1"># the defaults with that:</span>
+            <span class="n">default_values</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="n">default_values</span>
+        <span class="c1"># Build a new object (note that we don&#39;t set the corresponding</span>
+        <span class="c1"># attribute of Forecaster; if this is called again, we&#39;ll build</span>
+        <span class="c1"># a new object)</span>
+        <span class="k">if</span> <span class="n">param_type</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">param_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_types</span><span class="p">[</span><span class="n">param_name</span><span class="p">]</span>
+        <span class="n">param</span> <span class="o">=</span> <span class="n">param_type</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">memo</span><span class="p">[</span><span class="n">param_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">param</span>
+        <span class="k">return</span> <span class="n">param</span></div>
 
-<span class="sd">        See `add_account` for additional documentation.</span>
+<div class="viewcode-block" id="Forecaster.get_param"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.get_param">[docs]</a>    <span class="k">def</span> <span class="nf">get_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">memo</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Gets a parameter, builds one if none is explicitly provided.</span>
 
-<span class="sd">        Args:</span>
-<span class="sd">            cls (type): The class of `RegisteredAccount` being built by</span>
-<span class="sd">                the method. This class&#39;s `__init__` method must accept</span>
-<span class="sd">                all of the args of `RegisteredAccount`.</span>
+<span class="sd">        If a parameter has been explicitly assigned to this `Forecaster`</span>
+<span class="sd">        instance then that object is returned. Otherwise, this method</span>
+<span class="sd">        calls `build_param` to build it dynamically and returns it</span>
+<span class="sd">        without setting any attributes of the `Forecaster` object.</span>
+
+<span class="sd">        This is a convenience method which allows one to guarantee</span>
+<span class="sd">        that an object will be returned (if `param_name` is supported)</span>
+<span class="sd">        whether or not it is been explicitly set.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            param_name (str): The name of the parameter. This should</span>
+<span class="sd">                match a key value in `self.default_values`.</span>
+<span class="sd">            memo (dict[str, Any]): A mapping from parameter names to</span>
+<span class="sd">                objects. This is not generally needed by client code;</span>
+<span class="sd">                in cases where `build_param` needs to build other</span>
+<span class="sd">                parameters to build the requested parameter, this dict</span>
+<span class="sd">                is mutated to record already-built parameters. Optional.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            RegisteredAccount: An object of type `cls` constructed with</span>
-<span class="sd">            the relevant args, inputs, settings, and default values.</span>
+<span class="sd">            The value of the attribute with name `param_name` or, if</span>
+<span class="sd">            that value is None, a dynamically-built object that uses</span>
+<span class="sd">            the values of `settings` for init.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;contribution_room&#39;</span><span class="p">,</span> <span class="n">contribution_room</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="k">if</span> <span class="s1">&#39;owner&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
-            <span class="n">contributor_default</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;owner&#39;</span><span class="p">]</span>
+        <span class="c1"># Cast param_name to str once, for convenience:</span>
+        <span class="c1"># (This is needed because Parameter members are Enum objects,</span>
+        <span class="c1"># which can&#39;t be used in place of string-valued indexes)</span>
+        <span class="n">param_name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">param_name</span><span class="p">)</span>
+        <span class="n">explicit_attr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">explicit_attr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">explicit_attr</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">contributor_default</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">person1</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;contributor&#39;</span><span class="p">,</span> <span class="n">contributor</span><span class="p">,</span> <span class="n">contributor_default</span><span class="p">)</span>
-        <span class="n">account</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_asset</span><span class="p">(</span>
-            <span class="bp">cls</span><span class="o">=</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="n">account</span></div>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_param</span><span class="p">(</span><span class="n">param_name</span><span class="p">,</span> <span class="n">memo</span><span class="o">=</span><span class="n">memo</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Forecaster.add_debt"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.add_debt">[docs]</a>    <span class="k">def</span> <span class="nf">add_debt</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">nper</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">minimum_payment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">savings_rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">accelerated_payment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">Debt</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Adds a Debt to the forecast.</span>
+<div class="viewcode-block" id="Forecaster.set_param"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.set_param">[docs]</a>    <span class="k">def</span> <span class="nf">set_param</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+            <span class="n">param_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">memo</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Builds a parameter and sets the corresponding attribute.</span>
 
-<span class="sd">        This method should be used instead of the generic method</span>
-<span class="sd">        `add_account` because, in addition to building an object of the</span>
-<span class="sd">        appropriate type, it also manages object membership in the</span>
-<span class="sd">        `assets` set.</span>
+<span class="sd">        This is a convenience method that calls `build_param` and</span>
+<span class="sd">        sets the result as the value of the corresponding attribute of</span>
+<span class="sd">        this `Forecaster` object.</span>
 
-<span class="sd">        See `_add_account` for additional documentation.</span>
+<span class="sd">        Note that by calling this method, the resulting object will be</span>
+<span class="sd">        used without modification by `run_forecast` even if the</span>
+<span class="sd">        `settings` object changes. You can un-set the parameter by</span>
+<span class="sd">        assigning `None` to that attribute.</span>
 
-<span class="sd">        Args:</span>
-<span class="sd">            cls (type): The class of `Debt` being built by</span>
-<span class="sd">                the method. This class&#39;s `__init__` method must accept</span>
-<span class="sd">                all of the args of `Debt`.</span>
+<span class="sd">        This method does not set any attributes of `Forecaster`, it only</span>
+<span class="sd">        builds an object and returns it.</span>
 
-<span class="sd">        Returns:</span>
-<span class="sd">            `Debt`: An object of type `cls` constructed with</span>
-<span class="sd">            the relevant args, inputs, settings, and default values.</span>
+<span class="sd">        Arguments:</span>
+<span class="sd">            param_name (str): The name of the parameter. This should</span>
+<span class="sd">                match a key value in `self.default_values`.</span>
+<span class="sd">            *args (Any): Positional arguments to be passed to the init</span>
+<span class="sd">                method of the object being built. Optional.</span>
+<span class="sd">            param_type (type): The type of the parameter. Optional.</span>
+<span class="sd">                Defaults to the type provided by `self.default_types`.</span>
+<span class="sd">            memo (dict[str, Any]): A mapping from parameter names to</span>
+<span class="sd">                objects. This is not generally needed by client code;</span>
+<span class="sd">                in cases where `build_param` needs to build other</span>
+<span class="sd">                parameters to build the requested parameter, this dict</span>
+<span class="sd">                is mutated to record already-built parameters. Optional.</span>
+<span class="sd">            **kwargs (Any): Keyword arguments to be passed to the init</span>
+<span class="sd">                method of the object being built. Optional.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;minimum_payment&#39;</span><span class="p">,</span> <span class="n">minimum_payment</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;savings_rate&#39;</span><span class="p">,</span> <span class="n">savings_rate</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">debt_savings_rate</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;accelerated_payment&#39;</span><span class="p">,</span> <span class="n">accelerated_payment</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">debt_accelerated_payment</span><span class="p">)</span>
+        <span class="c1"># Cast param_name to str once, for convenience:</span>
+        <span class="c1"># (This is needed because Parameter members are Enum objects,</span>
+        <span class="c1"># which can&#39;t be used in place of string-valued indexes)</span>
+        <span class="n">param_name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">param_name</span><span class="p">)</span>
+        <span class="n">param</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_param</span><span class="p">(</span>
+            <span class="n">param_name</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">param_type</span><span class="o">=</span><span class="n">param_type</span><span class="p">,</span> <span class="n">memo</span><span class="o">=</span><span class="n">memo</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">param</span><span class="p">)</span></div>
 
-        <span class="n">account</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_account</span><span class="p">(</span>
-            <span class="n">owner</span><span class="o">=</span><span class="n">owner</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="n">balance</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="n">rate</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="n">transactions</span><span class="p">,</span>
-            <span class="n">nper</span><span class="o">=</span><span class="n">nper</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="n">inputs</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="n">initial_year</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="bp">cls</span><span class="p">,</span>
-            <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<div class="viewcode-block" id="Forecaster.build_allocation_strategy"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.build_allocation_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">build_allocation_strategy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Convenience method to build an allocation strategy.</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">debts</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">account</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">account</span></div>
+<span class="sd">        Any arguments are passed on to AllocationStrategy.__init__. Any</span>
+<span class="sd">        arguments that aren&#39;t passed explicitly to this function are</span>
+<span class="sd">        instead pulled from the `Forecaster` instance&#39;s `settings`</span>
+<span class="sd">        attribute.</span>
 
-<div class="viewcode-block" id="Forecaster.set_scenario"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.set_scenario">[docs]</a>    <span class="k">def</span> <span class="nf">set_scenario</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">inflation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">stock_return</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">bond_return</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">other_return</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">management_fees</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">num_years</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">Scenario</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; TODO &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;inflation&#39;</span><span class="p">,</span> <span class="n">inflation</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">inflation</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;stock_return&#39;</span><span class="p">,</span> <span class="n">stock_return</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">stock_return</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;bond_return&#39;</span><span class="p">,</span> <span class="n">bond_return</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">bond_return</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;other_return&#39;</span><span class="p">,</span> <span class="n">other_return</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">other_return</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;management_fees&#39;</span><span class="p">,</span> <span class="n">management_fees</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">management_fees</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;initial_year&#39;</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;num_years&#39;</span><span class="p">,</span> <span class="n">num_years</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">num_years</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="Forecaster.set_contribution_strategy"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.set_contribution_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">set_contribution_strategy</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">base_amount</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">LivingExpensesStrategy</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; TODO &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;strategy&#39;</span><span class="p">,</span> <span class="n">strategy</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">contribution_strategy</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;base_amount&#39;</span><span class="p">,</span> <span class="n">base_amount</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">contribution_base_amount</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;rate&#39;</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">contribution_rate</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;inflation_adjust&#39;</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">contribution_strategy</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">contribution_strategy</span></div>
-
-<div class="viewcode-block" id="Forecaster.set_transaction_in_strategy"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.set_transaction_in_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">set_transaction_in_strategy</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="bp">cls</span><span class="o">=</span><span class="n">AccountTransactionStrategy</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; TODO &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;strategy&#39;</span><span class="p">,</span> <span class="n">strategy</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">transaction_in_strategy</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;weights&#39;</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">transaction_in_weights</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;timing&#39;</span><span class="p">,</span> <span class="n">timing</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">transaction_in_timing</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">transaction_in_strategy</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">transaction_in_strategy</span></div>
-
-<div class="viewcode-block" id="Forecaster.set_transaction_out_strategy"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.set_transaction_out_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">set_transaction_out_strategy</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="bp">cls</span><span class="o">=</span><span class="n">AccountTransactionStrategy</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; TODO &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;strategy&#39;</span><span class="p">,</span> <span class="n">strategy</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">transaction_out_strategy</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;weights&#39;</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">transaction_out_weights</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;timing&#39;</span><span class="p">,</span> <span class="n">timing</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">transaction_out_timing</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">transaction_out_strategy</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">transaction_out_strategy</span></div>
-
-<div class="viewcode-block" id="Forecaster.set_allocation_strategy"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.set_allocation_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">set_allocation_strategy</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">min_equity</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_equity</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">standard_retirement_age</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">risk_transition_period</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">adjust_for_retirement_plan</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="bp">cls</span><span class="o">=</span><span class="n">AllocationStrategy</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; TODO &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;strategy&#39;</span><span class="p">,</span> <span class="n">strategy</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">allocation_strategy</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;min_equity&#39;</span><span class="p">,</span> <span class="n">min_equity</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">allocation_min_equity</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;max_equity&#39;</span><span class="p">,</span> <span class="n">max_equity</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">allocation_max_equity</span><span class="p">)</span>
-
-        <span class="c1"># Different strategies have different defaults in Settings:</span>
-        <span class="k">if</span> <span class="p">(</span>
-            <span class="c1"># pylint: disable=no-member</span>
-            <span class="c1"># Pylint thinks there&#39;s no strategy_key member. It&#39;s wrong</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;strategy&#39;</span><span class="p">]</span> <span class="o">==</span>
-            <span class="n">AllocationStrategy</span><span class="o">.</span><span class="n">strategy_n_minus_age</span><span class="o">.</span><span class="n">strategy_key</span>
-        <span class="p">):</span>
-            <span class="n">target_default</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">allocation_const_target</span>
-        <span class="k">elif</span> <span class="p">(</span>
-            <span class="c1"># pylint: disable=no-member</span>
-            <span class="c1"># Pylint thinks there&#39;s no strategy_key member. It&#39;s wrong</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;strategy&#39;</span><span class="p">]</span> <span class="o">==</span>
-            <span class="n">AllocationStrategy</span><span class="o">.</span><span class="n">strategy_transition_to_const</span><span class="o">.</span><span class="n">strategy_key</span>
-        <span class="p">):</span>
-            <span class="n">target_default</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">allocation_trans_target</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">target_default</span> <span class="o">=</span> <span class="kc">None</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;target&#39;</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">target_default</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;standard_retirement_age&#39;</span><span class="p">,</span>
-                       <span class="n">standard_retirement_age</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">allocation_std_retirement_age</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;risk_transition_period&#39;</span><span class="p">,</span>
-                       <span class="n">risk_transition_period</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">allocation_risk_trans_period</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;adjust_for_retirement_plan&#39;</span><span class="p">,</span>
-                       <span class="n">adjust_for_retirement_plan</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">allocation_adjust_retirement</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">allocation_strategy</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">allocation_strategy</span></div>
-
-<div class="viewcode-block" id="Forecaster.set_debt_payment_strategy"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.set_debt_payment_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">set_debt_payment_strategy</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="bp">cls</span><span class="o">=</span><span class="n">DebtPaymentStrategy</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; TODO &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;strategy&#39;</span><span class="p">,</span> <span class="n">strategy</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">debt_payment_strategy</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;timing&#39;</span><span class="p">,</span> <span class="n">timing</span><span class="p">,</span>
-                       <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">debt_payment_timing</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">debt_payment_strategy</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">debt_payment_strategy</span></div>
-
-<div class="viewcode-block" id="Forecaster.set_tax_treatment"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.set_tax_treatment">[docs]</a>    <span class="k">def</span> <span class="nf">set_tax_treatment</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">tax_brackets</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">personal_deduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">credit_rate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">Tax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; TODO &quot;&quot;&quot;</span>
-        <span class="c1"># By default, set a single 0% bracket starting at $0:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span>
-            <span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;tax_brackets&#39;</span><span class="p">,</span> <span class="n">tax_brackets</span><span class="p">,</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">initial_year</span><span class="p">:</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="mi">0</span><span class="p">}})</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;personal_deduction&#39;</span><span class="p">,</span> <span class="n">personal_deduction</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;credit_rate&#39;</span><span class="p">,</span> <span class="n">credit_rate</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="c1"># default to the inflation-adjust provided by `scenario`, if</span>
-        <span class="c1"># we have set a `scenario`</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span>
-            <span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;inflation_adjust&#39;</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span><span class="o">.</span><span class="n">inflation_adjust</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-            <span class="k">else</span> <span class="kc">None</span>
-        <span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">tax_treatment</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_treatment</span></div></div>
+<span class="sd">        The reason this specific object gets its own method is that</span>
+<span class="sd">        client code will likely need to call it to initialize `Account`</span>
+<span class="sd">        objects. In the future, we may provide similar methods for</span>
+<span class="sd">        other parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_param</span><span class="p">(</span>
+            <span class="n">Parameter</span><span class="o">.</span><span class="n">ALLOCATION_STRATEGY</span><span class="p">,</span> <span class="n">AllocationStrategy</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+            <span class="n">_special_builder</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div></div>
 </pre></div>
 
            </div>

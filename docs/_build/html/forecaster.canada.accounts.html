@@ -185,75 +185,63 @@
 </div>
 <div class="section" id="module-forecaster.canada.accounts.principle_residence">
 <span id="forecaster-canada-accounts-principle-residence-module"></span><h2>forecaster.canada.accounts.principle_residence module<a class="headerlink" href="#module-forecaster.canada.accounts.principle_residence" title="Permalink to this headline">¶</a></h2>
-<p>TODO</p>
+<p>A Canadian principle residence.</p>
 <dl class="class">
 <dt id="forecaster.canada.accounts.principle_residence.PrincipleResidence">
-<em class="property">class </em><code class="descclassname">forecaster.canada.accounts.principle_residence.</code><code class="descname">PrincipleResidence</code><span class="sig-paren">(</span><em>owner=None</em>, <em>balance=0</em>, <em>rate=0</em>, <em>nper=1</em>, <em>inputs=None</em>, <em>initial_year=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/principle_residence.html#PrincipleResidence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.principle_residence.PrincipleResidence" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.canada.accounts.principle_residence.</code><code class="sig-name descname">PrincipleResidence</code><span class="sig-paren">(</span><em class="sig-param">owner=None</em>, <em class="sig-param">balance=0</em>, <em class="sig-param">rate=0</em>, <em class="sig-param">nper=1</em>, <em class="sig-param">default_timing=None</em>, <em class="sig-param">inputs=None</em>, <em class="sig-param">initial_year=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/principle_residence.html#PrincipleResidence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.principle_residence.PrincipleResidence" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.base.Account" title="forecaster.accounts.base.Account"><code class="xref py py-class docutils literal notranslate"><span class="pre">forecaster.accounts.base.Account</span></code></a></p>
 <p>A Canadian principle residence. Gains in value are not taxable.</p>
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.principle_residence.PrincipleResidence.balance_history">
-<code class="descname">balance_history</code><a class="headerlink" href="#forecaster.canada.accounts.principle_residence.PrincipleResidence.balance_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">balance_history</code><a class="headerlink" href="#forecaster.canada.accounts.principle_residence.PrincipleResidence.balance_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of balance over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
-<dt id="forecaster.canada.accounts.principle_residence.PrincipleResidence.inflows_history">
-<code class="descname">inflows_history</code><a class="headerlink" href="#forecaster.canada.accounts.principle_residence.PrincipleResidence.inflows_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of inflows over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.canada.accounts.principle_residence.PrincipleResidence.outflows_history">
-<code class="descname">outflows_history</code><a class="headerlink" href="#forecaster.canada.accounts.principle_residence.PrincipleResidence.outflows_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of outflows over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.principle_residence.PrincipleResidence.rate_history">
-<code class="descname">rate_history</code><a class="headerlink" href="#forecaster.canada.accounts.principle_residence.PrincipleResidence.rate_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">rate_history</code><a class="headerlink" href="#forecaster.canada.accounts.principle_residence.PrincipleResidence.rate_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of rate over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.principle_residence.PrincipleResidence.returns_history">
-<code class="descname">returns_history</code><a class="headerlink" href="#forecaster.canada.accounts.principle_residence.PrincipleResidence.returns_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">returns_history</code><a class="headerlink" href="#forecaster.canada.accounts.principle_residence.PrincipleResidence.returns_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of returns over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.principle_residence.PrincipleResidence.tax_credit_history">
-<code class="descname">tax_credit_history</code><a class="headerlink" href="#forecaster.canada.accounts.principle_residence.PrincipleResidence.tax_credit_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">tax_credit_history</code><a class="headerlink" href="#forecaster.canada.accounts.principle_residence.PrincipleResidence.tax_credit_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of tax_credit over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.principle_residence.PrincipleResidence.tax_deduction_history">
-<code class="descname">tax_deduction_history</code><a class="headerlink" href="#forecaster.canada.accounts.principle_residence.PrincipleResidence.tax_deduction_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">tax_deduction_history</code><a class="headerlink" href="#forecaster.canada.accounts.principle_residence.PrincipleResidence.tax_deduction_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of tax_deduction over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.principle_residence.PrincipleResidence.tax_withheld_history">
-<code class="descname">tax_withheld_history</code><a class="headerlink" href="#forecaster.canada.accounts.principle_residence.PrincipleResidence.tax_withheld_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">tax_withheld_history</code><a class="headerlink" href="#forecaster.canada.accounts.principle_residence.PrincipleResidence.tax_withheld_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of tax_withheld over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.principle_residence.PrincipleResidence.taxable_income">
-<code class="descname">taxable_income</code><a class="headerlink" href="#forecaster.canada.accounts.principle_residence.PrincipleResidence.taxable_income" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">taxable_income</code><a class="headerlink" href="#forecaster.canada.accounts.principle_residence.PrincipleResidence.taxable_income" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.principle_residence.PrincipleResidence.taxable_income_history">
-<code class="descname">taxable_income_history</code><a class="headerlink" href="#forecaster.canada.accounts.principle_residence.PrincipleResidence.taxable_income_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">taxable_income_history</code><a class="headerlink" href="#forecaster.canada.accounts.principle_residence.PrincipleResidence.taxable_income_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of taxable_income over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.principle_residence.PrincipleResidence.transactions_history">
-<code class="descname">transactions_history</code><a class="headerlink" href="#forecaster.canada.accounts.principle_residence.PrincipleResidence.transactions_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">transactions_history</code><a class="headerlink" href="#forecaster.canada.accounts.principle_residence.PrincipleResidence.transactions_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of transactions over all past years.</p>
 </dd></dl>
 
@@ -262,91 +250,148 @@
 </div>
 <div class="section" id="module-forecaster.canada.accounts.registered_account">
 <span id="forecaster-canada-accounts-registered-account-module"></span><h2>forecaster.canada.accounts.registered_account module<a class="headerlink" href="#module-forecaster.canada.accounts.registered_account" title="Permalink to this headline">¶</a></h2>
-<p>TODO</p>
+<p>A Canadian registered account.</p>
+<p>These accounts come in various forms, but in general they have a
+contributor and finite contribution room that grows from year to year.</p>
 <dl class="class">
 <dt id="forecaster.canada.accounts.registered_account.RegisteredAccount">
-<em class="property">class </em><code class="descclassname">forecaster.canada.accounts.registered_account.</code><code class="descname">RegisteredAccount</code><span class="sig-paren">(</span><em>*args</em>, <em>inflation_adjust=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/registered_account.html#RegisteredAccount"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.registered_account.RegisteredAccount" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.contribution_limited.ContributionLimitAccount" title="forecaster.accounts.contribution_limited.ContributionLimitAccount"><code class="xref py py-class docutils literal notranslate"><span class="pre">forecaster.accounts.contribution_limited.ContributionLimitAccount</span></code></a></p>
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.canada.accounts.registered_account.</code><code class="sig-name descname">RegisteredAccount</code><span class="sig-paren">(</span><em class="sig-param">owner</em>, <em class="sig-param">*args</em>, <em class="sig-param">contribution_room=None</em>, <em class="sig-param">contributor=None</em>, <em class="sig-param">inflation_adjust=None</em>, <em class="sig-param">max_inflow_token=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/registered_account.html#RegisteredAccount"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.registered_account.RegisteredAccount" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount" title="forecaster.accounts.linked_limit.LinkedLimitAccount"><code class="xref py py-class docutils literal notranslate"><span class="pre">forecaster.accounts.linked_limit.LinkedLimitAccount</span></code></a></p>
 <p>An abstract base class for RRSPs, TFSAs, etc.</p>
 <dl class="method">
 <dt id="forecaster.canada.accounts.registered_account.RegisteredAccount.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>*args</em>, <em>inflation_adjust=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/registered_account.html#RegisteredAccount.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.registered_account.RegisteredAccount.__init__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">owner</em>, <em class="sig-param">*args</em>, <em class="sig-param">contribution_room=None</em>, <em class="sig-param">contributor=None</em>, <em class="sig-param">inflation_adjust=None</em>, <em class="sig-param">max_inflow_token=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/registered_account.html#RegisteredAccount.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.registered_account.RegisteredAccount.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Inits RegisteredAccount.</p>
-<p>See documentation for <cite>Account</cite> and <cite>ContributionLimitAccount</cite>
+<p>See documentation for <cite>Account</cite> and <cite>LinkedAccount</cite>
 for information on any args not listed below.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>inflation_adjust</strong> – <p>A method with the following form:
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>owner</strong> (<a class="reference internal" href="forecaster.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a>) – The person who owns the account. Some types
+of accounts call this the “annuitant”.</p></li>
+<li><p><strong>contribution_room</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – <p>The amount of contribution room
+available in the first year. Optional.</p>
+<p>If not provided, this value will default to <cite>None</cite>,
+which makes it easier for subclasses to determine
+whether it has been set but, if those subclasses don’t
+take care to set this manually, can lead to hard-to-
+diagnose errors in client code.</p>
+</p></li>
+<li><p><strong>contributor</strong> (<a class="reference internal" href="forecaster.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a>) – <p>The contributor to the account.
+Optional.</p>
+<p>If not provided, the contributor is assumed to be the
+same as the annuitant (i.e. the owner.)</p>
+</p></li>
+<li><p><strong>inflation_adjust</strong> – <p>A method with the following form:
 <cite>inflation_adjust(val, this_year, target_year)</cite>.</p>
 <p>Returns a Decimal object which is the inflation-
 adjustment factor from base_year to target_year.</p>
 <p>Optional. If not provided, all values are assumed to be
 in real terms, so no inflation adjustment is performed.</p>
-</td>
-</tr>
-</tbody>
-</table>
+</p></li>
+<li><p><strong>max_inflow_token</strong> (<em>str</em>) – <p>A token that is used to link this
+account to any other accounts with the same token and
+contributor. Optional.</p>
+<p>If not provided then by default the max inflows of this
+account are linked with all other accounts of the same
+type having the same contributor.</p>
+</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.registered_account.RegisteredAccount.balance_history">
-<code class="descname">balance_history</code><a class="headerlink" href="#forecaster.canada.accounts.registered_account.RegisteredAccount.balance_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">balance_history</code><a class="headerlink" href="#forecaster.canada.accounts.registered_account.RegisteredAccount.balance_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of balance over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
-<dt id="forecaster.canada.accounts.registered_account.RegisteredAccount.inflows_history">
-<code class="descname">inflows_history</code><a class="headerlink" href="#forecaster.canada.accounts.registered_account.RegisteredAccount.inflows_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of inflows over all past years.</p>
+<dl class="method">
+<dt id="forecaster.canada.accounts.registered_account.RegisteredAccount.contribution_room">
+<em class="property">property </em><code class="sig-name descname">contribution_room</code><a class="headerlink" href="#forecaster.canada.accounts.registered_account.RegisteredAccount.contribution_room" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
-<dl class="attribute">
-<dt id="forecaster.canada.accounts.registered_account.RegisteredAccount.outflows_history">
-<code class="descname">outflows_history</code><a class="headerlink" href="#forecaster.canada.accounts.registered_account.RegisteredAccount.outflows_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of outflows over all past years.</p>
+<dl class="method">
+<dt id="forecaster.canada.accounts.registered_account.RegisteredAccount.contribution_room_history">
+<em class="property">property </em><code class="sig-name descname">contribution_room_history</code><a class="headerlink" href="#forecaster.canada.accounts.registered_account.RegisteredAccount.contribution_room_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of contribution_room over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
+<dt id="forecaster.canada.accounts.registered_account.RegisteredAccount.contributor">
+<em class="property">property </em><code class="sig-name descname">contributor</code><a class="headerlink" href="#forecaster.canada.accounts.registered_account.RegisteredAccount.contributor" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <cite>Person</cite> authorized to contribute to this account.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.canada.accounts.registered_account.RegisteredAccount.next_contribution_room">
+<code class="sig-name descname">next_contribution_room</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/registered_account.html#RegisteredAccount.next_contribution_room"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.registered_account.RegisteredAccount.next_contribution_room" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the contribution room for next year.</p>
+<p>This method must be implemented by any subclass of
+<cite>RegisteredAccount</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The contribution room for next year.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>NotImplementedError</strong> – Raised if this method is not overridden</p></li>
+<li><p><strong>by a subclass.</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.canada.accounts.registered_account.RegisteredAccount.next_year">
+<code class="sig-name descname">next_year</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/registered_account.html#RegisteredAccount.next_year"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.registered_account.RegisteredAccount.next_year" title="Permalink to this definition">¶</a></dt>
+<dd><p>Confirms that the year is within the range of our data.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="forecaster.canada.accounts.registered_account.RegisteredAccount.rate_history">
-<code class="descname">rate_history</code><a class="headerlink" href="#forecaster.canada.accounts.registered_account.RegisteredAccount.rate_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">rate_history</code><a class="headerlink" href="#forecaster.canada.accounts.registered_account.RegisteredAccount.rate_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of rate over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.registered_account.RegisteredAccount.returns_history">
-<code class="descname">returns_history</code><a class="headerlink" href="#forecaster.canada.accounts.registered_account.RegisteredAccount.returns_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">returns_history</code><a class="headerlink" href="#forecaster.canada.accounts.registered_account.RegisteredAccount.returns_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of returns over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.registered_account.RegisteredAccount.tax_credit_history">
-<code class="descname">tax_credit_history</code><a class="headerlink" href="#forecaster.canada.accounts.registered_account.RegisteredAccount.tax_credit_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">tax_credit_history</code><a class="headerlink" href="#forecaster.canada.accounts.registered_account.RegisteredAccount.tax_credit_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of tax_credit over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.registered_account.RegisteredAccount.tax_deduction_history">
-<code class="descname">tax_deduction_history</code><a class="headerlink" href="#forecaster.canada.accounts.registered_account.RegisteredAccount.tax_deduction_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">tax_deduction_history</code><a class="headerlink" href="#forecaster.canada.accounts.registered_account.RegisteredAccount.tax_deduction_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of tax_deduction over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.registered_account.RegisteredAccount.tax_withheld_history">
-<code class="descname">tax_withheld_history</code><a class="headerlink" href="#forecaster.canada.accounts.registered_account.RegisteredAccount.tax_withheld_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">tax_withheld_history</code><a class="headerlink" href="#forecaster.canada.accounts.registered_account.RegisteredAccount.tax_withheld_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of tax_withheld over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.registered_account.RegisteredAccount.taxable_income_history">
-<code class="descname">taxable_income_history</code><a class="headerlink" href="#forecaster.canada.accounts.registered_account.RegisteredAccount.taxable_income_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">taxable_income_history</code><a class="headerlink" href="#forecaster.canada.accounts.registered_account.RegisteredAccount.taxable_income_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of taxable_income over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.registered_account.RegisteredAccount.transactions_history">
-<code class="descname">transactions_history</code><a class="headerlink" href="#forecaster.canada.accounts.registered_account.RegisteredAccount.transactions_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">transactions_history</code><a class="headerlink" href="#forecaster.canada.accounts.registered_account.RegisteredAccount.transactions_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of transactions over all past years.</p>
 </dd></dl>
 
@@ -358,12 +403,12 @@ in real terms, so no inflation adjustment is performed.</p>
 <p>Provices Registered Retirement Savings Accounts for Canadians.</p>
 <dl class="class">
 <dt id="forecaster.canada.accounts.rrsp.RRSP">
-<em class="property">class </em><code class="descclassname">forecaster.canada.accounts.rrsp.</code><code class="descname">RRSP</code><span class="sig-paren">(</span><em>*args</em>, <em>rrif_conversion_year=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/rrsp.html#RRSP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.canada.accounts.rrsp.</code><code class="sig-name descname">RRSP</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">rrif_conversion_year=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/rrsp.html#RRSP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#forecaster.canada.accounts.registered_account.RegisteredAccount" title="forecaster.canada.accounts.registered_account.RegisteredAccount"><code class="xref py py-class docutils literal notranslate"><span class="pre">forecaster.canada.accounts.registered_account.RegisteredAccount</span></code></a></p>
 <p>A Registered Retirement Savings Plan (Canada).</p>
 <dl class="method">
 <dt id="forecaster.canada.accounts.rrsp.RRSP.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>*args</em>, <em>rrif_conversion_year=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/rrsp.html#RRSP.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.__init__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">rrif_conversion_year=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/rrsp.html#RRSP.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initializes an RRSP object.</p>
 <p>This class also implements RRIFs (which RRSPs are converted into
 either at a user-defined time or by operation of law). A new
@@ -372,137 +417,129 @@ the object’s behaviour changes to limit inflows, require
 minimum withdrawals, and reduce withholding taxes.</p>
 <p>See documentation for <cite>RegisteredAccount</cite> for information on
 args not listed below.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>rrif_conversion_year</strong> (<em>int</em>) – The year in which the <cite>RRSP</cite>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>rrif_conversion_year</strong> (<em>int</em>) – The year in which the <cite>RRSP</cite>
 object’s behaviour switches from RRSP rules to RRIF
-rules.</td>
-</tr>
-</tbody>
-</table>
+rules.</p>
+</dd>
+</dl>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.rrsp.RRSP.balance_history">
-<code class="descname">balance_history</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.balance_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">balance_history</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.balance_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of balance over all past years.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="forecaster.canada.accounts.rrsp.RRSP.convert_to_rrif">
-<code class="descname">convert_to_rrif</code><span class="sig-paren">(</span><em>year=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/rrsp.html#RRSP.convert_to_rrif"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.convert_to_rrif" title="Permalink to this definition">¶</a></dt>
-<dd><p>Converts the RRSP to an RRIF.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.canada.accounts.rrsp.RRSP.inflows_history">
-<code class="descname">inflows_history</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.inflows_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of inflows over all past years.</p>
+<dt id="forecaster.canada.accounts.rrsp.RRSP.contribution_room_history">
+<em class="property">property </em><code class="sig-name descname">contribution_room_history</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.contribution_room_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of contribution_room over all past years.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="forecaster.canada.accounts.rrsp.RRSP.min_outflow">
-<code class="descname">min_outflow</code><span class="sig-paren">(</span><em>when='end'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/rrsp.html#RRSP.min_outflow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.min_outflow" title="Permalink to this definition">¶</a></dt>
-<dd><p>Minimum RRSP withdrawal</p>
+<dt id="forecaster.canada.accounts.rrsp.RRSP.convert_to_rrif">
+<code class="sig-name descname">convert_to_rrif</code><span class="sig-paren">(</span><em class="sig-param">year=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/rrsp.html#RRSP.convert_to_rrif"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.convert_to_rrif" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts the RRSP to an RRIF.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.canada.accounts.rrsp.RRSP.min_outflow_limit">
+<em class="property">property </em><code class="sig-name descname">min_outflow_limit</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.min_outflow_limit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Minimum annual RRSP/RRIF withdrawal</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.canada.accounts.rrsp.RRSP.minimum_distribution">
+<code class="sig-name descname">minimum_distribution</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/rrsp.html#RRSP.minimum_distribution"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.minimum_distribution" title="Permalink to this definition">¶</a></dt>
+<dd><p>A min. amount required by law to be withdrawn based on age.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.canada.accounts.rrsp.RRSP.next_contribution_room">
-<code class="descname">next_contribution_room</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/rrsp.html#RRSP.next_contribution_room"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.next_contribution_room" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">next_contribution_room</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/rrsp.html#RRSP.next_contribution_room"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.next_contribution_room" title="Permalink to this definition">¶</a></dt>
 <dd><p>Determines the amount of contribution room for next year.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>income</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – The amount of taxable income for this year
-used to calculate RRSP contribution room.</li>
-<li><strong>year</strong> (<em>int</em>) – The year in which the income is received.</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>income</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – The amount of taxable income for this year
+used to calculate RRSP contribution room.</p></li>
+<li><p><strong>year</strong> (<em>int</em>) – The year in which the income is received.</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The contribution room for the RRSP for the year <em>after</em>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The contribution room for the RRSP for the year <em>after</em>
 <cite>year</cite>.</p>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 </dd></dl>
 
-<dl class="attribute">
-<dt id="forecaster.canada.accounts.rrsp.RRSP.outflows_history">
-<code class="descname">outflows_history</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.outflows_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of outflows over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.rrsp.RRSP.rate_history">
-<code class="descname">rate_history</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.rate_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">rate_history</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.rate_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of rate over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.rrsp.RRSP.returns_history">
-<code class="descname">returns_history</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.returns_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">returns_history</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.returns_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of returns over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.rrsp.RRSP.rrif_conversion_year">
-<code class="descname">rrif_conversion_year</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.rrif_conversion_year" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">rrif_conversion_year</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.rrif_conversion_year" title="Permalink to this definition">¶</a></dt>
 <dd><p>The year in which the RRSP is converted to an RRIF.</p>
-<p>If not set explicitly, the owner’s retirement year or year in
-which conversion is required by law is returned (whichever
-happens first).</p>
+<p>If not set explicitly, the year in which conversion is required
+by law is returned (whichever happens first).</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.rrsp.RRSP.tax_credit_history">
-<code class="descname">tax_credit_history</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.tax_credit_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">tax_credit_history</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.tax_credit_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of tax_credit over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.rrsp.RRSP.tax_deduction">
-<code class="descname">tax_deduction</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.tax_deduction" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">tax_deduction</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.tax_deduction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.rrsp.RRSP.tax_deduction_history">
-<code class="descname">tax_deduction_history</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.tax_deduction_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">tax_deduction_history</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.tax_deduction_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of tax_deduction over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.rrsp.RRSP.tax_withheld">
-<code class="descname">tax_withheld</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.tax_withheld" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">tax_withheld</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.tax_withheld" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.rrsp.RRSP.tax_withheld_history">
-<code class="descname">tax_withheld_history</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.tax_withheld_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">tax_withheld_history</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.tax_withheld_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of tax_withheld over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.rrsp.RRSP.taxable_income">
-<code class="descname">taxable_income</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.taxable_income" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">taxable_income</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.taxable_income" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.rrsp.RRSP.taxable_income_history">
-<code class="descname">taxable_income_history</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.taxable_income_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">taxable_income_history</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.taxable_income_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of taxable_income over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.rrsp.RRSP.transactions_history">
-<code class="descname">transactions_history</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.transactions_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">transactions_history</code><a class="headerlink" href="#forecaster.canada.accounts.rrsp.RRSP.transactions_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of transactions over all past years.</p>
 </dd></dl>
 
@@ -511,10 +548,10 @@ happens first).</p>
 </div>
 <div class="section" id="module-forecaster.canada.accounts.taxable_account">
 <span id="forecaster-canada-accounts-taxable-account-module"></span><h2>forecaster.canada.accounts.taxable_account module<a class="headerlink" href="#module-forecaster.canada.accounts.taxable_account" title="Permalink to this headline">¶</a></h2>
-<p>TODO</p>
+<p>Provides a Canadian taxable investment account.</p>
 <dl class="class">
 <dt id="forecaster.canada.accounts.taxable_account.TaxableAccount">
-<em class="property">class </em><code class="descclassname">forecaster.canada.accounts.taxable_account.</code><code class="descname">TaxableAccount</code><span class="sig-paren">(</span><em>owner</em>, <em>balance=0</em>, <em>rate=0</em>, <em>nper=1</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>acb=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/taxable_account.html#TaxableAccount"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.canada.accounts.taxable_account.</code><code class="sig-name descname">TaxableAccount</code><span class="sig-paren">(</span><em class="sig-param">owner</em>, <em class="sig-param">balance=0</em>, <em class="sig-param">rate=0</em>, <em class="sig-param">nper=1</em>, <em class="sig-param">inputs=None</em>, <em class="sig-param">initial_year=None</em>, <em class="sig-param">default_timing=None</em>, <em class="sig-param">acb=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/taxable_account.html#TaxableAccount"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.base.Account" title="forecaster.accounts.base.Account"><code class="xref py py-class docutils literal notranslate"><span class="pre">forecaster.accounts.base.Account</span></code></a></p>
 <p>A taxable account, non-registered account.</p>
 <p>This account uses Canadian rules for determining taxable income from
@@ -523,168 +560,143 @@ of the assets.</p>
 <p>See Account for other attributes not listed below.</p>
 <dl class="attribute">
 <dt id="forecaster.canada.accounts.taxable_account.TaxableAccount.acb">
-<code class="descname">acb</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.acb" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">acb</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.acb" title="Permalink to this definition">¶</a></dt>
 <dd><p>The adjusted cost base of the assets in the account
 at the start of the year.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.canada.accounts.taxable_account.TaxableAccount.capital_gain">
-<code class="descname">capital_gain</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.capital_gain" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">capital_gain</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.capital_gain" title="Permalink to this definition">¶</a></dt>
 <dd><p>The total capital gains for the year.
 This is evaluated lazily, so it may return different values
 if you add or remove transactions.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.canada.accounts.taxable_account.TaxableAccount.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>owner</em>, <em>balance=0</em>, <em>rate=0</em>, <em>nper=1</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>acb=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/taxable_account.html#TaxableAccount.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.__init__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">owner</em>, <em class="sig-param">balance=0</em>, <em class="sig-param">rate=0</em>, <em class="sig-param">nper=1</em>, <em class="sig-param">inputs=None</em>, <em class="sig-param">initial_year=None</em>, <em class="sig-param">default_timing=None</em>, <em class="sig-param">acb=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/taxable_account.html#TaxableAccount.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Constructor for <cite>TaxableAccount</cite>.</p>
 <p>See documentation for <cite>Account</cite> for information on args not
 listed below.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>acb</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – The adjusted cost base of the assets in the
-account at the start of <cite>initial_year</cite>.</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>acb</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – The adjusted cost base of the assets in the
+account at the start of <cite>initial_year</cite>.</p>
+</dd>
+</dl>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt>
-<code class="descname">acb</code></dt>
+<em class="property">property </em><code class="sig-name descname">acb</code></dt>
 <dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.taxable_account.TaxableAccount.acb_history">
-<code class="descname">acb_history</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.acb_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">acb_history</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.acb_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of acb over all past years.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.canada.accounts.taxable_account.TaxableAccount.add_transaction">
-<code class="descname">add_transaction</code><span class="sig-paren">(</span><em>value</em>, <em>when='end'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/taxable_account.html#TaxableAccount.add_transaction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.add_transaction" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">add_transaction</code><span class="sig-paren">(</span><em class="sig-param">value</em>, <em class="sig-param">when='end'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/taxable_account.html#TaxableAccount.add_transaction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.add_transaction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adds a transaction to the account.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>value</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – The value of the transaction. Positive values
-are inflows and negative values are outflows.</li>
-<li><strong>when</strong> (<em>float</em><em>, </em><em>Decimal</em><em>, </em><em>str</em>) – The timing of the transaction.
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>value</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – The value of the transaction. Positive values
+are inflows and negative values are outflows.</p></li>
+<li><p><strong>when</strong> (<em>float</em><em>, </em><em>Decimal</em><em>, </em><em>str</em>) – The timing of the transaction.
 Must be in the range [0,1] or be a suitable str input,
-as described in the documentation for <cite>when_conv</cite>.</li>
+as described in the documentation for <cite>when_conv</cite>.</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">decimal.InvalidOperation</span></code> – Transactions must be convertible
-to type Money and <cite>when</cite> must be convertible to type
-Decimal.</li>
-<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – <cite>when</cite> must be in [0,1]</li>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>decimal.InvalidOperation</strong> – Transactions must be convertible
+    to type Money and <cite>when</cite> must be convertible to type
+    Decimal.</p></li>
+<li><p><strong>ValueError</strong> – <cite>when</cite> must be in [0,1]</p></li>
 </ul>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.taxable_account.TaxableAccount.balance_history">
-<code class="descname">balance_history</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.balance_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">balance_history</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.balance_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of balance over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt>
-<code class="descname">capital_gain</code></dt>
+<em class="property">property </em><code class="sig-name descname">capital_gain</code></dt>
 <dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.taxable_account.TaxableAccount.capital_gain_history">
-<code class="descname">capital_gain_history</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.capital_gain_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">capital_gain_history</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.capital_gain_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of capital_gain over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
-<dt id="forecaster.canada.accounts.taxable_account.TaxableAccount.inflows_history">
-<code class="descname">inflows_history</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.inflows_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of inflows over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.canada.accounts.taxable_account.TaxableAccount.outflows_history">
-<code class="descname">outflows_history</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.outflows_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of outflows over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.taxable_account.TaxableAccount.rate_history">
-<code class="descname">rate_history</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.rate_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">rate_history</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.rate_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of rate over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.taxable_account.TaxableAccount.returns_history">
-<code class="descname">returns_history</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.returns_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">returns_history</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.returns_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of returns over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.taxable_account.TaxableAccount.tax_credit_history">
-<code class="descname">tax_credit_history</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.tax_credit_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">tax_credit_history</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.tax_credit_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of tax_credit over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.taxable_account.TaxableAccount.tax_deduction_history">
-<code class="descname">tax_deduction_history</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.tax_deduction_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">tax_deduction_history</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.tax_deduction_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of tax_deduction over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.taxable_account.TaxableAccount.tax_withheld_history">
-<code class="descname">tax_withheld_history</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.tax_withheld_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">tax_withheld_history</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.tax_withheld_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of tax_withheld over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.taxable_account.TaxableAccount.taxable_income">
-<code class="descname">taxable_income</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.taxable_income" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">taxable_income</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.taxable_income" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.taxable_account.TaxableAccount.taxable_income_history">
-<code class="descname">taxable_income_history</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.taxable_income_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">taxable_income_history</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.taxable_income_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of taxable_income over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.taxable_account.TaxableAccount.transactions_history">
-<code class="descname">transactions_history</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.transactions_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">transactions_history</code><a class="headerlink" href="#forecaster.canada.accounts.taxable_account.TaxableAccount.transactions_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of transactions over all past years.</p>
 </dd></dl>
 
@@ -693,101 +705,92 @@ Decimal.</li>
 </div>
 <div class="section" id="module-forecaster.canada.accounts.tfsa">
 <span id="forecaster-canada-accounts-tfsa-module"></span><h2>forecaster.canada.accounts.tfsa module<a class="headerlink" href="#module-forecaster.canada.accounts.tfsa" title="Permalink to this headline">¶</a></h2>
-<p>TODO</p>
+<p>Provides a Canadian tax-free savings account.</p>
 <dl class="class">
 <dt id="forecaster.canada.accounts.tfsa.TFSA">
-<em class="property">class </em><code class="descclassname">forecaster.canada.accounts.tfsa.</code><code class="descname">TFSA</code><span class="sig-paren">(</span><em>owner</em>, <em>balance=0</em>, <em>rate=0</em>, <em>nper=1</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>contribution_room=None</em>, <em>contributor=None</em>, <em>inflation_adjust=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/tfsa.html#TFSA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.tfsa.TFSA" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.canada.accounts.tfsa.</code><code class="sig-name descname">TFSA</code><span class="sig-paren">(</span><em class="sig-param">owner</em>, <em class="sig-param">balance=0</em>, <em class="sig-param">rate=0</em>, <em class="sig-param">nper=1</em>, <em class="sig-param">inputs=None</em>, <em class="sig-param">initial_year=None</em>, <em class="sig-param">default_timing=None</em>, <em class="sig-param">contribution_room=None</em>, <em class="sig-param">contributor=None</em>, <em class="sig-param">inflation_adjust=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/tfsa.html#TFSA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.tfsa.TFSA" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#forecaster.canada.accounts.registered_account.RegisteredAccount" title="forecaster.canada.accounts.registered_account.RegisteredAccount"><code class="xref py py-class docutils literal notranslate"><span class="pre">forecaster.canada.accounts.registered_account.RegisteredAccount</span></code></a></p>
 <p>A Tax-Free Savings Account (Canada).</p>
 <dl class="method">
 <dt id="forecaster.canada.accounts.tfsa.TFSA.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>owner</em>, <em>balance=0</em>, <em>rate=0</em>, <em>nper=1</em>, <em>inputs=None</em>, <em>initial_year=None</em>, <em>contribution_room=None</em>, <em>contributor=None</em>, <em>inflation_adjust=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/tfsa.html#TFSA.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.tfsa.TFSA.__init__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">owner</em>, <em class="sig-param">balance=0</em>, <em class="sig-param">rate=0</em>, <em class="sig-param">nper=1</em>, <em class="sig-param">inputs=None</em>, <em class="sig-param">initial_year=None</em>, <em class="sig-param">default_timing=None</em>, <em class="sig-param">contribution_room=None</em>, <em class="sig-param">contributor=None</em>, <em class="sig-param">inflation_adjust=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/tfsa.html#TFSA.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.tfsa.TFSA.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initializes a TFSA object.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>inflation_adjust</strong> – <p>A method with the following form:
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>inflation_adjust</strong> – <p>A method with the following form:
 <cite>inflation_adjust(val, this_year, target_year)</cite>.</p>
 <p>Returns a Decimal object which is the inflation-
 adjustment factor from base_year to target_year.</p>
 <p>Optional. If not provided, all values are assumed to be
 in real terms, so no inflation adjustment is performed.</p>
-</td>
-</tr>
-</tbody>
-</table>
+</p>
+</dd>
+</dl>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.tfsa.TFSA.balance_history">
-<code class="descname">balance_history</code><a class="headerlink" href="#forecaster.canada.accounts.tfsa.TFSA.balance_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">balance_history</code><a class="headerlink" href="#forecaster.canada.accounts.tfsa.TFSA.balance_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of balance over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
-<dt id="forecaster.canada.accounts.tfsa.TFSA.inflows_history">
-<code class="descname">inflows_history</code><a class="headerlink" href="#forecaster.canada.accounts.tfsa.TFSA.inflows_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of inflows over all past years.</p>
+<dl class="method">
+<dt id="forecaster.canada.accounts.tfsa.TFSA.contribution_room_history">
+<em class="property">property </em><code class="sig-name descname">contribution_room_history</code><a class="headerlink" href="#forecaster.canada.accounts.tfsa.TFSA.contribution_room_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of contribution_room over all past years.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.canada.accounts.tfsa.TFSA.next_contribution_room">
-<code class="descname">next_contribution_room</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/tfsa.html#TFSA.next_contribution_room"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.tfsa.TFSA.next_contribution_room" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">next_contribution_room</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/accounts/tfsa.html#TFSA.next_contribution_room"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.accounts.tfsa.TFSA.next_contribution_room" title="Permalink to this definition">¶</a></dt>
 <dd><p>The amount of contribution room for next year.</p>
 </dd></dl>
 
-<dl class="attribute">
-<dt id="forecaster.canada.accounts.tfsa.TFSA.outflows_history">
-<code class="descname">outflows_history</code><a class="headerlink" href="#forecaster.canada.accounts.tfsa.TFSA.outflows_history" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record of outflows over all past years.</p>
-</dd></dl>
-
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.tfsa.TFSA.rate_history">
-<code class="descname">rate_history</code><a class="headerlink" href="#forecaster.canada.accounts.tfsa.TFSA.rate_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">rate_history</code><a class="headerlink" href="#forecaster.canada.accounts.tfsa.TFSA.rate_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of rate over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.tfsa.TFSA.returns_history">
-<code class="descname">returns_history</code><a class="headerlink" href="#forecaster.canada.accounts.tfsa.TFSA.returns_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">returns_history</code><a class="headerlink" href="#forecaster.canada.accounts.tfsa.TFSA.returns_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of returns over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.tfsa.TFSA.tax_credit_history">
-<code class="descname">tax_credit_history</code><a class="headerlink" href="#forecaster.canada.accounts.tfsa.TFSA.tax_credit_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">tax_credit_history</code><a class="headerlink" href="#forecaster.canada.accounts.tfsa.TFSA.tax_credit_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of tax_credit over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.tfsa.TFSA.tax_deduction_history">
-<code class="descname">tax_deduction_history</code><a class="headerlink" href="#forecaster.canada.accounts.tfsa.TFSA.tax_deduction_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">tax_deduction_history</code><a class="headerlink" href="#forecaster.canada.accounts.tfsa.TFSA.tax_deduction_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of tax_deduction over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.tfsa.TFSA.tax_withheld_history">
-<code class="descname">tax_withheld_history</code><a class="headerlink" href="#forecaster.canada.accounts.tfsa.TFSA.tax_withheld_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">tax_withheld_history</code><a class="headerlink" href="#forecaster.canada.accounts.tfsa.TFSA.tax_withheld_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of tax_withheld over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.tfsa.TFSA.taxable_income">
-<code class="descname">taxable_income</code><a class="headerlink" href="#forecaster.canada.accounts.tfsa.TFSA.taxable_income" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">taxable_income</code><a class="headerlink" href="#forecaster.canada.accounts.tfsa.TFSA.taxable_income" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns cached value in *_history dict if available.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.tfsa.TFSA.taxable_income_history">
-<code class="descname">taxable_income_history</code><a class="headerlink" href="#forecaster.canada.accounts.tfsa.TFSA.taxable_income_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">taxable_income_history</code><a class="headerlink" href="#forecaster.canada.accounts.tfsa.TFSA.taxable_income_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of taxable_income over all past years.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.accounts.tfsa.TFSA.transactions_history">
-<code class="descname">transactions_history</code><a class="headerlink" href="#forecaster.canada.accounts.tfsa.TFSA.transactions_history" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">transactions_history</code><a class="headerlink" href="#forecaster.canada.accounts.tfsa.TFSA.transactions_history" title="Permalink to this definition">¶</a></dt>
 <dd><p>Record of transactions over all past years.</p>
 </dd></dl>
 

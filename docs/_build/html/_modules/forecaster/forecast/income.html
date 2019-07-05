@@ -151,7 +151,6 @@
 <span></span><span class="sd">&quot;&quot;&quot; Provides an IncomeForecast class for use by Forecast. &quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="n">Money</span><span class="p">,</span> <span class="n">recorded_property</span>
-<span class="kn">from</span> <span class="nn">forecaster.accounts</span> <span class="k">import</span> <span class="n">Account</span>
 <span class="kn">from</span> <span class="nn">forecaster.forecast.subforecast</span> <span class="k">import</span> <span class="n">SubForecast</span>
 
 <div class="viewcode-block" id="IncomeForecast"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.income.IncomeForecast">[docs]</a><span class="k">class</span> <span class="nc">IncomeForecast</span><span class="p">(</span><span class="n">SubForecast</span><span class="p">):</span>
@@ -165,10 +164,12 @@
 
 <span class="sd">            Note that all `Person` objects must have the same</span>
 <span class="sd">            `this_year` attribute, as must their various accounts.</span>
+<span class="sd">        asset_sale_timing (Timing): The timing of asset sales.</span>
+<span class="sd">            Optional.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        asset_sale (Money): The proceeds from a sale of property.</span>
-<span class="sd">            TODO: Determine whether this belongs here or elsewhere.</span>
+<span class="sd">            TODO: Determine if asset sale belongs here or elsewhere.</span>
 <span class="sd">        carryover (Money): Money carried over from last year to</span>
 <span class="sd">            the current year.</span>
 <span class="sd">        gross_income (Money): Total income for all plannees for the</span>
@@ -180,45 +181,37 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="IncomeForecast.__init__"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">,</span> <span class="n">people</span>
-    <span class="p">):</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="n">asset_sale_timing</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Initializes an instance of IncomeForecast. &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">initial_year</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">initial_year</span><span class="p">,</span> <span class="n">default_timing</span><span class="o">=</span><span class="n">asset_sale_timing</span><span class="p">)</span>
         <span class="c1"># Invoke Ledger&#39;s __init__ or pay the price!</span>
         <span class="c1"># Store input values</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">people</span> <span class="o">=</span> <span class="n">people</span></div>
 
-<div class="viewcode-block" id="IncomeForecast.update_available"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.update_available">[docs]</a>    <span class="k">def</span> <span class="nf">update_available</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">available</span><span class="p">):</span>
+<div class="viewcode-block" id="IncomeForecast.__call__"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">available</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Records transactions against accounts; mutates `available`. &quot;&quot;&quot;</span>
         <span class="c1"># The superclass has some book-keeping to do before we get</span>
         <span class="c1"># started on doing the updates:</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">update_available</span><span class="p">(</span><span class="n">available</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__call__</span><span class="p">(</span><span class="n">available</span><span class="p">)</span>
 
-        <span class="c1"># TODO: Determine timing of asset sale. (see #32)</span>
-        <span class="c1"># Also: should this receive an Account (e.g. other_assets)</span>
-        <span class="c1"># as the `from_account`?</span>
+        <span class="c1"># TODO: Move money into available from an `Asset` account  #32</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">add_transaction</span><span class="p">(</span>
             <span class="n">value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">asset_sale</span><span class="p">,</span>
-            <span class="n">when</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>  <span class="c1"># TODO #32</span>
-            <span class="n">from_account</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># TODO #32</span>
+            <span class="n">from_account</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># TODO Move money from asset account #32</span>
             <span class="n">to_account</span><span class="o">=</span><span class="n">available</span>
         <span class="p">)</span>
 
-        <span class="c1"># Record income monthly.</span>
-        <span class="c1"># NOTE: This code assumes income is received at the end of</span>
-        <span class="c1"># each payment period. Consider whether some cases (like</span>
-        <span class="c1"># biweekly payments) might justify using the midpoint of</span>
-        <span class="c1"># each period.</span>
+        <span class="c1"># Record income according to the Persons&#39; payment schedules:</span>
         <span class="k">for</span> <span class="n">person</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">people</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">add_transaction</span><span class="p">(</span>
-                <span class="n">person</span><span class="o">.</span><span class="n">net_income</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
-                <span class="n">frequency</span><span class="o">=</span><span class="n">person</span><span class="o">.</span><span class="n">payment_frequency</span><span class="p">,</span>
+                <span class="n">person</span><span class="o">.</span><span class="n">net_income</span><span class="p">,</span>
+                <span class="n">timing</span><span class="o">=</span><span class="n">person</span><span class="o">.</span><span class="n">payment_timing</span><span class="p">,</span>
                 <span class="n">from_account</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">to_account</span><span class="o">=</span><span class="n">available</span><span class="p">)</span></div>
 
     <span class="nd">@recorded_property</span>
     <span class="k">def</span> <span class="nf">asset_sale</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Proceeds of sale of an asset. &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># TODO #32</span>
+        <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># TODO Implement asset sale #32</span>
 
     <span class="nd">@recorded_property</span>
     <span class="k">def</span> <span class="nf">carryover</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>

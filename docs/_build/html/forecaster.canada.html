@@ -205,31 +205,31 @@ brackets, research data describing safe withdrawal rates, contribution
 room accrual rates, and other non-user-modifiable constants.</p>
 <dl class="data">
 <dt id="forecaster.canada.constants.CPP_AGE_ADJUSTMENT_FACTOR">
-<code class="descclassname">forecaster.canada.constants.</code><code class="descname">CPP_AGE_ADJUSTMENT_FACTOR</code><em class="property"> = Decimal('0.006')</em><a class="headerlink" href="#forecaster.canada.constants.CPP_AGE_ADJUSTMENT_FACTOR" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">forecaster.canada.constants.</code><code class="sig-name descname">CPP_AGE_ADJUSTMENT_FACTOR</code><em class="property"> = Decimal('0.006')</em><a class="headerlink" href="#forecaster.canada.constants.CPP_AGE_ADJUSTMENT_FACTOR" title="Permalink to this definition">¶</a></dt>
 <dd><p>OAS constants</p>
 </dd></dl>
 
 <dl class="data">
 <dt id="forecaster.canada.constants.OAS_RECOVERY_TAX_RATE">
-<code class="descclassname">forecaster.canada.constants.</code><code class="descname">OAS_RECOVERY_TAX_RATE</code><em class="property"> = Decimal('0.15')</em><a class="headerlink" href="#forecaster.canada.constants.OAS_RECOVERY_TAX_RATE" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">forecaster.canada.constants.</code><code class="sig-name descname">OAS_RECOVERY_TAX_RATE</code><em class="property"> = Decimal('0.15')</em><a class="headerlink" href="#forecaster.canada.constants.OAS_RECOVERY_TAX_RATE" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tax constants</p>
 </dd></dl>
 
 <dl class="data">
 <dt id="forecaster.canada.constants.RESP_BCSTEG_AMOUNT">
-<code class="descclassname">forecaster.canada.constants.</code><code class="descname">RESP_BCSTEG_AMOUNT</code><em class="property"> = Decimal('1200')</em><a class="headerlink" href="#forecaster.canada.constants.RESP_BCSTEG_AMOUNT" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">forecaster.canada.constants.</code><code class="sig-name descname">RESP_BCSTEG_AMOUNT</code><em class="property"> = Decimal('1200')</em><a class="headerlink" href="#forecaster.canada.constants.RESP_BCSTEG_AMOUNT" title="Permalink to this definition">¶</a></dt>
 <dd><p>RRSP constants</p>
 </dd></dl>
 
 <dl class="data">
 <dt id="forecaster.canada.constants.RRSP_RRIF_WITHDRAWAL_MIN">
-<code class="descclassname">forecaster.canada.constants.</code><code class="descname">RRSP_RRIF_WITHDRAWAL_MIN</code><em class="property"> = {71: Decimal('0.0528'), 72: Decimal('0.0540'), 73: Decimal('0.0553'), 74: Decimal('0.0567'), 75: Decimal('0.0582'), 76: Decimal('0.0598'), 77: Decimal('0.0617'), 78: Decimal('0.0636'), 79: Decimal('0.0658'), 80: Decimal('0.0682'), 81: Decimal('0.0708'), 82: Decimal('0.0738'), 83: Decimal('0.0771'), 84: Decimal('0.0808'), 85: Decimal('0.0851'), 86: Decimal('0.0899'), 87: Decimal('0.0955'), 88: Decimal('0.1021'), 89: Decimal('0.1099'), 90: Decimal('0.1192'), 91: Decimal('0.1306'), 92: Decimal('0.1449'), 93: Decimal('0.1634'), 94: Decimal('0.1879'), 95: Decimal('0.2000')}</em><a class="headerlink" href="#forecaster.canada.constants.RRSP_RRIF_WITHDRAWAL_MIN" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">forecaster.canada.constants.</code><code class="sig-name descname">RRSP_RRIF_WITHDRAWAL_MIN</code><em class="property"> = {71: Decimal('0.0528'), 72: Decimal('0.0540'), 73: Decimal('0.0553'), 74: Decimal('0.0567'), 75: Decimal('0.0582'), 76: Decimal('0.0598'), 77: Decimal('0.0617'), 78: Decimal('0.0636'), 79: Decimal('0.0658'), 80: Decimal('0.0682'), 81: Decimal('0.0708'), 82: Decimal('0.0738'), 83: Decimal('0.0771'), 84: Decimal('0.0808'), 85: Decimal('0.0851'), 86: Decimal('0.0899'), 87: Decimal('0.0955'), 88: Decimal('0.1021'), 89: Decimal('0.1099'), 90: Decimal('0.1192'), 91: Decimal('0.1306'), 92: Decimal('0.1449'), 93: Decimal('0.1634'), 94: Decimal('0.1879'), 95: Decimal('0.2000')}</em><a class="headerlink" href="#forecaster.canada.constants.RRSP_RRIF_WITHDRAWAL_MIN" title="Permalink to this definition">¶</a></dt>
 <dd><p>TFSA constants</p>
 </dd></dl>
 
 <dl class="data">
 <dt id="forecaster.canada.constants.TFSA_ACCRUAL_ROUNDING_FACTOR">
-<code class="descclassname">forecaster.canada.constants.</code><code class="descname">TFSA_ACCRUAL_ROUNDING_FACTOR</code><em class="property"> = 500</em><a class="headerlink" href="#forecaster.canada.constants.TFSA_ACCRUAL_ROUNDING_FACTOR" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">forecaster.canada.constants.</code><code class="sig-name descname">TFSA_ACCRUAL_ROUNDING_FACTOR</code><em class="property"> = 500</em><a class="headerlink" href="#forecaster.canada.constants.TFSA_ACCRUAL_ROUNDING_FACTOR" title="Permalink to this definition">¶</a></dt>
 <dd><p>CPP constants</p>
 </dd></dl>
 
@@ -239,42 +239,16 @@ room accrual rates, and other non-user-modifiable constants.</p>
 <p>Provides a Canada-specific implementation of Forecaster.</p>
 <dl class="class">
 <dt id="forecaster.canada.forecaster.ForecasterCanada">
-<em class="property">class </em><code class="descclassname">forecaster.canada.forecaster.</code><code class="descname">ForecasterCanada</code><span class="sig-paren">(</span><em>settings=&lt;class 'forecaster.canada.settings.SettingsCanada'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/forecaster.html#ForecasterCanada"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.forecaster.ForecasterCanada" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.canada.forecaster.</code><code class="sig-name descname">ForecasterCanada</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">settings=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/forecaster.html#ForecasterCanada"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.forecaster.ForecasterCanada" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="forecaster.html#forecaster.forecaster.Forecaster" title="forecaster.forecaster.Forecaster"><code class="xref py py-class docutils literal notranslate"><span class="pre">forecaster.forecaster.Forecaster</span></code></a></p>
 <p>Tests Forecaster (Canada).</p>
 <dl class="method">
 <dt id="forecaster.canada.forecaster.ForecasterCanada.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>settings=&lt;class 'forecaster.canada.settings.SettingsCanada'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/forecaster.html#ForecasterCanada.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.forecaster.ForecasterCanada.__init__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">settings=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/forecaster.html#ForecasterCanada.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.forecaster.ForecasterCanada.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Inits Forecaster with Canada-specific settings.</p>
 <p>In addition to using a Canada-specific Settings object by
 default, this class also provides Canada-specific defaults and
 init logic for RRSPs, TFSAs, TaxableAccounts, and Tax objects.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.canada.forecaster.ForecasterCanada.add_rrsp">
-<code class="descname">add_rrsp</code><span class="sig-paren">(</span><em>inflation_adjust=None</em>, <em>rrif_conversion_year=None</em>, <em>cls=&lt;class 'forecaster.canada.accounts.rrsp.RRSP'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/forecaster.html#ForecasterCanada.add_rrsp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.forecaster.ForecasterCanada.add_rrsp" title="Permalink to this definition">¶</a></dt>
-<dd><p>Adds an RRSP to the forecast.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.canada.forecaster.ForecasterCanada.add_taxable_account">
-<code class="descname">add_taxable_account</code><span class="sig-paren">(</span><em>acb=None</em>, <em>cls=&lt;class 'forecaster.canada.accounts.taxable_account.TaxableAccount'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/forecaster.html#ForecasterCanada.add_taxable_account"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.forecaster.ForecasterCanada.add_taxable_account" title="Permalink to this definition">¶</a></dt>
-<dd><p>Adds a TaxableAccount to the forecast.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.canada.forecaster.ForecasterCanada.add_tfsa">
-<code class="descname">add_tfsa</code><span class="sig-paren">(</span><em>inflation_adjust=None</em>, <em>cls=&lt;class 'forecaster.canada.accounts.tfsa.TFSA'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/forecaster.html#ForecasterCanada.add_tfsa"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.forecaster.ForecasterCanada.add_tfsa" title="Permalink to this definition">¶</a></dt>
-<dd><p>Adds a TFSA to the forecast.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.canada.forecaster.ForecasterCanada.set_tax_treatment">
-<code class="descname">set_tax_treatment</code><span class="sig-paren">(</span><em>inflation_adjust=None</em>, <em>province=None</em>, <em>cls=&lt;class 'forecaster.canada.tax.TaxCanada'&gt;</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/forecaster.html#ForecasterCanada.set_tax_treatment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.forecaster.ForecasterCanada.set_tax_treatment" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sets tax treatment for the forecast.</p>
-<p>Overrides set_tax_treatment to deal with different parameter
-list for canada.tax objects.</p>
 </dd></dl>
 
 </dd></dl>
@@ -285,64 +259,70 @@ list for canada.tax objects.</p>
 <p>A module providing Canada-specific default values.</p>
 <dl class="class">
 <dt id="forecaster.canada.settings.SettingsCanada">
-<em class="property">class </em><code class="descclassname">forecaster.canada.settings.</code><code class="descname">SettingsCanada</code><a class="reference internal" href="_modules/forecaster/canada/settings.html#SettingsCanada"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.settings.SettingsCanada" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.canada.settings.</code><code class="sig-name descname">SettingsCanada</code><a class="reference internal" href="_modules/forecaster/canada/settings.html#SettingsCanada"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.settings.SettingsCanada" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="forecaster.html#forecaster.settings.Settings" title="forecaster.settings.Settings"><code class="xref py py-class docutils literal notranslate"><span class="pre">forecaster.settings.Settings</span></code></a></p>
 <p>Container for Canada-specific variables.</p>
 <dl class="attribute">
+<dt id="forecaster.canada.settings.SettingsCanada.contribution_weights">
+<code class="sig-name descname">contribution_weights</code><em class="property"> = {'RRSP': 1, 'TFSA': 2, 'TaxableAccount': 3}</em><a class="headerlink" href="#forecaster.canada.settings.SettingsCanada.contribution_weights" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
 <dt id="forecaster.canada.settings.SettingsCanada.cpp_person1_init_drop_periods">
-<code class="descname">cpp_person1_init_drop_periods</code><em class="property"> = 0</em><a class="headerlink" href="#forecaster.canada.settings.SettingsCanada.cpp_person1_init_drop_periods" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">cpp_person1_init_drop_periods</code><em class="property"> = 0</em><a class="headerlink" href="#forecaster.canada.settings.SettingsCanada.cpp_person1_init_drop_periods" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.canada.settings.SettingsCanada.cpp_person1_init_drop_tape">
-<code class="descname">cpp_person1_init_drop_tape</code><em class="property"> = 0</em><a class="headerlink" href="#forecaster.canada.settings.SettingsCanada.cpp_person1_init_drop_tape" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">cpp_person1_init_drop_tape</code><em class="property"> = 0</em><a class="headerlink" href="#forecaster.canada.settings.SettingsCanada.cpp_person1_init_drop_tape" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.canada.settings.SettingsCanada.cpp_person1_init_tape">
-<code class="descname">cpp_person1_init_tape</code><em class="property"> = 0</em><a class="headerlink" href="#forecaster.canada.settings.SettingsCanada.cpp_person1_init_tape" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">cpp_person1_init_tape</code><em class="property"> = 0</em><a class="headerlink" href="#forecaster.canada.settings.SettingsCanada.cpp_person1_init_tape" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.canada.settings.SettingsCanada.cpp_person2_init_drop_periods">
-<code class="descname">cpp_person2_init_drop_periods</code><em class="property"> = 0</em><a class="headerlink" href="#forecaster.canada.settings.SettingsCanada.cpp_person2_init_drop_periods" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">cpp_person2_init_drop_periods</code><em class="property"> = 0</em><a class="headerlink" href="#forecaster.canada.settings.SettingsCanada.cpp_person2_init_drop_periods" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.canada.settings.SettingsCanada.cpp_person2_init_drop_tape">
-<code class="descname">cpp_person2_init_drop_tape</code><em class="property"> = 0</em><a class="headerlink" href="#forecaster.canada.settings.SettingsCanada.cpp_person2_init_drop_tape" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">cpp_person2_init_drop_tape</code><em class="property"> = 0</em><a class="headerlink" href="#forecaster.canada.settings.SettingsCanada.cpp_person2_init_drop_tape" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.canada.settings.SettingsCanada.cpp_person2_init_tape">
-<code class="descname">cpp_person2_init_tape</code><em class="property"> = 0</em><a class="headerlink" href="#forecaster.canada.settings.SettingsCanada.cpp_person2_init_tape" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">cpp_person2_init_tape</code><em class="property"> = 0</em><a class="headerlink" href="#forecaster.canada.settings.SettingsCanada.cpp_person2_init_tape" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.canada.settings.SettingsCanada.resp_child_other_income">
-<code class="descname">resp_child_other_income</code><em class="property"> = 0</em><a class="headerlink" href="#forecaster.canada.settings.SettingsCanada.resp_child_other_income" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">resp_child_other_income</code><em class="property"> = 0</em><a class="headerlink" href="#forecaster.canada.settings.SettingsCanada.resp_child_other_income" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.canada.settings.SettingsCanada.resp_start_age">
-<code class="descname">resp_start_age</code><em class="property"> = 18</em><a class="headerlink" href="#forecaster.canada.settings.SettingsCanada.resp_start_age" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">resp_start_age</code><em class="property"> = 18</em><a class="headerlink" href="#forecaster.canada.settings.SettingsCanada.resp_start_age" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
 <dt id="forecaster.canada.settings.SettingsCanada.resp_withdrawal_years">
-<code class="descname">resp_withdrawal_years</code><em class="property"> = 4</em><a class="headerlink" href="#forecaster.canada.settings.SettingsCanada.resp_withdrawal_years" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">resp_withdrawal_years</code><em class="property"> = 4</em><a class="headerlink" href="#forecaster.canada.settings.SettingsCanada.resp_withdrawal_years" title="Permalink to this definition">¶</a></dt>
 <dd><p>CPP defaults</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="forecaster.canada.settings.SettingsCanada.transaction_in_weights">
-<code class="descname">transaction_in_weights</code><em class="property"> = {'RRSP': 1, 'TFSA': 2, 'TaxableAccount': 3}</em><a class="headerlink" href="#forecaster.canada.settings.SettingsCanada.transaction_in_weights" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt id="forecaster.canada.settings.SettingsCanada.tax_province">
+<code class="sig-name descname">tax_province</code><em class="property"> = 'BC'</em><a class="headerlink" href="#forecaster.canada.settings.SettingsCanada.tax_province" title="Permalink to this definition">¶</a></dt>
+<dd><p>RESP defaults</p>
+</dd></dl>
 
 <dl class="attribute">
-<dt id="forecaster.canada.settings.SettingsCanada.transaction_out_weights">
-<code class="descname">transaction_out_weights</code><em class="property"> = {'RRSP': 1, 'SavingsAccount': 3, 'TFSA': 2}</em><a class="headerlink" href="#forecaster.canada.settings.SettingsCanada.transaction_out_weights" title="Permalink to this definition">¶</a></dt>
-<dd><p>RESP defaults</p>
+<dt id="forecaster.canada.settings.SettingsCanada.withdrawal_weights">
+<code class="sig-name descname">withdrawal_weights</code><em class="property"> = {'RRSP': 1, 'SavingsAccount': 3, 'TFSA': 2}</em><a class="headerlink" href="#forecaster.canada.settings.SettingsCanada.withdrawal_weights" title="Permalink to this definition">¶</a></dt>
+<dd><p>TaxCanada defaults</p>
 </dd></dl>
 
 </dd></dl>
@@ -353,12 +333,12 @@ list for canada.tax objects.</p>
 <p>A module providing Canada-specific tax treatment.</p>
 <dl class="class">
 <dt id="forecaster.canada.tax.TaxCanada">
-<em class="property">class </em><code class="descclassname">forecaster.canada.tax.</code><code class="descname">TaxCanada</code><span class="sig-paren">(</span><em>inflation_adjust</em>, <em>province='BC'</em>, <em>payment_timing='start'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/tax.html#TaxCanada"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.tax.TaxCanada" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.canada.tax.</code><code class="sig-name descname">TaxCanada</code><span class="sig-paren">(</span><em class="sig-param">inflation_adjust</em>, <em class="sig-param">province='BC'</em>, <em class="sig-param">payment_timing='start'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/tax.html#TaxCanada"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.tax.TaxCanada" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Federal and provincial tax treatment for a Canadian resident.</p>
 <dl class="attribute">
 <dt id="forecaster.canada.tax.TaxCanada.inflation_adjust">
-<code class="descname">inflation_adjust</code><a class="headerlink" href="#forecaster.canada.tax.TaxCanada.inflation_adjust" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">inflation_adjust</code><a class="headerlink" href="#forecaster.canada.tax.TaxCanada.inflation_adjust" title="Permalink to this definition">¶</a></dt>
 <dd><p>A method with the following form:
 <cite>inflation_adjust(target_year, base_year) -&gt; Decimal</cite>.
 See documentation for <cite>Tax</cite> for more information.</p>
@@ -366,95 +346,84 @@ See documentation for <cite>Tax</cite> for more information.</p>
 
 <dl class="attribute">
 <dt id="forecaster.canada.tax.TaxCanada.province">
-<code class="descname">province</code><a class="headerlink" href="#forecaster.canada.tax.TaxCanada.province" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">province</code><a class="headerlink" href="#forecaster.canada.tax.TaxCanada.province" title="Permalink to this definition">¶</a></dt>
 <dd><p>The province in which income tax is paid.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">str</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.canada.tax.TaxCanada.__call__">
-<code class="descname">__call__</code><span class="sig-paren">(</span><em>income</em>, <em>year</em>, <em>other_federal_deduction=None</em>, <em>other_federal_credit=None</em>, <em>other_provincial_deduction=None</em>, <em>other_provincial_credit=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/tax.html#TaxCanada.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.tax.TaxCanada.__call__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param">income</em>, <em class="sig-param">year</em>, <em class="sig-param">other_federal_deduction=None</em>, <em class="sig-param">other_federal_credit=None</em>, <em class="sig-param">other_provincial_deduction=None</em>, <em class="sig-param">other_provincial_credit=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/tax.html#TaxCanada.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.tax.TaxCanada.__call__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Determines Canadian taxes owing on given income sources.</p>
 <p>This includes provincial and federal taxes.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>income</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>, </em><a class="reference internal" href="forecaster.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><em>iterable</em>) – Taxable income for the
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>income</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>, </em><a class="reference internal" href="forecaster.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><em>iterable</em>) – Taxable income for the
 year, either as a single scalar Money object, a single
 Person object, or as an iterable (list, set, etc.) of
-Person objects.</li>
-<li><strong>year</strong> (<em>int</em>) – The taxation year. This determines which tax
-rules and inflation-adjusted brackets are used.</li>
-<li><strong>other_federal_deduction</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>, </em><em>dict</em><em>[</em><a class="reference internal" href="forecaster.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em>) – Deductions to be applied against federal taxes.
-See documentation for <cite>Tax</cite> for more.</li>
-<li><strong>other_federal_credit</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>, </em><em>dict</em><em>[</em><a class="reference internal" href="forecaster.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em>) – Credits to be applied against federal taxes.
-See documentation for <cite>Tax</cite> for more.</li>
-<li><strong>other_provincial_deduction</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>, </em><em>dict</em><em>[</em><a class="reference internal" href="forecaster.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em>) – Deductions to be applied against provincial taxes.
-See documentation for <cite>Tax</cite> for more.</li>
-<li><strong>other_provincial_credit</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>, </em><em>dict</em><em>[</em><a class="reference internal" href="forecaster.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em>) – Credits to be applied against provincial taxes.
-See documentation for <cite>Tax</cite> for more.</li>
+Person objects.</p></li>
+<li><p><strong>year</strong> (<em>int</em>) – The taxation year. This determines which tax
+rules and inflation-adjusted brackets are used.</p></li>
+<li><p><strong>other_federal_deduction</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>, </em><em>dict</em><em>[</em><a class="reference internal" href="forecaster.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em>) – Deductions to be applied against federal taxes.
+See documentation for <cite>Tax</cite> for more.</p></li>
+<li><p><strong>other_federal_credit</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>, </em><em>dict</em><em>[</em><a class="reference internal" href="forecaster.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em>) – Credits to be applied against federal taxes.
+See documentation for <cite>Tax</cite> for more.</p></li>
+<li><p><strong>other_provincial_deduction</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>, </em><em>dict</em><em>[</em><a class="reference internal" href="forecaster.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em>) – Deductions to be applied against provincial taxes.
+See documentation for <cite>Tax</cite> for more.</p></li>
+<li><p><strong>other_provincial_credit</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>, </em><em>dict</em><em>[</em><a class="reference internal" href="forecaster.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em>) – Credits to be applied against provincial taxes.
+See documentation for <cite>Tax</cite> for more.</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The total amount of tax owing for the year.</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The total amount of tax owing for the year.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.canada.tax.TaxCanada.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>inflation_adjust</em>, <em>province='BC'</em>, <em>payment_timing='start'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/tax.html#TaxCanada.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.tax.TaxCanada.__init__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">inflation_adjust</em>, <em class="sig-param">province='BC'</em>, <em class="sig-param">payment_timing='start'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/tax.html#TaxCanada.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.tax.TaxCanada.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initializes TaxCanada.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>inflation_adjust</strong> – <p>A method with the following form:
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>inflation_adjust</strong> – <p>A method with the following form:
 <cite>inflation_adjust(target_year, base_year) -&gt; Decimal</cite>.</p>
 <p>Can be passed as dict or Decimal-convertible scalar,
 which will be converted to a callable object.</p>
 <p>See documentation for <cite>Tax</cite> for more information.</p>
-</li>
-<li><strong>province</strong> (<em>str</em>) – The province in which income tax is paid.</li>
-<li><strong>payment_timing</strong> (<em>Decimal</em><em>, </em><em>str</em>) – Timing for tax refunds and
-payments. See <cite>Tax</cite> documentation for more information.</li>
+</p></li>
+<li><p><strong>province</strong> (<em>str</em>) – The province in which income tax is paid.</p></li>
+<li><p><strong>payment_timing</strong> (<em>Decimal</em><em>, </em><em>str</em>) – Timing for tax refunds and
+payments. See <cite>Tax</cite> documentation for more information.</p></li>
 </ul>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.canada.tax.TaxCanada.marginal_bracket">
-<code class="descname">marginal_bracket</code><span class="sig-paren">(</span><em>taxable_income</em>, <em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/tax.html#TaxCanada.marginal_bracket"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.tax.TaxCanada.marginal_bracket" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">marginal_bracket</code><span class="sig-paren">(</span><em class="sig-param">taxable_income</em>, <em class="sig-param">year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/tax.html#TaxCanada.marginal_bracket"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.tax.TaxCanada.marginal_bracket" title="Permalink to this definition">¶</a></dt>
 <dd><p>The top tax bracket that taxable_income falls into.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="forecaster.canada.tax.TaxCanada.marginal_rate">
-<code class="descname">marginal_rate</code><span class="sig-paren">(</span><em>taxable_income</em>, <em>year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/tax.html#TaxCanada.marginal_rate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.tax.TaxCanada.marginal_rate" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">marginal_rate</code><span class="sig-paren">(</span><em class="sig-param">taxable_income</em>, <em class="sig-param">year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/tax.html#TaxCanada.marginal_rate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.tax.TaxCanada.marginal_rate" title="Permalink to this definition">¶</a></dt>
 <dd><p>The marginal rate for the given income.</p>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="method">
 <dt id="forecaster.canada.tax.TaxCanada.payment_timing">
-<code class="descname">payment_timing</code><a class="headerlink" href="#forecaster.canada.tax.TaxCanada.payment_timing" title="Permalink to this definition">¶</a></dt>
+<em class="property">property </em><code class="sig-name descname">payment_timing</code><a class="headerlink" href="#forecaster.canada.tax.TaxCanada.payment_timing" title="Permalink to this definition">¶</a></dt>
 <dd><p>Timing for refunds and payments.</p>
 </dd></dl>
 
@@ -462,40 +431,35 @@ payments. See <cite>Tax</cite> documentation for more information.</li>
 
 <dl class="class">
 <dt id="forecaster.canada.tax.TaxCanadaJurisdiction">
-<em class="property">class </em><code class="descclassname">forecaster.canada.tax.</code><code class="descname">TaxCanadaJurisdiction</code><span class="sig-paren">(</span><em>inflation_adjustments</em>, <em>jurisdiction='Federal'</em>, <em>payment_timing='start'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/tax.html#TaxCanadaJurisdiction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.tax.TaxCanadaJurisdiction" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.canada.tax.</code><code class="sig-name descname">TaxCanadaJurisdiction</code><span class="sig-paren">(</span><em class="sig-param">inflation_adjustments</em>, <em class="sig-param">jurisdiction='Federal'</em>, <em class="sig-param">payment_timing='start'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/tax.html#TaxCanadaJurisdiction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.tax.TaxCanadaJurisdiction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="forecaster.html#forecaster.tax.Tax" title="forecaster.tax.Tax"><code class="xref py py-class docutils literal notranslate"><span class="pre">forecaster.tax.Tax</span></code></a></p>
 <p>Federal or provincial tax treatment (Canada).</p>
 <dl class="method">
 <dt id="forecaster.canada.tax.TaxCanadaJurisdiction.credits">
-<code class="descname">credits</code><span class="sig-paren">(</span><em>person</em>, <em>year</em>, <em>deductions=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/tax.html#TaxCanadaJurisdiction.credits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.tax.TaxCanadaJurisdiction.credits" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">credits</code><span class="sig-paren">(</span><em class="sig-param">person</em>, <em class="sig-param">year</em>, <em class="sig-param">deductions=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/canada/tax.html#TaxCanadaJurisdiction.credits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.canada.tax.TaxCanadaJurisdiction.credits" title="Permalink to this definition">¶</a></dt>
 <dd><p>Finds tax credit available for each taxpayer.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>person</strong> (<a class="reference internal" href="forecaster.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a>) – A person with some number of accounts
-(or other tax sources).</li>
-<li><strong>year</strong> (<em>int</em>) – The year in which money is expressed (used for
-inflation adjustment)</li>
-<li><strong>deductions</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – The deductions for which the person
-is eligible.</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>person</strong> (<a class="reference internal" href="forecaster.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a>) – A person with some number of accounts
+(or other tax sources).</p></li>
+<li><p><strong>year</strong> (<em>int</em>) – The year in which money is expressed (used for
+inflation adjustment)</p></li>
+<li><p><strong>deductions</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – The deductions for which the person
+is eligible.</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
-<dt>The tax credit available in this jurisdiction for</dt>
-<dd><p class="first last">the person.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>The tax credit available in this jurisdiction for</dt><dd><p>the person.</p>
 </dd>
 </dl>
 </p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>

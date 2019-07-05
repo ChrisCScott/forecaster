@@ -446,10 +446,10 @@ class Account(TaxSource):
         The return value satisfies two criteria:
 
         * If each `{when: value}` pair is added as a transaction
-        then `self.balance_at_time('end')` will return `balance`,
-        subject to precision-based error.
+          then `self.balance_at_time('end')` will return `balance`,
+          subject to precision-based error.
         * Each `value` is proportionate to the corresponding
-        input `weight` for the given timing.
+          input `weight` for the given timing.
 
         Note that this method does not guarantee that the Account will
         not go into negative balance mid-year if the output is used to

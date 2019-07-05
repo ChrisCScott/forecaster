@@ -151,7 +151,6 @@
 <span></span><span class="sd">&quot;&quot;&quot; A module providing Canada-specific tax treatment. &quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="n">Money</span>
-<span class="kn">from</span> <span class="nn">forecaster.person</span> <span class="k">import</span> <span class="n">Person</span>
 <span class="kn">from</span> <span class="nn">forecaster.tax</span> <span class="k">import</span> <span class="n">Tax</span>
 <span class="kn">from</span> <span class="nn">forecaster.canada.accounts</span> <span class="k">import</span> <span class="n">RRSP</span>
 <span class="kn">from</span> <span class="nn">forecaster.canada</span> <span class="k">import</span> <span class="n">constants</span>
@@ -162,9 +161,8 @@
     <span class="sd">&quot;&quot;&quot; Federal or provincial tax treatment (Canada). &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">inflation_adjustments</span><span class="p">,</span> <span class="n">jurisdiction</span><span class="o">=</span><span class="s1">&#39;Federal&#39;</span><span class="p">,</span>
-        <span class="n">payment_timing</span><span class="o">=</span><span class="s1">&#39;start&#39;</span>
-    <span class="p">):</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">inflation_adjustments</span><span class="p">,</span> <span class="n">jurisdiction</span><span class="o">=</span><span class="s1">&#39;Federal&#39;</span><span class="p">,</span>
+            <span class="n">payment_timing</span><span class="o">=</span><span class="s1">&#39;start&#39;</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">tax_brackets</span><span class="o">=</span><span class="n">constants</span><span class="o">.</span><span class="n">TAX_BRACKETS</span><span class="p">[</span><span class="n">jurisdiction</span><span class="p">],</span>
             <span class="n">personal_deduction</span><span class="o">=</span><span class="n">constants</span><span class="o">.</span><span class="n">TAX_PERSONAL_DEDUCTION</span><span class="p">[</span>
@@ -193,16 +191,16 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Get basic credits (i.e. those tied to accounts) from the</span>
         <span class="c1"># superclass method:</span>
-        <span class="n">credits</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">credits</span><span class="p">(</span><span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">deductions</span><span class="p">)</span>
+        <span class="n">_credits</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">credits</span><span class="p">(</span><span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">deductions</span><span class="p">)</span>
 
         <span class="c1"># Apply the pension income tax credit for each person:</span>
-        <span class="n">credits</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pension_income_credit</span><span class="p">(</span><span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span>
+        <span class="n">_credits</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pension_income_credit</span><span class="p">(</span><span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span>
 
         <span class="c1"># Apply the spousal tax credit if the person is married:</span>
         <span class="k">if</span> <span class="n">person</span><span class="o">.</span><span class="n">spouse</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">credits</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spousal_tax_credit</span><span class="p">(</span><span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span>
+            <span class="n">_credits</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spousal_tax_credit</span><span class="p">(</span><span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">credits</span></div>
+        <span class="k">return</span> <span class="n">_credits</span></div>
 
     <span class="k">def</span> <span class="nf">_pension_income_credit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Determines the pension income credit claimable by `person`.</span>
@@ -217,7 +215,7 @@
 <span class="sd">            Money: The amount of the credit claimable by person in year.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">pension_income</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span>
-            <span class="n">account</span><span class="o">.</span><span class="n">outflows</span> <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">person</span><span class="o">.</span><span class="n">accounts</span>
+            <span class="n">account</span><span class="o">.</span><span class="n">outflows</span><span class="p">()</span> <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">person</span><span class="o">.</span><span class="n">accounts</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">account</span><span class="p">,</span> <span class="n">RRSP</span><span class="p">)</span>
             <span class="c1"># NOTE: Other qualified pension income sources can be</span>
             <span class="c1"># added here</span>
@@ -234,7 +232,7 @@
 
     <span class="k">def</span> <span class="nf">_spousal_tax_credit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Determines the spousal tax credit amount claimable.</span>
-<span class="sd">                </span>
+
 <span class="sd">        This method assigns the credit to the higher-earning</span>
 <span class="sd">        partner. Multiple people can be passed and the credit</span>
 <span class="sd">        will be determined for each individually.</span>
@@ -267,8 +265,8 @@
         <span class="p">)</span>
 
         <span class="c1"># We need to know the spouse&#39;s net income to assess the credit:</span>
-        <span class="c1"># TODO: To avoid calling self.deductions many times, sort out</span>
-        <span class="c1"># a way to pass in deductions for both spouses as args.</span>
+        <span class="c1"># TODO: Pass in deductions for both spouses as args?</span>
+        <span class="c1"># This would help to avoid calling self.deductions many times.</span>
         <span class="n">spouse</span> <span class="o">=</span> <span class="n">person</span><span class="o">.</span><span class="n">spouse</span>
         <span class="n">spouse_net_income</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">spouse</span><span class="o">.</span><span class="n">taxable_income</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">deductions</span><span class="p">(</span><span class="n">spouse</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span>
@@ -311,8 +309,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="TaxCanada.__init__"><a class="viewcode-back" href="../../../forecaster.canada.html#forecaster.canada.tax.TaxCanada.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="p">,</span> <span class="n">province</span><span class="o">=</span><span class="s1">&#39;BC&#39;</span><span class="p">,</span> <span class="n">payment_timing</span><span class="o">=</span><span class="s1">&#39;start&#39;</span>
-    <span class="p">):</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="p">,</span> <span class="n">province</span><span class="o">=</span><span class="s1">&#39;BC&#39;</span><span class="p">,</span> <span class="n">payment_timing</span><span class="o">=</span><span class="s1">&#39;start&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Initializes TaxCanada.</span>
 
 <span class="sd">        Args:</span>
@@ -359,10 +356,9 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">provincial_tax</span><span class="o">.</span><span class="n">marginal_rate</span><span class="p">(</span><span class="n">taxable_income</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TaxCanada.__call__"><a class="viewcode-back" href="../../../forecaster.canada.html#forecaster.canada.tax.TaxCanada.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">income</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span>
-        <span class="n">other_federal_deduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">other_federal_credit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">other_provincial_deduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">other_provincial_credit</span><span class="o">=</span><span class="kc">None</span>
-    <span class="p">):</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">income</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span>
+            <span class="n">other_federal_deduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">other_federal_credit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">other_provincial_deduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">other_provincial_credit</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Determines Canadian taxes owing on given income sources.</span>
 
 <span class="sd">        This includes provincial and federal taxes.</span>

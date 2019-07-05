@@ -264,10 +264,9 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># pylint: disable=too-many-arguments</span>
 <div class="viewcode-block" id="AllocationStrategy.__init__"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.allocation.AllocationStrategy.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">min_equity</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_equity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-        <span class="n">standard_retirement_age</span><span class="o">=</span><span class="mi">65</span><span class="p">,</span> <span class="n">risk_transition_period</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
-        <span class="n">adjust_for_retirement_plan</span><span class="o">=</span><span class="kc">True</span>
-    <span class="p">):</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">min_equity</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_equity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">standard_retirement_age</span><span class="o">=</span><span class="mi">65</span><span class="p">,</span> <span class="n">risk_transition_period</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+            <span class="n">adjust_for_retirement_plan</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Constructor for AllocationStrategy. &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span>
 
@@ -286,8 +285,7 @@
 
 <div class="viewcode-block" id="AllocationStrategy.strategy_n_minus_age"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.allocation.AllocationStrategy.strategy_n_minus_age">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;n-age&#39;</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">strategy_n_minus_age</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">retirement_age</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">retirement_age</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Used for 100-age, 110-age, 125-age, etc. strategies. &quot;&quot;&quot;</span>
         <span class="c1"># *args and **kwargs are included for consistency between</span>
         <span class="c1"># methods, even though we don&#39;t use them.</span>
@@ -310,8 +308,7 @@
 
 <div class="viewcode-block" id="AllocationStrategy.strategy_transition_to_const"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.allocation.AllocationStrategy.strategy_transition_to_const">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;Transition to constant&#39;</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">strategy_transition_to_const</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">retirement_age</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">retirement_age</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Used for `Transition to 50-50`, `Transition to 70-30`, etc. &quot;&quot;&quot;</span>
         <span class="c1"># *args and **kwargs are included for consistency between</span>
         <span class="c1"># methods, even though we don&#39;t use them.</span>
@@ -406,14 +403,16 @@
 
         <span class="k">return</span> <span class="n">allocation</span>
 
-<div class="viewcode-block" id="AllocationStrategy.__call__"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.allocation.AllocationStrategy.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">retirement_age</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="AllocationStrategy.__call__"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.allocation.AllocationStrategy.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">retirement_age</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Returns a dict of {account, Money} pairs. &quot;&quot;&quot;</span>
         <span class="c1"># TODO: Move min_equity and max_equity logic here to simplify</span>
         <span class="c1"># the logic of each strategy.</span>
         <span class="c1"># In the meantime, suppress Pylint&#39;s complaints about how this</span>
         <span class="c1"># method is useless:</span>
         <span class="c1"># pylint: disable=useless-super-delegation</span>
-        <span class="n">allocation</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__call__</span><span class="p">(</span><span class="n">age</span><span class="p">,</span> <span class="n">retirement_age</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">allocation</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__call__</span><span class="p">(</span>
+            <span class="n">age</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+            <span class="n">retirement_age</span><span class="o">=</span><span class="n">retirement_age</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_balance_allocation</span><span class="p">(</span><span class="n">allocation</span><span class="p">)</span></div></div>
 </pre></div>
