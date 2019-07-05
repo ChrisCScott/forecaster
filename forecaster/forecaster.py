@@ -17,7 +17,7 @@ from forecaster.settings import Settings
 # parameters. Rather than hard-code these strings, it's better practice
 # to define them here as an enum.
 class Parameter(Enum):
-    """ TODO """
+    """ Defines names of `Forecaster` parameters. """
     SCENARIO = "scenario"
     LIVING_EXPENSES_STRATEGY = "living_expenses_strategy"
     SAVING_STRATEGY = "saving_strategy"

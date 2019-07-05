@@ -195,7 +195,20 @@ class TransactionStrategy(Strategy):
             return {account: 1 for account in group}
 
     def _weight_account_groups(self, accounts):
-        """ TODO """
+        """ Groups accounts by their weights.
+
+        This method identifies a weight key for each account in
+        `accounts` (via `_get_weight_key`), groups accounts with common
+        weight keys, and returns a mapping from groups to their weights.
+
+        Arg:
+            accounts (set[Account]): A collection of accounts.
+
+        Returns:
+            dict[frozenset[Account], Number]: A mapping of account
+            groups (where each account in a group shares a common weight
+            key) to weights.
+        """
         account_keys = defaultdict(set)
         # Build a map of key: set[Account] pairs, where each set is the
         # set of accounts with the same key.
@@ -227,7 +240,17 @@ class TransactionStrategy(Strategy):
         return None
 
     def divide_debts(self, accounts):
-        """ TODO """
+        """ Separates high- and low-interest debts.
+
+        Args:
+            accounts (Iterable[Account]): A collection of accounts,
+                which may or may not contain any `Debt` members.
+        
+        Returns:
+            tuple[frozenset[Account], frozenset[Account]]: All
+            `Debt`-type accounts in `accounts` with outstanding
+            balances, as a `(low_interest, high_interest)` tuple.
+        """
         # Get all debts with balances owing:
         debts = {
             account for account in accounts
@@ -247,7 +270,21 @@ class TransactionStrategy(Strategy):
         return low_interest_debts, high_interest_debts
 
     def debt_priority(self, debts):
-        """ TODO """
+        """ Converts a collection of debts into a priority tree.
+        
+        This method uses the selected priority method (e.g.
+        `avalanche_priority`, `snowball_priority`) to convert `debts`
+        into a priority tree.
+
+        Arg:
+            debt (set[Debt]): Debts to organize into a priority tree.
+
+        Returns:
+            list[Debt]: An ordered list of `Debt` objects, with the
+            order determined according to `debt_strategy`. This is a
+            simple priority tree that can be embedded into a larger
+            tree.
+        """
         # Convert the sets of debts into priority trees
         # (or assign None if there are no debts of a given type)
         if debts is not None and debts:

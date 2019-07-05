@@ -1,4 +1,4 @@
-""" TODO """
+""" A Canadian principle residence. """
 
 from forecaster.accounts import Account
 from forecaster.ledger import Money, recorded_property

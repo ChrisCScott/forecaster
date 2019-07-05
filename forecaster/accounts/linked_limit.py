@@ -195,7 +195,34 @@ class LinkedLimitAccount(Account):
         return link
 
     def _merge_transactions(self, transactions, group_transactions, link):
-        """ TODO """
+        """ Merges `group_transactions` and `transactions`.
+
+        Only linked accounts have their transactions in
+        `group_transactions` added to `transactions`. Any keys in
+        `group_transactions` which are not linked (per `link`) are
+        ignored.
+
+        If `transactions` is provided, any transactions for this account
+        in `group_transactions` are ignored.
+
+        Args:
+            transactions (Union[dict[Number, Money], NoneType]): A
+                time-series of transactions for this account.
+                May be `None`.
+            group_transactions
+                (Union[dict[Account, dict[Number, Money]], NoneType]):
+                A mapping of `Account` keys to `transactions`-like
+                values. Keys not linked (according to `link`) are
+                ignored.
+            link (AccountLink): An object defining a collection of
+                linked accounts.
+
+        Returns:
+            dict[Number, Money]: A time-series of transactions formed
+            by merging `transactions` (if provided) with the
+            transactions mapped by any accounts of `group_transactions`
+            (if provided) which are linked to this account.
+        """
         # For convenience, use an empty iterable rather than `None`:
         if group_transactions is None:
             group_transactions = set()
@@ -230,9 +257,27 @@ class LinkedLimitAccount(Account):
         return transactions
 
     def max_inflows(
-            self, timing=None, transaction_limit=None, balance_limit=None,
-            transactions=None, group_transactions=None, **kwargs):
-        """ TODO """
+            self, *args, transactions=None, group_transactions=None, **kwargs):
+        """ The maximum amounts that can be contributed to the account.
+
+        This overloaded method simply provides a new argument
+        (`group_transactions`). See `Account.max_inflows` for
+        documentation of other arguments and method behaviour.
+
+        Args:
+            transactions (dict[Decimal, Money]): If provided, the result
+                will be determined as if the account also had these
+                transactions recorded against it. Optional.
+            group_transactions (dict[Account, dict[Number, Money]]):
+                A mapping of `Account` keys to `transactions`-like
+                values. Any transactions mapped to accounts with a max
+                inflow limit linked to this one will be added to
+                `transactions` when determining the result. Optional.
+
+        Returns:
+            dict[float, Money]: A mapping of `{when: value}` pairs where
+                `value` indicates the maximum inflow permitted.
+        """
         # pylint: disable=too-many-arguments,arguments-differ
         # This method just adds an extra optional argument.
 
@@ -240,13 +285,30 @@ class LinkedLimitAccount(Account):
         transactions = self._merge_transactions(
             transactions, group_transactions, self.max_inflow_link)
         return super().max_inflows(
-            timing=timing, transaction_limit=transaction_limit,
-            balance_limit=balance_limit, transactions=transactions, **kwargs)
+            *args, transactions=transactions, **kwargs)
 
     def max_outflows(
-            self, timing=None, transaction_limit=None, balance_limit=None,
-            transactions=None, group_transactions=None, **kwargs):
-        """ TODO """
+            self, *args, transactions=None, group_transactions=None, **kwargs):
+        """ The maximum amounts that can be withdrawn from the account.
+
+        This overloaded method simply provides a new argument
+        (`group_transactions`). See `Account.max_outflows` for
+        documentation of other arguments and method behaviour.
+
+        Args:
+            transactions (dict[Decimal, Money]): If provided, the result
+                will be determined as if the account also had these
+                transactions recorded against it. Optional.
+            group_transactions (dict[Account, dict[Number, Money]]):
+                A mapping of `Account` keys to `transactions`-like
+                values. Any transactions mapped to accounts with a max
+                outflow limit linked to this one will be added to
+                `transactions` when determining the result. Optional.
+
+        Returns:
+            dict[float, Money]: A mapping of `{when: value}` pairs where
+                `value` indicates the maximum outflow permitted.
+        """
         # pylint: disable=too-many-arguments,arguments-differ
         # This method just adds an extra optional argument.
 
@@ -254,13 +316,30 @@ class LinkedLimitAccount(Account):
         transactions = self._merge_transactions(
             transactions, group_transactions, self.max_outflow_link)
         return super().max_outflows(
-            timing=timing, transaction_limit=transaction_limit,
-            balance_limit=balance_limit, transactions=transactions, **kwargs)
+            *args, transactions=transactions, **kwargs)
 
     def min_inflows(
-            self, timing=None, transaction_limit=None, balance_limit=None,
-            transactions=None, group_transactions=None, **kwargs):
-        """ TODO """
+            self, *args, transactions=None, group_transactions=None, **kwargs):
+        """ The minimum amounts that must be contributed to the account.
+
+        This overloaded method simply provides a new argument
+        (`group_transactions`). See `Account.min_inflows` for
+        documentation of other arguments and method behaviour.
+
+        Args:
+            transactions (dict[Decimal, Money]): If provided, the result
+                will be determined as if the account also had these
+                transactions recorded against it. Optional.
+            group_transactions (dict[Account, dict[Number, Money]]):
+                A mapping of `Account` keys to `transactions`-like
+                values. Any transactions mapped to accounts with a min
+                inflow limit linked to this one will be added to
+                `transactions` when determining the result. Optional.
+
+        Returns:
+            dict[float, Money]: A mapping of `{when: value}` pairs where
+                `value` indicates the minimum inflow required.
+        """
         # pylint: disable=too-many-arguments,arguments-differ
         # This method just adds an extra optional argument.
 
@@ -268,12 +347,30 @@ class LinkedLimitAccount(Account):
         transactions = self._merge_transactions(
             transactions, group_transactions, self.min_inflow_link)
         return super().min_inflows(
-            timing=timing, transaction_limit=transaction_limit,
-            balance_limit=balance_limit, transactions=transactions, **kwargs)
+            *args, transactions=transactions, **kwargs)
 
     def min_outflows(
-            self, timing=None, transaction_limit=None, balance_limit=None,
-            transactions=None, group_transactions=None, **kwargs):
+            self, *args, transactions=None, group_transactions=None, **kwargs):
+        """ The minimum amounts that must be withdrawn from the account.
+
+        This overloaded method simply provides a new argument
+        (`group_transactions`). See `Account.min_outflows` for
+        documentation of other arguments and method behaviour.
+
+        Args:
+            transactions (dict[Decimal, Money]): If provided, the result
+                will be determined as if the account also had these
+                transactions recorded against it. Optional.
+            group_transactions (dict[Account, dict[Number, Money]]):
+                A mapping of `Account` keys to `transactions`-like
+                values. Any transactions mapped to accounts with a min
+                outflow limit linked to this one will be added to
+                `transactions` when determining the result. Optional.
+
+        Returns:
+            dict[float, Money]: A mapping of `{when: value}` pairs where
+                `value` indicates the minimum outflow required.
+        """
         # pylint: disable=too-many-arguments,arguments-differ
         # This method just adds an extra optional argument.
 
@@ -281,5 +378,4 @@ class LinkedLimitAccount(Account):
         transactions = self._merge_transactions(
             transactions, group_transactions, self.min_outflow_link)
         return super().min_outflows(
-            timing=timing, transaction_limit=transaction_limit,
-            balance_limit=balance_limit, transactions=transactions, **kwargs)
+            *args, transactions=transactions, **kwargs)
