@@ -96,6 +96,44 @@ class TransactionNode:
             isinstance(self.source, PARENT_NODE_TYPES)
             and isinstance(self.source, abc.Mapping))
 
+    def children_subset(self, subset):
+        """ Returns a reduced form of `children` based on `subset.
+
+        The reduced form includes only children in `subset` but has the
+        same typing as `children`. So, for example, for a weighted node
+        `node.children_subset({child_node})` will return a dict of the
+        form `{child_node: weight}` where `weight` is equal to
+        `node.children[child_node]`.
+
+        Args:
+            subset (Container): An iterable container containing only
+                elements of `node.children`.
+
+        Raises:
+            KeyError: An element of `subset` is not present in
+                `self.children`.
+            NotImplementedError: `node.children` is of a type that this
+                class does not recognize.
+                This is most likely caused by implementing a subclass
+                that allows for a differently-typed `children` attribute
+                but which hasn't overloaded this method to deal with it.
+        """
+        if isinstance(self.children, dict):
+            # Preserve the weights (values) of `node.children`:
+            return {child: self.children[child] for child in subset}
+        if isinstance(self.children, (list, tuple)):
+            # Preserve the ordering of `node.children`:
+            if any(child not in self.children for child in subset):
+                raise KeyError('subset contains element not in children.')
+            return type(self.children)(
+                child for child in self.children if child in subset)
+        # Type of `children` is determined by __init__, so if we get
+        # this far we're likely in a subclass that hasn't overloaded
+        # this method properly.
+        raise NotImplementedError(
+            str(type(self.children)) + " is not a supported type for the "
+            "children attribute.")
+
 def _children_from_source(node):
     """ Converts children in `source` to `TransactionNode`s """
     # Ordered and weighted nodes need to be handled differently:

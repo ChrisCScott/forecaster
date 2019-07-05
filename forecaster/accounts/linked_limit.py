@@ -124,23 +124,61 @@ class LinkedLimitAccount(Account):
         self._set_limit(self.min_inflow_link, value)
 
     def _get_limit(self, link, default=None):
-        """ TODO """
+        """ Gets the limit for a given linked group of accounts.
+
+        Args:
+            link (AccountLink): A link object pointing to a record
+                shared by all accounts sharing `link`.
+            default (Any): The value to return if `link` is `None`.
+                Optional.
+
+        Returns:
+            Money: The limit corresponding to `link`.
+        """
         if link is not None:
             return link.data
         else:
             return default
 
     def _set_limit(self, link, value):
-        """ TODO """
+        """ Sets the limit for a given linked group of accounts.
+
+        Args:
+            link (AccountLink): A link object pointing to a record
+                shared by all accounts sharing `link`.
+            value (Any): The value to store in the shared record.
+
+        Raises:
+            AttributeError: Cannot set limit if `link` is None.
+        """
         if link is not None:
             # Update centrally-managed record:
             link.data = value
         else:
-            # Raises AttributeError:
-            raise AttributeError('property does not provide setter')
+            # If there is no link, we cannot set its limit:
+            raise AttributeError('Cannot set limit if link is None')
 
-    def _process_link(self, link, limit=None, default_factory=lambda: None):
-        """ Convenience method for __init__ when processing inputs. """
+    def _process_link(
+            self, link, limit=None, default_factory=lambda: None):
+        """ Convenience method for __init__ when processing inputs.
+
+        Args:
+            link (Union[tuple[Person, str], AccountLink]): An
+                `AccountLink` or `AccountLink`-convertible value that
+                uniquely identifies the link between accounts.
+            limit (Any): The value all accounts sharing `link` should
+                share as a limit. If provided, overrides any value
+                provided by `default_factory`. Optional.
+            default_factory (Callable): If this method is creating a
+                new link (i.e. one which does not yet have a limit
+                value), then this 0-arg function will be called and its
+                return value will be used to populate the shared limit
+                value record. Optional.
+
+        Returns:
+            AccountLink: An object representing a link between accounts
+            and pointing to their shared limit record.
+        """
         # Nothing to do if no link is provided:
         if link is None:
             return None
