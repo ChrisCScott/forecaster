@@ -157,7 +157,7 @@
 <span class="kn">from</span> <span class="nn">forecaster.utility</span> <span class="k">import</span> <span class="n">extend_inflation_adjusted</span>
 
 
-<div class="viewcode-block" id="TaxCanadaJurisdiction"><a class="viewcode-back" href="../../../forecaster.canada.html#forecaster.canada.tax.TaxCanadaJurisdiction">[docs]</a><span class="k">class</span> <span class="nc">TaxCanadaJurisdiction</span><span class="p">(</span><span class="n">Tax</span><span class="p">):</span>
+<div class="viewcode-block" id="TaxCanadaJurisdiction"><a class="viewcode-back" href="../../../forecaster.canada.tax.html#forecaster.canada.tax.TaxCanadaJurisdiction">[docs]</a><span class="k">class</span> <span class="nc">TaxCanadaJurisdiction</span><span class="p">(</span><span class="n">Tax</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Federal or provincial tax treatment (Canada). &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
@@ -174,7 +174,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">jurisdiction</span> <span class="o">=</span> <span class="n">jurisdiction</span>
 
-<div class="viewcode-block" id="TaxCanadaJurisdiction.credits"><a class="viewcode-back" href="../../../forecaster.canada.html#forecaster.canada.tax.TaxCanadaJurisdiction.credits">[docs]</a>    <span class="k">def</span> <span class="nf">credits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">deductions</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="TaxCanadaJurisdiction.credits"><a class="viewcode-back" href="../../../forecaster.canada.tax.html#forecaster.canada.tax.TaxCanadaJurisdiction.credits">[docs]</a>    <span class="k">def</span> <span class="nf">credits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">deductions</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Finds tax credit available for each taxpayer.</span>
 
 <span class="sd">        Args:</span>
@@ -298,7 +298,7 @@
         <span class="k">return</span> <span class="n">credit</span></div>
 
 
-<div class="viewcode-block" id="TaxCanada"><a class="viewcode-back" href="../../../forecaster.canada.html#forecaster.canada.tax.TaxCanada">[docs]</a><span class="k">class</span> <span class="nc">TaxCanada</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="TaxCanada"><a class="viewcode-back" href="../../../forecaster.canada.tax.html#forecaster.canada.tax.TaxCanada">[docs]</a><span class="k">class</span> <span class="nc">TaxCanada</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Federal and provincial tax treatment for a Canadian resident.</span>
 
 <span class="sd">    Attributes:</span>
@@ -308,7 +308,7 @@
 <span class="sd">        province (str): The province in which income tax is paid.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="TaxCanada.__init__"><a class="viewcode-back" href="../../../forecaster.canada.html#forecaster.canada.tax.TaxCanada.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="TaxCanada.__init__"><a class="viewcode-back" href="../../../forecaster.canada.tax.html#forecaster.canada.tax.TaxCanada.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="p">,</span> <span class="n">province</span><span class="o">=</span><span class="s1">&#39;BC&#39;</span><span class="p">,</span> <span class="n">payment_timing</span><span class="o">=</span><span class="s1">&#39;start&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Initializes TaxCanada.</span>
 
@@ -343,19 +343,19 @@
     <span class="c1"># Marginal rate information is helpful for client code, so implement</span>
     <span class="c1"># it here based on fed. and prov. tax brackets:</span>
 
-<div class="viewcode-block" id="TaxCanada.marginal_bracket"><a class="viewcode-back" href="../../../forecaster.canada.html#forecaster.canada.tax.TaxCanada.marginal_bracket">[docs]</a>    <span class="k">def</span> <span class="nf">marginal_bracket</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">taxable_income</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+<div class="viewcode-block" id="TaxCanada.marginal_bracket"><a class="viewcode-back" href="../../../forecaster.canada.tax.html#forecaster.canada.tax.TaxCanada.marginal_bracket">[docs]</a>    <span class="k">def</span> <span class="nf">marginal_bracket</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">taxable_income</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The top tax bracket that taxable_income falls into. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">max</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">federal_tax</span><span class="o">.</span><span class="n">marginal_bracket</span><span class="p">(</span><span class="n">taxable_income</span><span class="p">,</span> <span class="n">year</span><span class="p">),</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">provincial_tax</span><span class="o">.</span><span class="n">marginal_bracket</span><span class="p">(</span><span class="n">taxable_income</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="TaxCanada.marginal_rate"><a class="viewcode-back" href="../../../forecaster.canada.html#forecaster.canada.tax.TaxCanada.marginal_rate">[docs]</a>    <span class="k">def</span> <span class="nf">marginal_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">taxable_income</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+<div class="viewcode-block" id="TaxCanada.marginal_rate"><a class="viewcode-back" href="../../../forecaster.canada.tax.html#forecaster.canada.tax.TaxCanada.marginal_rate">[docs]</a>    <span class="k">def</span> <span class="nf">marginal_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">taxable_income</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The marginal rate for the given income. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">federal_tax</span><span class="o">.</span><span class="n">marginal_rate</span><span class="p">(</span><span class="n">taxable_income</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span> <span class="o">+</span> \
             <span class="bp">self</span><span class="o">.</span><span class="n">provincial_tax</span><span class="o">.</span><span class="n">marginal_rate</span><span class="p">(</span><span class="n">taxable_income</span><span class="p">,</span> <span class="n">year</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="TaxCanada.__call__"><a class="viewcode-back" href="../../../forecaster.canada.html#forecaster.canada.tax.TaxCanada.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span>
+<div class="viewcode-block" id="TaxCanada.__call__"><a class="viewcode-back" href="../../../forecaster.canada.tax.html#forecaster.canada.tax.TaxCanada.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="n">income</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span>
             <span class="n">other_federal_deduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">other_federal_credit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">other_provincial_deduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">other_provincial_credit</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>

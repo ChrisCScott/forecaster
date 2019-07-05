@@ -1,0 +1,598 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.forecast.base module &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="forecaster.forecast.income module" href="forecaster.forecast.income.html" />
+    <link rel="prev" title="forecaster.forecast package" href="forecaster.forecast.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">forecaster</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="forecaster.html">forecaster package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="forecaster.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="forecaster.accounts.html">forecaster.accounts package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.canada.html">forecaster.canada package</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="forecaster.forecast.html">forecaster.forecast package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.ledger.html">forecaster.ledger package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.strategy.html">forecaster.strategy package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">forecaster</a> &raquo;</li>
+        
+          <li><a href="forecaster.html">forecaster package</a> &raquo;</li>
+        
+          <li><a href="forecaster.forecast.html">forecaster.forecast package</a> &raquo;</li>
+        
+      <li>forecaster.forecast.base module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/forecaster.forecast.base.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-forecaster.forecast.base">
+<span id="forecaster-forecast-base-module"></span><h1>forecaster.forecast.base module<a class="headerlink" href="#module-forecaster.forecast.base" title="Permalink to this headline">¶</a></h1>
+<p>This module provides a Forecast class for use in forecasts.</p>
+<p>This is where most of the financial forecasting logic of the Forecaster
+package lives. It applies Scenario, Strategy, and Tax information to
+determine how account balances will grow or shrink year-over-year.</p>
+<dl class="class">
+<dt id="forecaster.forecast.base.Forecast">
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.forecast.base.</code><code class="sig-name descname">Forecast</code><span class="sig-paren">(</span><em class="sig-param">income_forecast</em>, <em class="sig-param">living_expenses_forecast</em>, <em class="sig-param">saving_forecast</em>, <em class="sig-param">withdrawal_forecast</em>, <em class="sig-param">tax_forecast</em>, <em class="sig-param">scenario</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast/base.html#Forecast"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.base.Forecast" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="forecaster.ledger.base.html#forecaster.ledger.base.Ledger" title="forecaster.ledger.base.Ledger"><code class="xref py py-class docutils literal notranslate"><span class="pre">forecaster.ledger.base.Ledger</span></code></a></p>
+<p>A financial forecast spanning multiple years.</p>
+<p>A <cite>Forecast</cite> is a container for various <cite>*Forecast</cite> objects, such
+as <cite>IncomeForecast</cite> and <cite>WithdrawalForecast</cite>. Those objects contain
+various <cite>Account</cite> objects with balances that grow (or shrink) from
+year to year,  <cite>Person</cite> objects describing the plannees, <cite>Scenario</cite>
+information describing economic conditions over the course of the
+forecast, and <cite>Strategy</cite> objects to describe the plannees’ behaviour.</p>
+<p><cite>Forecast</cite> provides a high-level model for annual cashflows as they
+relate to retirement savings. In particular, it uses this model:</p>
+<ul>
+<li><p>Determine total (net) income for the year.</p></li>
+<li><p>Determine the portion of net income used for ordinary living
+expenses. This is the pool of money available for retirement
+savings and lifecycle expenses.</p>
+<p>Deducting living expenses from income yields “gross
+contributions” - the total amount available to be saved.</p>
+</li>
+<li><p>Determine the portion of available money which will be used
+on “lifecycle” expenses. These are expenditures on top of
+ordinary living expenses which vary over time. Inflows to
+retirement savings accounts are reduced to pay for these.
+This can include, e.g., childcare, contributions to education
+accounts, home purchase costs, debt repayment, and so on.</p>
+<p>Where lifecycle expenses involve contributions to
+non-retirement accounts (like education savings accounts or
+debt accounts), per-account contributions are also determined
+at this step.</p>
+<p>Deducting lifecycle expenses from gross contributions yields
+“net contributions” - the total amount actually saved.</p>
+</li>
+<li><p>Determine per-account retirement contributions based on net
+contributions.</p></li>
+<li><p>Determine the amount withdrawn from retirement savings accounts.
+Allocate portions of that to each retirement account.</p></li>
+<li><p>Determine total tax liability for the year; if necessary, adjust
+withdrawals accordingly and repeat.</p></li>
+<li><p>Determine statistics for the year (e.g. living standard.)</p></li>
+</ul>
+<p>The <cite>Forecast</cite> can be built around any number of people, but is
+ordinarily built around either a single person or a spousal
+couple (since spouses have specific tax treatment). Otherwise, it’s
+better practice to build separate <cite>Forecast</cite> objects for separate
+people.</p>
+<p>Note that each of the below <cite>Money</cite> attributes has an associated
+<cite>dict[int, Money]</cite> that stores the value of the attribute for each
+year of the forecast. (Key values are years.) The dicts are named
+<cite>*_history</cite>; e.g. <cite>income</cite> is associated with <cite>income_history</cite> and
+<cite>income_history[2001]</cite> gives the value of <cite>income</cite> for year <cite>2001</cite>.</p>
+<dl class="attribute">
+<dt id="forecaster.forecast.base.Forecast.income_forecast">
+<code class="sig-name descname">income_forecast</code><a class="headerlink" href="#forecaster.forecast.base.Forecast.income_forecast" title="Permalink to this definition">¶</a></dt>
+<dd><p>A callable object that takes
+a cashflow time series (called <cite>available</cite>) and mutates it
+to include net income for each year.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.forecast.income.html#forecaster.forecast.income.IncomeForecast" title="forecaster.forecast.income.IncomeForecast">IncomeForecast</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.base.Forecast.living_expenses_forecast">
+<code class="sig-name descname">living_expenses_forecast</code><a class="headerlink" href="#forecaster.forecast.base.Forecast.living_expenses_forecast" title="Permalink to this definition">¶</a></dt>
+<dd><p>A callable
+object that takes a cashflow time series (called
+<cite>available</cite>) and mutates it to include  ordinary living
+expenses for each year.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.forecast.living_expenses.html#forecaster.forecast.living_expenses.LivingExpensesForecast" title="forecaster.forecast.living_expenses.LivingExpensesForecast">LivingExpensesForecast</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.base.Forecast.saving_forecast">
+<code class="sig-name descname">saving_forecast</code><a class="headerlink" href="#forecaster.forecast.base.Forecast.saving_forecast" title="Permalink to this definition">¶</a></dt>
+<dd><p>A callable object that takes
+a cashflow time series (called <cite>available</cite>) and mutates it
+to include amounts contributed to savings for each year.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.forecast.saving.html#forecaster.forecast.saving.SavingForecast" title="forecaster.forecast.saving.SavingForecast">SavingForecast</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.base.Forecast.withdrawal_forecast">
+<code class="sig-name descname">withdrawal_forecast</code><a class="headerlink" href="#forecaster.forecast.base.Forecast.withdrawal_forecast" title="Permalink to this definition">¶</a></dt>
+<dd><p>A callable object that
+takes a cashflow time series (called <cite>available</cite>) and
+mutates it to include total withdrawals for each year.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.forecast.withdrawal.html#forecaster.forecast.withdrawal.WithdrawalForecast" title="forecaster.forecast.withdrawal.WithdrawalForecast">WithdrawalForecast</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.base.Forecast.tax_forecast">
+<code class="sig-name descname">tax_forecast</code><a class="headerlink" href="#forecaster.forecast.base.Forecast.tax_forecast" title="Permalink to this definition">¶</a></dt>
+<dd><p>A callable object that takes
+a cashflow time series (called <cite>available</cite>) and mutates it
+to include total taxes owed within the each year, if any.
+It also provides attributes which help <cite>Forecast</cite> to
+determine whether any tax liability should be reflected in
+next year’s cashflow.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.forecast.tax.html#forecaster.forecast.tax.TaxForecast" title="forecaster.forecast.tax.TaxForecast">TaxForecast</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.base.Forecast.scenario">
+<code class="sig-name descname">scenario</code><a class="headerlink" href="#forecaster.forecast.base.Forecast.scenario" title="Permalink to this definition">¶</a></dt>
+<dd><p>Economic information for the forecast
+(e.g. inflation and stock market returns for each year)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.scenario.html#forecaster.scenario.Scenario" title="forecaster.scenario.Scenario">Scenario</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.base.Forecast.income">
+<code class="sig-name descname">income</code><a class="headerlink" href="#forecaster.forecast.base.Forecast.income" title="Permalink to this definition">¶</a></dt>
+<dd><p>The net income for the plannees for the year.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.base.Forecast.living_expenses">
+<code class="sig-name descname">living_expenses</code><a class="headerlink" href="#forecaster.forecast.base.Forecast.living_expenses" title="Permalink to this definition">¶</a></dt>
+<dd><p>The amount that the plannees live off
+of for the year.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.base.Forecast.gross_contributions">
+<code class="sig-name descname">gross_contributions</code><a class="headerlink" href="#forecaster.forecast.base.Forecast.gross_contributions" title="Permalink to this definition">¶</a></dt>
+<dd><p>The amount available to
+contribute to savings, before any reductions. This is the
+amount left over after living expenses.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.base.Forecast.contribution_reductions">
+<code class="sig-name descname">contribution_reductions</code><a class="headerlink" href="#forecaster.forecast.base.Forecast.contribution_reductions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Amounts diverted from
+savings, such as certain debt repayments or childcare.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.base.Forecast.net_contributions">
+<code class="sig-name descname">net_contributions</code><a class="headerlink" href="#forecaster.forecast.base.Forecast.net_contributions" title="Permalink to this definition">¶</a></dt>
+<dd><p>The total amount contributed to
+savings accounts for the year.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.base.Forecast.principal">
+<code class="sig-name descname">principal</code><a class="headerlink" href="#forecaster.forecast.base.Forecast.principal" title="Permalink to this definition">¶</a></dt>
+<dd><p>The total value of all savings accounts
+(but not other property) at the start of the year.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.base.Forecast.withdrawals">
+<code class="sig-name descname">withdrawals</code><a class="headerlink" href="#forecaster.forecast.base.Forecast.withdrawals" title="Permalink to this definition">¶</a></dt>
+<dd><p>The total amount withdrawn from all
+accounts for the year.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.base.Forecast.tax">
+<code class="sig-name descname">tax</code><a class="headerlink" href="#forecaster.forecast.base.Forecast.tax" title="Permalink to this definition">¶</a></dt>
+<dd><p>The total tax liability for the year (some of
+which might not be payable unti the next year).
+Does not include tax liability from previous years which
+is paid in this year, but does include tax liability
+arising in this year which won’t be repaid until a
+future year.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.base.Forecast.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">income_forecast</em>, <em class="sig-param">living_expenses_forecast</em>, <em class="sig-param">saving_forecast</em>, <em class="sig-param">withdrawal_forecast</em>, <em class="sig-param">tax_forecast</em>, <em class="sig-param">scenario</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast/base.html#Forecast.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.base.Forecast.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs an instance of class Forecast.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>income_forecast</strong> (<a class="reference internal" href="forecaster.forecast.income.html#forecaster.forecast.income.IncomeForecast" title="forecaster.forecast.income.IncomeForecast"><em>IncomeForecast</em></a>) – Determines net income for each year.</p></li>
+<li><p><strong>living_expenses_forecast</strong> (<a class="reference internal" href="forecaster.forecast.living_expenses.html#forecaster.forecast.living_expenses.LivingExpensesForecast" title="forecaster.forecast.living_expenses.LivingExpensesForecast"><em>LivingExpensesForecast</em></a>) – Determines the living expenses for each year.</p></li>
+<li><p><strong>saving_forecast</strong> (<a class="reference internal" href="forecaster.forecast.saving.html#forecaster.forecast.saving.SavingForecast" title="forecaster.forecast.saving.SavingForecast"><em>SavingForecast</em></a>) – Determines the savings for each year.</p></li>
+<li><p><strong>withdrawal_forecast</strong> (<a class="reference internal" href="forecaster.forecast.withdrawal.html#forecaster.forecast.withdrawal.WithdrawalForecast" title="forecaster.forecast.withdrawal.WithdrawalForecast"><em>WithdrawalForecast</em></a>) – Determines the total withdrawals for each year.</p></li>
+<li><p><strong>tax_forecast</strong> (<a class="reference internal" href="forecaster.forecast.tax.html#forecaster.forecast.tax.TaxForecast" title="forecaster.forecast.tax.TaxForecast"><em>TaxForecast</em></a>) – Determines taxes owed for the year.</p></li>
+<li><p><strong>scenario</strong> (<a class="reference internal" href="forecaster.scenario.html#forecaster.scenario.Scenario" title="forecaster.scenario.Scenario"><em>Scenario</em></a>) – Provides <cite>initial_year</cite> and <cite>num_year</cite>
+properties.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.base.Forecast.assets">
+<em class="property">property </em><code class="sig-name descname">assets</code><a class="headerlink" href="#forecaster.forecast.base.Forecast.assets" title="Permalink to this definition">¶</a></dt>
+<dd><p>A set of non-Debt <cite>Account</cite> objects for the forecast.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.base.Forecast.call_subforecasts">
+<code class="sig-name descname">call_subforecasts</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast/base.html#Forecast.call_subforecasts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.base.Forecast.call_subforecasts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calls each SubForecast in order.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.base.Forecast.debts">
+<em class="property">property </em><code class="sig-name descname">debts</code><a class="headerlink" href="#forecaster.forecast.base.Forecast.debts" title="Permalink to this definition">¶</a></dt>
+<dd><p>A set of <cite>Debt</cite> objects for the forecast.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">income</code></dt>
+<dd><p>Returns cached value in *_history dict if available.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.base.Forecast.income_history">
+<em class="property">property </em><code class="sig-name descname">income_history</code><a class="headerlink" href="#forecaster.forecast.base.Forecast.income_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of income over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">living_expenses</code></dt>
+<dd><p>Returns cached value in *_history dict if available.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.base.Forecast.living_expenses_history">
+<em class="property">property </em><code class="sig-name descname">living_expenses_history</code><a class="headerlink" href="#forecaster.forecast.base.Forecast.living_expenses_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of living_expenses over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.base.Forecast.next_year">
+<code class="sig-name descname">next_year</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast/base.html#Forecast.next_year"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.base.Forecast.next_year" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a year to the forecast.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.base.Forecast.people">
+<em class="property">property </em><code class="sig-name descname">people</code><a class="headerlink" href="#forecaster.forecast.base.Forecast.people" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <cite>Person</cite> plannees for the forecast.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">principal</code></dt>
+<dd><p>Returns cached value in *_history dict if available.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.base.Forecast.principal_history">
+<em class="property">property </em><code class="sig-name descname">principal_history</code><a class="headerlink" href="#forecaster.forecast.base.Forecast.principal_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of principal over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.base.Forecast.retirement_year">
+<em class="property">property </em><code class="sig-name descname">retirement_year</code><a class="headerlink" href="#forecaster.forecast.base.Forecast.retirement_year" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines the retirement year for the plannees.</p>
+<p>TODO: This approach forces <cite>Forecast</cite> to assume that all
+plannees retire at the same time, which is often inaccurate.
+We should use per-retiree retirement dates, meaning that this
+method should be removed and the calling code refactored.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.base.Forecast.savings">
+<em class="property">property </em><code class="sig-name descname">savings</code><a class="headerlink" href="#forecaster.forecast.base.Forecast.savings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns cached value in *_history dict if available.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.base.Forecast.savings_history">
+<em class="property">property </em><code class="sig-name descname">savings_history</code><a class="headerlink" href="#forecaster.forecast.base.Forecast.savings_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of savings over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">tax</code></dt>
+<dd><p>Returns cached value in *_history dict if available.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.base.Forecast.tax_history">
+<em class="property">property </em><code class="sig-name descname">tax_history</code><a class="headerlink" href="#forecaster.forecast.base.Forecast.tax_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of tax over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">withdrawals</code></dt>
+<dd><p>Returns cached value in *_history dict if available.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.base.Forecast.withdrawals_history">
+<em class="property">property </em><code class="sig-name descname">withdrawals_history</code><a class="headerlink" href="#forecaster.forecast.base.Forecast.withdrawals_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of withdrawals over all past years.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="forecaster.forecast.income.html" class="btn btn-neutral float-right" title="forecaster.forecast.income module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="forecaster.forecast.html" class="btn btn-neutral float-left" title="forecaster.forecast package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

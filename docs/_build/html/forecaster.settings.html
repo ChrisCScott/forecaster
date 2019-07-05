@@ -1,0 +1,394 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.settings module &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="forecaster.tax module" href="forecaster.tax.html" />
+    <link rel="prev" title="forecaster.scenario module" href="forecaster.scenario.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">forecaster</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="forecaster.html">forecaster package</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#subpackages">Subpackages</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="forecaster.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="forecaster.forecaster.html">forecaster.forecaster module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.person.html">forecaster.person module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.scenario.html">forecaster.scenario module</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">forecaster.settings module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.tax.html">forecaster.tax module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.utility.html">forecaster.utility module</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">forecaster</a> &raquo;</li>
+        
+          <li><a href="forecaster.html">forecaster package</a> &raquo;</li>
+        
+      <li>forecaster.settings module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/forecaster.settings.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-forecaster.settings">
+<span id="forecaster-settings-module"></span><h1>forecaster.settings module<a class="headerlink" href="#module-forecaster.settings" title="Permalink to this headline">¶</a></h1>
+<p>This module provides user-modifiable settings for the application.</p>
+<p>It provides the <cite>Settings</cite> class, which contains various <cite>*Defaults</cite>
+classes. They provide default values for aspects of the application.</p>
+<dl class="class">
+<dt id="forecaster.settings.Settings">
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.settings.</code><code class="sig-name descname">Settings</code><a class="reference internal" href="_modules/forecaster/settings.html#Settings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.settings.Settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Container for variables used to control application settings.</p>
+<p>This class can be instantiated as an object and, where supported,
+passed to other objects to provide defaults for initialization.
+However, it also provides sensible defaults at the class level, so
+one might equivalently call Settings (the class) or Settings()
+(an object).</p>
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.allocation_adjust_retirement">
+<code class="sig-name descname">allocation_adjust_retirement</code><em class="property"> = True</em><a class="headerlink" href="#forecaster.settings.Settings.allocation_adjust_retirement" title="Permalink to this definition">¶</a></dt>
+<dd><p>DebtPaymentStrategy defaults</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.allocation_max_equity">
+<code class="sig-name descname">allocation_max_equity</code><em class="property"> = Decimal('0.3')</em><a class="headerlink" href="#forecaster.settings.Settings.allocation_max_equity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.allocation_min_equity">
+<code class="sig-name descname">allocation_min_equity</code><em class="property"> = Decimal('0.3')</em><a class="headerlink" href="#forecaster.settings.Settings.allocation_min_equity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.allocation_risk_trans_period">
+<code class="sig-name descname">allocation_risk_trans_period</code><em class="property"> = 20</em><a class="headerlink" href="#forecaster.settings.Settings.allocation_risk_trans_period" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.allocation_std_retirement_age">
+<code class="sig-name descname">allocation_std_retirement_age</code><em class="property"> = 65</em><a class="headerlink" href="#forecaster.settings.Settings.allocation_std_retirement_age" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.allocation_strategy">
+<code class="sig-name descname">allocation_strategy</code><em class="property"> = 'n-age'</em><a class="headerlink" href="#forecaster.settings.Settings.allocation_strategy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.allocation_target">
+<code class="sig-name descname">allocation_target</code><em class="property"> = 65</em><a class="headerlink" href="#forecaster.settings.Settings.allocation_target" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.bond_return">
+<code class="sig-name descname">bond_return</code><em class="property"> = 0.04</em><a class="headerlink" href="#forecaster.settings.Settings.bond_return" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.currency">
+<code class="sig-name descname">currency</code><em class="property"> = 'CAD'</em><a class="headerlink" href="#forecaster.settings.Settings.currency" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defaults for <cite>Scenario</cite></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.debt_payment_strategy">
+<code class="sig-name descname">debt_payment_strategy</code><em class="property"> = 'Avalanche'</em><a class="headerlink" href="#forecaster.settings.Settings.debt_payment_strategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tax defaults</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.display_year">
+<code class="sig-name descname">display_year</code><em class="property"> = 2019</em><a class="headerlink" href="#forecaster.settings.Settings.display_year" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.inflation">
+<code class="sig-name descname">inflation</code><em class="property"> = 0.02</em><a class="headerlink" href="#forecaster.settings.Settings.inflation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.initial_year">
+<code class="sig-name descname">initial_year</code><em class="property"> = 2019</em><a class="headerlink" href="#forecaster.settings.Settings.initial_year" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.living_expenses_base_amount">
+<code class="sig-name descname">living_expenses_base_amount</code><em class="property"> = Decimal('60000')</em><a class="headerlink" href="#forecaster.settings.Settings.living_expenses_base_amount" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.living_expenses_inflation_adjust">
+<code class="sig-name descname">living_expenses_inflation_adjust</code><em class="property"> = True</em><a class="headerlink" href="#forecaster.settings.Settings.living_expenses_inflation_adjust" title="Permalink to this definition">¶</a></dt>
+<dd><p>SavingStrategy defaults</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.living_expenses_rate">
+<code class="sig-name descname">living_expenses_rate</code><em class="property"> = Decimal('0.2')</em><a class="headerlink" href="#forecaster.settings.Settings.living_expenses_rate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.living_expenses_strategy">
+<code class="sig-name descname">living_expenses_strategy</code><em class="property"> = 'Constant living expenses'</em><a class="headerlink" href="#forecaster.settings.Settings.living_expenses_strategy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.management_fees">
+<code class="sig-name descname">management_fees</code><em class="property"> = 0.005</em><a class="headerlink" href="#forecaster.settings.Settings.management_fees" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.num_years">
+<code class="sig-name descname">num_years</code><em class="property"> = 100</em><a class="headerlink" href="#forecaster.settings.Settings.num_years" title="Permalink to this definition">¶</a></dt>
+<dd><p>LivingExpensesStrategy defaults</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.other_return">
+<code class="sig-name descname">other_return</code><em class="property"> = 0.03</em><a class="headerlink" href="#forecaster.settings.Settings.other_return" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.saving_strategy">
+<code class="sig-name descname">saving_strategy</code><em class="property"> = 'Ordered'</em><a class="headerlink" href="#forecaster.settings.Settings.saving_strategy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.saving_weights">
+<code class="sig-name descname">saving_weights</code><em class="property"> = {'Account': 1}</em><a class="headerlink" href="#forecaster.settings.Settings.saving_weights" title="Permalink to this definition">¶</a></dt>
+<dd><p>WithdrawalStrategy defaults</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.stock_return">
+<code class="sig-name descname">stock_return</code><em class="property"> = 0.07</em><a class="headerlink" href="#forecaster.settings.Settings.stock_return" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.tax_brackets">
+<code class="sig-name descname">tax_brackets</code><em class="property"> = {2019: {Decimal('0'): Decimal('0')}}</em><a class="headerlink" href="#forecaster.settings.Settings.tax_brackets" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.tax_credit_rate">
+<code class="sig-name descname">tax_credit_rate</code><em class="property"> = {2019: Decimal('0')}</em><a class="headerlink" href="#forecaster.settings.Settings.tax_credit_rate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.tax_payment_timing">
+<code class="sig-name descname">tax_payment_timing</code><em class="property"> = 'start'</em><a class="headerlink" href="#forecaster.settings.Settings.tax_payment_timing" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.tax_personal_deduction">
+<code class="sig-name descname">tax_personal_deduction</code><em class="property"> = {2019: Decimal('0')}</em><a class="headerlink" href="#forecaster.settings.Settings.tax_personal_deduction" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.withdrawal_strategy">
+<code class="sig-name descname">withdrawal_strategy</code><em class="property"> = 'Ordered'</em><a class="headerlink" href="#forecaster.settings.Settings.withdrawal_strategy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.settings.Settings.withdrawal_weights">
+<code class="sig-name descname">withdrawal_weights</code><em class="property"> = {'Account': 1}</em><a class="headerlink" href="#forecaster.settings.Settings.withdrawal_weights" title="Permalink to this definition">¶</a></dt>
+<dd><p>AllocationStrategy defaults</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="forecaster.tax.html" class="btn btn-neutral float-right" title="forecaster.tax module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="forecaster.scenario.html" class="btn btn-neutral float-left" title="forecaster.scenario module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

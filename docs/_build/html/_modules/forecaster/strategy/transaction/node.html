@@ -162,7 +162,7 @@
 <span class="n">WEIGHTED_NODE_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="nb">dict</span><span class="p">,)</span>
 <span class="n">PARENT_NODE_TYPES</span> <span class="o">=</span> <span class="n">ORDERED_NODE_TYPES</span> <span class="o">+</span> <span class="n">WEIGHTED_NODE_TYPES</span>
 
-<div class="viewcode-block" id="TransactionNode"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.node.TransactionNode">[docs]</a><span class="k">class</span> <span class="nc">TransactionNode</span><span class="p">:</span>
+<div class="viewcode-block" id="TransactionNode"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.node.html#forecaster.strategy.transaction.node.TransactionNode">[docs]</a><span class="k">class</span> <span class="nc">TransactionNode</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot; A data container for notes about nodes of a priority tree.</span>
 
 <span class="sd">    This is intended for use with TransactionStrategy, which provides</span>
@@ -198,7 +198,7 @@
 <span class="sd">            node is ordered (i.e. if the `source` version of the node</span>
 <span class="sd">            is a list or tuple).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-<div class="viewcode-block" id="TransactionNode.__init__"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.node.TransactionNode.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">limits</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="TransactionNode.__init__"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.node.html#forecaster.strategy.transaction.node.TransactionNode.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">limits</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Initializes TransactionNode. &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)):</span>
             <span class="c1"># Copy initialization:</span>
@@ -226,27 +226,27 @@
         <span class="c1"># TransactionNode instance for each child in `source`.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">children</span> <span class="o">=</span> <span class="n">_children_from_source</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="TransactionNode.is_leaf_node"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.node.TransactionNode.is_leaf_node">[docs]</a>    <span class="k">def</span> <span class="nf">is_leaf_node</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="TransactionNode.is_leaf_node"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.node.html#forecaster.strategy.transaction.node.TransactionNode.is_leaf_node">[docs]</a>    <span class="k">def</span> <span class="nf">is_leaf_node</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Returns True if the node is a leaf node, False otherwise. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_parent_node</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="TransactionNode.is_parent_node"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.node.TransactionNode.is_parent_node">[docs]</a>    <span class="k">def</span> <span class="nf">is_parent_node</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="TransactionNode.is_parent_node"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.node.html#forecaster.strategy.transaction.node.TransactionNode.is_parent_node">[docs]</a>    <span class="k">def</span> <span class="nf">is_parent_node</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Returns True if the node is a parent (non-leaf) node. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">PARENT_NODE_TYPES</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="TransactionNode.is_ordered"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.node.TransactionNode.is_ordered">[docs]</a>    <span class="k">def</span> <span class="nf">is_ordered</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="TransactionNode.is_ordered"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.node.html#forecaster.strategy.transaction.node.TransactionNode.is_ordered">[docs]</a>    <span class="k">def</span> <span class="nf">is_ordered</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Returns True if the node is an ordered parent node. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">(</span>
             <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">PARENT_NODE_TYPES</span><span class="p">)</span>
             <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">abc</span><span class="o">.</span><span class="n">Sequence</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="TransactionNode.is_weighted"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.node.TransactionNode.is_weighted">[docs]</a>    <span class="k">def</span> <span class="nf">is_weighted</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="TransactionNode.is_weighted"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.node.html#forecaster.strategy.transaction.node.TransactionNode.is_weighted">[docs]</a>    <span class="k">def</span> <span class="nf">is_weighted</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Returns True if the node is a weighted parent node. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">(</span>
             <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">PARENT_NODE_TYPES</span><span class="p">)</span>
             <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">abc</span><span class="o">.</span><span class="n">Mapping</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="TransactionNode.children_subset"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.node.TransactionNode.children_subset">[docs]</a>    <span class="k">def</span> <span class="nf">children_subset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subset</span><span class="p">):</span>
+<div class="viewcode-block" id="TransactionNode.children_subset"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.node.html#forecaster.strategy.transaction.node.TransactionNode.children_subset">[docs]</a>    <span class="k">def</span> <span class="nf">children_subset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subset</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Returns a reduced form of `children` based on `subset`.</span>
 
 <span class="sd">        The reduced form includes only children in `subset` but has the</span>

@@ -1,0 +1,243 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.strategy.transaction.util module &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="forecaster.strategy.allocation module" href="forecaster.strategy.allocation.html" />
+    <link rel="prev" title="forecaster.strategy.transaction.strategy module" href="forecaster.strategy.transaction.strategy.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">forecaster</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="forecaster.html">forecaster package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="forecaster.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="forecaster.accounts.html">forecaster.accounts package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.canada.html">forecaster.canada package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.forecast.html">forecaster.forecast package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.ledger.html">forecaster.ledger package</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="forecaster.strategy.html">forecaster.strategy package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">forecaster</a> &raquo;</li>
+        
+          <li><a href="forecaster.html">forecaster package</a> &raquo;</li>
+        
+          <li><a href="forecaster.strategy.html">forecaster.strategy package</a> &raquo;</li>
+        
+          <li><a href="forecaster.strategy.transaction.html">forecaster.strategy.transaction package</a> &raquo;</li>
+        
+      <li>forecaster.strategy.transaction.util module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/forecaster.strategy.transaction.util.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-forecaster.strategy.transaction.util">
+<span id="forecaster-strategy-transaction-util-module"></span><h1>forecaster.strategy.transaction.util module<a class="headerlink" href="#module-forecaster.strategy.transaction.util" title="Permalink to this headline">¶</a></h1>
+<p>Defines helper functions for identifying an account’s min/max.</p>
+<dl class="function">
+<dt id="forecaster.strategy.transaction.util.group_default_methods">
+<code class="sig-prename descclassname">forecaster.strategy.transaction.util.</code><code class="sig-name descname">group_default_methods</code><span class="sig-paren">(</span><em class="sig-param">field_names=LimitTuple(min_inflow='min_inflow_link'</em>, <em class="sig-param">max_inflow='max_inflow_link'</em>, <em class="sig-param">min_outflow='min_outflow_link'</em>, <em class="sig-param">max_outflow='max_outflow_link')</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/transaction/util.html#group_default_methods"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.transaction.util.group_default_methods" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns methods returning sets of linked accts. as a LimitTuple.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="forecaster.strategy.transaction.util.transaction_default_methods">
+<code class="sig-prename descclassname">forecaster.strategy.transaction.util.</code><code class="sig-name descname">transaction_default_methods</code><span class="sig-paren">(</span><em class="sig-param">field_names=LimitTuple(min_inflow='min_inflows'</em>, <em class="sig-param">max_inflow='max_inflows'</em>, <em class="sig-param">min_outflow='min_outflows'</em>, <em class="sig-param">max_outflow='max_outflows')</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/transaction/util.html#transaction_default_methods"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.transaction.util.transaction_default_methods" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns methods for finding min/max in/outflows as a LimitTuple.</p>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="forecaster.strategy.allocation.html" class="btn btn-neutral float-right" title="forecaster.strategy.allocation module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="forecaster.strategy.transaction.strategy.html" class="btn btn-neutral float-left" title="forecaster.strategy.transaction.strategy module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

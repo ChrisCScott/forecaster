@@ -1,0 +1,314 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.strategy.base module &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="forecaster.strategy.gross_transaction module" href="forecaster.strategy.gross_transaction.html" />
+    <link rel="prev" title="forecaster.strategy.allocation module" href="forecaster.strategy.allocation.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">forecaster</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="forecaster.html">forecaster package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="forecaster.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="forecaster.accounts.html">forecaster.accounts package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.canada.html">forecaster.canada package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.forecast.html">forecaster.forecast package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.ledger.html">forecaster.ledger package</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="forecaster.strategy.html">forecaster.strategy package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">forecaster</a> &raquo;</li>
+        
+          <li><a href="forecaster.html">forecaster package</a> &raquo;</li>
+        
+          <li><a href="forecaster.strategy.html">forecaster.strategy package</a> &raquo;</li>
+        
+      <li>forecaster.strategy.base module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/forecaster.strategy.base.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-forecaster.strategy.base">
+<span id="forecaster-strategy-base-module"></span><h1>forecaster.strategy.base module<a class="headerlink" href="#module-forecaster.strategy.base" title="Permalink to this headline">¶</a></h1>
+<p>A module that provides generic Strategy infrastructure.</p>
+<p>In particular, the modules offers a <cite>Strategy</cite> base class and a
+complementary <cite>&#64;strategy_method</cite> decorator for use by subclasses.</p>
+<dl class="class">
+<dt id="forecaster.strategy.base.Strategy">
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.strategy.base.</code><code class="sig-name descname">Strategy</code><span class="sig-paren">(</span><em class="sig-param">strategy</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/base.html#Strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.base.Strategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>An abstract callable class for determining a strategy.</p>
+<dl class="attribute">
+<dt id="forecaster.strategy.base.Strategy.strategy">
+<code class="sig-name descname">strategy</code><a class="headerlink" href="#forecaster.strategy.base.Strategy.strategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Either a string corresponding to a
+particular strategy or an instance of the strategy itself.
+See <cite>strategies</cite> for acceptable keys.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>str, func</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.base.Strategy.strategies">
+<code class="sig-name descname">strategies</code><a class="headerlink" href="#forecaster.strategy.base.Strategy.strategies" title="Permalink to this definition">¶</a></dt>
+<dd><p>{str, func} pairs where each key identifies
+a strategy (in human-readable text) and each value is a
+function. All functions have the same call signature and
+return value; this is the call signature of the Strategy
+object.</p>
+<p>See each subclass’s documentation for more information on
+the call signature for the subclass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.base.Strategy.__call__">
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/base.html#Strategy.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.base.Strategy.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Makes the Strategy object callable.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="sig-name descname">strategies</code><em class="property"> = {}</em></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="forecaster.strategy.base.StrategyType">
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.strategy.base.</code><code class="sig-name descname">StrategyType</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/base.html#StrategyType"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.base.StrategyType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></p>
+<p>A metaclass for Strategy classes.</p>
+<p>This metaclass inspects the class for any <cite>&#64;strategy(key)</cite>-decorated
+methods and generates a <cite>strategies</cite> dict of {key, func} pairs. This
+<cite>strategies</cite> dict is then accessible from the class interface.</p>
+<p>NOTE: One side-effect of this approach is that strategy methods are
+collected only once, at definition time. If you want to add a
+strategy to a class later, you’ll need to manually add it to the
+subclass’s <cite>strategies</cite> dict.
+TODO: Add static class methods to Strategy to register/unregister
+strategy methods? (consider using signature <cite>(func [, key])</cite>)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="forecaster.strategy.base.strategy_method">
+<code class="sig-prename descclassname">forecaster.strategy.base.</code><code class="sig-name descname">strategy_method</code><span class="sig-paren">(</span><em class="sig-param">key</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/base.html#strategy_method"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.base.strategy_method" title="Permalink to this definition">¶</a></dt>
+<dd><p>A decorator for strategy methods, used by Strategy subclasses</p>
+<p>Methods decorated with this decorator will be automatically added
+to the dict <cite>strategies</cite>, which is an attribute of the subclass.
+This happens at class definition time; you need to manually register
+strategy methods that are added dynamically.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ExampleStrategy</span><span class="p">(</span><span class="n">Strategy</span><span class="p">):</span>
+    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;method key&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">_strategy_method</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span>
+
+<span class="n">ExampleStrategy</span><span class="o">.</span><span class="n">strategies</span><span class="p">[</span><span class="s1">&#39;method key&#39;</span><span class="p">]</span> <span class="o">==</span>             <span class="n">ExampleStrategy</span><span class="o">.</span><span class="n">_strategy_method</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="forecaster.strategy.gross_transaction.html" class="btn btn-neutral float-right" title="forecaster.strategy.gross_transaction module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="forecaster.strategy.allocation.html" class="btn btn-neutral float-left" title="forecaster.strategy.allocation module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

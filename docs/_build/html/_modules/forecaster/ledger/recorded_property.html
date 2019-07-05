@@ -150,7 +150,7 @@
   <h1>Source code for forecaster.ledger.recorded_property</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot; Module providing property-like decorators for `Ledger` subclasses. &quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="recorded_property"><a class="viewcode-back" href="../../../forecaster.ledger.html#forecaster.person.recorded_property">[docs]</a><span class="k">class</span> <span class="nc">recorded_property</span><span class="p">(</span><span class="nb">property</span><span class="p">):</span>
+<div class="viewcode-block" id="recorded_property"><a class="viewcode-back" href="../../../forecaster.ledger.html#forecaster.accounts.base.recorded_property">[docs]</a><span class="k">class</span> <span class="nc">recorded_property</span><span class="p">(</span><span class="nb">property</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; A decorator for properties that record their annual amounts.</span>
 
 <span class="sd">    Methods decorated with this decorator (a) are decorated with the</span>
@@ -169,11 +169,11 @@
 <span class="sd">                return &lt;formula for taxable_income&gt;</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># This is a decorator, which mimics the naming convention followed by</span>
+    <span class="c1"># This is a decorator that mimics the naming convention followed by</span>
     <span class="c1"># `property` (i.e. lowercase)</span>
     <span class="c1"># pylint: disable=invalid-name</span>
 
-<div class="viewcode-block" id="recorded_property.__init__"><a class="viewcode-back" href="../../../forecaster.ledger.html#forecaster.person.recorded_property.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fget</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fdel</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="recorded_property.__init__"><a class="viewcode-back" href="../../../forecaster.ledger.html#forecaster.accounts.base.recorded_property.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fget</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fdel</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Init recorded_property.</span>
 
 <span class="sd">        This wraps the getter received via the `@recorded_property`</span>
@@ -280,9 +280,9 @@
         <span class="p">)</span></div></div>
 
 
-<div class="viewcode-block" id="recorded_property_cached"><a class="viewcode-back" href="../../../forecaster.ledger.html#forecaster.person.recorded_property_cached">[docs]</a><span class="k">class</span> <span class="nc">recorded_property_cached</span><span class="p">(</span><span class="n">recorded_property</span><span class="p">):</span>
+<div class="viewcode-block" id="recorded_property_cached"><a class="viewcode-back" href="../../../forecaster.ledger.recorded_property.html#forecaster.accounts.base.recorded_property_cached">[docs]</a><span class="k">class</span> <span class="nc">recorded_property_cached</span><span class="p">(</span><span class="n">recorded_property</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; A recorded property that is cached by Ledger classes. &quot;&quot;&quot;</span>
-    <span class="c1"># This is a decorator, which mimics the naming convention followed by</span>
+    <span class="c1"># This is a decorator that mimics the naming convention followed by</span>
     <span class="c1"># `property` (i.e. lowercase)</span>
     <span class="c1"># pylint: disable=invalid-name</span>
 
@@ -294,7 +294,7 @@
     <span class="c1"># arg `cached` and then `__call__` with the decorated method --</span>
     <span class="c1"># which makes `recorded_property` a much more complicated subclass</span>
     <span class="c1"># of `property`!</span>
-<div class="viewcode-block" id="recorded_property_cached.__init__"><a class="viewcode-back" href="../../../forecaster.ledger.html#forecaster.person.recorded_property_cached.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fget</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fdel</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="recorded_property_cached.__init__"><a class="viewcode-back" href="../../../forecaster.ledger.recorded_property.html#forecaster.accounts.base.recorded_property_cached.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fget</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fdel</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Overrides the property getter to cache on first call. &quot;&quot;&quot;</span>
 
         <span class="c1"># Wrap the getter in a method that will cache the property the</span>

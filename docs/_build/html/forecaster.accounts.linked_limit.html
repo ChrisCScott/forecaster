@@ -1,0 +1,565 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.accounts.linked_limit module &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="forecaster.accounts.util module" href="forecaster.accounts.util.html" />
+    <link rel="prev" title="forecaster.accounts.link module" href="forecaster.accounts.link.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">forecaster</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="forecaster.html">forecaster package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="forecaster.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="forecaster.accounts.html">forecaster.accounts package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.canada.html">forecaster.canada package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.forecast.html">forecaster.forecast package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.ledger.html">forecaster.ledger package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.strategy.html">forecaster.strategy package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">forecaster</a> &raquo;</li>
+        
+          <li><a href="forecaster.html">forecaster package</a> &raquo;</li>
+        
+          <li><a href="forecaster.accounts.html">forecaster.accounts package</a> &raquo;</li>
+        
+      <li>forecaster.accounts.linked_limit module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/forecaster.accounts.linked_limit.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-forecaster.accounts.linked_limit">
+<span id="forecaster-accounts-linked-limit-module"></span><h1>forecaster.accounts.linked_limit module<a class="headerlink" href="#module-forecaster.accounts.linked_limit" title="Permalink to this headline">¶</a></h1>
+<p>A module providing the LinkedLimitAccount class.</p>
+<dl class="class">
+<dt id="forecaster.accounts.linked_limit.LinkedLimitAccount">
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.accounts.linked_limit.</code><code class="sig-name descname">LinkedLimitAccount</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">max_inflow_link=None</em>, <em class="sig-param">max_inflow_limit=None</em>, <em class="sig-param">min_inflow_link=None</em>, <em class="sig-param">min_inflow_limit=None</em>, <em class="sig-param">max_outflow_link=None</em>, <em class="sig-param">max_outflow_limit=None</em>, <em class="sig-param">min_outflow_link=None</em>, <em class="sig-param">min_outflow_limit=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts/linked_limit.html#LinkedLimitAccount"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.linked_limit.LinkedLimitAccount" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="forecaster.accounts.base.html#forecaster.accounts.base.Account" title="forecaster.accounts.base.Account"><code class="xref py py-class docutils literal notranslate"><span class="pre">forecaster.accounts.base.Account</span></code></a></p>
+<p>An account with inflow/outflow limits linked to other accounts.</p>
+<p>Inflow and outflow limits may be shared between accounts. Such
+accounts should share a token for the corresponding inflow/outflow
+limit (e.g. <cite>max_inflow_token</cite>, <cite>min_outflow_token</cite>, etc.). This is
+registered with the corresponding token owner (e.g.
+<cite>max_inflow_owner</cite>, <cite>min_outflow_owner</cite>). By default, the account’s
+<cite>owner</cite> is used for each of these.</p>
+<p>Accounts that this <cite>LinkedLimitAccount</cite> is linked to for a given
+limit can be accessed via the corresponding <cite>*_group</cite> property (e.g.
+<cite>max_inflow_group</cite> for the <cite>max_inflow_limit</cite> property).</p>
+<p>This is an abstract base class. Any subclass must implement the
+method <cite>next_contribution_room</cite>, which returns the contribution
+room for the following year.</p>
+<div class="admonition-example admonition">
+<p class="admonition-title">Example</p>
+<p>All instances of this class with the same owner will share
+their contribution room (i.e. max_inflow limit):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">RegisteredAccount</span><span class="p">(</span><span class="n">LinkedLimitAccount</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">max_inflow_token</span><span class="o">=</span><span class="n">token</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<dl class="attribute">
+<dt id="forecaster.accounts.linked_limit.LinkedLimitAccount.max_inflow_limit">
+<code class="sig-name descname">max_inflow_limit</code><a class="headerlink" href="#forecaster.accounts.linked_limit.LinkedLimitAccount.max_inflow_limit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inherited from <cite>Account</cite>. The max.
+amount that may be contributed in the current year.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.accounts.linked_limit.LinkedLimitAccount.max_inflow_link">
+<code class="sig-name descname">max_inflow_link</code><a class="headerlink" href="#forecaster.accounts.linked_limit.LinkedLimitAccount.max_inflow_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>An <cite>(owner, token)</cite> pair.
+Accounts which share the same <cite>(owner, token)</cite> pair
+will share the same <cite>max_inflow_limit</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>(<a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person">Person</a>, str)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.accounts.linked_limit.LinkedLimitAccount.min_inflow_limit">
+<code class="sig-name descname">min_inflow_limit</code><a class="headerlink" href="#forecaster.accounts.linked_limit.LinkedLimitAccount.min_inflow_limit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inherited from <cite>Account</cite>. The min.
+amount that must be contributed in the current year.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.accounts.linked_limit.LinkedLimitAccount.min_inflow_link">
+<code class="sig-name descname">min_inflow_link</code><a class="headerlink" href="#forecaster.accounts.linked_limit.LinkedLimitAccount.min_inflow_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>An <cite>(owner, token)</cite> pair.
+Accounts which share the same <cite>(owner, token)</cite> pair
+will share the same <cite>min_inflow_limit</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>(<a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person">Person</a>, str)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.accounts.linked_limit.LinkedLimitAccount.max_outflow_limit">
+<code class="sig-name descname">max_outflow_limit</code><a class="headerlink" href="#forecaster.accounts.linked_limit.LinkedLimitAccount.max_outflow_limit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inherited from <cite>Account</cite>. The max.
+amount that may be withdrawn in the current year.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.accounts.linked_limit.LinkedLimitAccount.max_outflow_link">
+<code class="sig-name descname">max_outflow_link</code><a class="headerlink" href="#forecaster.accounts.linked_limit.LinkedLimitAccount.max_outflow_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>An <cite>(owner, token)</cite> pair.
+Accounts which share the same <cite>(owner, token)</cite> pair
+will share the same <cite>max_outflow_limit</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>(<a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person">Person</a>, str)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.accounts.linked_limit.LinkedLimitAccount.min_outflow_limit">
+<code class="sig-name descname">min_outflow_limit</code><a class="headerlink" href="#forecaster.accounts.linked_limit.LinkedLimitAccount.min_outflow_limit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inherited from <cite>Account</cite>. The min.
+amount that must be withdrawn in the current year.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.accounts.linked_limit.LinkedLimitAccount.min_outflow_link">
+<code class="sig-name descname">min_outflow_link</code><a class="headerlink" href="#forecaster.accounts.linked_limit.LinkedLimitAccount.min_outflow_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>An <cite>(owner, token)</cite> pair.
+Accounts which share the same <cite>(owner, token)</cite> pair
+will share the same <cite>min_outflow_limit</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>(<a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person">Person</a>, str)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.accounts.linked_limit.LinkedLimitAccount.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">max_inflow_link=None</em>, <em class="sig-param">max_inflow_limit=None</em>, <em class="sig-param">min_inflow_link=None</em>, <em class="sig-param">min_inflow_limit=None</em>, <em class="sig-param">max_outflow_link=None</em>, <em class="sig-param">max_outflow_limit=None</em>, <em class="sig-param">min_outflow_link=None</em>, <em class="sig-param">min_outflow_limit=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts/linked_limit.html#LinkedLimitAccount.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.linked_limit.LinkedLimitAccount.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes a LinkedLimitAccount object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.accounts.linked_limit.LinkedLimitAccount.balance_history">
+<em class="property">property </em><code class="sig-name descname">balance_history</code><a class="headerlink" href="#forecaster.accounts.linked_limit.LinkedLimitAccount.balance_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of balance over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">max_inflow_limit</code></dt>
+<dd><p>The maximum amount that can be contributed to the account.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.accounts.linked_limit.LinkedLimitAccount.max_inflows">
+<code class="sig-name descname">max_inflows</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">transactions=None</em>, <em class="sig-param">group_transactions=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts/linked_limit.html#LinkedLimitAccount.max_inflows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.linked_limit.LinkedLimitAccount.max_inflows" title="Permalink to this definition">¶</a></dt>
+<dd><p>The maximum amounts that can be contributed to the account.</p>
+<p>This overloaded method simply provides a new argument
+(<cite>group_transactions</cite>). See <cite>Account.max_inflows</cite> for
+documentation of other arguments and method behaviour.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>transactions</strong> (<em>dict</em><em>[</em><em>Decimal</em><em>, </em><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em>) – If provided, the result
+will be determined as if the account also had these
+transactions recorded against it. Optional.</p></li>
+<li><p><strong>group_transactions</strong> (<em>dict</em><em>[</em><a class="reference internal" href="forecaster.accounts.base.html#forecaster.accounts.base.Account" title="forecaster.accounts.base.Account"><em>Account</em></a><em>, </em><em>dict</em><em>[</em><em>Number</em><em>, </em><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em><em>]</em>) – A mapping of <cite>Account</cite> keys to <cite>transactions</cite>-like
+values. Any transactions mapped to accounts with a max
+inflow limit linked to this one will be added to
+<cite>transactions</cite> when determining the result. Optional.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>A mapping of <cite>{when: value}</cite> pairs where</dt><dd><p><cite>value</cite> indicates the maximum inflow permitted.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict[float, <a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">max_outflow_limit</code></dt>
+<dd><p>The maximum amount that can be withdrawn from the account.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.accounts.linked_limit.LinkedLimitAccount.max_outflows">
+<code class="sig-name descname">max_outflows</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">transactions=None</em>, <em class="sig-param">group_transactions=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts/linked_limit.html#LinkedLimitAccount.max_outflows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.linked_limit.LinkedLimitAccount.max_outflows" title="Permalink to this definition">¶</a></dt>
+<dd><p>The maximum amounts that can be withdrawn from the account.</p>
+<p>This overloaded method simply provides a new argument
+(<cite>group_transactions</cite>). See <cite>Account.max_outflows</cite> for
+documentation of other arguments and method behaviour.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>transactions</strong> (<em>dict</em><em>[</em><em>Decimal</em><em>, </em><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em>) – If provided, the result
+will be determined as if the account also had these
+transactions recorded against it. Optional.</p></li>
+<li><p><strong>group_transactions</strong> (<em>dict</em><em>[</em><a class="reference internal" href="forecaster.accounts.base.html#forecaster.accounts.base.Account" title="forecaster.accounts.base.Account"><em>Account</em></a><em>, </em><em>dict</em><em>[</em><em>Number</em><em>, </em><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em><em>]</em>) – A mapping of <cite>Account</cite> keys to <cite>transactions</cite>-like
+values. Any transactions mapped to accounts with a max
+outflow limit linked to this one will be added to
+<cite>transactions</cite> when determining the result. Optional.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>A mapping of <cite>{when: value}</cite> pairs where</dt><dd><p><cite>value</cite> indicates the maximum outflow permitted.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict[float, <a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">min_inflow_limit</code></dt>
+<dd><p>The minimum amount to be contributed to the account.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.accounts.linked_limit.LinkedLimitAccount.min_inflows">
+<code class="sig-name descname">min_inflows</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">transactions=None</em>, <em class="sig-param">group_transactions=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts/linked_limit.html#LinkedLimitAccount.min_inflows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.linked_limit.LinkedLimitAccount.min_inflows" title="Permalink to this definition">¶</a></dt>
+<dd><p>The minimum amounts that must be contributed to the account.</p>
+<p>This overloaded method simply provides a new argument
+(<cite>group_transactions</cite>). See <cite>Account.min_inflows</cite> for
+documentation of other arguments and method behaviour.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>transactions</strong> (<em>dict</em><em>[</em><em>Decimal</em><em>, </em><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em>) – If provided, the result
+will be determined as if the account also had these
+transactions recorded against it. Optional.</p></li>
+<li><p><strong>group_transactions</strong> (<em>dict</em><em>[</em><a class="reference internal" href="forecaster.accounts.base.html#forecaster.accounts.base.Account" title="forecaster.accounts.base.Account"><em>Account</em></a><em>, </em><em>dict</em><em>[</em><em>Number</em><em>, </em><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em><em>]</em>) – A mapping of <cite>Account</cite> keys to <cite>transactions</cite>-like
+values. Any transactions mapped to accounts with a min
+inflow limit linked to this one will be added to
+<cite>transactions</cite> when determining the result. Optional.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>A mapping of <cite>{when: value}</cite> pairs where</dt><dd><p><cite>value</cite> indicates the minimum inflow required.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict[float, <a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">min_outflow_limit</code></dt>
+<dd><p>The minimum amount to be withdrawn from the account.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.accounts.linked_limit.LinkedLimitAccount.min_outflows">
+<code class="sig-name descname">min_outflows</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">transactions=None</em>, <em class="sig-param">group_transactions=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts/linked_limit.html#LinkedLimitAccount.min_outflows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.linked_limit.LinkedLimitAccount.min_outflows" title="Permalink to this definition">¶</a></dt>
+<dd><p>The minimum amounts that must be withdrawn from the account.</p>
+<p>This overloaded method simply provides a new argument
+(<cite>group_transactions</cite>). See <cite>Account.min_outflows</cite> for
+documentation of other arguments and method behaviour.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>transactions</strong> (<em>dict</em><em>[</em><em>Decimal</em><em>, </em><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em>) – If provided, the result
+will be determined as if the account also had these
+transactions recorded against it. Optional.</p></li>
+<li><p><strong>group_transactions</strong> (<em>dict</em><em>[</em><a class="reference internal" href="forecaster.accounts.base.html#forecaster.accounts.base.Account" title="forecaster.accounts.base.Account"><em>Account</em></a><em>, </em><em>dict</em><em>[</em><em>Number</em><em>, </em><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em><em>]</em>) – A mapping of <cite>Account</cite> keys to <cite>transactions</cite>-like
+values. Any transactions mapped to accounts with a min
+outflow limit linked to this one will be added to
+<cite>transactions</cite> when determining the result. Optional.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>A mapping of <cite>{when: value}</cite> pairs where</dt><dd><p><cite>value</cite> indicates the minimum outflow required.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict[float, <a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.accounts.linked_limit.LinkedLimitAccount.rate_history">
+<em class="property">property </em><code class="sig-name descname">rate_history</code><a class="headerlink" href="#forecaster.accounts.linked_limit.LinkedLimitAccount.rate_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of rate over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.accounts.linked_limit.LinkedLimitAccount.returns_history">
+<em class="property">property </em><code class="sig-name descname">returns_history</code><a class="headerlink" href="#forecaster.accounts.linked_limit.LinkedLimitAccount.returns_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of returns over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.accounts.linked_limit.LinkedLimitAccount.tax_credit_history">
+<em class="property">property </em><code class="sig-name descname">tax_credit_history</code><a class="headerlink" href="#forecaster.accounts.linked_limit.LinkedLimitAccount.tax_credit_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of tax_credit over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.accounts.linked_limit.LinkedLimitAccount.tax_deduction_history">
+<em class="property">property </em><code class="sig-name descname">tax_deduction_history</code><a class="headerlink" href="#forecaster.accounts.linked_limit.LinkedLimitAccount.tax_deduction_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of tax_deduction over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.accounts.linked_limit.LinkedLimitAccount.tax_withheld_history">
+<em class="property">property </em><code class="sig-name descname">tax_withheld_history</code><a class="headerlink" href="#forecaster.accounts.linked_limit.LinkedLimitAccount.tax_withheld_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of tax_withheld over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.accounts.linked_limit.LinkedLimitAccount.taxable_income_history">
+<em class="property">property </em><code class="sig-name descname">taxable_income_history</code><a class="headerlink" href="#forecaster.accounts.linked_limit.LinkedLimitAccount.taxable_income_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of taxable_income over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.accounts.linked_limit.LinkedLimitAccount.transactions_history">
+<em class="property">property </em><code class="sig-name descname">transactions_history</code><a class="headerlink" href="#forecaster.accounts.linked_limit.LinkedLimitAccount.transactions_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of transactions over all past years.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="forecaster.accounts.util.html" class="btn btn-neutral float-right" title="forecaster.accounts.util module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="forecaster.accounts.link.html" class="btn btn-neutral float-left" title="forecaster.accounts.link module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

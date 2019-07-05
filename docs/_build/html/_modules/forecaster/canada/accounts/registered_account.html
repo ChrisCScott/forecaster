@@ -158,10 +158,10 @@
 <span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="n">recorded_property</span>
 <span class="kn">from</span> <span class="nn">forecaster.utility</span> <span class="k">import</span> <span class="n">build_inflation_adjust</span>
 
-<div class="viewcode-block" id="RegisteredAccount"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount">[docs]</a><span class="k">class</span> <span class="nc">RegisteredAccount</span><span class="p">(</span><span class="n">LinkedLimitAccount</span><span class="p">):</span>
+<div class="viewcode-block" id="RegisteredAccount"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.registered_account.html#forecaster.canada.accounts.registered_account.RegisteredAccount">[docs]</a><span class="k">class</span> <span class="nc">RegisteredAccount</span><span class="p">(</span><span class="n">LinkedLimitAccount</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; An abstract base class for RRSPs, TFSAs, etc. &quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="RegisteredAccount.__init__"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="RegisteredAccount.__init__"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.registered_account.html#forecaster.canada.accounts.registered_account.RegisteredAccount.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">contribution_room</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">contributor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_inflow_token</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Inits RegisteredAccount.</span>
@@ -255,7 +255,7 @@
         <span class="c1"># Wraps `max_inflow_limit`</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_inflow_limit</span> <span class="o">=</span> <span class="n">val</span>
 
-<div class="viewcode-block" id="RegisteredAccount.next_year"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.next_year">[docs]</a>    <span class="k">def</span> <span class="nf">next_year</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="RegisteredAccount.next_year"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.registered_account.html#forecaster.canada.accounts.registered_account.RegisteredAccount.next_year">[docs]</a>    <span class="k">def</span> <span class="nf">next_year</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Confirms that the year is within the range of our data. &quot;&quot;&quot;</span>
         <span class="c1"># If this is the first of the linked accounts to get advanced,</span>
         <span class="c1"># determine next_contribution_room, advance all the linked</span>
@@ -302,7 +302,7 @@
         <span class="k">if</span> <span class="n">first_account</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">contribution_room</span> <span class="o">=</span> <span class="n">contribution_room</span></div>
 
-<div class="viewcode-block" id="RegisteredAccount.next_contribution_room"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.html#forecaster.canada.accounts.registered_account.RegisteredAccount.next_contribution_room">[docs]</a>    <span class="k">def</span> <span class="nf">next_contribution_room</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="RegisteredAccount.next_contribution_room"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.registered_account.html#forecaster.canada.accounts.registered_account.RegisteredAccount.next_contribution_room">[docs]</a>    <span class="k">def</span> <span class="nf">next_contribution_room</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Returns the contribution room for next year.</span>
 
 <span class="sd">        This method must be implemented by any subclass of</span>

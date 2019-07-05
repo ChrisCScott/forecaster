@@ -1,0 +1,630 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.person module &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="forecaster.scenario module" href="forecaster.scenario.html" />
+    <link rel="prev" title="forecaster.forecaster module" href="forecaster.forecaster.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">forecaster</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="forecaster.html">forecaster package</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#subpackages">Subpackages</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="forecaster.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="forecaster.forecaster.html">forecaster.forecaster module</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">forecaster.person module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.scenario.html">forecaster.scenario module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.settings.html">forecaster.settings module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.tax.html">forecaster.tax module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.utility.html">forecaster.utility module</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">forecaster</a> &raquo;</li>
+        
+          <li><a href="forecaster.html">forecaster package</a> &raquo;</li>
+        
+      <li>forecaster.person module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/forecaster.person.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-forecaster.person">
+<span id="forecaster-person-module"></span><h1>forecaster.person module<a class="headerlink" href="#module-forecaster.person" title="Permalink to this headline">¶</a></h1>
+<p>A module providing a Person class.</p>
+<dl class="class">
+<dt id="forecaster.person.Person">
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.person.</code><code class="sig-name descname">Person</code><span class="sig-paren">(</span><em class="sig-param">initial_year</em>, <em class="sig-param">name</em>, <em class="sig-param">birth_date</em>, <em class="sig-param">retirement_date=None</em>, <em class="sig-param">gross_income=0</em>, <em class="sig-param">raise_rate=0</em>, <em class="sig-param">spouse=None</em>, <em class="sig-param">tax_treatment=None</em>, <em class="sig-param">payment_timing=None</em>, <em class="sig-param">inputs=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/person.html#Person"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.person.Person" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="forecaster.ledger.base.html#forecaster.ledger.base.TaxSource" title="forecaster.ledger.base.TaxSource"><code class="xref py py-class docutils literal notranslate"><span class="pre">forecaster.ledger.base.TaxSource</span></code></a></p>
+<p>Represents a person’s basic information: age and retirement age.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – The person’s name. No specific form is required;
+this is only used for display, not any computations.</p></li>
+<li><p><strong>birth_date</strong> (<em>datetime</em><em>, </em><em>str</em><em>, </em><em>int</em>) – The person’s birth date.
+May be passed as an int (interpreted as the birth year) or
+as a datetime-convertible value (e.g. a string in a
+suitable format)</p></li>
+<li><p><strong>retirement_date</strong> (<em>datetime</em><em>, </em><em>str</em><em>, </em><em>int</em>) – The person’s retirement
+date. Optional.
+May be passed as an int (interpreted as the birth year) or
+as a datetime-convertible value (e.g. a string in a
+suitable format)</p></li>
+<li><p><strong>gross_income</strong> (<a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – Annual gross income for the initial year.</p></li>
+<li><p><strong>raise_rate</strong> (<em>Decimal</em><em>, </em><em>Callable</em>) – The person’s raise in gross
+income for each year relative to the previous year.</p></li>
+<li><p><strong>payment_timing</strong> (<a class="reference internal" href="forecaster.utility.html#forecaster.utility.Timing" title="forecaster.utility.Timing"><em>Timing</em></a><em>, </em><em>dict</em><em>[</em><em>float</em><em>, </em><em>float</em><em>]</em>) – The timings of
+payments mapped to the weight of each payment. Optional.</p></li>
+<li><p><strong>spouse</strong> (<a class="reference internal" href="#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a>) – The person’s spouse. This linkage is
+one-to-one; the spouse’s <cite>spouse</cite> attribute points back to
+this Person.</p></li>
+<li><p><strong>tax_treatment</strong> (<a class="reference internal" href="forecaster.tax.html#forecaster.tax.Tax" title="forecaster.tax.Tax"><em>Tax</em></a>) – The tax treatment of the person. A callable
+object; see documentation for <cite>Tax</cite> for more information.</p></li>
+<li><p><strong>inputs</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>dict</em><em>[</em><em>int</em><em>, </em><em>Any</em><em>]</em><em>]</em>) – <p><cite>{attr: {year: val}}</cite>
+pairs, where <cite>attr</cite> is any one of <cite>Person</cite>’s recorded
+propertes, namely:</p>
+<ul>
+<li><p>taxable_income</p></li>
+<li><p>tax_withheld</p></li>
+<li><p>tax_credit</p></li>
+<li><p>tax_deduction</p></li>
+<li><p>gross_income</p></li>
+<li><p>net_income</p></li>
+<li><p>raise_rate</p></li>
+</ul>
+</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="forecaster.person.Person.accounts">
+<code class="sig-name descname">accounts</code><a class="headerlink" href="#forecaster.person.Person.accounts" title="Permalink to this definition">¶</a></dt>
+<dd><p>All accounts naming this Person as an owner.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>set</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.name">
+<code class="sig-name descname">name</code><a class="headerlink" href="#forecaster.person.Person.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>The person’s name. No specific form is required;
+this is only used for display, not any computations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.birth_date">
+<code class="sig-name descname">birth_date</code><a class="headerlink" href="#forecaster.person.Person.birth_date" title="Permalink to this definition">¶</a></dt>
+<dd><p>The person’s birth date.
+May be passed as an int (interpreted as the birth year) or
+as a datetime-convertible value (e.g. a string in a
+suitable format)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>datetime</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.retirement_date">
+<code class="sig-name descname">retirement_date</code><a class="headerlink" href="#forecaster.person.Person.retirement_date" title="Permalink to this definition">¶</a></dt>
+<dd><p>The person’s retirement date.
+Optional.
+May be passed as an int (interpreted as the birth year) or
+as a datetime-convertible value (e.g. a string in a
+suitable format)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>datetime</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.gross_income">
+<code class="sig-name descname">gross_income</code><a class="headerlink" href="#forecaster.person.Person.gross_income" title="Permalink to this definition">¶</a></dt>
+<dd><p>Annual gross income for the current year.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.gross_income_history">
+<code class="sig-name descname">gross_income_history</code><a class="headerlink" href="#forecaster.person.Person.gross_income_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gross income for all
+years on record.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict[int, <a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.net_income">
+<code class="sig-name descname">net_income</code><a class="headerlink" href="#forecaster.person.Person.net_income" title="Permalink to this definition">¶</a></dt>
+<dd><p>Annual net income for the current year.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.net_income_history">
+<code class="sig-name descname">net_income_history</code><a class="headerlink" href="#forecaster.person.Person.net_income_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Net income for all
+years on record.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict[int, <a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.raise_rate_callable">
+<code class="sig-name descname">raise_rate_callable</code><a class="headerlink" href="#forecaster.person.Person.raise_rate_callable" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function for determining the
+Person’s raise rate for a given year. A callable object with
+the form <cite>raise_rate_function(year) -&gt; Decimal</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>callable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.raise_rate">
+<code class="sig-name descname">raise_rate</code><a class="headerlink" href="#forecaster.person.Person.raise_rate" title="Permalink to this definition">¶</a></dt>
+<dd><p>The person’s raise in gross income this
+year relative to last year.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Decimal</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.raise_rate_history">
+<code class="sig-name descname">raise_rate_history</code><a class="headerlink" href="#forecaster.person.Person.raise_rate_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raises for all years
+on record.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict[int, Decimal]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.payment_timing">
+<code class="sig-name descname">payment_timing</code><a class="headerlink" href="#forecaster.person.Person.payment_timing" title="Permalink to this definition">¶</a></dt>
+<dd><p>The timings of
+payments and the weight of each payment timing. Optional.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.utility.html#forecaster.utility.Timing" title="forecaster.utility.Timing">Timing</a>, dict[float, float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.spouse">
+<code class="sig-name descname">spouse</code><a class="headerlink" href="#forecaster.person.Person.spouse" title="Permalink to this definition">¶</a></dt>
+<dd><p>The person’s spouse. This linkage is
+one-to-one; the spouse’s <cite>spouse</cite> attribute points back to
+this Person.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#forecaster.person.Person" title="forecaster.person.Person">Person</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.person.Person.tax_treatment">
+<code class="sig-name descname">tax_treatment</code><a class="headerlink" href="#forecaster.person.Person.tax_treatment" title="Permalink to this definition">¶</a></dt>
+<dd><p>The tax treatment of the person. A callable
+object; see documentation for <cite>Tax</cite> for more information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.tax.html#forecaster.tax.Tax" title="forecaster.tax.Tax">Tax</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>TypeError</strong> – birth_date or retirement_date are not parseable
+    as datetimes due to an unexpected type.</p></li>
+<li><p><strong>ValueError</strong> – birth_date or retirement_date are not parseable
+    as datetimes due to an unexpected value.</p></li>
+<li><p><strong>ValueError</strong> – retirement_date precedes birth_date</p></li>
+<li><p><strong>OverflowError</strong> – birth_date or retirement_date are too large.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="forecaster.person.Person.__gt__">
+<code class="sig-name descname">__gt__</code><span class="sig-paren">(</span><em class="sig-param">other</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/person.html#Person.__gt__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.person.Person.__gt__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Allows for sorting, max, min, etc. based on gross income.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.person.Person.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">initial_year</em>, <em class="sig-param">name</em>, <em class="sig-param">birth_date</em>, <em class="sig-param">retirement_date=None</em>, <em class="sig-param">gross_income=0</em>, <em class="sig-param">raise_rate=0</em>, <em class="sig-param">spouse=None</em>, <em class="sig-param">tax_treatment=None</em>, <em class="sig-param">payment_timing=None</em>, <em class="sig-param">inputs=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/person.html#Person.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.person.Person.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes a <cite>Person</cite> object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.person.Person.age">
+<code class="sig-name descname">age</code><span class="sig-paren">(</span><em class="sig-param">date</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/person.html#Person.age"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.person.Person.age" title="Permalink to this definition">¶</a></dt>
+<dd><p>The age of the <cite>Person</cite> as of <cite>date</cite>.</p>
+<p><cite>date</cite> may be a <cite>datetime</cite> object or a numeric value indicating
+a year (e.g. 2001). In the latter case, the age on the person’s
+birthday (in that year) is returned.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>date</strong> – The date at which to determine the person’s age.
+May be passed as a datetime or any other value that can
+be cast to str and converted to datetime by
+python-dateutils.parse().</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The age of the <cite>Person</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – <cite>date</cite> is not parseable as a datetime.</p></li>
+<li><p><strong>ValueError</strong> – <cite>date</cite> is earlier than <cite>birth_date</cite>.</p></li>
+<li><p><strong>OverflowError</strong> – <cite>date</cite> is too large.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">birth_date</code></dt>
+<dd><p>The birth date of the Person.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">gross_income</code></dt>
+<dd><p>Returns cached value in *_history dict if available.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">gross_income_history</code></dt>
+<dd><p>Record of gross_income over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">net_income</code></dt>
+<dd><p>Returns cached value in *_history dict if available.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">net_income_history</code></dt>
+<dd><p>Record of net_income over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">raise_rate</code></dt>
+<dd><p>Returns cached value in *_history dict if available.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">raise_rate_callable</code></dt>
+<dd><p>A callable object that generates a raise rate for the year.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A function with signature
+<cite>raise_rate(year) -&gt; Decimal</cite>.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>callable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">raise_rate_history</code></dt>
+<dd><p>Record of raise_rate over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.person.Person.retirement_age">
+<em class="property">property </em><code class="sig-name descname">retirement_age</code><a class="headerlink" href="#forecaster.person.Person.retirement_age" title="Permalink to this definition">¶</a></dt>
+<dd><p>The age of the Person at retirement</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">retirement_date</code></dt>
+<dd><p>The retirement date of the Person.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">spouse</code></dt>
+<dd><p>The Person’s spouse.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.person.Person.tax_credit">
+<em class="property">property </em><code class="sig-name descname">tax_credit</code><a class="headerlink" href="#forecaster.person.Person.tax_credit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns cached value in *_history dict if available.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.person.Person.tax_credit_history">
+<em class="property">property </em><code class="sig-name descname">tax_credit_history</code><a class="headerlink" href="#forecaster.person.Person.tax_credit_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of tax_credit over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.person.Person.tax_deduction">
+<em class="property">property </em><code class="sig-name descname">tax_deduction</code><a class="headerlink" href="#forecaster.person.Person.tax_deduction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns cached value in *_history dict if available.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.person.Person.tax_deduction_history">
+<em class="property">property </em><code class="sig-name descname">tax_deduction_history</code><a class="headerlink" href="#forecaster.person.Person.tax_deduction_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of tax_deduction over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">tax_treatment</code></dt>
+<dd><p>The tax treatment of the Person.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.person.Person.tax_withheld">
+<em class="property">property </em><code class="sig-name descname">tax_withheld</code><a class="headerlink" href="#forecaster.person.Person.tax_withheld" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns cached value in *_history dict if available.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.person.Person.tax_withheld_history">
+<em class="property">property </em><code class="sig-name descname">tax_withheld_history</code><a class="headerlink" href="#forecaster.person.Person.tax_withheld_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of tax_withheld over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.person.Person.taxable_income">
+<em class="property">property </em><code class="sig-name descname">taxable_income</code><a class="headerlink" href="#forecaster.person.Person.taxable_income" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns cached value in *_history dict if available.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.person.Person.taxable_income_history">
+<em class="property">property </em><code class="sig-name descname">taxable_income_history</code><a class="headerlink" href="#forecaster.person.Person.taxable_income_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of taxable_income over all past years.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="forecaster.scenario.html" class="btn btn-neutral float-right" title="forecaster.scenario module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="forecaster.forecaster.html" class="btn btn-neutral float-left" title="forecaster.forecaster module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -154,7 +154,7 @@
 <span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="p">(</span>
     <span class="n">Money</span><span class="p">,</span> <span class="n">recorded_property</span><span class="p">,</span> <span class="n">recorded_property_cached</span><span class="p">)</span>
 
-<div class="viewcode-block" id="TaxableAccount"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount">[docs]</a><span class="k">class</span> <span class="nc">TaxableAccount</span><span class="p">(</span><span class="n">Account</span><span class="p">):</span>
+<div class="viewcode-block" id="TaxableAccount"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.taxable_account.html#forecaster.canada.accounts.taxable_account.TaxableAccount">[docs]</a><span class="k">class</span> <span class="nc">TaxableAccount</span><span class="p">(</span><span class="n">Account</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; A taxable account, non-registered account.</span>
 
 <span class="sd">    This account uses Canadian rules for determining taxable income from</span>
@@ -182,7 +182,7 @@
     <span class="c1"># non-principle-residence real estate holdings.</span>
     <span class="c1"># (But we might want to also model rental income as well...)</span>
 
-<div class="viewcode-block" id="TaxableAccount.__init__"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="TaxableAccount.__init__"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.taxable_account.html#forecaster.canada.accounts.taxable_account.TaxableAccount.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
             <span class="n">nper</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">default_timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">acb</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -258,7 +258,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_acb_history</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">this_year</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">acb</span>
         <span class="k">return</span> <span class="n">capital_gain</span>
 
-<div class="viewcode-block" id="TaxableAccount.add_transaction"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.add_transaction">[docs]</a>    <span class="k">def</span> <span class="nf">add_transaction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="TaxableAccount.add_transaction"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.taxable_account.html#forecaster.canada.accounts.taxable_account.TaxableAccount.add_transaction">[docs]</a>    <span class="k">def</span> <span class="nf">add_transaction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">add_transaction</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">when</span><span class="p">)</span>
         <span class="c1"># Invalidate the cache for acb and capital gains, since</span>
         <span class="c1"># transactions will affect it.</span>

@@ -1,0 +1,495 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.utility module &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="forecaster.tax module" href="forecaster.tax.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">forecaster</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="forecaster.html">forecaster package</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#subpackages">Subpackages</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="forecaster.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="forecaster.forecaster.html">forecaster.forecaster module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.person.html">forecaster.person module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.scenario.html">forecaster.scenario module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.settings.html">forecaster.settings module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.tax.html">forecaster.tax module</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">forecaster.utility module</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">forecaster</a> &raquo;</li>
+        
+          <li><a href="forecaster.html">forecaster package</a> &raquo;</li>
+        
+      <li>forecaster.utility module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/forecaster.utility.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-forecaster.utility">
+<span id="forecaster-utility-module"></span><h1>forecaster.utility module<a class="headerlink" href="#module-forecaster.utility" title="Permalink to this headline">¶</a></h1>
+<p>A module with free methods and extensions to third-party classes.</p>
+<p>Used throughout the application, without any dependency on any other
+modules.</p>
+<dl class="class">
+<dt id="forecaster.utility.Timing">
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.utility.</code><code class="sig-name descname">Timing</code><span class="sig-paren">(</span><em class="sig-param">when=0.5</em>, <em class="sig-param">frequency=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/utility.html#Timing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.utility.Timing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
+<p>A dict of {timing: weight} pairs.</p>
+<p>This is really just a vanilla dict with a convenient init method.
+It divides the interval [0,1] into a number of equal-length periods
+equal to <cite>frequency</cite> and, within each period, assigns a timing at
+<cite>when</cite>. The timings are equally-weighted.</p>
+<p>This class provides a copy-constructor that can receive a dict of
+{when: value} pairs. If a dict has Money-type values, these are
+converted to Decimal to avoid arithmetic errors.</p>
+<div class="admonition-examples admonition">
+<p class="admonition-title">Examples</p>
+<p>Timing()
+# {0.5: 1}
+Timing(when=1, frequency=4)
+# {0.25: 0.25, 0.5: 0.25, 0.75: 0.25, 1: 0.25}
+Timing(when=0, frequency=4)
+# {0: 0.25, 0.25: 0.25, 0.5: 0.25, 0.75: 0.25}
+Timing(when=0.5, frequency=2)
+# {0.25: 0.5, 0.75: 0.5}</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>when</strong> (<em>Number</em><em>, </em><em>str</em>) – When transactions occur in each period (e.g.
+‘start’, ‘end’, 0.5). Uses the same syntax as
+<cite>forecaster.utility.when_conv</cite>. Optional.</p></li>
+<li><p><strong>frequency</strong> (<em>str</em><em>, </em><em>int</em>) – The number of periods (and thus the number
+of transactions). Uses the same syntax as
+<cite>forecaster.utility.frequency_conv</cite>. Optional.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="forecaster.utility.Timing.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">when=0.5</em>, <em class="sig-param">frequency=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/utility.html#Timing.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.utility.Timing.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes a Timing dict.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="forecaster.utility.add_transactions">
+<code class="sig-prename descclassname">forecaster.utility.</code><code class="sig-name descname">add_transactions</code><span class="sig-paren">(</span><em class="sig-param">base</em>, <em class="sig-param">added</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/utility.html#add_transactions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.utility.add_transactions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Combines the values of two dicts, summing values of shared keys.</p>
+<p>This method mutates its first argument (base). If you don’t want
+that behaviour, copy your input dict before calling this method.</p>
+<div class="admonition-example admonition">
+<p class="admonition-title">Example</p>
+<p>d1 = {1: 1, 2: 2}
+d2 = {2: 2, 3: 3}
+add_transactions(d1, d2)
+// d1 == {1: 1, 2: 4, 3: 3}</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>[</strong><strong>dict</strong><strong>[</strong><strong>Any</strong><strong>, </strong><strong>Any</strong><strong>]</strong><strong>]</strong> (<em>added</em>) – A dictionary, generally of transactions
+(i.e. <cite>Decimal: Money</cite> pairs), but potentially of any types.
+Mutated by this method.</p></li>
+<li><p><strong>[</strong><strong>dict</strong><strong>[</strong><strong>Any</strong><strong>, </strong><strong>Any</strong><strong>]</strong><strong>]</strong> – A dictionary whose values support
+addition (via <cite>+</cite> operator) with the same-key values of
+<cite>base</cite>. Not mutated by this method.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None. Input <cite>base</cite> is mutated instead.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="forecaster.utility.build_inflation_adjust">
+<code class="sig-prename descclassname">forecaster.utility.</code><code class="sig-name descname">build_inflation_adjust</code><span class="sig-paren">(</span><em class="sig-param">inflation_adjust=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/utility.html#build_inflation_adjust"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.utility.build_inflation_adjust" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates an inflation_adjust method.</p>
+<p>If inflation_adjust is not provided, all values are assumed to be in
+real terms, the returned method will return its argument <cite>val</cite>
+without inflation adjustment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>inflation_adjust</strong> – May be a dict of {year: inflation_adjustment}
+pairs, where <cite>inflation_adjustment</cite> is a Decimal that
+indicates a cumulative year-over-year inflation factor.
+Or may be a method (returned as-is). Optional.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p><cite>inflation_adjust(val, this_year, target_year)</cite>.</p>
+<p>The method returns a Money object (assuming Money-typed <cite>val</cite>
+input).</p>
+<p>Finds a nominal value in <cite>target_year</cite> with the same real
+value as <cite>val</cite>, a nominal value in <cite>this_year</cite>.</p>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>A method with the following form</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="forecaster.utility.extend_inflation_adjusted">
+<code class="sig-prename descclassname">forecaster.utility.</code><code class="sig-name descname">extend_inflation_adjusted</code><span class="sig-paren">(</span><em class="sig-param">vals</em>, <em class="sig-param">inflation_adjust</em>, <em class="sig-param">target_year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/utility.html#extend_inflation_adjusted"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.utility.extend_inflation_adjusted" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fills in partial time-series with inflation-adjusted values.</p>
+<p>This method is targeted at inflation-adjusting input data (e.g.
+as found in the Constants module), which tends to be incomplete
+and can represent non-sequential years. New years are often entered
+when something changes (i.e. when values change in real terms), so
+this method prefers to infer inflation-adjusted values based on the
+most recent <em>past</em> years when possible (since future years might
+not be comparable).</p>
+<p>If <cite>target_year</cite> is in <cite>vals</cite>, then this method returns the value
+for <cite>target_year</cite> in <cite>vals</cite> without further inflation-adjusting
+(as that value is already in nominal terms).</p>
+<p>If <cite>target_year</cite> is not in <cite>vals</cite>, then this method attempts to
+interpolate an inflation-adjusted value based on the last year in
+<cite>vals</cite> before <cite>target_year</cite> or, if no such year exists, based on the
+first year in <cite>vals</cite> after <cite>target_year</cite>.</p>
+<p>If the values of <cite>vals</cite> are dicts or other iterable, this method
+returns a dict or other iterable with values that have each been
+inflation-adjusted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vals</strong> (<em>dict</em>) – <p>A dict of <cite>{year: val}</cite> pairs, where <cite>val</cite> is a
+scalar, list, or dict. This dict may be incomplete, in the
+sense that some years may not be represented.</p>
+<p>If <cite>val</cite> is non-scalar, an object of the same type is
+returned with each of its values inflation-adjusted.</p>
+</p></li>
+<li><p><strong>inflation_adjust</strong> – A method of the form
+<cite>inflation_adjust(val, this_year, target_year)</cite> that finds a
+nominal value in <cite>target_year</cite> with the same real value as
+nominal value <cite>val</cite> in <cite>this_year</cite>.</p></li>
+<li><p><strong>year</strong> (<em>int</em>) – The year for which an adjusted value is to be
+generated.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="forecaster.utility.frequency_conv">
+<code class="sig-prename descclassname">forecaster.utility.</code><code class="sig-name descname">frequency_conv</code><span class="sig-paren">(</span><em class="sig-param">nper</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/utility.html#frequency_conv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.utility.frequency_conv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of periods in a year given a compounding frequency.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>nper</strong> (<em>str</em><em>, </em><em>int</em>) – A code (str) indicating a compounding
+frequency (e.g. ‘W’, ‘M’), an int, or None</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>An int indicating the number of compounding periods in a</dt><dd><p>year or None if compounding is continuous.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ValueError</strong> – str nper must have a known value.</p></li>
+<li><p><strong>ValueError</strong> – nper must be greater than 0.</p></li>
+<li><p><strong>TypeError</strong> – nper cannot be losslessly converted to int.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="forecaster.utility.nearest_year">
+<code class="sig-prename descclassname">forecaster.utility.</code><code class="sig-name descname">nearest_year</code><span class="sig-paren">(</span><em class="sig-param">vals</em>, <em class="sig-param">year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/utility.html#nearest_year"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.utility.nearest_year" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds the nearest (past) year to <cite>year</cite> in <cite>vals</cite>.</p>
+<p>This is a companion method to <cite>inflation_adjust()</cite>. It’s meant to be
+used when you want to pull a value out of an incomplete dict without
+inflation-adjusting it (e.g. when you want to grab the most recent
+percentage rate from a dict of <cite>{year: Decimal}</cite> pairs.)</p>
+<p>If <cite>year</cite> is in <cite>vals</cite>, then this method returns <cite>year</cite>.
+If not, then this method tries to find the last year
+before <cite>year</cite> that is in <cite>vals</cite>. If that doesn’t work, then this
+method tries to find the first year in <cite>vals</cite> following <cite>year</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><p>A year in <cite>vals</cite> is near to <cite>year</cite>, preferring
+the nearest preceding year (if it exists) over the nearest
+following year.</p>
+<p>Returns <cite>None</cite> if <cite>vals</cite> is empty.</p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="forecaster.utility.subtract_transactions">
+<code class="sig-prename descclassname">forecaster.utility.</code><code class="sig-name descname">subtract_transactions</code><span class="sig-paren">(</span><em class="sig-param">base</em>, <em class="sig-param">added</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/utility.html#subtract_transactions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.utility.subtract_transactions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Combines values of two dicts, subtracting values of shared keys.</p>
+<p>This method mutates its first argument (base). If you don’t want
+that behaviour, copy your input dict before calling this method.</p>
+<p>The semantics of this method are the same as <cite>add_transactions</cite>,
+except that the values of <cite>added</cite> are subtracted from those of
+<cite>base</cite>. A consequence of this is that, unlike <cite>add_transactions</cite>,
+<cite>subtract_transactions</cite> is not commutative.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>[</strong><strong>dict</strong><strong>[</strong><strong>Any</strong><strong>, </strong><strong>Any</strong><strong>]</strong><strong>]</strong> (<em>added</em>) – A dictionary, generally of transactions
+(i.e. <cite>Decimal: Money</cite> pairs), but potentially of any types.
+Mutated by this method.</p></li>
+<li><p><strong>[</strong><strong>dict</strong><strong>[</strong><strong>Any</strong><strong>, </strong><strong>Any</strong><strong>]</strong><strong>]</strong> – A dictionary whose values support
+addition (via <cite>+</cite> operator) with the same-key values of
+<cite>base</cite>. Not mutated by this method.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None. Input <cite>base</cite> is mutated instead.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="forecaster.utility.transactions_from_timing">
+<code class="sig-prename descclassname">forecaster.utility.</code><code class="sig-name descname">transactions_from_timing</code><span class="sig-paren">(</span><em class="sig-param">timing</em>, <em class="sig-param">total</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/utility.html#transactions_from_timing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.utility.transactions_from_timing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a schedule of transactions based on a timing and total</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>timing</strong> (<a class="reference internal" href="#forecaster.utility.Timing" title="forecaster.utility.Timing"><em>Timing</em></a>) – The timing of the transactions, each with a
+corresponding weight.</p></li>
+<li><p><strong>total</strong> (<a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – The sum of all transactions to be generated.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A schedule of transactions, each
+transaction having the relative weighting provided by <cite>timing</cite>
+and the total value of the transactions summing to <cite>total</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict[Decimal, <a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="forecaster.utility.when_conv">
+<code class="sig-prename descclassname">forecaster.utility.</code><code class="sig-name descname">when_conv</code><span class="sig-paren">(</span><em class="sig-param">when</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/utility.html#when_conv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.utility.when_conv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts various types of <cite>when</cite> inputs to Decimal.</p>
+<p>The Decimal value is in [0,1], where 0 is the start of the period
+and 1 is the end.</p>
+<p>NOTE: <cite>numpy</cite> defines its <cite>when</cite> argument such that ‘end’ = 0 and
+‘start’ = 1. If you’re using that package, consider whether any
+conversions are necessary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>when</strong> (<em>float</em><em>, </em><em>Decimal</em><em>, </em><em>str</em>) – The timing of the transaction.
+Must be in the range [0,1] or in (‘start’, ‘end’).</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>decimal.InvalidOperation</strong> – <cite>when</cite> must be convertible to
+    type Decimal</p></li>
+<li><p><strong>ValueError</strong> – <cite>when</cite> must be in [0,1]</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A Decimal in [0,1]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="forecaster.tax.html" class="btn btn-neutral float-left" title="forecaster.tax module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,456 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.forecast.subforecast module &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="forecaster.forecast.tax module" href="forecaster.forecast.tax.html" />
+    <link rel="prev" title="forecaster.forecast.saving module" href="forecaster.forecast.saving.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">forecaster</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="forecaster.html">forecaster package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="forecaster.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="forecaster.accounts.html">forecaster.accounts package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.canada.html">forecaster.canada package</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="forecaster.forecast.html">forecaster.forecast package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.ledger.html">forecaster.ledger package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.strategy.html">forecaster.strategy package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">forecaster</a> &raquo;</li>
+        
+          <li><a href="forecaster.html">forecaster package</a> &raquo;</li>
+        
+          <li><a href="forecaster.forecast.html">forecaster.forecast package</a> &raquo;</li>
+        
+      <li>forecaster.forecast.subforecast module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/forecaster.forecast.subforecast.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-forecaster.forecast.subforecast">
+<span id="forecaster-forecast-subforecast-module"></span><h1>forecaster.forecast.subforecast module<a class="headerlink" href="#module-forecaster.forecast.subforecast" title="Permalink to this headline">¶</a></h1>
+<p>A module providing a base class for SubForecast objects.</p>
+<dl class="class">
+<dt id="forecaster.forecast.subforecast.SubForecast">
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.forecast.subforecast.</code><code class="sig-name descname">SubForecast</code><span class="sig-paren">(</span><em class="sig-param">initial_year</em>, <em class="sig-param">default_timing=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast/subforecast.html#SubForecast"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.subforecast.SubForecast" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="forecaster.ledger.base.html#forecaster.ledger.base.Ledger" title="forecaster.ledger.base.Ledger"><code class="xref py py-class docutils literal notranslate"><span class="pre">forecaster.ledger.base.Ledger</span></code></a></p>
+<p>Generic class for implementing part of a financial forecast.</p>
+<p><cite>SubForecast</cite> instances are managed by a <cite>Forecast</cite> object. Each
+<cite>SubForecast</cite> instance receives a dict of cashflows when called
+and mutates it by adding or substracting from the cashflows.
+The mutated dict can then be passed to another <cite>SubForecast</cite> for
+further processing. The dict is called <cite>available</cite> and represents
+the amount of money available for use by subsequent <cite>SubForecast</cite>
+instances.</p>
+<p>In general, positive values indicate additions/deposits to the
+pool of money available for use, and negative values are
+substractions/withdrawals. E.g. when income is received, an
+<cite>IncomeForecast</cite> subclass instance might add positive values
+to <cite>available</cite>. A <cite>LivingExpensesForecast</cite> subclass instance
+might add negative values.</p>
+<p>In addition to mutating <cite>available</cite>, each <cite>SubForecast</cite> instance
+can manage accounts that money moves to/from. Much of the logic
+of this class deals with adding transactions to such accounts.
+Money can be moved from <cite>available</cite> to an account (or vice-versa),
+and those movements can be undone as well (via
+<cite>undo_transactions</cite>).</p>
+<p>This is a <cite>Ledger</cite> subclass, meaning that it provides
+<cite>recorded_property</cite> attributes with corresponding <cite>*_history</cite>
+dicts storing values of the properties over time. See the
+documentation of <cite>Ledger</cite> (or concrete subclasses like <cite>Account</cite>)
+for more information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>initial_year</strong> (<em>int</em>) – The first year of the forecast.
+NOTE: Issue #53 removes the requirement for initial_year.</p></li>
+<li><p><strong>default_timing</strong> (<a class="reference internal" href="forecaster.utility.html#forecaster.utility.Timing" title="forecaster.utility.Timing"><em>Timing</em></a>) – The timing of transactions to use if
+none is explicitly given to <cite>add_transactions</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt>
+<code class="sig-name descname">transactions (TransactionDict[</code></dt>
+<dd><p>Union[Account, dict]: defaultdict[Decimal: Money]):
+A record of transactions to/from various accounts.
+An account does not have to be a formal <cite>Account</cite>
+object; it can be any <cite>Mapping</cite>, like a <cite>dict</cite>.</p>
+<p>Each account is mapped to time-series data (in the
+{when: value} format used throughout this package) where
+positive values correspond to inflows to inflows to the
+account and negative values are outflows.</p>
+<p>This dict includes transactions made to/from <cite>available</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.subforecast.SubForecast.__call__">
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param">available</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast/subforecast.html#SubForecast.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.subforecast.SubForecast.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records transactions against accounts; mutates <cite>available</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.subforecast.SubForecast.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">initial_year</em>, <em class="sig-param">default_timing=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast/subforecast.html#SubForecast.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.subforecast.SubForecast.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes an instance of SubForecast.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.subforecast.SubForecast.add_transaction">
+<code class="sig-name descname">add_transaction</code><span class="sig-paren">(</span><em class="sig-param">value</em>, <em class="sig-param">timing=None</em>, <em class="sig-param">from_account=None</em>, <em class="sig-param">to_account=None</em>, <em class="sig-param">strict_timing=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast/subforecast.html#SubForecast.add_transaction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.subforecast.SubForecast.add_transaction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records a transaction at a time that balances the books.</p>
+<p>This method will always add the transaction at or after <cite>when</cite>
+(or at or after the implied timing provided by <cite>frequency</cite>).
+It tries to find a time where adding the transaction would
+avoid putting <cite>from_account</cite> into a negative balance (not
+only at the time of the transaction but at any subsequent
+time).</p>
+<p>In particular, it tries to find the _earliest_ workable
+time at or after <cite>when</cite>. Thus, <cite>when</cite> is used if it meets
+these constraints. <cite>when</cite> is also used if no such
+time can be found.</p>
+<p>The transaction is actually two transactions: an outflow
+from <cite>from_account</cite> and an inflow to <cite>to_account</cite>. (This is
+reversed if <cite>value</cite> is negative.) If an account are omitted,
+the method treats the money as coming from (and/or going to)
+an infinite pool of money outside of the model.</p>
+<p>The <cite>*_account</cite> parameters are not necessarily <cite>Account</cite>
+objects. <cite>dict[Decimal, Money]</cite> (a dict of timings mapped to
+transaction values) or anything with similar semantics will
+also work.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>value</strong> (<a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – The value of the transaction.
+Positive for inflows, negative for outflows.</p></li>
+<li><p><strong>timing</strong> (<a class="reference internal" href="forecaster.utility.html#forecaster.utility.Timing" title="forecaster.utility.Timing"><em>Timing</em></a><em>, </em><em>dict</em><em>[</em><em>float</em><em>, </em><em>float</em><em>]</em><em>, </em><em>float</em><em>, </em><em>str</em>) – This is either a Timing object or a value that can be
+converted to a Timing object (e.g. a dict of
+{timing: weight} pairs, a <cite>when</cite> value as a float or
+string, etc.). Optional; defaults to <cite>default_timing</cite>.</p></li>
+<li><p><strong>from_account</strong> (<a class="reference internal" href="forecaster.accounts.base.html#forecaster.accounts.base.Account" title="forecaster.accounts.base.Account"><em>Account</em></a><em>, </em><em>dict</em><em>[</em><em>Decimal</em><em>, </em><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em>) – An account
+(or dict of transactions) from which the transaction
+originates. Optional.</p></li>
+<li><p><strong>from_account</strong> – An account
+(or dict of transactions) to which the transaction
+is being sent. Optional.</p></li>
+<li><p><strong>strict_timing</strong> (<em>bool</em>) – If False, transactions may be added
+later than <cite>when</cite> if this avoids putting accounts in
+a negative balance. If True, <cite>when</cite> is always used.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.subforecast.SubForecast.add_transactions">
+<code class="sig-name descname">add_transactions</code><span class="sig-paren">(</span><em class="sig-param">transactions</em>, <em class="sig-param">from_account=None</em>, <em class="sig-param">to_account=None</em>, <em class="sig-param">strict_timing=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast/subforecast.html#SubForecast.add_transactions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.subforecast.SubForecast.add_transactions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records a group of transactions between accounts.</p>
+<p>This is a convenience method that takes in some transactions
+(as <cite>when: value</cite> pairs) and adds each one as a transaction from
+<cite>from_account</cite> to <cite>to_account</cite> using the same semantics as
+<cite>add_transaction</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>transactions</strong> (<em>dict</em><em>[</em><em>Decimal</em><em>, </em><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em>) – The timings and values
+of the transactions. Positive for inflows, negative for
+outflows.</p></li>
+<li><p><strong>from_account</strong> (<a class="reference internal" href="forecaster.accounts.base.html#forecaster.accounts.base.Account" title="forecaster.accounts.base.Account"><em>Account</em></a><em>, </em><em>dict</em><em>[</em><em>Decimal</em><em>, </em><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em>) – An account
+(or dict of transactions) from which the transaction
+originates. Optional.</p></li>
+<li><p><strong>from_account</strong> – An account
+(or dict of transactions) to which the transaction
+is being sent. Optional.</p></li>
+<li><p><strong>strict_timing</strong> (<em>bool</em>) – If False, transactions may be added
+later than <cite>when</cite> if this avoids putting accounts in
+a negative balance. If True, <cite>when</cite> is always used.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.subforecast.SubForecast.next_year">
+<code class="sig-name descname">next_year</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast/subforecast.html#SubForecast.next_year"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.subforecast.SubForecast.next_year" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a year to the forecast.</p>
+<p>Note that SubForecast does not advance the years of its
+<cite>Ledger</cite>-type attributes. This is done by <cite>Forecast</cite> to avoid
+one SubForecast advancing a Ledger object that is used by
+another SubForecast.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.subforecast.SubForecast.transactions">
+<em class="property">property </em><code class="sig-name descname">transactions</code><a class="headerlink" href="#forecaster.forecast.subforecast.SubForecast.transactions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns cached value in *_history dict if available.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.subforecast.SubForecast.transactions_history">
+<em class="property">property </em><code class="sig-name descname">transactions_history</code><a class="headerlink" href="#forecaster.forecast.subforecast.SubForecast.transactions_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of transactions over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.subforecast.SubForecast.undo_transactions">
+<code class="sig-name descname">undo_transactions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast/subforecast.html#SubForecast.undo_transactions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.subforecast.SubForecast.undo_transactions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reverses all transactions cause by this subforecast.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="forecaster.forecast.subforecast.TransactionDict">
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.forecast.subforecast.</code><code class="sig-name descname">TransactionDict</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast/subforecast.html#TransactionDict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.subforecast.TransactionDict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">collections.defaultdict</span></code></p>
+<p>A defaultdict that accepts unhashable keys.</p>
+<p>The purpose of this dictionary is to allow <cite>SubForecast</cite> to have
+a <cite>dict[dict[*], dict[Decimal, Money]]</cite> data structure to map
+accounts (or account-like dicts) to {when: value} transaction
+mappings.</p>
+<p>When this dict encounters an unhashable object being used as a
+key, it uses the <em>id</em> of that object as a key instead. Calling
+code does not need to use the id; it can index this dict with
+the unhashable object and will receive the unhashable object
+as a key when iterating over the dict.</p>
+<p>This class implicitly treats identity as equality for non-hashable
+keys. This avoids hashing collisions between unhashable keys
+(since different keys have different identities) and between
+unhashable and hashable keys, so long as no hashable key is equal
+to an unhashable key’s id. This is guaranteed if the hashable keys
+aren’t equal to any integers (and, if they are <cite>Account</cite> objects,
+they won’t be, so you should be fine!). Using integer (or integer-
+convertible) objects as keys may lead to unexpected behaviour due
+to hashing collisions (but even these are very unlikely!)</p>
+<p>NOTE: The behaviour of <cite>keys()</cite> is overridden for this class to
+return a list instead of a keyview. This mimics Python 2.x
+behaviour but is non-standard for Python 3.x.</p>
+<dl class="method">
+<dt id="forecaster.forecast.subforecast.TransactionDict.__getitem__">
+<code class="sig-name descname">__getitem__</code><span class="sig-paren">(</span><em class="sig-param">key</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast/subforecast.html#TransactionDict.__getitem__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.subforecast.TransactionDict.__getitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets an item for a key, even if key is unhashable.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.subforecast.TransactionDict.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast/subforecast.html#TransactionDict.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.subforecast.TransactionDict.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes the dict.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.subforecast.TransactionDict.__iter__">
+<code class="sig-name descname">__iter__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast/subforecast.html#TransactionDict.__iter__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.subforecast.TransactionDict.__iter__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates iterator over keys, including unhashable keys.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.subforecast.TransactionDict.__setitem__">
+<code class="sig-name descname">__setitem__</code><span class="sig-paren">(</span><em class="sig-param">key</em>, <em class="sig-param">value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast/subforecast.html#TransactionDict.__setitem__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.subforecast.TransactionDict.__setitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets a value for key, even if key is unhashable.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.subforecast.TransactionDict.keys">
+<code class="sig-name descname">keys</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast/subforecast.html#TransactionDict.keys"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.subforecast.TransactionDict.keys" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of keys, including unhashable keys.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="forecaster.forecast.tax.html" class="btn btn-neutral float-right" title="forecaster.forecast.tax module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="forecaster.forecast.saving.html" class="btn btn-neutral float-left" title="forecaster.forecast.saving module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
