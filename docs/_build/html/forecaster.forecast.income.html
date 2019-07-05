@@ -1,0 +1,389 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.forecast.income module &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="forecaster.forecast.living_expenses module" href="forecaster.forecast.living_expenses.html" />
+    <link rel="prev" title="forecaster.forecast.base module" href="forecaster.forecast.base.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">forecaster</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="forecaster.html">forecaster package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="forecaster.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="forecaster.accounts.html">forecaster.accounts package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.canada.html">forecaster.canada package</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="forecaster.forecast.html">forecaster.forecast package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.ledger.html">forecaster.ledger package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.strategy.html">forecaster.strategy package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">forecaster</a> &raquo;</li>
+        
+          <li><a href="forecaster.html">forecaster package</a> &raquo;</li>
+        
+          <li><a href="forecaster.forecast.html">forecaster.forecast package</a> &raquo;</li>
+        
+      <li>forecaster.forecast.income module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/forecaster.forecast.income.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-forecaster.forecast.income">
+<span id="forecaster-forecast-income-module"></span><h1>forecaster.forecast.income module<a class="headerlink" href="#module-forecaster.forecast.income" title="Permalink to this headline">¶</a></h1>
+<p>Provides an IncomeForecast class for use by Forecast.</p>
+<dl class="class">
+<dt id="forecaster.forecast.income.IncomeForecast">
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.forecast.income.</code><code class="sig-name descname">IncomeForecast</code><span class="sig-paren">(</span><em class="sig-param">initial_year</em>, <em class="sig-param">people</em>, <em class="sig-param">asset_sale_timing=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast/income.html#IncomeForecast"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.income.IncomeForecast" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="forecaster.forecast.subforecast.html#forecaster.forecast.subforecast.SubForecast" title="forecaster.forecast.subforecast.SubForecast"><code class="xref py py-class docutils literal notranslate"><span class="pre">forecaster.forecast.subforecast.SubForecast</span></code></a></p>
+<p>A forecast of income over the years.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>initial_year</strong> (<em>int</em>) – The first year of the forecast.</p></li>
+<li><p><strong>people</strong> (<em>Iterable</em><em>[</em><a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>]</em>) – <p>The people for whom the financial
+forecast is being generated. Typically a single person or
+a person and their spouse.</p>
+<p>Note that all <cite>Person</cite> objects must have the same
+<cite>this_year</cite> attribute, as must their various accounts.</p>
+</p></li>
+<li><p><strong>asset_sale_timing</strong> (<a class="reference internal" href="forecaster.utility.html#forecaster.utility.Timing" title="forecaster.utility.Timing"><em>Timing</em></a>) – The timing of asset sales.
+Optional.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="forecaster.forecast.income.IncomeForecast.asset_sale">
+<code class="sig-name descname">asset_sale</code><a class="headerlink" href="#forecaster.forecast.income.IncomeForecast.asset_sale" title="Permalink to this definition">¶</a></dt>
+<dd><p>The proceeds from a sale of property.
+TODO: Determine if asset sale belongs here or elsewhere.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.income.IncomeForecast.carryover">
+<code class="sig-name descname">carryover</code><a class="headerlink" href="#forecaster.forecast.income.IncomeForecast.carryover" title="Permalink to this definition">¶</a></dt>
+<dd><p>Money carried over from last year to
+the current year.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.income.IncomeForecast.gross_income">
+<code class="sig-name descname">gross_income</code><a class="headerlink" href="#forecaster.forecast.income.IncomeForecast.gross_income" title="Permalink to this definition">¶</a></dt>
+<dd><p>Total income for all plannees for the
+year, before taxes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.income.IncomeForecast.tax_withheld">
+<code class="sig-name descname">tax_withheld</code><a class="headerlink" href="#forecaster.forecast.income.IncomeForecast.tax_withheld" title="Permalink to this definition">¶</a></dt>
+<dd><p>Total tax withheld on plannees’ income
+at source.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecast.income.IncomeForecast.net_income">
+<code class="sig-name descname">net_income</code><a class="headerlink" href="#forecaster.forecast.income.IncomeForecast.net_income" title="Permalink to this definition">¶</a></dt>
+<dd><p>Total income for all plannees for the
+year, net of taxes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.income.IncomeForecast.__call__">
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param">available</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast/income.html#IncomeForecast.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.income.IncomeForecast.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records transactions against accounts; mutates <cite>available</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.income.IncomeForecast.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">initial_year</em>, <em class="sig-param">people</em>, <em class="sig-param">asset_sale_timing=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecast/income.html#IncomeForecast.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecast.income.IncomeForecast.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes an instance of IncomeForecast.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">asset_sale</code></dt>
+<dd><p>Returns cached value in *_history dict if available.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.income.IncomeForecast.asset_sale_history">
+<em class="property">property </em><code class="sig-name descname">asset_sale_history</code><a class="headerlink" href="#forecaster.forecast.income.IncomeForecast.asset_sale_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of asset_sale over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">carryover</code></dt>
+<dd><p>Returns cached value in *_history dict if available.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.income.IncomeForecast.carryover_history">
+<em class="property">property </em><code class="sig-name descname">carryover_history</code><a class="headerlink" href="#forecaster.forecast.income.IncomeForecast.carryover_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of carryover over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">gross_income</code></dt>
+<dd><p>Returns cached value in *_history dict if available.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.income.IncomeForecast.gross_income_history">
+<em class="property">property </em><code class="sig-name descname">gross_income_history</code><a class="headerlink" href="#forecaster.forecast.income.IncomeForecast.gross_income_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of gross_income over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">net_income</code></dt>
+<dd><p>Returns cached value in *_history dict if available.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.income.IncomeForecast.net_income_history">
+<em class="property">property </em><code class="sig-name descname">net_income_history</code><a class="headerlink" href="#forecaster.forecast.income.IncomeForecast.net_income_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of net_income over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">tax_withheld</code></dt>
+<dd><p>Returns cached value in *_history dict if available.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.income.IncomeForecast.tax_withheld_history">
+<em class="property">property </em><code class="sig-name descname">tax_withheld_history</code><a class="headerlink" href="#forecaster.forecast.income.IncomeForecast.tax_withheld_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of tax_withheld over all past years.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecast.income.IncomeForecast.transactions_history">
+<em class="property">property </em><code class="sig-name descname">transactions_history</code><a class="headerlink" href="#forecaster.forecast.income.IncomeForecast.transactions_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record of transactions over all past years.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="forecaster.forecast.living_expenses.html" class="btn btn-neutral float-right" title="forecaster.forecast.living_expenses module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="forecaster.forecast.base.html" class="btn btn-neutral float-left" title="forecaster.forecast.base module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

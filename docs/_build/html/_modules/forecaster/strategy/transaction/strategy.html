@@ -158,7 +158,7 @@
 <span class="kn">from</span> <span class="nn">forecaster.strategy.transaction.base</span> <span class="k">import</span> <span class="n">TransactionTraversal</span>
 <span class="kn">from</span> <span class="nn">forecaster.strategy.transaction.node</span> <span class="k">import</span> <span class="n">TransactionNode</span>
 
-<div class="viewcode-block" id="TransactionStrategy"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.strategy.TransactionStrategy">[docs]</a><span class="k">class</span> <span class="nc">TransactionStrategy</span><span class="p">(</span><span class="n">Strategy</span><span class="p">):</span>
+<div class="viewcode-block" id="TransactionStrategy"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.strategy.html#forecaster.strategy.transaction.strategy.TransactionStrategy">[docs]</a><span class="k">class</span> <span class="nc">TransactionStrategy</span><span class="p">(</span><span class="n">Strategy</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Determines transactions to/from a group of accounts.</span>
 
 <span class="sd">    This is simply a convenient wrapper for `TransactionTraversal`. It</span>
@@ -213,7 +213,7 @@
     <span class="c1"># to come criterion while still allowing it to be useful?</span>
     <span class="c1"># In short: can we abandon type-based approaches entirely?</span>
 
-<div class="viewcode-block" id="TransactionStrategy.__init__"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.strategy.TransactionStrategy.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="TransactionStrategy.__init__"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.strategy.html#forecaster.strategy.transaction.strategy.TransactionStrategy.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span>
             <span class="n">debt_strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">high_interest_threshold</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Init TransactionStrategy. &quot;&quot;&quot;</span>
@@ -228,7 +228,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">debt_strategy</span> <span class="o">=</span> <span class="n">debt_strategy</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">high_interest_threshold</span> <span class="o">=</span> <span class="n">high_interest_threshold</span></div>
 
-<div class="viewcode-block" id="TransactionStrategy.strategy_ordered"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.strategy.TransactionStrategy.strategy_ordered">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;Ordered&#39;</span><span class="p">)</span>
+<div class="viewcode-block" id="TransactionStrategy.strategy_ordered"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.strategy.html#forecaster.strategy.transaction.strategy.TransactionStrategy.strategy_ordered">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;Ordered&#39;</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">strategy_ordered</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="n">groups</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">subtrees</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Generates a priority tree with ordered accounts.</span>
@@ -282,7 +282,7 @@
             <span class="n">priority</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subtree</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">priority</span></div>
 
-<div class="viewcode-block" id="TransactionStrategy.strategy_weighted"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.strategy.TransactionStrategy.strategy_weighted">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;Weighted&#39;</span><span class="p">)</span>
+<div class="viewcode-block" id="TransactionStrategy.strategy_weighted"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.strategy.html#forecaster.strategy.transaction.strategy.TransactionStrategy.strategy_weighted">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;Weighted&#39;</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">strategy_weighted</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="n">groups</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">subtrees</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Generates a priority tree with ordered accounts.</span>
@@ -389,7 +389,7 @@
         <span class="c1"># If none of the above worked, there&#39;s no appropriate key.</span>
         <span class="k">return</span> <span class="kc">None</span>
 
-<div class="viewcode-block" id="TransactionStrategy.divide_debts"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.strategy.TransactionStrategy.divide_debts">[docs]</a>    <span class="k">def</span> <span class="nf">divide_debts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accounts</span><span class="p">):</span>
+<div class="viewcode-block" id="TransactionStrategy.divide_debts"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.strategy.html#forecaster.strategy.transaction.strategy.TransactionStrategy.divide_debts">[docs]</a>    <span class="k">def</span> <span class="nf">divide_debts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accounts</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Separates high- and low-interest debts.</span>
 
 <span class="sd">        Args:</span>
@@ -419,7 +419,7 @@
             <span class="n">high_interest_debts</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">low_interest_debts</span><span class="p">,</span> <span class="n">high_interest_debts</span></div>
 
-<div class="viewcode-block" id="TransactionStrategy.debt_priority"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.strategy.TransactionStrategy.debt_priority">[docs]</a>    <span class="k">def</span> <span class="nf">debt_priority</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">debts</span><span class="p">):</span>
+<div class="viewcode-block" id="TransactionStrategy.debt_priority"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.strategy.html#forecaster.strategy.transaction.strategy.TransactionStrategy.debt_priority">[docs]</a>    <span class="k">def</span> <span class="nf">debt_priority</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">debts</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Converts a collection of debts into a priority tree.</span>
 <span class="sd">        </span>
 <span class="sd">        This method uses the selected priority method (e.g.</span>
@@ -447,7 +447,7 @@
             <span class="n">priority</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">return</span> <span class="n">priority</span></div>
 
-<div class="viewcode-block" id="TransactionStrategy.__call__"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.strategy.TransactionStrategy.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">available</span><span class="p">,</span> <span class="n">accounts</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="TransactionStrategy.__call__"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.strategy.html#forecaster.strategy.transaction.strategy.TransactionStrategy.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">available</span><span class="p">,</span> <span class="n">accounts</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Returns a dict of account: transaction pairs. &quot;&quot;&quot;</span>
         <span class="c1"># Debts get special treatment, so separate them out here:</span>
         <span class="n">low_interest_debts</span><span class="p">,</span> <span class="n">high_interest_debts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">divide_debts</span><span class="p">(</span><span class="n">accounts</span><span class="p">)</span>

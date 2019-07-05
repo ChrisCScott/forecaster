@@ -19,7 +19,7 @@ class recorded_property(property):
                 return <formula for taxable_income>
 
     """
-    # This is a decorator, which mimics the naming convention followed by
+    # This is a decorator that mimics the naming convention followed by
     # `property` (i.e. lowercase)
     # pylint: disable=invalid-name
 
@@ -132,7 +132,7 @@ class recorded_property(property):
 
 class recorded_property_cached(recorded_property):
     """ A recorded property that is cached by Ledger classes. """
-    # This is a decorator, which mimics the naming convention followed by
+    # This is a decorator that mimics the naming convention followed by
     # `property` (i.e. lowercase)
     # pylint: disable=invalid-name
 

@@ -1,0 +1,444 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.forecaster module &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="forecaster.person module" href="forecaster.person.html" />
+    <link rel="prev" title="forecaster.strategy.gross_transaction module" href="forecaster.strategy.gross_transaction.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">forecaster</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="forecaster.html">forecaster package</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#subpackages">Subpackages</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="forecaster.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">forecaster.forecaster module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.person.html">forecaster.person module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.scenario.html">forecaster.scenario module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.settings.html">forecaster.settings module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.tax.html">forecaster.tax module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.utility.html">forecaster.utility module</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">forecaster</a> &raquo;</li>
+        
+          <li><a href="forecaster.html">forecaster package</a> &raquo;</li>
+        
+      <li>forecaster.forecaster module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/forecaster.forecaster.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-forecaster.forecaster">
+<span id="forecaster-forecaster-module"></span><h1>forecaster.forecaster module<a class="headerlink" href="#module-forecaster.forecaster" title="Permalink to this headline">¶</a></h1>
+<p>This module provides classes for creating and managing Forecasts.</p>
+<dl class="class">
+<dt id="forecaster.forecaster.Forecaster">
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.forecaster.</code><code class="sig-name descname">Forecaster</code><span class="sig-paren">(</span><em class="sig-param">settings=None</em>, <em class="sig-param">scenario=None</em>, <em class="sig-param">living_expenses_strategy=None</em>, <em class="sig-param">saving_strategy=None</em>, <em class="sig-param">withdrawal_strategy=None</em>, <em class="sig-param">tax_treatment=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A convenience class for building Forecasts based on settings.</p>
+<p><cite>Forecaster</cite> takes in information for building a <cite>Forecast</cite>
+(explicitly, via a <cite>Settings</cite> object, or via a combination of the
+two) and builds one or more <cite>Forecast</cite> objects from that
+information.</p>
+<p>One of the purposes of this class is to enable building <cite>Forecast</cite>
+objects solely from a <cite>Settings</cite> object and some <cite>Ledger</cite> objects
+(i.e. people, assets, and debts.) Client code may optionally
+provide certain parameters required by <cite>Forecast</cite> or its members,
+which will be used as-is without values from <cite>Settings</cite>. Client
+code may also (or alternatively) build parameters with partial
+init args; <cite>Forecaster</cite> will fill in any remaining init args with
+the appropriate values from <cite>Settings</cite>.</p>
+<p><cite>Forecaster</cite> also can be used to build certain objects which
+are used by <cite>Ledger</cite> arguments to <cite>Forecaster.run_forecast()</cite>,
+such as <cite>Tax</cite> and <cite>AllocationStrategy</cite> objects (used
+by <cite>Person</cite> and some <cite>Account</cite> objects, respectively.)</p>
+<p><cite>Forecaster</cite> does not mutate values provided to it. <cite>Ledger</cite>
+objects passed by client code are copied (actually deepcopied, so
+that relationships between them are preserved), and the copies are
+mutated and returned. This makes it easy to tweak a few parameters
+and run another forecast, e.g. via Monte Carlo sampling.</p>
+<dl class="method">
+<dt id="forecaster.forecaster.Forecaster.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">settings=None</em>, <em class="sig-param">scenario=None</em>, <em class="sig-param">living_expenses_strategy=None</em>, <em class="sig-param">saving_strategy=None</em>, <em class="sig-param">withdrawal_strategy=None</em>, <em class="sig-param">tax_treatment=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inits an instance of <cite>Forecaster</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecaster.Forecaster.build_allocation_strategy">
+<code class="sig-name descname">build_allocation_strategy</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.build_allocation_strategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.build_allocation_strategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience method to build an allocation strategy.</p>
+<p>Any arguments are passed on to AllocationStrategy.__init__. Any
+arguments that aren’t passed explicitly to this function are
+instead pulled from the <cite>Forecaster</cite> instance’s <cite>settings</cite>
+attribute.</p>
+<p>The reason this specific object gets its own method is that
+client code will likely need to call it to initialize <cite>Account</cite>
+objects. In the future, we may provide similar methods for
+other parameters.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecaster.Forecaster.build_param">
+<code class="sig-name descname">build_param</code><span class="sig-paren">(</span><em class="sig-param">param_name</em>, <em class="sig-param">*args</em>, <em class="sig-param">param_type=None</em>, <em class="sig-param">memo=None</em>, <em class="sig-param">_special_builder=True</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.build_param"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.build_param" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds a parameter based on settings and explicit args.</p>
+<p>This method does not set any attributes of <cite>Forecaster</cite>, it only
+builds an object and returns it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>param_name</strong> (<em>str</em>) – The name of the parameter. This should
+match a key value in <cite>self.default_values</cite>.</p></li>
+<li><p><strong>*args</strong> (<em>Any</em>) – Positional arguments to be passed to the init
+method of the object being built. Optional.</p></li>
+<li><p><strong>param_type</strong> (<em>type</em>) – The type of the parameter. Optional.
+Defaults to the type provided by <cite>self.default_types</cite>.</p></li>
+<li><p><strong>memo</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>) – A mapping from parameter names to
+objects. This is not generally needed by client code;
+in cases where <cite>build_param</cite> needs to build other
+parameters to build the requested parameter, this dict
+is mutated to record already-built parameters. Optional.</p></li>
+<li><p><strong>_special_builder</strong> (<em>Boolean</em>) – Parameters which require special
+logic to init (as identified in <cite>self.default_builders</cite>)
+will only have the corresponding special builder called
+iff this value is True. Optional.</p></li>
+<li><p><strong>**kwargs</strong> (<em>Any</em>) – Keyword arguments to be passed to the init
+method of the object being built. Optional.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An object of type <cite>param_type</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecaster.Forecaster.get_param">
+<code class="sig-name descname">get_param</code><span class="sig-paren">(</span><em class="sig-param">param_name</em>, <em class="sig-param">memo=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.get_param"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.get_param" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets a parameter, builds one if none is explicitly provided.</p>
+<p>If a parameter has been explicitly assigned to this <cite>Forecaster</cite>
+instance then that object is returned. Otherwise, this method
+calls <cite>build_param</cite> to build it dynamically and returns it
+without setting any attributes of the <cite>Forecaster</cite> object.</p>
+<p>This is a convenience method which allows one to guarantee
+that an object will be returned (if <cite>param_name</cite> is supported)
+whether or not it is been explicitly set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>param_name</strong> (<em>str</em>) – The name of the parameter. This should
+match a key value in <cite>self.default_values</cite>.</p></li>
+<li><p><strong>memo</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>) – A mapping from parameter names to
+objects. This is not generally needed by client code;
+in cases where <cite>build_param</cite> needs to build other
+parameters to build the requested parameter, this dict
+is mutated to record already-built parameters. Optional.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The value of the attribute with name <cite>param_name</cite> or, if
+that value is None, a dynamically-built object that uses
+the values of <cite>settings</cite> for init.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecaster.Forecaster.run_forecast">
+<code class="sig-name descname">run_forecast</code><span class="sig-paren">(</span><em class="sig-param">people</em>, <em class="sig-param">accounts</em>, <em class="sig-param">debts</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.run_forecast"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.run_forecast" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a <cite>Forecast</cite> object.</p>
+<p>This method builds a <cite>Forecast</cite> based on any explicitly-provided
+parameters (e.g. <cite>scenario</cite>, <cite>living_expenses_strategy</cite>) and
+the applicable <cite>settings</cite>. Any parameters that have not been
+explicitly provided are built dynamically.</p>
+<p>Arguments (<cite>people</cite>, etc.) are copied. Copies are mutated, but
+the objects passed as arguments are not so that they an be
+re-used (and because mutating arguments is considered rude).
+Relationships between arguments and their members are preserved
+via <cite>deepcopy</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>people</strong> (<em>set</em><em>[</em><a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>]</em>) – One or more people for whom a forecast
+is being generated.</p></li>
+<li><p><strong>accounts</strong> (<em>set</em><em>[</em><a class="reference internal" href="forecaster.accounts.base.html#forecaster.accounts.base.Account" title="forecaster.accounts.base.Account"><em>Account</em></a><em>]</em>) – Accounts belonging to the plannees.</p></li>
+<li><p><strong>debts</strong> (<em>set</em><em>[</em><a class="reference internal" href="forecaster.accounts.debt.html#forecaster.accounts.debt.Debt" title="forecaster.accounts.debt.Debt"><em>Debt</em></a><em>]</em>) – Debts owed by the plannees.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A forecast of the plannees income, savings,
+and withdrawals over the years.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.forecast.base.html#forecaster.forecast.base.Forecast" title="forecaster.forecast.base.Forecast">Forecast</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.forecaster.Forecaster.set_param">
+<code class="sig-name descname">set_param</code><span class="sig-paren">(</span><em class="sig-param">param_name</em>, <em class="sig-param">*args</em>, <em class="sig-param">param_type=None</em>, <em class="sig-param">memo=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/forecaster.html#Forecaster.set_param"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Forecaster.set_param" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds a parameter and sets the corresponding attribute.</p>
+<p>This is a convenience method that calls <cite>build_param</cite> and
+sets the result as the value of the corresponding attribute of
+this <cite>Forecaster</cite> object.</p>
+<p>Note that by calling this method, the resulting object will be
+used without modification by <cite>run_forecast</cite> even if the
+<cite>settings</cite> object changes. You can un-set the parameter by
+assigning <cite>None</cite> to that attribute.</p>
+<p>This method does not set any attributes of <cite>Forecaster</cite>, it only
+builds an object and returns it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>param_name</strong> (<em>str</em>) – The name of the parameter. This should
+match a key value in <cite>self.default_values</cite>.</p></li>
+<li><p><strong>*args</strong> (<em>Any</em>) – Positional arguments to be passed to the init
+method of the object being built. Optional.</p></li>
+<li><p><strong>param_type</strong> (<em>type</em>) – The type of the parameter. Optional.
+Defaults to the type provided by <cite>self.default_types</cite>.</p></li>
+<li><p><strong>memo</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>) – A mapping from parameter names to
+objects. This is not generally needed by client code;
+in cases where <cite>build_param</cite> needs to build other
+parameters to build the requested parameter, this dict
+is mutated to record already-built parameters. Optional.</p></li>
+<li><p><strong>**kwargs</strong> (<em>Any</em>) – Keyword arguments to be passed to the init
+method of the object being built. Optional.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="forecaster.forecaster.Parameter">
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.forecaster.</code><code class="sig-name descname">Parameter</code><a class="reference internal" href="_modules/forecaster/forecaster.html#Parameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.forecaster.Parameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>Defines names of <cite>Forecaster</cite> parameters.</p>
+<dl class="attribute">
+<dt id="forecaster.forecaster.Parameter.ALLOCATION_STRATEGY">
+<code class="sig-name descname">ALLOCATION_STRATEGY</code><em class="property"> = 'allocation_strategy'</em><a class="headerlink" href="#forecaster.forecaster.Parameter.ALLOCATION_STRATEGY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecaster.Parameter.LIVING_EXPENSES_STRATEGY">
+<code class="sig-name descname">LIVING_EXPENSES_STRATEGY</code><em class="property"> = 'living_expenses_strategy'</em><a class="headerlink" href="#forecaster.forecaster.Parameter.LIVING_EXPENSES_STRATEGY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecaster.Parameter.SAVING_STRATEGY">
+<code class="sig-name descname">SAVING_STRATEGY</code><em class="property"> = 'saving_strategy'</em><a class="headerlink" href="#forecaster.forecaster.Parameter.SAVING_STRATEGY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecaster.Parameter.SCENARIO">
+<code class="sig-name descname">SCENARIO</code><em class="property"> = 'scenario'</em><a class="headerlink" href="#forecaster.forecaster.Parameter.SCENARIO" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecaster.Parameter.TAX_TREATMENT">
+<code class="sig-name descname">TAX_TREATMENT</code><em class="property"> = 'tax_treatment'</em><a class="headerlink" href="#forecaster.forecaster.Parameter.TAX_TREATMENT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.forecaster.Parameter.WITHDRAWAL_STRATEGY">
+<code class="sig-name descname">WITHDRAWAL_STRATEGY</code><em class="property"> = 'withdrawal_strategy'</em><a class="headerlink" href="#forecaster.forecaster.Parameter.WITHDRAWAL_STRATEGY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="forecaster.person.html" class="btn btn-neutral float-right" title="forecaster.person module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="forecaster.strategy.gross_transaction.html" class="btn btn-neutral float-left" title="forecaster.strategy.gross_transaction module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -35,7 +35,7 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="forecaster.strategy.transaction package" href="forecaster.strategy.transaction.html" />
+    <link rel="next" title="forecaster.strategy.debt_payment.base module" href="forecaster.strategy.debt_payment.base.html" />
     <link rel="prev" title="forecaster.strategy package" href="forecaster.strategy.html" /> 
 </head>
 
@@ -97,12 +97,6 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="forecaster.html#submodules">Submodules</a></li>
-<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster.forecaster">forecaster.forecaster module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster.person">forecaster.person module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster.scenario">forecaster.scenario module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster.settings">forecaster.settings module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster.tax">forecaster.tax module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster.utility">forecaster.utility module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster">Module contents</a></li>
 </ul>
 </li>
@@ -182,132 +176,12 @@
 <h1>forecaster.strategy.debt_payment package<a class="headerlink" href="#forecaster-strategy-debt-payment-package" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="module-forecaster.strategy.debt_payment.base">
-<span id="forecaster-strategy-debt-payment-base-module"></span><h2>forecaster.strategy.debt_payment.base module<a class="headerlink" href="#module-forecaster.strategy.debt_payment.base" title="Permalink to this headline">¶</a></h2>
-<p>Provides a class for determining schedules of debt payments.</p>
-<dl class="class">
-<dt id="forecaster.strategy.debt_payment.base.DebtPaymentStrategy">
-<em class="property">class </em><code class="sig-prename descclassname">forecaster.strategy.debt_payment.base.</code><code class="sig-name descname">DebtPaymentStrategy</code><span class="sig-paren">(</span><em class="sig-param">strategy</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/debt_payment/base.html#DebtPaymentStrategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.debt_payment.base.DebtPaymentStrategy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="forecaster.strategy.html#forecaster.strategy.base.Strategy" title="forecaster.strategy.base.Strategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">forecaster.strategy.base.Strategy</span></code></a></p>
-<p>Determines payments for a group of debts.</p>
-<p>This is simply a convenient wrapper for <cite>TransactionTraversal</cite>.</p>
-<dl class="attribute">
-<dt id="forecaster.strategy.debt_payment.base.DebtPaymentStrategy.strategy">
-<code class="sig-name descname">strategy</code><a class="headerlink" href="#forecaster.strategy.debt_payment.base.DebtPaymentStrategy.strategy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Either a string corresponding to a
-particular strategy or an instance of the strategy itself.
-See <cite>strategies</cite> for acceptable keys.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>str, func</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="forecaster.strategy.debt_payment.base.DebtPaymentStrategy.strategies">
-<code class="sig-name descname">strategies</code><a class="headerlink" href="#forecaster.strategy.debt_payment.base.DebtPaymentStrategy.strategies" title="Permalink to this definition">¶</a></dt>
-<dd><p>{str, func} pairs where each key identifies
-a strategy (in human-readable text) and each value is a
-function with the same arguments and return value as
-transactions(). See its documentation for more info.</p>
-<p>Acceptable keys include:</p>
-<ul class="simple">
-<li><p>“Snowball”</p></li>
-<li><p>“Avalanche”</p></li>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="forecaster.strategy.debt_payment.base.html">forecaster.strategy.debt_payment.base module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="forecaster.strategy.debt_payment.util.html">forecaster.strategy.debt_payment.util module</a></li>
 </ul>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>dict</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>available</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>, </em><em>dict</em><em>[</em><em>float</em><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em>) – The amounts available
-for repayment across all accounts, either as a single
-Money value (in which case accounts’ default timings
-are used) or as a mapping of {timing: value} pairs where
-positive values are treated as inflows usable as repayments.</p></li>
-<li><p><strong>debts</strong> (<em>list</em>) – Debts to repay.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A mapping of debts to
-transactions.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>dict[<a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.debt.Debt" title="forecaster.accounts.debt.Debt">Debt</a>, dict[Decimal, <a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a>]]</p>
-</dd>
-</dl>
-<dl class="method">
-<dt id="forecaster.strategy.debt_payment.base.DebtPaymentStrategy.__call__">
-<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param">debts</em>, <em class="sig-param">available</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/debt_payment/base.html#DebtPaymentStrategy.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.debt_payment.base.DebtPaymentStrategy.__call__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a dict of {account, Money} pairs.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt>
-<code class="sig-name descname">strategies</code><em class="property"> = {'Avalanche': &lt;function DebtPaymentStrategy.strategy_avalanche&gt;, 'Snowball': &lt;function DebtPaymentStrategy.strategy_snowball&gt;}</em></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="forecaster.strategy.debt_payment.base.DebtPaymentStrategy.strategy_avalanche">
-<code class="sig-name descname">strategy_avalanche</code><span class="sig-paren">(</span><em class="sig-param">debts</em>, <em class="sig-param">available</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/debt_payment/base.html#DebtPaymentStrategy.strategy_avalanche"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.debt_payment.base.DebtPaymentStrategy.strategy_avalanche" title="Permalink to this definition">¶</a></dt>
-<dd><p>Pays off the highest-interest debt first.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="forecaster.strategy.debt_payment.base.DebtPaymentStrategy.strategy_snowball">
-<code class="sig-name descname">strategy_snowball</code><span class="sig-paren">(</span><em class="sig-param">debts</em>, <em class="sig-param">available</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/debt_payment/base.html#DebtPaymentStrategy.strategy_snowball"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.debt_payment.base.DebtPaymentStrategy.strategy_snowball" title="Permalink to this definition">¶</a></dt>
-<dd><p>Pays off the smallest debt first.</p>
-</dd></dl>
-
-</dd></dl>
-
 </div>
-<div class="section" id="module-forecaster.strategy.debt_payment.util">
-<span id="forecaster-strategy-debt-payment-util-module"></span><h2>forecaster.strategy.debt_payment.util module<a class="headerlink" href="#module-forecaster.strategy.debt_payment.util" title="Permalink to this headline">¶</a></h2>
-<p>Utility methods for DebtPaymentStrategy.</p>
-<dl class="function">
-<dt id="forecaster.strategy.debt_payment.util.avalanche_priority">
-<code class="sig-prename descclassname">forecaster.strategy.debt_payment.util.</code><code class="sig-name descname">avalanche_priority</code><span class="sig-paren">(</span><em class="sig-param">debts</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/debt_payment/util.html#avalanche_priority"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.debt_payment.util.avalanche_priority" title="Permalink to this definition">¶</a></dt>
-<dd><p>A priority tree of debts according to the avalanche strategy.</p>
-<p>Under the avalanche strategy, accounts with the highest rates are
-repaid first, regardless of balance size.</p>
-<p>This uses the priority tree pattern of <cite>TransactionTraversal</cite>; see
-that class for more information.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>An ordered list of Debts.</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p>list[<a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.debt.Debt" title="forecaster.accounts.debt.Debt">Debt</a>]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="forecaster.strategy.debt_payment.util.snowball_priority">
-<code class="sig-prename descclassname">forecaster.strategy.debt_payment.util.</code><code class="sig-name descname">snowball_priority</code><span class="sig-paren">(</span><em class="sig-param">debts</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/debt_payment/util.html#snowball_priority"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.debt_payment.util.snowball_priority" title="Permalink to this definition">¶</a></dt>
-<dd><p>A priority tree of debts according to the snowball strategy.</p>
-<p>Under the avalanche strategy, accounts with the lowest balances are
-repaid first, regardless of their rates.</p>
-<p>This uses the priority tree pattern of <cite>TransactionTraversal</cite>; see
-that class for more information.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>An ordered list of Debts.</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p>list[<a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.debt.Debt" title="forecaster.accounts.debt.Debt">Debt</a>]</p>
-</dd>
-</dl>
-</dd></dl>
-
 </div>
 <div class="section" id="module-forecaster.strategy.debt_payment">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-forecaster.strategy.debt_payment" title="Permalink to this headline">¶</a></h2>
@@ -323,7 +197,7 @@ that class for more information.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="forecaster.strategy.transaction.html" class="btn btn-neutral float-right" title="forecaster.strategy.transaction package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="forecaster.strategy.debt_payment.base.html" class="btn btn-neutral float-right" title="forecaster.strategy.debt_payment.base module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="forecaster.strategy.html" class="btn btn-neutral float-left" title="forecaster.strategy package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>

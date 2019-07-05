@@ -157,7 +157,7 @@
 <span class="kn">import</span> <span class="nn">inspect</span>
 
 
-<div class="viewcode-block" id="strategy_method"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.base.strategy_method">[docs]</a><span class="k">def</span> <span class="nf">strategy_method</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
+<div class="viewcode-block" id="strategy_method"><a class="viewcode-back" href="../../../forecaster.strategy.base.html#forecaster.strategy.base.strategy_method">[docs]</a><span class="k">def</span> <span class="nf">strategy_method</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; A decorator for strategy methods, used by Strategy subclasses</span>
 
 <span class="sd">    Methods decorated with this decorator will be automatically added</span>
@@ -186,7 +186,7 @@
     <span class="k">return</span> <span class="n">decorator</span></div>
 
 
-<div class="viewcode-block" id="StrategyType"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.base.StrategyType">[docs]</a><span class="k">class</span> <span class="nc">StrategyType</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+<div class="viewcode-block" id="StrategyType"><a class="viewcode-back" href="../../../forecaster.strategy.base.html#forecaster.strategy.base.StrategyType">[docs]</a><span class="k">class</span> <span class="nc">StrategyType</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; A metaclass for Strategy classes.</span>
 
 <span class="sd">    This metaclass inspects the class for any `@strategy(key)`-decorated</span>
@@ -214,7 +214,7 @@
 
 
 <span class="c1"># pylint: disable=too-few-public-methods</span>
-<div class="viewcode-block" id="Strategy"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.base.Strategy">[docs]</a><span class="k">class</span> <span class="nc">Strategy</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">StrategyType</span><span class="p">):</span>
+<div class="viewcode-block" id="Strategy"><a class="viewcode-back" href="../../../forecaster.strategy.base.html#forecaster.strategy.base.Strategy">[docs]</a><span class="k">class</span> <span class="nc">Strategy</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">StrategyType</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; An abstract callable class for determining a strategy.</span>
 
 <span class="sd">    Attributes:</span>
@@ -249,7 +249,7 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Strategy: Unsupported strategy &#39;</span> <span class="o">+</span>
                              <span class="s1">&#39;value: &#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Strategy.__call__"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.base.Strategy.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Strategy.__call__"><a class="viewcode-back" href="../../../forecaster.strategy.base.html#forecaster.strategy.base.Strategy.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Makes the Strategy object callable. &quot;&quot;&quot;</span>
         <span class="c1"># Call the selected strategy method.</span>
         <span class="c1"># The method is unbound (as it&#39;s assigned at the class level) so</span>

@@ -158,7 +158,7 @@
 <span class="n">AssetAllocation</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s1">&#39;AssetAllocation&#39;</span><span class="p">,</span> <span class="s1">&#39;stocks bonds other&#39;</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="RateFunction"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.allocation.RateFunction">[docs]</a><span class="k">class</span> <span class="nc">RateFunction</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="RateFunction"><a class="viewcode-back" href="../../../forecaster.strategy.allocation.html#forecaster.strategy.allocation.RateFunction">[docs]</a><span class="k">class</span> <span class="nc">RateFunction</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; A callable object with accessible state attributes. &quot;&quot;&quot;</span>
 
     <span class="c1"># We do provide public methods, but they&#39;re overrides of magic</span>
@@ -166,13 +166,13 @@
     <span class="c1"># to expose its state (which a method/function/lambda does not do).</span>
     <span class="c1"># pylint: disable=too-few-public-methods</span>
 
-<div class="viewcode-block" id="RateFunction.__init__"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.allocation.RateFunction.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="n">allocation_strategy</span><span class="p">):</span>
+<div class="viewcode-block" id="RateFunction.__init__"><a class="viewcode-back" href="../../../forecaster.strategy.allocation.html#forecaster.strategy.allocation.RateFunction.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="n">allocation_strategy</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Inits the RateFunction object. &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span> <span class="o">=</span> <span class="n">scenario</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">person</span> <span class="o">=</span> <span class="n">person</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">allocation_strategy</span> <span class="o">=</span> <span class="n">allocation_strategy</span></div>
 
-<div class="viewcode-block" id="RateFunction.__call__"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.allocation.RateFunction.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
+<div class="viewcode-block" id="RateFunction.__call__"><a class="viewcode-back" href="../../../forecaster.strategy.allocation.html#forecaster.strategy.allocation.RateFunction.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Rate of return for `year` based on asset allocation.</span>
 
 <span class="sd">        Args:</span>
@@ -198,7 +198,7 @@
         <span class="p">)</span></div></div>
 
 
-<div class="viewcode-block" id="AllocationStrategy"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.allocation.AllocationStrategy">[docs]</a><span class="k">class</span> <span class="nc">AllocationStrategy</span><span class="p">(</span><span class="n">Strategy</span><span class="p">):</span>
+<div class="viewcode-block" id="AllocationStrategy"><a class="viewcode-back" href="../../../forecaster.strategy.allocation.html#forecaster.strategy.allocation.AllocationStrategy">[docs]</a><span class="k">class</span> <span class="nc">AllocationStrategy</span><span class="p">(</span><span class="n">Strategy</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Generates an asset allocation for a point in time. Callable.</span>
 
 <span class="sd">    Attributes:</span>
@@ -263,7 +263,7 @@
 <span class="sd">        ValueError: min_equity greater than max_equity.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># pylint: disable=too-many-arguments</span>
-<div class="viewcode-block" id="AllocationStrategy.__init__"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.allocation.AllocationStrategy.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="AllocationStrategy.__init__"><a class="viewcode-back" href="../../../forecaster.strategy.allocation.html#forecaster.strategy.allocation.AllocationStrategy.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">min_equity</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_equity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
             <span class="n">standard_retirement_age</span><span class="o">=</span><span class="mi">65</span><span class="p">,</span> <span class="n">risk_transition_period</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
             <span class="n">adjust_for_retirement_plan</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
@@ -283,7 +283,7 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;AllocationStrategy: min_equity must not be &#39;</span> <span class="o">+</span>
                              <span class="s1">&#39;greater than max_equity.&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="AllocationStrategy.strategy_n_minus_age"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.allocation.AllocationStrategy.strategy_n_minus_age">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;n-age&#39;</span><span class="p">)</span>
+<div class="viewcode-block" id="AllocationStrategy.strategy_n_minus_age"><a class="viewcode-back" href="../../../forecaster.strategy.allocation.html#forecaster.strategy.allocation.AllocationStrategy.strategy_n_minus_age">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;n-age&#39;</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">strategy_n_minus_age</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">retirement_age</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Used for 100-age, 110-age, 125-age, etc. strategies. &quot;&quot;&quot;</span>
@@ -306,7 +306,7 @@
         <span class="c1"># Bonds is simply whatever isn&#39;t in equities</span>
         <span class="k">return</span> <span class="n">AssetAllocation</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">target</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="AllocationStrategy.strategy_transition_to_const"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.allocation.AllocationStrategy.strategy_transition_to_const">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;Transition to constant&#39;</span><span class="p">)</span>
+<div class="viewcode-block" id="AllocationStrategy.strategy_transition_to_const"><a class="viewcode-back" href="../../../forecaster.strategy.allocation.html#forecaster.strategy.allocation.AllocationStrategy.strategy_transition_to_const">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;Transition to constant&#39;</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">strategy_transition_to_const</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">retirement_age</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Used for `Transition to 50-50`, `Transition to 70-30`, etc. &quot;&quot;&quot;</span>
@@ -338,7 +338,7 @@
 
         <span class="k">return</span> <span class="n">AssetAllocation</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">target</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="AllocationStrategy.rate_function"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.allocation.AllocationStrategy.rate_function">[docs]</a>    <span class="k">def</span> <span class="nf">rate_function</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="n">scenario</span><span class="p">):</span>
+<div class="viewcode-block" id="AllocationStrategy.rate_function"><a class="viewcode-back" href="../../../forecaster.strategy.allocation.html#forecaster.strategy.allocation.AllocationStrategy.rate_function">[docs]</a>    <span class="k">def</span> <span class="nf">rate_function</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="n">scenario</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; A rate function usable by Person or Account objects.</span>
 
 <span class="sd">        Args:</span>
@@ -403,7 +403,7 @@
 
         <span class="k">return</span> <span class="n">allocation</span>
 
-<div class="viewcode-block" id="AllocationStrategy.__call__"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.allocation.AllocationStrategy.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">retirement_age</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="AllocationStrategy.__call__"><a class="viewcode-back" href="../../../forecaster.strategy.allocation.html#forecaster.strategy.allocation.AllocationStrategy.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">retirement_age</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Returns a dict of {account, Money} pairs. &quot;&quot;&quot;</span>
         <span class="c1"># TODO: Move min_equity and max_equity logic here to simplify</span>
         <span class="c1"># the logic of each strategy.</span>

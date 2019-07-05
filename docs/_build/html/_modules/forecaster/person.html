@@ -159,7 +159,7 @@
 <span class="kn">from</span> <span class="nn">forecaster.utility</span> <span class="k">import</span> <span class="n">Timing</span>
 
 
-<div class="viewcode-block" id="Person"><a class="viewcode-back" href="../../forecaster.html#forecaster.person.Person">[docs]</a><span class="k">class</span> <span class="nc">Person</span><span class="p">(</span><span class="n">TaxSource</span><span class="p">):</span>
+<div class="viewcode-block" id="Person"><a class="viewcode-back" href="../../forecaster.person.html#forecaster.person.Person">[docs]</a><span class="k">class</span> <span class="nc">Person</span><span class="p">(</span><span class="n">TaxSource</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Represents a person&#39;s basic information: age and retirement age.</span>
 
 <span class="sd">    Arguments:</span>
@@ -260,7 +260,7 @@
     <span class="c1"># We could override `_tax_credit` to provide the spousal tax credit</span>
     <span class="c1"># and replace the `tax_treatment` arg with a `province` (str) arg.</span>
 
-<div class="viewcode-block" id="Person.__init__"><a class="viewcode-back" href="../../forecaster.html#forecaster.person.Person.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="Person.__init__"><a class="viewcode-back" href="../../forecaster.person.html#forecaster.person.Person.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">birth_date</span><span class="p">,</span> <span class="n">retirement_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">gross_income</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">raise_rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">spouse</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tax_treatment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">payment_timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -498,7 +498,7 @@
         <span class="sd">&quot;&quot;&quot; The `Person`&#39;s raise for the current year. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_raise_rate_callable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">this_year</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Person.age"><a class="viewcode-back" href="../../forecaster.html#forecaster.person.Person.age">[docs]</a>    <span class="k">def</span> <span class="nf">age</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">date</span><span class="p">):</span>
+<div class="viewcode-block" id="Person.age"><a class="viewcode-back" href="../../forecaster.person.html#forecaster.person.Person.age">[docs]</a>    <span class="k">def</span> <span class="nf">age</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">date</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The age of the `Person` as of `date`.</span>
 
 <span class="sd">        `date` may be a `datetime` object or a numeric value indicating</span>
@@ -564,7 +564,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Person.__gt__"><a class="viewcode-back" href="../../forecaster.html#forecaster.person.Person.__gt__">[docs]</a>    <span class="k">def</span> <span class="nf">__gt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<div class="viewcode-block" id="Person.__gt__"><a class="viewcode-back" href="../../forecaster.person.html#forecaster.person.Person.__gt__">[docs]</a>    <span class="k">def</span> <span class="nf">__gt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Allows for sorting, max, min, etc. based on gross income. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">gross_income</span> <span class="o">&gt;</span> <span class="n">other</span><span class="o">.</span><span class="n">gross_income</span></div></div>
 </pre></div>

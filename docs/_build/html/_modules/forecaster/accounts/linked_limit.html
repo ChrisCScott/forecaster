@@ -155,7 +155,7 @@
 <span class="kn">from</span> <span class="nn">forecaster.accounts.link</span> <span class="k">import</span> <span class="n">AccountLink</span>
 <span class="kn">from</span> <span class="nn">forecaster.utility</span> <span class="k">import</span> <span class="n">add_transactions</span>
 
-<div class="viewcode-block" id="LinkedLimitAccount"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount">[docs]</a><span class="k">class</span> <span class="nc">LinkedLimitAccount</span><span class="p">(</span><span class="n">Account</span><span class="p">):</span>
+<div class="viewcode-block" id="LinkedLimitAccount"><a class="viewcode-back" href="../../../forecaster.accounts.linked_limit.html#forecaster.accounts.linked_limit.LinkedLimitAccount">[docs]</a><span class="k">class</span> <span class="nc">LinkedLimitAccount</span><span class="p">(</span><span class="n">Account</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; An account with inflow/outflow limits linked to other accounts.</span>
 
 <span class="sd">    Inflow and outflow limits may be shared between accounts. Such</span>
@@ -175,14 +175,12 @@
 
 <span class="sd">    Example:</span>
 <span class="sd">        All instances of this class with the same owner will share</span>
-<span class="sd">        their contribution room (i.e. max_inflow limit):</span>
-<span class="sd">        ```</span>
-<span class="sd">        class RegisteredAccount(LinkedLimitAccount):</span>
-<span class="sd">            def __init__(self):</span>
-<span class="sd">                token = type(self).__name__</span>
-<span class="sd">                super().__init__(max_inflow_token=token)</span>
+<span class="sd">        their contribution room (i.e. max_inflow limit)::</span>
 
-<span class="sd">        ```</span>
+<span class="sd">            class RegisteredAccount(LinkedLimitAccount):</span>
+<span class="sd">                def __init__(self):</span>
+<span class="sd">                    token = type(self).__name__</span>
+<span class="sd">                    super().__init__(max_inflow_token=token)</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        max_inflow_limit (Money): Inherited from `Account`. The max.</span>
@@ -210,7 +208,7 @@
 <span class="sd">            will share the same `min_outflow_limit`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="LinkedLimitAccount.__init__"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="LinkedLimitAccount.__init__"><a class="viewcode-back" href="../../../forecaster.accounts.linked_limit.html#forecaster.accounts.linked_limit.LinkedLimitAccount.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
             <span class="n">max_inflow_link</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_inflow_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">min_inflow_link</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">min_inflow_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -409,7 +407,7 @@
                 <span class="n">add_transactions</span><span class="p">(</span><span class="n">transactions</span><span class="p">,</span> <span class="n">group_transactions</span><span class="p">[</span><span class="n">account</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">transactions</span>
 
-<div class="viewcode-block" id="LinkedLimitAccount.max_inflows"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.max_inflows">[docs]</a>    <span class="k">def</span> <span class="nf">max_inflows</span><span class="p">(</span>
+<div class="viewcode-block" id="LinkedLimitAccount.max_inflows"><a class="viewcode-back" href="../../../forecaster.accounts.linked_limit.html#forecaster.accounts.linked_limit.LinkedLimitAccount.max_inflows">[docs]</a>    <span class="k">def</span> <span class="nf">max_inflows</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">group_transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The maximum amounts that can be contributed to the account.</span>
 
@@ -440,7 +438,7 @@
         <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">max_inflows</span><span class="p">(</span>
             <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="n">transactions</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="LinkedLimitAccount.max_outflows"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.max_outflows">[docs]</a>    <span class="k">def</span> <span class="nf">max_outflows</span><span class="p">(</span>
+<div class="viewcode-block" id="LinkedLimitAccount.max_outflows"><a class="viewcode-back" href="../../../forecaster.accounts.linked_limit.html#forecaster.accounts.linked_limit.LinkedLimitAccount.max_outflows">[docs]</a>    <span class="k">def</span> <span class="nf">max_outflows</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">group_transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The maximum amounts that can be withdrawn from the account.</span>
 
@@ -471,7 +469,7 @@
         <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">max_outflows</span><span class="p">(</span>
             <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="n">transactions</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="LinkedLimitAccount.min_inflows"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.min_inflows">[docs]</a>    <span class="k">def</span> <span class="nf">min_inflows</span><span class="p">(</span>
+<div class="viewcode-block" id="LinkedLimitAccount.min_inflows"><a class="viewcode-back" href="../../../forecaster.accounts.linked_limit.html#forecaster.accounts.linked_limit.LinkedLimitAccount.min_inflows">[docs]</a>    <span class="k">def</span> <span class="nf">min_inflows</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">group_transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The minimum amounts that must be contributed to the account.</span>
 
@@ -502,7 +500,7 @@
         <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">min_inflows</span><span class="p">(</span>
             <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="n">transactions</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="LinkedLimitAccount.min_outflows"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.linked_limit.LinkedLimitAccount.min_outflows">[docs]</a>    <span class="k">def</span> <span class="nf">min_outflows</span><span class="p">(</span>
+<div class="viewcode-block" id="LinkedLimitAccount.min_outflows"><a class="viewcode-back" href="../../../forecaster.accounts.linked_limit.html#forecaster.accounts.linked_limit.LinkedLimitAccount.min_outflows">[docs]</a>    <span class="k">def</span> <span class="nf">min_outflows</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">group_transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The minimum amounts that must be withdrawn from the account.</span>
 

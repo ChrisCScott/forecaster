@@ -157,7 +157,7 @@
 <span class="kn">from</span> <span class="nn">forecaster.accounts</span> <span class="k">import</span> <span class="n">Account</span>
 <span class="kn">from</span> <span class="nn">forecaster.utility</span> <span class="k">import</span> <span class="n">Timing</span>
 
-<div class="viewcode-block" id="TransactionDict"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.subforecast.TransactionDict">[docs]</a><span class="k">class</span> <span class="nc">TransactionDict</span><span class="p">(</span><span class="n">defaultdict</span><span class="p">):</span>
+<div class="viewcode-block" id="TransactionDict"><a class="viewcode-back" href="../../../forecaster.forecast.subforecast.html#forecaster.forecast.subforecast.TransactionDict">[docs]</a><span class="k">class</span> <span class="nc">TransactionDict</span><span class="p">(</span><span class="n">defaultdict</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; A defaultdict that accepts unhashable keys.</span>
 
 <span class="sd">    The purpose of this dictionary is to allow `SubForecast` to have</span>
@@ -185,12 +185,12 @@
 <span class="sd">    return a list instead of a keyview. This mimics Python 2.x</span>
 <span class="sd">    behaviour but is non-standard for Python 3.x.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-<div class="viewcode-block" id="TransactionDict.__init__"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.subforecast.TransactionDict.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="TransactionDict.__init__"><a class="viewcode-back" href="../../../forecaster.forecast.subforecast.html#forecaster.forecast.subforecast.TransactionDict.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Initializes the dict. &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_unhashablekeys</span> <span class="o">=</span> <span class="p">{}</span></div>
 
-<div class="viewcode-block" id="TransactionDict.__getitem__"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.subforecast.TransactionDict.__getitem__">[docs]</a>    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+<div class="viewcode-block" id="TransactionDict.__getitem__"><a class="viewcode-back" href="../../../forecaster.forecast.subforecast.html#forecaster.forecast.subforecast.TransactionDict.__getitem__">[docs]</a>    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Gets an item for a key, even if key is unhashable. &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">Hashable</span><span class="p">):</span>
             <span class="c1"># This is a defaultdict, so add new keys on get:</span>
@@ -200,7 +200,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="n">key</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="TransactionDict.__setitem__"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.subforecast.TransactionDict.__setitem__">[docs]</a>    <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+<div class="viewcode-block" id="TransactionDict.__setitem__"><a class="viewcode-back" href="../../../forecaster.forecast.subforecast.html#forecaster.forecast.subforecast.TransactionDict.__setitem__">[docs]</a>    <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Sets a value for key, even if key is unhashable. &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">Hashable</span><span class="p">):</span>
             <span class="k">if</span> <span class="nb">id</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unhashablekeys</span><span class="p">:</span>
@@ -209,7 +209,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="TransactionDict.__iter__"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.subforecast.TransactionDict.__iter__">[docs]</a>    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="TransactionDict.__iter__"><a class="viewcode-back" href="../../../forecaster.forecast.subforecast.html#forecaster.forecast.subforecast.TransactionDict.__iter__">[docs]</a>    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Generates iterator over keys, including unhashable keys. &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__iter__</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unhashablekeys</span><span class="p">:</span>
@@ -217,7 +217,7 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">yield</span> <span class="n">key</span></div>
 
-<div class="viewcode-block" id="TransactionDict.keys"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.subforecast.TransactionDict.keys">[docs]</a>    <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="TransactionDict.keys"><a class="viewcode-back" href="../../../forecaster.forecast.subforecast.html#forecaster.forecast.subforecast.TransactionDict.keys">[docs]</a>    <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Returns a list of keys, including unhashable keys. &quot;&quot;&quot;</span>
         <span class="c1"># We return a list because a keyview (the usual return type in</span>
         <span class="c1"># Python 3.x) exposes the underlying id-based implementation.</span>
@@ -226,7 +226,7 @@
         <span class="c1"># Translation between key and id(key) is handled by __iter__</span>
         <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="fm">__iter__</span><span class="p">())</span>  <span class="c1"># Returns a list</span></div></div>
 
-<div class="viewcode-block" id="SubForecast"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.subforecast.SubForecast">[docs]</a><span class="k">class</span> <span class="nc">SubForecast</span><span class="p">(</span><span class="n">Ledger</span><span class="p">):</span>
+<div class="viewcode-block" id="SubForecast"><a class="viewcode-back" href="../../../forecaster.forecast.subforecast.html#forecaster.forecast.subforecast.SubForecast">[docs]</a><span class="k">class</span> <span class="nc">SubForecast</span><span class="p">(</span><span class="n">Ledger</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Generic class for implementing part of a financial forecast.</span>
 
 <span class="sd">    `SubForecast` instances are managed by a `Forecast` object. Each</span>
@@ -278,7 +278,7 @@
 <span class="sd">            This dict includes transactions made to/from `available`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="SubForecast.__init__"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.subforecast.SubForecast.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">,</span> <span class="n">default_timing</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="SubForecast.__init__"><a class="viewcode-back" href="../../../forecaster.forecast.subforecast.html#forecaster.forecast.subforecast.SubForecast.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">,</span> <span class="n">default_timing</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Initializes an instance of SubForecast. &quot;&quot;&quot;</span>
         <span class="c1"># Invoke Ledger&#39;s __init__ or pay the price!</span>
         <span class="c1"># NOTE Issue #53 removes this requirement</span>
@@ -308,7 +308,7 @@
         <span class="sd">&quot;&quot;&quot; `TransactionDict` tracking transactions to/from accounts. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transactions</span>
 
-<div class="viewcode-block" id="SubForecast.next_year"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.subforecast.SubForecast.next_year">[docs]</a>    <span class="k">def</span> <span class="nf">next_year</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="SubForecast.next_year"><a class="viewcode-back" href="../../../forecaster.forecast.subforecast.html#forecaster.forecast.subforecast.SubForecast.next_year">[docs]</a>    <span class="k">def</span> <span class="nf">next_year</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Adds a year to the forecast.</span>
 
 <span class="sd">        Note that SubForecast does not advance the years of its</span>
@@ -323,7 +323,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">transactions</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_call_invoked</span> <span class="o">=</span> <span class="kc">False</span></div>
 
-<div class="viewcode-block" id="SubForecast.__call__"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.subforecast.SubForecast.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">available</span><span class="p">):</span>
+<div class="viewcode-block" id="SubForecast.__call__"><a class="viewcode-back" href="../../../forecaster.forecast.subforecast.html#forecaster.forecast.subforecast.SubForecast.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">available</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Records transactions against accounts; mutates `available`. &quot;&quot;&quot;</span>
         <span class="c1"># If this isn&#39;t the first time calling this method this year,</span>
         <span class="c1"># under whatever was done previously:</span>
@@ -350,7 +350,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">total_available</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">available</span><span class="o">.</span><span class="n">values</span><span class="p">())</span></div>
 
-<div class="viewcode-block" id="SubForecast.undo_transactions"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.subforecast.SubForecast.undo_transactions">[docs]</a>    <span class="k">def</span> <span class="nf">undo_transactions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="SubForecast.undo_transactions"><a class="viewcode-back" href="../../../forecaster.forecast.subforecast.html#forecaster.forecast.subforecast.SubForecast.undo_transactions">[docs]</a>    <span class="k">def</span> <span class="nf">undo_transactions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Reverses all transactions cause by this subforecast. &quot;&quot;&quot;</span>
         <span class="c1"># Reverse transactions:</span>
         <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">transactions</span><span class="p">:</span>
@@ -365,7 +365,7 @@
         <span class="c1"># the cache so they can be re-calculated based on the new input:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">clear_cache</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="SubForecast.add_transactions"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.subforecast.SubForecast.add_transactions">[docs]</a>    <span class="k">def</span> <span class="nf">add_transactions</span><span class="p">(</span>
+<div class="viewcode-block" id="SubForecast.add_transactions"><a class="viewcode-back" href="../../../forecaster.forecast.subforecast.html#forecaster.forecast.subforecast.SubForecast.add_transactions">[docs]</a>    <span class="k">def</span> <span class="nf">add_transactions</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="n">transactions</span><span class="p">,</span>
             <span class="n">from_account</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">to_account</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">strict_timing</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
@@ -396,7 +396,7 @@
                 <span class="n">from_account</span><span class="o">=</span><span class="n">from_account</span><span class="p">,</span> <span class="n">to_account</span><span class="o">=</span><span class="n">to_account</span><span class="p">,</span>
                 <span class="n">strict_timing</span><span class="o">=</span><span class="n">strict_timing</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="SubForecast.add_transaction"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.subforecast.SubForecast.add_transaction">[docs]</a>    <span class="k">def</span> <span class="nf">add_transaction</span><span class="p">(</span>
+<div class="viewcode-block" id="SubForecast.add_transaction"><a class="viewcode-back" href="../../../forecaster.forecast.subforecast.html#forecaster.forecast.subforecast.SubForecast.add_transaction">[docs]</a>    <span class="k">def</span> <span class="nf">add_transaction</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">from_account</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">to_account</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">strict_timing</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>

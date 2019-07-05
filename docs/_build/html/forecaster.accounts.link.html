@@ -1,0 +1,422 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.accounts.link module &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="forecaster.accounts.linked_limit module" href="forecaster.accounts.linked_limit.html" />
+    <link rel="prev" title="forecaster.accounts.debt module" href="forecaster.accounts.debt.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">forecaster</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="forecaster.html">forecaster package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="forecaster.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="forecaster.accounts.html">forecaster.accounts package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.canada.html">forecaster.canada package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.forecast.html">forecaster.forecast package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.ledger.html">forecaster.ledger package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.strategy.html">forecaster.strategy package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">forecaster</a> &raquo;</li>
+        
+          <li><a href="forecaster.html">forecaster package</a> &raquo;</li>
+        
+          <li><a href="forecaster.accounts.html">forecaster.accounts package</a> &raquo;</li>
+        
+      <li>forecaster.accounts.link module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/forecaster.accounts.link.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-forecaster.accounts.link">
+<span id="forecaster-accounts-link-module"></span><h1>forecaster.accounts.link module<a class="headerlink" href="#module-forecaster.accounts.link" title="Permalink to this headline">¶</a></h1>
+<p>A module providing a tool for linking accounts via an owner.</p>
+<dl class="class">
+<dt id="forecaster.accounts.link.AccountLink">
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.accounts.link.</code><code class="sig-name descname">AccountLink</code><span class="sig-paren">(</span><em class="sig-param">link</em>, <em class="sig-param">default_factory=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts/link.html#AccountLink"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.link.AccountLink" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Links accounts via an owner so that they share a data record.</p>
+<p>Accounts are linked based on a <cite>link</cite> parameter (which should be
+interpretable as a <cite>LinkTuple</cite>, which has <cite>owner</cite> and <cite>token</cite>
+attributes.) Accounts do not necessarily need to have access to the
+same <cite>AccountLink</cite> object to be linked - <cite>AccountLink</cite> merely
+provides an interface by which Accounts can get access to the
+centrally-managed data record.</p>
+<p>NOTE: This class is intended to provide immutable attributes, such
+as <cite>owner</cite> and <cite>token</cite>. Immutability is not programmatically
+enforced. Try not to get yourself in trouble.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>link</strong> (<a class="reference internal" href="#forecaster.accounts.link.LinkTuple" title="forecaster.accounts.link.LinkTuple"><em>LinkTuple</em></a>) – <p>A <cite>(owner, token)</cite> tuple (or anything
+convertible to LinkTuple) that uniquely identifies a group
+of linked accounts.</p>
+<p>Most commonly of type <cite>tuple[Person, str]</cite>. The first
+element (owner) must have a <cite>data</cite> attribute. The second
+element (token) must be hashable.</p>
+</p></li>
+<li><p><strong>default_factory</strong> (<em>Callable</em>) – <p>A callable object (e.g. a lambda
+expression) which takes no arguments and returns an object
+of any type. Inspired by <cite>defaultdict</cite>’s <cite>default_factory</cite>
+argument. Optional.</p>
+<p>The returned object is used to initialize the shared data
+record when the link is first registered.
+Defaults to <cite>dict</cite>.</p>
+</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="forecaster.accounts.link.AccountLink.owner">
+<code class="sig-name descname">owner</code><a class="headerlink" href="#forecaster.accounts.link.AccountLink.owner" title="Permalink to this definition">¶</a></dt>
+<dd><p>An object that holds the data shared by
+the linked accounts.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person">Person</a>, Any</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.accounts.link.AccountLink.token">
+<code class="sig-name descname">token</code><a class="headerlink" href="#forecaster.accounts.link.AccountLink.token" title="Permalink to this definition">¶</a></dt>
+<dd><p>A value registered with <cite>owner</cite> which is
+shared by all accounts in this link group with this owner.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>str, Hashable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.accounts.link.AccountLink.default_factory">
+<code class="sig-name descname">default_factory</code><a class="headerlink" href="#forecaster.accounts.link.AccountLink.default_factory" title="Permalink to this definition">¶</a></dt>
+<dd><p>A callable object (e.g. a lambda
+expression) which takes no arguments and returns an object
+of any type. Inspired by <cite>defaultdict</cite>’s <cite>default_factory</cite>
+argument. Optional.</p>
+<p>The returned object is used to initialize <cite>data</cite> when the
+link is first registered. Defaults to <cite>dict</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Callable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.accounts.link.AccountLink.data">
+<code class="sig-name descname">data</code><a class="headerlink" href="#forecaster.accounts.link.AccountLink.data" title="Permalink to this definition">¶</a></dt>
+<dd><p>The centrally-managed data record shared by all
+linked accounts. Can be of any type, which is determined by
+<cite>default_factory</cite>. Defaults to an empty <cite>dict</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Any</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.accounts.link.AccountLink.group">
+<code class="sig-name descname">group</code><a class="headerlink" href="#forecaster.accounts.link.AccountLink.group" title="Permalink to this definition">¶</a></dt>
+<dd><p>The group of all accounts linked by this
+owner/token pair.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>set</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.accounts.link.AccountLink.__eq__">
+<code class="sig-name descname">__eq__</code><span class="sig-paren">(</span><em class="sig-param">other</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts/link.html#AccountLink.__eq__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.link.AccountLink.__eq__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines equality operation on AccountLink.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.accounts.link.AccountLink.__hash__">
+<code class="sig-name descname">__hash__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts/link.html#AccountLink.__hash__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.link.AccountLink.__hash__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hash method for AccountLink.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.accounts.link.AccountLink.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">link</em>, <em class="sig-param">default_factory=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts/link.html#AccountLink.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.link.AccountLink.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes <cite>AccountLink</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">data</code></dt>
+<dd><p>A shared record for a given link.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<em class="property">property </em><code class="sig-name descname">group</code></dt>
+<dd><p>The group of accounts linked by this AccountLink.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.accounts.link.AccountLink.is_linked">
+<code class="sig-name descname">is_linked</code><span class="sig-paren">(</span><em class="sig-param">account</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts/link.html#AccountLink.is_linked"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.link.AccountLink.is_linked" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns whether an account has been linked.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.accounts.link.AccountLink.is_registered">
+<code class="sig-name descname">is_registered</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts/link.html#AccountLink.is_registered"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.link.AccountLink.is_registered" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns whether the link has been registered with owner.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.accounts.link.AccountLink.link_account">
+<code class="sig-name descname">link_account</code><span class="sig-paren">(</span><em class="sig-param">account</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts/link.html#AccountLink.link_account"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.link.AccountLink.link_account" title="Permalink to this definition">¶</a></dt>
+<dd><p>Links account to others linked by this <cite>AccountLink</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.accounts.link.AccountLink.register">
+<code class="sig-name descname">register</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts/link.html#AccountLink.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.link.AccountLink.register" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets up the shared data record for this <cite>AccountLink</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.accounts.link.AccountLink.unlink_account">
+<code class="sig-name descname">unlink_account</code><span class="sig-paren">(</span><em class="sig-param">account</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts/link.html#AccountLink.unlink_account"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.link.AccountLink.unlink_account" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unlinks account from others linked by this <cite>AccountLink</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.accounts.link.AccountLink.unregister">
+<code class="sig-name descname">unregister</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts/link.html#AccountLink.unregister"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.link.AccountLink.unregister" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deletes the shared data record for this <cite>AccountLink</cite>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="forecaster.accounts.link.LinkRecord">
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.accounts.link.</code><code class="sig-name descname">LinkRecord</code><span class="sig-paren">(</span><em class="sig-param">group: set = &lt;factory&gt;</em>, <em class="sig-param">data: Any = &lt;factory&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts/link.html#LinkRecord"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.link.LinkRecord" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Stores a transaction limit for a group of linked accounts.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="forecaster.accounts.link.LinkTuple">
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.accounts.link.</code><code class="sig-name descname">LinkTuple</code><span class="sig-paren">(</span><em class="sig-param">owner</em>, <em class="sig-param">token</em><span class="sig-paren">)</span><a class="headerlink" href="#forecaster.accounts.link.LinkTuple" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
+<dl class="method">
+<dt id="forecaster.accounts.link.LinkTuple.owner">
+<em class="property">property </em><code class="sig-name descname">owner</code><a class="headerlink" href="#forecaster.accounts.link.LinkTuple.owner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.accounts.link.LinkTuple.token">
+<em class="property">property </em><code class="sig-name descname">token</code><a class="headerlink" href="#forecaster.accounts.link.LinkTuple.token" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="forecaster.accounts.linked_limit.html" class="btn btn-neutral float-right" title="forecaster.accounts.linked_limit module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="forecaster.accounts.debt.html" class="btn btn-neutral float-left" title="forecaster.accounts.debt module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

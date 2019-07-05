@@ -1,0 +1,487 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.strategy.allocation module &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="forecaster.strategy.base module" href="forecaster.strategy.base.html" />
+    <link rel="prev" title="forecaster.strategy.transaction.util module" href="forecaster.strategy.transaction.util.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">forecaster</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="forecaster.html">forecaster package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="forecaster.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="forecaster.accounts.html">forecaster.accounts package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.canada.html">forecaster.canada package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.forecast.html">forecaster.forecast package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.ledger.html">forecaster.ledger package</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="forecaster.strategy.html">forecaster.strategy package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">forecaster</a> &raquo;</li>
+        
+          <li><a href="forecaster.html">forecaster package</a> &raquo;</li>
+        
+          <li><a href="forecaster.strategy.html">forecaster.strategy package</a> &raquo;</li>
+        
+      <li>forecaster.strategy.allocation module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/forecaster.strategy.allocation.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-forecaster.strategy.allocation">
+<span id="forecaster-strategy-allocation-module"></span><h1>forecaster.strategy.allocation module<a class="headerlink" href="#module-forecaster.strategy.allocation" title="Permalink to this headline">¶</a></h1>
+<p>Provides classes for determining asset allocation.</p>
+<dl class="class">
+<dt id="forecaster.strategy.allocation.AllocationStrategy">
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.strategy.allocation.</code><code class="sig-name descname">AllocationStrategy</code><span class="sig-paren">(</span><em class="sig-param">strategy</em>, <em class="sig-param">target</em>, <em class="sig-param">min_equity=0</em>, <em class="sig-param">max_equity=1</em>, <em class="sig-param">standard_retirement_age=65</em>, <em class="sig-param">risk_transition_period=20</em>, <em class="sig-param">adjust_for_retirement_plan=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/allocation.html#AllocationStrategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="forecaster.strategy.base.html#forecaster.strategy.base.Strategy" title="forecaster.strategy.base.Strategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">forecaster.strategy.base.Strategy</span></code></a></p>
+<p>Generates an asset allocation for a point in time. Callable.</p>
+<dl class="attribute">
+<dt id="forecaster.strategy.allocation.AllocationStrategy.strategy">
+<code class="sig-name descname">strategy</code><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.strategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Either a string corresponding to a
+particular strategy or an instance of the strategy itself.
+See <cite>strategies</cite> for acceptable keys.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>str, func</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.allocation.AllocationStrategy.strategies">
+<code class="sig-name descname">strategies</code><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.strategies" title="Permalink to this definition">¶</a></dt>
+<dd><p>{str, func} pairs where each key identifies
+a strategy (in human-readable text) and each value is a
+function with the same arguments and return value as
+transactions(). See its documentation for more info.</p>
+<p>Acceptable keys include:</p>
+<ul class="simple">
+<li><p>“n-age”</p></li>
+<li><p>“Transition to constant”</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.allocation.AllocationStrategy.min_equity">
+<code class="sig-name descname">min_equity</code><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.min_equity" title="Permalink to this definition">¶</a></dt>
+<dd><p>The minimum percentage of a portfolio that
+may be invested in equities. (All non-equity investments
+are included in <cite>fixed_income</cite>)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Decimal</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.allocation.AllocationStrategy.max_equity">
+<code class="sig-name descname">max_equity</code><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.max_equity" title="Permalink to this definition">¶</a></dt>
+<dd><p>The maximum percentage of a portfolio that
+may be invested in equities.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Decimal</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.allocation.AllocationStrategy.target">
+<code class="sig-name descname">target</code><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.target" title="Permalink to this definition">¶</a></dt>
+<dd><p>A target value used by strategies to affect
+their behaviour.</p>
+<p>For example, for the <cite>n-age</cite> strategy, this is the value <cite>n</cite>
+(e.g. <cite>target=100</cite> -&gt; <cite>100-age</cite>).</p>
+<p>For the <cite>Transition to constant</cite> strategy, this is the
+percentage of equities to transition to (e.g. for
+<cite>Transition to 50-50</cite>, use <cite>Decimal(‘0.5’)</cite>)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Decimal</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.allocation.AllocationStrategy.standard_retirement_age">
+<code class="sig-name descname">standard_retirement_age</code><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.standard_retirement_age" title="Permalink to this definition">¶</a></dt>
+<dd><p>The typical retirement age used
+in retirement planning.</p>
+<p>This is used if <cite>adjust_for_retirement_plan</cite> is False,
+otherwise the actual (or estimated) retirement age for the
+person is used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.allocation.AllocationStrategy.risk_transition_period">
+<code class="sig-name descname">risk_transition_period</code><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.risk_transition_period" title="Permalink to this definition">¶</a></dt>
+<dd><p>The period of time over which the
+<cite>Transition to constant</cite> strategy transitions.</p>
+<p>For example, if set to 20, the strategy will transition
+from <cite>max_equity</cite> to <cite>transition_strategy_target</cite> over 20
+years, ending on the retirement date.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.allocation.AllocationStrategy.adjust_for_retirement_plan">
+<code class="sig-name descname">adjust_for_retirement_plan</code><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.adjust_for_retirement_plan" title="Permalink to this definition">¶</a></dt>
+<dd><p>If True, the allocation will
+be adjusted to increase risk for later retirement or
+decrease risk for later retirement. If False, the standard
+retirement age will be used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>age</strong> (<em>int</em>) – The current age of the plannee.</p></li>
+<li><p><strong>retirement_age</strong> (<em>int</em>) – The (estimated) retirement age of the
+plannee.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p>A <cite>namedtuple</cite> where each member is the
+percentage of a portfolio that is made up of the named asset
+class.</p>
+<p>Allocations of the members sum to 1 (e.g. <cite>Decimal(0.03</cite> means
+3%).</p>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#forecaster.strategy.allocation.AssetAllocation" title="forecaster.strategy.allocation.AssetAllocation">AssetAllocation</a></p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>ValueError</strong> – min_equity greater than max_equity.</p>
+</dd>
+</dl>
+<dl class="method">
+<dt id="forecaster.strategy.allocation.AllocationStrategy.__call__">
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param">age</em>, <em class="sig-param">*args</em>, <em class="sig-param">retirement_age=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/allocation.html#AllocationStrategy.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dict of {account, Money} pairs.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.allocation.AllocationStrategy.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">strategy</em>, <em class="sig-param">target</em>, <em class="sig-param">min_equity=0</em>, <em class="sig-param">max_equity=1</em>, <em class="sig-param">standard_retirement_age=65</em>, <em class="sig-param">risk_transition_period=20</em>, <em class="sig-param">adjust_for_retirement_plan=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/allocation.html#AllocationStrategy.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructor for AllocationStrategy.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.allocation.AllocationStrategy.rate_function">
+<code class="sig-name descname">rate_function</code><span class="sig-paren">(</span><em class="sig-param">person</em>, <em class="sig-param">scenario</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/allocation.html#AllocationStrategy.rate_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.rate_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>A rate function usable by Person or Account objects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>person</strong> (<a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a>) – A person. The method builds a portfolio for
+the person based on this object’s allocation strategy
+(in particular, based on the person’s age and/or
+projected retirement date).</p></li>
+<li><p><strong>scenario</strong> (<a class="reference internal" href="forecaster.scenario.html#forecaster.scenario.Scenario" title="forecaster.scenario.Scenario"><em>Scenario</em></a>) – A <cite>Scenario</cite> providing information on
+returns on investment for stocks, bonds, etc.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An object callable with the form
+<cite>rate_function(year) -&gt; Decimal</cite> that provides a rate of
+return for a given year based on the person’s age and the
+investment returns for various asset classes provided by
+<cite>scenario</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="sig-name descname">strategies</code><em class="property"> = {'Transition to constant': &lt;function AllocationStrategy.strategy_transition_to_const&gt;, 'n-age': &lt;function AllocationStrategy.strategy_n_minus_age&gt;}</em></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.allocation.AllocationStrategy.strategy_n_minus_age">
+<code class="sig-name descname">strategy_n_minus_age</code><span class="sig-paren">(</span><em class="sig-param">age</em>, <em class="sig-param">*args</em>, <em class="sig-param">retirement_age=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/allocation.html#AllocationStrategy.strategy_n_minus_age"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.strategy_n_minus_age" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used for 100-age, 110-age, 125-age, etc. strategies.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.allocation.AllocationStrategy.strategy_transition_to_const">
+<code class="sig-name descname">strategy_transition_to_const</code><span class="sig-paren">(</span><em class="sig-param">age</em>, <em class="sig-param">*args</em>, <em class="sig-param">retirement_age=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/allocation.html#AllocationStrategy.strategy_transition_to_const"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.allocation.AllocationStrategy.strategy_transition_to_const" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used for <cite>Transition to 50-50</cite>, <cite>Transition to 70-30</cite>, etc.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="forecaster.strategy.allocation.AssetAllocation">
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.strategy.allocation.</code><code class="sig-name descname">AssetAllocation</code><span class="sig-paren">(</span><em class="sig-param">stocks</em>, <em class="sig-param">bonds</em>, <em class="sig-param">other</em><span class="sig-paren">)</span><a class="headerlink" href="#forecaster.strategy.allocation.AssetAllocation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
+<dl class="method">
+<dt id="forecaster.strategy.allocation.AssetAllocation.bonds">
+<em class="property">property </em><code class="sig-name descname">bonds</code><a class="headerlink" href="#forecaster.strategy.allocation.AssetAllocation.bonds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.allocation.AssetAllocation.other">
+<em class="property">property </em><code class="sig-name descname">other</code><a class="headerlink" href="#forecaster.strategy.allocation.AssetAllocation.other" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.allocation.AssetAllocation.stocks">
+<em class="property">property </em><code class="sig-name descname">stocks</code><a class="headerlink" href="#forecaster.strategy.allocation.AssetAllocation.stocks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="forecaster.strategy.allocation.RateFunction">
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.strategy.allocation.</code><code class="sig-name descname">RateFunction</code><span class="sig-paren">(</span><em class="sig-param">scenario</em>, <em class="sig-param">person</em>, <em class="sig-param">allocation_strategy</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/allocation.html#RateFunction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.allocation.RateFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A callable object with accessible state attributes.</p>
+<dl class="method">
+<dt id="forecaster.strategy.allocation.RateFunction.__call__">
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param">year</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/allocation.html#RateFunction.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.allocation.RateFunction.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rate of return for <cite>year</cite> based on asset allocation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>year</strong> (<em>int</em>) – The year for which the rate of return will be
+determined.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The rate of return. For example, <cite>Decimal(‘0.05’)</cite>
+means a 5% return.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Decimal</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.allocation.RateFunction.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">scenario</em>, <em class="sig-param">person</em>, <em class="sig-param">allocation_strategy</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/allocation.html#RateFunction.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.allocation.RateFunction.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inits the RateFunction object.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="forecaster.strategy.base.html" class="btn btn-neutral float-right" title="forecaster.strategy.base module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="forecaster.strategy.transaction.util.html" class="btn btn-neutral float-left" title="forecaster.strategy.transaction.util module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

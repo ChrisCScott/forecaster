@@ -153,7 +153,7 @@
 <span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="n">recorded_property_cached</span>
 <span class="kn">from</span> <span class="nn">forecaster.forecast.subforecast</span> <span class="k">import</span> <span class="n">SubForecast</span>
 
-<div class="viewcode-block" id="SavingForecast"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.saving.SavingForecast">[docs]</a><span class="k">class</span> <span class="nc">SavingForecast</span><span class="p">(</span><span class="n">SubForecast</span><span class="p">):</span>
+<div class="viewcode-block" id="SavingForecast"><a class="viewcode-back" href="../../../forecaster.forecast.saving.html#forecaster.forecast.saving.SavingForecast">[docs]</a><span class="k">class</span> <span class="nc">SavingForecast</span><span class="p">(</span><span class="n">SubForecast</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; A forecast of each year&#39;s contributions to various accounts.</span>
 
 <span class="sd">    Args:</span>
@@ -177,7 +177,7 @@
 <span class="sd">        total (Money): The amount contributed to all accounts.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="SavingForecast.__init__"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.saving.SavingForecast.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="SavingForecast.__init__"><a class="viewcode-back" href="../../../forecaster.forecast.saving.html#forecaster.forecast.saving.SavingForecast.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">,</span> <span class="n">retirement_accounts</span><span class="p">,</span> <span class="n">debt_accounts</span><span class="p">,</span>
             <span class="n">transaction_strategy</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Initializes an instance of SavingForecast. &quot;&quot;&quot;</span>
@@ -193,7 +193,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">account_transactions</span> <span class="o">=</span> <span class="p">{}</span></div>
 
-<div class="viewcode-block" id="SavingForecast.__call__"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.saving.SavingForecast.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">available</span><span class="p">):</span>
+<div class="viewcode-block" id="SavingForecast.__call__"><a class="viewcode-back" href="../../../forecaster.forecast.saving.html#forecaster.forecast.saving.SavingForecast.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">available</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Records transactions against accounts; mutates `available`. &quot;&quot;&quot;</span>
         <span class="c1"># The superclass has some book-keeping to do before we get</span>
         <span class="c1"># started on doing the updates:</span>

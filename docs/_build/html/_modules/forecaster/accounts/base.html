@@ -161,7 +161,7 @@
 <span class="kn">from</span> <span class="nn">forecaster.accounts.util</span> <span class="k">import</span> <span class="p">(</span>
     <span class="n">accumulation_function</span><span class="p">,</span> <span class="n">value_at_time</span><span class="p">,</span> <span class="n">time_to_value</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Account"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account">[docs]</a><span class="k">class</span> <span class="nc">Account</span><span class="p">(</span><span class="n">TaxSource</span><span class="p">):</span>
+<div class="viewcode-block" id="Account"><a class="viewcode-back" href="../../../forecaster.accounts.base.html#forecaster.accounts.base.Account">[docs]</a><span class="k">class</span> <span class="nc">Account</span><span class="p">(</span><span class="n">TaxSource</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; An account storing a `Money` balance.</span>
 
 <span class="sd">    Has a `balance` indicating the balance of the account at the start</span>
@@ -248,7 +248,7 @@
     <span class="c1"># they get counted twice.</span>
     <span class="c1"># pylint: disable=too-many-instance-attributes</span>
 
-<div class="viewcode-block" id="Account.__init__"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="Account.__init__"><a class="viewcode-back" href="../../../forecaster.accounts.base.html#forecaster.accounts.base.Account.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">balance</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">default_timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -449,7 +449,7 @@
 
         <span class="k">return</span> <span class="n">returns</span>
 
-<div class="viewcode-block" id="Account.add_transaction"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.add_transaction">[docs]</a>    <span class="k">def</span> <span class="nf">add_transaction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="Account.add_transaction"><a class="viewcode-back" href="../../../forecaster.accounts.base.html#forecaster.accounts.base.Account.add_transaction">[docs]</a>    <span class="k">def</span> <span class="nf">add_transaction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Adds a transaction to the account.</span>
 
 <span class="sd">        Args:</span>
@@ -474,7 +474,7 @@
         <span class="c1"># Simultaneous transactions are modelled as one sum,</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">transactions</span><span class="p">[</span><span class="n">when</span><span class="p">]</span> <span class="o">+=</span> <span class="n">value</span></div>
 
-<div class="viewcode-block" id="Account.inflows"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.inflows">[docs]</a>    <span class="k">def</span> <span class="nf">inflows</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Account.inflows"><a class="viewcode-back" href="../../../forecaster.accounts.base.html#forecaster.accounts.base.Account.inflows">[docs]</a>    <span class="k">def</span> <span class="nf">inflows</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The sum of all inflows to the account. &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">transactions</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">result</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">val</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">transactions</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">val</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
@@ -483,7 +483,7 @@
         <span class="n">result</span> <span class="o">+=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">val</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">transactions</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">val</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">result</span></div>
 
-<div class="viewcode-block" id="Account.outflows"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.outflows">[docs]</a>    <span class="k">def</span> <span class="nf">outflows</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Account.outflows"><a class="viewcode-back" href="../../../forecaster.accounts.base.html#forecaster.accounts.base.Account.outflows">[docs]</a>    <span class="k">def</span> <span class="nf">outflows</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The sum of all outflows from the account. &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">transactions</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">result</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">val</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">transactions</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">val</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
@@ -492,7 +492,7 @@
         <span class="n">result</span> <span class="o">+=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">val</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">transactions</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">val</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">result</span></div>
 
-<div class="viewcode-block" id="Account.next_year"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.next_year">[docs]</a>    <span class="k">def</span> <span class="nf">next_year</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Account.next_year"><a class="viewcode-back" href="../../../forecaster.accounts.base.html#forecaster.accounts.base.Account.next_year">[docs]</a>    <span class="k">def</span> <span class="nf">next_year</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Adds another year to the account.</span>
 
 <span class="sd">        This method will call the next_year method for the owner if they</span>
@@ -561,19 +561,19 @@
         <span class="c1"># For an ordinary Account, there is no minimum contribution.</span>
         <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="s1">&#39;0&#39;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Account.max_inflow"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.max_inflow">[docs]</a>    <span class="k">def</span> <span class="nf">max_inflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s2">&quot;end&quot;</span><span class="p">):</span>
+<div class="viewcode-block" id="Account.max_inflow"><a class="viewcode-back" href="../../../forecaster.accounts.base.html#forecaster.accounts.base.Account.max_inflow">[docs]</a>    <span class="k">def</span> <span class="nf">max_inflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s2">&quot;end&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The maximum amount that can be contributed at `when`. &quot;&quot;&quot;</span>
         <span class="c1"># The `when` arg is provided for subclasses to use.</span>
         <span class="c1"># pylint: disable=unused-argument</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_inflow_limit</span></div>
 
-<div class="viewcode-block" id="Account.min_inflow"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.min_inflow">[docs]</a>    <span class="k">def</span> <span class="nf">min_inflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s2">&quot;end&quot;</span><span class="p">):</span>
+<div class="viewcode-block" id="Account.min_inflow"><a class="viewcode-back" href="../../../forecaster.accounts.base.html#forecaster.accounts.base.Account.min_inflow">[docs]</a>    <span class="k">def</span> <span class="nf">min_inflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s2">&quot;end&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The minimum amount that can be contributed at `when`. &quot;&quot;&quot;</span>
         <span class="c1"># The `when` arg is provided for subclasses to use.</span>
         <span class="c1"># pylint: disable=unused-argument</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_inflow_limit</span></div>
 
-<div class="viewcode-block" id="Account.max_outflow"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.max_outflow">[docs]</a>    <span class="k">def</span> <span class="nf">max_outflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s2">&quot;end&quot;</span><span class="p">):</span>
+<div class="viewcode-block" id="Account.max_outflow"><a class="viewcode-back" href="../../../forecaster.accounts.base.html#forecaster.accounts.base.Account.max_outflow">[docs]</a>    <span class="k">def</span> <span class="nf">max_outflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s2">&quot;end&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The maximum amount that can be withdrawn at `when`. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">max</span><span class="p">(</span>
             <span class="c1"># Withdraw everything (or none if the balance is negative)</span>
@@ -581,13 +581,13 @@
             <span class="c1"># But no more than the maximum outflow:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">max_outflow_limit</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Account.min_outflow"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.min_outflow">[docs]</a>    <span class="k">def</span> <span class="nf">min_outflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s2">&quot;end&quot;</span><span class="p">):</span>
+<div class="viewcode-block" id="Account.min_outflow"><a class="viewcode-back" href="../../../forecaster.accounts.base.html#forecaster.accounts.base.Account.min_outflow">[docs]</a>    <span class="k">def</span> <span class="nf">min_outflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s2">&quot;end&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The minimum amount that can be withdrawn at `when`. &quot;&quot;&quot;</span>
         <span class="c1"># The `when` arg is provided for subclasses to use.</span>
         <span class="c1"># pylint: disable=unused-argument</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_outflow_limit</span></div>
 
-<div class="viewcode-block" id="Account.transactions_to_balance"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.transactions_to_balance">[docs]</a>    <span class="k">def</span> <span class="nf">transactions_to_balance</span><span class="p">(</span>
+<div class="viewcode-block" id="Account.transactions_to_balance"><a class="viewcode-back" href="../../../forecaster.accounts.base.html#forecaster.accounts.base.Account.transactions_to_balance">[docs]</a>    <span class="k">def</span> <span class="nf">transactions_to_balance</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="n">balance</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">max_total</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">min_total</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -711,7 +711,7 @@
             <span class="k">for</span> <span class="n">timing</span><span class="p">,</span> <span class="n">weight</span> <span class="ow">in</span> <span class="n">normalized_timing</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
         <span class="k">return</span> <span class="n">result_transactions</span></div>
 
-<div class="viewcode-block" id="Account.max_outflows"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.max_outflows">[docs]</a>    <span class="k">def</span> <span class="nf">max_outflows</span><span class="p">(</span>
+<div class="viewcode-block" id="Account.max_outflows"><a class="viewcode-back" href="../../../forecaster.accounts.base.html#forecaster.accounts.base.Account.max_outflows">[docs]</a>    <span class="k">def</span> <span class="nf">max_outflows</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transaction_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">balance_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The maximum amounts that can be withdrawn at `timings`.</span>
@@ -771,7 +771,7 @@
             <span class="n">min_total</span><span class="o">=</span><span class="n">min_total</span><span class="p">,</span>
             <span class="n">transactions</span><span class="o">=</span><span class="n">transactions</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Account.max_inflows"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.max_inflows">[docs]</a>    <span class="k">def</span> <span class="nf">max_inflows</span><span class="p">(</span>
+<div class="viewcode-block" id="Account.max_inflows"><a class="viewcode-back" href="../../../forecaster.accounts.base.html#forecaster.accounts.base.Account.max_inflows">[docs]</a>    <span class="k">def</span> <span class="nf">max_inflows</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transaction_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">balance_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The maximum amounts that can be contributed at `timing`.</span>
@@ -825,7 +825,7 @@
             <span class="n">min_total</span><span class="o">=</span><span class="n">min_total</span><span class="p">,</span>
             <span class="n">transactions</span><span class="o">=</span><span class="n">transactions</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Account.min_outflows"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.min_outflows">[docs]</a>    <span class="k">def</span> <span class="nf">min_outflows</span><span class="p">(</span>
+<div class="viewcode-block" id="Account.min_outflows"><a class="viewcode-back" href="../../../forecaster.accounts.base.html#forecaster.accounts.base.Account.min_outflows">[docs]</a>    <span class="k">def</span> <span class="nf">min_outflows</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transaction_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">balance_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The minimum outflows that should be withdrawn at `timings`.</span>
@@ -880,7 +880,7 @@
             <span class="n">min_total</span><span class="o">=</span><span class="n">min_total</span><span class="p">,</span>
             <span class="n">transactions</span><span class="o">=</span><span class="n">transactions</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Account.min_inflows"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.min_inflows">[docs]</a>    <span class="k">def</span> <span class="nf">min_inflows</span><span class="p">(</span>
+<div class="viewcode-block" id="Account.min_inflows"><a class="viewcode-back" href="../../../forecaster.accounts.base.html#forecaster.accounts.base.Account.min_inflows">[docs]</a>    <span class="k">def</span> <span class="nf">min_inflows</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transaction_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">balance_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The minimum amounts that should be contributed at `timing`.</span>
@@ -965,30 +965,30 @@
     <span class="k">def</span> <span class="nf">__delitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transactions</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
 
-<div class="viewcode-block" id="Account.keys"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.keys">[docs]</a>    <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Account.keys"><a class="viewcode-back" href="../../../forecaster.accounts.base.html#forecaster.accounts.base.Account.keys">[docs]</a>    <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The timings of the account&#39;s transactions. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transactions</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="Account.values"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.values">[docs]</a>    <span class="k">def</span> <span class="nf">values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Account.values"><a class="viewcode-back" href="../../../forecaster.accounts.base.html#forecaster.accounts.base.Account.values">[docs]</a>    <span class="k">def</span> <span class="nf">values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The values of the account&#39;s transactions. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transactions</span><span class="o">.</span><span class="n">values</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="Account.items"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.items">[docs]</a>    <span class="k">def</span> <span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Account.items"><a class="viewcode-back" href="../../../forecaster.accounts.base.html#forecaster.accounts.base.Account.items">[docs]</a>    <span class="k">def</span> <span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The account&#39;s transactions, as {when: value} pairs. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transactions</span><span class="o">.</span><span class="n">items</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="Account.get"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Account.get"><a class="viewcode-back" href="../../../forecaster.accounts.base.html#forecaster.accounts.base.Account.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Gets the transaction value at a particular timing. &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_transactions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">default</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Account.clear"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.clear">[docs]</a>    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Account.clear"><a class="viewcode-back" href="../../../forecaster.accounts.base.html#forecaster.accounts.base.Account.clear">[docs]</a>    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Clears all of the account&#39;s transactions. &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_transactions</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span></div>
 
     <span class="c1"># Finally, add some methods for calculating growth (i.e. balance</span>
     <span class="c1"># at a future time and time to get to a future balance.)</span>
 
-<div class="viewcode-block" id="Account.balance_at_time"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.balance_at_time">[docs]</a>    <span class="k">def</span> <span class="nf">balance_at_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Account.balance_at_time"><a class="viewcode-back" href="../../../forecaster.accounts.base.html#forecaster.accounts.base.Account.balance_at_time">[docs]</a>    <span class="k">def</span> <span class="nf">balance_at_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Returns the balance at a point in time.</span>
 
 <span class="sd">        Args:</span>
@@ -1022,7 +1022,7 @@
 
         <span class="k">return</span> <span class="n">balance</span></div>
 
-<div class="viewcode-block" id="Account.time_to_balance"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.base.Account.time_to_balance">[docs]</a>    <span class="k">def</span> <span class="nf">time_to_balance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="n">Decimal</span><span class="p">(</span><span class="mi">0</span><span class="p">)):</span>
+<div class="viewcode-block" id="Account.time_to_balance"><a class="viewcode-back" href="../../../forecaster.accounts.base.html#forecaster.accounts.base.Account.time_to_balance">[docs]</a>    <span class="k">def</span> <span class="nf">time_to_balance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="n">Decimal</span><span class="p">(</span><span class="mi">0</span><span class="p">)):</span>
         <span class="sd">&quot;&quot;&quot; Returns the time required to grow to a given balance.</span>
 
 <span class="sd">        If `when` is provided, this method returns the earliest time</span>

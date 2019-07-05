@@ -166,7 +166,7 @@
 <span class="c1"># The `Forecaster` class makes frequent reference to the names of</span>
 <span class="c1"># parameters. Rather than hard-code these strings, it&#39;s better practice</span>
 <span class="c1"># to define them here as an enum.</span>
-<div class="viewcode-block" id="Parameter"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Parameter">[docs]</a><span class="k">class</span> <span class="nc">Parameter</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<div class="viewcode-block" id="Parameter"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Parameter">[docs]</a><span class="k">class</span> <span class="nc">Parameter</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Defines names of `Forecaster` parameters. &quot;&quot;&quot;</span>
     <span class="n">SCENARIO</span> <span class="o">=</span> <span class="s2">&quot;scenario&quot;</span>
     <span class="n">LIVING_EXPENSES_STRATEGY</span> <span class="o">=</span> <span class="s2">&quot;living_expenses_strategy&quot;</span>
@@ -242,7 +242,7 @@
     <span class="c1"># str(Parameter.TAX_TREATMENT): &quot;build_tax_treatment&quot;</span>
 <span class="p">}</span>
 
-<div class="viewcode-block" id="Forecaster"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster">[docs]</a><span class="k">class</span> <span class="nc">Forecaster</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="Forecaster"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster">[docs]</a><span class="k">class</span> <span class="nc">Forecaster</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; A convenience class for building Forecasts based on settings.</span>
 
 <span class="sd">    `Forecaster` takes in information for building a `Forecast`</span>
@@ -271,7 +271,7 @@
 <span class="sd">    and run another forecast, e.g. via Monte Carlo sampling.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="Forecaster.__init__"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="Forecaster.__init__"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
             <span class="n">settings</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">scenario</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -340,7 +340,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">reduce</span><span class="p">(</span><span class="nb">getattr</span><span class="p">,</span> <span class="n">name_list</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">attr</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Forecaster.run_forecast"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.run_forecast">[docs]</a>    <span class="k">def</span> <span class="nf">run_forecast</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="n">accounts</span><span class="p">,</span> <span class="n">debts</span><span class="p">):</span>
+<div class="viewcode-block" id="Forecaster.run_forecast"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.run_forecast">[docs]</a>    <span class="k">def</span> <span class="nf">run_forecast</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="n">accounts</span><span class="p">,</span> <span class="n">debts</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Generates a `Forecast` object.</span>
 
 <span class="sd">        This method builds a `Forecast` based on any explicitly-provided</span>
@@ -420,7 +420,7 @@
         <span class="c1"># Forecasts run automatically on init, so we&#39;re done!</span>
         <span class="k">return</span> <span class="n">forecast</span></div>
 
-<div class="viewcode-block" id="Forecaster.build_param"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.build_param">[docs]</a>    <span class="k">def</span> <span class="nf">build_param</span><span class="p">(</span>
+<div class="viewcode-block" id="Forecaster.build_param"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.build_param">[docs]</a>    <span class="k">def</span> <span class="nf">build_param</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
             <span class="n">param_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">memo</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">_special_builder</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Builds a parameter based on settings and explicit args.</span>
@@ -494,7 +494,7 @@
         <span class="n">memo</span><span class="p">[</span><span class="n">param_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">param</span>
         <span class="k">return</span> <span class="n">param</span></div>
 
-<div class="viewcode-block" id="Forecaster.get_param"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.get_param">[docs]</a>    <span class="k">def</span> <span class="nf">get_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">memo</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Forecaster.get_param"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.get_param">[docs]</a>    <span class="k">def</span> <span class="nf">get_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">memo</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Gets a parameter, builds one if none is explicitly provided.</span>
 
 <span class="sd">        If a parameter has been explicitly assigned to this `Forecaster`</span>
@@ -530,7 +530,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_param</span><span class="p">(</span><span class="n">param_name</span><span class="p">,</span> <span class="n">memo</span><span class="o">=</span><span class="n">memo</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Forecaster.set_param"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.set_param">[docs]</a>    <span class="k">def</span> <span class="nf">set_param</span><span class="p">(</span>
+<div class="viewcode-block" id="Forecaster.set_param"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.set_param">[docs]</a>    <span class="k">def</span> <span class="nf">set_param</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
             <span class="n">param_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">memo</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Builds a parameter and sets the corresponding attribute.</span>
@@ -570,7 +570,7 @@
             <span class="n">param_name</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">param_type</span><span class="o">=</span><span class="n">param_type</span><span class="p">,</span> <span class="n">memo</span><span class="o">=</span><span class="n">memo</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">param</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Forecaster.build_allocation_strategy"><a class="viewcode-back" href="../../forecaster.html#forecaster.forecaster.Forecaster.build_allocation_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">build_allocation_strategy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Forecaster.build_allocation_strategy"><a class="viewcode-back" href="../../forecaster.forecaster.html#forecaster.forecaster.Forecaster.build_allocation_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">build_allocation_strategy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Convenience method to build an allocation strategy.</span>
 
 <span class="sd">        Any arguments are passed on to AllocationStrategy.__init__. Any</span>

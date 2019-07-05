@@ -4,62 +4,15 @@ forecaster.forecast package
 Submodules
 ----------
 
-forecaster.forecast.base module
--------------------------------
+.. toctree::
 
-.. automodule:: forecaster.forecast.base
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-forecaster.forecast.income module
----------------------------------
-
-.. automodule:: forecaster.forecast.income
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-forecaster.forecast.living\_expenses module
--------------------------------------------
-
-.. automodule:: forecaster.forecast.living_expenses
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-forecaster.forecast.saving module
----------------------------------
-
-.. automodule:: forecaster.forecast.saving
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-forecaster.forecast.subforecast module
---------------------------------------
-
-.. automodule:: forecaster.forecast.subforecast
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-forecaster.forecast.tax module
-------------------------------
-
-.. automodule:: forecaster.forecast.tax
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-forecaster.forecast.withdrawal module
--------------------------------------
-
-.. automodule:: forecaster.forecast.withdrawal
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
+   forecaster.forecast.base
+   forecaster.forecast.income
+   forecaster.forecast.living_expenses
+   forecaster.forecast.saving
+   forecaster.forecast.subforecast
+   forecaster.forecast.tax
+   forecaster.forecast.withdrawal
 
 Module contents
 ---------------

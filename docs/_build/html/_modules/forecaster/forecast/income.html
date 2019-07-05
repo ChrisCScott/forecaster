@@ -153,7 +153,7 @@
 <span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="n">Money</span><span class="p">,</span> <span class="n">recorded_property</span>
 <span class="kn">from</span> <span class="nn">forecaster.forecast.subforecast</span> <span class="k">import</span> <span class="n">SubForecast</span>
 
-<div class="viewcode-block" id="IncomeForecast"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.income.IncomeForecast">[docs]</a><span class="k">class</span> <span class="nc">IncomeForecast</span><span class="p">(</span><span class="n">SubForecast</span><span class="p">):</span>
+<div class="viewcode-block" id="IncomeForecast"><a class="viewcode-back" href="../../../forecaster.forecast.income.html#forecaster.forecast.income.IncomeForecast">[docs]</a><span class="k">class</span> <span class="nc">IncomeForecast</span><span class="p">(</span><span class="n">SubForecast</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; A forecast of income over the years.</span>
 
 <span class="sd">    Args:</span>
@@ -180,7 +180,7 @@
 <span class="sd">            year, net of taxes.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="IncomeForecast.__init__"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="IncomeForecast.__init__"><a class="viewcode-back" href="../../../forecaster.forecast.income.html#forecaster.forecast.income.IncomeForecast.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="n">asset_sale_timing</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Initializes an instance of IncomeForecast. &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">initial_year</span><span class="p">,</span> <span class="n">default_timing</span><span class="o">=</span><span class="n">asset_sale_timing</span><span class="p">)</span>
@@ -188,7 +188,7 @@
         <span class="c1"># Store input values</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">people</span> <span class="o">=</span> <span class="n">people</span></div>
 
-<div class="viewcode-block" id="IncomeForecast.__call__"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.income.IncomeForecast.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">available</span><span class="p">):</span>
+<div class="viewcode-block" id="IncomeForecast.__call__"><a class="viewcode-back" href="../../../forecaster.forecast.income.html#forecaster.forecast.income.IncomeForecast.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">available</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Records transactions against accounts; mutates `available`. &quot;&quot;&quot;</span>
         <span class="c1"># The superclass has some book-keeping to do before we get</span>
         <span class="c1"># started on doing the updates:</span>

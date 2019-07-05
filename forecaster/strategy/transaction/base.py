@@ -80,26 +80,23 @@ class TransactionTraversal:
     and `group_methods` that support all of the leaf nodes' types.
 
     Examples:
-        Collections can be nested (note also that `account2` repeats):
-        ```
-        subgroup = {account1: 0.5, account2: 0.5}
-        priority = [subgroup, account2]  # valid priority tree
-        strategy = TransactionStrategy(priority)
-        transactions = strategy(available)
+        Collections can be nested (note also that `account2` repeats)::
 
-        ```
+            subgroup = {account1: 0.5, account2: 0.5}
+            priority = [subgroup, account2]  # valid priority tree
+            strategy = TransactionStrategy(priority)
+            transactions = strategy(available)
 
         We can limit the total amount to contribute to `subgroup`
         (i.e. the equal-weighted group of account1 and account2)
-        by using a single-element dict, as follows:
-        ```
-        limit = LimitTuple(max_inflows=Money(100))
-        subgroup = TransactionNode(subgroup, limit=limit)
-        priority = [subgroup, account2]
-        strategy = TransactionStrategy(priority)
-        transactions = strategy(available)
+        by using a single-element dict, as follows::
 
-        ```
+            limit = LimitTuple(max_inflows=Money(100))
+            subgroup = TransactionNode(subgroup, limit=limit)
+            priority = [subgroup, account2]
+            strategy = TransactionStrategy(priority)
+            transactions = strategy(available)
+
         The result, assuming available represents net inflows, is that
         up to $100 will be contributed equally to `account1` and
         `account2`, with any excess going to `account2`

@@ -1,0 +1,499 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.strategy.gross_transaction module &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="forecaster.forecaster module" href="forecaster.forecaster.html" />
+    <link rel="prev" title="forecaster.strategy.base module" href="forecaster.strategy.base.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">forecaster</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="forecaster.html">forecaster package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="forecaster.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="forecaster.accounts.html">forecaster.accounts package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.canada.html">forecaster.canada package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.forecast.html">forecaster.forecast package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.ledger.html">forecaster.ledger package</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="forecaster.strategy.html">forecaster.strategy package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">forecaster</a> &raquo;</li>
+        
+          <li><a href="forecaster.html">forecaster package</a> &raquo;</li>
+        
+          <li><a href="forecaster.strategy.html">forecaster.strategy package</a> &raquo;</li>
+        
+      <li>forecaster.strategy.gross_transaction module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/forecaster.strategy.gross_transaction.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-forecaster.strategy.gross_transaction">
+<span id="forecaster-strategy-gross-transaction-module"></span><h1>forecaster.strategy.gross_transaction module<a class="headerlink" href="#module-forecaster.strategy.gross_transaction" title="Permalink to this headline">¶</a></h1>
+<p>Provides classes for determining the total sum of transactions.</p>
+<dl class="class">
+<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy">
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.strategy.gross_transaction.</code><code class="sig-name descname">LivingExpensesStrategy</code><span class="sig-paren">(</span><em class="sig-param">strategy</em>, <em class="sig-param">base_amount=0</em>, <em class="sig-param">rate=0</em>, <em class="sig-param">inflation_adjust=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="forecaster.strategy.base.html#forecaster.strategy.base.Strategy" title="forecaster.strategy.base.Strategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">forecaster.strategy.base.Strategy</span></code></a></p>
+<p>Determines annual living expenses.</p>
+<p>This class is callable. Its call signature has this form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">obj</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">refund</span><span class="p">,</span> <span class="n">other_contribution</span><span class="p">,</span> <span class="n">net_income</span><span class="p">,</span> <span class="n">gross_income</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Arguments may be omitted if the selected strategy does not require
+it; otherwise, an error is raised. All arguments are keyword
+arguments.</p>
+<dl class="attribute">
+<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy">
+<code class="sig-name descname">strategy</code><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>A string corresponding to a particular
+contribution strategy. See <cite>strategies</cite> for acceptable keys.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategies">
+<code class="sig-name descname">strategies</code><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategies" title="Permalink to this definition">¶</a></dt>
+<dd><p>{str, func} pairs where each key identifies
+a strategy (in human-readable text) and each value is a
+function with the same arguments and return value as
+gross_contribution(). See its documentation for more info.</p>
+<p>Acceptable keys include:</p>
+<ul class="simple">
+<li><p>“Constant contribution”</p></li>
+<li><p>“Constant living expenses”</p></li>
+<li><p>“Percentage of gross income”</p></li>
+<li><p>“Percentage of net income”</p></li>
+<li><p>“Percentage of principal at retirement”</p></li>
+<li><p>“Percentage of gross income at retirement”</p></li>
+<li><p>“Percentage of net income at retirement”</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.base_amount">
+<code class="sig-name descname">base_amount</code><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.base_amount" title="Permalink to this definition">¶</a></dt>
+<dd><p>A user-supplied amount of money, used in
+some strategies as a baseline for contributions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.rate">
+<code class="sig-name descname">rate</code><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.rate" title="Permalink to this definition">¶</a></dt>
+<dd><p>A user-supplied contribution rate. Must be a
+percentage (e.g. Decimal(‘0.03’) means 3%).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Decimal</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.refund_reinvestment_rate">
+<code class="sig-name descname">refund_reinvestment_rate</code><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.refund_reinvestment_rate" title="Permalink to this definition">¶</a></dt>
+<dd><p>The percentage of each tax
+refund that is reinvested in the year it’s received.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Decimal</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.inflation_adjust">
+<code class="sig-name descname">inflation_adjust</code><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.inflation_adjust" title="Permalink to this definition">¶</a></dt>
+<dd><p>If provided, <cite>base_amount</cite> is
+interpreted as a real (i.e. inflation-adjusted) currency
+value.</p>
+<p>This callable object will be called as
+<cite>inflation_adjust(year[, base_year])</cite> to receive the
+inflation-adjustment factor between real and nominal values
+for that year (relative to base_year, if provided).</p>
+<p>Optional. If not provided, <cite>base_amount</cite> is not
+inflation_adjusted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>callable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>people</strong> (<em>set</em><em>[</em><a class="reference internal" href="forecaster.person.html#forecaster.person.Person" title="forecaster.person.Person"><em>Person</em></a><em>]</em>) – The plannees (one or more people) with
+at least <cite>net_income</cite> and <cite>gross_income</cite> attributes.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A Money object corresponding to the living expenses incurred
+by the plannees for the year.</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – A required value was not provided for the given
+    strategy.</p>
+</dd>
+</dl>
+<dl class="method">
+<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.__call__">
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">people=None</em>, <em class="sig-param">year=None</em>, <em class="sig-param">retirement_year=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the living expenses for the year.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">strategy</em>, <em class="sig-param">base_amount=0</em>, <em class="sig-param">rate=0</em>, <em class="sig-param">inflation_adjust=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructor for LivingExpensesStrategy.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="sig-name descname">strategies</code><em class="property"> = {'Constant contribution': &lt;function LivingExpensesStrategy.strategy_const_contribution&gt;, 'Constant living expenses': &lt;function LivingExpensesStrategy.strategy_const_living_expenses&gt;, 'Percentage of earnings growth': &lt;function LivingExpensesStrategy.strategy_percent_over_base&gt;, 'Percentage of gross income': &lt;function LivingExpensesStrategy.strategy_gross_percent&gt;, 'Percentage of gross income at retirement': &lt;function LivingExpensesStrategy.strategy_gross_percent_ret&gt;, 'Percentage of net income': &lt;function LivingExpensesStrategy.strategy_net_percent&gt;, 'Percentage of net income at retirement': &lt;function LivingExpensesStrategy.strategy_net_percent_ret&gt;, 'Percentage of principal at retirement': &lt;function LivingExpensesStrategy.strategy_principal_percent_ret&gt;}</em></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_const_contribution">
+<code class="sig-name descname">strategy_const_contribution</code><span class="sig-paren">(</span><em class="sig-param">people</em>, <em class="sig-param">*args</em>, <em class="sig-param">year=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.strategy_const_contribution"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_const_contribution" title="Permalink to this definition">¶</a></dt>
+<dd><p>Contribute a constant (real) amount and live off the rest.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_const_living_expenses">
+<code class="sig-name descname">strategy_const_living_expenses</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">year=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.strategy_const_living_expenses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_const_living_expenses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Living expenses remain constant, in real terms.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_gross_percent">
+<code class="sig-name descname">strategy_gross_percent</code><span class="sig-paren">(</span><em class="sig-param">people</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.strategy_gross_percent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_gross_percent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Live off a percentage of gross income.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_gross_percent_ret">
+<code class="sig-name descname">strategy_gross_percent_ret</code><span class="sig-paren">(</span><em class="sig-param">people</em>, <em class="sig-param">retirement_year</em>, <em class="sig-param">*args</em>, <em class="sig-param">year=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.strategy_gross_percent_ret"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_gross_percent_ret" title="Permalink to this definition">¶</a></dt>
+<dd><p>Withdraw a percentage of gross income.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_net_percent">
+<code class="sig-name descname">strategy_net_percent</code><span class="sig-paren">(</span><em class="sig-param">people</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.strategy_net_percent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_net_percent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Live off a percentage of net income.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_net_percent_ret">
+<code class="sig-name descname">strategy_net_percent_ret</code><span class="sig-paren">(</span><em class="sig-param">people</em>, <em class="sig-param">retirement_year</em>, <em class="sig-param">*args</em>, <em class="sig-param">year=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.strategy_net_percent_ret"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_net_percent_ret" title="Permalink to this definition">¶</a></dt>
+<dd><p>Withdraw a percentage of max. net income (as of retirement).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_percent_over_base">
+<code class="sig-name descname">strategy_percent_over_base</code><span class="sig-paren">(</span><em class="sig-param">people</em>, <em class="sig-param">*args</em>, <em class="sig-param">year=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.strategy_percent_over_base"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_percent_over_base" title="Permalink to this definition">¶</a></dt>
+<dd><p>Live off a base amount plus a percentage of earnings above it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_principal_percent_ret">
+<code class="sig-name descname">strategy_principal_percent_ret</code><span class="sig-paren">(</span><em class="sig-param">accounts</em>, <em class="sig-param">retirement_year</em>, <em class="sig-param">*args</em>, <em class="sig-param">year=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategy.strategy_principal_percent_ret"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_principal_percent_ret" title="Permalink to this definition">¶</a></dt>
+<dd><p>Withdraw a percentage of principal (as of retirement).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule">
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.strategy.gross_transaction.</code><code class="sig-name descname">LivingExpensesStrategySchedule</code><span class="sig-paren">(</span><em class="sig-param">working</em>, <em class="sig-param">retirement</em>, <em class="sig-param">minimum=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategySchedule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Determines living expenses while working and retired.</p>
+<p>This class is callable, like <cite>LivingExpensesStrategy</cite>, and
+accepts all of the same arguments when called.</p>
+<p>Objects of this class wrap <cite>LivingExpensesStrategy</cite>
+objects - one for working life and one for retirement.
+The appropriate object is called depending on the current
+year.</p>
+<p>An additional <cite>LivingExpensesStrategy</cite> may also, optionally,
+be provided as a minimum level of expenses. This lets you
+avoid perverse situations where annual fluctuations in
+income or assets reduce living expenses unacceptably low.</p>
+<dl class="attribute">
+<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.working">
+<code class="sig-name descname">working</code><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.working" title="Permalink to this definition">¶</a></dt>
+<dd><p>The strategy to use
+during the plannees’ working life.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy" title="forecaster.strategy.gross_transaction.LivingExpensesStrategy">LivingExpensesStrategy</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.retirement">
+<code class="sig-name descname">retirement</code><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.retirement" title="Permalink to this definition">¶</a></dt>
+<dd><p>The strategy to
+use during the plannees’ retirement.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy" title="forecaster.strategy.gross_transaction.LivingExpensesStrategy">LivingExpensesStrategy</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.minimum">
+<code class="sig-name descname">minimum</code><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.minimum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provides a minimum
+living standard that must be met. Optional. May
+be a <cite>LivingExpensesStrategySchedule</cite> if you want
+to use different minima for working and retired
+phases of life.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategy" title="forecaster.strategy.gross_transaction.LivingExpensesStrategy">LivingExpensesStrategy</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>year</strong> (<em>int</em>) – The current year.</p></li>
+<li><p><strong>retirement_year</strong> (<em>int</em>) – The plannees’ retirement year.
+Optional; if not provided, it’s assumed that the
+plannees are still working.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A Money object corresponding to the living expenses incurred
+by the plannees for the year.</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – A required value was not provided for the given
+    strategy.</p>
+</dd>
+</dl>
+<dl class="method">
+<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.__call__">
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">year=None</em>, <em class="sig-param">retirement_year=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategySchedule.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the living expenses for the year.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">working</em>, <em class="sig-param">retirement</em>, <em class="sig-param">minimum=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/gross_transaction.html#LivingExpensesStrategySchedule.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inits LivingExpensesStrategySchedule.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="forecaster.forecaster.html" class="btn btn-neutral float-right" title="forecaster.forecaster module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="forecaster.strategy.base.html" class="btn btn-neutral float-left" title="forecaster.strategy.base module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

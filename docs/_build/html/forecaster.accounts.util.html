@@ -1,0 +1,359 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.accounts.util module &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="forecaster.canada package" href="forecaster.canada.html" />
+    <link rel="prev" title="forecaster.accounts.linked_limit module" href="forecaster.accounts.linked_limit.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">forecaster</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="forecaster.html">forecaster package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="forecaster.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="forecaster.accounts.html">forecaster.accounts package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.canada.html">forecaster.canada package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.forecast.html">forecaster.forecast package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.ledger.html">forecaster.ledger package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.strategy.html">forecaster.strategy package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">forecaster</a> &raquo;</li>
+        
+          <li><a href="forecaster.html">forecaster package</a> &raquo;</li>
+        
+          <li><a href="forecaster.accounts.html">forecaster.accounts package</a> &raquo;</li>
+        
+      <li>forecaster.accounts.util module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/forecaster.accounts.util.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-forecaster.accounts.util">
+<span id="forecaster-accounts-util-module"></span><h1>forecaster.accounts.util module<a class="headerlink" href="#module-forecaster.accounts.util" title="Permalink to this headline">¶</a></h1>
+<p>Helper classes and methods for Account.</p>
+<dl class="class">
+<dt id="forecaster.accounts.util.LimitTuple">
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.accounts.util.</code><code class="sig-name descname">LimitTuple</code><a class="headerlink" href="#forecaster.accounts.util.LimitTuple" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
+<p>A data container holding different values for min/max inflow/outfow</p>
+<dl class="method">
+<dt id="forecaster.accounts.util.LimitTuple.max_inflow">
+<em class="property">property </em><code class="sig-name descname">max_inflow</code><a class="headerlink" href="#forecaster.accounts.util.LimitTuple.max_inflow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.accounts.util.LimitTuple.max_outflow">
+<em class="property">property </em><code class="sig-name descname">max_outflow</code><a class="headerlink" href="#forecaster.accounts.util.LimitTuple.max_outflow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 3</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.accounts.util.LimitTuple.min_inflow">
+<em class="property">property </em><code class="sig-name descname">min_inflow</code><a class="headerlink" href="#forecaster.accounts.util.LimitTuple.min_inflow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.accounts.util.LimitTuple.min_outflow">
+<em class="property">property </em><code class="sig-name descname">min_outflow</code><a class="headerlink" href="#forecaster.accounts.util.LimitTuple.min_outflow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="forecaster.accounts.util.accumulation_function">
+<code class="sig-prename descclassname">forecaster.accounts.util.</code><code class="sig-name descname">accumulation_function</code><span class="sig-paren">(</span><em class="sig-param">t</em>, <em class="sig-param">rate</em>, <em class="sig-param">nper=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts/util.html#accumulation_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.util.accumulation_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>The accumulation function, A(t), from interest theory.</p>
+<p>A(t) provides the growth (or discount) factor over the period
+[0, t]. If <cite>t</cite> is negative, this method returns the inverse
+(i.e. <cite>A(t)^-1</cite>).</p>
+<p>This method’s output is not well-defined if <cite>t</cite> does not align
+with the start/end of a compounding period. (It will produce
+sensible output, but it might not correspond to how your bank
+calculates interest).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>t</strong> (<em>float</em><em>, </em><em>Decimal</em>) – Defines the period [0,t] over which the
+accumulation will be calculated.</p></li>
+<li><p><strong>rate</strong> (<em>float</em><em>, </em><em>Decimal</em>) – The rate of return (or interest).</p></li>
+<li><p><strong>nper</strong> (<em>int</em>) – The number of compounding periods per year.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The accumulation A(t), as a Decimal.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="forecaster.accounts.util.accumulation_function_inverse">
+<code class="sig-prename descclassname">forecaster.accounts.util.</code><code class="sig-name descname">accumulation_function_inverse</code><span class="sig-paren">(</span><em class="sig-param">accum</em>, <em class="sig-param">rate</em>, <em class="sig-param">nper=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts/util.html#accumulation_function_inverse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.util.accumulation_function_inverse" title="Permalink to this definition">¶</a></dt>
+<dd><p>The inverse of the accumulation function, A^-1(a).</p>
+<p>A^-1(a) provides the amount of time required to achieve a
+certain growth (or discount) factor. If <cite>accum</cite> is less than
+1, the result is negative. <cite>accum</cite> must be positive.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>accum</strong> (<em>float</em><em>, </em><em>Decimal</em>) – The accumulation factor.</p></li>
+<li><p><strong>rate</strong> (<em>float</em><em>, </em><em>Decimal</em>) – The rate of return (or interest).</p></li>
+<li><p><strong>nper</strong> (<em>int</em>) – The number of compounding periods per year.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>A value <cite>t</cite> defining the period [0,t]</dt><dd><p>or [t, 0] (if negative) over which the accumulation
+would be reached.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>(float, Decimal)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="forecaster.accounts.util.time_to_value">
+<code class="sig-prename descclassname">forecaster.accounts.util.</code><code class="sig-name descname">time_to_value</code><span class="sig-paren">(</span><em class="sig-param">rate</em>, <em class="sig-param">value_now</em>, <em class="sig-param">value_then</em>, <em class="sig-param">nper=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts/util.html#time_to_value"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.util.time_to_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>The time required to grow from one value to another.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rate</strong> (<em>Decimal</em>) – The rate of growth (e.g. inflation)</p></li>
+<li><p><strong>value_now</strong> (<a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – The (nominal) value we start with.</p></li>
+<li><p><strong>value_then</strong> (<a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – The (nominal) value we end with.</p></li>
+<li><p><strong>nper</strong> (<em>Decimal</em>) – The number of compounding periods for growth.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A Decimal object representing the time required to
+grow (or shrink) from <cite>value_now</cite> to <cite>value_then</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="forecaster.accounts.util.value_at_time">
+<code class="sig-prename descclassname">forecaster.accounts.util.</code><code class="sig-name descname">value_at_time</code><span class="sig-paren">(</span><em class="sig-param">value</em>, <em class="sig-param">rate</em>, <em class="sig-param">now='start'</em>, <em class="sig-param">time='end'</em>, <em class="sig-param">nper=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/accounts/util.html#value_at_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.accounts.util.value_at_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the present (or future) value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>value</strong> (<a class="reference internal" href="forecaster.ledger.money.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – The (nominal) value to be converted.</p></li>
+<li><p><strong>rate</strong> (<em>Decimal</em>) – The rate of growth (e.g. inflation)</p></li>
+<li><p><strong>now</strong> (<em>Decimal</em>) – The time associated with the nominal value,
+expressed using <cite>when_conv</cite> syntax.</p></li>
+<li><p><strong>time</strong> (<em>Decimal</em>) – The time to which the nominal value is to
+be converted, expressed using <cite>when_conv</cite> syntax.</p></li>
+<li><p><strong>nper</strong> (<em>Decimal</em>) – The number of compounding periods for growth.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A Money object representing the present value
+(if now &gt; time) or the future value (if now &lt; time) of
+<cite>value</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="forecaster.canada.html" class="btn btn-neutral float-right" title="forecaster.canada package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="forecaster.accounts.linked_limit.html" class="btn btn-neutral float-left" title="forecaster.accounts.linked_limit module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

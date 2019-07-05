@@ -158,7 +158,7 @@
 <span class="c1"># and insert it into a larger tree for handling all contributions</span>
 <span class="c1"># to accounts (i.e. without invoking DebtPaymentStrategy at all.)</span>
 
-<div class="viewcode-block" id="avalanche_priority"><a class="viewcode-back" href="../../../../forecaster.strategy.debt_payment.html#forecaster.strategy.debt_payment.util.avalanche_priority">[docs]</a><span class="k">def</span> <span class="nf">avalanche_priority</span><span class="p">(</span><span class="n">debts</span><span class="p">):</span>
+<div class="viewcode-block" id="avalanche_priority"><a class="viewcode-back" href="../../../../forecaster.strategy.debt_payment.util.html#forecaster.strategy.debt_payment.util.avalanche_priority">[docs]</a><span class="k">def</span> <span class="nf">avalanche_priority</span><span class="p">(</span><span class="n">debts</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; A priority tree of debts according to the avalanche strategy.</span>
 
 <span class="sd">    Under the avalanche strategy, accounts with the highest rates are</span>
@@ -173,7 +173,7 @@
     <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span>
         <span class="n">debts</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">account</span><span class="p">:</span> <span class="n">account</span><span class="o">.</span><span class="n">rate</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="snowball_priority"><a class="viewcode-back" href="../../../../forecaster.strategy.debt_payment.html#forecaster.strategy.debt_payment.util.snowball_priority">[docs]</a><span class="k">def</span> <span class="nf">snowball_priority</span><span class="p">(</span><span class="n">debts</span><span class="p">):</span>
+<div class="viewcode-block" id="snowball_priority"><a class="viewcode-back" href="../../../../forecaster.strategy.debt_payment.util.html#forecaster.strategy.debt_payment.util.snowball_priority">[docs]</a><span class="k">def</span> <span class="nf">snowball_priority</span><span class="p">(</span><span class="n">debts</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; A priority tree of debts according to the snowball strategy.</span>
 
 <span class="sd">    Under the avalanche strategy, accounts with the lowest balances are</span>
