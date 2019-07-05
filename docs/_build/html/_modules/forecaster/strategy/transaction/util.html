@@ -1,0 +1,429 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.strategy.transaction.util &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">forecaster</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+      <li>forecaster.strategy.transaction.util</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for forecaster.strategy.transaction.util</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; Defines helper functions for identifying an account&#39;s min/max. &quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">forecaster.accounts</span> <span class="k">import</span> <span class="n">LimitTuple</span>
+
+<span class="c1"># TODO: Move LimitTuple constants to forecaster.accounts module.</span>
+<span class="c1"># Consider going further and refactoring `Account` so that</span>
+<span class="c1"># `max_inflows`/etc and `max_inflow_link`/etc are held by LimitTuples</span>
+<span class="c1"># (e.g. so client code accesses `transaction_schedule.max_inflow`</span>
+<span class="c1"># or `link.max_inflow` instead). Is this pythonic?</span>
+
+<span class="c1"># Map LimitTuple fields to the names of AccountLink members of</span>
+<span class="c1"># LinkedLimitAccount objects:</span>
+<span class="n">LINK_FIELD_NAMES</span> <span class="o">=</span> <span class="n">LimitTuple</span><span class="p">(</span>
+    <span class="s1">&#39;min_inflow_link&#39;</span><span class="p">,</span> <span class="s1">&#39;max_inflow_link&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;min_outflow_link&#39;</span><span class="p">,</span> <span class="s1">&#39;max_outflow_link&#39;</span><span class="p">)</span>
+<span class="c1"># Map LimitTuple fields to the named of min/max inflow/outflow members</span>
+<span class="c1"># of Account objects:</span>
+<span class="n">TRANSACTION_LIMIT_FIELD_NAMES</span> <span class="o">=</span> <span class="n">LimitTuple</span><span class="p">(</span>
+    <span class="s1">&#39;min_inflows&#39;</span><span class="p">,</span> <span class="s1">&#39;max_inflows&#39;</span><span class="p">,</span> <span class="s1">&#39;min_outflows&#39;</span><span class="p">,</span> <span class="s1">&#39;max_outflows&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="transaction_default_methods"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.util.transaction_default_methods">[docs]</a><span class="k">def</span> <span class="nf">transaction_default_methods</span><span class="p">(</span><span class="n">field_names</span><span class="o">=</span><span class="n">TRANSACTION_LIMIT_FIELD_NAMES</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Returns methods for finding min/max in/outflows as a LimitTuple. &quot;&quot;&quot;</span>
+    <span class="n">methods</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1"># Rather than write out four separate methods that return</span>
+    <span class="c1"># min_inflows, max_inflows, ..., we write a generator for such</span>
+    <span class="c1"># methods and return a full set of them as a LimitTuple:</span>
+    <span class="k">for</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="n">field_names</span><span class="p">:</span>
+        <span class="c1"># We use `field_name` as a default value to avoid the issue</span>
+        <span class="c1"># where the closure will use the most recent value for</span>
+        <span class="c1"># `field_name` rather than the value at the time the closure</span>
+        <span class="c1"># was defined. (This could also be solved by using a partial).</span>
+        <span class="c1"># The default value is locked in at definition time.</span>
+        <span class="n">methods</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="k">lambda</span> <span class="n">account</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">field_name</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">account</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">LimitTuple</span><span class="p">(</span><span class="o">*</span><span class="n">methods</span><span class="p">)</span></div>
+
+<span class="n">TRANSACTION_DEFAULT_METHODS</span> <span class="o">=</span> <span class="n">transaction_default_methods</span><span class="p">()</span>
+
+<div class="viewcode-block" id="group_default_methods"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.util.group_default_methods">[docs]</a><span class="k">def</span> <span class="nf">group_default_methods</span><span class="p">(</span><span class="n">field_names</span><span class="o">=</span><span class="n">LINK_FIELD_NAMES</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Returns methods returning sets of linked accts. as a LimitTuple. &quot;&quot;&quot;</span>
+    <span class="n">methods</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1"># Rather than write out four separate methods that return</span>
+    <span class="c1"># min_inflow_link, max_inflow_link, ..., we write a generator for</span>
+    <span class="c1"># such methods and return a full set of them as a LimitTuple:</span>
+    <span class="k">for</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="n">field_names</span><span class="p">:</span>
+        <span class="c1"># Define a method that returns the group of linked accounts for</span>
+        <span class="c1"># a given link (e.g. `max_inflow_link`).</span>
+        <span class="c1"># NOTE: Use `field_name` as a default value to avoid the issue</span>
+        <span class="c1"># where the closure will use the most recent value for</span>
+        <span class="c1"># `field_name` rather than the value at the time the closure</span>
+        <span class="c1"># was defined. (This could also be solved by using a partial).</span>
+        <span class="c1"># The default value is locked in at definition time.</span>
+        <span class="k">def</span> <span class="nf">default_method</span><span class="p">(</span><span class="n">account</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">field_name</span><span class="p">):</span>
+            <span class="c1"># Return the group for the given link if the link exists:</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">account</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+                <span class="n">link</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">account</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">link</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">link</span><span class="o">.</span><span class="n">group</span>
+            <span class="c1"># If the account doesn&#39;t have a link (either because it&#39;s</span>
+            <span class="c1"># not a LinkedLimitAccount or similar, or because its link</span>
+            <span class="c1"># is None), then simply return None:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="c1"># default_method over. It will be added to the LimitTuple later.</span>
+        <span class="n">methods</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">default_method</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">LimitTuple</span><span class="p">(</span><span class="o">*</span><span class="n">methods</span><span class="p">)</span></div>
+
+<span class="n">GROUP_DEFAULT_METHODS</span> <span class="o">=</span> <span class="n">group_default_methods</span><span class="p">()</span>
+
+<span class="k">def</span> <span class="nf">_convert_flows_to_transactions</span><span class="p">(</span>
+        <span class="n">flows</span><span class="p">,</span> <span class="n">timing</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="n">accounts</span><span class="p">,</span> <span class="n">transaction_methods</span><span class="p">,</span>
+        <span class="n">total</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">precision</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">transaction_type</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Converts network flows to a mapping of accounts to transactions.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        flows (dict[Hashable, dict[Hashable, int]]): Flows across edges</span>
+<span class="sd">            between nodes, as `from_node: (to_node: flow_amount)`</span>
+<span class="sd">            triples.</span>
+<span class="sd">        timing (Timing): The timing with which transactions are made to</span>
+<span class="sd">            accounts.</span>
+<span class="sd">        limit (str): The name for the appropriate attribute of</span>
+<span class="sd">            `LimitTuple` to use for this traversal (e.g. &quot;min_inflow&quot;,</span>
+<span class="sd">            &quot;max_outflow&quot;)</span>
+<span class="sd">        accounts (Iterable[Hashable]): A collection of nodes in `flows`;</span>
+<span class="sd">            only these nodes will be used as keys in the return value.</span>
+<span class="sd">        transaction_methods (LimitTuple[Callable, Callable, Callable,</span>
+<span class="sd">            Callable]): A `namedtuple` that provides a `Callable` value</span>
+<span class="sd">            for the attribute with the name given by `limit`. That</span>
+<span class="sd">            function must take a single argument (an account from</span>
+<span class="sd">            `accounts`) and return a method which, when called, returns</span>
+<span class="sd">            a time-series of transactions</span>
+<span class="sd">            (as `dict[Number, Union[Number, Money]]`).</span>
+<span class="sd">        total (Union[Number, Money]): The total amount of inflows</span>
+<span class="sd">            (positive) or outflows (negative).</span>
+<span class="sd">            This method only uses this value for its sign.</span>
+<span class="sd">        precision (Number): Flows are *multiplied* by this factor prior</span>
+<span class="sd">            to being used to generate transaction values. Optional.</span>
+<span class="sd">            This makes it easy to scale down values that were inflated</span>
+<span class="sd">            to avoid rounding error when the graph was defined.</span>
+<span class="sd">        transaction_type (Callable): If provided, each flow value is</span>
+<span class="sd">            passed to `transaction_type` as its sole arg. It is expected</span>
+<span class="sd">            that `transaction_type` will wrap it in the appropriate type</span>
+<span class="sd">            for the applicable member of `transaction_methods`.</span>
+<span class="sd">            Optional.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict[Hashable, dict[Number, Any]]: A mapping of accounts to</span>
+<span class="sd">        transactions (as `dict[Number, Any]` time-series, where the</span>
+<span class="sd">        value type is determined by the account via</span>
+<span class="sd">        `transaction_methods` - usually `Money` for `Account` and its</span>
+<span class="sd">        subclasses).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">transaction_methods</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">transaction_methods</span> <span class="o">=</span> <span class="n">transaction_default_methods</span><span class="p">()</span>
+    <span class="c1"># If `total` is negative, all flows should be outflows</span>
+    <span class="c1"># (and thus need to be flipped to negative sign).</span>
+    <span class="n">is_outflows</span> <span class="o">=</span> <span class="n">total</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">total</span> <span class="o">&lt;</span> <span class="mi">0</span>
+    <span class="n">transactions</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">accounts</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">flows</span><span class="p">:</span>
+            <span class="c1"># NOTE: We scale down the flows to the account by a</span>
+            <span class="c1"># factor of `precision` because all flows/capacities</span>
+            <span class="c1"># are automatically inflated to avoid rounding errors.</span>
+            <span class="n">total_flows</span> <span class="o">=</span> <span class="n">precision</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span><span class="n">flows</span><span class="p">[</span><span class="n">account</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">is_outflows</span><span class="p">:</span>
+                <span class="n">total_flows</span> <span class="o">=</span> <span class="o">-</span><span class="n">total_flows</span>
+            <span class="c1"># Convert to `transaction_type`, if provided:</span>
+            <span class="k">if</span> <span class="n">transaction_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">total_flows</span> <span class="o">=</span> <span class="n">transaction_type</span><span class="p">(</span><span class="n">total_flows</span><span class="p">)</span>
+            <span class="n">transactions</span><span class="p">[</span><span class="n">account</span><span class="p">]</span> <span class="o">=</span> <span class="n">_get_transactions</span><span class="p">(</span>
+                <span class="n">account</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="n">timing</span><span class="p">,</span>
+                <span class="n">transaction_methods</span><span class="o">=</span><span class="n">transaction_methods</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="n">total_flows</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">transactions</span>
+
+<span class="k">def</span> <span class="nf">_get_accounts</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">accounts</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Returns the objects wrapped by all leaf nodes.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        node (TransactionNode): The root of a (sub)tree.</span>
+<span class="sd">        accounts (set[Any]): The set of all accounts found so far.</span>
+<span class="sd">            Used by this method on recursion; if passed in by client</span>
+<span class="sd">            code, beware that it will be mutated!</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        set[Any]: A collection of objects (which can be of any type)</span>
+<span class="sd">        wrapped by lead nodes under `node`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Set defaults (for recursion)</span>
+    <span class="k">if</span> <span class="n">accounts</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">accounts</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+    <span class="c1"># If this is a leaf, record its account:</span>
+    <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">is_leaf_node</span><span class="p">():</span>
+        <span class="n">accounts</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">source</span><span class="p">)</span>
+    <span class="c1"># Otherwise, recurse onto children:</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="n">_get_accounts</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">accounts</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">accounts</span>
+
+<span class="k">def</span> <span class="nf">_get_transactions</span><span class="p">(</span>
+        <span class="n">account</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="n">timing</span><span class="p">,</span> <span class="n">transaction_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Gets transactions for `account`.</span>
+
+<span class="sd">    This is a generic method that allows for any type to be wrapped by</span>
+<span class="sd">    a leaf node, not just `Account` and its subclasses. All that needs</span>
+<span class="sd">    to be done is to pass a `transaction_methods` with suitable</span>
+<span class="sd">    functions for the given type(s). See below for more details.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        account (Any): The object based on which transactions will be</span>
+<span class="sd">            generated.</span>
+<span class="sd">        timing (Timing): The timings (and corresponding weights) with</span>
+<span class="sd">            which transactions are made to accounts.</span>
+<span class="sd">        limit (str): The name for the appropriate attribute of</span>
+<span class="sd">            `LimitTuple` to use for this traversal (e.g. &quot;min_inflow&quot;,</span>
+<span class="sd">            &quot;max_outflow&quot;)</span>
+<span class="sd">        transaction_methods (LimitTuple[Callable, Callable, Callable,</span>
+<span class="sd">            Callable]): A `namedtuple` that provides a `Callable` value</span>
+<span class="sd">            for the attribute with the name given by `limit`.</span>
+
+<span class="sd">            The given function must take a single argument: `account`.</span>
+<span class="sd">            It returns a `Callable` (usually a method bound to</span>
+<span class="sd">            `account`) which takes `timing` as a positional arg and</span>
+<span class="sd">            `total` as an (optional) keyword arg and returns a</span>
+<span class="sd">            time-series of transactions</span>
+<span class="sd">            (as `dict[Number, Union[Number, Money]]`).</span>
+<span class="sd">        total (Union[Number, Money]): The maximum amount of inflows</span>
+<span class="sd">            (positive) or outflows (negative) to transact.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict[Number, Union[Number, Money]]: A time-series that maps</span>
+<span class="sd">        timings to transaction amounts. The typing of transaction amount</span>
+<span class="sd">        values is determined by the account, via</span>
+<span class="sd">        `transaction_methods`. (This is usually `Money` for `Account`</span>
+<span class="sd">        and its subclasses).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">transaction_methods</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">transaction_methods</span> <span class="o">=</span> <span class="n">transaction_default_methods</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">limit</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{}</span>
+    <span class="c1"># This is ugly, but it works. Someday we should refactor this:</span>
+    <span class="n">selector_method</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">transaction_methods</span><span class="p">,</span> <span class="n">limit</span><span class="p">)</span>
+    <span class="n">transaction_method</span> <span class="o">=</span> <span class="n">selector_method</span><span class="p">(</span><span class="n">account</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">transaction_method</span><span class="p">(</span><span class="n">timing</span><span class="p">,</span> <span class="n">transaction_limit</span><span class="o">=</span><span class="n">total</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_get_group</span><span class="p">(</span><span class="n">account</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="n">group_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Gets a group of accounts related to `account` for a given limit.</span>
+
+<span class="sd">    This is a generic method that allows for any type to be wrapped by</span>
+<span class="sd">    a leaf node, not just `Account` and its subclasses. All that needs</span>
+<span class="sd">    to be done is to pass a `group_methods` with suitable</span>
+<span class="sd">    functions for the given type(s). See below for more details.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        account (Any): The object based on which transactions will be</span>
+<span class="sd">            generated.</span>
+<span class="sd">        limit (str): The name for the appropriate attribute of</span>
+<span class="sd">            `LimitTuple` to use for this traversal (e.g. &quot;min_inflow&quot;,</span>
+<span class="sd">            &quot;max_outflow&quot;)</span>
+<span class="sd">        group_methods (LimitTuple[Callable, Callable, Callable,</span>
+<span class="sd">            Callable]): A `namedtuple` that provides a `Callable` value</span>
+<span class="sd">            for the attribute with the name given by `limit`.</span>
+
+<span class="sd">            The given function must take a single argument: `account`.</span>
+<span class="sd">            It returns a `Container` holding all accounts which are</span>
+<span class="sd">            related to `account` for the given `limit`. For example,</span>
+<span class="sd">            for `limit=&quot;max_inflow&quot;, this function might return a set of</span>
+<span class="sd">            all accounts which share contribution room with `account`.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Container[Any]: A collection holding all accounts which are</span>
+<span class="sd">        related to `account` for the given `limit`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">group_methods</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">group_methods</span> <span class="o">=</span> <span class="n">group_default_methods</span><span class="p">()</span>
+    <span class="n">group_method</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">group_methods</span><span class="p">,</span> <span class="n">limit</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">group_method</span><span class="p">(</span><span class="n">account</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

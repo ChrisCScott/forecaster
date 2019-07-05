@@ -148,10 +148,9 @@
            <div itemprop="articleBody">
             
   <h1>Source code for forecaster.ledger.base</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot; TODO &quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot; Module providing the Ledger base type and associated classes. &quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">inspect</span>
-<span class="kn">from</span> <span class="nn">decimal</span> <span class="k">import</span> <span class="n">Decimal</span>
 <span class="kn">from</span> <span class="nn">forecaster.ledger.money</span> <span class="k">import</span> <span class="n">Money</span>
 <span class="kn">from</span> <span class="nn">forecaster.ledger.recorded_property</span> <span class="k">import</span> <span class="p">(</span>
     <span class="n">recorded_property</span><span class="p">,</span> <span class="n">recorded_property_cached</span>
@@ -174,8 +173,7 @@
 
         <span class="c1"># Then identify all recorded_property attributes:</span>
         <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">prop</span> <span class="ow">in</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getmembers</span><span class="p">(</span>
-            <span class="bp">cls</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;history_property&#39;</span><span class="p">)</span>
-        <span class="p">):</span>
+                <span class="bp">cls</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;history_property&#39;</span><span class="p">)):</span>
             <span class="c1"># Store the identified recorded_property:</span>
             <span class="c1"># (This will help Ledger build object-specific dicts for</span>
             <span class="c1"># storing the values of each recorded property. We don&#39;t</span>
@@ -301,7 +299,7 @@
         <span class="sd">&quot;&quot;&quot; Taxable income for the given year.</span>
 
 <span class="sd">        Subclasses should override this method rather than the</span>
-<span class="sd">        taxable_income and _taxable_income_history properties.</span>
+<span class="sd">        _taxable_income and _taxable_income_history properties.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
@@ -310,7 +308,7 @@
         <span class="sd">&quot;&quot;&quot; Tax withheld for the given year.</span>
 
 <span class="sd">        Subclasses should override this method rather than the</span>
-<span class="sd">        tax_withheld and _tax_withheld_history properties.</span>
+<span class="sd">        _tax_withheld and _tax_withheld_history properties.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
@@ -319,7 +317,7 @@
         <span class="sd">&quot;&quot;&quot; Tax credit for the given year.</span>
 
 <span class="sd">        Subclasses should override this method rather than the</span>
-<span class="sd">        tax_credit and _tax_credit_history properties.</span>
+<span class="sd">        _tax_credit and _tax_credit_history properties.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
@@ -328,7 +326,7 @@
         <span class="sd">&quot;&quot;&quot; Tax deduction for the given year.</span>
 
 <span class="sd">        Subclasses should override this method rather than the</span>
-<span class="sd">        tax_deduction and _tax_deduction_history properties.</span>
+<span class="sd">        _tax_deduction and _tax_deduction_history properties.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
 </pre></div>

@@ -97,7 +97,7 @@ class TransactionNode:
             and isinstance(self.source, abc.Mapping))
 
     def children_subset(self, subset):
-        """ Returns a reduced form of `children` based on `subset.
+        """ Returns a reduced form of `children` based on `subset`.
 
         The reduced form includes only children in `subset` but has the
         same typing as `children`. So, for example, for a weighted node

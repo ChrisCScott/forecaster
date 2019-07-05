@@ -1,0 +1,1356 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.strategy.transaction.base &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">forecaster</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+      <li>forecaster.strategy.transaction.base</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for forecaster.strategy.transaction.base</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; Provides a class for determining schedules of transactions.</span>
+
+<span class="sd">These transaction schedules determine when transactions occur, in what</span>
+<span class="sd">amounts, and to which accounts.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="c1"># TODO: Reduce line length by moving `_build_graph` to another module?</span>
+<span class="c1"># Some of this class relates to generating the correct inputs for the</span>
+<span class="c1"># _build_graph algorithm and some relates to processing its output so</span>
+<span class="c1"># that it can return transaction data. Presumably `_build_graph` is</span>
+<span class="c1"># separable from this functionality. As a plus, it likely also makes it</span>
+<span class="c1"># easier to achieve the following todo!</span>
+
+<span class="c1"># TODO: Remove higher-level dependencies. Make this a microservice.</span>
+<span class="c1"># We should move all knowledge of `Money`, transactions, limit tuples,</span>
+<span class="c1"># and similar account/finance-specific concepts out of this class.</span>
+<span class="c1"># A wrapper class can provide that logic for client code.</span>
+
+<span class="kn">from</span> <span class="nn">decimal</span> <span class="k">import</span> <span class="n">Decimal</span>
+<span class="kn">from</span> <span class="nn">queue</span> <span class="k">import</span> <span class="n">SimpleQueue</span>
+<span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="n">Money</span>
+<span class="kn">from</span> <span class="nn">forecaster.utility</span> <span class="k">import</span> <span class="n">EPSILON</span><span class="p">,</span> <span class="n">add_transactions</span>
+<span class="kn">from</span> <span class="nn">forecaster.accounts.util</span> <span class="k">import</span> <span class="n">LIMIT_TUPLE_FIELDS</span>
+<span class="kn">from</span> <span class="nn">forecaster.strategy.transaction.util</span> <span class="k">import</span> <span class="p">(</span>
+    <span class="n">LimitTuple</span><span class="p">,</span> <span class="n">transaction_default_methods</span><span class="p">,</span> <span class="n">group_default_methods</span><span class="p">,</span>
+    <span class="n">_get_accounts</span><span class="p">,</span> <span class="n">_get_group</span><span class="p">,</span> <span class="n">_get_transactions</span><span class="p">,</span>
+    <span class="n">_convert_flows_to_transactions</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">forecaster.strategy.transaction.node</span> <span class="k">import</span> <span class="n">TransactionNode</span>
+<span class="kn">from</span> <span class="nn">forecaster.strategy.transaction.graph</span> <span class="k">import</span> <span class="p">(</span>
+    <span class="n">_get_empty_graph</span><span class="p">,</span> <span class="n">_add_edge</span><span class="p">,</span> <span class="n">_flows_through</span><span class="p">,</span> <span class="n">_generate_flows</span><span class="p">,</span>
+    <span class="n">_inbound_capacity</span><span class="p">,</span> <span class="n">_merge_flows</span><span class="p">,</span> <span class="n">_outbound_capacity</span><span class="p">,</span> <span class="n">_sum_weight</span><span class="p">,</span>
+    <span class="n">_get_outbound_node</span><span class="p">,</span> <span class="n">_get_overflow_node</span><span class="p">,</span> <span class="n">_classify_children_by_flows</span><span class="p">,</span>
+    <span class="n">_swap_saturated</span><span class="p">,</span> <span class="n">_restrict_overflow</span><span class="p">,</span> <span class="n">_unrestrict_overflow</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="TransactionTraversal"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.base.TransactionTraversal">[docs]</a><span class="k">class</span> <span class="nc">TransactionTraversal</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot; Determines transactions to/from accounts based on a priority.</span>
+
+<span class="sd">    Instances of this class, when initialized, receive a</span>
+<span class="sd">    `TransactionNode` (or a data structure that is convertible to</span>
+<span class="sd">    `TransactionNode`, e.g. `list`, `tuple`, `dict`, and/or `Account`).</span>
+<span class="sd">    This is usually expressible as a tree (and this documentation</span>
+<span class="sd">    usually describes it as as the &quot;priority tree&quot;), but a true tree</span>
+<span class="sd">    structure is not required; for example, nodes can share children</span>
+<span class="sd">    (even across levels).</span>
+<span class="sd">    In fact, it often is not semantically a tree in practice, since</span>
+<span class="sd">    leaf nodes (usually `Account` objects) can share contribution room</span>
+<span class="sd">    or have other relationships not captured by the tree structure.</span>
+
+<span class="sd">    Instances of this class, when called, traverse a representation of</span>
+<span class="sd">    the priority tree to allocate transactions to the leaves (which are</span>
+<span class="sd">    assumed to be accounts, although as described below they do not need</span>
+<span class="sd">    to inherit from `Account`). The traversal is breadth-first, so that</span>
+<span class="sd">    higher-level relationships are enforced in preference to lower-level</span>
+<span class="sd">    relationships. For example:</span>
+
+<span class="sd">    *   all lower-level ordered nodes will be exhausted before</span>
+<span class="sd">        moving on to the next ordered node at a higher level; and</span>
+<span class="sd">    *   all lower-level weighted nodes will be forced to deviate from</span>
+<span class="sd">        their target allocation as much as necessary to minimize</span>
+<span class="sd">        deviations by higher-order weighted nodes.</span>
+
+<span class="sd">    This class generates a directed graph based on the input which</span>
+<span class="sd">    represents the  relationships between nodes. It finds a minimum-cost</span>
+<span class="sd">    maximum flow across the graph which it translates into transactions</span>
+<span class="sd">    for each leaf node (usually `Account` objects). By default, it does this</span>
+<span class="sd">    twice, once to allocate minimum transactions and then again to</span>
+<span class="sd">    allocate maximum transactions.</span>
+
+<span class="sd">    The semantics of `TransactionNode` inputs are respected, including</span>
+<span class="sd">    limits on min/max in/outflows. See documentation for</span>
+<span class="sd">    `TransactionNode` for more detail.</span>
+
+<span class="sd">    As with all `Strategy` objects, objects of this type are callable</span>
+<span class="sd">    and will return a result resulting from their various settings; in</span>
+<span class="sd">    this case, a mapping of leaf nodes to transactions.</span>
+
+<span class="sd">    Usually leaf nodes are `Account` objects, but any type can be used.</span>
+<span class="sd">    If using another type, be sure to provide `transaction_methods`</span>
+<span class="sd">    and `group_methods` that support all of the leaf nodes&#39; types.</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        Collections can be nested (note also that `account2` repeats):</span>
+<span class="sd">        ```</span>
+<span class="sd">        subgroup = {account1: 0.5, account2: 0.5}</span>
+<span class="sd">        priority = [subgroup, account2]  # valid priority tree</span>
+<span class="sd">        strategy = TransactionStrategy(priority)</span>
+<span class="sd">        transactions = strategy(available)</span>
+
+<span class="sd">        ```</span>
+
+<span class="sd">        We can limit the total amount to contribute to `subgroup`</span>
+<span class="sd">        (i.e. the equal-weighted group of account1 and account2)</span>
+<span class="sd">        by using a single-element dict, as follows:</span>
+<span class="sd">        ```</span>
+<span class="sd">        limit = LimitTuple(max_inflows=Money(100))</span>
+<span class="sd">        subgroup = TransactionNode(subgroup, limit=limit)</span>
+<span class="sd">        priority = [subgroup, account2]</span>
+<span class="sd">        strategy = TransactionStrategy(priority)</span>
+<span class="sd">        transactions = strategy(available)</span>
+
+<span class="sd">        ```</span>
+<span class="sd">        The result, assuming available represents net inflows, is that</span>
+<span class="sd">        up to $100 will be contributed equally to `account1` and</span>
+<span class="sd">        `account2`, with any excess going to `account2`</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        priority (TransactionNode, list[Any], dict[Any, Decimal],</span>
+<span class="sd">            tuple[Any]): The (nested) collection of `Account` objects.</span>
+<span class="sd">        graph (networkx.DiGraph): A directed graph representing all of</span>
+<span class="sd">            the nodes from `priority`.</span>
+<span class="sd">        source (Hashable): The node to use as the source of all flows.</span>
+<span class="sd">        sink (Hashable): The node to use as the destination of all</span>
+<span class="sd">            flows.</span>
+<span class="sd">        memo (dict[Hashable, dict[Hashable, int]]): A record of all</span>
+<span class="sd">            flows assigned by various invocations of</span>
+<span class="sd">            `_traverse_priority`.</span>
+<span class="sd">        overflow_nodes (dict[Hashable, Hashable]): A mapping of</span>
+<span class="sd">            `node: overflow_node` pairs.</span>
+<span class="sd">        outbound_nodes (dict[Hashable, Hashable]): A mapping of</span>
+<span class="sd">            `node: outbound_node` pairs. Optional.</span>
+<span class="sd">        transaction_methods (LimitTuple[Callable]): A tuple of methods,</span>
+<span class="sd">            each taking a leaf node as the sole argument and returning a</span>
+<span class="sd">            transactions object (i.e. a `dict[Decimal, Money]` map of</span>
+<span class="sd">            timings to values).</span>
+<span class="sd">            Each method of the tuple respects a different limit (e.g.</span>
+<span class="sd">            `min_inflows`, `max_outflows`).</span>
+<span class="sd">            Optional. If not provided, methods supporting `Account`-type</span>
+<span class="sd">            leaf nodes will be used.</span>
+<span class="sd">        group_methods (LimitTuple[Callable]): A tuple of methods,</span>
+<span class="sd">            each taking a leaf node as the sole argument and returning a</span>
+<span class="sd">            group of linked accounts (i.e. a `set[Account]` or, more</span>
+<span class="sd">            generally, `set[T]` where `T` is any valid type for a leaf</span>
+<span class="sd">            node in `priority`).</span>
+<span class="sd">            Each method of the tuple corresponds to a different link</span>
+<span class="sd">            (e.g. `max_inflow_link`, `min_outflow_link`).</span>
+<span class="sd">            Optional. If not provided, methods supporting `Account`-type</span>
+<span class="sd">            leaf nodes will be used.</span>
+<span class="sd">        precision (float, Decimal): Results will be rounded to this</span>
+<span class="sd">            level of precision.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        available (dict[Decimal, Money]): A time series of inflows</span>
+<span class="sd">            and outflows, where keys are timings and values are</span>
+<span class="sd">            inflows (positive) or outflows (negative).</span>
+<span class="sd">        total (Money): The total amount of inflows/outflows to be</span>
+<span class="sd">            allocated between the accounts represented in the</span>
+<span class="sd">            `priority` tree. Optional. If not provided, the sum</span>
+<span class="sd">            total of `available` will be allocated.</span>
+<span class="sd">        assign_min_first (Bool): If True, minimum inflows/outflows</span>
+<span class="sd">            will be assigned first (in `priority` order, so if</span>
+<span class="sd">            `total` is less than the sum of minimum inflows/outflows</span>
+<span class="sd">            then low-priority will not have transactions assigned).</span>
+<span class="sd">            Remaining money is then allocated in `priority` order,</span>
+<span class="sd">            up to any limits on maximum inflows/outflows.</span>
+
+<span class="sd">            If False, minimum inflows/outflows will not be assigned</span>
+<span class="sd">            and the strategy will move directly to assigning up to</span>
+<span class="sd">            the maximum inflows/outflows.</span>
+
+<span class="sd">            Optional. Defaults to True.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict[Hashable, dict[Decimal, Money]]: A mapping of accounts to</span>
+<span class="sd">            transactions to (positive) or from (negative) those</span>
+<span class="sd">            accounts. No `list`, `dict`, or other sub-collection is</span>
+<span class="sd">            used as a key. Only the leaf node `Account`-like objects of</span>
+<span class="sd">            the tree defined by `priority` are used as keys.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="TransactionTraversal.__init__"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.base.TransactionTraversal.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">priority</span><span class="p">,</span>
+            <span class="n">transaction_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">group_methods</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">precision</span><span class="o">=</span><span class="n">EPSILON</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Initializes TransactionTraversal. &quot;&quot;&quot;</span>
+        <span class="c1"># Set up data-holding attributes:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_priority</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_priority_tree</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1"># Set up method-holding attributes:</span>
+        <span class="k">if</span> <span class="n">transaction_methods</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">transaction_methods</span> <span class="o">=</span> <span class="n">transaction_default_methods</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">transaction_methods</span> <span class="o">=</span> <span class="n">LimitTuple</span><span class="p">(</span><span class="n">transaction_methods</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">group_methods</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">group_methods</span> <span class="o">=</span> <span class="n">group_default_methods</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">group_methods</span> <span class="o">=</span> <span class="n">LimitTuple</span><span class="p">(</span><span class="n">group_methods</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">precision</span> <span class="o">=</span> <span class="n">precision</span>
+        <span class="c1"># Store args used by most class methods as attributes to</span>
+        <span class="c1"># simplify method calls:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">graph</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sink</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">memo</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outbound_nodes</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">overflow_nodes</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c1"># Use property setter to fill the data-holding attributes:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">priority</span> <span class="o">=</span> <span class="n">priority</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">priority</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; A priority tree defining how to add transactions to accounts &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_priority</span>
+
+    <span class="nd">@priority</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">priority</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Sets priority &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">val</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_priority</span><span class="p">:</span>
+            <span class="c1"># Take no action if `priority` is unchanged.</span>
+            <span class="k">return</span>
+        <span class="c1"># Otherwise, rebuild the annotated priority tree:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_priority_tree</span> <span class="o">=</span> <span class="n">TransactionNode</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_priority</span> <span class="o">=</span> <span class="n">val</span>
+
+<div class="viewcode-block" id="TransactionTraversal.__call__"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.base.TransactionTraversal.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">available</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">assign_min</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Determines transactions to accounts based on `available`. &quot;&quot;&quot;</span>
+        <span class="c1"># pylint: disable=unused-argument</span>
+        <span class="c1"># We provide a kwargs argument so that this class can be used</span>
+        <span class="c1"># wherever `TransactionStrategy` or similar classes are used.</span>
+
+        <span class="c1"># By default, use up all money in `available`, unless we&#39;re</span>
+        <span class="c1"># specifically told to use less:</span>
+        <span class="k">if</span> <span class="n">total</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">total</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">available</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+        <span class="c1"># Convert Money-typed `total` to Decimal:</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">total</span><span class="p">,</span> <span class="s2">&quot;amount&quot;</span><span class="p">):</span>
+            <span class="n">total</span> <span class="o">=</span> <span class="n">total</span><span class="o">.</span><span class="n">amount</span>
+
+        <span class="c1"># Determine which limits we need to respect during traversal.</span>
+        <span class="k">if</span> <span class="n">total</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">precision</span><span class="p">:</span>  <span class="c1"># inflows</span>
+            <span class="n">min_limit</span> <span class="o">=</span> <span class="n">LIMIT_TUPLE_FIELDS</span><span class="o">.</span><span class="n">min_inflow</span>
+            <span class="n">max_limit</span> <span class="o">=</span> <span class="n">LIMIT_TUPLE_FIELDS</span><span class="o">.</span><span class="n">max_inflow</span>
+            <span class="c1"># Limit min. inflows to what&#39;s available:</span>
+            <span class="n">min_total</span> <span class="o">=</span> <span class="n">total</span>
+        <span class="k">elif</span> <span class="n">total</span> <span class="o">&lt;</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">precision</span><span class="p">:</span>  <span class="c1"># outflows</span>
+            <span class="n">min_limit</span> <span class="o">=</span> <span class="n">LIMIT_TUPLE_FIELDS</span><span class="o">.</span><span class="n">min_outflow</span>
+            <span class="n">max_limit</span> <span class="o">=</span> <span class="n">LIMIT_TUPLE_FIELDS</span><span class="o">.</span><span class="n">max_outflow</span>
+            <span class="c1"># Limit min. outflows based on what&#39;s in the account, not</span>
+            <span class="c1"># the shortfall we&#39;re trying to fill:</span>
+            <span class="n">min_total</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;-Infinity&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># No transactions since total ~= 0</span>
+            <span class="k">return</span> <span class="p">{}</span>
+
+        <span class="c1"># Clear dicts storing former graph information that&#39;s carried</span>
+        <span class="c1"># over between traversals (only memo _needs_ to be, but</span>
+        <span class="c1"># outbound_nodes and overflow_nodes are guaranteed to be</span>
+        <span class="c1"># identical between traversals so might as well reuse them).</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">memo</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outbound_nodes</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">overflow_nodes</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c1"># Build and traverse a graph based on `priority`</span>
+        <span class="c1"># First traverse to assign min. flows:</span>
+        <span class="n">min_transactions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_traverse_priority</span><span class="p">(</span>
+            <span class="n">min_total</span><span class="p">,</span> <span class="n">available</span><span class="p">,</span> <span class="n">min_limit</span><span class="p">)</span>
+        <span class="c1"># Then traverse to assign max. flows. Pass in `memo` to ensure</span>
+        <span class="c1"># that the flows assigned previously are respected</span>
+        <span class="n">max_transactions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_traverse_priority</span><span class="p">(</span>
+            <span class="n">total</span><span class="p">,</span> <span class="n">available</span><span class="p">,</span> <span class="n">max_limit</span><span class="p">)</span>
+
+        <span class="c1"># Combine min/max transactions to get final result:</span>
+        <span class="k">for</span> <span class="n">account</span><span class="p">,</span> <span class="n">transactions</span> <span class="ow">in</span> <span class="n">min_transactions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">max_transactions</span><span class="p">:</span>
+                <span class="n">add_transactions</span><span class="p">(</span><span class="n">max_transactions</span><span class="p">[</span><span class="n">account</span><span class="p">],</span> <span class="n">transactions</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">max_transactions</span><span class="p">[</span><span class="n">account</span><span class="p">]</span> <span class="o">=</span> <span class="n">transactions</span>
+        <span class="k">return</span> <span class="n">max_transactions</span></div>
+
+    <span class="k">def</span> <span class="nf">_traverse_priority</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">total</span><span class="p">,</span> <span class="n">timing</span><span class="p">,</span> <span class="n">limit</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Builds a graph and finds the min-cost max. flow through it.</span>
+
+<span class="sd">        This method translates `priority` into a graph (via</span>
+<span class="sd">        `_build_graph`), finds the min. cost max. flows through it</span>
+<span class="sd">        from root to leaves, and translates those flows to transactions.</span>
+
+<span class="sd">        If calling multiple times with different `limit` values, you</span>
+<span class="sd">        may want to pass `memo` at each invocation. This will ensure</span>
+<span class="sd">        that total flows allocated by this traversal will be reduced</span>
+<span class="sd">        to account for earlier-allocated flows. Where necessary,</span>
+<span class="sd">        weighted nodes will be re-weighted to reflect earlier flows.</span>
+<span class="sd">        This method mutates `memo` to include newly-allocated flows.</span>
+<span class="sd">        Only incremental transactions (beyond those allocated in earlier</span>
+<span class="sd">        invocations) are returned via the return value.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            total (Decimal): The maximum amount of flow to allow through</span>
+<span class="sd">                the graph.</span>
+<span class="sd">            timing (Timing): The timing of account transactions. This is</span>
+<span class="sd">                used by leaf nodes to find their min/max transactions.</span>
+<span class="sd">            limit (str): The name for the appropriate attribute of</span>
+<span class="sd">                `LimitTuple` to use for this traversal (e.g.</span>
+<span class="sd">                &quot;min_inflow&quot;, &quot;max_outflow&quot;)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[Hashable, dict[Decimal, Money]]: A mapping of leaf</span>
+<span class="sd">                nodes to transactions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Build a graph that can accept up to `total` flow at the</span>
+        <span class="c1"># source and then find the maximum flow that can actually</span>
+        <span class="c1"># get through to the sink:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_build_graph</span><span class="p">(</span><span class="n">total</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="n">timing</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
+
+        <span class="n">_</span><span class="p">,</span> <span class="n">flows</span> <span class="o">=</span> <span class="n">_generate_flows</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sink</span><span class="p">)</span>
+
+        <span class="c1"># Store `flows` in memo, so that a later call to this method</span>
+        <span class="c1"># can reference this information:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">memo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_merge_flows</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">memo</span><span class="p">,</span> <span class="n">flows</span><span class="p">)</span>
+
+        <span class="c1"># Generate transactions for the accounts based on the newly-</span>
+        <span class="c1"># generated flows. (Note that memoized flows aren&#39;t included):</span>
+        <span class="n">accounts</span> <span class="o">=</span> <span class="n">_get_accounts</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_priority_tree</span><span class="p">)</span>
+        <span class="n">transactions</span> <span class="o">=</span> <span class="n">_convert_flows_to_transactions</span><span class="p">(</span>
+            <span class="n">flows</span><span class="p">,</span> <span class="n">timing</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="n">accounts</span><span class="p">,</span>
+            <span class="n">transaction_methods</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">transaction_methods</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="n">total</span><span class="p">,</span>
+            <span class="n">transaction_type</span><span class="o">=</span><span class="n">Money</span><span class="p">,</span> <span class="n">precision</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">precision</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">transactions</span>
+
+    <span class="k">def</span> <span class="nf">_build_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">total</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Generates a graph based on `priority`; assigns it to `graph`</span>
+
+<span class="sd">        The generated graph represents each node of `priority`, as well</span>
+<span class="sd">        as any accounts (stored in leaf nodes). The graph is directed</span>
+<span class="sd">        and acyclic, provided that `priority` is acyclic. This method</span>
+<span class="sd">        is not guaranteed to halt (and probably won&#39;t!) if `priority`</span>
+<span class="sd">        has a cycle.</span>
+
+<span class="sd">        This method also adds various nodes to support a network flow</span>
+<span class="sd">        algorithm, including:</span>
+
+<span class="sd">        *   a `source` node for flow to originate at and travel from;</span>
+<span class="sd">        *   a `sink` node for flow to travel to and terminate at;</span>
+<span class="sd">        *   limit nodes (if applicable) which allow for the addition of</span>
+<span class="sd">            an edge with limited capacity to be added between a node and</span>
+<span class="sd">            its children to enforce any per-node limit;</span>
+<span class="sd">        *   group nodes (if applicable) which several accounts in a</span>
+<span class="sd">            group may direct flow through to enforce shared group</span>
+<span class="sd">            limits; and</span>
+<span class="sd">        *   overflow nodes (if applicable) for weighted nodes which</span>
+<span class="sd">            allow for flows to children to be reallocated when the</span>
+<span class="sd">            default weighted allocation isn&#39;t possible.</span>
+
+<span class="sd">        Edges may be weighted or unweighted (in which case they are</span>
+<span class="sd">        treated as having 0 weight). Weighted edges are used to enforce</span>
+<span class="sd">        ordering of flow paths among ordered nodes&#39; children, and to</span>
+<span class="sd">        disincentivize flow through overflow nodes (thus prioritizing</span>
+<span class="sd">        the default allocation).</span>
+
+<span class="sd">        To execute successfully, this method needs to receive any kwargs</span>
+<span class="sd">        required by any lower-level `_add_*` methods that are called</span>
+<span class="sd">        for each node in `priority`. This usually means that at least</span>
+<span class="sd">        `limit` and `timing` must be provided. (See the</span>
+<span class="sd">        `_traverse_priority` documentation.)</span>
+
+<span class="sd">        Examples:</span>
+<span class="sd">            ```</span>
+<span class="sd">                                       T1 -&gt; L1 -&gt; A1</span>
+<span class="sd">                N                     /              \\</span>
+<span class="sd">               / \\    --&gt;  source -&gt; N                sink</span>
+<span class="sd">              T1 T2                   \\              /</span>
+<span class="sd">                                       T2 -&gt; L2 -&gt; A2</span>
+<span class="sd">            ```</span>
+<span class="sd">            In this example, N is an ordered node with children T1 and</span>
+<span class="sd">            T2 which are leaf nodes wrapping accounts A1 and A2,</span>
+<span class="sd">            respectively. The `source -&gt; N` edge has a capacity limited</span>
+<span class="sd">            to `total`. The `T1 -&gt; L1` and `T2 -&gt; L2` edges have</span>
+<span class="sd">            capacity limited to the applicable `limit` value for T1 and</span>
+<span class="sd">            T2, respectively. The capacity of the edges directed at</span>
+<span class="sd">            sink is limited to the applicable</span>
+<span class="sd">            min_inflow/max_outflow/etc. value for A1 and A2 for the</span>
+<span class="sd">            given `timing`. The `N -&gt; T1` edge has 0 weight, whereas</span>
+<span class="sd">            the `N -&gt; T2` weight is larger than any path flow can take</span>
+<span class="sd">            from T1 to sink (forcing flow to exhaust all such paths</span>
+<span class="sd">            first).</span>
+
+<span class="sd">            (In practice, N might have its own limit node, not shown</span>
+<span class="sd">            here.)</span>
+
+<span class="sd">            If the previous example is modified so that A1 and A2</span>
+<span class="sd">            are `LinkLimitAccount`s with shared `max_inflow` values</span>
+<span class="sd">            then the graph would look like this:</span>
+<span class="sd">            ```</span>
+<span class="sd">                                       T1 -&gt; L1 -&gt; A1</span>
+<span class="sd">                N                     /              \\</span>
+<span class="sd">               / \\    --&gt;  source -&gt; N                group -&gt; sink</span>
+<span class="sd">              T1 T2                   \\              /</span>
+<span class="sd">                                       T2 -&gt; L2 -&gt; A2</span>
+<span class="sd">            ```</span>
+<span class="sd">            In this case, the `A1 -&gt; group` edge has the same capacity</span>
+<span class="sd">            as the above `A1 -&gt; sink` edge, but now the `group -&gt; sink`</span>
+<span class="sd">            edge also has that capacity, so the total amount contributed</span>
+<span class="sd">            to A1 and A2 will not exceed their shared limit.</span>
+
+<span class="sd">            Weighted nodes are a little more complicated because they</span>
+<span class="sd">            add an overflow node:</span>
+<span class="sd">            ```</span>
+<span class="sd">                                        -&gt; T1 -&gt; L1 -&gt; A1</span>
+<span class="sd">                                       /   |           \\</span>
+<span class="sd">                N                     /    |            \\</span>
+<span class="sd">               / \\    --&gt;  source -&gt; N -&gt; O              group -&gt; sink</span>
+<span class="sd">              T1 T2                   \\   |              /</span>
+<span class="sd">                                       \\  |             /</span>
+<span class="sd">                                        -&gt; T2 -&gt; L2 -&gt; A2</span>
+<span class="sd">            ```</span>
+<span class="sd">            Here the `N -&gt; O` edge is weighted with unlimited capacity</span>
+<span class="sd">            and the `N -&gt; T1` and `N -&gt; T2` edges are unweighted with</span>
+<span class="sd">            limited capacity. In particular, their capacity is</span>
+<span class="sd">            determined based on the weightings provided by `N.children`.</span>
+
+<span class="sd">            In practice, by the time this method completes no flow will</span>
+<span class="sd">            pass through overflow node O. This is because the capacities</span>
+<span class="sd">            of the `N -&gt; T1` and `N -&gt; T2` edges have been repeatedly</span>
+<span class="sd">            rebalanced to reallocate those overflows proportionately</span>
+<span class="sd">            to the weights of any children that can accept additional</span>
+<span class="sd">            flow.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            total (Decimal): The maximum amount of flow to allow through</span>
+<span class="sd">                `graph`.</span>
+<span class="sd">            **kwargs: Arguments to pass to lower-level methods. Must</span>
+<span class="sd">                include at least &quot;timing&quot; and &quot;limit&quot; keys.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># The sink and source nodes are each unique dummy objects.</span>
+        <span class="c1"># Some algorithms don&#39;t require a unique sink (e.g. accounts</span>
+        <span class="c1"># could each be sinks), but it&#39;s actually helpful to set edges</span>
+        <span class="c1"># from accounts to this sink with capacities equal to the</span>
+        <span class="c1"># account&#39;s maximum flow (since the accounts might have multiple</span>
+        <span class="c1"># inbound edges which, together, exceed the account&#39;s capacity).</span>
+        <span class="c1"># They can be any hasahble value; we default to 0 and 1.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sink</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sink</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="c1"># networkx has unexpected behaviour for non-int edge capacities,</span>
+        <span class="c1"># so inflate total based on the EPSILON precision constant:</span>
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">total</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;Infinity&#39;</span><span class="p">):</span>
+            <span class="c1"># We can ignore infinite-valued `total`, which is dealt with</span>
+            <span class="c1"># in `_add_edge` (and can&#39;t be cast to `int`)</span>
+            <span class="n">total</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">total</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">precision</span><span class="p">)</span>
+
+        <span class="c1"># Create an empty graph:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">graph</span> <span class="o">=</span> <span class="n">_get_empty_graph</span><span class="p">()</span>
+        <span class="c1"># We could use the root node of the tree as the graph&#39;s source</span>
+        <span class="c1"># node, but it&#39;s convenient if each node can determine the</span>
+        <span class="c1"># capacities of its outbound weights based on the capacities</span>
+        <span class="c1"># of its inbound weights. So create a dummy source node with</span>
+        <span class="c1"># an edge to the root with capacity `total`, unless calling</span>
+        <span class="c1"># code explicitly requests the root node:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_priority_tree</span><span class="p">:</span>
+            <span class="n">_add_edge</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_priority_tree</span><span class="p">,</span>
+                <span class="n">capacity</span><span class="o">=</span><span class="n">total</span><span class="p">,</span> <span class="n">memo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">memo</span><span class="p">)</span>
+
+        <span class="c1"># Recursively build out the group from the root down:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_successors</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_priority_tree</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># This first pass results in weighted nodes providing too much</span>
+        <span class="c1"># outbound capacity to their children. Pass over weighted nodes</span>
+        <span class="c1"># and limit outbound capacity to actual maximum possible flows.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_balance_weighted_flows</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_add_successors</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">capacity</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Adds the children of `node` to `graph`.</span>
+
+<span class="sd">        By the time this method is called, `node` should already be in</span>
+<span class="sd">        `self.graph`. It will probably still work if not (i.e. `node`</span>
+<span class="sd">        should be added), but this use case has not been tested for.</span>
+
+<span class="sd">        This method will wrap `node` with a limit node (if `node` has</span>
+<span class="sd">        an applicable limit, and potentially even if not) and calls the</span>
+<span class="sd">        appropriate `_add_*` method to add the node&#39;s children in</span>
+<span class="sd">        whichever way is appropriate for a `node` of its type. If</span>
+<span class="sd">        `node` was wrapped with a limit node, edges to children will</span>
+<span class="sd">        originate with the limit node instead of `node`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            node (Hashable): The node whose successors are being added.</span>
+<span class="sd">            capacity (int): The maximum flow that can pass through this</span>
+<span class="sd">                node. Optional.</span>
+<span class="sd">            children (Iterable[Hashable]): A subset of `node.children`</span>
+<span class="sd">                on which to recurse. Optional; if not provided, all</span>
+<span class="sd">                members of `node.children` are recursed on. If provided,</span>
+<span class="sd">                this arg should be the same type as `node.children`.</span>
+<span class="sd">            limit (str): The name for the appropriate attribute of</span>
+<span class="sd">                `LimitTuple` to use for this traversal (e.g.</span>
+<span class="sd">                &quot;min_inflow&quot;, &quot;max_outflow&quot;).</span>
+<span class="sd">            **kwargs: Arguments to pass to lower-level methods. Must</span>
+<span class="sd">                include at least a &quot;timing&quot; key.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Identify which method is used to add the node&#39;s children to</span>
+        <span class="c1"># the graph:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">TransactionNode</span><span class="p">):</span>
+            <span class="c1"># Any non-TransactionNode gets treated as an account:</span>
+            <span class="n">method</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_node_account</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># TransactionNode</span>
+            <span class="c1"># TransactionNodes come in a few different flavours:</span>
+            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">is_weighted</span><span class="p">():</span>
+                <span class="n">method</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_node_weighted</span>
+            <span class="k">elif</span> <span class="n">node</span><span class="o">.</span><span class="n">is_ordered</span><span class="p">():</span>
+                <span class="n">method</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_node_ordered</span>
+            <span class="k">elif</span> <span class="n">node</span><span class="o">.</span><span class="n">is_leaf_node</span><span class="p">():</span>
+                <span class="n">method</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_node_leaf</span>
+                <span class="k">if</span> <span class="n">children</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="c1"># Leaf nodes don&#39;t have children, but they do wrap an</span>
+                    <span class="c1"># account which we treat like a child:</span>
+                    <span class="n">children</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">source</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unrecognized node type for node &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">node</span><span class="p">))</span>
+
+            <span class="c1"># Assign default value _after_ the above so that leaf nodes</span>
+            <span class="c1"># have a chance to assign their default first.</span>
+            <span class="k">if</span> <span class="n">children</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">children</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span>
+
+        <span class="c1"># Some nodes can have a per-node limit.</span>
+        <span class="c1"># Enforce this by adding a dummy `outbound_node` and limiting</span>
+        <span class="c1"># capacity on the edge from `node` to `outbound_node`:</span>
+        <span class="n">outbound_node</span><span class="p">,</span> <span class="n">capacity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_limit</span><span class="p">(</span>
+            <span class="n">node</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="n">capacity</span><span class="o">=</span><span class="n">capacity</span><span class="p">)</span>
+
+        <span class="c1"># Record the outbound node if the calling method wants us to:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">outbound_nodes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">outbound_nodes</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="n">outbound_node</span>
+
+        <span class="n">method</span><span class="p">(</span>
+            <span class="n">outbound_node</span><span class="p">,</span> <span class="n">children</span><span class="p">,</span> <span class="n">capacity</span><span class="o">=</span><span class="n">capacity</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_embed_limit</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">capacity</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Adds an capacity-limited edge from `node` to a limit node.</span>
+
+<span class="sd">        This method will add a limit node _at least_ when `node` has an</span>
+<span class="sd">        applicable limit, but may add limit nodes even when there is not</span>
+<span class="sd">        an applicable limit for this value of `limit`. For example, it</span>
+<span class="sd">        may add a limit node for every `TransactionNode`, or for</span>
+<span class="sd">        transaction nodes that have a limit for one of several limit</span>
+<span class="sd">        types (not just the one indicated by `limit`).</span>
+
+<span class="sd">        If `capacity` is provided, the capacity of the edge from `node`</span>
+<span class="sd">        to the limit node will not exceed `capacity`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            node (Hashable): The node whose successors are being added.</span>
+<span class="sd">            limit (str): The name for the appropriate attribute of</span>
+<span class="sd">                `LimitTuple` to use for this traversal (e.g.</span>
+<span class="sd">                &quot;min_inflow&quot;, &quot;max_outflow&quot;).</span>
+<span class="sd">            capacity (int): The maximum flow that can pass through this</span>
+<span class="sd">                node. Optional.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Process args:</span>
+        <span class="k">if</span> <span class="n">capacity</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">capacity</span> <span class="o">=</span> <span class="n">_inbound_capacity</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">node</span><span class="p">)</span>
+
+        <span class="c1"># Only TransactionNodes can have per-node limits, so</span>
+        <span class="c1"># short-circuit for any other node type:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">TransactionNode</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">node</span><span class="p">,</span> <span class="n">capacity</span>
+
+        <span class="c1"># We always embed TransactionNodes, even if they don&#39;t have an</span>
+        <span class="c1"># applicable limit for this value of `limit`, because we want to</span>
+        <span class="c1"># ensure that every call to `_traverse_priority` builds a graph</span>
+        <span class="c1"># with the same topology.</span>
+        <span class="c1"># NOTE: Its possible to make this more efficient by identifying</span>
+        <span class="c1"># which nodes possess _any_ applicable limit and generating</span>
+        <span class="c1"># outbound nodes in the initial stages of _build_graph. That&#39;s</span>
+        <span class="c1"># an optimization that can wait for a working build.</span>
+        <span class="k">if</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">outbound_nodes</span><span class="p">:</span>
+            <span class="n">outbound_node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">outbound_nodes</span><span class="p">[</span><span class="n">node</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">outbound_node</span> <span class="o">=</span> <span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="s2">&quot;limit&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Figure out whether `node` has an applicable limit:</span>
+        <span class="n">limit_value</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="s2">&quot;limits&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">limits</span><span class="p">,</span> <span class="n">limit</span><span class="p">):</span>
+            <span class="n">limit_value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">limits</span><span class="p">,</span> <span class="n">limit</span><span class="p">)</span>
+            <span class="c1"># Convert from Money-like to Decimal, if applicable:</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">limit_value</span><span class="p">,</span> <span class="s2">&quot;amount&quot;</span><span class="p">):</span>
+                <span class="n">limit_value</span> <span class="o">=</span> <span class="n">limit_value</span><span class="o">.</span><span class="n">amount</span>
+            <span class="k">if</span> <span class="n">limit_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Scale up the limit value by `precision` to avoid</span>
+                <span class="c1"># rounding issues:</span>
+                <span class="n">limit_value</span> <span class="o">/=</span> <span class="bp">self</span><span class="o">.</span><span class="n">precision</span>
+                <span class="c1"># Reduce `limit_value` based on any memoized flows</span>
+                <span class="c1"># through `node`:</span>
+                <span class="n">limit_value</span> <span class="o">-=</span> <span class="n">_flows_through</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">flows</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">memo</span><span class="p">)</span>
+                <span class="c1"># Use the lesser of `capacity` and `limit_value`;</span>
+                <span class="c1"># successors use this to determine their edge capacities</span>
+                <span class="n">capacity</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">capacity</span><span class="p">,</span> <span class="n">limit_value</span><span class="p">)</span>
+
+        <span class="c1"># Connect `node` and `outbound_node` via a directed edge:</span>
+        <span class="k">if</span> <span class="n">limit_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+             <span class="c1"># If `node` had an applicable limit, the edge will have</span>
+             <span class="c1"># `limit_value` capacity. This enforces the limit!</span>
+            <span class="n">_add_edge</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">outbound_node</span><span class="p">,</span> <span class="n">capacity</span><span class="o">=</span><span class="n">limit_value</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># If there&#39;s no applicable limit, the edge has infinite</span>
+            <span class="c1"># capacity (represented by omitting the capacity argument)</span>
+            <span class="n">_add_edge</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">outbound_node</span><span class="p">)</span>
+
+        <span class="c1"># Return the new outbound node and the (potentially-reduced)</span>
+        <span class="c1"># capacity. Any children should receive edges from</span>
+        <span class="c1"># `outbound_node` instead of `node`.</span>
+        <span class="k">return</span> <span class="n">outbound_node</span><span class="p">,</span> <span class="n">capacity</span>
+
+    <span class="k">def</span> <span class="nf">_add_node_weighted</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">children</span><span class="p">,</span>
+            <span class="o">*</span><span class="p">,</span> <span class="n">capacity</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">add_overflow</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Adds a weighted node&#39;s children to the graph.</span>
+
+<span class="sd">        Adds an edge from `node` to each child with 0 weight and</span>
+<span class="sd">        capacity equal to `node`&#39;s total inbound capacity, scaled down</span>
+<span class="sd">        proportionately to the weight that `node` gives the child.</span>
+
+<span class="sd">        If `add_overflow` is `True`, an overflow node is also added with</span>
+<span class="sd">        a weighted edge from `node` to the overflow node (and edges from</span>
+<span class="sd">        the overflow node to children which are unweighted and have</span>
+<span class="sd">        unlimited capacity). The weighted edge is guaranteed to have</span>
+<span class="sd">        a weight larger than the total weight of any path from any</span>
+<span class="sd">        member of `children` to `sink`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            node (Hashable): A node that acts as the origin for</span>
+<span class="sd">                edges to the members of `children`. Need not be a</span>
+<span class="sd">                `TransactionNode`; e.g. can be a corresponding limit</span>
+<span class="sd">                node.</span>
+<span class="sd">            children (dict[Hashable, Decimal]): The children to be</span>
+<span class="sd">                added to the graph, mapped to their relative weights.</span>
+<span class="sd">            capacity (int): The maximum flow that can pass through this</span>
+<span class="sd">                node. Optional.</span>
+<span class="sd">            add_overflow (bool): If True, adds an overflow node between</span>
+<span class="sd">                `node` and each member of `children`. Optional; defaults</span>
+<span class="sd">                to `True`.</span>
+<span class="sd">            **kwargs: Arguments to pass to lower-level methods. Must</span>
+<span class="sd">                include at least &quot;timing&quot; and &quot;limit&quot; keys.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">capacity</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Calculate the total capacity of inbound edges.</span>
+            <span class="c1"># This will be distributed to outbound edges.</span>
+            <span class="n">capacity</span> <span class="o">=</span> <span class="n">_inbound_capacity</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">node</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">add_overflow</span><span class="p">:</span>
+            <span class="c1"># For weighted nodes, we want to prioritize assigning flows</span>
+            <span class="c1"># as dictated by the nodes&#39; weights, while still allowing</span>
+            <span class="c1"># flows to be shifted between children if some children</span>
+            <span class="c1"># can&#39;t receive the full amount dictated by their weight.</span>
+            <span class="c1"># We accomplish this by adding weighted edges between</span>
+            <span class="c1"># children that allow (but penalize) flows between children.</span>
+            <span class="c1"># (We route all these edges through `overflow_node` so that</span>
+            <span class="c1"># the number of edges added is `n+1`, where `n` is the</span>
+            <span class="c1"># number of children. If added directly between children,</span>
+            <span class="c1"># the number of edges would be `n^2`.)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">overflow_nodes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">overflow_nodes</span><span class="p">:</span>
+                <span class="n">overflow_node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">overflow_nodes</span><span class="p">[</span><span class="n">node</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">overflow_node</span> <span class="o">=</span> <span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="s2">&quot;overflow&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">overflow_nodes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">overflow_nodes</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="n">overflow_node</span>
+            <span class="c1"># Add an edge from `node` to `overflow_node` and from</span>
+            <span class="c1"># `overflow_node` to each child. This enables shifting flow</span>
+            <span class="c1"># between children. (We&#39;ll add weight to the</span>
+            <span class="c1"># node-&gt;overflow_node edge later, once we know the weights</span>
+            <span class="c1"># of all paths to `sink`):</span>
+            <span class="n">_add_edge</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">overflow_node</span><span class="p">,</span> <span class="n">capacity</span><span class="o">=</span><span class="n">capacity</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">children</span><span class="p">:</span>
+                <span class="n">_add_edge</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">overflow_node</span><span class="p">,</span> <span class="n">child</span><span class="p">,</span> <span class="n">capacity</span><span class="o">=</span><span class="n">capacity</span><span class="p">)</span>
+
+        <span class="c1"># Recursively add successor nodes:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_weighted_children</span><span class="p">(</span>
+            <span class="n">node</span><span class="p">,</span> <span class="n">children</span><span class="p">,</span> <span class="n">capacity</span><span class="p">,</span> <span class="n">add_overflow</span><span class="o">=</span><span class="n">add_overflow</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">add_overflow</span><span class="p">:</span>
+            <span class="c1"># We want the flow through each child to be as close as</span>
+            <span class="c1"># possible to the capacity assigned above (i.e. we want to</span>
+            <span class="c1"># move as little flow as possible between children.)</span>
+            <span class="c1"># Accomplish this by heavily penalizing flows through</span>
+            <span class="c1"># `overflow_node`.</span>
+            <span class="c1"># It should be preferable to shift flow between _any_</span>
+            <span class="c1"># successor path before routing it through `overflow_node`.</span>
+            <span class="n">weight</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="nb">max</span><span class="p">(</span><span class="n">_sum_weight</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">child</span><span class="p">)</span> <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">children</span><span class="p">)</span>
+            <span class="n">_add_edge</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">overflow_node</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">weight</span><span class="p">)</span>
+
+        <span class="c1"># This deals with overflows, but not underflows - which are</span>
+        <span class="c1"># basically guaranteed, since each child node has more inbound</span>
+        <span class="c1"># capacity than is needed to achieve its weighted flows (thanks</span>
+        <span class="c1"># to the extra capacity from overflow_node).</span>
+        <span class="c1"># We&#39;ll need to solve this after the first complete iteration</span>
+        <span class="c1"># of the graph has been built.</span>
+
+    <span class="k">def</span> <span class="nf">_add_weighted_children</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">children</span><span class="p">,</span> <span class="n">capacity</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Helper method for `_add_node_weighted`.</span>
+
+<span class="sd">        This method does the actual calculating of child nodes&#39;</span>
+<span class="sd">        capacities and adding of children to the graph. Unlike</span>
+<span class="sd">        `_add_node_weighted`, this method doesn&#39;t worry about overflow</span>
+<span class="sd">        nodes (which are handled by the parent method).</span>
+
+<span class="sd">        One important feature of this method is that it accounts for</span>
+<span class="sd">        any flows in `self.memo` so that the resulting capacities remain</span>
+<span class="sd">        true to the weights of `children` _after_ the flows in</span>
+<span class="sd">        `self.memo` are added in. This is essential for allowing</span>
+<span class="sd">        `_traverse_priority` to be called multiple times with different</span>
+<span class="sd">        limit values without introducing unbalanced flows among weighted</span>
+<span class="sd">        children.</span>
+
+<span class="sd">        If the flows in `self.memo` are greater than would otherwise be</span>
+<span class="sd">        allocated based on weights, this method distorts the children&#39;s</span>
+<span class="sd">        weights as little as possible to accomodate. In particular, it</span>
+<span class="sd">        sets those children to have 0 capacity and recurses on the</span>
+<span class="sd">        remaining children to allocate the remaining capacity</span>
+<span class="sd">        proportionately among them.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            node (TransactionNode): A weighted node with one or more</span>
+<span class="sd">                children.</span>
+<span class="sd">            children (dict[Hashable, Decimal]): The children to be</span>
+<span class="sd">                added to the graph, mapped to their relative weights.</span>
+<span class="sd">            capacity (int): The maximum flow that can pass through this</span>
+<span class="sd">                node. Optional.</span>
+<span class="sd">            **kwargs: Arguments to pass to lower-level methods. Must</span>
+<span class="sd">                include at least &quot;timing&quot; and &quot;limit&quot; keys.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Weighted nodes assign flows proportionately to weights.</span>
+        <span class="c1"># Proportionality is easier to calculate with normalized weights</span>
+        <span class="c1"># so determine that first:</span>
+        <span class="n">normalization</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">children</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="c1"># If we&#39;ve previously assigned flows from `node` (or, rather,</span>
+        <span class="c1"># its corresponding outbound node) to any of `children`, account</span>
+        <span class="c1"># for that by increasing `capacity` here and decrementing that</span>
+        <span class="c1"># flow from the child&#39;s proportionate capacity later on:</span>
+        <span class="n">outbound_node</span> <span class="o">=</span> <span class="n">_get_outbound_node</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">outbound_nodes</span><span class="p">)</span>
+        <span class="n">flows</span> <span class="o">=</span> <span class="n">_flows_through</span><span class="p">(</span>
+            <span class="n">outbound_node</span><span class="p">,</span> <span class="n">flows</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">memo</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="n">children</span><span class="p">)</span>
+        <span class="n">capacity</span> <span class="o">+=</span> <span class="n">flows</span>
+
+        <span class="c1"># Generate a proportionate weighting for each child:</span>
+        <span class="n">totals</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">child</span><span class="p">,</span> <span class="n">weight</span> <span class="ow">in</span> <span class="n">children</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="c1"># Each child is allocated a slice of `capacity`</span>
+            <span class="c1"># proportionate to its weight in `children`:</span>
+            <span class="n">child_total</span> <span class="o">=</span> <span class="n">capacity</span> <span class="o">*</span> <span class="n">weight</span> <span class="o">/</span> <span class="n">normalization</span>
+            <span class="c1"># Reduce this capacity to account for any memoized flows:</span>
+            <span class="n">child_total</span> <span class="o">-=</span> <span class="n">_flows_through</span><span class="p">(</span><span class="n">outbound_node</span><span class="p">,</span> <span class="n">child</span><span class="p">,</span> <span class="n">flows</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">memo</span><span class="p">)</span>
+            <span class="c1"># Save this allocation:</span>
+            <span class="n">totals</span><span class="p">[</span><span class="n">child</span><span class="p">]</span> <span class="o">=</span> <span class="n">child_total</span>
+
+        <span class="c1"># Deal with the scenario where some children have been assigned</span>
+        <span class="c1"># negative capacity (i.e. memoized flows are greater than the</span>
+        <span class="c1"># total amount that would ordinarily be assigned here):</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">total</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">total</span> <span class="ow">in</span> <span class="n">totals</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+            <span class="c1"># Recurse on any children which have not previously been</span>
+            <span class="c1"># allocated more flows than their weight dictates:</span>
+            <span class="n">recurse_children</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">child</span><span class="p">:</span> <span class="n">weight</span> <span class="k">for</span> <span class="n">child</span><span class="p">,</span> <span class="n">weight</span> <span class="ow">in</span> <span class="n">children</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">totals</span><span class="p">[</span><span class="n">child</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">}</span>
+            <span class="c1"># Capacity should be restored to its original value...</span>
+            <span class="n">capacity</span> <span class="o">-=</span> <span class="n">flows</span>
+            <span class="c1"># ... and further reduced by the amount of excess flows</span>
+            <span class="c1"># previously allocated to some children:</span>
+            <span class="n">capacity</span> <span class="o">+=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">total</span> <span class="k">for</span> <span class="n">total</span> <span class="ow">in</span> <span class="n">totals</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">total</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_weighted_children</span><span class="p">(</span>
+                <span class="n">node</span><span class="p">,</span> <span class="n">recurse_children</span><span class="p">,</span> <span class="n">capacity</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="c1"># As for the children that have been over-allocated flow,</span>
+            <span class="c1"># give them 0-capacity edges (since negative capacity is</span>
+            <span class="c1"># not allowed):</span>
+            <span class="n">totals</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">child</span><span class="p">:</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">child</span><span class="p">,</span> <span class="n">total</span> <span class="ow">in</span> <span class="n">totals</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">total</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">}</span>
+
+        <span class="c1"># Generate edges for `children` (or, if we recursed onto a</span>
+        <span class="c1"># subset, onto the remainder that wasn&#39;t recursed on):</span>
+        <span class="k">for</span> <span class="n">child</span><span class="p">,</span> <span class="n">child_total</span> <span class="ow">in</span> <span class="n">totals</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="c1"># Add the edge (this implicitly adds the child to the</span>
+            <span class="c1"># graph if it hasn&#39;t already been added)</span>
+            <span class="n">_add_edge</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">outbound_node</span><span class="p">,</span> <span class="n">child</span><span class="p">,</span> <span class="n">capacity</span><span class="o">=</span><span class="n">child_total</span><span class="p">)</span>
+            <span class="c1"># Then recurse onto the child:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_successors</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_balance_weighted_flows</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Rebalances capacities of children of weighted nodes.</span>
+
+<span class="sd">        This method visits each weighted node in breadth-first order</span>
+<span class="sd">        and calls `_balance_flows` on each child.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            **kwargs: Arguments to pass to lower-level methods. Must</span>
+<span class="sd">                include at least &quot;timing&quot; and &quot;limit&quot; keys.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># We want to ensure that higher-order weighted nodes are</span>
+        <span class="c1"># prioritized (i.e. skew their flows to the most limited degree</span>
+        <span class="c1"># possible), so we&#39;ll use _breadth-first_ traversal.</span>
+        <span class="c1"># It&#39;s best to do that traversal on `_priority_tree`, since the</span>
+        <span class="c1"># graph itself can have dummy nodes that cause two weighted</span>
+        <span class="c1"># nodes with equal height in the tree to have unequal distance</span>
+        <span class="c1"># from `source` in the graph.</span>
+        <span class="n">weighted_nodes</span> <span class="o">=</span> <span class="n">SimpleQueue</span><span class="p">()</span>
+        <span class="n">traverse_nodes</span> <span class="o">=</span> <span class="n">SimpleQueue</span><span class="p">()</span>
+        <span class="n">traverse_nodes</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_priority_tree</span><span class="p">)</span>
+        <span class="k">while</span> <span class="ow">not</span> <span class="n">traverse_nodes</span><span class="o">.</span><span class="n">empty</span><span class="p">():</span>
+            <span class="c1"># Get the node at the front of the queue:</span>
+            <span class="n">node</span> <span class="o">=</span> <span class="n">traverse_nodes</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+            <span class="c1"># Store weighted nodes for later traversal:</span>
+            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">is_weighted</span><span class="p">():</span>
+                <span class="n">weighted_nodes</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+            <span class="c1"># Traverse children breadth-first:</span>
+            <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+                <span class="n">traverse_nodes</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+
+        <span class="c1"># Now we can traverse weighted nodes in breadth-first order.</span>
+        <span class="k">while</span> <span class="ow">not</span> <span class="n">weighted_nodes</span><span class="o">.</span><span class="n">empty</span><span class="p">():</span>
+            <span class="n">node</span> <span class="o">=</span> <span class="n">weighted_nodes</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_balance_flows</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_balance_flows</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rebalance_all</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Attempts to shift flow between children to match weights.</span>
+
+<span class="sd">        Based on the flows from `node` to `children`, we can identify 3</span>
+<span class="sd">        sets of child nodes.</span>
+<span class="sd">        (References to a child&#39;s &quot;capacity&quot; below refers to the</span>
+<span class="sd">        capacity of all zero-weight paths from `node` to the child.)</span>
+
+<span class="sd">        1. Underflow nodes: Flow to these nodes from `node` is less than</span>
+<span class="sd">            their capacity.</span>
+<span class="sd">        2. Overflow nodes: Flow to these nodes exceeds their capacity</span>
+<span class="sd">            (i.e. they receive flow over non-zero-weight paths).</span>
+<span class="sd">        3. Saturated nodes: All nodes that are not underflow or overflow</span>
+<span class="sd">            nodes. These have received exactly their capacity in flows.</span>
+
+<span class="sd">        There is no guarantee that overflow and underflow nodes are</span>
+<span class="sd">        weighted properly relative to each other, since there&#39;s no</span>
+<span class="sd">        mechanism to force flows through a set of identically-weighted</span>
+<span class="sd">        paths to adhere to a certain proportion of flows. This method</span>
+<span class="sd">        recurses onto each of those sets of children separately,</span>
+<span class="sd">        thereby attempting to reallocate capacity between them in a way</span>
+<span class="sd">        that respects weightings.</span>
+
+<span class="sd">        We know we can recurse on those sets of nodes separately because</span>
+<span class="sd">        overflow nodes only receive flow if they _must_, and underflow</span>
+<span class="sd">        nodes only fail to reach saturation if it&#39;s _impossible_ to do</span>
+<span class="sd">        so (so long as total flow through `node` is at least as large</span>
+<span class="sd">        as the capacity of the children - which this method enforces).</span>
+
+<span class="sd">        Saturated nodes are included when recursing onto both underflow</span>
+<span class="sd">        and overflow nodes. This is because it&#39;s possible for a</span>
+<span class="sd">        saturated node to share capacity with underflow or overflow</span>
+<span class="sd">        nodes. It might be appropriate to reallocate capacity from a</span>
+<span class="sd">        saturated node to an underflow node and/or to reallocate</span>
+<span class="sd">        capacity from an overflow node to a saturated node.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            node (Hashable): The node whose children are being</span>
+<span class="sd">                rebalanced.</span>
+<span class="sd">            children (dict[Hashable, Decimal]): The children to be</span>
+<span class="sd">                rebalanced, mapped to their relative weights. Optional.</span>
+<span class="sd">                If not provided, all children of `node` are rebalanced.</span>
+<span class="sd">            rebalance_all (bool): If `True`, this method will attempt to</span>
+<span class="sd">                reassign capacities if they don&#39;t match total flows.</span>
+<span class="sd">                It sets this to `False` on recursion to avoid infinite</span>
+<span class="sd">                recursion due to rounding error. Optional. Defaults to</span>
+<span class="sd">                `True`.</span>
+<span class="sd">            **kwargs: Arguments to pass to lower-level methods. Must</span>
+<span class="sd">                include at least &quot;timing&quot; and &quot;limit&quot; keys.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">children</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">children</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">children</span><span class="p">:</span>
+            <span class="c1"># Nothing to process if there are no children. Done.</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Try to generate flows through the graph.</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">flows</span> <span class="o">=</span> <span class="n">_generate_flows</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sink</span><span class="p">)</span>
+        <span class="c1"># Divide nodes based on whether flows match their capacities:</span>
+        <span class="n">underflow</span><span class="p">,</span> <span class="n">overflow</span><span class="p">,</span> <span class="n">saturated</span> <span class="o">=</span> <span class="n">_classify_children_by_flows</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">children</span><span class="p">,</span> <span class="n">flows</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">outbound_nodes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">overflow_nodes</span><span class="p">)</span>
+
+        <span class="c1"># Terminate if all nodes are saturated. This means we found</span>
+        <span class="c1"># a perfect proportion of flows to satisfy the source node&#39;s</span>
+        <span class="c1"># weights:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">underflow</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">overflow</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="c1"># If only _one_ of those two is empty, then we have an imbalance</span>
+        <span class="c1"># in capacity; need to reassign capacities to match flows:</span>
+        <span class="k">elif</span> <span class="nb">bool</span><span class="p">(</span><span class="n">underflow</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">overflow</span><span class="p">):</span>
+            <span class="c1"># `rebalance_all` ensures that we recurse here *at most</span>
+            <span class="c1"># once* for each instance of children. (Can have infinite</span>
+            <span class="c1"># recursion due to rounding errors; this avoids that.)</span>
+            <span class="k">if</span> <span class="n">rebalance_all</span><span class="p">:</span>
+                <span class="c1"># Force recalculation of 0-weight edges&#39; capacity based</span>
+                <span class="c1"># on the actual sum of flows through this node:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_balance_flows_recurse</span><span class="p">(</span>
+                    <span class="n">node</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="n">children</span><span class="p">,</span> <span class="n">flows</span><span class="o">=</span><span class="n">flows</span><span class="p">,</span>
+                    <span class="n">rebalance_all</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="c1"># Don&#39;t proceed on, since the old `flows` is based on</span>
+                <span class="c1"># unbalanced capacities.</span>
+                <span class="k">return</span>
+            <span class="k">elif</span> <span class="n">saturated</span><span class="p">:</span>
+                <span class="c1"># We can&#39;t move capacity out of `saturated`, so treat</span>
+                <span class="c1"># them as under/overflow (whichever is empty):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">underflow</span><span class="p">:</span>
+                    <span class="n">saturated</span><span class="p">,</span> <span class="n">underflow</span> <span class="o">=</span> <span class="n">underflow</span><span class="p">,</span> <span class="n">saturated</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">saturated</span><span class="p">,</span> <span class="n">overflow</span> <span class="o">=</span> <span class="n">overflow</span><span class="p">,</span> <span class="n">saturated</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># If there are no saturated nodes then we have only</span>
+                <span class="c1"># underflow/overflow. Not much that can be done there.</span>
+                <span class="k">return</span>
+
+        <span class="c1"># We are guaranteed to have both underflow and overflow nodes.</span>
+        <span class="c1"># Recurse first onto all non-overflow nodes, to see if any</span>
+        <span class="c1"># capacity from saturated nodes can be shifted to underflow</span>
+        <span class="c1"># nodes in a way that better reflects their proportionate</span>
+        <span class="c1"># weights:</span>
+        <span class="n">underflow_expanded</span> <span class="o">=</span> <span class="n">underflow</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">saturated</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_balance_flows_recurse</span><span class="p">(</span>
+            <span class="n">node</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="n">underflow_expanded</span><span class="p">,</span> <span class="n">flows</span><span class="o">=</span><span class="n">flows</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># Any saturated nodes that have changed capacity will</span>
+        <span class="c1"># necessarily have had their capacity reduced; shift those</span>
+        <span class="c1"># into `underflow`. This avoids recursing onto them in</span>
+        <span class="c1"># the non-overflow step.</span>
+        <span class="n">_swap_saturated</span><span class="p">(</span>
+            <span class="n">saturated</span><span class="p">,</span> <span class="n">underflow</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">children</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">flows</span><span class="p">,</span>
+            <span class="n">outbound_nodes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">outbound_nodes</span><span class="p">)</span>
+
+        <span class="c1"># Now do the same thing, but for non-underflow nodes.</span>
+        <span class="n">overflow_expanded</span> <span class="o">=</span> <span class="n">overflow</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">saturated</span><span class="p">)</span>
+        <span class="c1"># NOTE: We use the same `flows` because only flows to</span>
+        <span class="c1"># _underflow_ nodes have changed in the previous step.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_balance_flows_recurse</span><span class="p">(</span>
+            <span class="n">node</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="n">overflow_expanded</span><span class="p">,</span> <span class="n">flows</span><span class="o">=</span><span class="n">flows</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_balance_flows_recurse</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flows</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Helper method for `_balance_flows`.</span>
+
+<span class="sd">        Calls `_add_successors` on `children` to distribute capacity</span>
+<span class="sd">        between them to match the amount in `flows` and then recurses</span>
+<span class="sd">        onto `_balance_flows` to ensure that the new capacities of</span>
+<span class="sd">        `children` are distributed correctly.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            node (Hashable): The node whose children are being</span>
+<span class="sd">                rebalanced.</span>
+<span class="sd">            children (dict[Hashable, Decimal]): The children to be</span>
+<span class="sd">                rebalanced, mapped to their relative weights. Optional.</span>
+<span class="sd">                If not provided, all children of `node` are rebalanced.</span>
+<span class="sd">            flows (dict[Hashable, dict[Hashable, int]]): Flows through</span>
+<span class="sd">                the graph, as `from_node: (to_node: flow)` triples.</span>
+<span class="sd">            **kwargs: Arguments to pass to lower-level methods. Must</span>
+<span class="sd">                include at least &quot;timing&quot; and &quot;limit&quot; keys.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Process input:</span>
+        <span class="k">if</span> <span class="n">children</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">children</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span>
+        <span class="n">outbound_node</span> <span class="o">=</span> <span class="n">_get_outbound_node</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">outbound_nodes</span><span class="p">)</span>
+        <span class="n">overflow_node</span> <span class="o">=</span> <span class="n">_get_overflow_node</span><span class="p">(</span>
+            <span class="n">node</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">overflow_nodes</span><span class="p">,</span> <span class="n">outbound_node</span><span class="o">=</span><span class="n">outbound_node</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">flows</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Calling code can provide `flows`, in which case edges to</span>
+            <span class="c1"># children should be re-allocated based on actual flows</span>
+            <span class="c1"># (rather than capacities, which may be under- or</span>
+            <span class="c1"># over-provisioned).</span>
+            <span class="n">capacity</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">flows</span><span class="p">[</span><span class="n">outbound_node</span><span class="p">][</span><span class="n">child</span><span class="p">]</span> <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">children</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">overflow_node</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">capacity</span> <span class="o">+=</span> <span class="nb">sum</span><span class="p">(</span>
+                    <span class="n">flows</span><span class="p">[</span><span class="n">overflow_node</span><span class="p">][</span><span class="n">child</span><span class="p">]</span> <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">children</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Otherwise, simply use the 0-weight capacity to `children`:</span>
+            <span class="n">capacity</span> <span class="o">=</span> <span class="n">_outbound_capacity</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">outbound_node</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="n">children</span><span class="p">)</span>
+
+        <span class="c1"># _add_successors expects `children` to have the appropriate</span>
+        <span class="c1"># typing for this kind of node, so enforce that here:</span>
+        <span class="n">children_subset</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">children_subset</span><span class="p">(</span><span class="n">children</span><span class="p">)</span>
+        <span class="c1"># Attempt to reallocate capacity among children based on the</span>
+        <span class="c1"># parent node&#39;s weights.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_successors</span><span class="p">(</span>
+            <span class="n">node</span><span class="p">,</span> <span class="n">capacity</span><span class="o">=</span><span class="n">capacity</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="n">children_subset</span><span class="p">,</span>
+            <span class="c1"># (Don&#39;t mess with overflow nodes at this stage)</span>
+            <span class="n">add_overflow</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="c1"># If there are multiple children, recurse onto them to ensure</span>
+        <span class="c1"># that they are balanced relative to each other:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">children</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="c1"># Ensure that, if any changes in capacity cause additional</span>
+            <span class="c1"># flow to go through `overflow_node`, that such overflows</span>
+            <span class="c1"># are directed to `children` (which we know can accept it.)</span>
+            <span class="n">_restrict_overflow</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">children</span><span class="p">,</span> <span class="n">flows</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">overflow_nodes</span><span class="p">,</span>
+                <span class="n">outbound_nodes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">outbound_nodes</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_balance_flows</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="n">children</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="c1"># Undo the foregoing mutation of edges from `overflow_node`:</span>
+            <span class="n">_unrestrict_overflow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">overflow_nodes</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_add_node_ordered</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">children</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">capacity</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Adds an ordered node&#39;s children to the graph.</span>
+
+<span class="sd">        Adds an edge from `node` to each child. The first child&#39;s edge</span>
+<span class="sd">        has 0 weight. Each subsequent child&#39;s edge has a weight that is</span>
+<span class="sd">        greater than any path from `node` through any previous child to</span>
+<span class="sd">        `sink`. The edges&#39; capacities are either unlimited or set high</span>
+<span class="sd">        enough that they cannot constrain flows.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            node (Hashable): A node that acts as the origin for</span>
+<span class="sd">                edges to the members of `children`. Need not be a</span>
+<span class="sd">                `TransactionNode`; e.g. can be a corresponding limit</span>
+<span class="sd">                node.</span>
+<span class="sd">            children (Sequence[Hashable, Decimal]): The children to be</span>
+<span class="sd">                added to the graph, as an ordered `tuple`/`list`/etc.</span>
+<span class="sd">            capacity (int): The maximum flow that can pass through this</span>
+<span class="sd">                node. Optional.</span>
+<span class="sd">            **kwargs: Arguments to pass to lower-level methods. Must</span>
+<span class="sd">                include at least &quot;timing&quot; and &quot;limit&quot; keys.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">capacity</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Calculate the total capacity of inbound edges.</span>
+            <span class="c1"># This will be distributed to outbound edges.</span>
+            <span class="n">capacity</span> <span class="o">=</span> <span class="n">_inbound_capacity</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">node</span><span class="p">)</span>
+
+        <span class="c1"># Add an edge to each child (this adds both edge and child).</span>
+        <span class="c1"># The first live (i.e. non-skipped) child gets all the capacity.</span>
+        <span class="n">weight</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">children</span><span class="p">:</span>
+            <span class="n">_add_edge</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">child</span><span class="p">,</span> <span class="n">capacity</span><span class="o">=</span><span class="n">capacity</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">weight</span><span class="p">)</span>
+            <span class="c1"># Recurse onto the child:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_successors</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="c1"># Ensure that assigning flows to the next child in sequence</span>
+            <span class="c1"># has a penalty larger than any path through the current</span>
+            <span class="c1"># child&#39;s successors:</span>
+            <span class="n">weight</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">weight</span><span class="p">,</span> <span class="n">_sum_weight</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">child</span><span class="p">))</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="k">def</span> <span class="nf">_add_node_leaf</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">child</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">capacity</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Adds a leaf node&#39;s wrapped account to the graph.</span>
+
+<span class="sd">        This method simply adds an edge from `node` to `child` to the</span>
+<span class="sd">        graph. The edge is unweighted and has a capacity that is either</span>
+<span class="sd">        unlimited or set high enough that it cannot constrain flows.</span>
+
+<span class="sd">        Although technically leaf `TransactionNode` objects have no</span>
+<span class="sd">        children, they do wrap accounts and can provide their own</span>
+<span class="sd">        metadata (e.g. per-node limits). Accordingly, it makes sense to</span>
+<span class="sd">        add them to `graph` independently of their wrapped accounts so</span>
+<span class="sd">        that appropriate limit nodes/etc. can be added.</span>
+
+<span class="sd">        It is expected that `child` is an account wrapped by a leaf</span>
+<span class="sd">        `TransactionNode`, although this is not enforced. This method</span>
+<span class="sd">        does not impose any constraints on the semantics of `child`</span>
+<span class="sd">        other than that it be addable to the graph.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            node (Hashable): A node that acts as the origin for edges</span>
+<span class="sd">                to the members of `children`. Need not be a</span>
+<span class="sd">                `TransactionNode`; e.g. can be a corresponding limit</span>
+<span class="sd">                node.</span>
+<span class="sd">            child (Hashable): The child to be added to the graph.</span>
+<span class="sd">            capacity (int): The maximum flow that can pass through this</span>
+<span class="sd">                node. Optional.</span>
+<span class="sd">            **kwargs: Arguments to pass to lower-level methods. Must</span>
+<span class="sd">                include at least &quot;timing&quot; and &quot;limit&quot; keys.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">capacity</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Calculate the total capacity of inbound edges.</span>
+            <span class="c1"># This will be distributed to outbound edges.</span>
+            <span class="n">capacity</span> <span class="o">=</span> <span class="n">_inbound_capacity</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">node</span><span class="p">)</span>
+
+        <span class="c1"># Add an edge to the (single) child:</span>
+        <span class="n">_add_edge</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">child</span><span class="p">,</span> <span class="n">capacity</span><span class="o">=</span><span class="n">capacity</span><span class="p">)</span>
+
+        <span class="c1"># Recurse onto the child:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_successors</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_add_node_account</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+            <span class="n">timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Adds an account (of any type) to the graph.</span>
+
+<span class="sd">        This method determines the limit on transactions to this account</span>
+<span class="sd">        specified by `limit` (via `self.transaction_methods`) and adds</span>
+<span class="sd">        an edge from `node` to `sink` (or to a group node, described</span>
+<span class="sd">        below) with the transaction limit as the edge capacity.</span>
+
+<span class="sd">        If `node` is part of a group (as determined by</span>
+<span class="sd">        `self.group_methods`), then two edges are added: one from `node`</span>
+<span class="sd">        to a group node that&#39;s shared by all accounts of the group and</span>
+<span class="sd">        one from the group node to `sink`.</span>
+
+<span class="sd">        If any flows have been recorded through `node` and/or the group</span>
+<span class="sd">        node in `self.memo`, edge capacities for both are reduced</span>
+<span class="sd">        accordingly to avoid exceeding transaction limits.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            node (Hashable): A node that acts as the origin for edges</span>
+<span class="sd">                to the members of `children`. Need not be a</span>
+<span class="sd">                `TransactionNode`; e.g. can be a corresponding limit</span>
+<span class="sd">                node.</span>
+<span class="sd">            timing (Timing): The timing of account transactions.</span>
+<span class="sd">            limit (str): The name for the appropriate attribute of</span>
+<span class="sd">                `LimitTuple` to use for this traversal (e.g.</span>
+<span class="sd">                &quot;min_inflow&quot;, &quot;max_outflow&quot;)</span>
+<span class="sd">            **kwargs: Arguments to pass to lower-level methods. Must</span>
+<span class="sd">                include at least &quot;timing&quot; and &quot;limit&quot; keys.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># pylint: disable=unused-argument</span>
+        <span class="c1"># This method needs to provide the same number sequence of</span>
+        <span class="c1"># positional args as other `_add_node_*` methods.</span>
+        <span class="c1"># `_add_successors` will always pass a third value (None, in the</span>
+        <span class="c1"># case of this method).</span>
+
+        <span class="c1"># NOTE: It&#39;s expensive to query the account, and for a given</span>
+        <span class="c1"># `limit` the result shouldn&#39;t change. Consider caching the</span>
+        <span class="c1"># result on first invocation and reusing it on subsequent</span>
+        <span class="c1"># invocations.</span>
+
+        <span class="c1"># The capacity of an account is not a function of its</span>
+        <span class="c1"># inbound edges. It&#39;s dictated by the account itself.</span>
+        <span class="c1"># Query the account for the time-series of transactions that</span>
+        <span class="c1"># defines its capacity for the given `limit`:</span>
+        <span class="n">transactions</span> <span class="o">=</span> <span class="n">_get_transactions</span><span class="p">(</span>
+            <span class="n">node</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="n">timing</span><span class="p">,</span> <span class="n">transaction_methods</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">transaction_methods</span><span class="p">)</span>
+        <span class="n">transaction_limit</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">transactions</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="c1"># Convert `transaction_limit` to a non-Money type (since</span>
+        <span class="c1"># Money is not convertible to int, which is a problem later)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">transaction_limit</span><span class="p">,</span> <span class="s2">&quot;amount&quot;</span><span class="p">):</span>
+            <span class="n">transaction_limit</span> <span class="o">=</span> <span class="n">transaction_limit</span><span class="o">.</span><span class="n">amount</span>
+        <span class="c1"># Scale up based on the precision (as we do with all edge</span>
+        <span class="c1"># capacities):</span>
+        <span class="n">capacity</span> <span class="o">=</span> <span class="n">transaction_limit</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">precision</span>
+
+        <span class="c1"># Most accounts add an edge straight to `sink`, but accounts</span>
+        <span class="c1"># that have shared transaction limits have special treatment:</span>
+        <span class="n">group</span> <span class="o">=</span> <span class="n">_get_group</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="n">group_methods</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">group_methods</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">group</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">group_node</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>  <span class="c1"># make hashable</span>
+            <span class="c1"># Reduce capacity based on any memoized flows through</span>
+            <span class="c1"># `group_node` (which accounts for all flows through all</span>
+            <span class="c1"># of the linked nodes of the group)</span>
+            <span class="c1"># This prevents inadvertent over-contribution/withdrawal:</span>
+            <span class="n">capacity</span> <span class="o">-=</span> <span class="n">_flows_through</span><span class="p">(</span><span class="n">group_node</span><span class="p">,</span> <span class="n">flows</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">memo</span><span class="p">)</span>
+            <span class="n">_add_edge</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">group_node</span><span class="p">,</span>
+                <span class="n">capacity</span><span class="o">=</span><span class="n">capacity</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">capacity</span><span class="p">)</span>
+            <span class="c1"># We&#39;re done with the original account node; all further</span>
+            <span class="c1"># edges will be from the group node.</span>
+            <span class="n">node</span> <span class="o">=</span> <span class="n">group_node</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Reduce capacity based on any memoized flows through `node`</span>
+            <span class="n">capacity</span> <span class="o">-=</span> <span class="n">_flows_through</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">flows</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">memo</span><span class="p">)</span>
+
+        <span class="c1"># Send an edge from the node to the sink, if provided:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sink</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_add_edge</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sink</span><span class="p">,</span> <span class="n">capacity</span><span class="o">=</span><span class="n">capacity</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">capacity</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

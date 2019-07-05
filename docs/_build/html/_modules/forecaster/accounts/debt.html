@@ -150,10 +150,8 @@
   <h1>Source code for forecaster.accounts.debt</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot; A module providing the Debt class. &quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">decimal</span> <span class="k">import</span> <span class="n">Decimal</span>
 <span class="kn">from</span> <span class="nn">forecaster.accounts.base</span> <span class="k">import</span> <span class="n">Account</span>
 <span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="n">Money</span>
-<span class="kn">from</span> <span class="nn">forecaster.utility</span> <span class="k">import</span> <span class="n">frequency_conv</span>
 
 <div class="viewcode-block" id="Debt"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.debt.Debt">[docs]</a><span class="k">class</span> <span class="nc">Debt</span><span class="p">(</span><span class="n">Account</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; A debt with a balance and an interest rate.</span>
@@ -182,22 +180,18 @@
 <span class="sd">            Debts may be accelerated by as much as possible by setting</span>
 <span class="sd">            this argument to `Money(&#39;Infinity&#39;)`, or non-accelerated</span>
 <span class="sd">            by setting this argument to `Money(0)`.</span>
-<span class="sd">        payment_frequency (int): The number of times each year that</span>
-<span class="sd">            payments are due. Uses the same syntax as</span>
-<span class="sd">            `forecaster.utility.frequency_conv` (e.g. &#39;M&#39; or 12</span>
-<span class="sd">            for monthly payments).</span>
-<span class="sd">            Optional; defaults to monthly payments.</span>
+<span class="sd">        default_timing (Timing, dict[float, float]): The timings of</span>
+<span class="sd">            payments and the weight of each payment timing. Optional.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="Debt.__init__"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.debt.Debt.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span>
-        <span class="n">balance</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-        <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">minimum_payment</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
-        <span class="n">living_expense</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">savings_rate</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-        <span class="n">accelerated_payment</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="s1">&#39;Infinity&#39;</span><span class="p">),</span>
-        <span class="n">payment_frequency</span><span class="o">=</span><span class="s1">&#39;M&#39;</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
+            <span class="c1"># Inherited args:</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="c1"># New args:</span>
+            <span class="n">minimum_payment</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">accelerated_payment</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="s1">&#39;Infinity&#39;</span><span class="p">),</span>
+            <span class="n">default_timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Constructor for `Debt`. &quot;&quot;&quot;</span>
 
         <span class="c1"># The superclass has a lot of arguments, so we&#39;re sort of stuck</span>
@@ -208,22 +202,17 @@
 
         <span class="c1"># Declare hidden variables for properties:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_minimum_payment</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_living_expense</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_savings_rate</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_accelerated_payment</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_payment_frequency</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="c1"># Apply generic Account logic:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">owner</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="n">balance</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="n">rate</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="n">nper</span><span class="p">,</span>
-            <span class="n">inputs</span><span class="o">=</span><span class="n">inputs</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="n">initial_year</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">inputs</span><span class="o">=</span><span class="n">inputs</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="n">initial_year</span><span class="p">,</span>
+            <span class="n">default_timing</span><span class="o">=</span><span class="n">default_timing</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="c1"># Set up (and type-convert) Debt-specific inputs:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">minimum_payment</span> <span class="o">=</span> <span class="n">minimum_payment</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">living_expense</span> <span class="o">=</span> <span class="n">living_expense</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">savings_rate</span> <span class="o">=</span> <span class="n">savings_rate</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">accelerated_payment</span> <span class="o">=</span> <span class="n">accelerated_payment</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">payment_frequency</span> <span class="o">=</span> <span class="n">payment_frequency</span>
 
         <span class="c1"># Debt must have a negative balance</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">balance</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
@@ -231,6 +220,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">minimum_payment</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The minimum payment required each year. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_minimum_payment</span>
 
     <span class="nd">@minimum_payment</span><span class="o">.</span><span class="n">setter</span>
@@ -238,23 +228,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_minimum_payment</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">living_expense</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_living_expense</span>
-
-    <span class="nd">@living_expense</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">living_expense</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_living_expense</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">savings_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_savings_rate</span>
-
-    <span class="nd">@savings_rate</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">savings_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_savings_rate</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
-
-    <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">accelerated_payment</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The maximum amount to repay above the minimum payment. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_accelerated_payment</span>
 
     <span class="nd">@accelerated_payment</span><span class="o">.</span><span class="n">setter</span>
@@ -262,154 +237,106 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_accelerated_payment</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">payment_frequency</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; The number of times a year that payments are due. &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_payment_frequency</span>
+    <span class="k">def</span> <span class="nf">min_inflow_limit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The minimum annual payment on the debt. &quot;&quot;&quot;</span>
+        <span class="c1"># Must make at least the minimum payment</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">minimum_payment</span>
 
-    <span class="nd">@payment_frequency</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">payment_frequency</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Sets the debt&#39;s payment frequency. &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_payment_frequency</span> <span class="o">=</span> <span class="n">frequency_conv</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">max_inflow_limit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The maximum annual payment on the debt. &quot;&quot;&quot;</span>
+        <span class="c1"># Largest payment exceeds minimum only by `accelerated_payment`</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">minimum_payment</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">accelerated_payment</span>
 
-<div class="viewcode-block" id="Debt.min_inflow"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.debt.Debt.min_inflow">[docs]</a>    <span class="k">def</span> <span class="nf">min_inflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; The minimum payment on the debt. &quot;&quot;&quot;</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">max_outflow_limit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The maximum annual withdrawals from the debt account. &quot;&quot;&quot;</span>
+        <span class="c1"># No outflows permitted</span>
+        <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># No need to override min_outflow_limit - still $0.</span>
+
+<div class="viewcode-block" id="Debt.max_inflow"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.debt.Debt.max_inflow">[docs]</a>    <span class="k">def</span> <span class="nf">max_inflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s2">&quot;end&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The maximum amount that can be contributed at `when`. &quot;&quot;&quot;</span>
+        <span class="c1"># Max you can contribute is the lesser of: the limit and the</span>
+        <span class="c1"># remaining balance.</span>
         <span class="k">return</span> <span class="nb">min</span><span class="p">(</span>
-            <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">balance_at_time</span><span class="p">(</span><span class="n">when</span><span class="p">),</span>
-            <span class="nb">max</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">minimum_payment</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflows</span><span class="p">,</span>
-                <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
-        <span class="p">)</span></div>
+            <span class="c1"># Repay the whole balance (or none if positive)</span>
+            <span class="nb">max</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">balance_at_time</span><span class="p">(</span><span class="n">when</span><span class="p">),</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)),</span>
+            <span class="c1"># But no more than the maximum outflow:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">max_inflow_limit</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Debt.max_inflow"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.debt.Debt.max_inflow">[docs]</a>    <span class="k">def</span> <span class="nf">max_inflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; The payment at time `when` that would reduce balance to 0.</span>
+<div class="viewcode-block" id="Debt.max_inflows"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.debt.Debt.max_inflows">[docs]</a>    <span class="k">def</span> <span class="nf">max_inflows</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transaction_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">balance_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The maximum amounts that can be contributed at `timing`.</span>
 
-<span class="sd">        This is in addition to any existing payments in the account,</span>
-<span class="sd">        so if an inflow is added `max_inflow` will be reduced.</span>
+<span class="sd">        The output transaction values will be proportionate to the</span>
+<span class="sd">        values of `timing`, which are used as weights.</span>
 
-<span class="sd">        Example::</span>
-
-<span class="sd">                debt = Debt(-100)</span>
-<span class="sd">                debt.maximum_payment(&#39;start&#39;) == Money(100)  # True</span>
-<span class="sd">                debt.add_transaction(100, &#39;start&#39;)</span>
-<span class="sd">                debt.maximum_payment(&#39;start&#39;) == 0  # True</span>
-
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="nb">min</span><span class="p">(</span>
-            <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">balance_at_time</span><span class="p">(</span><span class="n">when</span><span class="p">),</span>
-            <span class="nb">max</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">minimum_payment</span>
-                <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">accelerated_payment</span>
-                <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflows</span><span class="p">,</span>
-                <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
-        <span class="p">)</span></div>
-
-<div class="viewcode-block" id="Debt.payment"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.debt.Debt.payment">[docs]</a>    <span class="k">def</span> <span class="nf">payment</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">savings_available</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
-        <span class="n">living_expenses_available</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="s1">&#39;Infinity&#39;</span><span class="p">),</span>
-        <span class="n">other_payments</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
-        <span class="n">when</span><span class="o">=</span><span class="s1">&#39;end&#39;</span>
-    <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Calculates the maximum payment amount for the year.</span>
-<span class="sd">        </span>
-<span class="sd">        Args:</span>
-<span class="sd">            savings_available (Money): The amount available from</span>
-<span class="sd">                savings to repay this debt this year. Optional.</span>
-<span class="sd">            living_expenses_available (Money): The amount available</span>
-<span class="sd">                from living expenses to repay this debt this year.</span>
-<span class="sd">                Optional.</span>
-<span class="sd">            other_payments (Money): An amount of money that is</span>
-<span class="sd">                planned for payment to this debt but which has</span>
-<span class="sd">                not yet been recorded as an inflow. Optional.</span>
-<span class="sd">            when (str, Decimal): The date at which the payment</span>
-<span class="sd">                is to occur.</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            Money: The maximum payment amount that can be made to</span>
-<span class="sd">                this account this year given the amounts available</span>
-<span class="sd">                for repayment.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Convert types of inputs if they aren&#39;t as expected.</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">savings_available</span><span class="p">,</span> <span class="n">Money</span><span class="p">):</span>
-            <span class="n">savings_available</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="n">savings_available</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">living_expenses_available</span><span class="p">,</span> <span class="n">Money</span><span class="p">):</span>
-            <span class="n">living_expenses_available</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="n">living_expenses_available</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other_payments</span><span class="p">,</span> <span class="n">Money</span><span class="p">):</span>
-            <span class="n">other_payments</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="n">other_payments</span><span class="p">)</span>
-
-        <span class="c1"># Set aside the base amount payable directly from living</span>
-        <span class="c1"># expenses (i.e. before drawing down any savings)</span>
-        <span class="n">base_living_expense</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">living_expense</span> <span class="o">-</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inflows</span> <span class="o">+</span> <span class="n">other_payments</span><span class="p">),</span>
-            <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-        <span class="p">)</span>
-        <span class="c1"># Apply the base living amount right up-front:</span>
-        <span class="n">payment</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
-            <span class="n">base_living_expense</span><span class="p">,</span>
-            <span class="n">living_expenses_available</span>
-        <span class="p">)</span>
-        <span class="n">living_expenses_available</span> <span class="o">-=</span> <span class="n">payment</span>
-
-        <span class="c1"># Deal with the special cases where we withdraw 0% from</span>
-        <span class="c1"># either savings or living expenses (to avoid DIV0 error).</span>
-        <span class="c1"># We do the same for both savings and living expenses</span>
-        <span class="c1"># because these impose separate limits.</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">savings_rate</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">max_savings</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="s1">&#39;Infinity&#39;</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">max_savings</span> <span class="o">=</span> <span class="n">savings_available</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">savings_rate</span>
-        <span class="c1"># (This could be indented, but it&#39;s much more readable</span>
-        <span class="c1"># this way. We can incur an extra comparison if it means</span>
-        <span class="c1"># we&#39;re being more Pythonic.)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">savings_rate</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">max_living</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="s1">&#39;Infinity&#39;</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">max_living</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="n">living_expenses_available</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">savings_rate</span><span class="p">))</span>
-
-        <span class="c1"># Available savings and living expenses will result in two</span>
-        <span class="c1"># different max payments; use the lesser of the two.</span>
-        <span class="n">payment</span> <span class="o">+=</span> <span class="nb">min</span><span class="p">(</span><span class="n">max_savings</span><span class="p">,</span> <span class="n">max_living</span><span class="p">)</span>
-
-        <span class="c1"># The payment shouldn&#39;t exceed the maximum inflow:</span>
-        <span class="k">return</span> <span class="nb">min</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">max_inflow</span><span class="p">(</span><span class="n">when</span><span class="p">)</span> <span class="o">-</span> <span class="n">other_payments</span><span class="p">,</span>
-            <span class="n">payment</span>
-        <span class="p">)</span></div>
-
-<div class="viewcode-block" id="Debt.payment_from_savings"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.debt.Debt.payment_from_savings">[docs]</a>    <span class="k">def</span> <span class="nf">payment_from_savings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">amount</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)):</span>
-        <span class="sd">&quot;&quot;&quot; The amount of annual payments made from savings.</span>
-
-<span class="sd">        NOTE: This method is not useful if called on a single</span>
-<span class="sd">        transation (if there are multiple inflows for the year)</span>
-<span class="sd">        because the `living_expense` amount applies on an annual</span>
-<span class="sd">        basis against all transactions, not each transaction</span>
-<span class="sd">        individually. Be careful!</span>
+<span class="sd">        For a `Debt`, this will return the amounts that return the</span>
+<span class="sd">        account to a zero balance.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            amount (Money): The amount paid against this debt in the</span>
-<span class="sd">                year.</span>
-<span class="sd">                Optional. If not provided, uses current inflows for</span>
-<span class="sd">                the year.</span>
-<span class="sd">            base (Money): Amounts already paid against this debt in</span>
-<span class="sd">                the year (and which have thus reduced the living</span>
-<span class="sd">                expenses portion available to be claimed.)</span>
-<span class="sd">                Optional.</span>
-<span class="sd">        </span>
-<span class="sd">        Returns:</span>
-<span class="sd">            Money: The amount paid from savings for the year.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">amount</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">amount</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflows</span>
-        <span class="c1"># Determine how much of this payment is eligible to be</span>
-        <span class="c1"># wholly included in living expenses (after accounting</span>
-        <span class="c1"># for past payments, i.e. `base`)</span>
-        <span class="n">living_expense</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">living_expense</span> <span class="o">-</span> <span class="n">base</span><span class="p">,</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
-        <span class="n">payment_from_savings</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="p">(</span><span class="n">amount</span> <span class="o">-</span> <span class="n">living_expense</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">savings_rate</span>
-        <span class="p">)</span>
+<span class="sd">            timing (Timing): A mapping of `{when: weight}` pairs.</span>
+<span class="sd">                Optional. Uses default_timing if not provided.</span>
+<span class="sd">            transaction_limit (Money): Total inflows will not exceed</span>
+<span class="sd">                this amount (not including any inflows already recorded</span>
+<span class="sd">                against this `Account`). Optional.</span>
+<span class="sd">            balance_limit (Money): This balance, if provided, will not</span>
+<span class="sd">                be exceeded at year-end. Optional.</span>
 
-        <span class="c1"># Payments should always be non-negative:</span>
-        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">payment_from_savings</span><span class="p">)</span></div></div>
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[float, Money]: A mapping of `{when: value}` pairs where</span>
+<span class="sd">                `value` indicates the maximum amount that can be</span>
+<span class="sd">                contributed at that time.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">balance_limit</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Only pay off debts until they reach $0 balance.</span>
+            <span class="c1"># (Superclass assumes we want to contribute indefinitely.)</span>
+            <span class="n">balance_limit</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">max_inflows</span><span class="p">(</span>
+            <span class="n">timing</span><span class="o">=</span><span class="n">timing</span><span class="p">,</span>
+            <span class="n">transaction_limit</span><span class="o">=</span><span class="n">transaction_limit</span><span class="p">,</span>
+            <span class="n">balance_limit</span><span class="o">=</span><span class="n">balance_limit</span><span class="p">,</span>
+            <span class="n">transactions</span><span class="o">=</span><span class="n">transactions</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Debt.min_inflows"><a class="viewcode-back" href="../../../forecaster.accounts.html#forecaster.accounts.debt.Debt.min_inflows">[docs]</a>    <span class="k">def</span> <span class="nf">min_inflows</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transaction_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">balance_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">transactions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The minimum amounts that must be contributed at `timing`.</span>
+
+<span class="sd">        The output transaction values will be proportionate to the</span>
+<span class="sd">        values of `timing`, which are used as weights.</span>
+
+<span class="sd">        For a `Debt`, this will return the minimum payments (or the</span>
+<span class="sd">        amounts that return the account to a zero balance, if less).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            timing (Timing): A mapping of `{when: weight}` pairs.</span>
+<span class="sd">                Optional. Uses default_timing if not provided.</span>
+<span class="sd">            transaction_limit (Money): Total inflows will not exceed</span>
+<span class="sd">                this amount (not including any inflows already recorded</span>
+<span class="sd">                against this `Account`). Optional.</span>
+<span class="sd">            balance_limit (Money): This balance, if provided, will not</span>
+<span class="sd">                be exceeded at year-end. Optional.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[float, Money]: A mapping of `{when: value}` pairs where</span>
+<span class="sd">                `value` indicates the maximum amount that can be</span>
+<span class="sd">                contributed at that time.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">balance_limit</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Only pay off debts until they reach $0 balance.</span>
+            <span class="c1"># (Superclass assumes we want to contribute indefinitely.)</span>
+            <span class="n">balance_limit</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">min_inflows</span><span class="p">(</span>
+            <span class="n">timing</span><span class="o">=</span><span class="n">timing</span><span class="p">,</span>
+            <span class="n">transaction_limit</span><span class="o">=</span><span class="n">transaction_limit</span><span class="p">,</span>
+            <span class="n">balance_limit</span><span class="o">=</span><span class="n">balance_limit</span><span class="p">,</span>
+            <span class="n">transactions</span><span class="o">=</span><span class="n">transactions</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div></div>
 </pre></div>
 
            </div>

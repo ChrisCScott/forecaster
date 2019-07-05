@@ -1,0 +1,870 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.strategy.transaction package &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="forecaster.strategy.debt_payment package" href="forecaster.strategy.debt_payment.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">forecaster</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="forecaster.html">forecaster package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="forecaster.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="forecaster.accounts.html">forecaster.accounts package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.canada.html">forecaster.canada package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.forecast.html">forecaster.forecast package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="forecaster.ledger.html">forecaster.ledger package</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="forecaster.strategy.html">forecaster.strategy package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster.forecaster">forecaster.forecaster module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster.person">forecaster.person module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster.scenario">forecaster.scenario module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster.settings">forecaster.settings module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster.tax">forecaster.tax module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster.utility">forecaster.utility module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="forecaster.html#module-forecaster">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">forecaster</a> &raquo;</li>
+        
+          <li><a href="forecaster.html">forecaster package</a> &raquo;</li>
+        
+          <li><a href="forecaster.strategy.html">forecaster.strategy package</a> &raquo;</li>
+        
+      <li>forecaster.strategy.transaction package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/forecaster.strategy.transaction.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="forecaster-strategy-transaction-package">
+<h1>forecaster.strategy.transaction package<a class="headerlink" href="#forecaster-strategy-transaction-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-forecaster.strategy.transaction.base">
+<span id="forecaster-strategy-transaction-base-module"></span><h2>forecaster.strategy.transaction.base module<a class="headerlink" href="#module-forecaster.strategy.transaction.base" title="Permalink to this headline">¶</a></h2>
+<p>Provides a class for determining schedules of transactions.</p>
+<p>These transaction schedules determine when transactions occur, in what
+amounts, and to which accounts.</p>
+<dl class="class">
+<dt id="forecaster.strategy.transaction.base.TransactionTraversal">
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.strategy.transaction.base.</code><code class="sig-name descname">TransactionTraversal</code><span class="sig-paren">(</span><em class="sig-param">priority</em>, <em class="sig-param">transaction_methods=None</em>, <em class="sig-param">group_methods=None</em>, <em class="sig-param">precision=Decimal('0.00001')</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/transaction/base.html#TransactionTraversal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.transaction.base.TransactionTraversal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Determines transactions to/from accounts based on a priority.</p>
+<p>Instances of this class, when initialized, receive a
+<cite>TransactionNode</cite> (or a data structure that is convertible to
+<cite>TransactionNode</cite>, e.g. <cite>list</cite>, <cite>tuple</cite>, <cite>dict</cite>, and/or <cite>Account</cite>).
+This is usually expressible as a tree (and this documentation
+usually describes it as as the “priority tree”), but a true tree
+structure is not required; for example, nodes can share children
+(even across levels).
+In fact, it often is not semantically a tree in practice, since
+leaf nodes (usually <cite>Account</cite> objects) can share contribution room
+or have other relationships not captured by the tree structure.</p>
+<p>Instances of this class, when called, traverse a representation of
+the priority tree to allocate transactions to the leaves (which are
+assumed to be accounts, although as described below they do not need
+to inherit from <cite>Account</cite>). The traversal is breadth-first, so that
+higher-level relationships are enforced in preference to lower-level
+relationships. For example:</p>
+<ul class="simple">
+<li><p>all lower-level ordered nodes will be exhausted before
+moving on to the next ordered node at a higher level; and</p></li>
+<li><p>all lower-level weighted nodes will be forced to deviate from
+their target allocation as much as necessary to minimize
+deviations by higher-order weighted nodes.</p></li>
+</ul>
+<p>This class generates a directed graph based on the input which
+represents the  relationships between nodes. It finds a minimum-cost
+maximum flow across the graph which it translates into transactions
+for each leaf node (usually <cite>Account</cite> objects). By default, it does this
+twice, once to allocate minimum transactions and then again to
+allocate maximum transactions.</p>
+<p>The semantics of <cite>TransactionNode</cite> inputs are respected, including
+limits on min/max in/outflows. See documentation for
+<cite>TransactionNode</cite> for more detail.</p>
+<p>As with all <cite>Strategy</cite> objects, objects of this type are callable
+and will return a result resulting from their various settings; in
+this case, a mapping of leaf nodes to transactions.</p>
+<p>Usually leaf nodes are <cite>Account</cite> objects, but any type can be used.
+If using another type, be sure to provide <cite>transaction_methods</cite>
+and <cite>group_methods</cite> that support all of the leaf nodes’ types.</p>
+<div class="admonition-examples admonition">
+<p class="admonition-title">Examples</p>
+<p>Collections can be nested (note also that <cite>account2</cite> repeats):
+<a href="#id1"><span class="problematic" id="id2">``</span></a>`
+subgroup = {account1: 0.5, account2: 0.5}
+priority = [subgroup, account2]  # valid priority tree
+strategy = TransactionStrategy(priority)
+transactions = strategy(available)</p>
+<p><a href="#id3"><span class="problematic" id="id4">``</span></a><a href="#id5"><span class="problematic" id="id6">`</span></a></p>
+<p>We can limit the total amount to contribute to <cite>subgroup</cite>
+(i.e. the equal-weighted group of account1 and account2)
+by using a single-element dict, as follows:
+<a href="#id7"><span class="problematic" id="id8">``</span></a>`
+limit = LimitTuple(max_inflows=Money(100))
+subgroup = TransactionNode(subgroup, limit=limit)
+priority = [subgroup, account2]
+strategy = TransactionStrategy(priority)
+transactions = strategy(available)</p>
+<p><a href="#id9"><span class="problematic" id="id10">``</span></a>`
+The result, assuming available represents net inflows, is that
+up to $100 will be contributed equally to <cite>account1</cite> and
+<cite>account2</cite>, with any excess going to <cite>account2</cite></p>
+</div>
+<dl class="attribute">
+<dt>
+<code class="sig-name descname">priority (TransactionNode, list[Any], dict[Any, Decimal],</code></dt>
+<dd><p>tuple[Any]): The (nested) collection of <cite>Account</cite> objects.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.transaction.base.TransactionTraversal.graph">
+<code class="sig-name descname">graph</code><a class="headerlink" href="#forecaster.strategy.transaction.base.TransactionTraversal.graph" title="Permalink to this definition">¶</a></dt>
+<dd><p>A directed graph representing all of
+the nodes from <cite>priority</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>networkx.DiGraph</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.transaction.base.TransactionTraversal.source">
+<code class="sig-name descname">source</code><a class="headerlink" href="#forecaster.strategy.transaction.base.TransactionTraversal.source" title="Permalink to this definition">¶</a></dt>
+<dd><p>The node to use as the source of all flows.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Hashable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.transaction.base.TransactionTraversal.sink">
+<code class="sig-name descname">sink</code><a class="headerlink" href="#forecaster.strategy.transaction.base.TransactionTraversal.sink" title="Permalink to this definition">¶</a></dt>
+<dd><p>The node to use as the destination of all
+flows.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Hashable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.transaction.base.TransactionTraversal.memo">
+<code class="sig-name descname">memo</code><a class="headerlink" href="#forecaster.strategy.transaction.base.TransactionTraversal.memo" title="Permalink to this definition">¶</a></dt>
+<dd><p>A record of all
+flows assigned by various invocations of
+<cite>_traverse_priority</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict[Hashable, dict[Hashable, int]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.transaction.base.TransactionTraversal.overflow_nodes">
+<code class="sig-name descname">overflow_nodes</code><a class="headerlink" href="#forecaster.strategy.transaction.base.TransactionTraversal.overflow_nodes" title="Permalink to this definition">¶</a></dt>
+<dd><p>A mapping of
+<cite>node: overflow_node</cite> pairs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict[Hashable, Hashable]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.transaction.base.TransactionTraversal.outbound_nodes">
+<code class="sig-name descname">outbound_nodes</code><a class="headerlink" href="#forecaster.strategy.transaction.base.TransactionTraversal.outbound_nodes" title="Permalink to this definition">¶</a></dt>
+<dd><p>A mapping of
+<cite>node: outbound_node</cite> pairs. Optional.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict[Hashable, Hashable]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.transaction.base.TransactionTraversal.transaction_methods">
+<code class="sig-name descname">transaction_methods</code><a class="headerlink" href="#forecaster.strategy.transaction.base.TransactionTraversal.transaction_methods" title="Permalink to this definition">¶</a></dt>
+<dd><p>A tuple of methods,
+each taking a leaf node as the sole argument and returning a
+transactions object (i.e. a <cite>dict[Decimal, Money]</cite> map of
+timings to values).
+Each method of the tuple respects a different limit (e.g.
+<cite>min_inflows</cite>, <cite>max_outflows</cite>).
+Optional. If not provided, methods supporting <cite>Account</cite>-type
+leaf nodes will be used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.util.LimitTuple" title="forecaster.accounts.util.LimitTuple">LimitTuple</a>[Callable]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.transaction.base.TransactionTraversal.group_methods">
+<code class="sig-name descname">group_methods</code><a class="headerlink" href="#forecaster.strategy.transaction.base.TransactionTraversal.group_methods" title="Permalink to this definition">¶</a></dt>
+<dd><p>A tuple of methods,
+each taking a leaf node as the sole argument and returning a
+group of linked accounts (i.e. a <cite>set[Account]</cite> or, more
+generally, <cite>set[T]</cite> where <cite>T</cite> is any valid type for a leaf
+node in <cite>priority</cite>).
+Each method of the tuple corresponds to a different link
+(e.g. <cite>max_inflow_link</cite>, <cite>min_outflow_link</cite>).
+Optional. If not provided, methods supporting <cite>Account</cite>-type
+leaf nodes will be used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.util.LimitTuple" title="forecaster.accounts.util.LimitTuple">LimitTuple</a>[Callable]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.transaction.base.TransactionTraversal.precision">
+<code class="sig-name descname">precision</code><a class="headerlink" href="#forecaster.strategy.transaction.base.TransactionTraversal.precision" title="Permalink to this definition">¶</a></dt>
+<dd><p>Results will be rounded to this
+level of precision.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float, Decimal</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>available</strong> (<em>dict</em><em>[</em><em>Decimal</em><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em>) – A time series of inflows
+and outflows, where keys are timings and values are
+inflows (positive) or outflows (negative).</p></li>
+<li><p><strong>total</strong> (<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a>) – The total amount of inflows/outflows to be
+allocated between the accounts represented in the
+<cite>priority</cite> tree. Optional. If not provided, the sum
+total of <cite>available</cite> will be allocated.</p></li>
+<li><p><strong>assign_min_first</strong> (<em>Bool</em>) – <p>If True, minimum inflows/outflows
+will be assigned first (in <cite>priority</cite> order, so if
+<cite>total</cite> is less than the sum of minimum inflows/outflows
+then low-priority will not have transactions assigned).
+Remaining money is then allocated in <cite>priority</cite> order,
+up to any limits on maximum inflows/outflows.</p>
+<p>If False, minimum inflows/outflows will not be assigned
+and the strategy will move directly to assigning up to
+the maximum inflows/outflows.</p>
+<p>Optional. Defaults to True.</p>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>A mapping of accounts to</dt><dd><p>transactions to (positive) or from (negative) those
+accounts. No <cite>list</cite>, <cite>dict</cite>, or other sub-collection is
+used as a key. Only the leaf node <cite>Account</cite>-like objects of
+the tree defined by <cite>priority</cite> are used as keys.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict[Hashable, dict[Decimal, <a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a>]]</p>
+</dd>
+</dl>
+<dl class="method">
+<dt id="forecaster.strategy.transaction.base.TransactionTraversal.__call__">
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param">available</em>, <em class="sig-param">total=None</em>, <em class="sig-param">assign_min=True</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/transaction/base.html#TransactionTraversal.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.transaction.base.TransactionTraversal.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines transactions to accounts based on <cite>available</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.transaction.base.TransactionTraversal.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">priority</em>, <em class="sig-param">transaction_methods=None</em>, <em class="sig-param">group_methods=None</em>, <em class="sig-param">precision=Decimal('0.00001')</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/transaction/base.html#TransactionTraversal.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.transaction.base.TransactionTraversal.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes TransactionTraversal.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.transaction.base.TransactionTraversal.priority">
+<em class="property">property </em><code class="sig-name descname">priority</code><a class="headerlink" href="#forecaster.strategy.transaction.base.TransactionTraversal.priority" title="Permalink to this definition">¶</a></dt>
+<dd><p>A priority tree defining how to add transactions to accounts</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-forecaster.strategy.transaction.graph">
+<span id="forecaster-strategy-transaction-graph-module"></span><h2>forecaster.strategy.transaction.graph module<a class="headerlink" href="#module-forecaster.strategy.transaction.graph" title="Permalink to this headline">¶</a></h2>
+<p>Provides methods for generating and manipulating graphs.</p>
+<p>Wraps networkx and adds a few convenience methods.</p>
+</div>
+<div class="section" id="module-forecaster.strategy.transaction.node">
+<span id="forecaster-strategy-transaction-node-module"></span><h2>forecaster.strategy.transaction.node module<a class="headerlink" href="#module-forecaster.strategy.transaction.node" title="Permalink to this headline">¶</a></h2>
+<p>Helper methods and classes for TransactionStrategy.</p>
+<dl class="class">
+<dt id="forecaster.strategy.transaction.node.TransactionNode">
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.strategy.transaction.node.</code><code class="sig-name descname">TransactionNode</code><span class="sig-paren">(</span><em class="sig-param">source</em>, <em class="sig-param">limits=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/transaction/node.html#TransactionNode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.transaction.node.TransactionNode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A data container for notes about nodes of a priority tree.</p>
+<p>This is intended for use with TransactionStrategy, which provides
+traversal logic.</p>
+<dl class="attribute">
+<dt id="forecaster.strategy.transaction.node.TransactionNode.source">
+<code class="sig-name descname">source</code><a class="headerlink" href="#forecaster.strategy.transaction.node.TransactionNode.source" title="Permalink to this definition">¶</a></dt>
+<dd><p>A
+user-provided tree structure.</p>
+<p>Nodes may be native <cite>dict</cite>, <cite>list</cite>, and <cite>tuple</cite> objects.
+<cite>dict</cite> elements are unordered; each key is a child node and
+the corresponding value is a weight. <cite>list</cite> or <cite>tuple</cite>
+objects provide an ordered sequence of child nodes. (Tip:
+use <cite>tuple</cite> for nodes that need to be stored as keys in a
+<cite>dict</cite>). <cite>Account</cite> objects (or similar) are leaf nodes.</p>
+<p>Nodes may optionally be <cite>TransactionNode</cite> objects, which
+must provide their own non-<cite>TransactionNode</cite> <cite>source</cite>
+attributes. These will not be wrapped in a further
+<cite>TransactionNode</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict[Any, Decimal], list[Any], tuple[Any], <a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.base.Account" title="forecaster.accounts.base.Account">Account</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.transaction.node.TransactionNode.limits">
+<code class="sig-name descname">limits</code><a class="headerlink" href="#forecaster.strategy.transaction.node.TransactionNode.limits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Limits on min/max in/outflows for
+this <cite>TransactionNode</cite>. These do not replace any limits on
+leaf nodes’ <cite>Account</cite> objects. The intention is that the
+strictest limit will be enforced by traversing code.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.util.LimitTuple" title="forecaster.accounts.util.LimitTuple">LimitTuple</a>[<a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="sig-name descname">children (dict[TransactionNode</code></dt>
+<dd><p>Decimal],
+tuple(TransactionNode)): The children of this node, which
+are <cite>TransactionNode</cite> objects encapulating the children
+of the corresponding node in <cite>source</cite>. (If a child in
+<cite>source</cite> is a <cite>TransactionNode</cite>, it is not re-encapsulated).</p>
+<p><cite>children</cite> is a dict if the node is weighted (i.e. if the
+<cite>source</cite> version of the node is a dict) and a tuple if the
+node is ordered (i.e. if the <cite>source</cite> version of the node
+is a list or tuple).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.transaction.node.TransactionNode.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">source</em>, <em class="sig-param">limits=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/transaction/node.html#TransactionNode.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.transaction.node.TransactionNode.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes TransactionNode.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.transaction.node.TransactionNode.children_subset">
+<code class="sig-name descname">children_subset</code><span class="sig-paren">(</span><em class="sig-param">subset</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/transaction/node.html#TransactionNode.children_subset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.transaction.node.TransactionNode.children_subset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a reduced form of <cite>children</cite> based on <cite>subset</cite>.</p>
+<p>The reduced form includes only children in <cite>subset</cite> but has the
+same typing as <cite>children</cite>. So, for example, for a weighted node
+<cite>node.children_subset({child_node})</cite> will return a dict of the
+form <cite>{child_node: weight}</cite> where <cite>weight</cite> is equal to
+<cite>node.children[child_node]</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>subset</strong> (<em>Container</em>) – An iterable container containing only
+elements of <cite>node.children</cite>.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>KeyError</strong> – An element of <cite>subset</cite> is not present in
+    <cite>self.children</cite>.</p></li>
+<li><p><strong>NotImplementedError</strong> – <cite>node.children</cite> is of a type that this
+    class does not recognize.
+    This is most likely caused by implementing a subclass
+    that allows for a differently-typed <cite>children</cite> attribute
+    but which hasn’t overloaded this method to deal with it.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.transaction.node.TransactionNode.is_leaf_node">
+<code class="sig-name descname">is_leaf_node</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/transaction/node.html#TransactionNode.is_leaf_node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.transaction.node.TransactionNode.is_leaf_node" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if the node is a leaf node, False otherwise.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.transaction.node.TransactionNode.is_ordered">
+<code class="sig-name descname">is_ordered</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/transaction/node.html#TransactionNode.is_ordered"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.transaction.node.TransactionNode.is_ordered" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if the node is an ordered parent node.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.transaction.node.TransactionNode.is_parent_node">
+<code class="sig-name descname">is_parent_node</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/transaction/node.html#TransactionNode.is_parent_node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.transaction.node.TransactionNode.is_parent_node" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if the node is a parent (non-leaf) node.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.transaction.node.TransactionNode.is_weighted">
+<code class="sig-name descname">is_weighted</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/transaction/node.html#TransactionNode.is_weighted"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.transaction.node.TransactionNode.is_weighted" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if the node is a weighted parent node.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-forecaster.strategy.transaction.strategy">
+<span id="forecaster-strategy-transaction-strategy-module"></span><h2>forecaster.strategy.transaction.strategy module<a class="headerlink" href="#module-forecaster.strategy.transaction.strategy" title="Permalink to this headline">¶</a></h2>
+<p>Provides Strategy-type wrappers for TransactionTraversal.</p>
+<dl class="class">
+<dt id="forecaster.strategy.transaction.strategy.TransactionStrategy">
+<em class="property">class </em><code class="sig-prename descclassname">forecaster.strategy.transaction.strategy.</code><code class="sig-name descname">TransactionStrategy</code><span class="sig-paren">(</span><em class="sig-param">strategy</em>, <em class="sig-param">weights</em>, <em class="sig-param">debt_strategy=None</em>, <em class="sig-param">high_interest_threshold=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/transaction/strategy.html#TransactionStrategy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.transaction.strategy.TransactionStrategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="forecaster.strategy.html#forecaster.strategy.base.Strategy" title="forecaster.strategy.base.Strategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">forecaster.strategy.base.Strategy</span></code></a></p>
+<p>Determines transactions to/from a group of accounts.</p>
+<p>This is simply a convenient wrapper for <cite>TransactionTraversal</cite>. It
+generates a suitable <cite>priority</cite> tree based on the selected strategy
+and then traverses the tree to generate transactions for the
+accounts.</p>
+<dl class="attribute">
+<dt id="forecaster.strategy.transaction.strategy.TransactionStrategy.strategy">
+<code class="sig-name descname">strategy</code><a class="headerlink" href="#forecaster.strategy.transaction.strategy.TransactionStrategy.strategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Either a string corresponding to a
+particular strategy or an instance of the strategy itself.
+See <cite>strategies</cite> for acceptable keys.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>str, func</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.transaction.strategy.TransactionStrategy.strategies">
+<code class="sig-name descname">strategies</code><a class="headerlink" href="#forecaster.strategy.transaction.strategy.TransactionStrategy.strategies" title="Permalink to this definition">¶</a></dt>
+<dd><p>{str, func} pairs where each key identifies
+a strategy (in human-readable text) and each value is a
+function with the same arguments and return value as
+transactions(). See its documentation for more info.</p>
+<p>Acceptable keys include:</p>
+<ul class="simple">
+<li><p>“TODO”</p></li>
+<li><p>“TODO”</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.transaction.strategy.TransactionStrategy.debt_strategy">
+<code class="sig-name descname">debt_strategy</code><a class="headerlink" href="#forecaster.strategy.transaction.strategy.TransactionStrategy.debt_strategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>A key in <cite>DebtPayment.strategies</cite>.
+Strategies will prioritize debts according to this strategy.
+See <cite>DebtPaymentStrategy</cite> for more information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="forecaster.strategy.transaction.strategy.TransactionStrategy.high_interest_threshold">
+<code class="sig-name descname">high_interest_threshold</code><a class="headerlink" href="#forecaster.strategy.transaction.strategy.TransactionStrategy.high_interest_threshold" title="Permalink to this definition">¶</a></dt>
+<dd><p>Debt accounts with this rate
+of interest or greater will be considered high-interest
+and those with lower interest rates will be considered
+low-interest. Some strategies use this division to determine
+which debts to prioritize ahead of investments.</p>
+<p>Optional. If not provided, all debts are considered
+high-interest.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Decimal</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>available</strong> (<em>dict</em><em>[</em><em>float</em><em>, </em><a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money"><em>Money</em></a><em>]</em>) – The amounts to be
+contributed to (or withdrawn from, if negative) the
+accounts, as a mapping of {timing: value} pairs.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A mapping of accounts to
+transactions.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict[<a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.base.Account" title="forecaster.accounts.base.Account">Account</a>, dict[Decimal, <a class="reference internal" href="forecaster.ledger.html#forecaster.ledger.money.Money" title="forecaster.ledger.money.Money">Money</a>]]</p>
+</dd>
+</dl>
+<dl class="method">
+<dt id="forecaster.strategy.transaction.strategy.TransactionStrategy.__call__">
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param">available</em>, <em class="sig-param">accounts</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/transaction/strategy.html#TransactionStrategy.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.transaction.strategy.TransactionStrategy.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dict of account: transaction pairs.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.transaction.strategy.TransactionStrategy.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">strategy</em>, <em class="sig-param">weights</em>, <em class="sig-param">debt_strategy=None</em>, <em class="sig-param">high_interest_threshold=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/transaction/strategy.html#TransactionStrategy.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.transaction.strategy.TransactionStrategy.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Init TransactionStrategy.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.transaction.strategy.TransactionStrategy.debt_priority">
+<code class="sig-name descname">debt_priority</code><span class="sig-paren">(</span><em class="sig-param">debts</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/transaction/strategy.html#TransactionStrategy.debt_priority"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.transaction.strategy.TransactionStrategy.debt_priority" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts a collection of debts into a priority tree.</p>
+<p>This method uses the selected priority method (e.g.
+<cite>avalanche_priority</cite>, <cite>snowball_priority</cite>) to convert <cite>debts</cite>
+into a priority tree.</p>
+<dl class="simple">
+<dt>Arg:</dt><dd><p>debt (set[Debt]): Debts to organize into a priority tree.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>An ordered list of <cite>Debt</cite> objects, with the
+order determined according to <cite>debt_strategy</cite>. This is a
+simple priority tree that can be embedded into a larger
+tree.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>list[<a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.debt.Debt" title="forecaster.accounts.debt.Debt">Debt</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.transaction.strategy.TransactionStrategy.divide_debts">
+<code class="sig-name descname">divide_debts</code><span class="sig-paren">(</span><em class="sig-param">accounts</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/transaction/strategy.html#TransactionStrategy.divide_debts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.transaction.strategy.TransactionStrategy.divide_debts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Separates high- and low-interest debts.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>accounts</strong> (<em>Iterable</em><em>[</em><a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.base.Account" title="forecaster.accounts.base.Account"><em>Account</em></a><em>]</em>) – A collection of accounts,
+which may or may not contain any <cite>Debt</cite> members.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>All
+<cite>Debt</cite>-type accounts in <cite>accounts</cite> with outstanding
+balances, as a <cite>(low_interest, high_interest)</cite> tuple.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple[frozenset[<a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.base.Account" title="forecaster.accounts.base.Account">Account</a>], frozenset[<a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.base.Account" title="forecaster.accounts.base.Account">Account</a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="sig-name descname">strategies</code><em class="property"> = {'Ordered': &lt;function TransactionStrategy.strategy_ordered&gt;, 'Weighted': &lt;function TransactionStrategy.strategy_weighted&gt;}</em></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.transaction.strategy.TransactionStrategy.strategy_ordered">
+<code class="sig-name descname">strategy_ordered</code><span class="sig-paren">(</span><em class="sig-param">groups</em>, <em class="sig-param">*args</em>, <em class="sig-param">subtrees=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/transaction/strategy.html#TransactionStrategy.strategy_ordered"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.transaction.strategy.TransactionStrategy.strategy_ordered" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a priority tree with ordered accounts.</p>
+<p>This strategy treats the values of <cite>TransactionStrategy.weights</cite>
+as ordinals. The key with the lowest value (usually 1) are
+first in the order, followed by the next-lowest key.</p>
+<p>This method does not translate the keys of
+<cite>TransactionStrategy.weights</cite> into accounts. That should be done
+in advance, so that <cite>groups</cite> contains only sets of accounts
+mapped to weights. Each group should have a unique weight,
+otherwise the behaviour is undefined.
+_This method will fail if <cite>groups</cite> contains a <cite>type</cite> object!_</p>
+<p>Where multiple accounts are mapped to a given weight (by being
+contained by the same group), they will be added to the priority
+tree as a weighted node. That node will be nested within an
+ordered tree.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>groups</strong> (<em>dict</em><em>[</em><em>frozenset</em><em>[</em><a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.base.Account" title="forecaster.accounts.base.Account"><em>Account</em></a><em>]</em><em>, </em><em>Decimal</em><em>]</em>) – Sets of accounts
+mapped to the order (i.e. weight) associated with the
+set of accounts. Weights should be unique, otherwise
+behaviour is undefined.</p></li>
+<li><p><strong>subtrees</strong> (<em>dict</em><em>[</em><em>frozenset</em><em>[</em><a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.base.Account" title="forecaster.accounts.base.Account"><em>Account</em></a><em>]</em><em>, </em><em>Any</em><em>]</em>) – Maps groups to
+priority trees. If a given group is in <cite>subtrees</cite>, the
+corresponding value in <cite>subtrees</cite> will be inserted into
+the priority tree instead of whatever this method would
+ordinarily generate (e.g. an equal-weighted dict).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An ordered
+priority tree, potentially with nested priority trees of
+arbitrary form (if provided by <cite>subtrees</cite>, otherwise all
+nested trees are equal-weighted dicts).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list((<a class="reference internal" href="#forecaster.strategy.transaction.node.TransactionNode" title="forecaster.strategy.transaction.node.TransactionNode">TransactionNode</a>, list[Any], dict[Any]))</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="forecaster.strategy.transaction.strategy.TransactionStrategy.strategy_weighted">
+<code class="sig-name descname">strategy_weighted</code><span class="sig-paren">(</span><em class="sig-param">groups</em>, <em class="sig-param">*args</em>, <em class="sig-param">subtrees=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/transaction/strategy.html#TransactionStrategy.strategy_weighted"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.transaction.strategy.TransactionStrategy.strategy_weighted" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a priority tree with ordered accounts.</p>
+<p>This strategy treats the values of <cite>TransactionStrategy.weights</cite>
+as proportional weights. Each group will receive its associated
+weight. Weights do not need to be unique between groups.</p>
+<p>This method does not translate the keys of
+<cite>TransactionStrategy.weights</cite> into accounts. That should be done
+in advance, so that <cite>groups</cite> contains only sets of accounts
+mapped to weights.
+_This method will fail if <cite>groups</cite> contains a <cite>type</cite> object!_</p>
+<p>Where multiple accounts are mapped to a given weight (by being
+contained by the same group), they will be added to the priority
+tree as a weighted node. That node will be nested within a
+weighted tree.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>groups</strong> (<em>dict</em><em>[</em><em>frozenset</em><em>[</em><a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.base.Account" title="forecaster.accounts.base.Account"><em>Account</em></a><em>]</em><em>, </em><em>Decimal</em><em>]</em>) – Sets of accounts
+mapped to the weight associated with the set.</p></li>
+<li><p><strong>subtrees</strong> (<em>dict</em><em>[</em><em>frozenset</em><em>[</em><a class="reference internal" href="forecaster.accounts.html#forecaster.accounts.base.Account" title="forecaster.accounts.base.Account"><em>Account</em></a><em>]</em><em>, </em><em>Any</em><em>]</em>) – Maps groups to
+priority trees. If a given group is in <cite>subtrees</cite>, the
+corresponding value in <cite>subtrees</cite> will be inserted into
+the priority tree instead of whatever this method would
+ordinarily generate (e.g. an equal-weighted dict).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A weighted priority tree, potentially with nested priority
+trees of arbitrary form (if provided by <cite>subtrees</cite>,
+otherwise all nested trees are equal-weighted dicts).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict((<a class="reference internal" href="#forecaster.strategy.transaction.node.TransactionNode" title="forecaster.strategy.transaction.node.TransactionNode">TransactionNode</a>, list[Any], dict[Any]), Decimal)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-forecaster.strategy.transaction.util">
+<span id="forecaster-strategy-transaction-util-module"></span><h2>forecaster.strategy.transaction.util module<a class="headerlink" href="#module-forecaster.strategy.transaction.util" title="Permalink to this headline">¶</a></h2>
+<p>Defines helper functions for identifying an account’s min/max.</p>
+<dl class="function">
+<dt id="forecaster.strategy.transaction.util.group_default_methods">
+<code class="sig-prename descclassname">forecaster.strategy.transaction.util.</code><code class="sig-name descname">group_default_methods</code><span class="sig-paren">(</span><em class="sig-param">field_names=LimitTuple(min_inflow='min_inflow_link'</em>, <em class="sig-param">max_inflow='max_inflow_link'</em>, <em class="sig-param">min_outflow='min_outflow_link'</em>, <em class="sig-param">max_outflow='max_outflow_link')</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/transaction/util.html#group_default_methods"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.transaction.util.group_default_methods" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns methods returning sets of linked accts. as a LimitTuple.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="forecaster.strategy.transaction.util.transaction_default_methods">
+<code class="sig-prename descclassname">forecaster.strategy.transaction.util.</code><code class="sig-name descname">transaction_default_methods</code><span class="sig-paren">(</span><em class="sig-param">field_names=LimitTuple(min_inflow='min_inflows'</em>, <em class="sig-param">max_inflow='max_inflows'</em>, <em class="sig-param">min_outflow='min_outflows'</em>, <em class="sig-param">max_outflow='max_outflows')</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/forecaster/strategy/transaction/util.html#transaction_default_methods"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#forecaster.strategy.transaction.util.transaction_default_methods" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns methods for finding min/max in/outflows as a LimitTuple.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-forecaster.strategy.transaction">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-forecaster.strategy.transaction" title="Permalink to this headline">¶</a></h2>
+<p>A module for providing strategies for per-account transactions.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="forecaster.strategy.debt_payment.html" class="btn btn-neutral float-left" title="forecaster.strategy.debt_payment package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -173,7 +173,7 @@
     <span class="c1"># `property` (i.e. lowercase)</span>
     <span class="c1"># pylint: disable=invalid-name</span>
 
-<div class="viewcode-block" id="recorded_property.__init__"><a class="viewcode-back" href="../../../forecaster.ledger.html#forecaster.person.recorded_property.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fget</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="recorded_property.__init__"><a class="viewcode-back" href="../../../forecaster.ledger.html#forecaster.person.recorded_property.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fget</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fdel</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Init recorded_property.</span>
 
 <span class="sd">        This wraps the getter received via the `@recorded_property`</span>
@@ -183,7 +183,23 @@
 <span class="sd">        provided; this decorator automatically generates one based on</span>
 <span class="sd">        this dict of recorded values.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="n">fget</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="c1"># `property` is weird in that its init seems to be called</span>
+        <span class="c1"># multiple times, one for each definition of `fget`, `fset`,</span>
+        <span class="c1"># and `fdel`. Only one of those methods will have the</span>
+        <span class="c1"># user-defined name (the others default to `getter`, `setter`,</span>
+        <span class="c1"># and `deleter`, respectively), and none are bound at decoration</span>
+        <span class="c1"># time! Try to determine which method has the correct name:</span>
+        <span class="k">if</span> <span class="n">fget</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">fget</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">!=</span> <span class="s2">&quot;getter&quot;</span><span class="p">:</span>
+            <span class="n">name_method</span> <span class="o">=</span> <span class="n">fget</span>
+        <span class="k">elif</span> <span class="n">fset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">fset</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">!=</span> <span class="s2">&quot;setter&quot;</span><span class="p">:</span>
+            <span class="n">name_method</span> <span class="o">=</span> <span class="n">fset</span>
+        <span class="k">elif</span> <span class="n">fdel</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">fdel</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">!=</span> <span class="s2">&quot;deleter&quot;</span><span class="p">:</span>
+            <span class="n">name_method</span> <span class="o">=</span> <span class="n">fdel</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">name_method</span> <span class="o">=</span> <span class="n">fget</span>
+        <span class="bp">self</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="n">name_method</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="c1"># We will name the corresponding history objects based on this</span>
+        <span class="c1"># object&#39;s name:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">history_prop_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s1">&#39;_history&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">history_dict_name</span> <span class="o">=</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">history_prop_name</span>
 
@@ -201,23 +217,44 @@
         <span class="k">def</span> <span class="nf">setter</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
             <span class="sd">&quot;&quot;&quot; Adds value to cache, without overwriting user input. &quot;&quot;&quot;</span>
             <span class="c1"># Don&#39;t overwrite a value provided via an inputs dict:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="vm">__name__</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">inputs</span> <span class="ow">and</span>
-                <span class="n">obj</span><span class="o">.</span><span class="n">this_year</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="vm">__name__</span><span class="p">]</span>
-            <span class="p">):</span>
-                <span class="n">history_dict</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">history_dict_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="vm">__name__</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">inputs</span> <span class="ow">and</span>
+                    <span class="n">obj</span><span class="o">.</span><span class="n">this_year</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="vm">__name__</span><span class="p">]):</span>
+                <span class="k">return</span>
+            <span class="c1"># Otherwise, there are two possibilities. Both involve</span>
+            <span class="c1"># checking the history dict, so get that now:</span>
+            <span class="n">history_dict</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">history_dict_name</span><span class="p">)</span>
+            <span class="c1"># Option one: No custom setter provided.</span>
+            <span class="k">if</span> <span class="n">fset</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Cache the value in the history dict</span>
                 <span class="n">history_dict</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">this_year</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+            <span class="c1"># Option two: A custom setter was provided</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Remove any cached value and call the custom setter:</span>
+                <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">this_year</span> <span class="ow">in</span> <span class="n">history_dict</span><span class="p">:</span>
+                    <span class="k">del</span> <span class="n">history_dict</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">this_year</span><span class="p">]</span>
+                <span class="n">fset</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+                <span class="c1"># NOTE: We don&#39;t update the cache here; we leave it to</span>
+                <span class="c1"># the custom setter to ensure that subsequent calls to</span>
+                <span class="c1"># this property&#39;s `fget` will return an appropriately</span>
+                <span class="c1"># parsed form of `val`.</span>
+                <span class="c1"># (We *could* invoke `fget` here and cache its result,</span>
+                <span class="c1"># but this could lead to side-effects)</span>
 
         <span class="k">def</span> <span class="nf">deleter</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
             <span class="sd">&quot;&quot;&quot; Removes a cached value, without removing user input. &quot;&quot;&quot;</span>
             <span class="c1"># Don&#39;t delete a value provided via an inputs dict:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="vm">__name__</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">inputs</span> <span class="ow">and</span>
-                <span class="n">obj</span><span class="o">.</span><span class="n">this_year</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="vm">__name__</span><span class="p">]</span>
-            <span class="p">):</span>
-                <span class="n">history_dict</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">history_dict_name</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">this_year</span> <span class="ow">in</span> <span class="n">history_dict</span><span class="p">:</span>
-                    <span class="k">del</span> <span class="n">history_dict</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">this_year</span><span class="p">]</span>
+            <span class="k">if</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="vm">__name__</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">inputs</span> <span class="ow">and</span>
+                    <span class="n">obj</span><span class="o">.</span><span class="n">this_year</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="vm">__name__</span><span class="p">]):</span>
+                <span class="k">return</span>
+            <span class="c1"># Otherwise, delete the entry from `history_dict` and call</span>
+            <span class="c1"># `fdel` (if provided):</span>
+            <span class="n">history_dict</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">history_dict_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">this_year</span> <span class="ow">in</span> <span class="n">history_dict</span><span class="p">:</span>
+                <span class="k">del</span> <span class="n">history_dict</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">this_year</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">fdel</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">fdel</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">fget</span><span class="o">=</span><span class="n">getter</span><span class="p">,</span> <span class="n">fset</span><span class="o">=</span><span class="n">setter</span><span class="p">,</span> <span class="n">fdel</span><span class="o">=</span><span class="n">deleter</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="n">doc</span><span class="p">)</span>
 
@@ -225,18 +262,18 @@
             <span class="sd">&quot;&quot;&quot; Returns history dict for the property. &quot;&quot;&quot;</span>
             <span class="c1"># For non-cached properties, the history dict might</span>
             <span class="c1"># not include a property for the current year.</span>
-            <span class="c1"># NOTE: Consider building a new dict and adding the</span>
-            <span class="c1"># current year to that (if not already in the dict),</span>
-            <span class="c1"># so that *_history always contains the current year</span>
             <span class="n">history_dict</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">history_dict_name</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">this_year</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">history_dict</span><span class="p">:</span>
+                <span class="c1"># Build a new dict and add the current year to that</span>
+                <span class="c1"># (if not already in the dict), so that *_history always</span>
+                <span class="c1"># contains the current year:</span>
                 <span class="n">history_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">history_dict</span><span class="p">)</span>  <span class="c1"># copy dict</span>
                 <span class="n">history_dict</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">this_year</span><span class="p">]</span> <span class="o">=</span> <span class="n">fget</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>  <span class="c1"># add this year</span>
             <span class="k">return</span> <span class="n">history_dict</span>
 
         <span class="n">history</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">history_prop_name</span>
 
-        <span class="c1"># Cast history_function to a property with sane docstring.</span>
+        <span class="c1"># Cast `history` to a property with sane docstring.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">history_property</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span>
             <span class="n">fget</span><span class="o">=</span><span class="n">history</span><span class="p">,</span>
             <span class="n">doc</span><span class="o">=</span><span class="s1">&#39;Record of &#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s1">&#39; over all past years.&#39;</span>
@@ -249,14 +286,15 @@
     <span class="c1"># `property` (i.e. lowercase)</span>
     <span class="c1"># pylint: disable=invalid-name</span>
 
-    <span class="c1"># NOTE: Due to how decorators&#39; pie-notation works, this is much</span>
-    <span class="c1"># simpler than extending `recorded_property` to take a `cached`</span>
-    <span class="c1"># argument (since `@recorded_property` (with no args) calls only</span>
-    <span class="c1"># __init__ and `@recorded_property(cached=True)` calls __init__</span>
-    <span class="c1"># with the keyword arg `cached` and then `__call__` with the</span>
-    <span class="c1"># decorated method -- which makes `recorded_property` a much more</span>
-    <span class="c1"># complicated subclass of `property`.)</span>
-<div class="viewcode-block" id="recorded_property_cached.__init__"><a class="viewcode-back" href="../../../forecaster.ledger.html#forecaster.person.recorded_property_cached.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fget</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="c1"># NOTE: Due to how decorators&#39; pie-notation works, adding this</span>
+    <span class="c1"># subclass is much simpler than extending `recorded_property` to</span>
+    <span class="c1"># take a `cached` argument. </span>
+    <span class="c1"># `@recorded_property` (with no args) calls only __init__, whereas</span>
+    <span class="c1"># `@recorded_property(cached=True)` calls __init__ with the keyword</span>
+    <span class="c1"># arg `cached` and then `__call__` with the decorated method --</span>
+    <span class="c1"># which makes `recorded_property` a much more complicated subclass</span>
+    <span class="c1"># of `property`!</span>
+<div class="viewcode-block" id="recorded_property_cached.__init__"><a class="viewcode-back" href="../../../forecaster.ledger.html#forecaster.person.recorded_property_cached.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fget</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fdel</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Overrides the property getter to cache on first call. &quot;&quot;&quot;</span>
 
         <span class="c1"># Wrap the getter in a method that will cache the property the</span>
@@ -268,11 +306,12 @@
             <span class="n">history_dict</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">this_year</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
             <span class="k">return</span> <span class="n">val</span>
 
-        <span class="c1"># Property needs the original name and docstring:</span>
+        <span class="c1"># The wrapping getter function should mimic the name and</span>
+        <span class="c1"># docstring of the `fget` argument:</span>
         <span class="n">getter</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="n">fget</span><span class="o">.</span><span class="vm">__name__</span>
         <span class="n">getter</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">fget</span><span class="o">.</span><span class="vm">__doc__</span>
 
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">fget</span><span class="o">=</span><span class="n">getter</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="n">doc</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">fget</span><span class="o">=</span><span class="n">getter</span><span class="p">,</span> <span class="n">fset</span><span class="o">=</span><span class="n">fset</span><span class="p">,</span> <span class="n">fdel</span><span class="o">=</span><span class="n">fdel</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="n">doc</span><span class="p">)</span>
 
         <span class="c1"># Override history property with different method that adds the</span>
         <span class="c1"># current year&#39;s value to the cache if it isn&#39;t already there:</span>

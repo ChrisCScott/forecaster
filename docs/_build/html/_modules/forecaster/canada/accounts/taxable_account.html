@@ -148,7 +148,7 @@
            <div itemprop="articleBody">
             
   <h1>Source code for forecaster.canada.accounts.taxable_account</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot; TODO &quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot; Provides a Canadian taxable investment account. &quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">forecaster.accounts</span> <span class="k">import</span> <span class="n">Account</span>
 <span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="p">(</span>
@@ -183,9 +183,9 @@
     <span class="c1"># (But we might want to also model rental income as well...)</span>
 
 <div class="viewcode-block" id="TaxableAccount.__init__"><a class="viewcode-back" href="../../../../forecaster.canada.accounts.html#forecaster.canada.accounts.taxable_account.TaxableAccount.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-        <span class="n">nper</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">acb</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+            <span class="n">nper</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">default_timing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">acb</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Constructor for `TaxableAccount`.</span>
 
 <span class="sd">        See documentation for `Account` for information on args not</span>
@@ -201,7 +201,8 @@
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">owner</span><span class="o">=</span><span class="n">owner</span><span class="p">,</span> <span class="n">balance</span><span class="o">=</span><span class="n">balance</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="n">rate</span><span class="p">,</span> <span class="n">nper</span><span class="o">=</span><span class="n">nper</span><span class="p">,</span>
-            <span class="n">inputs</span><span class="o">=</span><span class="n">inputs</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="n">initial_year</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">inputs</span><span class="o">=</span><span class="n">inputs</span><span class="p">,</span> <span class="n">initial_year</span><span class="o">=</span><span class="n">initial_year</span><span class="p">,</span>
+            <span class="n">default_timing</span><span class="o">=</span><span class="n">default_timing</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="c1"># If acb wasn&#39;t provided, assume there have been no capital</span>
         <span class="c1"># gains or losses, so acb = balance.</span>
@@ -284,8 +285,10 @@
         <span class="c1"># Only 50% of capital gains are included in taxable income</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">capital_gain</span> <span class="o">/</span> <span class="mi">2</span></div>
 
-        <span class="c1"># TODO: Track asset allocation and apportion growth in the</span>
-        <span class="c1"># account between capital gains, dividends, etc.</span>
+        <span class="c1"># TODO: Apportion growth between asset classes.</span>
+        <span class="c1"># This would require us to track asset allocation and would</span>
+        <span class="c1"># enable us to determine how much growth is capital gains,</span>
+        <span class="c1"># dividends, etc.</span>
 
     <span class="c1"># TODO: Implement tax_withheld and tax_credit.</span>
     <span class="c1"># tax_withheld: foreign withholding taxes.</span>

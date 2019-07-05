@@ -152,8 +152,8 @@
 
 <span class="kn">from</span> <span class="nn">forecaster.ledger</span> <span class="k">import</span> <span class="p">(</span>
     <span class="n">Money</span><span class="p">,</span> <span class="n">recorded_property</span><span class="p">,</span> <span class="n">recorded_property_cached</span><span class="p">)</span>
-<span class="kn">from</span> <span class="nn">forecaster.accounts</span> <span class="k">import</span> <span class="n">Account</span>
 <span class="kn">from</span> <span class="nn">forecaster.forecast.subforecast</span> <span class="k">import</span> <span class="n">SubForecast</span>
+<span class="kn">from</span> <span class="nn">forecaster.utility</span> <span class="k">import</span> <span class="n">transactions_from_timing</span>
 
 <div class="viewcode-block" id="WithdrawalForecast"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast">[docs]</a><span class="k">class</span> <span class="nc">WithdrawalForecast</span><span class="p">(</span><span class="n">SubForecast</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; A forecast of withdrawals from a portfolio over time.</span>
@@ -163,12 +163,10 @@
 <span class="sd">        people (Iterable[Person]): The plannees.</span>
 <span class="sd">        accounts (Iterable[Account]): Retirement accounts of the</span>
 <span class="sd">            `people`.</span>
-<span class="sd">        scenario (Scenario): Economic information for the forecast</span>
-<span class="sd">            (e.g. inflation and stock market returns for each year)</span>
-<span class="sd">        account_transaction_strategy (AccountTransactionStrategy):</span>
+<span class="sd">        transaction_strategy (TransactionStrategy):</span>
 <span class="sd">            A callable object that determines the schedule of</span>
 <span class="sd">            transactions for any contributions during the year.</span>
-<span class="sd">            See the documentation for `AccountTransactionStrategy`</span>
+<span class="sd">            See the documentation for `TransactionStrategy`</span>
 <span class="sd">            for acceptable args when calling this object.</span>
 
 <span class="sd">    Attributes:</span>
@@ -186,9 +184,8 @@
     <span class="c1"># NOTE: Consider combining the various strategy objects into a dict</span>
     <span class="c1"># or something (although it&#39;s not clear how this benefits the code.)</span>
 <div class="viewcode-block" id="WithdrawalForecast.__init__"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="n">accounts</span><span class="p">,</span> <span class="n">scenario</span><span class="p">,</span>
-        <span class="n">account_transaction_strategy</span>
-    <span class="p">):</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">initial_year</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="n">accounts</span><span class="p">,</span>
+            <span class="n">transaction_strategy</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Initializes an instance of WithdrawalForecast. &quot;&quot;&quot;</span>
         <span class="c1"># Recall that, as a Ledger object, we need to call the</span>
         <span class="c1"># superclass initializer and let it know what the first</span>
@@ -199,114 +196,80 @@
         <span class="c1"># Store input values</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">people</span> <span class="o">=</span> <span class="n">people</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">accounts</span> <span class="o">=</span> <span class="n">accounts</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span> <span class="o">=</span> <span class="n">scenario</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">account_transaction_strategy</span> <span class="o">=</span> <span class="n">account_transaction_strategy</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transaction_strategy</span> <span class="o">=</span> <span class="n">transaction_strategy</span>
 
-<div class="viewcode-block" id="WithdrawalForecast.update_available"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.update_available">[docs]</a>    <span class="k">def</span> <span class="nf">update_available</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">available</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">account_transactions</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tax_withheld</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="WithdrawalForecast.__call__"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">available</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Records transactions against accounts; mutates `available`. &quot;&quot;&quot;</span>
         <span class="c1"># The superclass has some book-keeping to do before we get</span>
         <span class="c1"># started on doing the updates:</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">update_available</span><span class="p">(</span><span class="n">available</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__call__</span><span class="p">(</span><span class="n">available</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">account_transactions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transaction_strategy</span><span class="p">(</span>
+            <span class="n">available</span><span class="p">,</span> <span class="n">accounts</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">accounts</span><span class="p">)</span>
 
         <span class="c1"># pylint: disable=not-an-iterable,unsubscriptable-object,no-member</span>
         <span class="c1"># pylint can&#39;t infer the type of account_transactions</span>
-        <span class="c1"># because we don&#39;t import `AccountTransactionsStrategy`</span>
+        <span class="c1"># because we don&#39;t import `TransactionsStrategy`</span>
 
-        <span class="c1"># Set up variables to track progress as we make withdrawals:</span>
-        <span class="n">accum</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-        <span class="n">transactions_total</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">account_transactions</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="c1"># Keep track of tax withholdings before adding transactions to</span>
+        <span class="c1"># accounts so we can check later for changes.</span>
         <span class="n">tax_withheld</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="n">account</span><span class="p">:</span> <span class="n">account</span><span class="o">.</span><span class="n">tax_withheld</span>
-            <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">account_transactions</span><span class="p">}</span>
-        <span class="c1"># We want to step through the time-series of transactions</span>
-        <span class="c1"># and withdraw whenever we dip into negative balance.</span>
-        <span class="k">for</span> <span class="n">when</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">available</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
-            <span class="n">accum</span> <span class="o">+=</span> <span class="n">available</span><span class="p">[</span><span class="n">when</span><span class="p">]</span>
-            <span class="k">if</span> <span class="n">accum</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># negative balance - time to withdraw!</span>
-                <span class="c1"># Withdraw however much we&#39;re short by:</span>
-                <span class="n">withdrawal</span> <span class="o">=</span> <span class="o">-</span><span class="n">accum</span>
-                <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">account_transactions</span><span class="p">:</span>
-                    <span class="c1"># Withdraw from each account proportionately to</span>
-                    <span class="c1"># the total amounts withdrawn from each account:</span>
-                    <span class="n">account_transaction</span> <span class="o">=</span> <span class="n">withdrawal</span> <span class="o">*</span> <span class="p">(</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">account_transactions</span><span class="p">[</span><span class="n">account</span><span class="p">]</span>
-                        <span class="o">/</span> <span class="n">transactions_total</span><span class="p">)</span>
-                    <span class="c1"># Add the gross transaction from the account</span>
-                    <span class="c1"># (not accounting for withholdings):</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">add_transaction</span><span class="p">(</span>
-                        <span class="n">value</span><span class="o">=</span><span class="n">account_transaction</span><span class="p">,</span>
-                        <span class="n">when</span><span class="o">=</span><span class="n">when</span><span class="p">,</span>
-                        <span class="n">from_account</span><span class="o">=</span><span class="n">account</span><span class="p">,</span>
-                        <span class="n">to_account</span><span class="o">=</span><span class="n">available</span><span class="p">,</span>
-                        <span class="n">strict_timing</span><span class="o">=</span><span class="kc">True</span>
-                    <span class="p">)</span>
-                    <span class="c1"># Now deduct any increased witholding tax</span>
-                    <span class="c1"># from the new `available` balance:</span>
-                    <span class="n">new_withholding</span> <span class="o">=</span> <span class="p">(</span>
-                        <span class="n">account</span><span class="o">.</span><span class="n">tax_withheld</span>
-                        <span class="o">-</span> <span class="n">tax_withheld</span><span class="p">[</span><span class="n">account</span><span class="p">])</span>
-                    <span class="k">if</span> <span class="n">new_withholding</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">add_transaction</span><span class="p">(</span>
-                            <span class="n">value</span><span class="o">=</span><span class="n">new_withholding</span><span class="p">,</span>
-                            <span class="n">when</span><span class="o">=</span><span class="n">when</span><span class="p">,</span>
-                            <span class="n">from_account</span><span class="o">=</span><span class="n">available</span><span class="p">,</span>
-                            <span class="n">to_account</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                            <span class="n">strict_timing</span><span class="o">=</span><span class="kc">True</span>
-                        <span class="p">)</span>
-                    <span class="n">tax_withheld</span><span class="p">[</span><span class="n">account</span><span class="p">]</span> <span class="o">+=</span> <span class="n">new_withholding</span>
-                <span class="c1"># NOTE: This essentially adds the *gross* withdrawals</span>
-                <span class="c1"># to `accum`, with the result being that any taxes</span>
-                <span class="c1"># withheld will result in a negative end-of-year</span>
-                <span class="c1"># balance.</span>
-                <span class="c1"># This can be partially addressed by only adding the</span>
-                <span class="c1"># *net* withdrawals, except that would result in</span>
-                <span class="c1"># larger amounts being withdrawn later in the year,</span>
-                <span class="c1"># and more being withdrawn than was anticipated by</span>
-                <span class="c1"># `account_transactions`.</span>
-                <span class="c1"># If we do move in this direction, we need to think</span>
-                <span class="c1"># carefully about how to redesign this class so that</span>
-                <span class="c1"># `gross_withdrawals` is determined dynamically and</span>
-                <span class="c1"># `net_withdrawals` is set up-front.</span>
-                <span class="c1"># (Right now it&#39;s the reverse.)</span>
-                <span class="n">accum</span> <span class="o">+=</span> <span class="n">withdrawal</span></div>
+            <span class="n">account</span><span class="p">:</span> <span class="n">account</span><span class="o">.</span><span class="n">tax_withheld</span> <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">accounts</span><span class="p">}</span>
 
-    <span class="nd">@recorded_property_cached</span>
-    <span class="k">def</span> <span class="nf">account_transactions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Transactions for each account, according to the strategy.</span>
-<span class="sd">        </span>
-<span class="sd">        This is what `account_transaction_strategy` returns.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># NOTE: gross_withdrawals is positive, but</span>
-        <span class="c1"># AccountTransactionStrategy expects a negative value for</span>
-        <span class="c1"># withdrawals.</span>
+        <span class="c1"># Record the transactions for each account as dictated by</span>
+        <span class="c1"># `transaction_strategy`:</span>
+        <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">account_transactions</span><span class="p">:</span>
+            <span class="c1"># NOTE: `available` is used as the `from_account` because</span>
+            <span class="c1"># values returned by `transaction_strategy` are negative.</span>
+            <span class="c1"># Thus, money will flow _to_ `available` _from_ `account`.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_transactions</span><span class="p">(</span>
+                <span class="n">transactions</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">account_transactions</span><span class="p">[</span><span class="n">account</span><span class="p">],</span>
+                <span class="n">from_account</span><span class="o">=</span><span class="n">available</span><span class="p">,</span>
+                <span class="n">to_account</span><span class="o">=</span><span class="n">account</span><span class="p">)</span>
 
-        <span class="c1"># pylint: disable=invalid-unary-operand-type</span>
-        <span class="c1"># gross_withdrawals returns Money, which accepts unary `-`</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">account_transaction_strategy</span><span class="p">(</span>
-            <span class="n">total</span><span class="o">=-</span><span class="bp">self</span><span class="o">.</span><span class="n">gross_withdrawals</span><span class="p">,</span>
-            <span class="n">accounts</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">accounts</span><span class="p">)</span>
+            <span class="c1"># If the tax withholdings have changed (usually we&#39;d expect</span>
+            <span class="c1"># an increase, but this code works for decreases too) then</span>
+            <span class="c1"># record a transaction out of the account:</span>
+            <span class="k">if</span> <span class="n">account</span><span class="o">.</span><span class="n">tax_withheld</span> <span class="o">!=</span> <span class="n">tax_withheld</span><span class="p">[</span><span class="n">account</span><span class="p">]:</span>
+                <span class="c1"># Find the change in tax withholdings for the account</span>
+                <span class="n">new_withholdings</span> <span class="o">=</span> <span class="n">account</span><span class="o">.</span><span class="n">tax_withheld</span> <span class="o">-</span> <span class="n">tax_withheld</span><span class="p">[</span><span class="n">account</span><span class="p">]</span>
+                <span class="c1"># Assume they&#39;re withheld with the same timing and</span>
+                <span class="c1"># weighting as the withdrawals themselves:</span>
+                <span class="n">transactions</span> <span class="o">=</span> <span class="n">transactions_from_timing</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">account_transactions</span><span class="p">[</span><span class="n">account</span><span class="p">],</span>
+                    <span class="n">new_withholdings</span><span class="p">)</span>
+                <span class="c1"># The withholdings come from money we&#39;ve already</span>
+                <span class="c1"># withdrawn, so remove money from `available`.</span>
+                <span class="c1"># (transactions will be negative is there&#39;s an amount</span>
+                <span class="c1"># owing, so use `to_account`)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_transactions</span><span class="p">(</span>
+                    <span class="n">transactions</span><span class="o">=</span><span class="n">transactions</span><span class="p">,</span>
+                    <span class="n">to_account</span><span class="o">=</span><span class="n">available</span><span class="p">)</span>
+                <span class="c1"># Keep track of total tax withheld:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">tax_withheld</span> <span class="o">+=</span> <span class="n">new_withholdings</span></div>
+
+<div class="viewcode-block" id="WithdrawalForecast.undo_transactions"><a class="viewcode-back" href="../../../forecaster.forecast.html#forecaster.forecast.withdrawal.WithdrawalForecast.undo_transactions">[docs]</a>    <span class="k">def</span> <span class="nf">undo_transactions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Reverses all transactions cause by this subforecast. &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">undo_transactions</span><span class="p">()</span>
+        <span class="c1"># Reset tax_withheld:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tax_withheld</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
 
     <span class="nd">@recorded_property_cached</span>
     <span class="k">def</span> <span class="nf">gross_withdrawals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Total gross withdrawals for the year. &quot;&quot;&quot;</span>
         <span class="c1"># The amount withdrawn is simply the shortfall in cashflow</span>
         <span class="c1"># over the course of the year.</span>
-        <span class="c1"># TODO: Incorporate some tax logic to increase gross</span>
-        <span class="c1"># withdrawals so that `net_withdrawals` approximates</span>
-        <span class="c1"># `total_available`?</span>
+        <span class="c1"># TODO: Increase gross withdrawals based on tax liability #34</span>
+        <span class="c1"># Aim is for `net_withdrawals` to approximate `total_available`.</span>
         <span class="k">return</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">total_available</span>
-
-    <span class="nd">@recorded_property</span>
-    <span class="k">def</span> <span class="nf">tax_withheld</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Total tax withheld on withdrawals for the year. &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
-            <span class="p">(</span><span class="n">account</span><span class="o">.</span><span class="n">tax_withheld</span> <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">accounts</span><span class="p">),</span>
-            <span class="n">Money</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
 
     <span class="nd">@recorded_property</span>
     <span class="k">def</span> <span class="nf">net_withdrawals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Total withdrawals, net of withholding taxes, for the year. &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">gross_withdrawals</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_withheld</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">gross_withdrawals</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_withheld</span></div>
 </pre></div>
 
            </div>

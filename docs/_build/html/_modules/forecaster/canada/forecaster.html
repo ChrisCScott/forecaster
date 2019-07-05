@@ -150,70 +150,37 @@
   <h1>Source code for forecaster.canada.forecaster</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot; Provides a Canada-specific implementation of Forecaster. &quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">forecaster.forecaster</span> <span class="k">import</span> <span class="n">Forecaster</span>
-<span class="kn">from</span> <span class="nn">forecaster.canada.accounts</span> <span class="k">import</span> <span class="n">RRSP</span><span class="p">,</span> <span class="n">TFSA</span><span class="p">,</span> <span class="n">TaxableAccount</span>
+<span class="kn">from</span> <span class="nn">forecaster.forecaster</span> <span class="k">import</span> <span class="n">Forecaster</span><span class="p">,</span> <span class="n">Parameter</span>
 <span class="kn">from</span> <span class="nn">forecaster.canada.tax</span> <span class="k">import</span> <span class="n">TaxCanada</span>
 <span class="kn">from</span> <span class="nn">forecaster.canada.settings</span> <span class="k">import</span> <span class="n">SettingsCanada</span>
 
 
+<span class="c1"># Override the arguments for initializing tax_treatment, since</span>
+<span class="c1"># ForecasterCanada uses TaxCanada instead of Tax.</span>
+<span class="n">DEFAULTVALUES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nb">str</span><span class="p">(</span><span class="n">Parameter</span><span class="o">.</span><span class="n">TAX_TREATMENT</span><span class="p">):</span> <span class="p">{</span>
+        <span class="s2">&quot;inflation_adjust&quot;</span><span class="p">:</span> <span class="s2">&quot;scenario.inflation_adjust&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;province&quot;</span><span class="p">:</span> <span class="s2">&quot;settings.tax_province&quot;</span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1"># This maps each of the above parameters to a type:</span>
+<span class="n">DEFAULTTYPES</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">Parameter</span><span class="o">.</span><span class="n">TAX_TREATMENT</span><span class="p">):</span> <span class="n">TaxCanada</span><span class="p">}</span>
+
 <div class="viewcode-block" id="ForecasterCanada"><a class="viewcode-back" href="../../../forecaster.canada.html#forecaster.canada.forecaster.ForecasterCanada">[docs]</a><span class="k">class</span> <span class="nc">ForecasterCanada</span><span class="p">(</span><span class="n">Forecaster</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Tests Forecaster (Canada). &quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="ForecasterCanada.__init__"><a class="viewcode-back" href="../../../forecaster.canada.html#forecaster.canada.forecaster.ForecasterCanada.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="n">SettingsCanada</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ForecasterCanada.__init__"><a class="viewcode-back" href="../../../forecaster.canada.html#forecaster.canada.forecaster.ForecasterCanada.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Inits Forecaster with Canada-specific settings.</span>
 
 <span class="sd">        In addition to using a Canada-specific Settings object by</span>
 <span class="sd">        default, this class also provides Canada-specific defaults and</span>
 <span class="sd">        init logic for RRSPs, TFSAs, TaxableAccounts, and Tax objects.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">settings</span><span class="o">=</span><span class="n">settings</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="ForecasterCanada.add_rrsp"><a class="viewcode-back" href="../../../forecaster.canada.html#forecaster.canada.forecaster.ForecasterCanada.add_rrsp">[docs]</a>    <span class="k">def</span> <span class="nf">add_rrsp</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rrif_conversion_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">RRSP</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Adds an RRSP to the forecast. &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span>
-            <span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;inflation_adjust&#39;</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span>
-            <span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;rrif_conversion_year&#39;</span><span class="p">,</span> <span class="n">rrif_conversion_year</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_contribution_limit_account</span><span class="p">(</span><span class="bp">cls</span><span class="o">=</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="ForecasterCanada.add_tfsa"><a class="viewcode-back" href="../../../forecaster.canada.html#forecaster.canada.forecaster.ForecasterCanada.add_tfsa">[docs]</a>    <span class="k">def</span> <span class="nf">add_tfsa</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">TFSA</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Adds a TFSA to the forecast. &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span>
-            <span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;inflation_adjust&#39;</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_contribution_limit_account</span><span class="p">(</span><span class="bp">cls</span><span class="o">=</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="ForecasterCanada.add_taxable_account"><a class="viewcode-back" href="../../../forecaster.canada.html#forecaster.canada.forecaster.ForecasterCanada.add_taxable_account">[docs]</a>    <span class="k">def</span> <span class="nf">add_taxable_account</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">acb</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">TaxableAccount</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Adds a TaxableAccount to the forecast. &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;acb&#39;</span><span class="p">,</span> <span class="n">acb</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_asset</span><span class="p">(</span><span class="bp">cls</span><span class="o">=</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="ForecasterCanada.set_tax_treatment"><a class="viewcode-back" href="../../../forecaster.canada.html#forecaster.canada.forecaster.ForecasterCanada.set_tax_treatment">[docs]</a>    <span class="k">def</span> <span class="nf">set_tax_treatment</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">province</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">TaxCanada</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Sets tax treatment for the forecast.</span>
-
-<span class="sd">        Overrides set_tax_treatment to deal with different parameter</span>
-<span class="sd">        list for canada.tax objects.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># canada.tax has a different call signature than forecaster.tax,</span>
-        <span class="c1"># so it&#39;s appropriate for this method to take different args.</span>
-        <span class="c1"># pylint: disable=arguments-differ</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span>
-            <span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;inflation_adjust&#39;</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">scenario</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_kwarg</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="s1">&#39;province&#39;</span><span class="p">,</span> <span class="n">province</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tax_treatment</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_treatment</span></div></div>
+        <span class="k">if</span> <span class="n">settings</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">settings</span> <span class="o">=</span> <span class="n">SettingsCanada</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="n">settings</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default_values</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">DEFAULTVALUES</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default_types</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">DEFAULTTYPES</span><span class="p">)</span></div></div>
 </pre></div>
 
            </div>

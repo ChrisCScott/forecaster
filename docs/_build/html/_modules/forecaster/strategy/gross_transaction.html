@@ -220,8 +220,7 @@
     <span class="c1"># are 6 of them (including self). Refactoring to use a dict or</span>
     <span class="c1"># similar would hurt readability.</span>
 <div class="viewcode-block" id="LivingExpensesStrategy.__init__"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="p">,</span> <span class="n">base_amount</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span>
-    <span class="p">):</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="p">,</span> <span class="n">base_amount</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">inflation_adjust</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Constructor for LivingExpensesStrategy. &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span>
 
@@ -237,18 +236,21 @@
 
         <span class="c1"># Types are enforced by explicit conversion; no need to check.</span>
 
+    <span class="c1"># These methods all have the same signature, though they don&#39;t</span>
+    <span class="c1"># all use every argument. Accordingly, some unused arguments are</span>
+    <span class="c1"># to be expected.</span>
+    <span class="c1"># pylint: disable=unused-argument</span>
+
     <span class="c1"># Begin defining subclass-specific strategies</span>
 <div class="viewcode-block" id="LivingExpensesStrategy.strategy_const_contribution"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_const_contribution">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;Constant contribution&#39;</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">strategy_const_contribution</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="n">year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Contribute a constant amount (in real terms) and live off the rest. &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">strategy_const_contribution</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Contribute a constant (real) amount and live off the rest. &quot;&quot;&quot;</span>
         <span class="n">total_income</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">person</span><span class="o">.</span><span class="n">net_income</span> <span class="k">for</span> <span class="n">person</span> <span class="ow">in</span> <span class="n">people</span><span class="p">)</span>
         <span class="n">contributions</span> <span class="o">=</span> <span class="n">Money</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_amount</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">(</span><span class="n">year</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">total_income</span> <span class="o">-</span> <span class="n">contributions</span></div>
 
 <div class="viewcode-block" id="LivingExpensesStrategy.strategy_const_living_expenses"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_const_living_expenses">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;Constant living expenses&#39;</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">strategy_const_living_expenses</span><span class="p">(</span>
-            <span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
+    <span class="k">def</span> <span class="nf">strategy_const_living_expenses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Living expenses remain constant, in real terms. &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_amount</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">(</span><span class="n">year</span><span class="p">))</span></div>
 
@@ -263,18 +265,15 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rate</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span><span class="n">person</span><span class="o">.</span><span class="n">gross_income</span> <span class="k">for</span> <span class="n">person</span> <span class="ow">in</span> <span class="n">people</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="LivingExpensesStrategy.strategy_percent_over_base"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_percent_over_base">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;Percentage of earnings growth&#39;</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">strategy_percent_over_base</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="n">year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
+    <span class="k">def</span> <span class="nf">strategy_percent_over_base</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Live off a base amount plus a percentage of earnings above it. &quot;&quot;&quot;</span>
         <span class="n">base_amount</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_amount</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
         <span class="n">total_income</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">person</span><span class="o">.</span><span class="n">net_income</span> <span class="k">for</span> <span class="n">person</span> <span class="ow">in</span> <span class="n">people</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">base_amount</span> <span class="o">+</span> <span class="p">(</span><span class="n">total_income</span> <span class="o">-</span> <span class="n">base_amount</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">rate</span></div>
 
-<div class="viewcode-block" id="LivingExpensesStrategy.strategy_principal_percent_retirement"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_principal_percent_retirement">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;Percentage of principal at retirement&#39;</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">strategy_principal_percent_retirement</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">accounts</span><span class="p">,</span> <span class="n">retirement_year</span><span class="p">,</span> <span class="n">year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
+<div class="viewcode-block" id="LivingExpensesStrategy.strategy_principal_percent_ret"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_principal_percent_ret">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;Percentage of principal at retirement&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">strategy_principal_percent_ret</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">accounts</span><span class="p">,</span> <span class="n">retirement_year</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Withdraw a percentage of principal (as of retirement). &quot;&quot;&quot;</span>
         <span class="n">retirement_balance</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
             <span class="n">account</span><span class="o">.</span><span class="n">balance_history</span><span class="p">[</span><span class="n">retirement_year</span><span class="p">]</span> <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">accounts</span><span class="p">)</span>
@@ -282,10 +281,9 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">rate</span> <span class="o">*</span> <span class="n">retirement_balance</span>
             <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">retirement_year</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="LivingExpensesStrategy.strategy_net_percent_retirement"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_net_percent_retirement">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;Percentage of net income at retirement&#39;</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">strategy_net_percent_retirement</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="n">retirement_year</span><span class="p">,</span> <span class="n">year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
+<div class="viewcode-block" id="LivingExpensesStrategy.strategy_net_percent_ret"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_net_percent_ret">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;Percentage of net income at retirement&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">strategy_net_percent_ret</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="n">retirement_year</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Withdraw a percentage of max. net income (as of retirement). &quot;&quot;&quot;</span>
         <span class="n">retirement_income</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
             <span class="n">person</span><span class="o">.</span><span class="n">net_income_history</span><span class="p">[</span><span class="n">retirement_year</span><span class="p">]</span> <span class="k">for</span> <span class="n">person</span> <span class="ow">in</span> <span class="n">people</span><span class="p">)</span>
@@ -293,10 +291,9 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">rate</span> <span class="o">*</span> <span class="n">retirement_income</span>
             <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">retirement_year</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="LivingExpensesStrategy.strategy_gross_percent_retirement"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_gross_percent_retirement">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;Percentage of gross income at retirement&#39;</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">strategy_gross_percent_retirement</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="n">retirement_year</span><span class="p">,</span> <span class="n">year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
+<div class="viewcode-block" id="LivingExpensesStrategy.strategy_gross_percent_ret"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.strategy_gross_percent_ret">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;Percentage of gross income at retirement&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">strategy_gross_percent_ret</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">people</span><span class="p">,</span> <span class="n">retirement_year</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Withdraw a percentage of gross income. &quot;&quot;&quot;</span>
         <span class="n">retirement_income</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
             <span class="n">person</span><span class="o">.</span><span class="n">gross_income_history</span><span class="p">[</span><span class="n">retirement_year</span><span class="p">]</span> <span class="k">for</span> <span class="n">person</span> <span class="ow">in</span> <span class="n">people</span><span class="p">)</span>
@@ -304,10 +301,11 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">rate</span> <span class="o">*</span> <span class="n">retirement_income</span>
             <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">inflation_adjust</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">retirement_year</span><span class="p">))</span></div>
 
+    <span class="c1"># pylint: enable=unused-argument</span>
+
 <div class="viewcode-block" id="LivingExpensesStrategy.__call__"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategy.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">people</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">retirement_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+            <span class="n">people</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">retirement_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Returns the living expenses for the year. &quot;&quot;&quot;</span>
         <span class="c1"># Collect the accounts owned by `people` into a flat</span>
         <span class="c1"># `set[Account]` object:</span>
@@ -327,7 +325,7 @@
 
 <div class="viewcode-block" id="LivingExpensesStrategySchedule"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule">[docs]</a><span class="k">class</span> <span class="nc">LivingExpensesStrategySchedule</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Determines living expenses while working and retired.</span>
-<span class="sd">    </span>
+
 <span class="sd">    This class is callable, like `LivingExpensesStrategy`, and</span>
 <span class="sd">    accepts all of the same arguments when called.</span>
 
@@ -373,15 +371,14 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">retirement</span> <span class="o">=</span> <span class="n">retirement</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">minimum</span> <span class="o">=</span> <span class="n">minimum</span></div>
 
-<div class="viewcode-block" id="LivingExpensesStrategySchedule.__call__"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">retirement_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="LivingExpensesStrategySchedule.__call__"><a class="viewcode-back" href="../../../forecaster.strategy.html#forecaster.strategy.gross_transaction.LivingExpensesStrategySchedule.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">retirement_year</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Returns the living expenses for the year. &quot;&quot;&quot;</span>
         <span class="c1"># First determine whether we&#39;re using the working</span>
         <span class="c1"># or retirement living expenses formula:</span>
         <span class="k">if</span> <span class="p">(</span>
-            <span class="p">(</span><span class="n">year</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">retirement_year</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
-            <span class="ow">and</span> <span class="n">year</span> <span class="o">&gt;</span> <span class="n">retirement_year</span>
-        <span class="p">):</span>
+                <span class="n">year</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="ow">and</span> <span class="n">retirement_year</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="ow">and</span> <span class="n">year</span> <span class="o">&gt;</span> <span class="n">retirement_year</span><span class="p">):</span>
             <span class="n">living_expenses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">retirement</span><span class="p">(</span>
                 <span class="n">year</span><span class="o">=</span><span class="n">year</span><span class="p">,</span> <span class="n">retirement_year</span><span class="o">=</span><span class="n">retirement_year</span><span class="p">,</span>
                 <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>

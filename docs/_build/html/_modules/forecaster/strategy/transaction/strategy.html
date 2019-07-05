@@ -1,0 +1,524 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>forecaster.strategy.transaction.strategy &mdash; forecaster 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> forecaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">forecaster</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">forecaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+      <li>forecaster.strategy.transaction.strategy</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for forecaster.strategy.transaction.strategy</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; Provides Strategy-type wrappers for TransactionTraversal. &quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">forecaster.accounts.debt</span> <span class="k">import</span> <span class="n">Debt</span>
+<span class="kn">from</span> <span class="nn">forecaster.strategy.base</span> <span class="k">import</span> <span class="n">Strategy</span><span class="p">,</span> <span class="n">strategy_method</span>
+<span class="kn">from</span> <span class="nn">forecaster.strategy.debt_payment.util</span> <span class="k">import</span> <span class="p">(</span>
+    <span class="n">PRIORITY_METHODS</span><span class="p">,</span> <span class="n">AVALANCHE_KEY</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">forecaster.strategy.transaction.base</span> <span class="k">import</span> <span class="n">TransactionTraversal</span>
+<span class="kn">from</span> <span class="nn">forecaster.strategy.transaction.node</span> <span class="k">import</span> <span class="n">TransactionNode</span>
+
+<div class="viewcode-block" id="TransactionStrategy"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.strategy.TransactionStrategy">[docs]</a><span class="k">class</span> <span class="nc">TransactionStrategy</span><span class="p">(</span><span class="n">Strategy</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Determines transactions to/from a group of accounts.</span>
+
+<span class="sd">    This is simply a convenient wrapper for `TransactionTraversal`. It</span>
+<span class="sd">    generates a suitable `priority` tree based on the selected strategy</span>
+<span class="sd">    and then traverses the tree to generate transactions for the</span>
+<span class="sd">    accounts.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        strategy (str, func): Either a string corresponding to a</span>
+<span class="sd">            particular strategy or an instance of the strategy itself.</span>
+<span class="sd">            See `strategies` for acceptable keys.</span>
+<span class="sd">        strategies (dict): {str, func} pairs where each key identifies</span>
+<span class="sd">            a strategy (in human-readable text) and each value is a</span>
+<span class="sd">            function with the same arguments and return value as</span>
+<span class="sd">            transactions(). See its documentation for more info.</span>
+
+<span class="sd">            Acceptable keys include:</span>
+
+<span class="sd">            * &quot;TODO&quot;</span>
+<span class="sd">            * &quot;TODO&quot;</span>
+<span class="sd">        debt_strategy (str): A key in `DebtPayment.strategies`.</span>
+<span class="sd">            Strategies will prioritize debts according to this strategy.</span>
+<span class="sd">            See `DebtPaymentStrategy` for more information.</span>
+<span class="sd">        high_interest_threshold (Decimal): Debt accounts with this rate</span>
+<span class="sd">            of interest or greater will be considered high-interest</span>
+<span class="sd">            and those with lower interest rates will be considered</span>
+<span class="sd">            low-interest. Some strategies use this division to determine</span>
+<span class="sd">            which debts to prioritize ahead of investments.</span>
+
+<span class="sd">            Optional. If not provided, all debts are considered</span>
+<span class="sd">            high-interest.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        available (dict[float, Money]): The amounts to be</span>
+<span class="sd">            contributed to (or withdrawn from, if negative) the</span>
+<span class="sd">            accounts, as a mapping of {timing: value} pairs.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict[Account, dict[Decimal, Money]]: A mapping of accounts to</span>
+<span class="sd">        transactions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># NOTE: Consider the question of how to deal with more complex</span>
+    <span class="c1"># priority structures, e.g. where you might want to contribute first</span>
+    <span class="c1"># to an RRSP and spousal RRSP with the same contributor (a</span>
+    <span class="c1"># higher-earner) before contributing to another RRSP and spousal</span>
+    <span class="c1"># RRSP with another contributor (a lower-earner).</span>
+    <span class="c1"># That goes deeper into country-specific tax planning. Should these</span>
+    <span class="c1"># country-specific scenarios be carved off into country-specific</span>
+    <span class="c1"># submodules? Is there a generic way to implement this class so that</span>
+    <span class="c1"># it allows for accounts of the same type to be divided up according</span>
+    <span class="c1"># to come criterion while still allowing it to be useful?</span>
+    <span class="c1"># In short: can we abandon type-based approaches entirely?</span>
+
+<div class="viewcode-block" id="TransactionStrategy.__init__"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.strategy.TransactionStrategy.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">strategy</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span>
+            <span class="n">debt_strategy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">high_interest_threshold</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Init TransactionStrategy. &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span>
+
+        <span class="c1"># Store args:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span>
+        <span class="k">if</span> <span class="n">debt_strategy</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Default to &quot;Avalanche&quot; (which has superior performance to</span>
+            <span class="c1"># Snowball, though is admittedly less popular.)</span>
+            <span class="n">debt_strategy</span> <span class="o">=</span> <span class="n">AVALANCHE_KEY</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">debt_strategy</span> <span class="o">=</span> <span class="n">debt_strategy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">high_interest_threshold</span> <span class="o">=</span> <span class="n">high_interest_threshold</span></div>
+
+<div class="viewcode-block" id="TransactionStrategy.strategy_ordered"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.strategy.TransactionStrategy.strategy_ordered">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;Ordered&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">strategy_ordered</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">groups</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">subtrees</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Generates a priority tree with ordered accounts.</span>
+<span class="sd">        </span>
+<span class="sd">        This strategy treats the values of `TransactionStrategy.weights`</span>
+<span class="sd">        as ordinals. The key with the lowest value (usually 1) are</span>
+<span class="sd">        first in the order, followed by the next-lowest key.</span>
+
+<span class="sd">        This method does not translate the keys of</span>
+<span class="sd">        `TransactionStrategy.weights` into accounts. That should be done</span>
+<span class="sd">        in advance, so that `groups` contains only sets of accounts</span>
+<span class="sd">        mapped to weights. Each group should have a unique weight,</span>
+<span class="sd">        otherwise the behaviour is undefined.</span>
+<span class="sd">        _This method will fail if `groups` contains a `type` object!_</span>
+
+<span class="sd">        Where multiple accounts are mapped to a given weight (by being</span>
+<span class="sd">        contained by the same group), they will be added to the priority</span>
+<span class="sd">        tree as a weighted node. That node will be nested within an</span>
+<span class="sd">        ordered tree.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            groups (dict[frozenset[Account], Decimal]): Sets of accounts</span>
+<span class="sd">                mapped to the order (i.e. weight) associated with the</span>
+<span class="sd">                set of accounts. Weights should be unique, otherwise</span>
+<span class="sd">                behaviour is undefined.</span>
+<span class="sd">            subtrees (dict[frozenset[Account], Any]): Maps groups to</span>
+<span class="sd">                priority trees. If a given group is in `subtrees`, the</span>
+<span class="sd">                corresponding value in `subtrees` will be inserted into</span>
+<span class="sd">                the priority tree instead of whatever this method would</span>
+<span class="sd">                ordinarily generate (e.g. an equal-weighted dict).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list((TransactionNode, list[Any], dict[Any])): An ordered</span>
+<span class="sd">            priority tree, potentially with nested priority trees of</span>
+<span class="sd">            arbitrary form (if provided by `subtrees`, otherwise all</span>
+<span class="sd">            nested trees are equal-weighted dicts).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># pylint: disable=unused-argument</span>
+        <span class="c1"># *args, **kwargs provided to make extending by subclass easier.</span>
+
+        <span class="c1"># TODO: Deal with multiple groups having the same weight</span>
+        <span class="c1"># (swap in an equal-weighted dict rather than append?)</span>
+
+        <span class="c1"># Sort groups according to their weights and then swap in</span>
+        <span class="c1"># priority trees for each account type (either as provided in</span>
+        <span class="c1"># `subtrees` or according to a default, e.g. equal-weighted).</span>
+        <span class="n">priority</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">groups</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">groups</span><span class="o">.</span><span class="n">get</span><span class="p">):</span>
+            <span class="c1"># Add the accounts of each group, in order.</span>
+            <span class="n">subtree</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_subtree</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">subtrees</span><span class="p">)</span>
+            <span class="n">priority</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subtree</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">priority</span></div>
+
+<div class="viewcode-block" id="TransactionStrategy.strategy_weighted"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.strategy.TransactionStrategy.strategy_weighted">[docs]</a>    <span class="nd">@strategy_method</span><span class="p">(</span><span class="s1">&#39;Weighted&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">strategy_weighted</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">groups</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">subtrees</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Generates a priority tree with ordered accounts.</span>
+
+<span class="sd">        This strategy treats the values of `TransactionStrategy.weights`</span>
+<span class="sd">        as proportional weights. Each group will receive its associated</span>
+<span class="sd">        weight. Weights do not need to be unique between groups.</span>
+
+<span class="sd">        This method does not translate the keys of</span>
+<span class="sd">        `TransactionStrategy.weights` into accounts. That should be done</span>
+<span class="sd">        in advance, so that `groups` contains only sets of accounts</span>
+<span class="sd">        mapped to weights.</span>
+<span class="sd">        _This method will fail if `groups` contains a `type` object!_</span>
+
+<span class="sd">        Where multiple accounts are mapped to a given weight (by being</span>
+<span class="sd">        contained by the same group), they will be added to the priority</span>
+<span class="sd">        tree as a weighted node. That node will be nested within a</span>
+<span class="sd">        weighted tree.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            groups (dict[frozenset[Account], Decimal]): Sets of accounts</span>
+<span class="sd">                mapped to the weight associated with the set.</span>
+<span class="sd">            subtrees (dict[frozenset[Account], Any]): Maps groups to</span>
+<span class="sd">                priority trees. If a given group is in `subtrees`, the</span>
+<span class="sd">                corresponding value in `subtrees` will be inserted into</span>
+<span class="sd">                the priority tree instead of whatever this method would</span>
+<span class="sd">                ordinarily generate (e.g. an equal-weighted dict).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict((TransactionNode, list[Any], dict[Any]), Decimal):</span>
+<span class="sd">            A weighted priority tree, potentially with nested priority</span>
+<span class="sd">            trees of arbitrary form (if provided by `subtrees`,</span>
+<span class="sd">            otherwise all nested trees are equal-weighted dicts).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># pylint: disable=unused-argument</span>
+        <span class="c1"># *args, **kwargs provided to make extending by subclass easier.</span>
+
+        <span class="c1"># Map each group to its corresponding weight; no need to sort.</span>
+        <span class="n">priority</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">group</span><span class="p">,</span> <span class="n">weight</span> <span class="ow">in</span> <span class="n">groups</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="c1"># Get the subtree for this group and wrap it in a</span>
+            <span class="c1"># TransactionNode to ensure that it can be used as a key</span>
+            <span class="c1"># in the top-level `priorty` tree (which is a dict).</span>
+            <span class="n">subtree</span> <span class="o">=</span> <span class="n">TransactionNode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_subtree</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">subtrees</span><span class="p">))</span>
+            <span class="n">priority</span><span class="p">[</span><span class="n">subtree</span><span class="p">]</span> <span class="o">=</span> <span class="n">weight</span>
+        <span class="k">return</span> <span class="n">priority</span></div>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_get_subtree</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">subtrees</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Generates a priority tree for a given group&#39;s accounts. &quot;&quot;&quot;</span>
+        <span class="c1"># If a subtree has been specified in `subtrees`, use that:</span>
+        <span class="k">if</span> <span class="n">subtrees</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">subtrees</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">subtrees</span><span class="p">[</span><span class="n">group</span><span class="p">]</span>
+        <span class="c1"># If the group has only one member, use that account directly:</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">group</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">group</span><span class="p">))</span>
+        <span class="c1"># If the group has more than one member, use a weighted subtree,</span>
+        <span class="c1"># with all accounts getting equal weight:</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">account</span><span class="p">:</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">group</span><span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">_weight_account_groups</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accounts</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Groups accounts by their weights.</span>
+
+<span class="sd">        This method identifies a weight key for each account in</span>
+<span class="sd">        `accounts` (via `_get_weight_key`), groups accounts with common</span>
+<span class="sd">        weight keys, and returns a mapping from groups to their weights.</span>
+
+<span class="sd">        Arg:</span>
+<span class="sd">            accounts (set[Account]): A collection of accounts.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[frozenset[Account], Number]: A mapping of account</span>
+<span class="sd">            groups (where each account in a group shares a common weight</span>
+<span class="sd">            key) to weights.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">account_keys</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">set</span><span class="p">)</span>
+        <span class="c1"># Build a map of key: set[Account] pairs, where each set is the</span>
+        <span class="c1"># set of accounts with the same key.</span>
+        <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">accounts</span><span class="p">:</span>
+            <span class="c1"># Find the key in `self.weights` that best matches this</span>
+            <span class="c1"># account (or None if no key is appropriate):</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_weight_key</span><span class="p">(</span><span class="n">account</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">:</span>
+                <span class="n">account_keys</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">account</span><span class="p">)</span>
+        <span class="c1"># Now reverse that into a map of frozenset[Account]: weight</span>
+        <span class="c1"># pairs:</span>
+        <span class="n">groups</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="nb">frozenset</span><span class="p">(</span><span class="n">group</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">account_keys</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">return</span> <span class="n">groups</span>
+
+    <span class="k">def</span> <span class="nf">_get_weight_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">account</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Gets the most relevant key for `account` in `weights`. &quot;&quot;&quot;</span>
+        <span class="c1"># If this object&#39;s type is referenced by name, use that:</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">account</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">key</span>
+        <span class="c1"># Otherwise, type each superclass (in MRO order).</span>
+        <span class="k">for</span> <span class="n">super_type</span> <span class="ow">in</span> <span class="nb">type</span><span class="p">(</span><span class="n">account</span><span class="p">)</span><span class="o">.</span><span class="vm">__mro__</span><span class="p">:</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="n">super_type</span><span class="o">.</span><span class="vm">__name__</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">key</span>
+        <span class="c1"># If none of the above worked, there&#39;s no appropriate key.</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="TransactionStrategy.divide_debts"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.strategy.TransactionStrategy.divide_debts">[docs]</a>    <span class="k">def</span> <span class="nf">divide_debts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accounts</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Separates high- and low-interest debts.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            accounts (Iterable[Account]): A collection of accounts,</span>
+<span class="sd">                which may or may not contain any `Debt` members.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            tuple[frozenset[Account], frozenset[Account]]: All</span>
+<span class="sd">            `Debt`-type accounts in `accounts` with outstanding</span>
+<span class="sd">            balances, as a `(low_interest, high_interest)` tuple.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Get all debts with balances owing:</span>
+        <span class="n">debts</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">account</span> <span class="k">for</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">accounts</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">account</span><span class="p">,</span> <span class="n">Debt</span><span class="p">)</span> <span class="ow">and</span> <span class="n">account</span><span class="o">.</span><span class="n">balance</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">}</span>
+        <span class="c1"># If we&#39;re distinguishing high-interest from low-interest debts,</span>
+        <span class="c1"># separate them out here:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">high_interest_threshold</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">low_interest_debts</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span>
+                <span class="n">debt</span> <span class="k">for</span> <span class="n">debt</span> <span class="ow">in</span> <span class="n">debts</span>
+                <span class="k">if</span> <span class="n">debt</span><span class="o">.</span><span class="n">rate</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">high_interest_threshold</span><span class="p">)</span>
+            <span class="n">high_interest_debts</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span>
+                <span class="n">debt</span> <span class="k">for</span> <span class="n">debt</span> <span class="ow">in</span> <span class="n">debts</span> <span class="k">if</span> <span class="n">debt</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">low_interest_debts</span><span class="p">)</span>
+        <span class="c1"># Otherwise, consider all debts to be low-interest:</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">low_interest_debts</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">debts</span><span class="p">)</span>
+            <span class="n">high_interest_debts</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">low_interest_debts</span><span class="p">,</span> <span class="n">high_interest_debts</span></div>
+
+<div class="viewcode-block" id="TransactionStrategy.debt_priority"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.strategy.TransactionStrategy.debt_priority">[docs]</a>    <span class="k">def</span> <span class="nf">debt_priority</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">debts</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Converts a collection of debts into a priority tree.</span>
+<span class="sd">        </span>
+<span class="sd">        This method uses the selected priority method (e.g.</span>
+<span class="sd">        `avalanche_priority`, `snowball_priority`) to convert `debts`</span>
+<span class="sd">        into a priority tree.</span>
+
+<span class="sd">        Arg:</span>
+<span class="sd">            debt (set[Debt]): Debts to organize into a priority tree.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list[Debt]: An ordered list of `Debt` objects, with the</span>
+<span class="sd">            order determined according to `debt_strategy`. This is a</span>
+<span class="sd">            simple priority tree that can be embedded into a larger</span>
+<span class="sd">            tree.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Convert the sets of debts into priority trees</span>
+        <span class="c1"># (or assign None if there are no debts of a given type)</span>
+        <span class="k">if</span> <span class="n">debts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">debts</span><span class="p">:</span>
+            <span class="c1"># Get the method that turns a set of debts into an ordered</span>
+            <span class="c1"># list (or other priority tree):</span>
+            <span class="n">priority_method</span> <span class="o">=</span> <span class="n">PRIORITY_METHODS</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">debt_strategy</span><span class="p">]</span>
+            <span class="c1"># Use it to generate a priority tree:</span>
+            <span class="n">priority</span> <span class="o">=</span> <span class="n">priority_method</span><span class="p">(</span><span class="n">debts</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">priority</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">priority</span></div>
+
+<div class="viewcode-block" id="TransactionStrategy.__call__"><a class="viewcode-back" href="../../../../forecaster.strategy.transaction.html#forecaster.strategy.transaction.strategy.TransactionStrategy.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">available</span><span class="p">,</span> <span class="n">accounts</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Returns a dict of account: transaction pairs. &quot;&quot;&quot;</span>
+        <span class="c1"># Debts get special treatment, so separate them out here:</span>
+        <span class="n">low_interest_debts</span><span class="p">,</span> <span class="n">high_interest_debts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">divide_debts</span><span class="p">(</span><span class="n">accounts</span><span class="p">)</span>
+        <span class="c1"># Get priority trees for each debt. These will be inserted into</span>
+        <span class="c1"># the final priority tree differently (in-place replacement for</span>
+        <span class="c1"># low-interest, prepending for high-interest.)</span>
+        <span class="n">low_interest_priority</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">debt_priority</span><span class="p">(</span><span class="n">low_interest_debts</span><span class="p">)</span>
+        <span class="n">high_interest_priority</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">debt_priority</span><span class="p">(</span><span class="n">high_interest_debts</span><span class="p">)</span>
+
+        <span class="c1"># Group together accounts that share weights (and map them to</span>
+        <span class="c1"># those weights for convenience):</span>
+        <span class="n">groups</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_weight_account_groups</span><span class="p">(</span>
+            <span class="nb">set</span><span class="p">(</span><span class="n">accounts</span><span class="p">)</span> <span class="o">-</span> <span class="n">high_interest_debts</span><span class="p">)</span>
+
+        <span class="c1"># Ensure that low-interest debts are properly ordered, rather</span>
+        <span class="c1"># than assigned some default order based on their common typing:</span>
+        <span class="n">subtrees</span> <span class="o">=</span> <span class="p">{</span><span class="n">low_interest_debts</span><span class="p">:</span> <span class="n">low_interest_priority</span><span class="p">}</span>
+
+        <span class="c1"># Get the basic priority tree based on this strategy:</span>
+        <span class="n">priority</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__call__</span><span class="p">(</span>
+            <span class="n">groups</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">subtrees</span><span class="o">=</span><span class="n">subtrees</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># Prioritize high-interest debts repayment, if provided:</span>
+        <span class="k">if</span> <span class="n">high_interest_priority</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">high_interest_priority</span><span class="p">:</span>
+            <span class="c1"># Prepend the high-interest debts, so that they are repaid</span>
+            <span class="c1"># before any discretionary money is allocated to other</span>
+            <span class="c1"># accounts (i.e. money other than minimums):</span>
+            <span class="n">priority</span> <span class="o">=</span> <span class="p">[</span><span class="n">high_interest_priority</span><span class="p">,</span> <span class="n">priority</span><span class="p">]</span>
+
+        <span class="c1"># Traverse the tree and return the results:</span>
+        <span class="n">traverse</span> <span class="o">=</span> <span class="n">TransactionTraversal</span><span class="p">(</span><span class="n">priority</span><span class="o">=</span><span class="n">priority</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">traverse</span><span class="p">(</span><span class="n">available</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Christopher Scott
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

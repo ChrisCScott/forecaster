@@ -85,15 +85,16 @@ setup(
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
         'py-moneyed>=0.7.0',
-        'python-dateutil>=2.7.3'
+        'python-dateutil>=2.7.3',
+        'networkx>=2.3'
     ],  # Optional
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). 
-    # extras_require={  # Optional
-    #     'dev': ['check-manifest'],
-    #     'test': ['coverage'],
-    # },
+    extras_require={  # Optional
+        'doc': ['sphinx'],
+        'test': ['nose']
+    },
 
     # If there are data files included in your packages that need to be
     # installed, specify them here.
