@@ -25,14 +25,12 @@ class LinkedLimitAccount(Account):
 
     Example:
         All instances of this class with the same owner will share
-        their contribution room (i.e. max_inflow limit):
-        ```
-        class RegisteredAccount(LinkedLimitAccount):
-            def __init__(self):
-                token = type(self).__name__
-                super().__init__(max_inflow_token=token)
+        their contribution room (i.e. max_inflow limit)::
 
-        ```
+            class RegisteredAccount(LinkedLimitAccount):
+                def __init__(self):
+                    token = type(self).__name__
+                    super().__init__(max_inflow_token=token)
 
     Attributes:
         max_inflow_limit (Money): Inherited from `Account`. The max.
