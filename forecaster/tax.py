@@ -9,7 +9,7 @@ from forecaster.ledger import Money
 from forecaster.person import Person
 from forecaster.utility import (
     build_inflation_adjust, nearest_year, extend_inflation_adjusted,
-    when_conv)
+    Timing)
 
 # NOTE: Consider making this a ledger-like object that stores values
 # year-over-year. These values might include:
@@ -115,7 +115,8 @@ class Tax(object):
     """
     def __init__(
             self, tax_brackets, personal_deduction=None, credit_rate=None,
-            inflation_adjust=None, payment_timing='start'):
+            inflation_adjust=None,
+            refund_timing='start', payment_timing='start'):
         """ Initializes the Tax object.
 
         Args:
@@ -137,11 +138,11 @@ class Tax(object):
 
                 Optional. If not provided, all values are assumed to be
                 in real terms, so no inflation adjustment is performed.
-            payment_timing (Decimal, str): A `when`-formatted value
-                specifying the timing of tax refunds and payments for
-                amounts owing. For example, `'start'` indicates that
-                refunds are paid on January 1st and that if taxes are
-                owing then they are due on January 1st. Optional.
+            refund_timing (Timing): The timing with which tax refunds
+                are received. Optional.
+            payment_timing (Timing): The timing with which tax payments
+                must be made, if there is an amount owing for the year
+                in excess of the amount withheld. Optional.
         """
         # NOTE: Consider allowing users to pass in non-year-indexed
         # values (e.g. so that `tax_brackets` can be a dict of
@@ -191,7 +192,9 @@ class Tax(object):
             self._credit_rate = {min(self._tax_brackets): Decimal(1)}
 
         self._payment_timing = None
+        self._refund_timing = None
         self.payment_timing = payment_timing
+        self.refund_timing = refund_timing
 
     def tax_brackets(self, year, bracket=None):
         """ Retrieve tax brackets for year. """
@@ -277,13 +280,23 @@ class Tax(object):
 
     @property
     def payment_timing(self):
-        """ The timing of payments to/from the tax authority. """
+        """ The timing of payments _to_ the tax authority. """
         return self._payment_timing
 
     @payment_timing.setter
     def payment_timing(self, val):
         """ Sets `payment_timing`. """
-        self._payment_timing = when_conv(val)
+        self._payment_timing = Timing(val)
+
+    @property
+    def refund_timing(self):
+        """ The timing of payments _from_ the tax authority. """
+        return self._refund_timing
+
+    @refund_timing.setter
+    def refund_timing(self, val):
+        """ Sets `refund_timing`. """
+        self._refund_timing = Timing(val)
 
     def marginal_bracket(self, taxable_income, year):
         """ The top tax bracket that taxable_income falls into. """

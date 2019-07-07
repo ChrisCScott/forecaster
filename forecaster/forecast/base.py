@@ -8,9 +8,8 @@ determine how account balances will grow or shrink year-over-year.
 from collections import defaultdict
 from decimal import Decimal
 from forecaster.ledger import (
-    Ledger, Money,
-    recorded_property, recorded_property_cached
-)
+    Ledger, Money, recorded_property, recorded_property_cached)
+from forecaster.utility import Timing, add_transactions
 
 class Forecast(Ledger):
     """ A financial forecast spanning multiple years.
@@ -189,6 +188,11 @@ class Forecast(Ledger):
 
     def next_year(self):
         """ Adds a year to the forecast. """
+        # Store the values from this year that will be needed to
+        # determine carryover amounts:
+        available_previous = dict(self.available)
+        tax_adjustment_previous = self._get_tax_adjustment()
+
         # First, record the state of all recorded_property attributes:
         super().next_year()
         # The do the same for all SubForecast objects, so they can
@@ -205,11 +209,53 @@ class Forecast(Ledger):
             while account.this_year < self.this_year:
                 account.next_year()
 
+        # It's a new year! Empty out `available` and then add any
+        # applicable carryover amounts:
+        self.available.clear()
+        self._carrover_overflow(available_previous)
+        self._carryover_tax(tax_adjustment_previous)
+
+    def _get_tax_adjustment(self):
+        """ The tax adjustment for this year, payable next year. """
+        # Don't carry over taxes if the objects involved aren't set up
+        # to tell us how much tax is owing!
+        if (
+                not hasattr(self, "tax_forecast")
+                or not hasattr(self.tax_forecast, "tax_adjustment")):
+            return None
+
+        # Tax refunds/payments are not reflected in `available`; add
+        # them here based on what's in `tax_treatment`:
+        return self.tax_forecast.tax_adjustment
+
+    def _carrover_overflow(self, available_previous):
+        """ Roll over unused monies from one year to the next. """
         # Keep track of cash flows over the course of the year,
         # rolling over unused monies to the start of next year:
-        excess = sum(self.available.values())
-        self.available = defaultdict(lambda: Money(0))
-        self.available[Decimal(0)] = excess
+        self.available[Decimal(0)] += sum(available_previous.values())
+
+    def _carryover_tax(self, tax_adjustment_previous):
+        """ Add tax refunds/payments arising from last year's taxes. """
+        # Nothing to carry over is there's no known tax adjustment:
+        if tax_adjustment_previous is None:
+            return
+
+        # Determine the time series of transactions as appropriate:
+        if tax_adjustment_previous > 0:  # refund
+            if hasattr(self.tax_forecast, "tax_refund_timing"):
+                timing = self.tax_forecast.tax_refund_timing
+            else:
+                timing = Timing(0)
+        elif tax_adjustment_previous < 0:  # payment owing
+            if hasattr(self.tax_forecast, "tax_payment_timing"):
+                timing = self.tax_forecast.tax_payment_timing
+            else:
+                timing = Timing(0)
+        else:  # no adjustment
+            return  # No need to proceed on to add_transactions
+        # Add the time-series of transactions to `available`:
+        transactions = timing.time_series(tax_adjustment_previous)
+        add_transactions(self.available, transactions)
 
     @property
     def retirement_year(self):
