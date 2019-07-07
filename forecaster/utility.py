@@ -80,10 +80,41 @@ class Timing(dict):
 
             # Build out multiple timings based on scalar inputs.
             # Each transaction has equal weight:
-            weight = 1 / frequency
+            weight = 1 / Decimal(frequency)
             # Build the dict:
             for time in range(frequency):
                 self[(time + when) / frequency] = weight
+
+    def time_series(self, scalar):
+        """ Scales `scalar` into portions proportionate to this timing.
+
+        This method essentially performs scalar multiplication, where
+        `scalar` is the scalar value and `self` is the (normed) vector.
+        The result is a time-series that has the same proportions as
+        `self` and sums to `scalar`.
+
+        Args:
+            scalar (Any): Any scalar value (not necessarily `Number`;
+                may be `Money`, for instance). Any type that supports
+                multiplication against the values of `Timing` may be
+                used.
+
+        Returns:
+            dict[Decimal, Any]: A time-series of values with the same
+                proportions as this timing object, with values of the
+                same type as `scalar` and which sum to `other`.
+
+        Raises:
+            ValueError: `scalar` does not support multiplication by the
+            values of this timing object.
+        """
+        # `Timing` is not necessarily normalized, so do that manually:
+        normalization = sum(self.values())
+        # Split up `scalar` into smaller amounts for each key in `self`
+        # proportionate to the (normalized) values of `self`.
+        return {
+            timing: scalar * (weight / normalization)
+            for timing, weight in self.items()}
 
 def _convert_dict(when):
     """ Converts `dict` input to `Timing`-style `when: weight` pairs.

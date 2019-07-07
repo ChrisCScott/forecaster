@@ -77,29 +77,51 @@ class WithdrawalForecast(SubForecast):
             # Thus, money will flow _to_ `available` _from_ `account`.
             self.add_transactions(
                 transactions=self.account_transactions[account],
-                from_account=available,
-                to_account=account)
+                from_account=available, to_account=account)
+            # If tax withholdings have changed due to this transaction,
+            # be sure to flow money into/out of `available` as needed:
+            self._update_tax_withheld(account, available, tax_withheld[account])
 
-            # If the tax withholdings have changed (usually we'd expect
-            # an increase, but this code works for decreases too) then
-            # record a transaction out of the account:
-            if account.tax_withheld != tax_withheld[account]:
-                # Find the change in tax withholdings for the account
-                new_withholdings = account.tax_withheld - tax_withheld[account]
-                # Assume they're withheld with the same timing and
-                # weighting as the withdrawals themselves:
-                transactions = transactions_from_timing(
-                    self.account_transactions[account],
-                    new_withholdings)
-                # The withholdings come from money we've already
-                # withdrawn, so remove money from `available`.
-                # (transactions will be negative is there's an amount
-                # owing, so use `to_account`)
-                self.add_transactions(
-                    transactions=transactions,
-                    to_account=available)
-                # Keep track of total tax withheld:
-                self.tax_withheld += new_withholdings
+    def _update_tax_withheld(self, account, available, old_tax_withheld):
+        """ Moves new tax withholdings out of `available`.
+
+        This method compares the current tax withholdings for `account`
+        against the value of `old_tax_withheld` to determine the change
+        in tax withholdings.
+
+        If tax withholdings have _decreased_, money is moved _into_
+        `available`. In either case, `available` is mutated.
+
+        Args:
+            account (Account): An object providing a `tax_withheld`
+                attribute (of `Money` type).
+            available (dict[Number, Money]): A time-series of available
+                cash. The net value indicates a surplus (positive) or
+                shortfall (negative) of cash.
+            old_tax_withheld (Money): The amount of tax withheld prior
+                to the addition of a transaction to `account`. This is
+                used as the base of comparison to determine what the
+                difference in withholdings is post-transaction.
+        """
+        # If the tax withholdings have changed (usually we'd expect
+        # an increase, but this code works for decreases too) then
+        # record a transaction out of the account:
+        if account.tax_withheld != old_tax_withheld:
+            # Find the change in tax withholdings for the account
+            new_tax_withheld = account.tax_withheld - old_tax_withheld
+            # Assume they're withheld with the same timing and
+            # weighting as the withdrawals themselves:
+            transactions = transactions_from_timing(
+                self.account_transactions[account],
+                new_tax_withheld)
+            # The withholdings come from money we've already
+            # withdrawn, so remove money from `available`.
+            # (transactions will be negative is there's an amount
+            # owing, so use `to_account`)
+            self.add_transactions(
+                transactions=transactions, to_account=available)
+            # Keep track of total tax withheld:
+            self.tax_withheld += new_tax_withheld
 
     def undo_transactions(self):
         """ Reverses all transactions cause by this subforecast. """

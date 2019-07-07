@@ -26,6 +26,11 @@ class TaxForecast(SubForecast):
             positive) or paid (if negative) in next year's tax season
             due to excess/insufficient withholding taxes during this
             year.
+        tax_refund_timing (Timing): The timing with which tax refunds
+            are received.
+        tax_owing_timing (Timing): The timing with which tax payments
+            must be made, if there is an amount owing for the year in
+            excess of the amount withheld.
     """
 
     def __init__(
@@ -36,12 +41,6 @@ class TaxForecast(SubForecast):
         # Store input values
         self.people = people
         self.tax_treatment = tax_treatment
-
-    # TODO: Add __call__ method to apply tax_adjustment?
-    # One option would be to clear `available` and add
-    # appropriately-timed inflows/outflows for rebates/amounts owing,
-    # on the assumption that this is the last subforecast to be called.
-    # At present that doesn't seem necessary.
 
     @recorded_property_cached
     def tax_withheld(self):
@@ -67,3 +66,13 @@ class TaxForecast(SubForecast):
         Negative values are amounts owing, positive are refunds.
         """
         return self.tax_withheld - self.tax_owing
+
+    @property
+    def tax_refund_timing(self):
+        """ Timing of refunds from the tax authority. """
+        return self.tax_treatment.refund_timing
+
+    @property
+    def tax_payment_timing(self):
+        """ Timing of payments to the tax authority for amounts owing. """
+        return self.tax_treatment.payment_timing

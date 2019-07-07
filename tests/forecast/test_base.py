@@ -61,7 +61,7 @@ class TestForecast(unittest.TestCase):
         self.living_expenses_forecast_dummy = DummyForecast(
             self.initial_year,
             {Decimal(when)/12: Money(-70) for when in range(12)})
-        # Contribute the balance ($360):
+        # Contribute the balance ($30/mo, $360/yr):
         self.saving_forecast_dummy = DummyForecast(
             self.initial_year,
             {Decimal(when+1)/12: Money(-30) for when in range(12)})
@@ -72,6 +72,7 @@ class TestForecast(unittest.TestCase):
         # Refund for $100 next year:
         self.tax_forecast_dummy = DummyForecast(self.initial_year)
         self.tax_forecast_dummy.tax_adjustment = Money(100)
+        self.tax_forecast_dummy.tax_refund_timing = Timing('start')
 
         # Also build a real ContributionForecast so that we can
         # test cash flows into accounts according to the overall
@@ -104,12 +105,15 @@ class TestForecast(unittest.TestCase):
         # appropriate subforecasts so that Forecast can retrieve
         # them:
         self.income_forecast_dummy.people = {self.person}
+        self.saving_forecast_dummy.debt_accounts = set()
         self.withdrawal_forecast_dummy.accounts = {self.account}
         # Also add these to the null forecast, since it could be
         # substituted for any of the above dummy forecasts:
         self.null_forecast.people = self.income_forecast_dummy.people
         self.null_forecast.accounts = self.withdrawal_forecast_dummy.accounts
-        # Forecast depends on SubForecasts have certain properties,
+        self.null_forecast.debt_accounts = (
+            self.saving_forecast_dummy.debt_accounts)
+        # Forecast depends on SubForecasts having certain properties,
         # so add those here:
         self.income_forecast_dummy.net_income = (
             sum(self.income_forecast_dummy.transactions.values()))
@@ -191,6 +195,50 @@ class TestForecast(unittest.TestCase):
             Money(720)]
         for first, second in zip(results, target):
             self.assertAlmostEqual(first, second, places=2)
+
+    def test_refund(self):
+        """ Tests tax refund carryovers """
+        # Set up a forecast where we receive a $100 refund in the middle
+        # of year 2, with no other transactions:
+        self.scenario.num_years = 2
+        self.tax_forecast_dummy.tax_adjustment = Money(100)
+        trans_time = Decimal(0.5)
+        self.tax_forecast_dummy.tax_refund_timing = Timing(trans_time)
+        forecast = Forecast(
+            income_forecast=self.null_forecast,
+            living_expenses_forecast=self.null_forecast,
+            saving_forecast=self.null_forecast,
+            withdrawal_forecast=self.null_forecast,
+            tax_forecast=self.tax_forecast_dummy,
+            scenario=self.scenario)
+        # Now confirm that the refund was in fact received:
+        self.assertEqual(forecast.available[trans_time], Money(100))
+        # And confirm that there were no other non-zero transactions:
+        self.assertTrue(all(
+            value == 0 for timing, value in forecast.available.items()
+            if timing != trans_time))
+
+    def test_payment(self):
+        """ Tests tax payment carryovers """
+        # Set up a forecast where we pay $100 in taxes owing in the
+        # middle of year 2, with no other transactions:
+        self.scenario.num_years = 2
+        self.tax_forecast_dummy.tax_adjustment = Money(-100)
+        trans_time = Decimal(0.5)
+        self.tax_forecast_dummy.tax_payment_timing = Timing(trans_time)
+        forecast = Forecast(
+            income_forecast=self.null_forecast,
+            living_expenses_forecast=self.null_forecast,
+            saving_forecast=self.null_forecast,
+            withdrawal_forecast=self.null_forecast,
+            tax_forecast=self.tax_forecast_dummy,
+            scenario=self.scenario)
+        # Now confirm that the refund was in fact received:
+        self.assertEqual(forecast.available[trans_time], Money(-100))
+        # And confirm that there were no other non-zero transactions:
+        self.assertTrue(all(
+            value == 0 for timing, value in forecast.available.items()
+            if timing != trans_time))
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(

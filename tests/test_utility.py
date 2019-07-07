@@ -58,6 +58,10 @@ class TestTiming(unittest.TestCase):
         target = Timing({0.25: 10000, 0.75: 10000})
         self.assertEqual(timing, target)
 
+    def test_time_series(self):
+        """ TODO """
+        pass
+
 class TestFreeMethods(unittest.TestCase):
     """ A test case for the free methods in the utility module. """
 
