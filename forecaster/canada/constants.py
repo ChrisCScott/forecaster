@@ -134,3 +134,10 @@ TAX_SPOUSAL_AMOUNT = {
     'Federal': {2017: Decimal(11635)},
     'BC': {2017: Decimal(9614)}
 }
+
+# Deadline to file is April 30th (120/365 ~= 0.328), and the refund
+# is paid shortly thereafter. Truncate this to 0.3 for simplicity.
+TAX_REFUND_TIMING = Decimal('0.3')
+# Deadline to pay any amounts owing is April 30th (120/365).
+# Truncate this to 0.3 for simplicity.
+TAX_PAYMENT_TIMING = Decimal('0.3')
