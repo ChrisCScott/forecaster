@@ -114,6 +114,12 @@ class TestTaxCanada(unittest.TestCase):
                 tax.federal_tax.credit_rate(year),
                 constants.TAX_CREDIT_RATE['Federal'][year])
         self.assertTrue(callable(tax.federal_tax.inflation_adjust))
+        # Test that the default timings for CRA refunds/payments have
+        # been set:
+        self.assertEqual(
+            set(tax.payment_timing), {constants.TAX_PAYMENT_TIMING})
+        self.assertEqual(
+            set(tax.refund_timing), {constants.TAX_REFUND_TIMING})
 
     def test_init_provincial(self):
         """ Test TaxCanada.__init__ for provincial jurisdiction. """

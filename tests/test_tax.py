@@ -386,6 +386,17 @@ class TestTax(unittest.TestCase):
             single_tax * 2,
             double_tax)
 
+    def test_payment_timing(self):
+        """ Tests `payment_timing` property. """
+        # `payment_timing` should have exactly one timing: 0
+        self.tax.payment_timing = 'start'
+        self.assertEqual(set(self.tax.payment_timing), {0})
+
+    def test_refund_timing(self):
+        """ Tests `refund_timing` property. """
+        # `refund_timing` should have exactly one timing: 0
+        self.tax.refund_timing = 'start'
+        self.assertEqual(set(self.tax.refund_timing), {0})
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(
