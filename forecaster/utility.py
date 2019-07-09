@@ -85,7 +85,55 @@ class Timing(dict):
             for time in range(frequency):
                 self[(time + when) / frequency] = weight
 
-    def time_series(self, scalar):
+    def _normalized(self, keys=None):
+        """ Returns a normalized dict based on this `Timing` object.
+
+        This method is just a convenience for other class methods which
+        need to get a normalized dict quickly but don't need to wrap the
+        result in a `Timing` object.
+
+        Args:
+            keys (Container[Number]): A subset of the keys of the
+                `Timing` object. If provided, the result contains only
+                the keys in `keys` and the normalization is applied only
+                to those keys. Optional.
+
+        Returns:
+            dict[Number, Any]: A normalized dict with values
+            proportional to those of this `Timing` object (or to the
+            subset indicated by `keys`).
+
+        Raises:
+            KeyError: Element of `keys` not in `self`.
+        """
+        if keys is None:
+            keys = self.keys()
+        # Simply scale down each value by the sum of all values:
+        normalization = sum(self[key] for key in keys)
+        return {key: self[key] / normalization for key in keys}
+
+    def normalized(self, keys=None):
+        """ Returns a normalized version of the `Timing` object.
+
+        'Normalized' here means that the values sum to 1.
+
+        Args:
+            keys (Container[Number]): A subset of the keys of the
+                `Timing` object. If provided, the result contains only
+                the keys in `keys` and the normalization is applied only
+                to those keys. Optional.
+
+        Raises:
+            KeyError: Element of `keys` not in `self`.
+
+        Returns:
+            Timing: A `Timing` object with values that sum to 1 and
+            which are proportional to those of this `Timing` object (or
+            to the subset indicated by `keys`).
+        """
+        return Timing(self._normalized(keys))
+
+    def time_series(self, scalar, keys=None):
         """ Scales `scalar` into portions proportionate to this timing.
 
         This method essentially performs scalar multiplication, where
@@ -108,13 +156,14 @@ class Timing(dict):
             ValueError: `scalar` does not support multiplication by the
             values of this timing object.
         """
-        # `Timing` is not necessarily normalized, so do that manually:
-        normalization = sum(self.values())
-        # Split up `scalar` into smaller amounts for each key in `self`
-        # proportionate to the (normalized) values of `self`.
-        return {
-            timing: scalar * (weight / normalization)
-            for timing, weight in self.items()}
+        normalized = self._normalized(keys=keys)
+        # Scale `scalar` by the normalized weight of each value of this
+        # `Timing` object. This effectively splits `scalar` up into
+        # smaller amounts for each key in `self` proportionately to the
+        # (normalized) values of `self`.
+        for key in normalized:
+            normalized[key] *= scalar
+        return normalized
 
 def _convert_dict(when):
     """ Converts `dict` input to `Timing`-style `when: weight` pairs.
@@ -174,12 +223,10 @@ def _convert_dict(when):
     total = sum(when.values())
     # First, deal with the case where the total is zero:
     if total == 0:
-        # If the time-series is perfectly balanced between
-        # positive and negative, simply duplicate all timings
-        # (excluding zero-value transactions) and weight them based
-        # on the unsigned magnitudes of those transactions:
-        return {
-            key: abs(value) for key, value in when.items() if when != 0}
+        # If the time-series is perfectly balanced between positive and
+        # negative, no transactions are needed to bring the time-series
+        # to balance, so return a time-series with no transactions:
+        return {}
     elif total > 0:
         return _accum_inflows(when)
     else:
