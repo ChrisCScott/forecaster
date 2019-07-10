@@ -158,7 +158,7 @@ class TestTiming(unittest.TestCase):
         self.assertEqual(timing, target)
 
     def test_time_series_basic(self):
-        """ Tests `time_series` for a simple `Timing` object. """
+        """ Tests `time_series` with simple input. """
         # start and end are equally weighted:
         timing = Timing({0: 1, 1: 1})
         result = timing.time_series(2)
@@ -167,16 +167,32 @@ class TestTiming(unittest.TestCase):
         self.assertEqual(result, {0: 1, 1: 1})
 
     def test_time_series_subset(self):
-        """ TODO """
-        pass
+        """ Tests `time_series` for a subset of keys. """
+        # start and end are equally weighted:
+        timing = Timing({0: 1, 1: 1})
+        result = timing.time_series(2, keys={1})
+        # Spreading a value of 2 equally across _just end_ means
+        # allocating 2 at end:
+        self.assertEqual(result, {1: 2})
 
     def test_normalized_basic(self):
-        """ TODO """
-        pass
+        """ Tests `normalized` with simple input. """
+        # start and end are equally weighted:
+        timing = Timing({0: 1, 1: 1})
+        result = timing.normalized()
+        # start and end are equally weighted, so each should get 0.5
+        # when normalized:
+        target = Timing({0: 0.5, 1: 0.5})
+        self.assertEqual(result, target)
 
     def test_normalized_subset(self):
-        """ TODO """
-        pass
+        """ Tests `normalized` for a subset of keys. """
+        # start and end are equally weighted:
+        timing = Timing({0: 1, 1: 1})
+        result = timing.normalized(keys={1})
+        # Normalizing just end should yield a value of 1 at that time:
+        target = Timing({1: 1})
+        self.assertEqual(result, target)
 
 class TestFreeMethods(unittest.TestCase):
     """ A test case for the free methods in the utility module. """
