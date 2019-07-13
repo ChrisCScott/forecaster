@@ -205,15 +205,18 @@ class TestTaxCanada(unittest.TestCase):
         spousal_tax = self.tax.federal_tax(
             {self.person1, self.person2}, self.initial_year)
 
+        # Tax should be reduced (relative to baseline) by the shortfall
+        # of person2's income (relative to the spousal amount, after
+        # applying deductions), scaled down by the credit rate.
+        # That is, for every dollar that person2 earns _under_ the
+        # spousal amount, tax is reduced by (e.g.) 15 cents (assuming
+        # a credit rate of 15%)
         target = baseline_tax - (
-            shortfall * self.tax.federal_tax.credit_rate(
-                self.initial_year))
+            shortfall * self.tax.federal_tax.credit_rate(self.initial_year))
 
         # The different between these scenarios should be equal to
         # the amount of the spousal tax credit:
-        self.assertEqual(
-            spousal_tax,
-            target)
+        self.assertEqual(spousal_tax, target)
 
     def test_pension_tax_credit(self):
         """ Test pension tax credit behaviour. """
