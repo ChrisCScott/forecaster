@@ -1,7 +1,7 @@
 """ A module providing Canada-specific tax treatment. """
 
 from forecaster.ledger import Money
-from forecaster.tax import Tax
+from forecaster.tax import Tax, TaxMulti
 from forecaster.canada.accounts import RRSP
 from forecaster.canada import constants
 from forecaster.utility import extend_inflation_adjusted
@@ -24,7 +24,7 @@ class TaxCanadaJurisdiction(Tax):
 
         self.jurisdiction = jurisdiction
 
-    def credits(self, person, year, deductions=None):
+    def credits(self, person, year, deduction=None):
         """ Finds tax credit available for each taxpayer.
 
         Args:
@@ -41,7 +41,7 @@ class TaxCanadaJurisdiction(Tax):
         """
         # Get basic credits (i.e. those tied to accounts) from the
         # superclass method:
-        _credits = super().credits(person, year, deductions)
+        _credits = super().credits(person, year, deduction)
 
         # Apply the pension income tax credit for each person:
         _credits += self._pension_income_credit(person, year)
@@ -66,18 +66,16 @@ class TaxCanadaJurisdiction(Tax):
         """
         pension_income = abs(sum(
             account.outflows() for account in person.accounts
-            if isinstance(account, RRSP)
+            if isinstance(account, RRSP)))
             # NOTE: Other qualified pension income sources can be
             # added here
-        ))
         # Each jurisdiction has a maximum claimable amount for the
         # pension credit, so determine that (inflation-adjusted
         # amount) here:
         deduction_max = Money(extend_inflation_adjusted(
             constants.TAX_PENSION_CREDIT[self.jurisdiction],
             self.inflation_adjust,
-            year
-        ))
+            year))
         return min(pension_income, deduction_max)
 
     def _spousal_tax_credit(self, person, year):
@@ -110,25 +108,21 @@ class TaxCanadaJurisdiction(Tax):
             extend_inflation_adjusted(
                 constants.TAX_SPOUSAL_AMOUNT[self.jurisdiction],
                 self.inflation_adjust,
-                year
-            )
-        )
+                year))
 
         # We need to know the spouse's net income to assess the credit:
         # TODO: Pass in deductions for both spouses as args?
         # This would help to avoid calling self.deductions many times.
         spouse = person.spouse
         spouse_net_income = (
-            spouse.taxable_income - self.deductions(spouse, year)
-        )
+            spouse.taxable_income - self.deduction(spouse, year))
 
         # Figure out whether to assign the credit to this person or
         # their spouse based on who has more income:
 
         # If this is the lower-earner, use their spouse instead:
         person_net_income = (
-            person.taxable_income - self.deductions(person, year)
-        )
+            person.taxable_income - self.deduction(person, year))
         if person_net_income < spouse_net_income:
             return Money(0)
         # If their incomes are the same, use memory location to
@@ -142,8 +136,7 @@ class TaxCanadaJurisdiction(Tax):
         # negative.
         credit = max(
             max_spousal_amount - spouse_net_income,
-            Money(0)
-        )
+            Money(0))
 
         return credit
 
@@ -198,16 +191,16 @@ class TaxCanada(TaxMulti):
                 Person objects.
             year (int): The taxation year. This determines which tax
                 rules and inflation-adjusted brackets are used.
-            other_federal_deduction (Money, dict[Person, Money]):
+            federal_deduction (Money, dict[Person, Money]):
                 Deductions to be applied against federal taxes.
                 See documentation for `Tax` for more.
-            other_federal_credit (Money, dict[Person, Money]):
+            federal_credit (Money, dict[Person, Money]):
                 Credits to be applied against federal taxes.
                 See documentation for `Tax` for more.
-            other_provincial_deduction (Money, dict[Person, Money]):
+            provincial_deduction (Money, dict[Person, Money]):
                 Deductions to be applied against provincial taxes.
                 See documentation for `Tax` for more.
-            other_provincial_credit (Money, dict[Person, Money]):
+            provincial_credit (Money, dict[Person, Money]):
                 Credits to be applied against provincial taxes.
                 See documentation for `Tax` for more.
             kwargs (dict[str, Any]): Keyword arguments accepted by

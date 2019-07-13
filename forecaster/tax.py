@@ -233,7 +233,7 @@ class Tax(object):
         return extend_inflation_adjusted(
             self._personal_deduction, self.inflation_adjust, year)
 
-    def deductions(self, person, year):
+    def deduction(self, person, year):
         """ The deductions the person is eligible for.
 
         Args:
@@ -255,7 +255,7 @@ class Tax(object):
     # It's not necessary here to determine deductions, but it may
     # be in a subclass, so we leave it in.
     # pylint: disable=unused-argument
-    def credits(self, person, year, deductions=None):
+    def credit(self, person, year, deduction=None):
         """ The tax credits each person is eligible for.
 
         Args:
@@ -269,8 +269,8 @@ class Tax(object):
         Returns:
             Money: The credits for the person.
         """
-        _credits = person.tax_credit_history[year]
-        return _credits
+        _credit = person.tax_credit_history[year]
+        return _credit
 
     # pylint: enable=unused-argument
 
@@ -414,22 +414,15 @@ class Tax(object):
             Money: The tax liability of the person.
         """
         taxable_income = person.taxable_income_history[year]
-        deductions = (
+        deduction = (
             person.tax_deduction_history[year]
-            + self.deductions(person, year)
-            + deduction
-        )
-        _credits = (
+            + self.deduction(person, year)
+            + deduction)
+        credit = (
             person.tax_credit_history[year]
-            + self.credits(person, year)
-            + credit
-        )
-        return self.tax_money(
-            taxable_income,
-            year,
-            deductions,
-            _credits
-        )
+            + self.credit(person, year)
+            + credit)
+        return self.tax_money(taxable_income, year, deduction, credit)
 
     def tax_people(self, people, year, deduction=None, credit=None):
         """ Total tax liability for a group of people.
@@ -469,10 +462,9 @@ class Tax(object):
             # Process taxes for the couple and recurse on the remaining
             # people.
             return self.tax_spouses(
-                {person, person.spouse}, year, deduction, credit
-            ) + self.tax_people(
-                people - {person, person.spouse}, year, deduction, credit
-            )
+                {person, person.spouse}, year, deduction, credit)
+            + self.tax_people(
+                people - {person, person.spouse}, year, deduction, credit)
         # Otherwise, process this person as a single individual and
         # recurse on the remaining folks:
         else:
@@ -486,9 +478,9 @@ class Tax(object):
                 kwargs['credit'] = credit[person]
 
             # Determine tax owing for this person and then recurse.
-            return self.tax_person(person, year, **kwargs) + \
-                self.tax_people(people - {person}, year,
-                                deduction, credit)
+            return (
+                self.tax_person(person, year, **kwargs)
+                + self.tax_people(people - {person}, year, deduction, credit))
 
     def tax_spouses(self, people, year, deduction=None, credit=None):
         """ Tax treatment for a pair of spouses.
