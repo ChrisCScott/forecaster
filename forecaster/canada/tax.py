@@ -148,7 +148,7 @@ class TaxCanadaJurisdiction(Tax):
         return credit
 
 
-class TaxCanada(object):
+class TaxCanada(TaxMulti):
     """ Federal and provincial tax treatment for a Canadian resident.
 
     Attributes:
@@ -180,45 +180,13 @@ class TaxCanada(object):
             inflation_adjust, province)
         self.province = province
 
-    @property
-    def payment_timing(self):
-        """ Timing for payments. """
-        return self.federal_tax.payment_timing
-
-    @payment_timing.setter
-    def payment_timing(self, val):
-        """ Sets `payment_timing`. """
-        self.federal_tax.payment_timing = val
-
-    @property
-    def refund_timing(self):
-        """ Timing for refunds. """
-        return self.federal_tax.refund_timing
-
-    @refund_timing.setter
-    def refund_timing(self, val):
-        """ Sets `refund_timing`. """
-        self.federal_tax.refund_timing = val
-
-    # Marginal rate information is helpful for client code, so implement
-    # it here based on fed. and prov. tax brackets:
-
-    def marginal_bracket(self, taxable_income, year):
-        """ The top tax bracket that taxable_income falls into. """
-        return max(
-            self.federal_tax.marginal_bracket(taxable_income, year),
-            self.provincial_tax.marginal_bracket(taxable_income, year)
-        )
-
-    def marginal_rate(self, taxable_income, year):
-        """ The marginal rate for the given income. """
-        return self.federal_tax.marginal_rate(taxable_income, year) + \
-            self.provincial_tax.marginal_rate(taxable_income, year)
+        jurisdictions = (self.federal_tax, self.provincial_tax)
+        super().__init__(jurisdictions)
 
     def __call__(
             self, income, year,
-            other_federal_deduction=None, other_federal_credit=None,
-            other_provincial_deduction=None, other_provincial_credit=None):
+            federal_deduction=None, federal_credit=None,
+            provincial_deduction=None, provincial_credit=None, **kwargs):
         """ Determines Canadian taxes owing on given income sources.
 
         This includes provincial and federal taxes.
@@ -242,21 +210,40 @@ class TaxCanada(object):
             other_provincial_credit (Money, dict[Person, Money]):
                 Credits to be applied against provincial taxes.
                 See documentation for `Tax` for more.
+            kwargs (dict[str, Any]): Keyword arguments accepted by
+                `TaxMulti`, which may be passed instead of (or in
+                addition to) the convenience arguments defined by this
+                class.
 
         Returns:
             Money: The total amount of tax owing for the year.
         """
-        # This method has a lot of (optional) arguments, but this is
-        # much cleaner than bundling federal and provincial amounts into
-        # a collection to be passed in. (We tried it; it was ugly.)
-        # pylint: disable=too-many-arguments
+        # pylint: disable=arguments-differ
+        # Users can pass in `deductions` and `credits` dicts (as allowed
+        # by the superclass), or they can pass in `federal_*` and/or
+        # `provincial_*` scalars which we'll wrap up appropriately.
+        if "deductions" in kwargs:
+            deductions = kwargs["deductions"]
+        else:
+            deductions = {}
+        if "credits_" in kwargs:
+            credits_ = kwargs["credits_"]
+        else:
+            credits_ = {}
 
-        # Total tax is simply the sum of federal and prov. taxes.
-        return (
-            self.federal_tax(
-                income, year,
-                other_federal_deduction, other_federal_credit) +
-            self.provincial_tax(
-                income, year,
-                other_provincial_deduction, other_provincial_credit)
-        )
+        # Override any values in `deductions` and `credis` with
+        # subclass-specific kwargs, if provided:
+        if federal_deduction is not None:
+            deductions[self.federal_tax] = federal_deduction
+        if federal_credit is not None:
+            credits_[self.federal_tax] = federal_credit
+        if provincial_deduction is not None:
+            deductions[self.provincial_tax] = provincial_deduction
+        if provincial_credit is not None:
+            credits_[self.provincial_tax] = provincial_credit
+
+        # Bundle the kwargs up to be passed to the superclass:
+        kwargs["deductions"] = deductions
+        kwargs["credits_"] = credits_
+
+        return super().__call__(income=income, year=year, **kwargs)
