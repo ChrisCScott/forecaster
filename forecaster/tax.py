@@ -461,10 +461,11 @@ class Tax(object):
         if person.spouse is not None and person.spouse in people:
             # Process taxes for the couple and recurse on the remaining
             # people.
-            return self.tax_spouses(
-                {person, person.spouse}, year, deduction, credit)
-            + self.tax_people(
-                people - {person, person.spouse}, year, deduction, credit)
+            return (
+                self.tax_spouses(
+                    {person, person.spouse}, year, deduction, credit)
+                + self.tax_people(
+                    people - {person, person.spouse}, year, deduction, credit))
         # Otherwise, process this person as a single individual and
         # recurse on the remaining folks:
         else:

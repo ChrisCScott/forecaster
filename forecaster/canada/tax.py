@@ -24,7 +24,7 @@ class TaxCanadaJurisdiction(Tax):
 
         self.jurisdiction = jurisdiction
 
-    def credits(self, person, year, deduction=None):
+    def credit(self, person, year, deduction=None):
         """ Finds tax credit available for each taxpayer.
 
         Args:
@@ -41,7 +41,7 @@ class TaxCanadaJurisdiction(Tax):
         """
         # Get basic credits (i.e. those tied to accounts) from the
         # superclass method:
-        _credits = super().credits(person, year, deduction)
+        _credits = super().credit(person, year, deduction)
 
         # Apply the pension income tax credit for each person:
         _credits += self._pension_income_credit(person, year)
