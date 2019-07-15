@@ -19,8 +19,7 @@ class TestTaxCanada(unittest.TestCase):
         year_range = range(cls.initial_year, cls.initial_year + 100)
         cls.inflation_adjustments = {
             year: 1 + (year - cls.initial_year) / growth_factor
-            for year in year_range
-        }
+            for year in year_range}
 
         # Build some brackets with nice round numbers:
         constants.TAX_BRACKETS = {
@@ -28,29 +27,21 @@ class TestTaxCanada(unittest.TestCase):
                 cls.initial_year: {
                     Money(0): Decimal('0.1'),
                     Money('100'): Decimal('0.2'),
-                    Money('10000'): Decimal('0.3')
-                }
-            },
+                    Money('10000'): Decimal('0.3')}},
             'BC': {
                 cls.initial_year: {
                     Money(0): Decimal('0.25'),
                     Money('1000'): Decimal('0.5'),
-                    Money('100000'): Decimal('0.75')
-                }
-            }
-        }
+                    Money('100000'): Decimal('0.75')}}}
         constants.TAX_PERSONAL_DEDUCTION = {
             'Federal': {cls.initial_year: Money('100')},
-            'BC': {cls.initial_year: Money('1000')}
-        }
+            'BC': {cls.initial_year: Money('1000')}}
         constants.TAX_CREDIT_RATE = {
             'Federal': {cls.initial_year: Decimal('0.1')},
-            'BC': {cls.initial_year: Decimal('0.25')}
-        }
+            'BC': {cls.initial_year: Decimal('0.25')}}
         constants.TAX_PENSION_CREDIT = {
             'Federal': {cls.initial_year: Money('100')},
-            'BC': {cls.initial_year: Decimal('1000')}
-        }
+            'BC': {cls.initial_year: Decimal('1000')}}
         # It's convenient (and accurate!) to use the same values
         # for the spousal amount and the personal deduction:
         constants.TAX_SPOUSAL_AMOUNT = constants.TAX_PERSONAL_DEDUCTION
@@ -104,9 +95,7 @@ class TestTaxCanada(unittest.TestCase):
                 {
                     Money(bracket): value
                     for bracket, value in
-                    constants.TAX_BRACKETS['Federal'][year].items()
-                }
-            )
+                    constants.TAX_BRACKETS['Federal'][year].items()})
             self.assertEqual(
                 tax.federal_tax.personal_deduction(year),
                 constants.TAX_PERSONAL_DEDUCTION['Federal'][year])
@@ -130,9 +119,7 @@ class TestTaxCanada(unittest.TestCase):
                 {
                     Money(bracket): value
                     for bracket, value in
-                    constants.TAX_BRACKETS[self.province][year].items()
-                }
-            )
+                    constants.TAX_BRACKETS[self.province][year].items()})
             self.assertEqual(
                 tax.provincial_tax.personal_deduction(year),
                 constants.TAX_PERSONAL_DEDUCTION[self.province][year])
@@ -150,9 +137,7 @@ class TestTaxCanada(unittest.TestCase):
                 {
                     Money(bracket): value
                     for bracket, value in
-                    constants.TAX_BRACKETS[self.province][year].items()
-                }
-            )
+                    constants.TAX_BRACKETS[self.province][year].items()})
             self.assertEqual(
                 tax.provincial_tax.personal_deduction(year),
                 constants.TAX_PERSONAL_DEDUCTION[self.province][year])
@@ -167,24 +152,21 @@ class TestTaxCanada(unittest.TestCase):
         self.assertEqual(
             self.tax(taxable_income, self.initial_year),
             self.tax.federal_tax(taxable_income, self.initial_year) +
-            self.tax.provincial_tax(taxable_income, self.initial_year)
-        )
+            self.tax.provincial_tax(taxable_income, self.initial_year))
 
     def test_call_person(self):
         """ Test TaxCanada.__call__ on one Person input """
         self.assertEqual(
             self.tax(self.person1, self.initial_year),
             self.tax.federal_tax(self.person1, self.initial_year) +
-            self.tax.provincial_tax(self.person1, self.initial_year)
-        )
+            self.tax.provincial_tax(self.person1, self.initial_year))
 
     def test_call_person_set(self):
         """ Test TaxCanada.__call__ on a one-Person set input """
         # Should get the same result as for a setless Person:
         self.assertEqual(
             self.tax({self.person1}, self.initial_year),
-            self.tax(self.person1, self.initial_year)
-        )
+            self.tax(self.person1, self.initial_year))
 
     def test_call_people(self):
         """ Test TaxCanada.__call__ on a set of multiple people. """
@@ -193,12 +175,9 @@ class TestTaxCanada(unittest.TestCase):
         self.assertEqual(
             self.tax({self.person1, self.person2}, self.initial_year),
             self.tax.federal_tax(
-                {self.person1, self.person2}, self.initial_year
-            ) +
-            self.tax.provincial_tax(
-                {self.person1, self.person2}, self.initial_year
-            )
-        )
+                {self.person1, self.person2}, self.initial_year)
+            + self.tax.provincial_tax(
+                {self.person1, self.person2}, self.initial_year))
 
     def test_spousal_tax_credit(self):
         """ Test spousal tax credit behaviour. """
@@ -207,38 +186,37 @@ class TestTaxCanada(unittest.TestCase):
         spousal_amount = (
             constants.TAX_SPOUSAL_AMOUNT['Federal'][self.initial_year])
         shortfall = spousal_amount / 2
-        deductions = self.tax.federal_tax.deductions(
+        deduction = self.tax.federal_tax.deduction(
             self.person2, self.initial_year)
-        self.person2.gross_income = deductions + spousal_amount - shortfall
+        self.person2.gross_income = deduction + spousal_amount - shortfall
 
-        # Ensure that there are is no taxable income for person2
-        # beyond the above (to stay under spousal amount):
+        # Ensure that there is no taxable income for person2 beyond the
+        # above (to stay under spousal amount):
         self.taxable_account2.owner = self.person1
 
         # Get a tax treatment baseline for unrelated people:
         baseline_tax = self.tax.federal_tax(
-            {self.person1, self.person2}, self.initial_year
-        )
+            {self.person1, self.person2}, self.initial_year)
 
         # Wed the two people in holy matrimony:
         self.person1.spouse = self.person2
 
         # Now determine total tax liability federally:
         spousal_tax = self.tax.federal_tax(
-            {self.person1, self.person2}, self.initial_year
-        )
+            {self.person1, self.person2}, self.initial_year)
 
+        # Tax should be reduced (relative to baseline) by the shortfall
+        # of person2's income (relative to the spousal amount, after
+        # applying deductions), scaled down by the credit rate.
+        # That is, for every dollar that person2 earns _under_ the
+        # spousal amount, tax is reduced by (e.g.) 15 cents (assuming
+        # a credit rate of 15%)
         target = baseline_tax - (
-            shortfall * self.tax.federal_tax.credit_rate(
-                self.initial_year)
-        )
+            shortfall * self.tax.federal_tax.credit_rate(self.initial_year))
 
         # The different between these scenarios should be equal to
         # the amount of the spousal tax credit:
-        self.assertEqual(
-            spousal_tax,
-            target
-        )
+        self.assertEqual(spousal_tax, target)
 
     def test_pension_tax_credit(self):
         """ Test pension tax credit behaviour. """

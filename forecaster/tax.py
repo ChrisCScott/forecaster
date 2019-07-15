@@ -233,7 +233,7 @@ class Tax(object):
         return extend_inflation_adjusted(
             self._personal_deduction, self.inflation_adjust, year)
 
-    def deductions(self, person, year):
+    def deduction(self, person, year):
         """ The deductions the person is eligible for.
 
         Args:
@@ -255,7 +255,7 @@ class Tax(object):
     # It's not necessary here to determine deductions, but it may
     # be in a subclass, so we leave it in.
     # pylint: disable=unused-argument
-    def credits(self, person, year, deductions=None):
+    def credit(self, person, year, deduction=None):
         """ The tax credits each person is eligible for.
 
         Args:
@@ -269,8 +269,8 @@ class Tax(object):
         Returns:
             Money: The credits for the person.
         """
-        _credits = person.tax_credit_history[year]
-        return _credits
+        _credit = person.tax_credit_history[year]
+        return _credit
 
     # pylint: enable=unused-argument
 
@@ -414,22 +414,15 @@ class Tax(object):
             Money: The tax liability of the person.
         """
         taxable_income = person.taxable_income_history[year]
-        deductions = (
+        deduction = (
             person.tax_deduction_history[year]
-            + self.deductions(person, year)
-            + deduction
-        )
-        _credits = (
+            + self.deduction(person, year)
+            + deduction)
+        credit = (
             person.tax_credit_history[year]
-            + self.credits(person, year)
-            + credit
-        )
-        return self.tax_money(
-            taxable_income,
-            year,
-            deductions,
-            _credits
-        )
+            + self.credit(person, year)
+            + credit)
+        return self.tax_money(taxable_income, year, deduction, credit)
 
     def tax_people(self, people, year, deduction=None, credit=None):
         """ Total tax liability for a group of people.
@@ -468,11 +461,11 @@ class Tax(object):
         if person.spouse is not None and person.spouse in people:
             # Process taxes for the couple and recurse on the remaining
             # people.
-            return self.tax_spouses(
-                {person, person.spouse}, year, deduction, credit
-            ) + self.tax_people(
-                people - {person, person.spouse}, year, deduction, credit
-            )
+            return (
+                self.tax_spouses(
+                    {person, person.spouse}, year, deduction, credit)
+                + self.tax_people(
+                    people - {person, person.spouse}, year, deduction, credit))
         # Otherwise, process this person as a single individual and
         # recurse on the remaining folks:
         else:
@@ -486,9 +479,9 @@ class Tax(object):
                 kwargs['credit'] = credit[person]
 
             # Determine tax owing for this person and then recurse.
-            return self.tax_person(person, year, **kwargs) + \
-                self.tax_people(people - {person}, year,
-                                deduction, credit)
+            return (
+                self.tax_person(person, year, **kwargs)
+                + self.tax_people(people - {person}, year, deduction, credit))
 
     def tax_spouses(self, people, year, deduction=None, credit=None):
         """ Tax treatment for a pair of spouses.
@@ -601,3 +594,213 @@ class Tax(object):
         # Otherwise, this is the easy case: interpret income as
         # Money (or Money-convertible)
         return self.tax_money(income, year, **kwargs)
+
+class TaxMulti(object):
+    """ Combines tax treatment for multiple jurisdictions.
+
+    Some attributes can't be readily combined (e.g. `payment_timing`),
+    in which case the value for the _first_ jurisdiction is returned.
+    This behaviour may be modified by subclasses where combinations are
+    known (e.g. where different jurisdictions coordinate timings.)
+
+    Attributes:
+        jurisdictions (Tuple[Tax]): One or more jurisdictions' tax
+            treatment for a given taxpayer.
+        tax_brackets (dict[int, dict[Money, Decimal]]): The combined tax
+            brackets of `juridctions`.
+        personal_deduction (dict[int, Money]): The combined personal
+            deductions A dict of `{year: deduction}` pairs,
+            where `deduction` is convertible to Money.
+
+            The personal deduction for a given year is deducted from
+            income when determining income tax in that year.
+        credit_rate (dict): A dict of `{year: rate}` pairs, where `rate`
+            is convertible to Decimal.
+
+            The credit rate is used to determine how much each tax
+            credit reduced total tax liability.
+        accum (dict): A dict of `{year: {bracket: accum}}` pairs, where
+            each `bracket` corresponds to a key in `tax_brackets` and
+            `accum` is the sum of tax payable on the income falling into
+            all lower brackets.
+
+            For example, if there are $10, $100, and $1000 tax brackets,
+            then `accum[year][$1000]` is equal to::
+
+                tax_brackets[year][10] * 10 + tax_brackets[year][100] * 100
+
+        inflation_adjust: A method with the following form:
+            `inflation_adjust(target_year, base_year)`.
+
+            Returns a Decimal scaling factor. Multiplying this by a
+            nominal value in base_year will yield a nominal value in
+            target_year with the same real value.
+
+            Optional. If not provided, all values are assumed to be in
+            real terms, so no inflation adjustment is performed.
+    """
+
+    def __init__(
+            self, jurisdictions):
+        """ Initializes TaxMulti. """
+        self._jurisdictions = None
+        self.jurisdictions = jurisdictions
+
+    @property
+    def jurisdictions(self):
+        """ The jurisdictions combined by this instance of `TaxMulti`. """
+        return self._jurisdictions
+
+    @jurisdictions.setter
+    def jurisdictions(self, val):
+        """ Sets `jurisdictions`. """
+        self._jurisdictions = tuple(val)
+
+    @property
+    def payment_timing(self):
+        """ Timing for payments. """
+        return self._jurisdictions[0].payment_timing
+
+    @payment_timing.setter
+    def payment_timing(self, val):
+        """ Sets `payment_timing`. """
+        self._jurisdictions[0].payment_timing = val
+
+    @property
+    def refund_timing(self):
+        """ Timing for refunds. """
+        return self._jurisdictions[0].refund_timing
+
+    @refund_timing.setter
+    def refund_timing(self, val):
+        """ Sets `refund_timing`. """
+        self._jurisdictions[0].refund_timing = val
+
+    def tax_brackets(self, year, bracket=None):
+        """ Combined tax brackets for year. """
+        # If `bracket` is provided, we return a scalar:
+        if bracket is not None:
+            return sum(
+                tax.tax_brackets(year=year, bracket=bracket)
+                for tax in self.jurisdictions)
+        # Otherwise we return a dict.
+        # Get a dict for each jurisdiction:
+        brackets = (tax.tax_brackets(year=year) for tax in self.jurisdictions)
+        # Collect all the keys of the dicts (ignoring duplicates):
+        bracket_keys = set.union(*(set(bracket) for bracket in brackets))
+        combined_brackets = {}
+        # Sum up the rate for each bracket (since brackets might not
+        # align, find the highest-threshold bracket for each
+        # jurisdiction without exceeding `key`)
+        for key in sorted(bracket_keys):
+            combined_brackets[key] = sum(
+                bracket[
+                    max(inner_key for inner_key in bracket if inner_key <= key)]
+                for bracket in brackets)
+        return combined_brackets
+
+    def accum(self, year, bracket=None):
+        """ The accumulated tax payable for a given tax bracket. """
+        return sum(
+            tax.accum(year=year, bracket=bracket)
+            for tax in self.jurisdictions)
+
+    def personal_deduction(self, year):
+        """ Personal deduction for `year`. """
+        return self.jurisdictions[0].personal_deduction(year=year)
+
+    def deduction(self, person, year):
+        """ The deductions the person is eligible for. """
+        return self.jurisdictions[0].deductions(
+            person=person, year=year)
+
+    def credit(self, person, year, deduction=None):
+        """ The tax credits each person is eligible for. """
+        if deduction is not None and self.jurisdictions[0] in deduction:
+            deduction = deduction[self.jurisdictions[0]]
+        else:
+            deduction = None
+        return self.jurisdictions[0].credit(
+            person=person, year=year, deduction=deduction)
+
+    def credit_rate(self, year):
+        """ The credit rate for the given year. """
+        return self.jurisdictions[0].credit_rate(year)
+
+    def marginal_bracket(self, taxable_income, year):
+        """ The top tax bracket that taxable_income falls into. """
+        return max(
+            tax.marginal_bracket(taxable_income, year)
+            for tax in self.jurisdictions)
+
+    def marginal_rate(self, taxable_income, year):
+        """ The marginal rate for the given income. """
+        return sum(
+            tax.marginal_rate(taxable_income, year)
+            for tax in self.jurisdictions)
+
+    def tax_money(
+            self, taxable_income, year, deductions=None, credits_=None):
+        """ Returns taxes owing on a given amount of taxable income. """
+        # Wrap args in defaultdicts to avoid key errors:
+        deductions = make_defaultdict(deductions)
+        credits_ = make_defaultdict(credits_)
+        # Add up all jurisdictions' tax treatment:
+        return sum(
+            tax.tax_money(
+                taxable_income=taxable_income, year=year,
+                deduction=deductions[tax], credit=credits_[tax])
+            for tax in self.jurisdictions)
+
+    def tax_person(
+            self, person, year, deductions=None, credits_=None):
+        """ Returns tax treatment for an individual person. """
+        # Wrap args in defaultdicts to avoid key errors:
+        deductions = make_defaultdict(deductions)
+        credits_ = make_defaultdict(credits_)
+        # Add up all jurisdictions' tax treatment:
+        return sum(
+            tax.tax_person(
+                person=person, year=year,
+                deduction=deductions[tax], credit=credits_[tax])
+            for tax in self.jurisdictions)
+
+    def tax_people(self, people, year, deductions=None, credits_=None):
+        """ Total tax liability for a group of people. """
+        # Wrap args in defaultdicts to avoid key errors:
+        deductions = make_defaultdict(deductions)
+        credits_ = make_defaultdict(credits_)
+        # Add up all jurisdictions' tax treatment:
+        return sum(
+            tax.tax_people(
+                people=people, year=year,
+                deduction=deductions[tax], credit=credits_[tax])
+            for tax in self.jurisdictions)
+
+    def tax_spouses(self, people, year, deductions=None, credits_=None):
+        """ Tax treatment for a pair of spouses. """
+        # Wrap args in defaultdicts to avoid key errors:
+        deductions = make_defaultdict(deductions)
+        credits_ = make_defaultdict(credits_)
+        # Add up all jurisdictions' tax treatment:
+        return sum(
+            tax.tax_spouses(
+                people=people, year=year,
+                deduction=deductions[tax], credit=credits_[tax])
+            for tax in self.jurisdictions)
+
+    def __call__(
+            self, income, year, deductions=None, credits_=None):
+        """ Determines taxes owing in multiple jurisdictions. """
+        # Total tax is simply the sum of federal and prov. taxes.
+        deductions = make_defaultdict(deductions)
+        credits_ = make_defaultdict(credits_)
+        return sum(
+            tax(income, year, deduction=deductions[tax], credit=credits_[tax])
+            for tax in self.jurisdictions)
+
+def make_defaultdict(arg, default_factory=lambda: None):
+    """ Creates a defaultdict from `arg` (empty if `arg` is None). """
+    if arg is None:
+        return collections.defaultdict(default_factory)
+    return collections.defaultdict(default_factory, arg)
