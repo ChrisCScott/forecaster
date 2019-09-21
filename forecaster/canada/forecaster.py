@@ -1,6 +1,6 @@
 """ Provides a Canada-specific implementation of Forecaster. """
 
-from forecaster.forecaster import Forecaster, Parameter
+from forecaster.forecaster import ForecastBuilder, Parameter
 from forecaster.canada.tax import TaxCanada
 from forecaster.canada.settings import SettingsCanada
 
@@ -16,11 +16,11 @@ DEFAULTVALUES = {
 # This maps each of the above parameters to a type:
 DEFAULTTYPES = {str(Parameter.TAX_TREATMENT): TaxCanada}
 
-class ForecasterCanada(Forecaster):
-    """ Tests Forecaster (Canada). """
+class ForecastBuilderCanada(ForecastBuilder):
+    """ Tests ForecastBuilder (Canada). """
 
     def __init__(self, *args, settings=None, **kwargs):
-        """ Inits Forecaster with Canada-specific settings.
+        """ Inits ForecastBuilder with Canada-specific settings.
 
         In addition to using a Canada-specific Settings object by
         default, this class also provides Canada-specific defaults and

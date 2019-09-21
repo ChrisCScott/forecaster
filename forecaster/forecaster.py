@@ -13,11 +13,11 @@ from forecaster.scenario import Scenario
 from forecaster.settings import Settings
 
 
-# The `Forecaster` class makes frequent reference to the names of
+# The `ForecastBuilder` class makes frequent reference to the names of
 # parameters. Rather than hard-code these strings, it's better practice
 # to define them here as an enum.
 class Parameter(Enum):
-    """ Defines names of `Forecaster` parameters. """
+    """ Defines names of `ForecastBuilder` parameters. """
     SCENARIO = "scenario"
     LIVING_EXPENSES_STRATEGY = "living_expenses_strategy"
     SAVING_STRATEGY = "saving_strategy"
@@ -38,9 +38,9 @@ class Parameter(Enum):
 # default value.
 # EXAMPLE:
 #   `{"scenario": {"inflation": "scenario_inflation"}}`
-#   implies that `Forecaster.scenario` receives the parameter
+#   implies that `ForecastBuilder.scenario` receives the parameter
 #   `inflation` when initialized and its default value is provided by
-#   `Forecaster.settings.scenario_inflation`.
+#   `ForecastBuilder.settings.scenario_inflation`.
 DEFAULTVALUES = {
     str(Parameter.SCENARIO): {
         "initial_year": "settings.initial_year",
@@ -92,10 +92,10 @@ DEFAULTBUILDERS = {
     # str(Parameter.TAX_TREATMENT): "build_tax_treatment"
 }
 
-class Forecaster(object):
+class ForecastBuilder(object):
     """ A convenience class for building Forecasts based on settings.
 
-    `Forecaster` takes in information for building a `Forecast`
+    `ForecastBuilder` takes in information for building a `Forecast`
     (explicitly, via a `Settings` object, or via a combination of the
     two) and builds one or more `Forecast` objects from that
     information.
@@ -106,15 +106,15 @@ class Forecaster(object):
     provide certain parameters required by `Forecast` or its members,
     which will be used as-is without values from `Settings`. Client
     code may also (or alternatively) build parameters with partial
-    init args; `Forecaster` will fill in any remaining init args with
-    the appropriate values from `Settings`.
+    init args; `ForecastBuilder` will fill in any remaining init args
+    with the appropriate values from `Settings`.
 
-    `Forecaster` also can be used to build certain objects which
-    are used by `Ledger` arguments to `Forecaster.run_forecast()`,
+    `ForecastBuilder` also can be used to build certain objects which
+    are used by `Ledger` arguments to `ForecastBuilder.build_forecast()`
     such as `Tax` and `AllocationStrategy` objects (used
     by `Person` and some `Account` objects, respectively.)
 
-    `Forecaster` does not mutate values provided to it. `Ledger`
+    `ForecastBuilder` does not mutate values provided to it. `Ledger`
     objects passed by client code are copied (actually deepcopied, so
     that relationships between them are preserved), and the copies are
     mutated and returned. This makes it easy to tweak a few parameters
@@ -130,7 +130,7 @@ class Forecaster(object):
             withdrawal_strategy=None,
             tax_treatment=None
     ):
-        """ Inits an instance of `Forecaster`. """
+        """ Inits an instance of `ForecastBuilder`. """
         # Set up instance:
         super().__init__()
         self.default_values = copy(DEFAULTVALUES)
@@ -162,8 +162,8 @@ class Forecaster(object):
         `build_param`.
 
         Example:
-            `forecaster._get_attr_recursive('settings.initial_year')`
-            Returns the value of `forecaster.settings.initial_year`
+            `builder._get_attr_recursive('settings.initial_year')`
+            Returns the value of `builder.settings.initial_year`
 
         Returns:
             (Any) The value of the requested attribute.
@@ -190,8 +190,8 @@ class Forecaster(object):
         else:
             return reduce(getattr, name_list[1:], attr)
 
-    def run_forecast(self, people, accounts, debts):
-        """ Generates a `Forecast` object.
+    def build_forecast(self, people, accounts, debts):
+        """ Builds a `Forecast` object.
 
         This method builds a `Forecast` based on any explicitly-provided
         parameters (e.g. `scenario`, `living_expenses_strategy`) and
@@ -275,8 +275,8 @@ class Forecaster(object):
             param_type=None, memo=None, _special_builder=True, **kwargs):
         """ Builds a parameter based on settings and explicit args.
 
-        This method does not set any attributes of `Forecaster`, it only
-        builds an object and returns it.
+        This method does not set any attributes of `ForecastBuilder`, it
+        only builds an object and returns it.
 
         Arguments:
             param_name (str): The name of the parameter. This should
@@ -328,7 +328,7 @@ class Forecaster(object):
             # (We copy it to avoid mutating it)
             default_values = copy(self.default_values[param_name])
             # Replace each value with the value of the same-named
-            # attribute of the `Forecaster` object:
+            # attribute of the `ForecastBuilder` object:
             for key, value in default_values.items():
                 default_values[key] = self._get_attr_recursive(value, memo=memo)
             # If any values have been provided explicitly, override
@@ -336,8 +336,8 @@ class Forecaster(object):
             default_values.update(kwargs)
             kwargs = default_values
         # Build a new object (note that we don't set the corresponding
-        # attribute of Forecaster; if this is called again, we'll build
-        # a new object)
+        # attribute of ForecastBuilder; if this is called again, we'll
+        # build a new object)
         if param_type is None:
             param_type = self.default_types[param_name]
         param = param_type(*args, **kwargs)
@@ -347,10 +347,11 @@ class Forecaster(object):
     def get_param(self, param_name, memo=None):
         """ Gets a parameter, builds one if none is explicitly provided.
 
-        If a parameter has been explicitly assigned to this `Forecaster`
-        instance then that object is returned. Otherwise, this method
-        calls `build_param` to build it dynamically and returns it
-        without setting any attributes of the `Forecaster` object.
+        If a parameter has been explicitly assigned to this
+        `ForecastBuilder` instance then that object is returned.
+        Otherwise, this method calls `build_param` to build it
+        dynamically and returns it without setting any attributes of the
+        `ForecastBuilder` object.
 
         This is a convenience method which allows one to guarantee
         that an object will be returned (if `param_name` is supported)
@@ -387,15 +388,15 @@ class Forecaster(object):
 
         This is a convenience method that calls `build_param` and
         sets the result as the value of the corresponding attribute of
-        this `Forecaster` object.
+        this `ForecastBuilder` object.
 
         Note that by calling this method, the resulting object will be
-        used without modification by `run_forecast` even if the
+        used without modification by `build_forecast` even if the
         `settings` object changes. You can un-set the parameter by
         assigning `None` to that attribute.
 
-        This method does not set any attributes of `Forecaster`, it only
-        builds an object and returns it.
+        This method does not set any attributes of `ForecastBuilder`, it
+        only builds an object and returns it.
 
         Arguments:
             param_name (str): The name of the parameter. This should
@@ -425,7 +426,7 @@ class Forecaster(object):
 
         Any arguments are passed on to AllocationStrategy.__init__. Any
         arguments that aren't passed explicitly to this function are
-        instead pulled from the `Forecaster` instance's `settings`
+        instead pulled from the `ForecastBuilder` instance's `settings`
         attribute.
 
         The reason this specific object gets its own method is that

@@ -27,5 +27,5 @@ from forecaster.settings import Settings
 from forecaster.forecast import (
     Forecast, SubForecast, IncomeForecast, LivingExpensesForecast,
     SavingForecast, WithdrawalForecast, TaxForecast)
-from forecaster.forecaster import Forecaster, Parameter
+from forecaster.forecaster import ForecastBuilder, Parameter
 from forecaster.utility import Timing, transactions_from_timing

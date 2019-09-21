@@ -1,4 +1,4 @@
-""" Unit tests for `Forecaster`. """
+""" Unit tests for `ForecastBuilder`. """
 
 import unittest
 import collections
@@ -7,11 +7,11 @@ from decimal import Decimal
 from forecaster import (
     Settings, Tax, Person, Money, Account, Debt, Scenario,
     LivingExpensesStrategy, TransactionStrategy,
-    AllocationStrategy, DebtPaymentStrategy, Forecaster, Parameter)
+    AllocationStrategy, DebtPaymentStrategy, ForecastBuilder, Parameter)
 
 
-class TestForecaster(unittest.TestCase):
-    """ Tests Forecaster. """
+class TestForecastBuilder(unittest.TestCase):
+    """ Tests ForecastBuilder. """
 
     def setUp(self):
         """ Builds default strategies, persons, etc. """
@@ -28,10 +28,10 @@ class TestForecaster(unittest.TestCase):
             LivingExpensesStrategy.strategy_const_contribution)
         self.settings.living_expenses_base_amount = Decimal(1000)
 
-        # Allow subclasses to use subclasses of Forecaster by assigning
-        # to forecaster_type
-        if not hasattr(self, 'forecaster_type'):
-            self.forecaster_type = Forecaster
+        # Allow subclasses of this test case to use subclasses of
+        # ForecastBuilder by assigning to forecast_builder_type
+        if not hasattr(self, 'forecast_builder_type'):
+            self.forecast_builder_type = ForecastBuilder
 
         # Build default `SubForecast` inputs based on `settings`:
         self.initial_year = self.settings.initial_year
@@ -92,8 +92,9 @@ class TestForecaster(unittest.TestCase):
             owner=self.person,
             balance=Money(100))
 
-        # Init a Forecaster object here for convenience:
-        self.forecaster = self.forecaster_type(settings=self.settings)
+        # Init a ForecastBuilder object here for convenience:
+        self.forecast_builder = self.forecast_builder_type(
+            settings=self.settings)
 
     def assertEqual_dict(self, first, second, msg=None, memo=None):
         """ Extends equality testing for dicts with complex members. """
@@ -241,7 +242,7 @@ class TestForecaster(unittest.TestCase):
         raise AssertionError(str(first) + ' == ' + str(second))
 
     def test_assertEqual(self):  # pylint: disable=invalid-name
-        """ Tests overloaded TestForecaster.assertEqual. """
+        """ Tests overloaded TestForecastBuilder.assertEqual. """
         # Compare an object to itself
         person1 = self.person
         self.assertEqual(person1, self.person)
@@ -254,56 +255,56 @@ class TestForecaster(unittest.TestCase):
         self.assertNotEqual(person1, person2)
 
     def test_init_default(self):
-        """ Tests Forecaster.__init__ with default parameters. """
-        self.forecaster = Forecaster()
+        """ Tests ForecastBuilder.__init__ with default parameters. """
+        self.forecast_builder = ForecastBuilder()
         # For most params, not being passed means they should be None:
         self.assertEqual(
-            self.forecaster.living_expenses_strategy, None)
+            self.forecast_builder.living_expenses_strategy, None)
         self.assertEqual(
-            self.forecaster.saving_strategy, None)
+            self.forecast_builder.saving_strategy, None)
         self.assertEqual(
-            self.forecaster.withdrawal_strategy, None)
+            self.forecast_builder.withdrawal_strategy, None)
         self.assertEqual(
-            self.forecaster.allocation_strategy, None)
+            self.forecast_builder.allocation_strategy, None)
         # For two of the params, they should be initialized to whatever
         # is provided by default by the Settings class:
-        self.assertEqual(self.forecaster.settings, Settings())
+        self.assertEqual(self.forecast_builder.settings, Settings())
 
     def test_build_living_exp_strat(self):
-        """ Test Forecaster.build_param for living_expenses_strategy. """
-        param = self.forecaster.get_param(Parameter.LIVING_EXPENSES_STRATEGY)
+        """ Test ForecastBuilder.build_param for living_expenses_strategy. """
+        param = self.forecast_builder.get_param(Parameter.LIVING_EXPENSES_STRATEGY)
         self.assertEqual(param, self.living_expenses_strategy)
 
     def test_build_saving_strat(self):
-        """ Test Forecaster.build_param for contribution_strategy. """
-        param = self.forecaster.get_param(Parameter.SAVING_STRATEGY)
+        """ Test ForecastBuilder.build_param for contribution_strategy. """
+        param = self.forecast_builder.get_param(Parameter.SAVING_STRATEGY)
         self.assertEqual(param, self.saving_strategy)
 
     def test_build_withdraw_strat(self):
-        """ Test Forecaster.build_param for withdrawal_strategy. """
-        param = self.forecaster.get_param(Parameter.WITHDRAWAL_STRATEGY)
+        """ Test ForecastBuilder.build_param for withdrawal_strategy. """
+        param = self.forecast_builder.get_param(Parameter.WITHDRAWAL_STRATEGY)
         self.assertEqual(param, self.withdrawal_strategy)
 
     def test_build_allocation_strat(self):
-        """ Test Forecaster.build_param for allocation_strategy. """
-        param = self.forecaster.get_param(Parameter.ALLOCATION_STRATEGY)
+        """ Test ForecastBuilder.build_param for allocation_strategy. """
+        param = self.forecast_builder.get_param(Parameter.ALLOCATION_STRATEGY)
         self.assertEqual(param, self.allocation_strategy)
 
     def test_build_tax_treatment(self):
-        """ Test Forecaster.build_param for tax_treatment. """
-        param = self.forecaster.get_param(Parameter.TAX_TREATMENT)
+        """ Test ForecastBuilder.build_param for tax_treatment. """
+        param = self.forecast_builder.get_param(Parameter.TAX_TREATMENT)
         self.assertEqual(param, self.tax_treatment)
 
-    def test_run_forecast_basic(self):
-        """ Test Forecaster.run_forecast with simple arguments. """
+    def test_build_forecast_basic(self):
+        """ Test ForecastBuilder.build_forecast with simple arguments. """
         # Run a simple forecast with $10,000 income, $500 in annual
         # contributions, and $1000 in starting balances with no growth:
-        self.forecaster = Forecaster(
+        self.forecast_builder = ForecastBuilder(
             living_expenses_strategy=LivingExpensesStrategy(
                 strategy=LivingExpensesStrategy.strategy_const_contribution,
                 base_amount=Money(500), inflation_adjust=None),
             settings=self.settings)
-        forecast = self.forecaster.run_forecast(
+        forecast = self.forecast_builder.build_forecast(
             people={self.person},
             accounts={self.account},
             debts={})
@@ -330,10 +331,10 @@ class TestForecaster(unittest.TestCase):
             Money(10000),
             places=2)
 
-    def test_run_forecast_mutation(self):
-        """ Test that Forecaster.run_forecast doesn't mutate arguments. """
+    def test_build_forecast_mutation(self):
+        """ Test that ForecastBuilder.build_forecast doesn't mutate arguments. """
         # Run a forecast and check whether the inputs were mutated:
-        forecast = self.forecaster.run_forecast(
+        forecast = self.forecast_builder.build_forecast(
             people={self.person},
             accounts={self.account},
             debts={self.debt})
