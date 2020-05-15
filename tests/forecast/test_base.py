@@ -225,7 +225,11 @@ class TestForecast(unittest.TestCase):
         self.scenario.num_years = 2
         self.tax_forecast_dummy.tax_adjustment = Money(-100)
         trans_time = Decimal(0.5)
+        # pylint: disable=attribute-defined-outside-init
+        # We use a dummy object for tax_forecast. That object must have
+        # a tax_payment_timing attribute, so we add it here:
         self.tax_forecast_dummy.tax_payment_timing = Timing(trans_time)
+        # pylint: enable=attribute-defined-outside-init
         forecast = Forecast(
             income_forecast=self.null_forecast,
             living_expenses_forecast=self.null_forecast,

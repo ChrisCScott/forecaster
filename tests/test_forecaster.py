@@ -272,7 +272,8 @@ class TestForecastBuilder(unittest.TestCase):
 
     def test_build_living_exp_strat(self):
         """ Test ForecastBuilder.build_param for living_expenses_strategy. """
-        param = self.forecast_builder.get_param(Parameter.LIVING_EXPENSES_STRATEGY)
+        param = self.forecast_builder.get_param(
+            Parameter.LIVING_EXPENSES_STRATEGY)
         self.assertEqual(param, self.living_expenses_strategy)
 
     def test_build_saving_strat(self):
@@ -332,7 +333,7 @@ class TestForecastBuilder(unittest.TestCase):
             places=2)
 
     def test_build_forecast_mutation(self):
-        """ Test that ForecastBuilder.build_forecast doesn't mutate arguments. """
+        """ ForecastBuilder.build_forecast mustn't mutate arguments. """
         # Run a forecast and check whether the inputs were mutated:
         forecast = self.forecast_builder.build_forecast(
             people={self.person},

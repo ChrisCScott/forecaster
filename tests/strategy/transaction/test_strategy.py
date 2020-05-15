@@ -439,7 +439,7 @@ class TestTransactionStrategyWeighted(TestCaseTransactions):
 
 class TestTransactionStrategyWeightedLink(TestCaseTransactions):
     """ Tests TransactionStrategy.strategy_weighted with linked accounts
-    
+
     This test case includes multiple linked accounts (e.g. two RRSPs)
     to ensure that accounts that share a weighting are handled properly.
     """

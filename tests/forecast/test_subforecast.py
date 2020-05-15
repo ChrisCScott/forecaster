@@ -259,7 +259,9 @@ class TestSubForecast(unittest.TestCase):
             from_account=self.account1, to_account=self.account2)
         # Check net transaction flows of available cash:
         self.assertEqual(
-            (self.account1.transactions[Decimal(0)], self.account1.transactions[Decimal(0.5)]),
+            (
+                self.account1.transactions[Decimal(0)],
+                self.account1.transactions[Decimal(0.5)]),
             (Money(100), Money(-150)))
         # A $150 transaction should be added to account2:
         self.assertEqual(
