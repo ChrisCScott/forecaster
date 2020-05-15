@@ -8,12 +8,18 @@
         "test_*.py"
     ],
     "editor.rulers": [72, 80],
-    "python.testing.pytestEnabled": false,
+    "python.testing.pytestEnabled": true,
     "python.testing.nosetestsEnabled": false,
-    "python.testing.unittestEnabled": true,
+    "python.testing.unittestEnabled": false,
     "python.linting.enabled": true,
     "python.linting.pylintEnabled": true,
     "python.linting.pep8Enabled": false,
     "python.pythonPath": "${workspaceFolder}/venv/",
-    "terminal.integrated.shellArgs.windows": ["-ExecutionPolicy", "Bypass"]
+    "terminal.integrated.shellArgs.windows": [
+        "-ExecutionPolicy",
+        "Bypass"
+    ],
+    "python.testing.pytestArgs": [
+        "tests"
+    ]
 }
