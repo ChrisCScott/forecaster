@@ -82,7 +82,7 @@ class TransactionStrategy(Strategy):
     def strategy_ordered(
             self, groups, *args, subtrees=None, **kwargs):
         """ Generates a priority tree with ordered accounts.
-        
+
         This strategy treats the values of `TransactionStrategy.weights`
         as ordinals. The key with the lowest value (usually 1) are
         first in the order, followed by the next-lowest key.
@@ -245,7 +245,7 @@ class TransactionStrategy(Strategy):
         Args:
             accounts (Iterable[Account]): A collection of accounts,
                 which may or may not contain any `Debt` members.
-        
+
         Returns:
             tuple[frozenset[Account], frozenset[Account]]: All
             `Debt`-type accounts in `accounts` with outstanding
@@ -271,7 +271,7 @@ class TransactionStrategy(Strategy):
 
     def debt_priority(self, debts):
         """ Converts a collection of debts into a priority tree.
-        
+
         This method uses the selected priority method (e.g.
         `avalanche_priority`, `snowball_priority`) to convert `debts`
         into a priority tree.

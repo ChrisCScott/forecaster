@@ -27,7 +27,7 @@ class Parameter(Enum):
 
     def __str__(self):
         """ Cast enum members directly to their string value. """
-        return self.value
+        return str(self.value)
 
 # This mapping has the following form:
 #   dict[str: dict[str, str]]

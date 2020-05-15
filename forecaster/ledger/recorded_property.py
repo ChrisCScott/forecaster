@@ -138,7 +138,7 @@ class recorded_property_cached(recorded_property):
 
     # NOTE: Due to how decorators' pie-notation works, adding this
     # subclass is much simpler than extending `recorded_property` to
-    # take a `cached` argument. 
+    # take a `cached` argument.
     # `@recorded_property` (with no args) calls only __init__, whereas
     # `@recorded_property(cached=True)` calls __init__ with the keyword
     # arg `cached` and then `__call__` with the decorated method --
