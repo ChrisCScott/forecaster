@@ -3,7 +3,8 @@
 from collections import defaultdict
 from collections.abc import Hashable
 from decimal import Decimal
-from forecaster.ledger import Ledger, Money, recorded_property
+from forecaster.ledger import Ledger, recorded_property
+from forecaster.money import Money
 from forecaster.accounts import Account
 from forecaster.utility import Timing
 

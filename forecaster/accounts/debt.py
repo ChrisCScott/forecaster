@@ -1,7 +1,7 @@
 """ A module providing the Debt class. """
 
 from forecaster.accounts.base import Account
-from forecaster.ledger import Money
+from forecaster.money import Money
 
 class Debt(Account):
     """ A debt with a balance and an interest rate.

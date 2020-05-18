@@ -1,7 +1,7 @@
 """ Provides classes for determining the total sum of transactions. """
 
 from decimal import Decimal
-from forecaster.ledger import Money
+from forecaster.money import Money
 from forecaster.strategy.base import Strategy, strategy_method
 
 

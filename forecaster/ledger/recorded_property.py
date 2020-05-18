@@ -1,5 +1,7 @@
 """ Module providing property-like decorators for `Ledger` subclasses. """
 
+from typing import Callable, Optional, Any, Dict
+
 class recorded_property(property):
     """ A decorator for properties that record their annual amounts.
 
@@ -23,7 +25,12 @@ class recorded_property(property):
     # `property` (i.e. lowercase)
     # pylint: disable=invalid-name
 
-    def __init__(self, fget=None, fset=None, fdel=None, doc=None):
+    def __init__(
+            self,
+            fget: Optional[Callable[[Any], Any]] = None,
+            fset: Optional[Callable[[Any, Any], None]] = None,
+            fdel: Optional[Callable[[Any], None]] = None,
+            doc: Optional[str] = None) -> None:
         """ Init recorded_property.
 
         This wraps the getter received via the `@recorded_property`
@@ -40,14 +47,13 @@ class recorded_property(property):
         # and `deleter`, respectively), and none are bound at decoration
         # time! Try to determine which method has the correct name:
         if fget is not None and fget.__name__ != "getter":
-            name_method = fget
+            self.__name__ = fget.__name__
         elif fset is not None and fset.__name__ != "setter":
-            name_method = fset
+            self.__name__ = fset.__name__
         elif fdel is not None and fdel.__name__ != "deleter":
-            name_method = fdel
-        else:
-            name_method = fget
-        self.__name__ = name_method.__name__
+            self.__name__ = fdel.__name__
+        # If no name is provided, use whatever the default name is.
+
         # We will name the corresponding history objects based on this
         # object's name:
         self.history_prop_name = self.__name__ + '_history'
@@ -56,15 +62,15 @@ class recorded_property(property):
         # Getter returns stored value if available, otherwise generates
         # a new value (and does not cache it - we only automatically
         # store a value when next_year() is called)
-        def getter(obj):
+        def getter(obj: Any) -> Any:
             """ Returns cached value in \\*_history dict if available. """
             history_dict = getattr(obj, self.history_dict_name)
             if obj.this_year in history_dict:
                 return history_dict[obj.this_year]
             else:
-                return fget(obj)
+                return fget(obj)  # type: ignore[misc]
 
-        def setter(obj, val):
+        def setter(obj: Any, val: Any) -> None:
             """ Adds value to cache, without overwriting user input. """
             # Don't overwrite a value provided via an inputs dict:
             if (
@@ -91,7 +97,7 @@ class recorded_property(property):
                 # (We *could* invoke `fget` here and cache its result,
                 # but this could lead to side-effects)
 
-        def deleter(obj):
+        def deleter(obj: Any) -> None:
             """ Removes a cached value, without removing user input. """
             # Don't delete a value provided via an inputs dict:
             if (
@@ -108,17 +114,18 @@ class recorded_property(property):
 
         super().__init__(fget=getter, fset=setter, fdel=deleter, doc=doc)
 
-        def history(obj):
+        def history(obj: Any) -> Dict[int, Any]:
             """ Returns history dict for the property. """
             # For non-cached properties, the history dict might
             # not include a property for the current year.
             history_dict = getattr(obj, self.history_dict_name)
             if obj.this_year not in history_dict:
-                # Build a new dict and add the current year to that
+                # Build a new dict (so as to avoid mutation of the input
+                # dict) and add the current year to the new dict
                 # (if not already in the dict), so that *_history always
                 # contains the current year:
-                history_dict = dict(history_dict)  # copy dict
-                history_dict[obj.this_year] = fget(obj)  # add this year
+                history_dict = dict(history_dict)
+                history_dict[obj.this_year] = fget(obj) # type: ignore[misc]
             return history_dict
 
         history.__name__ = self.history_prop_name
@@ -144,32 +151,38 @@ class recorded_property_cached(recorded_property):
     # arg `cached` and then `__call__` with the decorated method --
     # which makes `recorded_property` a much more complicated subclass
     # of `property`!
-    def __init__(self, fget=None, fset=None, fdel=None, doc=None):
+    def __init__(
+            self,
+            fget: Optional[Callable[[Any], Any]] = None,
+            fset: Optional[Callable[[Any, Any], None]] = None,
+            fdel: Optional[Callable[[Any], None]] = None,
+            doc: Optional[str] = None) -> None:
         """ Overrides the property getter to cache on first call. """
 
         # Wrap the getter in a method that will cache the property the
         # first time it's called each year.
-        def getter(obj):
+        def getter(obj: Any) -> Any:
             """ Gets the property and caches it. """
             history_dict = getattr(obj, self.history_dict_name)
-            val = fget(obj)
+            val = fget(obj)  # type: ignore[misc]
             history_dict[obj.this_year] = val
             return val
 
         # The wrapping getter function should mimic the name and
         # docstring of the `fget` argument:
-        getter.__name__ = fget.__name__
-        getter.__doc__ = fget.__doc__
+        if fget is not None:
+            getter.__name__ = fget.__name__
+            getter.__doc__ = fget.__doc__
 
         super().__init__(fget=getter, fset=fset, fdel=fdel, doc=doc)
 
         # Override history property with different method that adds the
         # current year's value to the cache if it isn't already there:
-        def history(obj):
+        def history(obj: Any) -> Dict[int, Any]:
             """ Returns \\*_history dict (and caches this year's value). """
             history_dict = getattr(obj, self.history_dict_name)
             if obj.this_year not in history_dict:
-                history_dict[obj.this_year] = fget(obj)
+                history_dict[obj.this_year] = fget(obj)  # type: ignore[misc]
             return history_dict
 
         history.__name__ = self.history_prop_name

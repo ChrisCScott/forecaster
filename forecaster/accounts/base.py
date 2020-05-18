@@ -5,7 +5,8 @@ from collections import defaultdict
 from decimal import Decimal
 from forecaster.person import Person
 from forecaster.ledger import (
-    Money, TaxSource, recorded_property, recorded_property_cached)
+    TaxSource, recorded_property, recorded_property_cached)
+from forecaster.money import Money
 from forecaster.utility import (
     Timing, when_conv, frequency_conv, add_transactions)
 from forecaster.accounts.util import (

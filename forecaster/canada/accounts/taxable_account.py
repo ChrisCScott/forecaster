@@ -2,7 +2,8 @@
 
 from forecaster.accounts import Account
 from forecaster.ledger import (
-    Money, recorded_property, recorded_property_cached)
+    recorded_property, recorded_property_cached)
+from forecaster.money import Money
 
 class TaxableAccount(Account):
     """ A taxable account, non-registered account.

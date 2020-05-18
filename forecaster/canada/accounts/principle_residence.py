@@ -1,7 +1,8 @@
 """ A Canadian principle residence. """
 
 from forecaster.accounts import Account
-from forecaster.ledger import Money, recorded_property
+from forecaster.ledger import recorded_property
+from forecaster.money import Money
 
 class PrincipleResidence(Account):
     """ A Canadian principle residence. Gains in value are not taxable. """

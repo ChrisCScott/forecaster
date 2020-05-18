@@ -69,27 +69,28 @@ class TestTax(unittest.TestCase):
         # Set up a simple person with no account-derived taxable income
         self.person = Person(
             self.initial_year, "Tester", self.initial_year - 25,
-            retirement_date=self.initial_year + 40, gross_income=0)
+            retirement_date=self.initial_year + 40, gross_income=Money(0))
 
         # Set up two people, spouses, on which to do more complex tests
         self.person1 = Person(
             self.initial_year, "Tester 1", self.initial_year - 20,
-            retirement_date=self.initial_year + 45, gross_income=100000)
+            retirement_date=self.initial_year + 45, gross_income=Money(100000))
         self.person2 = Person(
             self.initial_year, "Tester 2", self.initial_year - 22,
-            retirement_date=self.initial_year + 43, gross_income=50000)
+            retirement_date=self.initial_year + 43, gross_income=Money(50000))
 
         # Give the first person two accounts, one taxable and one
         # tax-deferred. Withdraw the entirety from the taxable account,
         # so that we don't need to worry about tax on unrealized growth:
         self.taxable_account1 = TaxableAccount(
             owner=self.person1,
-            acb=0, balance=50000, rate=Decimal('0.05'), nper=1)
-        self.taxable_account1.add_transaction(-50000, when='start')
+            acb=Money(0), balance=Money(50000), rate=Decimal('0.05'), nper=1)
+        self.taxable_account1.add_transaction(Money(-50000), when='start')
         self.rrsp = RRSP(
             owner=self.person1,
             inflation_adjust=self.inflation_adjustments,
-            contribution_room=0, balance=10000, rate=Decimal('0.05'), nper=1)
+            contribution_room=Money(0), balance=Money(10000),
+            rate=Decimal('0.05'), nper=1)
         # Employment income is fully taxable, and only half of capital
         # gains (the income from the taxable account) is taxable:
         self.person1_taxable_income = Money(
@@ -102,11 +103,11 @@ class TestTax(unittest.TestCase):
         # have no effect on taxable income):
         self.taxable_account2 = TaxableAccount(
             owner=self.person2,
-            acb=0, balance=20000, rate=Decimal('0.05'), nper=1)
+            acb=Money(0), balance=Money(20000), rate=Decimal('0.05'), nper=1)
         self.taxable_account2.add_transaction(-20000, when='start')
         self.tfsa = TFSA(
             owner=self.person2,
-            balance=50000, rate='0.05', nper=1)
+            balance=Money(50000), rate='0.05', nper=1)
         self.tfsa.add_transaction(-20000, when='start')
         # Employment income is fully taxable, and only half of capital
         # gains (the income from the taxable account) is taxable:

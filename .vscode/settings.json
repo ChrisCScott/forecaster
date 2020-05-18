@@ -13,8 +13,15 @@
     "python.testing.unittestEnabled": false,
     "python.linting.enabled": true,
     "python.linting.pylintEnabled": true,
-    "python.linting.pep8Enabled": false,
+    "python.linting.pycodestyleEnabled": false,
     "python.pythonPath": "${workspaceFolder}/venv/",
+    "python.linting.mypyEnabled": true,
+    "python.linting.mypyArgs": [
+        "--ignore-missing-imports",
+        "--follow-imports=silent",
+        "--show-column-numbers",
+        "--show-error-codes"
+    ],
     "terminal.integrated.shellArgs.windows": [
         "-ExecutionPolicy",
         "Bypass"

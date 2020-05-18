@@ -5,12 +5,11 @@ modules.
 """
 
 import collections
-from decimal import Decimal
-from forecaster.ledger import Money
+from numbers import Number
+from forecaster.money import MoneyType as Money, Real
 
-EPSILON = Decimal("0.00001")
-EPSILON_MONEY = Money(EPSILON)
-
+# Define constants for use throughout `forecaster` packages:
+EPSILON = 0.5**13  # Roughly 0.000122. Should be losslessly represented.
 WHEN_DEFAULT = 0.5
 
 class Timing(dict):
@@ -23,7 +22,7 @@ class Timing(dict):
 
     This class provides a copy-constructor that can receive a dict of
     {when: value} pairs. If a dict has Money-type values, these are
-    converted to Decimal to avoid arithmetic errors.
+    converted to numerical values to avoid arithmetic errors.
 
     Examples:
         Timing()
@@ -80,7 +79,7 @@ class Timing(dict):
 
             # Build out multiple timings based on scalar inputs.
             # Each transaction has equal weight:
-            weight = 1 / Decimal(frequency)
+            weight = 1 / frequency
             # Build the dict:
             for time in range(frequency):
                 self[(time + when) / frequency] = weight
@@ -148,7 +147,7 @@ class Timing(dict):
                 used.
 
         Returns:
-            dict[Decimal, Any]: A time-series of values with the same
+            dict[Real, Any]: A time-series of values with the same
                 proportions as this timing object, with values of the
                 same type as `scalar` and which sum to `other`.
 
@@ -186,10 +185,10 @@ def _convert_dict(when):
         when (dict[Number, Union[Money, Number]]): A mapping of timings
             (in [0,1]) to values.
             If the values are `Money`-typed, they are converted to
-            `Decimal`.
+            a numerical type.
 
     Returns:
-        dict[Decimal, Number]: A mapping of timings to weights.
+        dict[Real, Real]: A mapping of timings to weights.
     """
     # First, deal with empty dict or all-zero dict:
     if not when:
@@ -198,14 +197,17 @@ def _convert_dict(when):
     if all(value == 0 for value in when.values()):
         # Use the timings provided by the dict and fill in uniform
         # weights, since no non-zero weights were given:
-        return {key: Decimal(1) for key in when}
+        return {key: 1 for key in when}
 
-    # If values are Money-types, convert to Decimal:
+    # If values are Money-types, convert to numerical:
     # Get a random element from `when` so we can check its type:
     sample = next(iter(when.values()))
-    if isinstance(sample, Money):
-        # Convert the dict's values to Decimal (no mutation!):
-        when = {timing: value.amount for timing, value in when.items()}
+    if not isinstance(sample, Number):
+        if hasattr(sample, 'amount'):
+            # Convert the dict's values to Decimal (no mutation!):
+            when = {timing: value.amount for timing, value in when.items()}
+        else:
+            raise TypeError("Money value not convertible to numeric type")
 
     # OK, so the dict is non-empty, has a non-zero element, and
     # doesn't have awkward `Money` semantics (i.e. is Decimal-like).
@@ -383,11 +385,8 @@ def when_conv(when):
             when = 1
         elif when == 'start':
             when = 0
-
-    # Decimal can take a variety of input types (including str), so
-    # rather than throw an error on non-start/end input strings, try
-    # to cast to Decimal and throw a decimal.InvalidOperation error.
-    when = Decimal(when)
+        else:
+            raise ValueError('`when` may be either \'start\' or \'end\'.')
 
     if when > 1 or when < 0:
         raise ValueError("When: 'when' must be in [0,1]")
@@ -633,36 +632,22 @@ def build_inflation_adjust(inflation_adjust=None):
         # Assume real values if no inflation-adjustment method is
         # given - i.e. always return val without adjustment.
         # pylint: disable=W0613,E0102
-        def inflation_adjust_func(target_year=None, base_year=None):
+        def inflation_adjust_func(target_year, base_year=None):
             """ No inflation adjustment; returns 1 every year. """
-            return Decimal(1)
+            return 1
     elif isinstance(inflation_adjust, dict):
         # If a dict of {year: Decimal} values has been passed in,
         # convert that to a suitable method.
-        # If inflation_adjust has a default value, preserve it:
-        if isinstance(inflation_adjust, collections.defaultdict):
-            inflation_dict = collections.defaultdict(
-                inflation_adjust.default_factory)
-        else:
-            inflation_dict = {}
-        # Then type-convert all the elements of inflation_adjust:
-        inflation_dict.update({
-            int(key): Decimal(inflation_adjust[key])
-            for key in inflation_adjust
-        })
 
         # It's slightly more efficient to find the smallest key in
         # inflation_adjust outside of the function.
-        default_base = min(inflation_dict.keys())
+        default_base = min(inflation_adjust.keys())
 
         def inflation_adjust_func(target_year, base_year=None):
             """ Inflation adjustment from """
             if base_year is None:
                 base_year = default_base
-            return Decimal(
-                inflation_dict[target_year] /
-                inflation_dict[base_year]
-            )
+            return inflation_adjust[target_year] / inflation_adjust[base_year]
     elif not callable(inflation_adjust):
         # If it's not a dict and not callable, then we don't know
         # what to do with it. Raise an error.

@@ -288,7 +288,7 @@ class TestPersonMethods(unittest.TestCase):
     def test_next(self):
         """ Test next_year to confirm that properties are advanced. """
         initial_year = 2017
-        gross_income = 100
+        gross_income = Money(100)
         tax = Tax(
             {initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
             inflation_adjust={2017: 1, 2018: 1, 2019: 1, 2020: 1},
@@ -310,7 +310,7 @@ class TestPersonMethods(unittest.TestCase):
     def test_taxable_income(self):
         """ Test Person.taxable_income. """
         initial_year = 2017
-        gross_income = 100
+        gross_income = Money(100)
         tax = Tax({initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
                   {2017: 1, 2018: 1, 2019: 1, 2020: 1}, {2017: 0})
         person = Person(
@@ -322,7 +322,7 @@ class TestPersonMethods(unittest.TestCase):
     def test_tax_withheld(self):
         """ Test Person.tax_withheld. """
         initial_year = 2017
-        gross_income = 300
+        gross_income = Money(300)
         tax = Tax(
             {initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
             inflation_adjust={2017: 1, 2018: 1, 2019: 1, 2020: 1},
@@ -336,7 +336,7 @@ class TestPersonMethods(unittest.TestCase):
     def test_tax_credit(self):
         """ Test Person.tax_credit. """
         initial_year = 2017
-        gross_income = 300
+        gross_income = Money(300)
         tax = Tax({initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
                   {2017: 1, 2018: 1, 2019: 1, 2020: 1}, {2017: 0})
         person = Person(
@@ -348,7 +348,7 @@ class TestPersonMethods(unittest.TestCase):
     def test_tax_deduction(self):
         """ Test Person.tax_deduction. """
         initial_year = 2017
-        gross_income = 300
+        gross_income = Money(300)
         tax = Tax({initial_year: {0: 0, 200: 0.5, 1000: 0.75}},
                   {2017: 1, 2018: 1, 2019: 1, 2020: 1}, {2017: 0})
         person = Person(
@@ -360,7 +360,7 @@ class TestPersonMethods(unittest.TestCase):
     def test_init_inputs(self):
         """ Test Person.__init__ with inputs arg. """
         initial_year = 2017
-        gross_income = 500
+        gross_income = Money(500)
         inputs = {
             'gross_income': {
                 initial_year: Money(1000), initial_year + 2: Money(0)

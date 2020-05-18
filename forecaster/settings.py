@@ -4,8 +4,9 @@ It provides the `Settings` class, which contains various `*Defaults`
 classes. They provide default values for aspects of the application.
 """
 
+from typing import Dict, Union
 import datetime
-from decimal import Decimal
+from forecaster.money import Real, MoneyType as Money
 
 
 class Settings:
@@ -30,46 +31,46 @@ class Settings:
     # where the .ini doesn't provide a value. (This sounds like a good
     # role for an __init__ function...)
     """ Application-level and UI defaults """
-    initial_year = datetime.datetime.now().year  # Model starts with this year
-    display_year = initial_year  # Base year for displaying real-valued amounts
-    currency = 'CAD'  # Use Canadian dollars as the default currency
+    initial_year: int = datetime.datetime.now().year  # Start with this year
+    display_year: int = initial_year  # Year for display of real-valued amounts
+    currency: str = 'CAD'  # Use Canadian dollars as the default currency
 
     """ Defaults for `Scenario`  """
-    inflation = 0.02
-    stock_return = 0.07
-    bond_return = 0.04
-    other_return = inflation + 0.01
-    management_fees = 0.005
-    num_years = 100  # Model this number of years from the initial_year
+    inflation: Real = 0.02
+    stock_return: Real = 0.07
+    bond_return: Real = 0.04
+    other_return: Real = 0.03
+    management_fees: Real = 0.005
+    num_years: int = 100  # Model this number of years from the initial_year
 
     ''' LivingExpensesStrategy defaults '''
-    living_expenses_strategy = 'Constant living expenses'
-    living_expenses_base_amount = Decimal('60000')
-    living_expenses_rate = Decimal('0.2')
-    living_expenses_inflation_adjust = True
+    living_expenses_strategy: str = 'Constant living expenses'
+    living_expenses_base_amount: Real = 60000
+    living_expenses_rate: Real = 0.2
+    living_expenses_inflation_adjust: bool = True
 
     ''' SavingStrategy defaults '''
-    saving_strategy = "Ordered"
-    saving_weights = {"Account": 1}
+    saving_strategy: str = "Ordered"
+    saving_weights: Dict[str, Real] = {"Account": 1}
 
     ''' WithdrawalStrategy defaults '''
-    withdrawal_strategy = "Ordered"
-    withdrawal_weights = {"Account": 1}
+    withdrawal_strategy: str = "Ordered"
+    withdrawal_weights: Dict[str, Real] = {"Account": 1}
 
     ''' AllocationStrategy defaults '''
-    allocation_strategy = 'n-age'
-    allocation_min_equity = Decimal('0.3')
-    allocation_max_equity = Decimal('0.3')
-    allocation_std_retirement_age = 65
-    allocation_target = 65
-    allocation_risk_trans_period = 20
-    allocation_adjust_retirement = True
+    allocation_strategy: str = 'n-age'
+    allocation_min_equity: Real = 0.3
+    allocation_max_equity: Real = 0.3
+    allocation_std_retirement_age: int = 65
+    allocation_target: int = 65
+    allocation_risk_trans_period: int = 20
+    allocation_adjust_retirement: bool = True
 
     ''' DebtPaymentStrategy defaults '''
-    debt_payment_strategy = 'Avalanche'
+    debt_payment_strategy: str = 'Avalanche'
 
     ''' Tax defaults '''
-    tax_brackets = {initial_year: {Decimal(0): Decimal(0)}}
-    tax_personal_deduction = {initial_year: Decimal(0)}
-    tax_credit_rate = {initial_year: Decimal(0)}
-    tax_payment_timing = 'start'
+    tax_brackets: Dict[int, Dict[Money, Real]] = {initial_year: {0: 0}}
+    tax_personal_deduction: Dict[int, Money] = {initial_year: 0}
+    tax_credit_rate: Dict[int, Real] = {initial_year: 0}
+    tax_payment_timing: Union[str, Real] = 'start'

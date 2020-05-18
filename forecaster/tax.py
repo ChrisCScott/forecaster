@@ -4,12 +4,15 @@ These classes are callable with the form `tax(taxable_income, year)`
 """
 
 import collections
-from decimal import Decimal
-from forecaster.ledger import Money
+from typing import Union, Dict, Optional, Callable
+from forecaster.money import MoneyType as Money, Real
 from forecaster.person import Person
 from forecaster.utility import (
     build_inflation_adjust, nearest_year, extend_inflation_adjusted,
     Timing)
+
+
+Time = Union[str, Real]
 
 # NOTE: Consider making this a ledger-like object that stores values
 # year-over-year. These values might include:
@@ -90,6 +93,9 @@ class Tax(object):
 
             Optional. If not provided, all values are assumed to be in
             real terms, so no inflation adjustment is performed.
+        money_factory (Callable[[Real], Money]): A callable
+            object which takes a numeric value and returns a `Money`
+            value. Optional; defaults to `float`.
 
     Args:
         taxable_income (Money, iterable): Taxable income for the year,
@@ -112,11 +118,19 @@ class Tax(object):
             themselves. These will generally be boutique tax credit.
 
             Optional.
+        money_factory (Callable[[Real], Money]): A callable
+            object which takes a numeric value and returns a `Money`
+            value. Optional; defaults to `float`.
     """
     def __init__(
-            self, tax_brackets, personal_deduction=None, credit_rate=None,
-            inflation_adjust=None,
-            refund_timing='start', payment_timing='start'):
+            self, tax_brackets: Dict[int, Dict[Money, Real]],
+            personal_deduction: Optional[Dict[int, Money]] = None,
+            credit_rate: Optional[Dict[int, Money]] = None,
+            inflation_adjust:
+                Optional[Callable[[Money, int, int], Real]] = None,
+            refund_timing: Time = 'start',
+            payment_timing: Time = 'start',
+            money_factory: Callable[[Real], Money] = float) -> None:
         """ Initializes the Tax object.
 
         Args:
@@ -143,6 +157,9 @@ class Tax(object):
             payment_timing (Timing): The timing with which tax payments
                 must be made, if there is an amount owing for the year
                 in excess of the amount withheld. Optional.
+            money_factory (Callable[[Real], Money]): A callable
+                object which takes a numeric value and returns a `Money`
+                value. Optional; defaults to `float`.
         """
         # NOTE: Consider allowing users to pass in non-year-indexed
         # values (e.g. so that `tax_brackets` can be a dict of
@@ -153,6 +170,8 @@ class Tax(object):
         # If it's provided, we would interpret any non-year-indexed args
         # as values for the key `initial_year`.
 
+        self.money_factory = money_factory
+
         # Don't set these args to {} in the call signature, or else
         # the mutated dicts will be shared between instances.
         if personal_deduction is None:
@@ -162,34 +181,23 @@ class Tax(object):
 
         # Enforce {int: {Money: Decimal}} types for tax_brackets and
         # generate an entry in `accum` for each new bracket:
-        self._accum = {}
-        self._tax_brackets = {}
+        self._accum: Dict[int, Dict[Money, Money]] = {}
+        self._tax_brackets: Dict[int, Dict[Money, Real]] = {}
         for year in tax_brackets:
             self.add_brackets(tax_brackets[year], year)
 
         self.inflation_adjust = build_inflation_adjust(inflation_adjust)
 
-        if personal_deduction != {}:
-            # Enforce {int: Money} types for personal_deduction:
-            self._personal_deduction = {
-                int(year): Money(personal_deduction[year])
-                for year in personal_deduction
-            }
-        else:
+        if not personal_deduction:
             # If this arg wasn't passed, assume there's no deduction
-            self._personal_deduction = {min(self._tax_brackets): Money(0)}
+            self._personal_deduction = {min(
+                self._tax_brackets): self.money_factory(0)}
 
-        if credit_rate != {}:
-            # Enforce {int: Decimal} types for credit_rate:
-            self._credit_rate = {
-                int(year): Decimal(credit_rate[year])
-                for year in credit_rate
-            }
-        else:
+        if not credit_rate:
             # If this argument wasn't passed, default to behaviour where
             # all tax credits are fully refundable (i.e. credits reduce
             # tax liability at a 100% rate)
-            self._credit_rate = {min(self._tax_brackets): Decimal(1)}
+            self._credit_rate = {min(self._tax_brackets): 1}
 
         self._payment_timing = None
         self._refund_timing = None
@@ -321,7 +329,7 @@ class Tax(object):
         # Enforce types for the new brackets (We'll reuse this short
         # name later when building the accum dict for convenience)
         brackets = {
-            Money(key): Decimal(brackets[key])
+            self.money_factory(key): brackets[key]
             for key in brackets
         }
         self._tax_brackets[year] = brackets
@@ -336,7 +344,8 @@ class Tax(object):
         # marginal rate of that bracket applied to the full taxable
         # income within its range.
         prev = min(brackets)  # We need to look at 2 brackets at a time
-        self._accum[year] = {prev: Money(0)}  # Accum for lowest bracket
+        # Accum for lowest bracket:
+        self._accum[year] = {prev: self.money_factory(0)}
         iterator = sorted(brackets.keys())  # Look at brackets in order
         iterator.remove(prev)  # Lowest bracket is already accounted for.
         for bracket in iterator:
@@ -345,7 +354,7 @@ class Tax(object):
             prev = bracket  # Keep track of next-lowest bracket
 
     def tax_money(
-            self, taxable_income, year, deduction=Money(0), credit=Money(0)):
+            self, taxable_income, year, deduction=None, credit=None):
         """ Returns taxes owing on a given amount of taxable income.
 
         This method does not apply any deductions or credits other than
@@ -372,6 +381,12 @@ class Tax(object):
             Money: Total tax liability arising from `taxable_income` in
                 `year`, after applying `deduction` and `credit`.
         """
+        # Assign default values:
+        if deduction is None:
+            deduction = self.money_factory(0)
+        if credit is None:
+            credit = self.money_factory(0)
+
         # Apply deductions:
         taxable_income -= deduction
 
@@ -390,10 +405,10 @@ class Tax(object):
         # Apply tax credts:
         net_tax = gross_tax - credit * self.credit_rate(year)
         # Assume credits are non-refundable:
-        return max(net_tax, Money(0))
+        return max(net_tax, self.money_factory(0))
 
     def tax_person(
-            self, person, year, deduction=Money(0), credit=Money(0)):
+            self, person, year, deduction=None, credit=None):
         """ Returns tax treatment for an individual person.
 
         Args:
@@ -413,6 +428,12 @@ class Tax(object):
         Returns:
             Money: The tax liability of the person.
         """
+        # Assign default values:
+        if deduction is None:
+            deduction = self.money_factory(0)
+        if credit is None:
+            credit = self.money_factory(0)
+
         taxable_income = person.taxable_income_history[year]
         deduction = (
             person.tax_deduction_history[year]
@@ -449,7 +470,7 @@ class Tax(object):
 
         # Base case: If {} is passed, return $0.
         if not people:
-            return Money(0)
+            return self.money_factory(0)
 
         # Otherwise, grab someone at random and determine their taxes.
         person = next(iter(people))
@@ -520,7 +541,7 @@ class Tax(object):
         # Add together the tax treatment for each spouse, without doing
         # anything special (this is essentially the same logic as
         # tax_person, but without the check for spouses or recursion)
-        tax = Money(0)
+        tax = self.money_factory(0)
         for person in people:
             kwargs = {}
             if person in deduction:

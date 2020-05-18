@@ -3,7 +3,7 @@
 import unittest
 import decimal
 from decimal import Decimal
-from forecaster.ledger.money import Money
+from forecaster.money import Money
 from forecaster.utility import (
     Timing, transactions_from_timing,
     nearest_year, extend_inflation_adjusted,

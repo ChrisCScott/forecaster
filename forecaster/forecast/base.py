@@ -8,7 +8,8 @@ determine how account balances will grow or shrink year-over-year.
 from collections import defaultdict
 from decimal import Decimal
 from forecaster.ledger import (
-    Ledger, Money, recorded_property, recorded_property_cached)
+    Ledger, recorded_property, recorded_property_cached)
+from forecaster.money import Money
 from forecaster.utility import Timing, add_transactions
 
 class Forecast(Ledger):

@@ -1,13 +1,29 @@
 """ A module providing a Person class. """
 
-from decimal import Decimal
+from typing import Any, Optional, Union, Dict, Callable, Set, cast, Protocol
+from abc import abstractmethod
 from datetime import datetime
 from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
+from forecaster.money import MoneyType as Money, Real
 from forecaster.ledger import (
-    Money, TaxSource, recorded_property, recorded_property_cached)
+    TaxSource, recorded_property, recorded_property_cached)
 from forecaster.utility import Timing
 
+
+# Define protocols for tax_treatment and account attributes:
+class Tax(Protocol):
+    """ Estimates tax treatment for gross income in a given year. """
+    @abstractmethod
+    def __call__(self, income: Money, year: int, *args) -> Money:
+        """ Callable with two positional args: gross income and year. """
+        raise NotImplementedError
+
+class Account(Protocol):
+    """ Estimates tax treatment of an account. """
+    taxable_income: Money
+    tax_credit: Money
+    tax_deduction: Money
 
 class Person(TaxSource):
     """ Represents a person's basic information: age and retirement age.
@@ -45,6 +61,9 @@ class Person(TaxSource):
             * gross_income
             * net_income
             * raise_rate
+        money_factory (Callable[[Real], Money]): A callable
+            object which takes a numeric value and returns a `Money`
+            value. Optional; defaults to `float`.
 
     Attributes:
         accounts (set): All accounts naming this Person as an owner.
@@ -79,6 +98,9 @@ class Person(TaxSource):
             this Person.
         tax_treatment (Tax): The tax treatment of the person. A callable
             object; see documentation for `Tax` for more information.
+        money_factory (Callable[[Real], Money]): A callable
+            object which takes a numeric value and returns a `Money`
+            value. Optional; defaults to `float`.
 
     Raises:
         TypeError: birth_date or retirement_date are not parseable
@@ -111,14 +133,26 @@ class Person(TaxSource):
     # and replace the `tax_treatment` arg with a `province` (str) arg.
 
     def __init__(
-            self, initial_year, name, birth_date, retirement_date=None,
-            gross_income=0, raise_rate=0, spouse=None, tax_treatment=None,
-            payment_timing=None, inputs=None):
+            self,
+            initial_year: int, name: str, birth_date: Any,
+            retirement_date: Optional[Any] = None,
+            gross_income: Money = 0,
+            raise_rate: float = 0,
+            spouse: Optional["Person"] = None,
+            tax_treatment: Optional[Tax] = None,
+            payment_timing: Optional[Union[Timing, Dict[float, float]]] = None,
+            inputs: Optional[Dict[str, Dict[int, Any]]] = None,
+            money_factory: Callable[[Real], Money] = float
+        ) -> None:
         """ Initializes a `Person` object. """
-        super().__init__(initial_year=initial_year, inputs=inputs)
+        super().__init__(
+            initial_year=initial_year, inputs=inputs,
+            money_factory=money_factory)
 
         # For simple, non-property-wrapped attributes, assign directly:
-        self.name = name
+        self.name: str = name
+        self.tax_treatment: Optional[Tax] = tax_treatment
+        self.payment_timing: Timing
         if payment_timing is None:
             # Timing is technically mutable, so init it here rather than
             # using "Timing()" as a default value.
@@ -128,37 +162,39 @@ class Person(TaxSource):
 
         # For attributes wrapped by ordinary properties, create hidden
         # attributes and assign to them using the properties:
-        self._birth_date = None
-        self._retirement_date = None
-        self._raise_rate_callable = None
-        self._spouse = None
-        self._tax_treatment = None
-        self._contribution_room = {}
-        self._contribution_groups = {}
+        # First declare non-optional values instantiated via properties:
+        self._birth_date: datetime
+        self._raise_rate_callable: Callable[[int], Real]
+        # Now declare optional/empty values:
+        self._retirement_date: Optional[datetime] = None
+        self._spouse: Optional["Person"] = None
+        self._contribution_room: Dict[Any, Money] = {}
+        self._contribution_groups: Dict[Any, Any] = {}
+        # Now call on properties to populate the wrapped attributes:
         self.birth_date = birth_date
-        self.retirement_date = retirement_date
-        self.raise_rate_callable = raise_rate
-        self.spouse = spouse
-        self.tax_treatment = tax_treatment
+        # These properties do some type-conversion that confuses mypy:
+        self.retirement_date = retirement_date  # type: ignore[assignment]
+        self.raise_rate_callable = raise_rate  # type: ignore[assignment]
+        self.spouse = spouse  # type: ignore[assignment]
 
         # Now provide initial-year values for recorded properties:
         # NOTE: Be sure to do type-checking here.
-        self.gross_income = Money(gross_income)
+        self.gross_income = gross_income
         # NOTE: Be sure to set up tax_treatment before calling tax_withheld
         self.net_income = self.gross_income - self.tax_withheld
 
         # Finally, build an empty set for accounts to add themselves to
         # and a `data` dict for accounts to write unstructed data to.
-        self.accounts = set()
-        self.data = {}
+        self.accounts: Set["Account"] = set()
+        self.data: Dict[Any, Any] = {}
 
     @property
-    def birth_date(self):
+    def birth_date(self) -> datetime:
         """ The birth date of the Person. """
         return self._birth_date
 
     @birth_date.setter
-    def birth_date(self, val):
+    def birth_date(self, val: Any) -> None:
         """ Sets the birth date of the Person.
 
         Raises:
@@ -178,12 +214,12 @@ class Person(TaxSource):
         self._birth_date = val
 
     @property
-    def retirement_date(self):
+    def retirement_date(self) -> Optional[datetime]:
         """ The retirement date of the Person. """
         return self._retirement_date
 
     @retirement_date.setter
-    def retirement_date(self, val):
+    def retirement_date(self, val: Any) -> None:
         """ Sets both retirement_date and retirement_age.
 
         Raises:
@@ -216,12 +252,12 @@ class Person(TaxSource):
         self._retirement_date = val
 
     @property
-    def retirement_age(self):
+    def retirement_age(self) -> int:
         """ The age of the Person at retirement """
         return relativedelta(self.retirement_date, self.birth_date).years
 
     @retirement_age.setter
-    def retirement_age(self, val):
+    def retirement_age(self, val: Union[None, int]) -> None:
         """ Sets retirement_age. """
         # This method sets values via the retirement_date property.
         if val is None:
@@ -233,7 +269,7 @@ class Person(TaxSource):
             self.retirement_date = self.birth_date + relativedelta(years=val)
 
     @property
-    def raise_rate_callable(self):
+    def raise_rate_callable(self) -> Callable[[int], Real]:
         """ A callable object that generates a raise rate for the year.
 
         Returns:
@@ -243,38 +279,43 @@ class Person(TaxSource):
         return self._raise_rate_callable
 
     @raise_rate_callable.setter
-    def raise_rate_callable(self, val):
+    def raise_rate_callable(
+            self,
+            val: Union[None, Callable[[int], Real], Dict[int, Real], Real]
+        ) -> None:
         """ Sets raise_rate_function. """
         # Treat setting the method to None as reverting to the default
         # rate parameter, which is Money(0).
         if val is None:
-            self.raise_rate_callable = Money(0)
-        # Is raise_rate isn't callable, convert it to a suitable method:
-        if not callable(val):  # Make callable if dict or scalar
-            if isinstance(val, dict):
-                # assume dict of {year: raise} pairs
-                def func(year):
-                    """ Wraps dict in a function """
-                    return val[year]
-            else:
-                # If we can cast this to Decimal, return a constant rate
-                val = Decimal(val)
+            val = 0
 
-                def func(_=None):
-                    """ Wraps value in a function with an optional arg. """
-                    return val
-            self._raise_rate_callable = func
-        else:
+        if callable(val):
             # If the input is callable, use it without modification.
             self._raise_rate_callable = val
+        # Is raise_rate isn't callable, convert it to a suitable method:
+        else:  # If not callable, make it callable
+            if isinstance(val, dict):
+                # assume dict of {year: raise} pairs
+                def func(year: int) -> Real:
+                    """ Wraps dict in a function """
+                    # Ignore mypy error that val isn't indexable; it's
+                    # a dict, so we know it is indexable:
+                    return val[year]  # type: ignore[index]
+            else: # If this is a scalar, return a constant rate:
+                # Use the same signature as above definition of `func`,
+                # even though we don't use the argument in this version:
+                def func(year: int) -> Real: # pylint: disable=unused-argument
+                    """ Wraps value in a function with an optional arg. """
+                    return cast(Real, val)
+            self._raise_rate_callable = func
 
     @property
-    def spouse(self):
+    def spouse(self) -> Optional["Person"]:
         """ The Person's spouse. """
         return self._spouse
 
     @spouse.setter
-    def spouse(self, val):
+    def spouse(self, val: "Person") -> None:
         """ Sets the Person's spouse. """
         # If this Person already has a spouse, unlink them:
         if hasattr(self, 'spouse') and self.spouse is not None:
@@ -297,21 +338,6 @@ class Person(TaxSource):
         # Update the spouse attr whether or not the new value is None
         self._spouse = val
 
-    @property
-    def tax_treatment(self):
-        """ The tax treatment of the Person. """
-        return self._tax_treatment
-
-    @tax_treatment.setter
-    def tax_treatment(self, val):
-        """ Sets the Person's tax treatment. """
-        if val is None:
-            self._tax_treatment = None
-        elif callable(val):
-            self._tax_treatment = val
-        else:
-            raise TypeError('Person: tax_treatment must be callable or None.')
-
     # pylint: disable=method-hidden
     # Pylint gets confused by attributes added by metaclass.
     # This method isn't hidden in __init__; it's assigned to (by a
@@ -324,7 +350,7 @@ class Person(TaxSource):
         if (
                 self.retirement_date is not None and
                 self.retirement_date.year < self.this_year):
-            return Money(0)
+            return self.money_factory(0)
         else:
             return (
                 # Pylint gets confused by attributes added by metaclass.
@@ -412,7 +438,7 @@ class Person(TaxSource):
             # We test that tax_treatment is callable in its setter.
             return self.tax_treatment(self.gross_income, self.this_year)
         else:
-            return Money(0)
+            return self.money_factory(0)
 
     def __gt__(self, other):
         """ Allows for sorting, max, min, etc. based on gross income. """

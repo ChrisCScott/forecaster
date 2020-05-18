@@ -57,7 +57,7 @@ class TestTaxCanada(unittest.TestCase):
         # taxable income, and an RRSP with $500,000 in taxable income.
         self.person1 = Person(
             self.initial_year, "Tester 1", self.initial_year - 20,
-            retirement_date=self.initial_year + 45, gross_income=100000)
+            retirement_date=self.initial_year + 45, gross_income=Money(100000))
         self.taxable_account1 = TaxableAccount(
             owner=self.person1,
             acb=0, balance=Money(1000000), rate=Decimal('0.05'), nper=1)
@@ -77,7 +77,7 @@ class TestTaxCanada(unittest.TestCase):
         # $5000 taxable income.
         self.person2 = Person(
             self.initial_year, "Tester 2", self.initial_year - 18,
-            retirement_date=self.initial_year + 47, gross_income=50000)
+            retirement_date=self.initial_year + 47, gross_income=Money(50000))
         self.taxable_account2 = TaxableAccount(
             owner=self.person2,
             acb=0, balance=Money(10000), rate=Decimal('0.05'), nper=1)

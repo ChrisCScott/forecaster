@@ -5,7 +5,7 @@ from forecaster.ledger import (
     Ledger, recorded_property, recorded_property_cached)
 
 
-class TestLedger(Ledger):
+class ExampleLedger(Ledger):
     """ Test class with cached and uncached recorded properties. """
 
     def __init__(self):
@@ -20,13 +20,13 @@ class TestLedger(Ledger):
         self.counter += 1
         return self.counter
 
-    @uncached.setter
+    @uncached.setter  # type: ignore[no-redef]
     def uncached(self, val):
         """ Sets `uncached` and toggles `flag` as a side-effect. """
         self.counter = val
         self.side_effect = True
 
-    @uncached.deleter
+    @uncached.deleter  # type: ignore[no-redef]
     def uncached(self):
         """ Sets counter to 0 and toggles `flag` as a side-effect. """
         self.counter = 0
@@ -38,13 +38,13 @@ class TestLedger(Ledger):
         self.counter += 1
         return self.counter
 
-    @cached.setter
+    @cached.setter  # type: ignore[no-redef]
     def cached(self, val):
         """ Sets `cached` and toggles `flag` as a side-effect. """
         self.counter = val
         self.side_effect = True
 
-    @cached.deleter
+    @cached.deleter  # type: ignore[no-redef]
     def cached(self):
         """ Toggles `flag` as a side-effect. """
         # NOTE: We do *not* modify counter here so that we can
@@ -57,7 +57,7 @@ class TestLedgerMethods(unittest.TestCase):
 
     def setUp(self):
         """ Sets up stock attributes for testing. """
-        self.ledger = TestLedger()
+        self.ledger = ExampleLedger()
 
     def test_uncached_get(self):
         """ Tests getting uncached properties. """

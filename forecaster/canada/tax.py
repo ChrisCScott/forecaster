@@ -1,6 +1,6 @@
 """ A module providing Canada-specific tax treatment. """
 
-from forecaster.ledger import Money
+from forecaster.money import Money
 from forecaster.tax import Tax, TaxMulti
 from forecaster.canada.accounts import RRSP
 from forecaster.canada import constants

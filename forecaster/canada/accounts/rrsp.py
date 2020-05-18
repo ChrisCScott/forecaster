@@ -1,7 +1,8 @@
 """ Provices Registered Retirement Savings Accounts for Canadians. """
 
 from forecaster.canada.accounts.registered_account import RegisteredAccount
-from forecaster.ledger import Money, recorded_property
+from forecaster.ledger import recorded_property
+from forecaster.money import Money
 from forecaster.utility import extend_inflation_adjusted, nearest_year
 from forecaster.canada import constants
 

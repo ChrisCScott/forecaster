@@ -1,7 +1,8 @@
 """ Provides a WithdrawalForecast class for use by Forecast. """
 
 from forecaster.ledger import (
-    Money, recorded_property, recorded_property_cached)
+    recorded_property, recorded_property_cached)
+from forecaster.money import Money
 from forecaster.forecast.subforecast import SubForecast
 from forecaster.utility import transactions_from_timing
 

@@ -18,7 +18,7 @@ amounts, and to which accounts.
 
 from decimal import Decimal
 from queue import SimpleQueue
-from forecaster.ledger import Money
+from forecaster.money import Money
 from forecaster.utility import EPSILON, add_transactions
 from forecaster.accounts.util import LIMIT_TUPLE_FIELDS
 from forecaster.strategy.transaction.util import (

@@ -1,7 +1,8 @@
 """ Provides a Canadian tax-free savings account. """
 
 from forecaster.canada.accounts.registered_account import RegisteredAccount
-from forecaster.ledger import Money, recorded_property
+from forecaster.ledger import recorded_property
+from forecaster.money import Money
 from forecaster.utility import (
     build_inflation_adjust, extend_inflation_adjusted)
 from forecaster.canada import constants

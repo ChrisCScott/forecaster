@@ -1,5 +1,6 @@
 ''' This module provides classes for creating and managing Forecasts. '''
 
+from typing import Any, Optional, Dict, Set, Type, Union
 from copy import copy, deepcopy
 from functools import reduce
 from enum import Enum
@@ -11,6 +12,10 @@ from forecaster.strategy import (
     LivingExpensesStrategy, TransactionStrategy, AllocationStrategy)
 from forecaster.scenario import Scenario
 from forecaster.settings import Settings
+# Importing these just for typing
+# TODO: Define ABCs for Person/Account/Debt and use them here:
+from forecaster.accounts import Account, Debt
+from forecaster.person import Person
 
 
 # The `ForecastBuilder` class makes frequent reference to the names of
@@ -25,7 +30,7 @@ class Parameter(Enum):
     ALLOCATION_STRATEGY = "allocation_strategy"
     TAX_TREATMENT = "tax_treatment"
 
-    def __str__(self):
+    def __str__(self) -> str:
         """ Cast enum members directly to their string value. """
         return str(self.value)
 
@@ -88,7 +93,7 @@ DEFAULTTYPES = {
 
 # This maps certain parameters that need special init logic to
 # the method name that provides that logic.
-DEFAULTBUILDERS = {
+DEFAULTBUILDERS: Dict[str, str] = {
     # str(Parameter.TAX_TREATMENT): "build_tax_treatment"
 }
 
@@ -123,13 +128,13 @@ class ForecastBuilder(object):
 
     def __init__(
             self,
-            settings=None,
-            scenario=None,
-            living_expenses_strategy=None,
-            saving_strategy=None,
-            withdrawal_strategy=None,
-            tax_treatment=None
-    ):
+            settings: Optional[Settings] = None,
+            scenario: Optional[Scenario] = None,
+            living_expenses_strategy: Optional[LivingExpensesStrategy] = None,
+            saving_strategy: Optional[TransactionStrategy] = None,
+            withdrawal_strategy: Optional[TransactionStrategy] = None,
+            tax_treatment: Optional[Tax] = None
+    ) -> None:
         """ Inits an instance of `ForecastBuilder`. """
         # Set up instance:
         super().__init__()
@@ -153,7 +158,11 @@ class ForecastBuilder(object):
         # received as input to __init__. Create attrs for them here:
         self.allocation_strategy = None
 
-    def _get_attr_recursive(self, name, memo=None):
+    def _get_attr_recursive(
+            self,
+            name: str,
+            memo: Optional[Dict[str, Any]] = None
+        ) -> Any:
         """ Get an attribute based on a dot-delimited identifier.
 
         If the first element of `name` is an optional parameter
@@ -190,7 +199,10 @@ class ForecastBuilder(object):
         else:
             return reduce(getattr, name_list[1:], attr)
 
-    def build_forecast(self, people, accounts, debts):
+    def build_forecast(
+            self,
+            people: Set[Person], accounts: Set[Account], debts: Set[Debt]
+        ) -> Forecast:
         """ Builds a `Forecast` object.
 
         This method builds a `Forecast` based on any explicitly-provided
@@ -215,13 +227,13 @@ class ForecastBuilder(object):
             and withdrawals over the years.
         """
         # We don't want to mutate the inputs, so create copies:
-        memo = {}
-        people = deepcopy(people, memo=memo)
-        accounts = deepcopy(accounts, memo=memo)
-        debts = deepcopy(debts, memo=memo)
+        copy_memo: Dict[int, Any] = {}
+        people = deepcopy(people, memo=copy_memo)
+        accounts = deepcopy(accounts, memo=copy_memo)
+        debts = deepcopy(debts, memo=copy_memo)
 
         # Build Scenario first so that we have access to initial_year:
-        memo = {}
+        memo: Dict[str, Any] = {}
         scenario = self.get_param(Parameter.SCENARIO, memo=memo)
         initial_year = scenario.initial_year  # extract for convenience
 
@@ -271,8 +283,13 @@ class ForecastBuilder(object):
         return forecast
 
     def build_param(
-            self, param_name, *args,
-            param_type=None, memo=None, _special_builder=True, **kwargs):
+            self,
+            param_name: Union[str, Parameter], *args: Any,
+            param_type: Optional[Type] = None,
+            memo: Optional[Dict[str, Any]] = None,
+            _special_builder: bool = True,
+            **kwargs: Any
+        ) -> Any:
         """ Builds a parameter based on settings and explicit args.
 
         This method does not set any attributes of `ForecastBuilder`, it
@@ -344,7 +361,9 @@ class ForecastBuilder(object):
         memo[param_name] = param
         return param
 
-    def get_param(self, param_name, memo=None):
+    def get_param(
+            self, param_name: Union[Parameter, str],
+            memo: Optional[Dict[str, Any]] = None) -> Any:
         """ Gets a parameter, builds one if none is explicitly provided.
 
         If a parameter has been explicitly assigned to this
@@ -374,16 +393,20 @@ class ForecastBuilder(object):
         # Cast param_name to str once, for convenience:
         # (This is needed because Parameter members are Enum objects,
         # which can't be used in place of string-valued indexes)
-        param_name = str(param_name)
-        explicit_attr = getattr(self, param_name)
+        param = str(param_name)
+        explicit_attr = getattr(self, param)
         if explicit_attr is not None:
             return explicit_attr
         else:
-            return self.build_param(param_name, memo=memo)
+            return self.build_param(param, memo=memo)
 
     def set_param(
-            self, param_name, *args,
-            param_type=None, memo=None, **kwargs):
+            self,
+            param_name: Union[Parameter, str],
+            *args: Any,
+            param_type: Optional[Type] = None,
+            memo: Optional[Dict[str, Any]] = None,
+            **kwargs: Any) -> None:
         """ Builds a parameter and sets the corresponding attribute.
 
         This is a convenience method that calls `build_param` and
@@ -416,12 +439,13 @@ class ForecastBuilder(object):
         # Cast param_name to str once, for convenience:
         # (This is needed because Parameter members are Enum objects,
         # which can't be used in place of string-valued indexes)
-        param_name = str(param_name)
+        param_str = str(param_name)
         param = self.build_param(
-            param_name, *args, param_type=param_type, memo=memo, **kwargs)
-        setattr(self, param_name, param)
+            param_str, *args, param_type=param_type, memo=memo, **kwargs)
+        setattr(self, param_str, param)
 
-    def build_allocation_strategy(self, *args, **kwargs):
+    def build_allocation_strategy(
+            self, *args: Any, **kwargs: Any) -> AllocationStrategy:
         """ Convenience method to build an allocation strategy.
 
         Any arguments are passed on to AllocationStrategy.__init__. Any
