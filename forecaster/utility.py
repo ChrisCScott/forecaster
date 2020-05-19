@@ -5,12 +5,39 @@ modules.
 """
 
 import collections
+from typing import Union, Dict, Optional, Iterable, Any
 from numbers import Number
 from forecaster.money import MoneyType as Money, Real
 
+
+# `when` values can take any (real-valued) numeric value, as well as
+# specific string values. This gets used a lot, so define the type here.
+Time = Union[Real, str]
+
+# String codes describing points in time, mapped to numeric values:
+WHEN_STRS: Dict[str, Real] = {
+    'start': 0,
+    'end': 1
+}
+
+# String codes describing frequencies (e.g. annual, bimonthly)
+# mapped to ints giving the number of such periods in a year:
+FREQUENCY_STRS: Dict[str, Optional[int]] = {
+    'C': None,
+    'D': 365,
+    'W': 52,
+    'BW': 26,
+    'SM': 24,
+    'M': 12,
+    'BM': 6,
+    'Q': 4,
+    'SA': 2,
+    'A': 1
+}
+
 # Define constants for use throughout `forecaster` packages:
-EPSILON = 0.5**13  # Roughly 0.000122. Should be losslessly represented.
-WHEN_DEFAULT = 0.5
+EPSILON: Real = 0.5**13  # Roughly 0.000122. Should be losslessly represented.
+WHEN_DEFAULT: Time = 0.5
 
 class Timing(dict):
     """ A dict of {timing: weight} pairs.
@@ -20,14 +47,29 @@ class Timing(dict):
     equal to `frequency` and, within each period, assigns a timing at
     `when`. The timings are equally-weighted.
 
-    This class provides a copy-constructor that can receive a dict of
-    {when: value} pairs. If a dict has Money-type values, these are
-    converted to numerical values to avoid arithmetic errors.
+    This class only accepts discrete frequencies. Providing a continuous
+    frequency will result in an error.
+
+    This class can be initialized as follows:
+    * No args: Produces empty dict
+    * One arg, a dict (e.g. a Timing object): Copy-constructor. If the
+      dict has non-numeric values (e.g. non-numeric Money type), these
+      are converted to numeric values to avoid arithmetic errors.
+    * One arg, a str-value interpretable as a frequency: The arg is
+      interpreted as a frequency. Each period receives a timing based on
+      `WHEN_DEFAULT`.
+    * One arg, otherwise: Interprets the input as a `when` value and
+      thus produces a dict with one key.
+    * Two args: Interprets the inputs as `when` and `frequency`.
 
     Examples:
-        Timing()
+        Timing()  # 0-ary
+        # {}
+        Timing('SA')  # 1-ary with valid frequency string
+        # {0.25: 0.5, 0.75: 05}
+        Timing(0.5)  # 1-ary otherwise
         # {0.5: 1}
-        Timing(when=1, frequency=4)
+        Timing(when=1, frequency=4)  # 2-ary
         # {0.25: 0.25, 0.5: 0.25, 0.75: 0.25, 1: 0.25}
         Timing(when=0, frequency=4)
         # {0: 0.25, 0.25: 0.25, 0.5: 0.25, 0.75: 0.25}
@@ -35,14 +77,21 @@ class Timing(dict):
         # {0.25: 0.5, 0.75: 0.5}
 
     Args:
-        when (Number, str): When transactions occur in each period (e.g.
+        when (Real, str): When transactions occur in each period (e.g.
             'start', 'end', 0.5). Uses the same syntax as
             `forecaster.utility.when_conv`. Optional.
         frequency (str, int): The number of periods (and thus the number
             of transactions). Uses the same syntax as
             `forecaster.utility.frequency_conv`. Optional.
     """
-    def __init__(self, when=WHEN_DEFAULT, frequency=1):
+    def __init__(
+            self, when: Optional[Union[
+                Time, # Standard call signature, receiving a when value
+                Dict[Real, Any], # 1-ary copy constructor
+                str, # 1-ary frequency string
+            ]] = None,
+            frequency: Optional[Union[int, str]] = None
+        ) -> None:
         """ Initializes a Timing dict. """
         # We allow four forms of init call:
         # 1) Init with two arguments: `when` and `frequency`
@@ -54,37 +103,60 @@ class Timing(dict):
 
         # Set up the object by getting an empty dict:
         super().__init__()
-        # Provide a simple copy-constructor. We will assume that other
-        # Timing objects have nice values already:
-        if isinstance(when, Timing):
-            self.update(when)
+
+        # First, deal with 0-ary construction:
+        if when is None and frequency is None:
             return
-        # If we call Timing(input) with dict-type `input` (that isn't
-        # already a Timing object), things get trickier. We want to
-        # be able to receive time-series data of transactions (which
-        # may or may not be explicitly Money-typed), so we need to deal
-        # with negative values, and potentially with Money-typed values.
-        elif isinstance(when, dict):
-            self.update(_convert_dict(when))
-            return
-        else:
-            # If we receive a frequency as the first argument, swap args
-            # and use the default value for `when`:
-            if isinstance(when, str) and when in FREQUENCY_MAPPING:
+        # If frequency was provided but when wasn't, use default value:
+        elif when is None:
+            when = WHEN_DEFAULT
+
+        # Deal with 1-ary init.
+        if frequency is None:
+            # First deal with copy constructor. There are two cases:
+            # 1: the input is already Timing. No more processing needed.
+            if isinstance(when, Timing):
+                self.update(when)
+                return
+            # 2: the input is a dict. We want to be able to receive
+            # time-series data of transactions. Values may be
+            # non-numeric or negative, so some processing is needed.
+            elif isinstance(when, dict):
+                self.update(_convert_dict(when))
+                return
+            # Next, deal with case where a string interpretable as a
+            # frequency is passed:
+            elif isinstance(when, str) and when in FREQUENCY_STRS:
+                # Simple to deal with; use the input as `frequency` and
+                # use the default value for `when`, then fall through
+                # to the regular 2-ary case:
                 frequency = when
                 when = WHEN_DEFAULT  # default value
-            # Arguments might be str-valued; make them numeric:
-            when = when_conv(when)
-            frequency = frequency_conv(frequency)
 
-            # Build out multiple timings based on scalar inputs.
-            # Each transaction has equal weight:
-            weight = 1 / frequency
-            # Build the dict:
-            for time in range(frequency):
-                self[(time + when) / frequency] = weight
+        # Now deal with 2-ary case:
+        # First, catch the case where `frequency` was passed with
+        # dict-type `when`:
+        if isinstance(when, dict):
+            raise ValueError('frequency cannot be used with copy-constructor')
 
-    def _normalized(self, keys=None):
+        # Next, convert arguments to numeric type if necessary:
+        when = when_conv(when)
+        frequency = frequency_conv(frequency)
+
+        # Some str codings convert to None, so test for that here:
+        if frequency is None:  # Continuous frequency provided.
+            raise ValueError('Frequency must be non-continuous.')
+
+        # Build out multiple timings based on scalar inputs.
+        # Each transaction has equal weight:
+        weight: float = 1 / frequency
+        # Build the dict:
+        for time in range(frequency):
+            self[(time + when) / frequency] = weight
+
+    def _normalized(
+            self, keys: Optional[Iterable[Real]] = None
+        ) -> Dict[Real, Real]:
         """ Returns a normalized dict based on this `Timing` object.
 
         This method is just a convenience for other class methods which
@@ -92,13 +164,13 @@ class Timing(dict):
         result in a `Timing` object.
 
         Args:
-            keys (Container[Number]): A subset of the keys of the
+            keys (Iterable[Real]): A subset of the keys of the
                 `Timing` object. If provided, the result contains only
                 the keys in `keys` and the normalization is applied only
                 to those keys. Optional.
 
         Returns:
-            dict[Number, Any]: A normalized dict with values
+            dict[Real, Real]: A normalized dict with values
             proportional to those of this `Timing` object (or to the
             subset indicated by `keys`).
 
@@ -108,16 +180,18 @@ class Timing(dict):
         if keys is None:
             keys = self.keys()
         # Simply scale down each value by the sum of all values:
-        normalization = sum(self[key] for key in keys)
+        normalization: Real = sum(self[key] for key in keys)
         return {key: self[key] / normalization for key in keys}
 
-    def normalized(self, keys=None):
+    def normalized(
+            self, keys: Optional[Iterable[Real]] = None
+        ) -> Timing:
         """ Returns a normalized version of the `Timing` object.
 
         'Normalized' here means that the values sum to 1.
 
         Args:
-            keys (Container[Number]): A subset of the keys of the
+            keys (Iterable[Number]): A subset of the keys of the
                 `Timing` object. If provided, the result contains only
                 the keys in `keys` and the normalization is applied only
                 to those keys. Optional.
@@ -132,7 +206,10 @@ class Timing(dict):
         """
         return Timing(self._normalized(keys))
 
-    def time_series(self, scalar, keys=None):
+    def time_series(
+            self, scalar: Union[Money, Real],
+            keys: Optional[Iterable[Real]] = None
+        ) -> Dict[Real, Union[Money, Real]]:
         """ Scales `scalar` into portions proportionate to this timing.
 
         This method essentially performs scalar multiplication, where
@@ -141,30 +218,36 @@ class Timing(dict):
         `self` and sums to `scalar`.
 
         Args:
-            scalar (Any): Any scalar value (not necessarily `Number`;
-                may be `Money`, for instance). Any type that supports
-                multiplication against the values of `Timing` may be
-                used.
+            scalar (Union[Real, Money]): Any scalar value that supports
+                multiplication against the values of `Timing`.
+            keys (Iterable[Real]): Key values for timings.
+                See `Timing.normalized` for more. Optional.
 
         Returns:
-            dict[Real, Any]: A time-series of values with the same
-                proportions as this timing object, with values of the
-                same type as `scalar` and which sum to `other`.
+            dict[Real, Union[Money, Real]]: A time-series of values with
+                the same proportions as this timing object, with values
+                of the same type as `scalar` and which sum to `other`.
 
         Raises:
             ValueError: `scalar` does not support multiplication by the
             values of this timing object.
         """
-        normalized = self._normalized(keys=keys)
+        # We get a dict of Real values here, but we'll mutate later
+        # and may potentially introduce Money-typed values
+        # (if scalar is Money-typed):
+        normalized: Dict[Real, Union[Real, Money]] = (
+            self._normalized(keys=keys)) # type: ignore[assignment]
         # Scale `scalar` by the normalized weight of each value of this
         # `Timing` object. This effectively splits `scalar` up into
         # smaller amounts for each key in `self` proportionately to the
         # (normalized) values of `self`.
         for key in normalized:
-            normalized[key] *= scalar
+            # Leave it to calling code to provide compatibly-typed
+            # `scalar` (i.e. should be compatible with values of `self`)
+            normalized[key] *= scalar  # type: ignore[operator]
         return normalized
 
-def _convert_dict(when):
+def _convert_dict(when: Dict[Real, Union[Money, Real]]) -> Dict[Real, Real]:
     """ Converts `dict` input to `Timing`-style `when: weight` pairs.
 
     If all values are positive, the dict is returned unchanged. If they
@@ -182,7 +265,7 @@ def _convert_dict(when):
     (without bringing the net transactions to positive balance).
 
     Args:
-        when (dict[Number, Union[Money, Number]]): A mapping of timings
+        when (dict[Real, Union[Money, Real]]): A mapping of timings
             (in [0,1]) to values.
             If the values are `Money`-typed, they are converted to
             a numerical type.
@@ -357,10 +440,10 @@ def transactions_from_timing(timing, total):
         for time, weight in timing.items()}
     return transactions
 
-def when_conv(when):
-    """ Converts various types of `when` inputs to Decimal.
+def when_conv(when: Time) -> Real:
+    """ Converts various types of `when` inputs to numeric values.
 
-    The Decimal value is in [0,1], where 0 is the start of the period
+    The numeric value is in [0,1], where 0 is the start of the period
     and 1 is the end.
 
     NOTE: `numpy` defines its `when` argument such that 'end' = 0 and
@@ -368,12 +451,11 @@ def when_conv(when):
     conversions are necessary.
 
     Args:
-        `when` (float, Decimal, str): The timing of the transaction.
+        `when` (Real, str): The timing of the transaction.
             Must be in the range [0,1] or in ('start', 'end').
 
     Raises:
-        decimal.InvalidOperation: `when` must be convertible to
-            type Decimal
+        ValueError: `when` must be either 'start' or 'end'.
         ValueError: `when` must be in [0,1]
 
     Returns:
@@ -386,29 +468,17 @@ def when_conv(when):
         elif when == 'start':
             when = 0
         else:
-            raise ValueError('`when` may be either \'start\' or \'end\'.')
+            raise ValueError('`when` must be either \'start\' or \'end\'.')
 
-    if when > 1 or when < 0:
+    # Any str-valued `when` input was dealt with above. It is Real now.
+    # For some reason mypy insists that < is not supported for Real and
+    # int operands, but it ought to be.
+    if when > 1 or when < 0:  # type: ignore[operator]
         raise ValueError("When: 'when' must be in [0,1]")
 
     return when
 
-# String codes describing frequencies (e.g. annual, bimonthly)
-# mapped to ints giving the number of such periods in a year:
-FREQUENCY_MAPPING = {
-    'C': None,
-    'D': 365,
-    'W': 52,
-    'BW': 26,
-    'SM': 24,
-    'M': 12,
-    'BM': 6,
-    'Q': 4,
-    'SA': 2,
-    'A': 1
-}
-
-def frequency_conv(nper):
+def frequency_conv(nper: Optional[Union[int, str]]) -> Optional[int]:
     """ Number of periods in a year given a compounding frequency.
 
     Args:
@@ -430,9 +500,9 @@ def frequency_conv(nper):
 
     # Try to parse a string based on known compounding frequencies
     if isinstance(nper, str):
-        if nper not in FREQUENCY_MAPPING:
+        if nper not in FREQUENCY_STRS:
             raise ValueError('Account: str nper must have a known value')
-        return FREQUENCY_MAPPING[nper]
+        return FREQUENCY_STRS[nper]
     else:  # Attempt to cast to int
         if not nper == int(nper):
             raise TypeError(
