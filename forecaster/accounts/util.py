@@ -1,19 +1,20 @@
 """ Helper classes and methods for Account. """
 
 import math
-from collections import namedtuple
+from typing import Optional, NamedTuple, Any
 from decimal import Decimal
 from forecaster.utility import when_conv
 
 
-FIELDS = ['min_inflow', 'max_inflow', 'min_outflow', 'max_outflow']
-LimitTuple = namedtuple(
-    'LimitTuple', FIELDS, defaults=(None,) * len(FIELDS))
-LimitTuple.__doc__ = (
-    "A data container holding different values for min/max inflow/outfow")
+class LimitTuple(NamedTuple):
+    "A data container holding different values for min/max inflow/outfow"
+    min_inflow: Optional[Any] = None
+    max_inflow: Optional[Any] = None
+    min_outflow: Optional[Any] = None
+    max_outflow: Optional[Any] = None
 
 # Give an easy way for refactors to update references to LimitTuples:
-LIMIT_TUPLE_FIELDS = LimitTuple(*FIELDS)
+LIMIT_TUPLE_FIELDS = LimitTuple(*LimitTuple._fields)
 
 
 def accumulation_function(t, rate, nper=1):
