@@ -10,9 +10,11 @@ __author__ = 'Christopher Scott'
 __copyright__ = 'Copyright (C) 2019 Christopher Scott'
 __license__ = 'All rights reserved'
 
+from forecaster.typing import (
+    Money as MoneyType, MoneyConvertible, MoneyFactory, Real)
 from forecaster.ledger import (
     Ledger, recorded_property, recorded_property_cached)
-from forecaster.money import Money, MoneyABC, MoneyType, Real
+from forecaster.money import Money
 from forecaster.person import Person
 from forecaster.scenario import Scenario
 from forecaster.accounts import (

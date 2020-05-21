@@ -5,9 +5,9 @@ modules.
 """
 
 import collections
-from typing import Union, Dict, Optional, Iterable, Any
 from numbers import Number
-from forecaster.money import MoneyType as Money, Real
+from typing import Union, Dict, Optional, Iterable, Any
+from forecaster.typing import Money, Real
 
 
 # `when` values can take any (real-valued) numeric value, as well as
@@ -62,6 +62,11 @@ class Timing(dict):
       thus produces a dict with one key.
     * Two args: Interprets the inputs as `when` and `frequency`.
 
+    In general, the type of values will be `float` unless a
+    copy-constructor is used, in which case the type will be based on
+    the types of values in the input dict (e.g. numeric types are
+    preserved, non-numeric Money types are converted to Numeric.)
+
     Examples:
         Timing()  # 0-ary
         # {}
@@ -80,8 +85,8 @@ class Timing(dict):
         when (Real, str): When transactions occur in each period (e.g.
             'start', 'end', 0.5). Uses the same syntax as
             `forecaster.utility.when_conv`. Optional.
-        frequency (str, int): The number of periods (and thus the number
-            of transactions). Uses the same syntax as
+        frequency (Real, str): The number of periods (and thus the
+            number of transactions). Uses the same syntax as
             `forecaster.utility.frequency_conv`. Optional.
     """
     def __init__(
@@ -89,8 +94,8 @@ class Timing(dict):
                 Time, # Standard call signature, receiving a when value
                 Dict[Real, Any], # 1-ary copy constructor
                 str, # 1-ary frequency string
-            ]] = None,
-            frequency: Optional[Union[int, str]] = None
+            ]]=None,
+            frequency: Optional[Union[Real, str]] = None
         ) -> None:
         """ Initializes a Timing dict. """
         # We allow four forms of init call:
@@ -282,40 +287,45 @@ def _convert_dict(when: Dict[Real, Union[Money, Real]]) -> Dict[Real, Real]:
         # weights, since no non-zero weights were given:
         return {key: 1 for key in when}
 
-    # If values are Money-types, convert to numerical:
-    # Get a random element from `when` so we can check its type:
-    sample = next(iter(when.values()))
-    if not isinstance(sample, Number):
-        if hasattr(sample, 'amount'):
-            # Convert the dict's values to Decimal (no mutation!):
-            when = {timing: value.amount for timing, value in when.items()}
-        else:
-            raise TypeError("Money value not convertible to numeric type")
+    # If values are Money-like, convert to numerical type:
+    when_out: Dict[Real, Real]
+    if all(hasattr(value, 'amount') for value in when.values()):
+        # Convert the dict's values to Decimal (no mutation!):
+        when_out = {
+            # We know from the above test that `amount` is an attribute:
+            timing: value.amount # type: ignore[union-attr]
+            for timing, value in when.items()}
+    # If values not Money-like, then they should all be numeric:
+    elif any(not isinstance(value, Number) for value in when.values()):
+        raise TypeError("Money value not convertible to numeric type")
+    # If we don't trigger the above checks, then all values are numeric:
+    else:
+        when_out = when  # type: ignore[assignment]
 
     # OK, so the dict is non-empty, has a non-zero element, and
-    # doesn't have awkward `Money` semantics (i.e. is Decimal-like).
+    # has only numeric values. The only remaining issue is sign.
     # If there are no negative values, the dict is useable as-is:
-    if all(value >= 0 for value in when.values()):
-        return when
+    if all(value >= 0 for value in when_out.values()):  # type: ignore[operator]
+        return when_out
     # If all items are negative, flip the signs:
-    elif all(value <= 0 for value in when.values()):
-        return {time: -value for time, value in when.items()}
+    elif all(value <= 0 for value in when_out.values()):
+        return {time: -value for time, value in when_out.items()}
 
     # If the dict has a mix of positive and negative values, treat
     # it like an `available` dict of transactions. Use the
     # timings for inflows if the total is positive and outflows if
     # the total is negative (this way we reinforce inflows/outflows)
-    total = sum(when.values())
+    total = sum(when_out.values())
     # First, deal with the case where the total is zero:
     if total == 0:
         # If the time-series is perfectly balanced between positive and
         # negative, no transactions are needed to bring the time-series
         # to balance, so return a time-series with no transactions:
         return {}
-    elif total > 0:
-        return _accum_inflows(when)
+    elif total > 0:  # type: ignore[operator]
+        return _accum_inflows(when_out)
     else:
-        return _accum_outflows(when)
+        return _accum_outflows(when_out)
 
 def _accum_inflows(when):
     """ Determines maximum withdrawable amount for each timing.
@@ -478,21 +488,22 @@ def when_conv(when: Time) -> Real:
 
     return when
 
-def frequency_conv(nper: Optional[Union[int, str]]) -> Optional[int]:
+def frequency_conv(nper: Optional[Union[Real, str]]) -> Optional[int]:
     """ Number of periods in a year given a compounding frequency.
 
     Args:
-        nper (str, int): A code (str) indicating a compounding
-            frequency (e.g. 'W', 'M'), an int, or None
+        nper (str, Real): A code (str) indicating a compounding
+            frequency (e.g. 'W', 'M'), an integer-valued numeric value,
+            or None.
 
     Returns:
-        An int indicating the number of compounding periods in a
-            year or None if compounding is continuous.
+        An int indicating the number of compounding periods in a year,
+        or None if compounding is continuous.
 
     Raises:
         ValueError: str nper must have a known value.
         ValueError: nper must be greater than 0.
-        TypeError: nper cannot be losslessly converted to int.
+        ValueError: nper must have an integer value.
     """
     # nper can be None, so return gracefully.
     if nper is None:
@@ -503,13 +514,15 @@ def frequency_conv(nper: Optional[Union[int, str]]) -> Optional[int]:
         if nper not in FREQUENCY_STRS:
             raise ValueError('Account: str nper must have a known value')
         return FREQUENCY_STRS[nper]
-    else:  # Attempt to cast to int
-        if not nper == int(nper):
-            raise TypeError(
+    # For numeric types, ensure that it's a positive integer:
+    else:
+        if not nper == int(nper):  # type: ignore[arg-type]
+            raise ValueError(
                 'Account: nper is not losslessly convertible to int')
         if nper <= 0:
             raise ValueError('Account: nper must be greater than 0')
-        return int(nper)
+        # After the above tests, the value should be convertible to int:
+        return int(nper)  # type: ignore[arg-type]
 
 def add_transactions(base, added):
     """ Combines the values of two dicts, summing values of shared keys.

@@ -1,11 +1,12 @@
 """ Module providing the Ledger base type and associated classes. """
 
 import inspect
-from typing import Type, Dict, Any, Optional, Callable
-from forecaster.money import MoneyType as Money, Real
+from typing import Type, Dict, Any, Optional
+from forecaster.typing import Money, MoneyFactory
 from forecaster.ledger.recorded_property import (
     recorded_property, recorded_property_cached
 )
+
 
 class LedgerType(type):
     """ A metaclass for Ledger classes.
@@ -147,7 +148,7 @@ class TaxSource(Ledger):
             from the object for each year thus far.
         tax_deduction_history (Dict[int,Money]): Taxable deductions
             arising from the object for each year thus far.
-        money_factory (Callable[[Real], Money]): A callable
+        money_factory (Callable[[Union[Real, Money]], Money]): A callable
             object which takes a numeric value and returns a `Money`
             value. Optional; defaults to `float`.
     """
@@ -155,10 +156,16 @@ class TaxSource(Ledger):
     def __init__(
             self, initial_year: int,
             inputs: Optional[Dict[str, Dict[int, Any]]] = None,
-            money_factory: Callable[[Real], Money] = float) -> None:
+            money_factory: Optional[MoneyFactory] = None) -> None:
         """ Initializes TaxSource. """
         super().__init__(initial_year, inputs)
-        self.money_factory = money_factory
+        # We use `None` as a default value so that subclasses don't need
+        # to know the default or test for None values.
+        self.money_factory: MoneyFactory
+        if money_factory is None:
+            self.money_factory = float
+        else:
+            self.money_factory = money_factory
 
     @recorded_property
     def taxable_income(self) -> Money:

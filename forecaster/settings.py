@@ -4,9 +4,9 @@ It provides the `Settings` class, which contains various `*Defaults`
 classes. They provide default values for aspects of the application.
 """
 
-from typing import Dict, Union
 import datetime
-from forecaster.money import Real, MoneyType as Money
+from typing import Dict, Union
+from forecaster.typing import Real, MoneyConvertible
 
 
 class Settings:
@@ -70,7 +70,8 @@ class Settings:
     debt_payment_strategy: str = 'Avalanche'
 
     ''' Tax defaults '''
-    tax_brackets: Dict[int, Dict[Money, Real]] = {initial_year: {0: 0}}
-    tax_personal_deduction: Dict[int, Money] = {initial_year: 0}
+    tax_brackets: Dict[int, Dict[MoneyConvertible, Real]] = {
+        initial_year: {0: 0}}
+    tax_personal_deduction: Dict[int, MoneyConvertible] = {initial_year: 0}
     tax_credit_rate: Dict[int, Real] = {initial_year: 0}
     tax_payment_timing: Union[str, Real] = 'start'

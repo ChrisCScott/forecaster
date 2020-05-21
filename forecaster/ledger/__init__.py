@@ -7,7 +7,7 @@ __all__ = [
 ]
 
 from forecaster.ledger.base import (
-    Ledger, LedgerType, TaxSource
+    Ledger, LedgerType, TaxSource, MoneyFactory
 )
 from forecaster.ledger.recorded_property import (
     recorded_property, recorded_property_cached

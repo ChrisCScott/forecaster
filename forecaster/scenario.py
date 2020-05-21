@@ -2,7 +2,7 @@
 
 import collections
 from typing import Union, List, Dict, Any, cast
-from forecaster.money import Real
+from forecaster.typing import Real
 
 
 # TODO: Replace use of List/Dict with Iterable/Mapping

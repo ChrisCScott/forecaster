@@ -1,11 +1,11 @@
 """ A module providing a Person class. """
 
-from typing import Any, Optional, Union, Dict, Callable, Set, cast, Protocol
 from abc import abstractmethod
 from datetime import datetime
 from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
-from forecaster.money import MoneyType as Money, Real
+from typing import Any, Optional, Union, Dict, Callable, Set, cast, Protocol
+from forecaster.typing import Money, Real, MoneyFactory
 from forecaster.ledger import (
     TaxSource, recorded_property, recorded_property_cached)
 from forecaster.utility import Timing
@@ -142,7 +142,7 @@ class Person(TaxSource):
             tax_treatment: Optional[Tax] = None,
             payment_timing: Optional[Union[Timing, Dict[float, float]]] = None,
             inputs: Optional[Dict[str, Dict[int, Any]]] = None,
-            money_factory: Callable[[Real], Money] = float
+            money_factory: MoneyFactory = float
         ) -> None:
         """ Initializes a `Person` object. """
         super().__init__(
