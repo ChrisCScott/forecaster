@@ -1,7 +1,9 @@
 """ A module providing types common to `forecaster` subpackages. """
 
 from abc import abstractmethod
-from typing import (Union, Callable, Protocol, TypeVar, runtime_checkable)
+from typing import (
+    Union, Callable, Protocol, TypeVar, runtime_checkable,
+    SupportsFloat, SupportsIndex, Text, Type, Any, Optional)
 from numbers import Real as PyReal
 from decimal import Decimal
 from fractions import Fraction
@@ -27,15 +29,15 @@ Real = Union[PyReal, Decimal, Fraction, float, int]
 # to require that `__add__` support addition with arbitrary `Money`
 # types. For example, `Decimal` does not support addition with `float`
 # in general, but is an acceptable Money type.)
-MoneyType = TypeVar('MoneyType', "Money", Real)
-ScalarType = TypeVar(
-    'ScalarType', PyReal, Decimal, Fraction, float, int, contravariant=True)
+_Money = TypeVar('_Money')
+_Scalar_contra = (  # pylint: disable=invalid-name
+    TypeVar('_Scalar_contra', contravariant=True))
 
 # Money is referenceable as `Money` or as `Money[X,Y]`, were X is the
 # money type itself (e.g. `float`, `moneyed.Money`) and Y is the scalar
 # type (e.g. `float`, `Decimal`).
 @runtime_checkable
-class Money(Protocol[MoneyType, ScalarType]):
+class MoneyABC(Protocol[_Money, _Scalar_contra]):
     """ An protocol (quasi-abstract base class) for Money types.
 
     Money types must support the following builtin operators:
@@ -68,29 +70,29 @@ class Money(Protocol[MoneyType, ScalarType]):
     """
 
     @abstractmethod
-    def __add__(self, other: MoneyType) -> MoneyType:
+    def __add__(self, other: _Money) -> _Money:
         """ Adds two Money values. """
         raise NotImplementedError
 
     @abstractmethod
-    def __sub__(self, other: MoneyType) -> MoneyType:
+    def __sub__(self, other: _Money) -> _Money:
         """ Determines the difference between two Money values. """
         raise NotImplementedError
 
     @abstractmethod
-    def __mul__(self, other: ScalarType) -> MoneyType:
+    def __mul__(self, other: _Scalar_contra) -> _Money:
         """ Scalar multiplication of a Money object. """
         raise NotImplementedError
 
     @abstractmethod
-    def __div__(
-            self, other: Union[MoneyType, ScalarType]
-        ) -> Union[MoneyType, ScalarType]:
+    def __truediv__(
+            self, other: Union[_Money, _Scalar_contra]
+        ) -> Union[_Money, _Scalar_contra]:
         """ Division by another Money value or a scalar divisor. """
         raise NotImplementedError
 
     @abstractmethod
-    def __round__(self, ndigits: int = None) -> MoneyType:
+    def __round__(self, ndigits: int = None) -> _Money:
         """ Rounds to ndigits """
         raise NotImplementedError
 
@@ -110,7 +112,7 @@ class Money(Protocol[MoneyType, ScalarType]):
         raise NotImplementedError
 
     @abstractmethod
-    def __lt__(self, other: Union[MoneyType, ScalarType]) -> bool:
+    def __lt__(self, other: Union[_Money, _Scalar_contra]) -> bool:
         """ Allow comparison between Money objects (and also with 0).
 
         If a Money type supports multiple currencies, comparing values
@@ -120,7 +122,7 @@ class Money(Protocol[MoneyType, ScalarType]):
         raise NotImplementedError
 
     @abstractmethod
-    def __gt__(self, other: Union[MoneyType, ScalarType]) -> bool:
+    def __gt__(self, other: Union[_Money, _Scalar_contra]) -> bool:
         """ Allow comparison between Money objects (and also with 0).
 
         If a Money type supports multiple currencies, comparing values
@@ -129,11 +131,83 @@ class Money(Protocol[MoneyType, ScalarType]):
         """
         raise NotImplementedError
 
-# Types that can be cast to Money should include any real number and
-# of course Money itself:
-MoneyConvertible = Union[Real, Money]
+# Any float-compatible value should be convertible to Money. (Note that
+# this does not necessarily include non-numeric Money classes.
+# This is because, e.g., `float` doesn't match `Money[Any, Any]`, but
+# it should match `Money[Real, Any]`.
+MoneyConvertible = Union[
+    SupportsFloat, SupportsIndex, Text, bytes, bytearray]
 
-# Many classes need to be able to cast numeric values to Money.
-# Any 1-ary callable that takes a Money-convertible object and returns
-# Money can be used for such conversion.
-MoneyFactory = Union[Callable[[MoneyConvertible], Money]]
+# Define a TypeVar for convenience. Use this to ensure that a specific
+# numeric type or custom class implementing MoneyABC is used by a
+# Generic class. (e.g. `class Custom(Generic[MoneyType]): ...`)
+MoneyType = TypeVar(
+    'MoneyType', MoneyABC, float, Decimal, Fraction, int, covariant=True)
+
+class MoneyFactory(Protocol[MoneyType]):
+    """ Protocol for callable objects which return `MoneyType`.
+
+    Many classes need to be able to cast numeric values to Money.
+    Any 1-ary (excluding optional args) callable that takes a
+    Money-convertible object and returns Money can be used for such
+    conversion.
+
+    Although this is not a TypeVar, it is bound to one (MoneyType).
+    Classes can reference this without binding to MoneyType, in which
+    case it will not enforce consistent typing across instance members.
+    Classes can conveniently bind to MoneyType by inheriting from
+    MoneyHandler, in which case MoneyFactory will return the same
+    MoneyType as any other member of the class.
+
+    MoneyFactoryUnion (and the corresponding MoneyUnion) are legacy
+    non-Generic/TypeVar alternatives to MoneyFactory and MoneyType.
+    """
+    # The arg name `x` is what's used by `float.__call__`, so we use it
+    # here as well to ensure compatibility:
+    # pylint: disable=invalid-name
+    @abstractmethod
+    def __call__(
+            self, x: MoneyConvertible,
+            *args: Any, **kwargs: Any
+        ) -> MoneyType:
+        """ Takes a numeric (or other) value and returns Money. """
+        raise NotImplementedError
+    # pylint: disable=invalid-name
+
+# For convenience, define a base class for any custom class that wants
+# to bind the `MoneyType` TypeVar (including indirectly, e.g. to make
+# use of MoneyFactoryProtocol)
+class MoneyHandler(Protocol[MoneyType]):
+    """ Convenience base class for classes taking a `money_factory` arg.
+
+    Args:
+        money_factory (MoneyFactory): A callable object that takes any
+            Money-convertible type and returns a Money object.
+            Keyword argument only. Optional.
+
+    Attributes:
+        money_factory (MoneyFactory): A callable object that takes any
+            Money-convertible type and returns a Money object.
+            Keyword argument only. Optional.
+    """
+    money_factory: MoneyFactory
+
+    @abstractmethod
+    def __init__(
+            self, *args, money_factory: Optional[MoneyFactory] = None, **kwargs
+    ) -> None:
+        # We use `None` as a default value so that subclasses don't need
+        # to know the default or test for None values.
+        self.money_factory: MoneyFactory
+        if money_factory is None:
+            self.money_factory = float
+        else:
+            self.money_factory = money_factory
+
+# Classes which are not Generic (or free methods) can use Unions to
+# describe Money and MoneyFactory:
+MoneyUnion = Union[MoneyABC, float, Decimal, Fraction, int]
+
+MoneyFactoryUnion = Union[
+    Callable[[MoneyConvertible], MoneyUnion],  # General def. of money_factory
+    Type[float], Type[Decimal], Type[Fraction], Type[int]] # numeric types
