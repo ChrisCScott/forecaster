@@ -2,7 +2,7 @@
 
 import inspect
 from typing import Type, Dict, Any, Optional
-from forecaster.typing import Money, MoneyFactory
+from forecaster.typing import MoneyType, MoneyFactory, MoneyHandler
 from forecaster.ledger.recorded_property import (
     recorded_property, recorded_property_cached
 )
@@ -61,7 +61,9 @@ class Ledger(object, metaclass=LedgerType):
 
     def __init__(
             self, initial_year: int,
-            inputs: Optional[Dict[str, Dict[int, Any]]] = None) -> None:
+            inputs: Optional[Dict[str, Dict[int, Any]]] = None,
+            **_: Any  # Allow kwargs to support multiple inheritance
+        ) -> None:
         """ Inits IncrementableByYear.
 
         Behaviour when a `year` in `inputs` is equal to `initial_year`
@@ -121,7 +123,7 @@ class Ledger(object, metaclass=LedgerType):
         for prop in self._recorded_properties_cached:
             prop.fdel(obj=self)
 
-class TaxSource(Ledger):
+class TaxSource(Ledger, MoneyHandler):
     """ An object that can be considered when calculating taxes.
 
     Provides standard tax-related properties, listed below.
@@ -156,19 +158,13 @@ class TaxSource(Ledger):
     def __init__(
             self, initial_year: int,
             inputs: Optional[Dict[str, Dict[int, Any]]] = None,
-            money_factory: Optional[MoneyFactory] = None) -> None:
+            money_factory: Optional[MoneyFactory] = None
+        ) -> None:
         """ Initializes TaxSource. """
-        super().__init__(initial_year, inputs)
-        # We use `None` as a default value so that subclasses don't need
-        # to know the default or test for None values.
-        self.money_factory: MoneyFactory
-        if money_factory is None:
-            self.money_factory = float
-        else:
-            self.money_factory = money_factory
+        super().__init__(initial_year, inputs, money_factory=money_factory)
 
     @recorded_property
-    def taxable_income(self) -> Money:
+    def taxable_income(self) -> MoneyType:
         """ Taxable income for the given year.
 
         Subclasses should override this method rather than the
@@ -177,7 +173,7 @@ class TaxSource(Ledger):
         return self.money_factory(0)
 
     @recorded_property
-    def tax_withheld(self) -> Money:
+    def tax_withheld(self) -> MoneyType:
         """ Tax withheld for the given year.
 
         Subclasses should override this method rather than the
@@ -186,7 +182,7 @@ class TaxSource(Ledger):
         return self.money_factory(0)
 
     @recorded_property
-    def tax_credit(self) -> Money:
+    def tax_credit(self) -> MoneyType:
         """ Tax credit for the given year.
 
         Subclasses should override this method rather than the
@@ -195,7 +191,7 @@ class TaxSource(Ledger):
         return self.money_factory(0)
 
     @recorded_property
-    def tax_deduction(self) -> Money:
+    def tax_deduction(self) -> MoneyType:
         """ Tax deduction for the given year.
 
         Subclasses should override this method rather than the

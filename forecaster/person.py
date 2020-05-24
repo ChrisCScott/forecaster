@@ -1,31 +1,31 @@
 """ A module providing a Person class. """
 
 from abc import abstractmethod
+from typing import Any, Optional, Union, Dict, Callable, Set, cast, Protocol
 from datetime import datetime
 from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
-from typing import Any, Optional, Union, Dict, Callable, Set, cast, Protocol
-from forecaster.typing import Money, Real, MoneyFactory
+from forecaster.typing import MoneyType, Real, MoneyFactory, MoneyHandler
 from forecaster.ledger import (
     TaxSource, recorded_property, recorded_property_cached)
 from forecaster.utility import Timing
 
 
-# Define protocols for tax_treatment and account attributes:
-class Tax(Protocol):
+# Define a protocol for tax_treatment (using a simple Callable won't
+# work because Python typing doesn't support explicit types for some
+# args if there are also optional args)
+# TODO: Move this Tax protocol to `typing`?
+# If Person, Account, and Forecaster each use similar signatures for
+# Tax, it may make sense to consolidate their Tax protocols into one
+# instance, defined in `typing`, rather than have 3 different versions.
+class Tax(Protocol, MoneyHandler):
     """ Estimates tax treatment for gross income in a given year. """
     @abstractmethod
-    def __call__(self, income: Money, year: int, *args) -> Money:
+    def __call__(self, income: MoneyType, year: int, *args) -> MoneyType:
         """ Callable with two positional args: gross income and year. """
         raise NotImplementedError
 
-class Account(Protocol):
-    """ Estimates tax treatment of an account. """
-    taxable_income: Money
-    tax_credit: Money
-    tax_deduction: Money
-
-class Person(TaxSource):
+class Person(TaxSource, MoneyHandler):
     """ Represents a person's basic information: age and retirement age.
 
     Arguments:
@@ -136,11 +136,11 @@ class Person(TaxSource):
             self,
             initial_year: int, name: str, birth_date: Any,
             retirement_date: Optional[Any] = None,
-            gross_income: Money = 0,
+            gross_income: Optional[MoneyType] = None,
             raise_rate: float = 0,
             spouse: Optional["Person"] = None,
             tax_treatment: Optional[Tax] = None,
-            payment_timing: Optional[Union[Timing, Dict[float, float]]] = None,
+            payment_timing: Optional[Union[Timing, Dict[Real, Any]]] = None,
             inputs: Optional[Dict[str, Dict[int, Any]]] = None,
             money_factory: MoneyFactory = float
         ) -> None:
@@ -168,7 +168,7 @@ class Person(TaxSource):
         # Now declare optional/empty values:
         self._retirement_date: Optional[datetime] = None
         self._spouse: Optional["Person"] = None
-        self._contribution_room: Dict[Any, Money] = {}
+        self._contribution_room: Dict[Any, MoneyType] = {}
         self._contribution_groups: Dict[Any, Any] = {}
         # Now call on properties to populate the wrapped attributes:
         self.birth_date = birth_date
@@ -179,13 +179,16 @@ class Person(TaxSource):
 
         # Now provide initial-year values for recorded properties:
         # NOTE: Be sure to do type-checking here.
-        self.gross_income = gross_income
+        if gross_income is None:
+            self.gross_income = self.money_factory(0)
+        else:
+            self.gross_income = gross_income
         # NOTE: Be sure to set up tax_treatment before calling tax_withheld
         self.net_income = self.gross_income - self.tax_withheld
 
         # Finally, build an empty set for accounts to add themselves to
         # and a `data` dict for accounts to write unstructed data to.
-        self.accounts: Set["Account"] = set()
+        self.accounts: Set[TaxSource] = set()
         self.data: Dict[Any, Any] = {}
 
     @property

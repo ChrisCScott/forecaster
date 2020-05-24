@@ -11,7 +11,8 @@ __copyright__ = 'Copyright (C) 2019 Christopher Scott'
 __license__ = 'All rights reserved'
 
 from forecaster.typing import (
-    Money as MoneyType, MoneyConvertible, MoneyFactory, Real)
+    MoneyABC, MoneyConvertible, MoneyType, MoneyFactory, MoneyHandler,
+    MoneyUnion, MoneyFactoryUnion, Real)
 from forecaster.ledger import (
     Ledger, recorded_property, recorded_property_cached)
 from forecaster.money import Money

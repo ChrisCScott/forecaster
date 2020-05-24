@@ -6,23 +6,25 @@ from typing import (
     Union, MutableSet, Protocol, Optional, Dict, Callable, Any,
     Iterator, List, Tuple)
 from forecaster.ledger import (
-    Ledger, TaxSource, MoneyFactory,
-    recorded_property, recorded_property_cached)
-from forecaster.money import MoneyType as Money, Real
+    Ledger, TaxSource, recorded_property, recorded_property_cached)
+from forecaster.typing import (
+    MoneyType, MoneyFactory, MoneyHandler, Real)
 from forecaster.utility import (
     Timing, Time, when_conv, frequency_conv, add_transactions)
 from forecaster.accounts.util import (
     accumulation_function, value_at_time, time_to_value)
 
 
-# TODO: Introduce a Ledger protocol
-class Person(Protocol, Ledger):
+# TODO: Introduce a Ledger protocol?
+class Person(Protocol):
     """ Defines the interface for an account's owner. """
     accounts: MutableSet["Account"]
+    initial_year: int
+    this_year: int
 
 Transactions = Dict[Real, Money]
 
-class Account(TaxSource):
+class Account(TaxSource, MoneyHandler):
     """ An account storing a `Money` balance.
 
     Has a `balance` indicating the balance of the account at the start
@@ -111,7 +113,7 @@ class Account(TaxSource):
 
     def __init__(
             self, owner: Optional[Person] = None,
-            balance: Optional[Money] = None, rate: Real = 0, nper: int = 1,
+            balance: Optional[MoneyType] = None, rate: Real = 0, nper: int = 1,
             default_timing: Timing = None,
             inputs: Dict[str, Dict[int, Any]] = None,
             initial_year: int = None,

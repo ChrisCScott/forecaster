@@ -92,6 +92,7 @@ class Timing(dict):
     def __init__(
             self, when: Optional[Union[
                 Time, # Standard call signature, receiving a when value
+                "Timing", # 1-ary copy constructor
                 Dict[Real, Any], # 1-ary copy constructor
                 str, # 1-ary frequency string
             ]]=None,
