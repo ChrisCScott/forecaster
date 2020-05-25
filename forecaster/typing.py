@@ -142,9 +142,15 @@ MoneyConvertible = Union[
 # numeric type or custom class implementing MoneyABC is used by a
 # Generic class. (e.g. `class Custom(Generic[MoneyType]): ...`)
 MoneyType = TypeVar(
-    'MoneyType', MoneyABC, float, Decimal, Fraction, int, covariant=True)
+    'MoneyType', MoneyABC, float, Decimal, Fraction, int)
+# It is conventional to use CamelCase for `TypeVar` names, and to append
+# `_co` when they are covariant.
+# pylint: disable=invalid-name
+MoneyType_co = TypeVar(
+    'MoneyType_co', MoneyABC, float, Decimal, Fraction, int, covariant=True)
+# pylint: enable=invalid-name
 
-class MoneyFactory(Protocol[MoneyType]):
+class MoneyFactory(Protocol[MoneyType_co]):
     """ Protocol for callable objects which return `MoneyType`.
 
     Many classes need to be able to cast numeric values to Money.
@@ -169,7 +175,7 @@ class MoneyFactory(Protocol[MoneyType]):
     def __call__(
             self, x: MoneyConvertible,
             *args: Any, **kwargs: Any
-        ) -> MoneyType:
+        ) -> MoneyType_co:
         """ Takes a numeric (or other) value and returns Money. """
         raise NotImplementedError
     # pylint: disable=invalid-name
@@ -184,25 +190,42 @@ class MoneyHandler(Protocol[MoneyType]):
         money_factory (MoneyFactory): A callable object that takes any
             Money-convertible type and returns a Money object.
             Keyword argument only. Optional.
+        money_type (Money): A type object for the Money type used by
+            this MoneyHandler instance. Used for type-checking;
+            isinstance(x, money_type) should return True only if x
+            is of type Money. Optional.
 
     Attributes:
         money_factory (MoneyFactory): A callable object that takes any
             Money-convertible type and returns a Money object.
             Keyword argument only. Optional.
+        money_type (type): A type object corresponding to the return
+            type of money_factory.
     """
-    money_factory: MoneyFactory
+    money_factory: MoneyFactory[MoneyType]
+    money_type: Type[MoneyType]
 
     @abstractmethod
     def __init__(
-            self, *args, money_factory: Optional[MoneyFactory] = None, **kwargs
+            self, *args,
+            money_factory: Optional[MoneyFactory[MoneyType]] = None,
+            money_type: Optional[Type[MoneyType]] = None,
+            **kwargs
     ) -> None:
+        self.money_factory: MoneyFactory[MoneyType]
+        self.money_type: Type[MoneyType]
         # We use `None` as a default value so that subclasses don't need
         # to know the default or test for None values.
-        self.money_factory: MoneyFactory
         if money_factory is None:
             self.money_factory = float
         else:
             self.money_factory = money_factory
+
+        if money_type is None:
+            # Use the type of whatever money_factory returns:
+            self.money_type = type(self.money_factory(0))
+        else:
+            self.money_type = money_type
 
 # Classes which are not Generic (or free methods) can use Unions to
 # describe Money and MoneyFactory:
