@@ -7,7 +7,7 @@ modules.
 import collections
 from numbers import Number
 from typing import Union, Dict, Optional, Iterable, Any
-from forecaster.typing import Money, Real
+from forecaster.typing import MoneyType, Real
 
 
 # `when` values can take any (real-valued) numeric value, as well as
@@ -213,9 +213,9 @@ class Timing(dict):
         return Timing(self._normalized(keys))
 
     def time_series(
-            self, scalar: Union[Money, Real],
+            self, scalar: Union[MoneyType, Real],
             keys: Optional[Iterable[Real]] = None
-        ) -> Dict[Real, Union[Money, Real]]:
+        ) -> Dict[Real, Union[MoneyType, Real]]:
         """ Scales `scalar` into portions proportionate to this timing.
 
         This method essentially performs scalar multiplication, where
@@ -241,7 +241,7 @@ class Timing(dict):
         # We get a dict of Real values here, but we'll mutate later
         # and may potentially introduce Money-typed values
         # (if scalar is Money-typed):
-        normalized: Dict[Real, Union[Real, Money]] = (
+        normalized: Dict[Real, Union[Real, MoneyType]] = (
             self._normalized(keys=keys)) # type: ignore[assignment]
         # Scale `scalar` by the normalized weight of each value of this
         # `Timing` object. This effectively splits `scalar` up into
@@ -253,7 +253,7 @@ class Timing(dict):
             normalized[key] *= scalar  # type: ignore[operator]
         return normalized
 
-def _convert_dict(when: Dict[Real, Union[Money, Real]]) -> Dict[Real, Real]:
+def _convert_dict(when: Dict[Real, Union[MoneyType, Real]]) -> Dict[Real, Real]:
     """ Converts `dict` input to `Timing`-style `when: weight` pairs.
 
     If all values are positive, the dict is returned unchanged. If they

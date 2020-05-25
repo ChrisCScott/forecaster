@@ -4,11 +4,11 @@ from copy import copy
 from collections import defaultdict
 from typing import (
     Union, MutableSet, Protocol, Optional, Dict, Callable, Any,
-    Iterator, List, Tuple)
+    Iterator, cast, KeysView, ValuesView, ItemsView)
 from forecaster.ledger import (
-    Ledger, TaxSource, recorded_property, recorded_property_cached)
+    TaxSource, recorded_property, recorded_property_cached)
 from forecaster.typing import (
-    MoneyType, MoneyFactory, MoneyHandler, Real)
+    MoneyType, MoneyFactory, MoneyHandler, MoneyConvertible, Real)
 from forecaster.utility import (
     Timing, Time, when_conv, frequency_conv, add_transactions)
 from forecaster.accounts.util import (
@@ -21,8 +21,9 @@ class Person(Protocol):
     accounts: MutableSet["Account"]
     initial_year: int
     this_year: int
+    next_year: Callable[["Person"], None]
 
-Transactions = Dict[Real, Money]
+Transactions = Dict[Real, MoneyType]
 
 class Account(TaxSource, MoneyHandler):
     """ An account storing a `Money` balance.
@@ -176,7 +177,7 @@ class Account(TaxSource, MoneyHandler):
         if balance is None:
             self.balance = self.money_factory(0)
         else:
-            self.balance = self.money_factory(balance)
+            self.balance = balance
         # The setter for `rate_callable` does type conversion, but
         # mypy doesn't understand this:
         self.rate_callable = rate # type: ignore[assignment]
@@ -231,7 +232,7 @@ class Account(TaxSource, MoneyHandler):
         self._default_timing = Timing()
 
     @recorded_property_cached
-    def balance(self) -> Money:
+    def balance(self) -> MoneyType:
         """ The balance of the account for the current year (Money).
 
         This is the balance after applying all transactions and any
@@ -336,7 +337,10 @@ class Account(TaxSource, MoneyHandler):
 
         return returns
 
-    def add_transaction(self, value: Money, when: Time = 'end'):
+    def add_transaction(
+            self, value: Union[MoneyType, MoneyConvertible],
+            when: Time = 'end'
+        ) -> None:
         """ Adds a transaction to the account.
 
         Args:
@@ -354,13 +358,19 @@ class Account(TaxSource, MoneyHandler):
         """
         when = when_conv(when)
 
-        # Ensure that the transaction amount is Money-typed
-        # (Simultaneous transactions are modelled as one sum)
-        self.transactions[when] += self.money_factory(value)
+        # Ensure that the transaction amount is Money-typed:
+        money_val: MoneyType
+        if isinstance(value, self.money_type):
+            money_val = value
+        else:
+            # If `value` is not Money-typed, convert it:
+            money_val = self.money_factory(cast(MoneyConvertible, value))
+        # Simultaneous transactions are modelled as one sum:
+        self.transactions[when] += money_val
 
-    def inflows(self, transactions: Optional[Transactions] = None) -> Money:
+    def inflows(self, transactions: Optional[Transactions] = None) -> MoneyType:
         """ The sum of all inflows to the account. """
-        result: Money
+        result: MoneyType
         if transactions is not None:
             result = sum(
                 (val for val in transactions.values() if val > 0),
@@ -372,17 +382,18 @@ class Account(TaxSource, MoneyHandler):
             start=self.money_factory(0))
         return result
 
-    def outflows(self, transactions: Optional[Transactions] = None) -> Money:
+    def outflows(
+            self, transactions: Optional[Transactions] = None) -> MoneyType:
         """ The sum of all outflows from the account. """
-        result: Money
+        result: MoneyType
         if transactions is not None:
-            result = sum((
-                val for val in transactions.values() if val < 0),
+            result = sum(
+                (val for val in transactions.values() if val < 0),
                 start=self.money_factory(0))
         else:
             result = self.money_factory(0)
-        result += sum((
-            val for val in self.transactions.values() if val < 0),
+        result += sum(
+            (val for val in self.transactions.values() if val < 0),
             start=self.money_factory(0))
         return result
 
@@ -407,7 +418,7 @@ class Account(TaxSource, MoneyHandler):
         self._transactions = defaultdict(lambda: self.money_factory(0))
 
     @property
-    def max_outflow_limit(self) -> Optional[Money]:
+    def max_outflow_limit(self) -> Optional[MoneyType]:
         """ The maximum amount that can be withdrawn from the account.
 
         This property provides a scalar value representing the largest
@@ -423,20 +434,20 @@ class Account(TaxSource, MoneyHandler):
             The maximum value that can be withdrawn from the account.
         """
         # For an ordinary Account, there is no limit on withdrawals.
-        return None  # Can use -Infinity if using Decimal-based Money
+        return None  # Can use -inf if using float-based Money
 
     @property
-    def max_inflow_limit(self) -> Optional[Money]:
+    def max_inflow_limit(self) -> Optional[MoneyType]:
         """ The maximum amount that can be contributed to the account.
 
         This method uses the same semantics as `max_outflow`, except
         for inflows.
         """
         # For an ordinary Account, there is no limit on contributions.
-        return None  # Can use +Infinity if using Decimal-based Money
+        return None  # Can use +inf if using float-based Money
 
     @property
-    def min_outflow_limit(self) -> Optional[Money]:
+    def min_outflow_limit(self) -> Optional[MoneyType]:
         """ The minimum amount to be withdrawn from the account.
 
         This method uses the same semantics as `max_outflow`, except
@@ -446,7 +457,7 @@ class Account(TaxSource, MoneyHandler):
         return self.money_factory(0)
 
     @property
-    def min_inflow_limit(self) -> Optional[Money]:
+    def min_inflow_limit(self) -> Optional[MoneyType]:
         """ The minimum amount to be contributed to the account.
 
         This method uses the same semantics as `max_outflow`, except
@@ -455,19 +466,19 @@ class Account(TaxSource, MoneyHandler):
         # For an ordinary Account, there is no minimum contribution.
         return self.money_factory(0)
 
-    def max_inflow(self, when: Time = "end") -> Money:
+    def max_inflow(self, when: Time = "end") -> Optional[MoneyType]:
         """ The maximum amount that can be contributed at `when`. """
         # The `when` arg is provided for subclasses to use.
         # pylint: disable=unused-argument
         return self.max_inflow_limit
 
-    def min_inflow(self, when: Time = "end") -> Money:
+    def min_inflow(self, when: Time = "end") -> Optional[MoneyType]:
         """ The minimum amount that can be contributed at `when`. """
         # The `when` arg is provided for subclasses to use.
         # pylint: disable=unused-argument
         return self.min_inflow_limit
 
-    def max_outflow(self, when: Time = "end") -> Money:
+    def max_outflow(self, when: Time = "end") -> Optional[MoneyType]:
         """ The maximum amount that can be withdrawn at `when`. """
         return max(
             # Withdraw everything (or none if the balance is negative)
@@ -475,16 +486,16 @@ class Account(TaxSource, MoneyHandler):
             # But no more than the maximum outflow:
             self.max_outflow_limit)
 
-    def min_outflow(self, when: Time = "end") -> Money:
+    def min_outflow(self, when: Time = "end") -> Optional[MoneyType]:
         """ The minimum amount that can be withdrawn at `when`. """
         # The `when` arg is provided for subclasses to use.
         # pylint: disable=unused-argument
         return self.min_outflow_limit
 
     def transactions_to_balance(
-            self, balance: Money, timing: Optional[Timing] = None,
-            max_total: Optional[Money] = None,
-            min_total: Optional[Money] = None,
+            self, balance: MoneyType, timing: Optional[Timing] = None,
+            max_total: Optional[MoneyType] = None,
+            min_total: Optional[MoneyType] = None,
             transactions: Optional[Transactions] = None
         ) -> Transactions:
         """ The amounts to add/withdraw at `timing` to get `balance`.
@@ -609,9 +620,9 @@ class Account(TaxSource, MoneyHandler):
     def max_outflows(
             self,
             timing: Optional[Timing] = None,
-            transaction_limit: Optional[Money] = None,
-            balance_limit: Optional[Money] = None,
-            transactions: Optional[Money] = None,
+            transaction_limit: Optional[MoneyType] = None,
+            balance_limit: Optional[MoneyType] = None,
+            transactions: Optional[Transactions] = None,
             **kwargs: Any
         ) -> Transactions:
         """ The maximum amounts that can be withdrawn at `timings`.
@@ -681,9 +692,9 @@ class Account(TaxSource, MoneyHandler):
     def max_inflows(
             self,
             timing: Optional[Timing] = None,
-            transaction_limit: Optional[Money] = None,
-            balance_limit: Optional[Money] = None,
-            transactions: Optional[Money] = None,
+            transaction_limit: Optional[MoneyType] = None,
+            balance_limit: Optional[MoneyType] = None,
+            transactions: Optional[Transactions] = None,
             **kwargs: Any
         ) -> Transactions:
         """ The maximum amounts that can be contributed at `timing`.
@@ -717,7 +728,7 @@ class Account(TaxSource, MoneyHandler):
 
         if balance_limit is None:
             # Inflows have no upper cap:
-            balance_limit = Money('Infinity')
+            balance_limit = self.money_factory(float('inf'))
 
         # Limit transactions to max total inflows, accounting for any
         # existing inflows already recorded as transactions:
@@ -726,10 +737,10 @@ class Account(TaxSource, MoneyHandler):
         if transaction_limit is not None:
             max_total = min(max_total, transaction_limit)
         # Don't allow negative lower bounds:
-        max_total = max(max_total, Money(0))
+        max_total = max(max_total, self.money_factory(0))
 
         # Ensure that only non-negative amounts are returned:
-        min_total = Money(0)
+        min_total = self.money_factory(0)
         return self.transactions_to_balance(
             balance_limit,
             timing=timing,
@@ -740,9 +751,9 @@ class Account(TaxSource, MoneyHandler):
     def min_outflows(
             self,
             timing: Optional[Timing] = None,
-            transaction_limit: Optional[Money] = None,
-            balance_limit: Optional[Money] = None,
-            transactions: Optional[Money] = None,
+            transaction_limit: Optional[MoneyType] = None,
+            balance_limit: Optional[MoneyType] = None,
+            transactions: Optional[Transactions] = None,
             **kwargs: Any
         ) -> Transactions:
         """ The minimum outflows that should be withdrawn at `timings`.
@@ -776,7 +787,7 @@ class Account(TaxSource, MoneyHandler):
 
         if balance_limit is None:
             # Outflows are limited by the account balance:
-            balance_limit = Money(0)
+            balance_limit = self.money_factory(0)
 
         # Limit transactions to min total outflows, accounting for any
         # existing outflows already recorded as transactions:
@@ -786,10 +797,10 @@ class Account(TaxSource, MoneyHandler):
         if transaction_limit is not None:
             min_total = max(min_total, transaction_limit)
         # Don't allow positive lower bounds:
-        min_total = min(min_total, Money(0))
+        min_total = min(min_total, self.money_factory(0))
 
         # Ensure that only negative amounts are returned:
-        max_total = Money(0)
+        max_total = self.money_factory(0)
         return self.transactions_to_balance(
             balance_limit,
             timing=timing,
@@ -800,9 +811,9 @@ class Account(TaxSource, MoneyHandler):
     def min_inflows(
             self,
             timing: Optional[Timing] = None,
-            transaction_limit: Optional[Money] = None,
-            balance_limit: Optional[Money] = None,
-            transactions: Optional[Money] = None,
+            transaction_limit: Optional[MoneyType] = None,
+            balance_limit: Optional[MoneyType] = None,
+            transactions: Optional[Transactions] = None,
             **kwargs: Any
         ) -> Transactions:
         """ The minimum amounts that should be contributed at `timing`.
@@ -836,7 +847,7 @@ class Account(TaxSource, MoneyHandler):
 
         if balance_limit is None:
             # Inflows have no upper cap:
-            balance_limit = Money('Infinity')
+            balance_limit = self.money_factory(float('inf'))
 
         # Limit transactions to min total inflows, accounting for any
         # existing inflows already recorded as transactions:
@@ -845,10 +856,10 @@ class Account(TaxSource, MoneyHandler):
         if transaction_limit is not None:
             max_total = min(max_total, transaction_limit)
         # Don't allow negative lower bounds:
-        max_total = max(max_total, Money(0))
+        max_total = max(max_total, self.money_factory(0))
 
         # Ensure that only non-negative amounts are returned:
-        min_total = Money(0)
+        min_total = self.money_factory(0)
         return self.transactions_to_balance(
             balance_limit,
             timing=timing,
@@ -857,7 +868,7 @@ class Account(TaxSource, MoneyHandler):
             transactions=transactions)
 
     @recorded_property
-    def taxable_income(self) -> Money:
+    def taxable_income(self) -> MoneyType:
         """ Treats all returns as taxable. """
         return max(self.returns, self.money_factory(0))
 
@@ -876,10 +887,10 @@ class Account(TaxSource, MoneyHandler):
         when = when_conv(key)
         return when in self._transactions
 
-    def __getitem__(self, key: Real) -> Money:
+    def __getitem__(self, key: Real) -> MoneyType:
         return self._transactions[key]
 
-    def __setitem__(self, key: Real, value: Money) -> None:
+    def __setitem__(self, key: Real, value: MoneyType) -> None:
         if key in self._transactions:
             del self._transactions[key]
         self.add_transaction(value=value, when=key)
@@ -887,19 +898,19 @@ class Account(TaxSource, MoneyHandler):
     def __delitem__(self, key: Real) -> None:
         del self._transactions[key]
 
-    def keys(self) -> List[Real]:
+    def keys(self) -> KeysView[Real]:
         """ The timings of the account's transactions. """
         return self._transactions.keys()
 
-    def values(self) -> List[Money]:
+    def values(self) -> ValuesView[MoneyType]:
         """ The values of the account's transactions. """
         return self._transactions.values()
 
-    def items(self) -> List[Tuple[Real, Money]]:
+    def items(self) -> ItemsView[Real, MoneyType]:
         """ The account's transactions, as {when: value} pairs. """
         return self._transactions.items()
 
-    def get(self, key: Real, default: Optional[Money] = None):
+    def get(self, key: Real, default: Optional[MoneyType] = None):
         """ Gets the transaction value at a particular timing. """
         self._transactions.get(key, default=default)
 
@@ -912,7 +923,7 @@ class Account(TaxSource, MoneyHandler):
 
     def balance_at_time(
             self, time: Time, transactions: Optional[Transactions] = None
-        ) -> Money:
+        ) -> MoneyType:
         """ Returns the balance at a point in time.
 
         Args:
@@ -941,7 +952,7 @@ class Account(TaxSource, MoneyHandler):
         # Otherwise simply use the account's recorded transactions:
         else:
             transactions = self.transactions
-        # Add in the future value of each transaction (except that that
+        # Add in the future value of each transaction (except those that
         # happen after `time`).
         for when in [w for w in transactions if w <= time]:
             balance += value_at_time(
@@ -949,7 +960,7 @@ class Account(TaxSource, MoneyHandler):
 
         return balance
 
-    def time_to_balance(self, value: Money, when: Time = 0):
+    def time_to_balance(self, value: MoneyType, when: Time = 0):
         """ Returns the time required to grow to a given balance.
 
         If `when` is provided, this method returns the earliest time
