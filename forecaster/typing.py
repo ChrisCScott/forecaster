@@ -3,8 +3,8 @@
 from abc import abstractmethod
 from typing import (
     Union, Callable, Protocol, TypeVar, runtime_checkable,
-    SupportsFloat, SupportsIndex, Text, Type, Any, Optional)
-from numbers import Real as PyReal
+    SupportsFloat, SupportsIndex, Text, Type, Any, Optional, Dict)
+from numbers import Real as PyReal, Rational
 from decimal import Decimal
 from fractions import Fraction
 
@@ -22,6 +22,15 @@ from fractions import Fraction
 # signatures. See:
 # https://stackoverflow.com/questions/47237378/why-is-not-decimal-decimal1-an-instance-of-numbers-real
 Real = Union[PyReal, Decimal, Fraction, float, int]
+# Some classes and methods might accept any Real value but require that
+# the specific type be consistent. Define these type variables to
+# support that:
+RealType = TypeVar('RealType', PyReal, Decimal, Fraction, float, int)
+RealType_co = TypeVar(
+    'RealType_co', PyReal, Decimal, Fraction, float, int, covariant=True)
+RealType_contra = TypeVar(
+    'RealType_contra', PyReal, Decimal, Fraction, float, int,
+    contravariant=True)
 
 # When we define the Money protocol, we want to ensure that methods'
 # signatures are consistent re: the Money type they use and the scalar
@@ -234,3 +243,12 @@ MoneyUnion = Union[MoneyABC, float, Decimal, Fraction, int]
 MoneyFactoryUnion = Union[
     Callable[[MoneyConvertible], MoneyUnion],  # General def. of money_factory
     Type[float], Type[Decimal], Type[Fraction], Type[int]] # numeric types
+
+# For times, we will allow any rational value (which can be represented
+# precisely via Fraction). This is slightly more restrictive than Real.
+Time = Union[Rational, Fraction, float, int]
+TS_Key = TypeVar('TS_Key', Rational, Fraction, float, int)
+TS_Val = TypeVar('TS_Val', Real, Decimal, Fraction, float, int)
+TimeSeries = Dict[TS_Key, TS_Val]
+# Transactions are simply TimeSeries where the values are Money:
+Transactions = Dict[TS_Key, MoneyType]
