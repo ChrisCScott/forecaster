@@ -5,14 +5,18 @@ modules.
 """
 
 import collections
-from numbers import Number
-from typing import Union, Dict, Optional, Iterable, Any
-from forecaster.typing import MoneyType, Real
+from numbers import Rational
+from fractions import Fraction
+from typing import Union, Dict, Optional, Iterable, Any, TypeVar, Generic
+from forecaster.typing import MoneyType, Real, Time, Transactions, TimeSeries
 
-
-# `when` values can take any (real-valued) numeric value, as well as
-# specific string values. This gets used a lot, so define the type here.
-Time = Union[Real, str]
+# `when` values can take any valid Time value, as well as specific
+# string values. This gets used a lot by this module.
+When = Union[Time, str]
+# Some methods here take dict inputs which must have consistent key
+# and/or value types. We can use TypeVars to enforce that.
+T_Key = TypeVar('T_Key')
+T_Val = TypeVar('T_Val')
 
 # String codes describing points in time, mapped to numeric values:
 WHEN_STRS: Dict[str, Real] = {
@@ -36,8 +40,8 @@ FREQUENCY_STRS: Dict[str, Optional[int]] = {
 }
 
 # Define constants for use throughout `forecaster` packages:
-EPSILON: Real = 0.5**13  # Roughly 0.000122. Should be losslessly represented.
-WHEN_DEFAULT: Time = 0.5
+EPSILON = 0.5**13  # Roughly 0.000122. Should be losslessly represented.
+WHEN_DEFAULT = 0.5
 
 class Timing(dict):
     """ A dict of {timing: weight} pairs.
@@ -91,12 +95,12 @@ class Timing(dict):
     """
     def __init__(
             self, when: Optional[Union[
-                Time, # Standard call signature, receiving a when value
+                When, # Standard call signature, receiving a when value
                 "Timing", # 1-ary copy constructor
-                Dict[Real, Any], # 1-ary copy constructor
+                Dict[Time, Any], # 1-ary copy constructor
                 str, # 1-ary frequency string
             ]]=None,
-            frequency: Optional[Union[Real, str]] = None
+            frequency: Optional[Union[Time, str]] = None
         ) -> None:
         """ Initializes a Timing dict. """
         # We allow four forms of init call:
@@ -160,9 +164,27 @@ class Timing(dict):
         for time in range(frequency):
             self[(time + when) / frequency] = weight
 
+    def __setitem__(self, key: Time, value: Real) -> None:
+        """ Sets a value for a key.
+
+        Converts the provided key to a `Fraction` for lossless
+        representation. If an irrational number is provided, behaviour
+        is undefined.
+        """
+        if not isinstance(key, Fraction):
+            key = Fraction(key)
+        super().__setitem__(key, value)
+
+    # The getter is overridden solely to add type annotations.
+    # pylint: disable=useless-super-delegation
+    def __getitem__(self, key: Real) -> Real:
+        """ Gets a value for a key. Overridden only for typing. """
+        return super().__getitem__(key)
+    # pylint: enable=useless-super-delegation
+
     def _normalized(
-            self, keys: Optional[Iterable[Real]] = None
-        ) -> Dict[Real, Real]:
+            self, keys: Optional[Iterable[Time]] = None
+        ) -> Dict[Time, Real]:
         """ Returns a normalized dict based on this `Timing` object.
 
         This method is just a convenience for other class methods which
@@ -170,13 +192,13 @@ class Timing(dict):
         result in a `Timing` object.
 
         Args:
-            keys (Iterable[Real]): A subset of the keys of the
+            keys (Iterable[Time]): A subset of the keys of the
                 `Timing` object. If provided, the result contains only
                 the keys in `keys` and the normalization is applied only
                 to those keys. Optional.
 
         Returns:
-            dict[Real, Real]: A normalized dict with values
+            dict[Time, Real]: A normalized dict with values
             proportional to those of this `Timing` object (or to the
             subset indicated by `keys`).
 
@@ -187,17 +209,20 @@ class Timing(dict):
             keys = self.keys()
         # Simply scale down each value by the sum of all values:
         normalization: Real = sum(self[key] for key in keys)
-        return {key: self[key] / normalization for key in keys}
+        return {
+            # self[key] and normalization have the same type
+            key: self[key] / normalization  # type: ignore[operator]
+            for key in keys}
 
     def normalized(
-            self, keys: Optional[Iterable[Real]] = None
+            self, keys: Optional[Iterable[Time]] = None
         ) -> Timing:
         """ Returns a normalized version of the `Timing` object.
 
         'Normalized' here means that the values sum to 1.
 
         Args:
-            keys (Iterable[Number]): A subset of the keys of the
+            keys (Iterable[Rational]): A subset of the keys of the
                 `Timing` object. If provided, the result contains only
                 the keys in `keys` and the normalization is applied only
                 to those keys. Optional.
@@ -214,8 +239,8 @@ class Timing(dict):
 
     def time_series(
             self, scalar: Union[MoneyType, Real],
-            keys: Optional[Iterable[Real]] = None
-        ) -> Dict[Real, Union[MoneyType, Real]]:
+            keys: Optional[Iterable[Time]] = None
+        ) -> Dict[Time, Union[MoneyType, Real]]:
         """ Scales `scalar` into portions proportionate to this timing.
 
         This method essentially performs scalar multiplication, where
@@ -241,8 +266,8 @@ class Timing(dict):
         # We get a dict of Real values here, but we'll mutate later
         # and may potentially introduce Money-typed values
         # (if scalar is Money-typed):
-        normalized: Dict[Real, Union[Real, MoneyType]] = (
-            self._normalized(keys=keys)) # type: ignore[assignment]
+        normalized: Dict[Time, Union[Real, MoneyType]] = (
+            self._normalized(keys=keys))
         # Scale `scalar` by the normalized weight of each value of this
         # `Timing` object. This effectively splits `scalar` up into
         # smaller amounts for each key in `self` proportionately to the
@@ -253,7 +278,7 @@ class Timing(dict):
             normalized[key] *= scalar  # type: ignore[operator]
         return normalized
 
-def _convert_dict(when: Dict[Real, Union[MoneyType, Real]]) -> Dict[Real, Real]:
+def _convert_dict(when: Dict[Time, Union[MoneyType, Real]]) -> Dict[Time, Real]:
     """ Converts `dict` input to `Timing`-style `when: weight` pairs.
 
     If all values are positive, the dict is returned unchanged. If they
@@ -274,7 +299,7 @@ def _convert_dict(when: Dict[Real, Union[MoneyType, Real]]) -> Dict[Real, Real]:
         when (dict[Real, Union[Money, Real]]): A mapping of timings
             (in [0,1]) to values.
             If the values are `Money`-typed, they are converted to
-            a numerical type.
+            a numeric type.
 
     Returns:
         dict[Real, Real]: A mapping of timings to weights.
@@ -291,13 +316,13 @@ def _convert_dict(when: Dict[Real, Union[MoneyType, Real]]) -> Dict[Real, Real]:
     # If values are Money-like, convert to numerical type:
     when_out: Dict[Real, Real]
     if all(hasattr(value, 'amount') for value in when.values()):
-        # Convert the dict's values to Decimal (no mutation!):
+        # Convert the dict's values to numeric type (no mutation!):
         when_out = {
             # We know from the above test that `amount` is an attribute:
             timing: value.amount # type: ignore[union-attr]
             for timing, value in when.items()}
     # If values not Money-like, then they should all be numeric:
-    elif any(not isinstance(value, Number) for value in when.values()):
+    elif any(not isinstance(value, Rational) for value in when.values()):
         raise TypeError("Money value not convertible to numeric type")
     # If we don't trigger the above checks, then all values are numeric:
     else:
@@ -328,7 +353,7 @@ def _convert_dict(when: Dict[Real, Union[MoneyType, Real]]) -> Dict[Real, Real]:
     else:
         return _accum_outflows(when_out)
 
-def _accum_inflows(when):
+def _accum_inflows(when: Union[Transactions, TimeSeries]) -> TimeSeries:
     """ Determines maximum withdrawable amount for each timing.
 
     This method receives an input (`when`) with a mix of inflows and
@@ -351,13 +376,13 @@ def _accum_inflows(when):
         # outflows == {0: 5, 1: 5}
 
     Args:
-        when (dict[Number, Union[Money, Number]]): A mapping of timings
+        when (dict[Real, Union[Money, Real]]): A mapping of timings
             (in [0,1]) to values. The values must sum to a positive
             value. If the values are `Money`-typed, they are converted
-            to `Decimal`.
+            to numeric type.
 
     Returns:
-        dict[Decimal, Number]: A mapping of timings to weights.
+        dict[Real, Real]: A mapping of timings to weights.
     """
     # We do this in two stages.
     # First, for each timing, determine the cumulative value of
@@ -390,7 +415,7 @@ def _accum_inflows(when):
                     accum[key] -= max_transaction
     return result
 
-def _accum_outflows(when):
+def _accum_outflows(when: Transactions):
     """ Determines minimum necessary contribution for each timing.
 
     This method receives an input (`when`) with a mix of inflows and
@@ -410,13 +435,13 @@ def _accum_outflows(when):
         # inflows == {0: 10, 0.5: 5}
 
     Args:
-        when (dict[Number, Union[Money, Number]]): A mapping of timings
+        when (dict[Rational, Union[Money, Real]]): A mapping of timings
             (in [0,1]) to values. The values must sum to a negative
             value. If the values are `Money`-typed, they are converted
-            to `Decimal`.
+            to numeric type.
 
     Returns:
-        dict[Decimal, Number]: A mapping of timings to weights.
+        dict[Rational, Union[Money, Real]]: A timing:weight mapping.
     """
     # Accumulate the various transactions in order. Every time the
     # rolling accumulation dips negative, record an inflow that brings
@@ -439,7 +464,7 @@ def transactions_from_timing(timing, total):
         total (Money): The sum of all transactions to be generated.
 
     Returns:
-        dict[Decimal, Money]: A schedule of transactions, each
+        dict[Real, Money]: A schedule of transactions, each
         transaction having the relative weighting provided by `timing`
         and the total value of the transactions summing to `total`.
     """
@@ -451,7 +476,7 @@ def transactions_from_timing(timing, total):
         for time, weight in timing.items()}
     return transactions
 
-def when_conv(when: Time) -> Real:
+def when_conv(when: When) -> Time:
     """ Converts various types of `when` inputs to numeric values.
 
     The numeric value is in [0,1], where 0 is the start of the period
@@ -470,7 +495,7 @@ def when_conv(when: Time) -> Real:
         ValueError: `when` must be in [0,1]
 
     Returns:
-        A Decimal in [0,1]
+        A numeric value in [0,1]
     """
     # Attempt to convert strings 'start' and 'end' first
     if isinstance(when, str):
@@ -539,7 +564,7 @@ def add_transactions(base, added):
 
     Args:
         base [dict[Any, Any]]: A dictionary, generally of transactions
-            (i.e. `Decimal: Money` pairs), but potentially of any types.
+            (i.e. `Real: Money` pairs), but potentially of any types.
             Mutated by this method.
         added [dict[Any, Any]]: A dictionary whose values support
             addition (via `+` operator) with the same-key values of
@@ -568,7 +593,7 @@ def subtract_transactions(base, added):
 
     Args:
         base [dict[Any, Any]]: A dictionary, generally of transactions
-            (i.e. `Decimal: Money` pairs), but potentially of any types.
+            (i.e. `Real: Money` pairs), but potentially of any types.
             Mutated by this method.
         added [dict[Any, Any]]: A dictionary whose values support
             addition (via `+` operator) with the same-key values of
@@ -590,7 +615,7 @@ def nearest_year(vals, year):
     This is a companion method to `inflation_adjust()`. It's meant to be
     used when you want to pull a value out of an incomplete dict without
     inflation-adjusting it (e.g. when you want to grab the most recent
-    percentage rate from a dict of `{year: Decimal}` pairs.)
+    percentage rate from a dict of `{year: Real}` pairs.)
 
     If `year` is in `vals`, then this method returns `year`.
     If not, then this method tries to find the last year
@@ -697,7 +722,7 @@ def build_inflation_adjust(inflation_adjust=None):
 
     Args:
         inflation_adjust: May be a dict of {year: inflation_adjustment}
-            pairs, where `inflation_adjustment` is a Decimal that
+            pairs, where `inflation_adjustment` is a numeric value that
             indicates a cumulative year-over-year inflation factor.
             Or may be a method (returned as-is). Optional.
 
@@ -720,7 +745,7 @@ def build_inflation_adjust(inflation_adjust=None):
             """ No inflation adjustment; returns 1 every year. """
             return 1
     elif isinstance(inflation_adjust, dict):
-        # If a dict of {year: Decimal} values has been passed in,
+        # If a dict of {year: Real} values has been passed in,
         # convert that to a suitable method.
 
         # It's slightly more efficient to find the smallest key in
