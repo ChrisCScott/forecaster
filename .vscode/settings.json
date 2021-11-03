@@ -22,10 +22,6 @@
         "--show-column-numbers",
         "--show-error-codes"
     ],
-    "terminal.integrated.shellArgs.windows": [
-        "-ExecutionPolicy",
-        "Bypass"
-    ],
     "python.testing.pytestArgs": [
         "tests"
     ],
