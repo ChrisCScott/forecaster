@@ -12,7 +12,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 setup(
     # We have reserved the name `forecaster` on PyPi, although this project
     # is not currently published there.
-    name='sampleproject', # Required
+    name='forecaster', # Required
 
     # Versions should comply with PEP 440:
     # https://www.python.org/dev/peps/pep-0440/
