@@ -13,7 +13,11 @@
     "python.testing.unittestEnabled": true,
     "python.linting.enabled": true,
     "python.linting.pylintEnabled": true,
-    "python.linting.pep8Enabled": false,
+    "python.linting.pycodestyleEnabled": false,
     "python.pythonPath": "${workspaceFolder}/venv/",
-    "terminal.integrated.shellArgs.windows": ["-ExecutionPolicy", "Bypass"]
+    "terminal.integrated.shellArgs.windows": [
+        "-ExecutionPolicy",
+        "Bypass"
+    ],
+    "python.languageServer": "Jedi"
 }
