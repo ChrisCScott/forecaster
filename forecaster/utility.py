@@ -5,11 +5,8 @@ modules.
 """
 
 import collections
-from decimal import Decimal
-from forecaster.ledger import Money
 
-EPSILON = Decimal("0.00001")
-EPSILON_MONEY = Money(EPSILON)
+EPSILON = 0.00001
 
 WHEN_DEFAULT = 0.5
 
@@ -22,8 +19,7 @@ class Timing(dict):
     `when`. The timings are equally-weighted.
 
     This class provides a copy-constructor that can receive a dict of
-    {when: value} pairs. If a dict has Money-type values, these are
-    converted to Decimal to avoid arithmetic errors.
+    {when: value} pairs.
 
     Examples:
         Timing()
@@ -62,9 +58,8 @@ class Timing(dict):
             return
         # If we call Timing(input) with dict-type `input` (that isn't
         # already a Timing object), things get trickier. We want to
-        # be able to receive time-series data of transactions (which
-        # may or may not be explicitly Money-typed), so we need to deal
-        # with negative values, and potentially with Money-typed values.
+        # be able to receive time-series data of transactions, so we
+        # need to deal with negative values.
         elif isinstance(when, dict):
             self.update(_convert_dict(when))
             return
@@ -80,7 +75,7 @@ class Timing(dict):
 
             # Build out multiple timings based on scalar inputs.
             # Each transaction has equal weight:
-            weight = 1 / Decimal(frequency)
+            weight = 1 / frequency
             # Build the dict:
             for time in range(frequency):
                 self[(time + when) / frequency] = weight
@@ -143,12 +138,12 @@ class Timing(dict):
 
         Args:
             scalar (Any): Any scalar value (not necessarily `Number`;
-                may be `Money`, for instance). Any type that supports
-                multiplication against the values of `Timing` may be
-                used.
+                may be a custom money type, for instance).
+                Any type that supports multiplication against the values
+                of `Timing` may be used.
 
         Returns:
-            dict[Decimal, Any]: A time-series of values with the same
+            dict[float, Any]: A time-series of values with the same
                 proportions as this timing object, with values of the
                 same type as `scalar` and which sum to `other`.
 
@@ -168,28 +163,26 @@ class Timing(dict):
 def _convert_dict(when):
     """ Converts `dict` input to `Timing`-style `when: weight` pairs.
 
-    If all values are positive, the dict is returned unchanged. If they
-    are all negative, they're flipped to positive and returned. (This
-    excludes 0-values, so technically "non-negative" and "non-positive"
-    are the correct terms.)
+    If all values are non-negative, the dict is returned unchanged.
+    If they are all non-positive, they're negated to make them
+    non-negative.
 
     If there are both positive and negative values, `when` is assumed
-    to be a dict of transactions. If total flows are positive, this
-    method returns a mapping of timings to the largest amount at each
-    timing that can be withdrawn without causing the net flows at that
-    timing or any later timing to be negative. If the total flows are
-    negative, the method returns a mapping of timings to the smallest
-    amount that must be added to bring the net flows to zero balance
-    (without bringing the net transactions to positive balance).
+    to be a dict of transactions with inflows and outflows.
+    If total flows are positive, this method returns a mapping of
+    timings to the largest amount at each timing that can be withdrawn
+    without causing the net flows at that timing or any later timing to
+    be negative. If the total flows are negative, the method returns a
+    mapping of timings to the smallest amount that must be added to
+    bring the net flows to zero balance (without bringing the net
+    transactions to positive balance).
 
     Args:
-        when (dict[Number, Union[Money, Number]]): A mapping of timings
-            (in [0,1]) to values.
-            If the values are `Money`-typed, they are converted to
-            `Decimal`.
+        when (dict[float, float]): A mapping of timings (in [0,1]) to
+            values.
 
     Returns:
-        dict[Decimal, Number]: A mapping of timings to weights.
+        dict[float, float]: A mapping of timings to weights.
     """
     # First, deal with empty dict or all-zero dict:
     if not when:
@@ -198,17 +191,8 @@ def _convert_dict(when):
     if all(value == 0 for value in when.values()):
         # Use the timings provided by the dict and fill in uniform
         # weights, since no non-zero weights were given:
-        return {key: Decimal(1) for key in when}
+        return {key: 1 for key in when}
 
-    # If values are Money-types, convert to Decimal:
-    # Get a random element from `when` so we can check its type:
-    sample = next(iter(when.values()))
-    if isinstance(sample, Money):
-        # Convert the dict's values to Decimal (no mutation!):
-        when = {timing: value.amount for timing, value in when.items()}
-
-    # OK, so the dict is non-empty, has a non-zero element, and
-    # doesn't have awkward `Money` semantics (i.e. is Decimal-like).
     # If there are no negative values, the dict is useable as-is:
     if all(value >= 0 for value in when.values()):
         return when
@@ -255,13 +239,12 @@ def _accum_inflows(when):
         # outflows == {0: 5, 1: 5}
 
     Args:
-        when (dict[Number, Union[Money, Number]]): A mapping of timings
+        when (dict[float, Union[float, float]]): A mapping of timings
             (in [0,1]) to values. The values must sum to a positive
-            value. If the values are `Money`-typed, they are converted
-            to `Decimal`.
+            value.
 
     Returns:
-        dict[Decimal, Number]: A mapping of timings to weights.
+        dict[float, float]: A mapping of timings to weights.
     """
     # We do this in two stages.
     # First, for each timing, determine the cumulative value of
@@ -314,10 +297,9 @@ def _accum_outflows(when):
         # inflows == {0: 10, 0.5: 5}
 
     Args:
-        when (dict[Number, Union[Money, Number]]): A mapping of timings
+        when (dict[Number, Union[float, float]]): A mapping of timings
             (in [0,1]) to values. The values must sum to a negative
-            value. If the values are `Money`-typed, they are converted
-            to `Decimal`.
+            value.
 
     Returns:
         dict[Decimal, Number]: A mapping of timings to weights.
@@ -340,10 +322,10 @@ def transactions_from_timing(timing, total):
     Args:
         timing (Timing): The timing of the transactions, each with a
             corresponding weight.
-        total (Money): The sum of all transactions to be generated.
+        total (float): The sum of all transactions to be generated.
 
     Returns:
-        dict[Decimal, Money]: A schedule of transactions, each
+        dict[float, float]: A schedule of transactions, each
         transaction having the relative weighting provided by `timing`
         and the total value of the transactions summing to `total`.
     """
@@ -356,22 +338,20 @@ def transactions_from_timing(timing, total):
     return transactions
 
 def when_conv(when):
-    """ Converts various types of `when` inputs to Decimal.
+    """ Converts various types of `when` inputs to floats in [0,1].
 
-    The Decimal value is in [0,1], where 0 is the start of the period
-    and 1 is the end.
+    0 is the start of the period and 1 is the end.
 
     NOTE: `numpy` defines its `when` argument such that 'end' = 0 and
     'start' = 1. If you're using that package, consider whether any
     conversions are necessary.
 
     Args:
-        `when` (float, Decimal, str): The timing of the transaction.
+        `when` (float, str): The timing of the transaction.
             Must be in the range [0,1] or in ('start', 'end').
 
     Raises:
-        decimal.InvalidOperation: `when` must be convertible to
-            type Decimal
+        ValueError: `when` must be convertible to type `float`
         ValueError: `when` must be in [0,1]
 
     Returns:
@@ -384,10 +364,10 @@ def when_conv(when):
         elif when == 'start':
             when = 0
 
-    # Decimal can take a variety of input types (including str), so
+    # float can take a variety of input types (including str), so
     # rather than throw an error on non-start/end input strings, try
-    # to cast to Decimal and throw a decimal.InvalidOperation error.
-    when = Decimal(when)
+    # to cast to float and throw a ValueError on failure.
+    when = float(when)
 
     if when > 1 or when < 0:
         raise ValueError("When: 'when' must be in [0,1]")
@@ -456,7 +436,7 @@ def add_transactions(base, added):
 
     Args:
         base [dict[Any, Any]]: A dictionary, generally of transactions
-            (i.e. `Decimal: Money` pairs), but potentially of any types.
+            (i.e. `float: float` pairs), but potentially of any types.
             Mutated by this method.
         added [dict[Any, Any]]: A dictionary whose values support
             addition (via `+` operator) with the same-key values of
@@ -485,7 +465,7 @@ def subtract_transactions(base, added):
 
     Args:
         base [dict[Any, Any]]: A dictionary, generally of transactions
-            (i.e. `Decimal: Money` pairs), but potentially of any types.
+            (i.e. `float: float` pairs), but potentially of any types.
             Mutated by this method.
         added [dict[Any, Any]]: A dictionary whose values support
             addition (via `+` operator) with the same-key values of
@@ -614,16 +594,13 @@ def build_inflation_adjust(inflation_adjust=None):
 
     Args:
         inflation_adjust: May be a dict of {year: inflation_adjustment}
-            pairs, where `inflation_adjustment` is a Decimal that
+            pairs, where `inflation_adjustment` is a number that
             indicates a cumulative year-over-year inflation factor.
             Or may be a method (returned as-is). Optional.
 
     Returns:
         A method with the following form:
         `inflation_adjust(val, this_year, target_year)`.
-
-        The method returns a Money object (assuming Money-typed `val`
-        input).
 
         Finds a nominal value in `target_year` with the same real
         value as `val`, a nominal value in `this_year`.
@@ -635,33 +612,22 @@ def build_inflation_adjust(inflation_adjust=None):
         # pylint: disable=W0613,E0102
         def inflation_adjust_func(target_year=None, base_year=None):
             """ No inflation adjustment; returns 1 every year. """
-            return Decimal(1)
+            return 1
     elif isinstance(inflation_adjust, dict):
-        # If a dict of {year: Decimal} values has been passed in,
+        # If a dict of {year: val} values has been passed in,
         # convert that to a suitable method.
-        # If inflation_adjust has a default value, preserve it:
-        if isinstance(inflation_adjust, collections.defaultdict):
-            inflation_dict = collections.defaultdict(
-                inflation_adjust.default_factory)
-        else:
-            inflation_dict = {}
-        # Then type-convert all the elements of inflation_adjust:
-        inflation_dict.update({
-            int(key): Decimal(inflation_adjust[key])
-            for key in inflation_adjust
-        })
 
         # It's slightly more efficient to find the smallest key in
         # inflation_adjust outside of the function.
-        default_base = min(inflation_dict.keys())
+        default_base = min(inflation_adjust.keys())
 
         def inflation_adjust_func(target_year, base_year=None):
             """ Inflation adjustment from """
             if base_year is None:
                 base_year = default_base
-            return Decimal(
-                inflation_dict[target_year] /
-                inflation_dict[base_year]
+            return (
+                inflation_adjust[target_year] /
+                inflation_adjust[base_year]
             )
     elif not callable(inflation_adjust):
         # If it's not a dict and not callable, then we don't know
