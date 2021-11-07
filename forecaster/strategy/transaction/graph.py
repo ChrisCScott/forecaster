@@ -3,7 +3,6 @@
 Wraps networkx and adds a few convenience methods.
 """
 
-from decimal import Decimal
 import networkx
 
 CAPACITY_KEY = "capacity"
@@ -26,7 +25,7 @@ def _inbound_capacity(graph, node):
         node (Hashable): A node in `graph`.
 
     Returns:
-        Decimal: The sum of the capacities of inbound edges. Inbound
+        float: The sum of the capacities of inbound edges. Inbound
         edges with no `capacity` attribute are ignored.
     """
     # For each node, we'll calculate this amount each time the node is
@@ -39,11 +38,8 @@ def _inbound_capacity(graph, node):
         graph[parent][node][CAPACITY_KEY]
         for parent in graph.predecessors(node)
         if CAPACITY_KEY in graph[parent][node])
-    # Avoid setting `capacity` to a non-Decimal value:
     # TODO: If any(CAPACITY_KEY not in graph[parent[node]]) then
-    # return Decimal('Infinity')?
-    if not isinstance(capacity, Decimal):
-        capacity = Decimal(capacity)
+    # return float('inf')?
     return capacity
 
 def _outbound_capacity(graph, node, weight=None, children=None):
@@ -58,7 +54,7 @@ def _outbound_capacity(graph, node, weight=None, children=None):
             `node` and members of `children` are included. Optional.
 
     Returns:
-        Decimal: The sum of the capacities of outbound edges from
+        float: The sum of the capacities of outbound edges from
         `node` to its successors. Outbound edges with no `capacity`
         attribute are ignored.
     """
@@ -86,7 +82,7 @@ def _outbound_capacity(graph, node, weight=None, children=None):
                 capacity += graph[node][child][CAPACITY_KEY]
         else:
             # If capacity is not explicitly provided, it's infinite:
-            capacity = Decimal('Infinity')
+            capacity = float('inf')
     return capacity
 
 def _sum_weight(graph, node):
@@ -125,12 +121,9 @@ def _add_edge(
     is not translated into an attribute.) Certain attributes with
     significance to `networkx` are processed to avoid errors.
 
-    For `capacity` attributes (passed via the `capacity` kwarg), this
-    method converts `Decimal`- or `Money`-valued attribute inputs to
-    `int`, handles infinite-valued inputs appropriately, and reduces
-    edges' capacities based on any flows in `memo`.
-
-    This method also converts non-int `weight` attributes to `int`.
+    This method converts `capacity` and `weight` values to `int`,
+    handles infinite-valued inputs appropriately, and reduces edges'
+    capacities based on any flows in `memo`.
 
     Args:
         graph (networkx.DiGraph): A directed graph.
@@ -147,11 +140,9 @@ def _add_edge(
     # specific attrs with custom names are processed explicitly.
     if CAPACITY_KEY in kwargs:
         capacity = kwargs[CAPACITY_KEY]
-        # Ensure all capacity attrs use the same typing to avoid
-        # `unsupported operand type` errors.
-        if hasattr(capacity, "amount"):
-            # Convert Money-valued `capacity` to Decimal:
-            capacity = capacity.amount
+        # NOTE: If Money values need to be explicitly converted to
+        # scalar (as with PyMoney), do that here.
+
         # Capacity must be non-negative (we might receive negative
         # values if capacity is drawn from outflow transactions)
         capacity = abs(capacity)
@@ -160,9 +151,9 @@ def _add_edge(
         # edge:
         capacity -= _flows_through(from_node, to_node, flows=memo)
         # Only assign `capacity` as an edge value if it is finite.
-        # (networkx doesn't deal well with Decimal('Infinity'). The
+        # (networkx doesn't deal well with float('inf'). The
         # "capacity" attr should be absent if capacity is unbounded.)
-        if capacity < Decimal('Infinity'):
+        if capacity < float('inf'):
             # Round `capacity` to an int (recommended by networkx):
             # https://networkx.github.io/documentation/stable/reference/algorithms/generated/networkx.algorithms.flow.max_flow_min_cost.html#networkx.algorithms.flow.max_flow_min_cost
             # (See `Notes`: "This algorithm is not guaranteed to

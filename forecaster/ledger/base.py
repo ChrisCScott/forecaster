@@ -1,7 +1,6 @@
 """ Module providing the Ledger base type and associated classes. """
 
 import inspect
-from forecaster.ledger.money import Money
 from forecaster.ledger.recorded_property import (
     recorded_property, recorded_property_cached
 )
@@ -151,7 +150,7 @@ class TaxSource(Ledger):
         Subclasses should override this method rather than the
         _taxable_income and _taxable_income_history properties.
         """
-        return Money(0)
+        return 0 # Money value
 
     @recorded_property
     def tax_withheld(self):
@@ -160,7 +159,7 @@ class TaxSource(Ledger):
         Subclasses should override this method rather than the
         _tax_withheld and _tax_withheld_history properties.
         """
-        return Money(0)
+        return 0 # Money value
 
     @recorded_property
     def tax_credit(self):
@@ -169,7 +168,7 @@ class TaxSource(Ledger):
         Subclasses should override this method rather than the
         _tax_credit and _tax_credit_history properties.
         """
-        return Money(0)
+        return 0 # Money value
 
     @recorded_property
     def tax_deduction(self):
@@ -178,4 +177,4 @@ class TaxSource(Ledger):
         Subclasses should override this method rather than the
         _tax_deduction and _tax_deduction_history properties.
         """
-        return Money(0)
+        return 0 # Money value

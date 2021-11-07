@@ -2,7 +2,6 @@
 
 import math
 from collections import namedtuple
-from decimal import Decimal
 from forecaster.utility import when_conv
 
 
@@ -40,15 +39,12 @@ def accumulation_function(t, rate, nper=1):
     # pylint: disable=invalid-name
     # `t` is the usual name for the input to A(t) in interest theory.
 
-    # Convert t and rate to Decimal
-    t = Decimal(t)
-    rate = Decimal(rate)
+    # NOTE: If using high-precision numerical classes (like Decimal),
+    # convert `t` and `rate` here
 
     # Use the exponential formula for continuous compounding: e^rt
     if nper is None:
-        # math.exp(rate * t) throws a warning, since there's an
-        # implicit float-Decimal multiplication.
-        acc = Decimal(math.e) ** (rate * t)
+        acc = math.exp(rate * t)
     # Otherwise use the discrete formula: (1+r/n)^nt
     else:
         acc = (1 + rate / nper) ** (nper * t)
@@ -72,9 +68,8 @@ def accumulation_function_inverse(accum, rate, nper=1):
             or [t, 0] (if negative) over which the accumulation
             would be reached.
     """
-    # Convert accum and rate to Decimal
-    accum = Decimal(accum)
-    rate = Decimal(rate)
+    # NOTE: If using high-precision numerical classes (like Decimal),
+    # convert `accum` and `rate` here
 
     if accum < 0:
         raise ValueError('accum must be positive.')
@@ -86,11 +81,11 @@ def accumulation_function_inverse(accum, rate, nper=1):
     # or 0 (in the special case of accum=1)
     if rate == 0:
         if accum == 1:
-            return Decimal(0)
+            return 0
         elif accum < 1:
-            return -Decimal('Infinity')
+            return float('-inf')
         else:
-            return Decimal('Infinity')
+            return float('inf')
 
     # Use the exponential formula for continuous compounding: a=e^rt
     # Derive from this t=ln(a)/r

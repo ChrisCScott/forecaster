@@ -1,6 +1,6 @@
 """ Provides an IncomeForecast class for use by Forecast. """
 
-from forecaster.ledger import Money, recorded_property
+from forecaster.ledger import recorded_property
 from forecaster.forecast.subforecast import SubForecast
 
 class IncomeForecast(SubForecast):
@@ -18,15 +18,15 @@ class IncomeForecast(SubForecast):
             Optional.
 
     Attributes:
-        asset_sale (Money): The proceeds from a sale of property.
+        asset_sale (float): The proceeds from a sale of property.
             TODO: Determine if asset sale belongs here or elsewhere.
-        carryover (Money): Money carried over from last year to
+        carryover (float): Money carried over from last year to
             the current year.
-        gross_income (Money): Total income for all plannees for the
+        gross_income (float): Total income for all plannees for the
             year, before taxes.
-        tax_withheld (Money): Total tax withheld on plannees' income
+        tax_withheld (float): Total tax withheld on plannees' income
             at source.
-        net_income (Money): Total income for all plannees for the
+        net_income (float): Total income for all plannees for the
             year, net of taxes.
     """
 
@@ -61,7 +61,8 @@ class IncomeForecast(SubForecast):
     @recorded_property
     def asset_sale(self):
         """ Proceeds of sale of an asset. """
-        return Money(0)  # TODO Implement asset sale #32
+        # TODO Implement asset sale #32
+        return 0 # Money value
 
     @recorded_property
     def carryover(self):
@@ -80,18 +81,18 @@ class IncomeForecast(SubForecast):
         """ Gross income for all plannees for the year. """
         return sum(
             (person.gross_income for person in self.people),
-            Money(0))
+            0) # Money value
 
     @recorded_property
     def tax_withheld(self):
         """ Tax withheld on income for all plannees for the year. """
         return sum(
             (person.tax_withheld for person in self.people),
-            Money(0))
+            0) # Money value
 
     @recorded_property
     def net_income(self):
         """ Net income for all plannees for the year. """
         return sum(
             (person.net_income for person in self.people),
-            Money(0))
+            0) # Money value

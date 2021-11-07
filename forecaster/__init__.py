@@ -11,7 +11,7 @@ __copyright__ = 'Copyright (C) 2019 Christopher Scott'
 __license__ = 'All rights reserved'
 
 from forecaster.ledger import (
-    Ledger, Money, recorded_property, recorded_property_cached)
+    Ledger, recorded_property, recorded_property_cached)
 from forecaster.person import Person
 from forecaster.scenario import Scenario
 from forecaster.accounts import (

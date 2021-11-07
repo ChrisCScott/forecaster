@@ -1,7 +1,7 @@
 """ Provices Registered Retirement Savings Accounts for Canadians. """
 
 from forecaster.canada.accounts.registered_account import RegisteredAccount
-from forecaster.ledger import Money, recorded_property
+from forecaster.ledger import recorded_property
 from forecaster.utility import extend_inflation_adjusted, nearest_year
 from forecaster.canada import constants
 
@@ -47,7 +47,7 @@ class RRSP(RegisteredAccount):
 
         # If no contribution room was provided, set it to $0.
         if self.contribution_room is None:
-            self.contribution_room = Money(0)
+            self.contribution_room = 0 # Money value
 
     def _rrif_max_conversion_year(self):
         """ The latest year in which the RRSP can convert to an RRIF. """
@@ -111,13 +111,12 @@ class RRSP(RegisteredAccount):
         """ The total tax owing on withdrawals from the account.
 
         Returns:
-            The taxable income owing on withdrawals the account as a
-                `Money` object.
+            The taxable income owing on withdrawals from the account
         """
         # Return the sum of all withdrawals from the account.
         # pylint: disable=invalid-unary-operand-type
         # Pylint thinks this doesn't support negation via `-`, but it's
-        # wrong - `outflows` returns `Money`, which supports `-`:
+        # wrong - `outflows` returns `float`, which supports `-`:
         return -self.outflows()
 
     @recorded_property
@@ -178,7 +177,7 @@ class RRSP(RegisteredAccount):
         if self.contributor.age(year + 1) > constants.RRSP_RRIF_CONVERSION_AGE:
             # If past the mandatory RRIF conversion age, no
             # contributions are allowed.
-            return Money(0)
+            return 0 # Money value
         else:
             # TODO: Add pension adjustment?
 
@@ -198,7 +197,10 @@ class RRSP(RegisteredAccount):
             )
             # Don't forget to add in any rollovers:
             rollover = self.contribution_room - self.inflows()
-            return min(accrual, Money(max_accrual)) + rollover
+            return min(
+                accrual,
+                max_accrual # Money value
+                ) + rollover
 
     @property
     def min_outflow_limit(self):
@@ -222,7 +224,7 @@ class RRSP(RegisteredAccount):
             else:
                 return self.balance / (90 - age)
         else:
-            return Money(0)
+            return 0 # Money value
 
     # TODO: Add RRSP tax credits (e.g. pension tax credit)?
     # Implement this in an overloaded _tax_credit method.

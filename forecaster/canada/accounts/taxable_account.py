@@ -2,7 +2,7 @@
 
 from forecaster.accounts import Account
 from forecaster.ledger import (
-    Money, recorded_property, recorded_property_cached)
+    recorded_property, recorded_property_cached)
 
 class TaxableAccount(Account):
     """ A taxable account, non-registered account.
@@ -21,9 +21,9 @@ class TaxableAccount(Account):
             if you add or remove transactions.
     """
     # TODO (v2): Reimplement TaxableAccount based on Asset objects
-    # (subclassed from Money), which independently track acb and possess
-    # an asset class (or perhaps `distribution` dict defining the
-    # relative proportions of sources of taxable income?)
+    # which independently track acb and possess an asset attribute (or
+    # perhaps `distribution` dict defining the relative proportions of
+    # sources of taxable income?)
     # Perhaps also implement a tax_credit and/or tax_deduction method
     # (e.g. to account for Canadian dividends)
     # TODO: Define a proportion of growth attributable to capital gains?
@@ -56,7 +56,7 @@ class TaxableAccount(Account):
 
         # If acb wasn't provided, assume there have been no capital
         # gains or losses, so acb = balance.
-        self.acb = Money(acb if acb is not None else self.balance)
+        self.acb = (acb if acb is not None else self.balance) # Money value
 
     # pylint: disable=method-hidden
     # The `self.acb` assignment in `__init__ doesn't actually overwrite

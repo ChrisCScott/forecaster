@@ -1,7 +1,6 @@
 """ A module providing the Debt class. """
 
 from forecaster.accounts.base import Account
-from forecaster.ledger import Money
 
 class Debt(Account):
     """ A debt with a balance and an interest rate.
@@ -39,7 +38,7 @@ class Debt(Account):
             self, owner, balance=0, rate=0, nper=1,
             inputs=None, initial_year=None,
             # New args:
-            minimum_payment=Money(0), accelerated_payment=Money('Infinity'),
+            minimum_payment=0, accelerated_payment=float('inf'),
             default_timing=None,
             **kwargs):
         """ Constructor for `Debt`. """
@@ -75,7 +74,7 @@ class Debt(Account):
 
     @minimum_payment.setter
     def minimum_payment(self, val):
-        self._minimum_payment = Money(val)
+        self._minimum_payment = val # Money value
 
     @property
     def accelerated_payment(self):
@@ -84,7 +83,7 @@ class Debt(Account):
 
     @accelerated_payment.setter
     def accelerated_payment(self, val):
-        self._accelerated_payment = Money(val)
+        self._accelerated_payment = val # Money value
 
     @property
     def min_inflow_limit(self):
@@ -102,7 +101,7 @@ class Debt(Account):
     def max_outflow_limit(self):
         """ The maximum annual withdrawals from the debt account. """
         # No outflows permitted
-        return Money(0)
+        return 0 # Money value
 
     # No need to override min_outflow_limit - still $0.
 
@@ -112,7 +111,9 @@ class Debt(Account):
         # remaining balance.
         return min(
             # Repay the whole balance (or none if positive)
-            max(-self.balance_at_time(when), Money(0)),
+            max(
+                -self.balance_at_time(when),
+                0), # Money value
             # But no more than the maximum outflow:
             self.max_inflow_limit)
 
@@ -144,7 +145,7 @@ class Debt(Account):
         if balance_limit is None:
             # Only pay off debts until they reach $0 balance.
             # (Superclass assumes we want to contribute indefinitely.)
-            balance_limit = Money(0)
+            balance_limit = 0 # Money value
         return super().max_inflows(
             timing=timing,
             transaction_limit=transaction_limit,
@@ -180,7 +181,7 @@ class Debt(Account):
         if balance_limit is None:
             # Only pay off debts until they reach $0 balance.
             # (Superclass assumes we want to contribute indefinitely.)
-            balance_limit = Money(0)
+            balance_limit = 0 # Money value
         return super().min_inflows(
             timing=timing,
             transaction_limit=transaction_limit,

@@ -5,7 +5,6 @@ classes. They provide default values for aspects of the application.
 """
 
 import datetime
-from decimal import Decimal
 
 
 class Settings:
@@ -44,8 +43,8 @@ class Settings:
 
     ''' LivingExpensesStrategy defaults '''
     living_expenses_strategy = 'Constant living expenses'
-    living_expenses_base_amount = Decimal('60000')
-    living_expenses_rate = Decimal('0.2')
+    living_expenses_base_amount = 60000
+    living_expenses_rate = 0.2
     living_expenses_inflation_adjust = True
 
     ''' SavingStrategy defaults '''
@@ -58,8 +57,8 @@ class Settings:
 
     ''' AllocationStrategy defaults '''
     allocation_strategy = 'n-age'
-    allocation_min_equity = Decimal('0.3')
-    allocation_max_equity = Decimal('0.3')
+    allocation_min_equity = 0.3
+    allocation_max_equity = 0.3
     allocation_std_retirement_age = 65
     allocation_target = 65
     allocation_risk_trans_period = 20
@@ -69,7 +68,7 @@ class Settings:
     debt_payment_strategy = 'Avalanche'
 
     ''' Tax defaults '''
-    tax_brackets = {initial_year: {Decimal(0): Decimal(0)}}
-    tax_personal_deduction = {initial_year: Decimal(0)}
-    tax_credit_rate = {initial_year: Decimal(0)}
+    tax_brackets = {initial_year: {0: 0}}
+    tax_personal_deduction = {initial_year: 0}
+    tax_credit_rate = {initial_year: 0}
     tax_payment_timing = 'start'

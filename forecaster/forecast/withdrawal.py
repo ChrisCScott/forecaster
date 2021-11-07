@@ -1,7 +1,7 @@
 """ Provides a WithdrawalForecast class for use by Forecast. """
 
 from forecaster.ledger import (
-    Money, recorded_property, recorded_property_cached)
+    recorded_property, recorded_property_cached)
 from forecaster.forecast.subforecast import SubForecast
 from forecaster.utility import transactions_from_timing
 
@@ -20,13 +20,13 @@ class WithdrawalForecast(SubForecast):
             for acceptable args when calling this object.
 
     Attributes:
-        account_transactions (dict[Account, Money]): The total
+        account_transactions (dict[Account, float]): The total
             amount withdrawn from each account.
-        gross_withdrawals (Money): The total amount withdrawn from all
+        gross_withdrawals (float): The total amount withdrawn from all
             accounts.
-        tax_withheld (Money): Taxes deducted at source on withdrawals
+        tax_withheld (float): Taxes deducted at source on withdrawals
             from savings.
-        net_withdrawals (Money): The total amount withdrawn from all
+        net_withdrawals (float): The total amount withdrawn from all
             accounts, net of withholding taxes.
     """
 
@@ -49,7 +49,7 @@ class WithdrawalForecast(SubForecast):
         self.transaction_strategy = transaction_strategy
 
         self.account_transactions = {}
-        self.tax_withheld = Money(0)
+        self.tax_withheld = 0 # Money value
 
     def __call__(self, available):
         """ Records transactions against accounts; mutates `available`. """
@@ -94,11 +94,11 @@ class WithdrawalForecast(SubForecast):
 
         Args:
             account (Account): An object providing a `tax_withheld`
-                attribute (of `Money` type).
-            available (dict[Number, Money]): A time-series of available
+                attribute.
+            available (dict[Number, float]): A time-series of available
                 cash. The net value indicates a surplus (positive) or
                 shortfall (negative) of cash.
-            old_tax_withheld (Money): The amount of tax withheld prior
+            old_tax_withheld (float): The amount of tax withheld prior
                 to the addition of a transaction to `account`. This is
                 used as the base of comparison to determine what the
                 difference in withholdings is post-transaction.
@@ -127,7 +127,7 @@ class WithdrawalForecast(SubForecast):
         """ Reverses all transactions cause by this subforecast. """
         super().undo_transactions()
         # Reset tax_withheld:
-        self.tax_withheld = Money(0)
+        self.tax_withheld = 0 # Money value
 
     @recorded_property_cached
     def gross_withdrawals(self):

@@ -6,9 +6,8 @@ determine how account balances will grow or shrink year-over-year.
 """
 
 from collections import defaultdict
-from decimal import Decimal
 from forecaster.ledger import (
-    Ledger, Money, recorded_property, recorded_property_cached)
+    Ledger, recorded_property, recorded_property_cached)
 from forecaster.utility import Timing, add_transactions
 
 class Forecast(Ledger):
@@ -59,8 +58,8 @@ class Forecast(Ledger):
     better practice to build separate `Forecast` objects for separate
     people.
 
-    Note that each of the below `Money` attributes has an associated
-    `dict[int, Money]` that stores the value of the attribute for each
+    Note that each of the below `float` attributes has an associated
+    `dict[int, float]` that stores the value of the attribute for each
     year of the forecast. (Key values are years.) The dicts are named
     `*_history`; e.g. `income` is associated with `income_history` and
     `income_history[2001]` gives the value of `income` for year `2001`.
@@ -89,21 +88,21 @@ class Forecast(Ledger):
         scenario (Scenario): Economic information for the forecast
             (e.g. inflation and stock market returns for each year)
 
-        income (Money): The net income for the plannees for the year.
-        living_expenses (Money): The amount that the plannees live off
+        income (float): The net income for the plannees for the year.
+        living_expenses (float): The amount that the plannees live off
             of for the year.
-        gross_contributions (Money): The amount available to
+        gross_contributions (float): The amount available to
             contribute to savings, before any reductions. This is the
             amount left over after living expenses.
-        contribution_reductions (Money): Amounts diverted from
+        contribution_reductions (float): Amounts diverted from
             savings, such as certain debt repayments or childcare.
-        net_contributions (Money): The total amount contributed to
+        net_contributions (float): The total amount contributed to
             savings accounts for the year.
-        principal (Money): The total value of all savings accounts
+        principal (float): The total value of all savings accounts
             (but not other property) at the start of the year.
-        withdrawals (Money): The total amount withdrawn from all
+        withdrawals (float): The total amount withdrawn from all
             accounts for the year.
-        tax (Money): The total tax liability for the year (some of
+        tax (float): The total tax liability for the year (some of
             which might not be payable unti the next year).
             Does not include tax liability from previous years which
             is paid in this year, but does include tax liability
@@ -147,7 +146,7 @@ class Forecast(Ledger):
 
         # We'll keep track of cash flows over the course of the year, but
         # we don't save it as a recorded_property, so init it here:
-        self.available = defaultdict(lambda: Money(0))
+        self.available = defaultdict(lambda: 0) # Money value
 
         # Arrange forecasts in order so it'll be easy to call them
         # in the correct order later:
@@ -232,7 +231,7 @@ class Forecast(Ledger):
         """ Roll over unused monies from one year to the next. """
         # Keep track of cash flows over the course of the year,
         # rolling over unused monies to the start of next year:
-        self.available[Decimal(0)] += sum(available_previous.values())
+        self.available[0] += sum(available_previous.values())
 
     def _carryover_tax(self, tax_adjustment_previous):
         """ Add tax refunds/payments arising from last year's taxes. """
@@ -288,14 +287,16 @@ class Forecast(Ledger):
     def savings(self):
         """ Contributions to savings for the year. """
         # Never contribute a negative amount:
-        return max(self.income - self.living_expenses, Money(0))
+        return max(
+            self.income - self.living_expenses,
+            0) # Money value
 
     @recorded_property_cached
     def principal(self):
         """ Total principal in accounts as of the start of the year. """
         return sum(
             (account.balance for account in self.assets),
-            Money(0))
+            0) # Money value
 
     @recorded_property
     def withdrawals(self):

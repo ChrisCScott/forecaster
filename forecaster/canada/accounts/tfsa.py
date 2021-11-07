@@ -1,7 +1,7 @@
 """ Provides a Canadian tax-free savings account. """
 
 from forecaster.canada.accounts.registered_account import RegisteredAccount
-from forecaster.ledger import Money, recorded_property
+from forecaster.ledger import recorded_property
 from forecaster.utility import (
     build_inflation_adjust, extend_inflation_adjusted)
 from forecaster.canada import constants
@@ -106,15 +106,15 @@ class TFSA(RegisteredAccount):
         """
         # No accrual if the owner is too young to qualify:
         if self.owner.age(year + 1) < constants.TFSA_ELIGIBILITY_AGE:
-            return Money(0)
+            return 0 # Money value
 
         # If we already have an accrual rate set for this year, use that
         if year in constants.TFSA_ANNUAL_ACCRUAL:
-            return Money(constants.TFSA_ANNUAL_ACCRUAL[year])
+            return constants.TFSA_ANNUAL_ACCRUAL[year] # Money value
         # Otherwise, infer the accrual rate by inflation-adjusting the
         # base rate and rounding.
         else:
-            return Money(
+            return ( # Money value
                 round(
                     self._base_accrual * self.inflation_adjust(
                         self._base_accrual_year, year) /
@@ -133,4 +133,4 @@ class TFSA(RegisteredAccount):
     @recorded_property
     def taxable_income(self):
         """ Returns $0 (TFSAs are not taxable.) """
-        return Money(0)
+        return 0 # Money value
