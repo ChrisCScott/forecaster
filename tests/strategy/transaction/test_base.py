@@ -3,7 +3,7 @@
 import unittest
 from decimal import Decimal
 from forecaster import (
-    Person, Money, TransactionTraversal, Debt, TransactionNode, LimitTuple)
+    Person, TransactionTraversal, Debt, TransactionNode, LimitTuple)
 from forecaster.canada import RRSP, TFSA, TaxableAccount
 from tests.util import TestCaseTransactions
 
@@ -21,8 +21,8 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         self.rrsp = RRSP(
             initial_year=self.initial_year,
             owner=self.person,
-            balance=Money(1000),
-            contribution_room=Money(100))
+            balance=Decimal(1000),
+            contribution_room=Decimal(100))
         # Another RRSP, linked to the first one:
         # (For testing LinkedLimitAccount nodes)
         self.rrsp2 = RRSP(
@@ -32,8 +32,8 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         self.tfsa = TFSA(
             initial_year=self.initial_year,
             owner=self.person,
-            balance=Money(100),
-            contribution_room=Money(1000))
+            balance=Decimal(100),
+            contribution_room=Decimal(1000))
         # Another TFSA, linked to the first one:
         self.tfsa2 = TFSA(
             initial_year=self.initial_year,
@@ -42,13 +42,13 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         self.taxable_account = TaxableAccount(
             initial_year=self.initial_year,
             owner=self.person,
-            balance=Money(0))
+            balance=Decimal(0))
         # A $100 debt with no interest and a $10 min. payment:
         self.debt = Debt(
             initial_year=self.initial_year,
             owner=self.person,
-            balance=Money(100),
-            minimum_payment=Money(10))
+            balance=Decimal(100),
+            minimum_payment=Decimal(10))
         # Contribute to RRSP, then TFSA, then taxable
         self.priority_ordered = [self.rrsp, self.tfsa, self.taxable_account]
         # Contribute 50% to RRSP, 25% to TFSA, and 25% to taxable
@@ -72,98 +72,98 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
     def test_call_basic(self):
         """ Test __call__ with a one-node priority tree. """
         strategy = TransactionTraversal(priority=self.taxable_account)
-        available = {Decimal(0.5): Money(100)}
+        available = {Decimal(0.5): Decimal(100)}
         transactions = strategy(available)
         # All $100 will go to the single account:
-        self.assertTransactions(transactions[self.taxable_account], Money(100))
+        self.assertTransactions(transactions[self.taxable_account], Decimal(100))
 
     def test_ordered_basic(self):
         """ Contribute to the first account of an ordered list. """
         # Contribute $100 to RRSP, then TFSA, then taxable.
         strategy = TransactionTraversal(priority=self.priority_ordered)
-        available = {Decimal(0.5): Money(100)}
+        available = {Decimal(0.5): Decimal(100)}
         transactions = strategy(available)
         # $100 will go to RRSP, $0 to TFSA, $0 to taxable:
-        self.assertTransactions(transactions[self.rrsp], Money(100))
+        self.assertTransactions(transactions[self.rrsp], Decimal(100))
         if self.tfsa in transactions:
-            self.assertTransactions(transactions[self.tfsa], Money(0))
+            self.assertTransactions(transactions[self.tfsa], Decimal(0))
         if self.taxable_account in transactions:
             self.assertTransactions(
-                transactions[self.taxable_account], Money(0))
+                transactions[self.taxable_account], Decimal(0))
 
     def test_weighted_basic(self):
         """ Contribute to each account proportionate to its weight. """
         # Contribute $100 to the accounts.
         strategy = TransactionTraversal(priority=self.priority_weighted)
-        available = {Decimal(0.5): Money(100)}
+        available = {Decimal(0.5): Decimal(100)}
         transactions = strategy(available)
         # $50 will go to RRSP, $25 to TFSA, $25 to taxable:
-        self.assertTransactions(transactions[self.rrsp], Money(50))
-        self.assertTransactions(transactions[self.tfsa], Money(25))
-        self.assertTransactions(transactions[self.taxable_account], Money(25))
+        self.assertTransactions(transactions[self.rrsp], Decimal(50))
+        self.assertTransactions(transactions[self.tfsa], Decimal(25))
+        self.assertTransactions(transactions[self.taxable_account], Decimal(25))
 
     def test_nested_basic(self):
         """ Test with weighted dict nested in ordered list. """
         # Contribute $100 to the accounts.
         strategy = TransactionTraversal(priority=self.priority_nested)
-        available = {Decimal(0.5): Money(100)}
+        available = {Decimal(0.5): Decimal(100)}
         transactions = strategy(available)
         # $50 will go to RRSP, $50 to TFSA, $0 to taxable:
-        self.assertTransactions(transactions[self.rrsp], Money(50))
-        self.assertTransactions(transactions[self.tfsa], Money(50))
+        self.assertTransactions(transactions[self.rrsp], Decimal(50))
+        self.assertTransactions(transactions[self.tfsa], Decimal(50))
         if self.taxable_account in transactions:
             self.assertTransactions(
-                transactions[self.taxable_account], Money(0))
+                transactions[self.taxable_account], Decimal(0))
 
     def test_ordered_overflow_partial(self):
         """ Contribute to first and second accounts of an ordered list. """
         # Contribute $200 to RRSP, then TFSA, then taxable.
         strategy = TransactionTraversal(priority=self.priority_ordered)
-        available = {Decimal(0.5): Money(200)}
+        available = {Decimal(0.5): Decimal(200)}
         transactions = strategy(available)
         # $100 will go to RRSP, $100 to TFSA, $0 to taxable:
-        self.assertTransactions(transactions[self.rrsp], Money(100))
-        self.assertTransactions(transactions[self.tfsa], Money(100))
+        self.assertTransactions(transactions[self.rrsp], Decimal(100))
+        self.assertTransactions(transactions[self.tfsa], Decimal(100))
         if self.taxable_account in transactions:
             self.assertTransactions(
-                transactions[self.taxable_account], Money(0))
+                transactions[self.taxable_account], Decimal(0))
 
     def test_weighted_overflow_partial(self):
         """ Max out one weighted account, contribute overflow to others. """
         # Contribute $400 to the accounts.
         strategy = TransactionTraversal(priority=self.priority_weighted)
-        available = {Decimal(0.5): Money(400)}
+        available = {Decimal(0.5): Decimal(400)}
         transactions = strategy(available)
         # $100 will go to RRSP (maxed), $150 to TFSA, $150 to taxable:
-        self.assertTransactions(transactions[self.rrsp], Money(100))
-        self.assertTransactions(transactions[self.tfsa], Money(150))
-        self.assertTransactions(transactions[self.taxable_account], Money(150))
+        self.assertTransactions(transactions[self.rrsp], Decimal(100))
+        self.assertTransactions(transactions[self.tfsa], Decimal(150))
+        self.assertTransactions(transactions[self.taxable_account], Decimal(150))
 
     def test_nested_overflow_partial(self):
         """ Max out one nested account, contribute overflow to neighbor. """
         # Contribute $400 to the accounts.
         strategy = TransactionTraversal(priority=self.priority_nested)
-        available = {Decimal(0.5): Money(400)}
+        available = {Decimal(0.5): Decimal(400)}
         transactions = strategy(available)
         # $100 will go to RRSP (maxed), $300 to TFSA, $0 to taxable:
-        self.assertTransactions(transactions[self.rrsp], Money(100))
-        self.assertTransactions(transactions[self.tfsa], Money(300))
+        self.assertTransactions(transactions[self.rrsp], Decimal(100))
+        self.assertTransactions(transactions[self.tfsa], Decimal(300))
         if self.taxable_account in transactions:
             self.assertTransactions(
-                transactions[self.taxable_account], Money(0))
+                transactions[self.taxable_account], Decimal(0))
 
     def test_link_group_ordered(self):
         """ Contribute to ordered accounts sharing max inflow limit. """
         priority = [self.rrsp, self.rrsp2, self.taxable_account]
         strategy = TransactionTraversal(priority=priority)
         # Contribute $200 to the accounts:
-        available = {Decimal(0.5): Money(200)}
+        available = {Decimal(0.5): Decimal(200)}
         transactions = strategy(available)
         # $100 will go to self.rrsp, $0 to rrsp2, and $100 to taxable:
-        self.assertTransactions(transactions[self.rrsp], Money(100))
+        self.assertTransactions(transactions[self.rrsp], Decimal(100))
         if self.rrsp2 in transactions:
-            self.assertTransactions(transactions[self.rrsp2], Money(0))
-        self.assertTransactions(transactions[self.taxable_account], Money(100))
+            self.assertTransactions(transactions[self.rrsp2], Decimal(0))
+        self.assertTransactions(transactions[self.taxable_account], Decimal(100))
 
     def test_link_weighted_nested_1(self):
         """ Contribute to weighted accounts sharing max inflow limit. """
@@ -172,45 +172,45 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
             self.taxable_account]
         strategy = TransactionTraversal(priority=priority)
         # Contribute $200 to the accounts:
-        available = {Decimal(0.5): Money(200)}
+        available = {Decimal(0.5): Decimal(200)}
         transactions = strategy(available)
         # $50 will go to self.rrsp, $50 to rrsp2, and $100 to taxable:
-        self.assertTransactions(transactions[self.rrsp], Money(50))
-        self.assertTransactions(transactions[self.rrsp2], Money(50))
-        self.assertTransactions(transactions[self.taxable_account], Money(100))
+        self.assertTransactions(transactions[self.rrsp], Decimal(50))
+        self.assertTransactions(transactions[self.rrsp2], Decimal(50))
+        self.assertTransactions(transactions[self.taxable_account], Decimal(100))
 
     def test_limit_ordered(self):
         """ Limit contributions with per-node limit in ordered tree. """
         # Limit debt contributions to $100
         # (rather than $1000 max. contribution)
-        limits = LimitTuple(max_inflow=Money(100))
+        limits = LimitTuple(max_inflow=Decimal(100))
         limit_node = TransactionNode(self.debt, limits=limits)
         priority = [self.rrsp, limit_node, self.taxable_account]
         strategy = TransactionTraversal(priority=priority)
         # Contribute $300 to the accounts:
-        available = {Decimal(0.5): Money(300)}
+        available = {Decimal(0.5): Decimal(300)}
         transactions = strategy(available)
         # $100 will go to each account:
-        self.assertTransactions(transactions[self.rrsp], Money(100))
-        self.assertTransactions(transactions[self.debt], Money(100))
-        self.assertTransactions(transactions[self.taxable_account], Money(100))
+        self.assertTransactions(transactions[self.rrsp], Decimal(100))
+        self.assertTransactions(transactions[self.debt], Decimal(100))
+        self.assertTransactions(transactions[self.taxable_account], Decimal(100))
 
     def test_limit_weighted(self):
         """ Limit contributions with per-node limit in weighted tree. """
         # Limit debt contributions to $50
         # (rather than $1000 max. contribution)
-        limits = LimitTuple(max_inflow=Money(50))
+        limits = LimitTuple(max_inflow=Decimal(50))
         limit_node = TransactionNode(self.debt, limits=limits)
         priority = {
             self.rrsp: Decimal(1),
             limit_node: Decimal(1)}
         strategy = TransactionTraversal(priority=priority)
         # Contribute $150 to the accounts:
-        available = {Decimal(0.5): Money(150)}
+        available = {Decimal(0.5): Decimal(150)}
         transactions = strategy(available)
         # $50 will go to debt. Remaining $100 will go to RRSP:
-        self.assertTransactions(transactions[self.debt], Money(50))
-        self.assertTransactions(transactions[self.rrsp], Money(100))
+        self.assertTransactions(transactions[self.debt], Decimal(50))
+        self.assertTransactions(transactions[self.rrsp], Decimal(100))
 
     def test_limit_weight_link_1_small(self):
         """ Linked account with limit in weighted tree; small inflow. """
@@ -224,7 +224,7 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         # This should result in any contributions over the limit being
         # redistributed to R2 and A (up to the linked group limit, in
         # the case of R2).
-        limits = LimitTuple(max_inflow=Money(10))
+        limits = LimitTuple(max_inflow=Decimal(10))
         limit_node = TransactionNode(self.rrsp, limits=limits)
         priority = {
             limit_node: Decimal(1),
@@ -232,13 +232,13 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
             self.taxable_account: Decimal(1)}
         strategy = TransactionTraversal(priority=priority)
         # Contribute $110 to the accounts:
-        available = {Decimal(0.5): Money(110)}
+        available = {Decimal(0.5): Decimal(110)}
         transactions = strategy(available)
         # $10 will go to rrsp and $100 will be split equally between
         # the two other accounts, for a total of $50 each:
-        self.assertTransactions(transactions[self.rrsp], Money(10))
-        self.assertTransactions(transactions[self.rrsp2], Money(50))
-        self.assertTransactions(transactions[self.taxable_account], Money(50))
+        self.assertTransactions(transactions[self.rrsp], Decimal(10))
+        self.assertTransactions(transactions[self.rrsp2], Decimal(50))
+        self.assertTransactions(transactions[self.taxable_account], Decimal(50))
 
     def test_limit_weight_link_1_large(self):
         """ Linked account with limit in weighted tree; large inflow. """
@@ -246,7 +246,7 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         # `test_limit_weighted_link_small`, except that enough money
         # is contributed to hit the group limit for R2 (as well as the
         # per-node limit for R1)
-        limits = LimitTuple(max_inflow=Money(10))
+        limits = LimitTuple(max_inflow=Decimal(10))
         limit_node = TransactionNode(self.rrsp, limits=limits)
         priority = {
             limit_node: Decimal(1),
@@ -254,14 +254,14 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
             self.taxable_account: Decimal(1)}
         strategy = TransactionTraversal(priority=priority)
         # Contribute $210 to the accounts:
-        available = {Decimal(0.5): Money(210)}
+        available = {Decimal(0.5): Decimal(210)}
         transactions = strategy(available)
         # $10 will go to rrsp and $200 will be split between the two
         # other accounts - i.e. $90 to rrsp2 and $110 to taxable
         # (because rrsp/rrsp2 share a $100 limit):
-        self.assertTransactions(transactions[self.rrsp], Money(10))
-        self.assertTransactions(transactions[self.rrsp2], Money(90))
-        self.assertTransactions(transactions[self.taxable_account], Money(110))
+        self.assertTransactions(transactions[self.rrsp], Decimal(10))
+        self.assertTransactions(transactions[self.rrsp2], Decimal(90))
+        self.assertTransactions(transactions[self.taxable_account], Decimal(110))
 
     def test_limit_weight_link_2_small(self):
         """ Limit in weighted tree with linked accounts; small inflow. """
@@ -273,7 +273,7 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         # R1/R2 are a group. _A_ has a per-node limit.
         # This should result in any contributions over the limit being
         # redistributed to R1 and R2 (up to the linked group limit).
-        limits = LimitTuple(max_inflow=Money(10))
+        limits = LimitTuple(max_inflow=Decimal(10))
         limit_node = TransactionNode(self.taxable_account, limits=limits)
         priority = {
             self.rrsp: Decimal(1),
@@ -281,20 +281,20 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
             limit_node: Decimal(1)}
         strategy = TransactionTraversal(priority=priority)
         # Contribute $60 to the accounts:
-        available = {Decimal(0.5): Money(60)}
+        available = {Decimal(0.5): Decimal(60)}
         transactions = strategy(available)
         # $10 will go to taxable and $50 will be split between the two
         # linked accounts - i.e. $25 to each of rrsp and rrsp2:
-        self.assertTransactions(transactions[self.rrsp], Money(25))
-        self.assertTransactions(transactions[self.rrsp2], Money(25))
-        self.assertTransactions(transactions[self.taxable_account], Money(10))
+        self.assertTransactions(transactions[self.rrsp], Decimal(25))
+        self.assertTransactions(transactions[self.rrsp2], Decimal(25))
+        self.assertTransactions(transactions[self.taxable_account], Decimal(10))
 
     def test_limit_weight_link_2_large(self):
         """ Limit in weighted tree with linked accounts; large inflow. """
         # This test looks at the same structure as
         # `test_limit_weight_link_2_small`, except that enough money
         # is contributed to hit the group limit for R1/R2
-        limits = LimitTuple(max_inflow=Money(10))
+        limits = LimitTuple(max_inflow=Decimal(10))
         limit_node = TransactionNode(self.taxable_account, limits=limits)
         priority = {
             self.rrsp: Decimal(1),
@@ -302,14 +302,14 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
             limit_node: Decimal(1)}
         strategy = TransactionTraversal(priority=priority)
         # Contribute $300 to the accounts:
-        available = {Decimal(0.5): Money(300)}
+        available = {Decimal(0.5): Decimal(300)}
         transactions = strategy(available)
         # $10 will go to taxable and $50 go to each of rrsp and rrsp2:
         # (This is less than the full $300 because the various accounts
         # hit their limits at $110 of inflows)
-        self.assertTransactions(transactions[self.rrsp], Money(50))
-        self.assertTransactions(transactions[self.rrsp2], Money(50))
-        self.assertTransactions(transactions[self.taxable_account], Money(10))
+        self.assertTransactions(transactions[self.rrsp], Decimal(50))
+        self.assertTransactions(transactions[self.rrsp2], Decimal(50))
+        self.assertTransactions(transactions[self.taxable_account], Decimal(10))
 
     def test_link_basic(self):
         """ A weighted root with two linked children. """
@@ -325,11 +325,11 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         strategy = TransactionTraversal(priority=priority)
         # Contribute $200 (i.e. more than the joint contribution room
         # of the two RRSPs, which is $100):
-        available = {Decimal(0.5): Money(200)}
+        available = {Decimal(0.5): Decimal(200)}
         transactions = strategy(available)
         # $50 should go to each account:
-        self.assertTransactions(transactions[self.rrsp], Money(50))
-        self.assertTransactions(transactions[self.rrsp2], Money(50))
+        self.assertTransactions(transactions[self.rrsp], Decimal(50))
+        self.assertTransactions(transactions[self.rrsp2], Decimal(50))
 
     def test_link_weighted_overflow(self):
         """ A weighted root with two linked children and one other. """
@@ -344,12 +344,12 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         priority = {self.rrsp: 1, self.rrsp2: 1, self.taxable_account: 1}
         strategy = TransactionTraversal(priority=priority)
         # Contribute $200:
-        available = {Decimal(0.5): Money(200)}
+        available = {Decimal(0.5): Decimal(200)}
         transactions = strategy(available)
         # $50 should go to each RRSP, with remaining $100 to taxable:
-        self.assertTransactions(transactions[self.rrsp], Money(50))
-        self.assertTransactions(transactions[self.rrsp2], Money(50))
-        self.assertTransactions(transactions[self.taxable_account], Money(100))
+        self.assertTransactions(transactions[self.rrsp], Decimal(50))
+        self.assertTransactions(transactions[self.rrsp2], Decimal(50))
+        self.assertTransactions(transactions[self.taxable_account], Decimal(100))
 
     def test_link_weighted_max(self):
         """ A weighted root with two linked children and one other. """
@@ -364,11 +364,11 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         priority = {self.rrsp: 1, self.rrsp2: 1}
         strategy = TransactionTraversal(priority=priority)
         # Contribute $200:
-        available = {Decimal(0.5): Money(200)}
+        available = {Decimal(0.5): Decimal(200)}
         transactions = strategy(available)
         # $50 should go to each RRSP:
-        self.assertTransactions(transactions[self.rrsp], Money(50))
-        self.assertTransactions(transactions[self.rrsp2], Money(50))
+        self.assertTransactions(transactions[self.rrsp], Decimal(50))
+        self.assertTransactions(transactions[self.rrsp2], Decimal(50))
 
     def test_link_order_equal(self):
         """ Two linked groups, each under both children of the root. """
@@ -388,14 +388,14 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         self.tfsa.contribution_room = self.rrsp.contribution_room
         strategy = TransactionTraversal(priority=priority)
         # Contribute $200 (enough to fill both groups):
-        available = {Decimal(0.5): Money(200)}
+        available = {Decimal(0.5): Decimal(200)}
         transactions = strategy(available)
         # $100 should go to each of rrsp and tfsa (which are 1st on each
         # side of the root node), with no more going to rrsp2 or tfsa2:
-        self.assertTransactions(transactions[self.rrsp], Money(100))
-        self.assertTransactions(transactions[self.tfsa], Money(100))
-        self.assertTransactions(transactions[self.rrsp2], Money(0))
-        self.assertTransactions(transactions[self.tfsa2], Money(0))
+        self.assertTransactions(transactions[self.rrsp], Decimal(100))
+        self.assertTransactions(transactions[self.tfsa], Decimal(100))
+        self.assertTransactions(transactions[self.rrsp2], Decimal(0))
+        self.assertTransactions(transactions[self.tfsa2], Decimal(0))
 
     def test_link_order_unequal(self):
         """ Two linked groups, each under both children of the root. """
@@ -412,17 +412,17 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
             (self.rrsp, self.tfsa2): 1,
             (self.tfsa, self.rrsp2): 1}
         # Ensure RRSP has more contribution room than TFSA:
-        self.tfsa.contribution_room = Money(50)
+        self.tfsa.contribution_room = Decimal(50)
         strategy = TransactionTraversal(priority=priority)
         # Contribute $150 (enough to fill both groups):
-        available = {Decimal(0.5): Money(150)}
+        available = {Decimal(0.5): Decimal(150)}
         transactions = strategy(available)
         # $75 should go to rrsp, $50 to tfsa, and $25 to rrsp2:
-        self.assertTransactions(transactions[self.rrsp], Money(75))
-        self.assertTransactions(transactions[self.tfsa], Money(50))
-        self.assertTransactions(transactions[self.rrsp2], Money(25))
+        self.assertTransactions(transactions[self.rrsp], Decimal(75))
+        self.assertTransactions(transactions[self.tfsa], Decimal(50))
+        self.assertTransactions(transactions[self.rrsp2], Decimal(25))
         if self.tfsa2 in transactions:
-            self.assertTransactions(transactions[self.tfsa2], Money(0))
+            self.assertTransactions(transactions[self.tfsa2], Decimal(0))
 
     def test_link_weighted_nested_2(self):
         """ A weighted root with weighted children with common groups. """
@@ -444,13 +444,13 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         self.tfsa.contribution_room = self.rrsp.contribution_room
         strategy = TransactionTraversal(priority=priority)
         # Contribute $200 (enough to fill both groups):
-        available = {Decimal(0.5): Money(200)}
+        available = {Decimal(0.5): Decimal(200)}
         transactions = strategy(available)
         # $50 should go to each account:
-        self.assertTransactions(transactions[self.rrsp], Money(50))
-        self.assertTransactions(transactions[self.tfsa], Money(50))
-        self.assertTransactions(transactions[self.rrsp2], Money(50))
-        self.assertTransactions(transactions[self.tfsa2], Money(50))
+        self.assertTransactions(transactions[self.rrsp], Decimal(50))
+        self.assertTransactions(transactions[self.tfsa], Decimal(50))
+        self.assertTransactions(transactions[self.rrsp2], Decimal(50))
+        self.assertTransactions(transactions[self.tfsa2], Decimal(50))
 
     def test_link_nested_basic(self):
         """ A weighted root with weighted children with common groups. """
@@ -474,13 +474,13 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
             (self.rrsp2, self.taxable_account): Decimal(1)}
         strategy = TransactionTraversal(priority=priority)
         # Contribute $200 (enough to fill RRSPs with $100 left over):
-        available = {Decimal(0.5): Money(200)}
+        available = {Decimal(0.5): Decimal(200)}
         transactions = strategy(available)
         # $100 should go to rrsp, none to rrsp2, and balance to taxable:
-        self.assertTransactions(transactions[self.rrsp], Money(100))
+        self.assertTransactions(transactions[self.rrsp], Decimal(100))
         if self.rrsp2 in transactions:
-            self.assertTransactions(transactions[self.rrsp2], Money(0))
-        self.assertTransactions(transactions[self.taxable_account], Money(100))
+            self.assertTransactions(transactions[self.rrsp2], Decimal(0))
+        self.assertTransactions(transactions[self.taxable_account], Decimal(100))
 
     def test_link_nested_hidden(self):
         """ A weighted root with weighted children with common groups. """
@@ -499,13 +499,13 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
             (self.taxable_account, self.rrsp2): Decimal(1)}
         strategy = TransactionTraversal(priority=priority)
         # Contribute $200 (enough to fill RRSPs with $100 left over):
-        available = {Decimal(0.5): Money(200)}
+        available = {Decimal(0.5): Decimal(200)}
         transactions = strategy(available)
         # $100 should go to rrsp, with balance to taxable:
-        self.assertTransactions(transactions[self.rrsp], Money(100))
+        self.assertTransactions(transactions[self.rrsp], Decimal(100))
         if self.rrsp2 in transactions:
-            self.assertTransactions(transactions[self.rrsp2], Money(0))
-        self.assertTransactions(transactions[self.taxable_account], Money(100))
+            self.assertTransactions(transactions[self.rrsp2], Decimal(0))
+        self.assertTransactions(transactions[self.taxable_account], Decimal(100))
 
     def test_assign_mins(self):
         """ Assign minimum inflows without throwing off total inflows. """
@@ -513,15 +513,15 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         priority = [self.rrsp, self.debt]
         strategy = TransactionTraversal(priority=priority)
         # Contribute the debt's minimum payment ($10):
-        available = {Decimal(0.5): Money(10)}
+        available = {Decimal(0.5): Decimal(10)}
         transactions = strategy(available)
         # Exactly $10 should go to `debt`, with none going to `rrsp`,
         # even though `rrsp` comes first in the priority tree:
         self.assertTransactions(
-            transactions[self.debt], Money(10))
+            transactions[self.debt], Decimal(10))
         if self.rrsp in transactions:
             self.assertTransactions(
-                transactions[self.rrsp], Money(0))
+                transactions[self.rrsp], Decimal(0))
 
     def test_assign_mins_out(self):
         """ Assign minimum outflows without throwing off total outflows. """
@@ -574,8 +574,8 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         self.person.birth_date = self.initial_year - 72
         self.rrsp.convert_to_rrif(year=self.initial_year - 1)
         # Use balances that were used by TestWithdrawalForecast:
-        self.rrsp.balance = Money(6000)
-        self.taxable_account.balance = Money(60000)
+        self.rrsp.balance = Decimal(6000)
+        self.taxable_account.balance = Decimal(60000)
         # We want to withdraw $20,000 from these accounts, with
         # $3000 from the RRSP and $17000 from the taxable account.
         priority = {
@@ -584,18 +584,18 @@ class TestTransactionTraversalMethods(TestCaseTransactions):
         # with $2000 in inflows and $22,000 in outflows, for a net need
         # of $20,000 in withdrawals to make up the shortfall:
         available = {
-            Decimal(0.25): Money(1000),
-            Decimal(0.5): Money(-11000),
-            Decimal(0.75): Money(1000),
-            Decimal(1): Money(-11000)}
+            Decimal(0.25): Decimal(1000),
+            Decimal(0.5): Decimal(-11000),
+            Decimal(0.75): Decimal(1000),
+            Decimal(1): Decimal(-11000)}
         strategy = TransactionTraversal(priority=priority)
         # Generate the transactions:
         transactions = strategy(available)
         # Confirm that the $20,000 is distributed as in `priority`:
-        self.assertAccountTransactionsTotal(transactions, Money(-20000))
-        self.assertTransactions(transactions[self.rrsp], Money(-3000))
+        self.assertAccountTransactionsTotal(transactions, Decimal(-20000))
+        self.assertTransactions(transactions[self.rrsp], Decimal(-3000))
         self.assertTransactions(
-            transactions[self.taxable_account], Money(-17000))
+            transactions[self.taxable_account], Decimal(-17000))
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(

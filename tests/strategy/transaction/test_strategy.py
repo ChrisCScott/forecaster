@@ -2,7 +2,7 @@
 
 import unittest
 from decimal import Decimal
-from forecaster import Person, Money, TransactionStrategy
+from forecaster import Person, TransactionStrategy
 from forecaster.canada import RRSP, TFSA, TaxableAccount
 from tests.util import make_available, TestCaseTransactions
 
@@ -26,12 +26,12 @@ class TestTransactionStrategyOrdered(TestCaseTransactions):
         # Set up some accounts for the tests.
         self.rrsp = RRSP(
             person,
-            balance=Money(200), rate=0, contribution_room=Money(200))
+            balance=Decimal(200), rate=0, contribution_room=Decimal(200))
         self.tfsa = TFSA(
             person,
-            balance=Money(100), rate=0, contribution_room=Money(100))
+            balance=Decimal(100), rate=0, contribution_room=Decimal(100))
         self.taxable_account = TaxableAccount(
-            person, balance=Money(1000), rate=0)
+            person, balance=Decimal(1000), rate=0)
         self.accounts = {self.rrsp, self.tfsa, self.taxable_account}
 
         # Define a simple timing for transactions:
@@ -51,36 +51,36 @@ class TestTransactionStrategyOrdered(TestCaseTransactions):
         """ Test strategy_ordered with a small amount of inflows. """
         # The amount being contributed is less than the available
         # contribution room in the top-weighted account type.
-        available = make_available(Money(100), self.timing)
+        available = make_available(Decimal(100), self.timing)
         results = self.strategy(available, self.accounts)
-        self.assertTransactions(results[self.rrsp], Money(100))
+        self.assertTransactions(results[self.rrsp], Decimal(100))
         # Accounts with no transactions aren't guaranteed to be
         # included in the results dict:
         if self.tfsa in results:
-            self.assertTransactions(results[self.tfsa], Money(0))
+            self.assertTransactions(results[self.tfsa], Decimal(0))
         if self.taxable_account in results:
-            self.assertTransactions(results[self.taxable_account], Money(0))
+            self.assertTransactions(results[self.taxable_account], Decimal(0))
 
     def test_in_fill_one(self):
         """ Test strategy_ordered with inflows to fill 1 account. """
         # Contribute more than the rrsp will accomodate.
         # The extra $50 should go to the tfsa, which is next in line.
-        available = make_available(Money(250), self.timing)
+        available = make_available(Decimal(250), self.timing)
         results = self.strategy(available, self.accounts)
-        self.assertTransactions(results[self.rrsp], Money(200))
-        self.assertTransactions(results[self.tfsa], Money(50))
+        self.assertTransactions(results[self.rrsp], Decimal(200))
+        self.assertTransactions(results[self.tfsa], Decimal(50))
         if self.taxable_account in results:
-            self.assertTransactions(results[self.taxable_account], Money(0))
+            self.assertTransactions(results[self.taxable_account], Decimal(0))
 
     def test_in_fill_two(self):
         """ Test strategy_ordered with inflows to fill 2 accounts. """
         # The rrsp and tfsa will get filled and the remainder will go to
         # the taxable account.
-        available = make_available(Money(1000), self.timing)
+        available = make_available(Decimal(1000), self.timing)
         results = self.strategy(available, self.accounts)
-        self.assertTransactions(results[self.rrsp], Money(200))
-        self.assertTransactions(results[self.tfsa], Money(100))
-        self.assertTransactions(results[self.taxable_account], Money(700))
+        self.assertTransactions(results[self.rrsp], Decimal(200))
+        self.assertTransactions(results[self.tfsa], Decimal(100))
+        self.assertTransactions(results[self.taxable_account], Decimal(700))
 
     # Test with outflows:
 
@@ -88,34 +88,34 @@ class TestTransactionStrategyOrdered(TestCaseTransactions):
         """ Test strategy_ordered with a small amount of outflows. """
         # The amount being withdrawn is less than the max outflow in the
         # top-weighted account type.
-        available = make_available(Money(-100), self.timing)
+        available = make_available(Decimal(-100), self.timing)
         results = self.strategy(available, self.accounts)
-        self.assertTransactions(results[self.rrsp], Money(-100))
+        self.assertTransactions(results[self.rrsp], Decimal(-100))
         if self.tfsa in results:
-            self.assertTransactions(results[self.tfsa], Money(0))
+            self.assertTransactions(results[self.tfsa], Decimal(0))
         if self.taxable_account in results:
-            self.assertTransactions(results[self.taxable_account], Money(0))
+            self.assertTransactions(results[self.taxable_account], Decimal(0))
 
     def test_out_empty_one(self):
         """ Test strategy_ordered with outflows to empty 1 account. """
         # Now withdraw more than the rrsp will accomodate. The extra $50
         # should come from the tfsa, which is next in line.
-        available = make_available(Money(-250), self.timing)
+        available = make_available(Decimal(-250), self.timing)
         results = self.strategy(available, self.accounts)
-        self.assertTransactions(results[self.rrsp], Money(-200))
-        self.assertTransactions(results[self.tfsa], Money(-50))
+        self.assertTransactions(results[self.rrsp], Decimal(-200))
+        self.assertTransactions(results[self.tfsa], Decimal(-50))
         if self.taxable_account in results:
-            self.assertTransactions(results[self.taxable_account], Money(0))
+            self.assertTransactions(results[self.taxable_account], Decimal(0))
 
     def test_out_empty_two(self):
         """ Test strategy_ordered with outflows to empty 2 accounts. """
         # The rrsp and tfsa will get emptied and the remainder will go
         # to the taxable account.
-        available = make_available(Money(-1000), self.timing)
+        available = make_available(Decimal(-1000), self.timing)
         results = self.strategy(available, self.accounts)
         self.assertTransactions(results[self.rrsp], self.rrsp.max_outflows())
         self.assertTransactions(results[self.tfsa], self.tfsa.max_outflows())
-        self.assertTransactions(results[self.taxable_account], Money(-700))
+        self.assertTransactions(results[self.taxable_account], Decimal(-700))
 
     def test_out_empty_all(self):
         """ Test strategy_ordered with outflows to empty all account. """
@@ -124,7 +124,7 @@ class TestTransactionStrategyOrdered(TestCaseTransactions):
             sum(account.max_outflows().values())
             for account in self.accounts
         ) * 2
-        available = make_available(Money(val), self.timing)
+        available = make_available(Decimal(val), self.timing)
         results = self.strategy(available, self.accounts)
         self.assertTransactions(results[self.rrsp], self.rrsp.max_outflows())
         self.assertTransactions(results[self.tfsa], self.tfsa.max_outflows())
@@ -136,15 +136,15 @@ class TestTransactionStrategyOrdered(TestCaseTransactions):
         """ Test strategy_ordered works with changed order vars. """
         self.strategy.weights['RRSP'] = 2
         self.strategy.weights['TFSA'] = 1
-        available = make_available(Money(100), self.timing)
+        available = make_available(Decimal(100), self.timing)
         results = self.strategy(available, self.accounts)
         # Contribute the full $100 to TFSA:
         self.assertTransactions(results[self.tfsa], self.tfsa.max_inflows())
         # Remaining accounts shouldn't be contributed to:
         if self.rrsp in results:
-            self.assertTransactions(results[self.rrsp], Money(0))
+            self.assertTransactions(results[self.rrsp], Decimal(0))
         if self.taxable_account in results:
-            self.assertTransactions(results[self.taxable_account], Money(0))
+            self.assertTransactions(results[self.taxable_account], Decimal(0))
 
 
 class TestTransactionStrategyOrderedMult(TestCaseTransactions):
@@ -163,13 +163,13 @@ class TestTransactionStrategyOrderedMult(TestCaseTransactions):
         # Set up some accounts for the tests.
         self.rrsp = RRSP(
             person,
-            balance=Money(200), rate=0, contribution_room=Money(200))
-        self.rrsp2 = RRSP(person, balance=Money(100), rate=0)
+            balance=Decimal(200), rate=0, contribution_room=Decimal(200))
+        self.rrsp2 = RRSP(person, balance=Decimal(100), rate=0)
         self.tfsa = TFSA(
             person,
-            balance=Money(100), rate=0, contribution_room=Money(100))
+            balance=Decimal(100), rate=0, contribution_room=Decimal(100))
         self.taxable_account = TaxableAccount(
-            person, balance=Money(1000), rate=0)
+            person, balance=Decimal(1000), rate=0)
         self.accounts = {
             self.rrsp, self.rrsp2, self.tfsa, self.taxable_account
         }
@@ -194,32 +194,32 @@ class TestTransactionStrategyOrderedMult(TestCaseTransactions):
 
     def test_out_basic(self):
         """ Test strategy_ordered with multiple RRSPs, small outflows. """
-        available = make_available(Money(-150), self.timing)
+        available = make_available(Decimal(-150), self.timing)
         results = self.strategy(available, self.accounts)
         # Confirm that the total of all outflows sums up to `-$150`,
         # which should be fully allocated to accounts:
-        self.assertAccountTransactionsTotal(results, Money(-150))
+        self.assertAccountTransactionsTotal(results, Decimal(-150))
         self.assertAlmostEqual(
             sum(results[self.rrsp].values())
             + sum(results[self.rrsp2].values()),
-            Money(-150))
+            Decimal(-150))
 
     def test_out_empty_three(self):
         """ Test strategy_ordered with multiple RRSPs, empty 3 accounts. """
-        available = make_available(Money(-400), self.timing)
+        available = make_available(Decimal(-400), self.timing)
         results = self.strategy(available, self.accounts)
         # Confirm that the total of all outflows sums up to -$400, which
         # should be fully allocated to accounts:
-        self.assertAccountTransactionsTotal(results, Money(-400))
-        self.assertTransactions(results[self.rrsp], Money(-200))
-        self.assertTransactions(results[self.rrsp2], Money(-100))
-        self.assertTransactions(results[self.tfsa], Money(-100))
+        self.assertAccountTransactionsTotal(results, Decimal(-400))
+        self.assertTransactions(results[self.rrsp], Decimal(-200))
+        self.assertTransactions(results[self.rrsp2], Decimal(-100))
+        self.assertTransactions(results[self.tfsa], Decimal(-100))
 
     def test_out_empty_all(self):
         """ Test strategy_ordered with multiple RRSPs, empty all accounts. """
         # Try to withdraw more than all accounts combined contain:
         val = self.max_outflow * 2
-        available = make_available(Money(val), self.timing)
+        available = make_available(Decimal(val), self.timing)
         results = self.strategy(available, self.accounts)
         # Ensure that the correct amount is withdrawn in total; should
         # be the amount available in the accounts (i.e. their balances):
@@ -236,8 +236,8 @@ class TestTransactionStrategyOrderedMult(TestCaseTransactions):
     def test_in_basic(self):
         """ Test strategy_ordered with multiple RRSPs, small inflows. """
         # Amount contributed is more than the RRSPs can receive:
-        val = self.rrsp.contribution_room + Money(50)
-        available = make_available(Money(val), self.timing)
+        val = self.rrsp.contribution_room + Decimal(50)
+        available = make_available(Decimal(val), self.timing)
         results = self.strategy(available, self.accounts)
 
         # Confirm that the total amount contributed to the RRSPs is
@@ -249,7 +249,7 @@ class TestTransactionStrategyOrderedMult(TestCaseTransactions):
             + sum(results[self.rrsp2].values()),
             self.rrsp.contribution_room)
         # The remainder should be contributed to the TFSA:
-        self.assertTransactions(results[self.tfsa], Money(50))
+        self.assertTransactions(results[self.tfsa], Decimal(50))
 
 
 class TestTransactionStrategyWeighted(TestCaseTransactions):
@@ -266,12 +266,12 @@ class TestTransactionStrategyWeighted(TestCaseTransactions):
         # Set up some accounts for the tests.
         self.rrsp = RRSP(
             person,
-            balance=Money(200), rate=0, contribution_room=Money(200))
+            balance=Decimal(200), rate=0, contribution_room=Decimal(200))
         self.tfsa = TFSA(
             person,
-            balance=Money(100), rate=0, contribution_room=Money(100))
+            balance=Decimal(100), rate=0, contribution_room=Decimal(100))
         self.taxable_account = TaxableAccount(
-            person, balance=Money(1000), rate=0)
+            person, balance=Decimal(1000), rate=0)
         self.accounts = {self.rrsp, self.tfsa, self.taxable_account}
 
         # Define a simple timing for transactions:
@@ -301,7 +301,7 @@ class TestTransactionStrategyWeighted(TestCaseTransactions):
         val = max(
             sum(account.max_outflows().values())
             for account in self.accounts)
-        available = make_available(Money(val), self.timing)
+        available = make_available(Decimal(val), self.timing)
         results = self.strategy(available, self.accounts)
         # Confirm that the total of all outflows sums up to `val`, which
         # should be fully allocated to accounts:
@@ -319,8 +319,8 @@ class TestTransactionStrategyWeighted(TestCaseTransactions):
         threshold = (
             sum(self.tfsa.max_outflows().values())
             / self.weights['TFSA'])
-        val = Money(threshold - Money(50))
-        available = make_available(Money(val), self.timing)
+        val = Decimal(threshold - Decimal(50))
+        available = make_available(Decimal(val), self.timing)
         results = self.strategy(available, self.accounts)
         # Sum up results for each account for convenience:
         results_totals = {
@@ -343,8 +343,8 @@ class TestTransactionStrategyWeighted(TestCaseTransactions):
         val = sum(
             sum(account.max_outflows().values())
             for account in self.accounts
-        ) + Money(50)
-        available = make_available(Money(val), self.timing)
+        ) + Decimal(50)
+        available = make_available(Decimal(val), self.timing)
         results = self.strategy(available, self.accounts)
         # Confirm that the total of all outflows sums up to `val`, which
         # should be fully allocated to accounts:
@@ -355,7 +355,7 @@ class TestTransactionStrategyWeighted(TestCaseTransactions):
         self.assertTransactions(
             results[self.taxable_account],
             sum(self.taxable_account.max_outflows().values())
-            + Money(50))
+            + Decimal(50))
 
     def test_out_all_empty(self):
         """ Test strategy_weighted with outflows to empty all accounts. """
@@ -363,8 +363,8 @@ class TestTransactionStrategyWeighted(TestCaseTransactions):
         val = sum(
             sum(account.max_outflows().values())
             for account in self.accounts
-        ) - Money(50)
-        available = make_available(Money(val), self.timing)
+        ) - Decimal(50)
+        available = make_available(Decimal(val), self.timing)
         results = self.strategy(available, self.accounts)
         # Confirm each account gets the expected total transactions:
         self.assertTransactions(results[self.rrsp], self.rrsp.max_outflows())
@@ -380,7 +380,7 @@ class TestTransactionStrategyWeighted(TestCaseTransactions):
         val = min(
             sum(account.max_inflows().values())
             for account in self.accounts)
-        available = make_available(Money(val), self.timing)
+        available = make_available(Decimal(val), self.timing)
         results = self.strategy(available, self.accounts)
         # Confirm that the total of all outflows sums up to `val`, which
         # should be fully allocated to accounts:
@@ -401,8 +401,8 @@ class TestTransactionStrategyWeighted(TestCaseTransactions):
         # their relative weights:
         threshold = (
             sum(self.tfsa.max_inflows().values()) / self.weights['TFSA'])
-        val = Money(threshold + Money(50))
-        available = make_available(Money(val), self.timing)
+        val = Decimal(threshold + Decimal(50))
+        available = make_available(Decimal(val), self.timing)
         results = self.strategy(available, self.accounts)
         # Confirm that the total of all outflows sums up to `val`, which
         # should be fully allocated to accounts:
@@ -421,8 +421,8 @@ class TestTransactionStrategyWeighted(TestCaseTransactions):
         threshold = max(
             sum(self.rrsp.max_inflows().values()) / self.weights['RRSP'],
             sum(self.tfsa.max_inflows().values()) / self.weights['TFSA'])
-        val = threshold + Money(50)
-        available = make_available(Money(val), self.timing)
+        val = threshold + Decimal(50)
+        available = make_available(Decimal(val), self.timing)
         results = self.strategy(available, self.accounts)
         # Confirm that the total of all outflows sums up to `val`, which
         # should be fully allocated to accounts:
@@ -454,13 +454,13 @@ class TestTransactionStrategyWeightedLink(TestCaseTransactions):
         # Set up some accounts for the tests.
         self.rrsp = RRSP(
             person,
-            balance=Money(200), rate=0, contribution_room=Money(200))
-        self.rrsp2 = RRSP(person, balance=Money(100), rate=0)
+            balance=Decimal(200), rate=0, contribution_room=Decimal(200))
+        self.rrsp2 = RRSP(person, balance=Decimal(100), rate=0)
         self.tfsa = TFSA(
             person,
-            balance=Money(100), rate=0, contribution_room=Money(100))
+            balance=Decimal(100), rate=0, contribution_room=Decimal(100))
         self.taxable_account = TaxableAccount(
-            person, balance=Money(1000), rate=0)
+            person, balance=Decimal(1000), rate=0)
         self.accounts = {
             self.rrsp, self.rrsp2, self.tfsa, self.taxable_account
         }
@@ -480,10 +480,10 @@ class TestTransactionStrategyWeightedLink(TestCaseTransactions):
     def test_out_basic(self):
         """ Test strategy_weighted with multiple RRSPs, small outflows. """
         # Amount withdrawn is less than the balance of each account.
-        val = Money(
+        val = Decimal(
             max(sum(account.max_outflows().values())
                 for account in self.accounts))
-        available = make_available(Money(val), self.timing)
+        available = make_available(Decimal(val), self.timing)
         results = self.strategy(available, self.accounts)
         # Sum up results for each account for convenience:
         results_totals = {
@@ -498,8 +498,8 @@ class TestTransactionStrategyWeightedLink(TestCaseTransactions):
             val * self.weights['RRSP'])
         # Confirm that money is withdrawn from each RRSP, but don't
         # put constraints on how much:
-        self.assertLess(results_totals[self.rrsp], Money(0))
-        self.assertLess(results_totals[self.rrsp2], Money(0))
+        self.assertLess(results_totals[self.rrsp], Decimal(0))
+        self.assertLess(results_totals[self.rrsp2], Decimal(0))
         # Confirm that remaining accounts have expected amounts:
         self.assertTransactions(results[self.tfsa], val * self.weights['TFSA'])
         self.assertTransactions(
@@ -513,8 +513,8 @@ class TestTransactionStrategyWeightedLink(TestCaseTransactions):
         threshold = (
             sum(self.tfsa.max_outflows().values())
             / self.weights['TFSA'])
-        val = Money(threshold - Money(50))
-        available = make_available(Money(val), self.timing)
+        val = Decimal(threshold - Decimal(50))
+        available = make_available(Decimal(val), self.timing)
         results = self.strategy(available, self.accounts)
         # Sum up results for each account for convenience:
         results_totals = {
@@ -543,8 +543,8 @@ class TestTransactionStrategyWeightedLink(TestCaseTransactions):
         val = sum(
             sum(account.max_outflows().values())
             for account in self.accounts
-        ) + Money(50)
-        available = make_available(Money(val), self.timing)
+        ) + Decimal(50)
+        available = make_available(Decimal(val), self.timing)
         results = self.strategy(available, self.accounts)
         # Sum up results for each account for convenience:
         # Confirm that the total of all outflows sums up to `val`, which
@@ -557,7 +557,7 @@ class TestTransactionStrategyWeightedLink(TestCaseTransactions):
         # And confirm that the largest account is not-quite-filled:
         self.assertTransactions(
             results[self.taxable_account],
-            sum(self.taxable_account.max_outflows().values()) + Money(50))
+            sum(self.taxable_account.max_outflows().values()) + Decimal(50))
 
     def test_out_empty_all(self):
         """ Test strategy_weighted with mult. RRSPs, empty all accounts. """
@@ -565,8 +565,8 @@ class TestTransactionStrategyWeightedLink(TestCaseTransactions):
         val = sum(
             sum(account.max_outflows().values())
             for account in self.accounts
-        ) - Money(50)
-        available = make_available(Money(val), self.timing)
+        ) - Decimal(50)
+        available = make_available(Decimal(val), self.timing)
         results = self.strategy(available, self.accounts)
         # Confirm each account has the expected set of transactions:
         self.assertTransactions(results[self.rrsp], self.rrsp.max_outflows())
@@ -578,8 +578,8 @@ class TestTransactionStrategyWeightedLink(TestCaseTransactions):
     def test_in_basic(self):
         """ Test strategy_weighted with multiple RRSPs, small inflows. """
         # Amount contributed is more than the RRSPs can receive:
-        val = self.rrsp.contribution_room / self.weights['RRSP'] + Money(50)
-        available = make_available(Money(val), self.timing)
+        val = self.rrsp.contribution_room / self.weights['RRSP'] + Decimal(50)
+        available = make_available(Decimal(val), self.timing)
         results = self.strategy(available, self.accounts)
         # Sum up results for each account for convenience:
         results_totals = {

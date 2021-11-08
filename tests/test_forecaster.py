@@ -5,7 +5,7 @@ import collections
 from copy import copy, deepcopy
 from decimal import Decimal
 from forecaster import (
-    Settings, Tax, Person, Money, Account, Debt, Scenario,
+    Settings, Tax, Person, Account, Debt, Scenario,
     LivingExpensesStrategy, TransactionStrategy,
     AllocationStrategy, DebtPaymentStrategy, Forecaster, Parameter)
 
@@ -79,18 +79,18 @@ class TestForecaster(unittest.TestCase):
             name="Test 1",
             birth_date="1 January 1980",
             retirement_date="31 December 2040",
-            gross_income=Money(10000),
+            gross_income=Decimal(10000),
             raise_rate=Decimal(0),
             spouse=None,
             tax_treatment=self.tax_treatment)
         # An account with $1000 in it (and no interest)
         self.account = Account(
             owner=self.person,
-            balance=Money(1000))
+            balance=Decimal(1000))
         # A debt with a $100 balance (and no interest)
         self.debt = Debt(
             owner=self.person,
-            balance=Money(100))
+            balance=Decimal(100))
 
         # Init a Forecaster object here for convenience:
         self.forecaster = self.forecaster_type(settings=self.settings)
@@ -301,7 +301,7 @@ class TestForecaster(unittest.TestCase):
         self.forecaster = Forecaster(
             living_expenses_strategy=LivingExpensesStrategy(
                 strategy=LivingExpensesStrategy.strategy_const_contribution,
-                base_amount=Money(500), inflation_adjust=None),
+                base_amount=Decimal(500), inflation_adjust=None),
             settings=self.settings)
         forecast = self.forecaster.run_forecast(
             people={self.person},
@@ -322,12 +322,12 @@ class TestForecaster(unittest.TestCase):
         # initial $1000 principal by the start of year 2:
         self.assertAlmostEqual(
             forecast.principal,
-            Money(1500),
+            Decimal(1500),
             places=2)
         # Gross income should be unchanged at $10,000:
         self.assertAlmostEqual(
             forecast.income_forecast.gross_income,
-            Money(10000),
+            Decimal(10000),
             places=2)
 
     def test_run_forecast_mutation(self):

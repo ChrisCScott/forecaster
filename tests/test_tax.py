@@ -2,7 +2,7 @@
 
 import unittest
 from decimal import Decimal
-from forecaster import Tax, Money, Person
+from forecaster import Tax, Person
 # Include extra accounts to test handling of different tax* behaviour:
 from forecaster.canada import RRSP, TaxableAccount, TFSA
 from tests.test_helper import type_check
@@ -34,27 +34,27 @@ class TestTax(unittest.TestCase):
         # Build some brackets with nice round numbers:
         self.tax_brackets = {
             self.initial_year: {
-                Money(0): Decimal('0.1'),
-                Money('100'): Decimal('0.2'),
-                Money('10000'): Decimal('0.3')
+                Decimal(0): Decimal('0.1'),
+                Decimal('100'): Decimal('0.2'),
+                Decimal('10000'): Decimal('0.3')
             }
         }
         # For convenience, build a sorted, type-converted array of
         # each of the tax bracket thresholds:
         self.brackets = sorted({
-            Money(key): self.tax_brackets[self.initial_year][key]
+            Decimal(key): self.tax_brackets[self.initial_year][key]
             for key in self.tax_brackets[self.initial_year].keys()})
         # For convenience in testing, build an accum dict that
         # corresponds to the tax brackets above.
         self.accum = {
             self.initial_year: {
-                Money(0): Money('0'),
-                Money('100'): Money('10'),
-                Money('10000'): Money('1990')
+                Decimal(0): Decimal('0'),
+                Decimal('100'): Decimal('10'),
+                Decimal('10000'): Decimal('1990')
             }
         }
         self.personal_deduction = {
-            self.initial_year: Money('100')
+            self.initial_year: Decimal('100')
         }
         self.credit_rate = {
             self.initial_year: Decimal('0.1')
@@ -92,7 +92,7 @@ class TestTax(unittest.TestCase):
             contribution_room=0, balance=10000, rate=Decimal('0.05'), nper=1)
         # Employment income is fully taxable, and only half of capital
         # gains (the income from the taxable account) is taxable:
-        self.person1_taxable_income = Money(
+        self.person1_taxable_income = Decimal(
             self.person1.gross_income + self.taxable_account1.balance / 2)
 
         # Give the second person two accounts, one taxable and one
@@ -110,7 +110,7 @@ class TestTax(unittest.TestCase):
         self.tfsa.add_transaction(-20000, when='start')
         # Employment income is fully taxable, and only half of capital
         # gains (the income from the taxable account) is taxable:
-        self.person2_taxable_income = Money(
+        self.person2_taxable_income = Decimal(
             self.person2.gross_income + self.taxable_account2.balance / 2)
 
     def test_init_optional(self):
@@ -158,20 +158,20 @@ class TestTax(unittest.TestCase):
         for year in self.tax_brackets:
             self.assertEqual(tax.tax_brackets(year), self.tax_brackets[year])
             self.assertTrue(type_check(
-                tax.tax_brackets(year), {Money: Decimal}))
+                tax.tax_brackets(year), {Decimal: Decimal}))
         self.assertTrue(callable(tax.inflation_adjust))
 
     def test_income_0_money(self):
         """ Call Test on $0 income. """
         # $0 should return $0 in tax owing. This is the easiest test.
-        income = Money(0)
-        self.assertEqual(self.tax(income, self.initial_year), Money(0))
+        income = Decimal(0)
+        self.assertEqual(self.tax(income, self.initial_year), Decimal(0))
 
     def test_income_0_person(self):
         """ Test tax on a person with $0 income. """
         # $0 should return $0 in tax owing. This is the easiest test.
-        self.person.gross_income = Money(0)
-        self.assertEqual(self.tax(self.person, self.initial_year), Money(0))
+        self.person.gross_income = Decimal(0)
+        self.assertEqual(self.tax(self.person, self.initial_year), Decimal(0))
 
     def test_income_under_deduction(self):
         """ Test tax on person with income under personal deduction. """
@@ -179,13 +179,13 @@ class TestTax(unittest.TestCase):
             self.personal_deduction[self.initial_year] / 2
         )
         # Should return $0
-        self.assertEqual(self.tax(self.person, self.initial_year), Money(0))
+        self.assertEqual(self.tax(self.person, self.initial_year), Decimal(0))
 
     def test_income_at_deduction(self):
         """ Call Test on income equal to the personal deduction. """
         self.person.gross_income = self.personal_deduction[self.initial_year]
         # Should return $0
-        self.assertEqual(self.tax(self.person, self.initial_year), Money(0))
+        self.assertEqual(self.tax(self.person, self.initial_year), Decimal(0))
 
     def test_income_in_bracket_1_money(self):
         """ Call Test on income mid-way into the lowest tax bracket. """

@@ -4,7 +4,7 @@ import unittest
 import decimal
 from decimal import Decimal
 from random import Random
-from forecaster import Person, Money
+from forecaster import Person
 from forecaster.canada import TFSA, constants
 from tests.canada.accounts.test_registered_account import (
     TestRegisteredAccountMethods)
@@ -56,7 +56,7 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
                 owner, *args,
                 inflation_adjust=self.inflation_adjust,
                 initial_year=year, **kwargs)
-            target = Money(sum([
+            target = Decimal(sum([
                 accruals[i] for i in range(min(accruals), year + 1)]))
             self.assertEqual(account.contribution_room, target)
             # We're starting each TFSA in a different year, which can
@@ -122,7 +122,7 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
 
         # For each year, confirm that the balance and contribution room
         # are updated appropriately
-        transactions = Money(0)
+        transactions = Decimal(0)
         for year in accruals:
             # Add a transaction (either an inflow or outflow)
             transaction = rand.randint(-account.balance.amount,
@@ -132,7 +132,7 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
             # less any net transactions
             accrual = sum(
                 [accruals[i] for i in range(min(accruals), year + 1)])
-            target = Money(accrual) - transactions
+            target = Decimal(accrual) - transactions
             self.assertEqual(account.contribution_room, target)
             # Confirm that balance is equal to the sum of transactions
             # over the previous years (note that this is a no-growth
@@ -142,12 +142,12 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
             account.next_year()
             # Update the running total of transactions, to be referenced
             # in the next round of tests.
-            transactions += Money(transaction)
+            transactions += Decimal(transaction)
 
     def get_accruals(self):
         """ Builds a dict of {year: accrual} pairs.
 
-        Each accrual is a Money object corresponding to the total TFSA
+        Each accrual is a Decimal object corresponding to the total TFSA
         contribution room accrued since inception (2009) to year.
         """
         # Build a secquence of accruals covering known accruals and
@@ -180,7 +180,7 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
         # withdrawal to realize any gains:
         account.add_transaction(100, 'start')
         account.add_transaction(-200, 'end')
-        self.assertEqual(account.taxable_income, Money(0))
+        self.assertEqual(account.taxable_income, Decimal(0))
 
 if __name__ == '__main__':
     # NOTE: BasicContext is useful for debugging, as most errors are treated

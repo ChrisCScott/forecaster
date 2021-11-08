@@ -2,8 +2,7 @@
 
 import unittest
 from decimal import Decimal
-from forecaster import (
-    Money, Person, IncomeForecast, Tax, Timing)
+from forecaster import Person, IncomeForecast, Tax, Timing
 
 
 class TestIncomeForecast(unittest.TestCase):
@@ -14,7 +13,7 @@ class TestIncomeForecast(unittest.TestCase):
         self.initial_year = 2000
         # Simple tax treatment: 50% tax rate across the board.
         tax = Tax(tax_brackets={
-            self.initial_year: {Money(0): Decimal(0.5)}})
+            self.initial_year: {Decimal(0): Decimal(0.5)}})
         # A person who is paid $200 gross ($100 net) every 2 weeks:
         timing = Timing(frequency='BW')
         self.person1 = Person(
@@ -22,7 +21,7 @@ class TestIncomeForecast(unittest.TestCase):
             name="Test 1",
             birth_date="1 January 1980",
             retirement_date="31 December 2045",
-            gross_income=Money(5200),
+            gross_income=Decimal(5200),
             tax_treatment=tax,
             payment_timing=timing)
         # A person who is paid $100 gross ($50 net) every 2 weeks:
@@ -31,7 +30,7 @@ class TestIncomeForecast(unittest.TestCase):
             name="Test 2",
             birth_date="1 January 1982",
             retirement_date="31 December 2047",
-            gross_income=Money(2600),
+            gross_income=Decimal(2600),
             tax_treatment=tax,
             payment_timing=timing)
         self.forecast = IncomeForecast(
@@ -58,7 +57,7 @@ class TestIncomeForecast(unittest.TestCase):
 
     def test_carryover(self):
         """ Test an amount carried over from previous year. """
-        carryover = Money(100)
+        carryover = Decimal(100)
         available = {Decimal(0.5): carryover}
         self.forecast(available)
         self.assertEqual(
@@ -79,7 +78,7 @@ class TestIncomeForecast(unittest.TestCase):
         # carryovers), the sum of inflows should be 150*26=3900
         self.assertAlmostEqual(
             sum(self.forecast.transactions[available].values()),
-            Money(3900),
+            Decimal(3900),
             places=2)
 
 if __name__ == '__main__':

@@ -3,7 +3,7 @@
 import unittest
 from decimal import Decimal
 from forecaster import (
-    Money, Person, LivingExpensesForecast,
+    Person, LivingExpensesForecast,
     LivingExpensesStrategy, Tax, Timing)
 
 
@@ -15,7 +15,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
         self.initial_year = 2000
         # Simple tax treatment: 50% tax rate across the board.
         tax = Tax(tax_brackets={
-            self.initial_year: {Money(0): Decimal(0.5)}})
+            self.initial_year: {Decimal(0): Decimal(0.5)}})
         # A person who is paid $200 gross ($100 net) every 2 weeks:
         timing = Timing(frequency='BW')
         self.person1 = Person(
@@ -23,7 +23,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
             name="Test 1",
             birth_date="1 January 1980",
             retirement_date="31 December 2045",
-            gross_income=Money(5200),
+            gross_income=Decimal(5200),
             tax_treatment=tax,
             payment_timing=timing)
         # A person who is paid $100 gross ($50 net) every 2 weeks:
@@ -32,12 +32,12 @@ class TestLivingExpensesForecast(unittest.TestCase):
             name="Test 2",
             birth_date="1 January 1982",
             retirement_date="31 December 2047",
-            gross_income=Money(2600),
+            gross_income=Decimal(2600),
             tax_treatment=tax,
             payment_timing=timing)
         # Track inflows from employment:
         self.available = {
-            Decimal(0.5 + i) / 26: Money(150)
+            Decimal(0.5 + i) / 26: Decimal(150)
             for i in range(26)}
         self.total_available = sum(self.available.values())
         # Contribute 50% of net income (i.e. $3900):
@@ -94,7 +94,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
         # Contribute $100 and live off the rest:
         self.strategy = LivingExpensesStrategy(
             strategy=LivingExpensesStrategy.strategy_const_contribution,
-            base_amount=Money(100))
+            base_amount=Decimal(100))
         self.forecast.living_expenses_strategy = self.strategy
 
         # It _is_ necessary to record inflows from employment
@@ -102,7 +102,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
         self.forecast(self.available)
 
         # Calculate manually and compare results:
-        living_expenses = self.total_available - Money(100)
+        living_expenses = self.total_available - Decimal(100)
         self.assertEqual(
             living_expenses,
             self.forecast.living_expenses)
@@ -112,7 +112,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
         # Live off of $1200/yr:
         self.strategy = LivingExpensesStrategy(
             strategy=LivingExpensesStrategy.strategy_const_living_expenses,
-            base_amount=Money(1200))
+            base_amount=Decimal(1200))
         self.forecast.living_expenses_strategy = self.strategy
 
         # It's not necessary to record inflows from employment,
@@ -121,7 +121,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
         self.forecast(self.available)
 
         # Calculate manually and compare results:
-        living_expenses = Money(1200)
+        living_expenses = Decimal(1200)
         self.assertEqual(
             living_expenses,
             self.forecast.living_expenses)
@@ -131,7 +131,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
         # Live off of $1200/yr:
         self.strategy = LivingExpensesStrategy(
             strategy=LivingExpensesStrategy.strategy_percent_over_base,
-            base_amount=Money(1200))
+            base_amount=Decimal(1200))
         self.forecast.living_expenses_strategy = self.strategy
 
         # It's not necessary to record inflows from employment,
@@ -140,7 +140,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
         self.forecast(self.available)
 
         # Calculate manually and compare results:
-        living_expenses = Money(1200)
+        living_expenses = Decimal(1200)
         self.assertEqual(
             living_expenses,
             self.forecast.living_expenses)
@@ -152,7 +152,7 @@ class TestLivingExpensesForecast(unittest.TestCase):
         # net income, for net available of $3900.
         self.assertAlmostEqual(
             sum(self.forecast.transactions[self.available].values()),
-            Money(-3900),
+            Decimal(-3900),
             places=2)
 
 if __name__ == '__main__':

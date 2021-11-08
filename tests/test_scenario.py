@@ -192,7 +192,8 @@ class TestScenarioMethods(unittest.TestCase):
             self.assertAlmostEqual(
                 scenario.accumulation_function(
                     self.constant_initial_year, year),
-                pow(Decimal(1 + self.constant_inflation),
+                pow(
+                    1 + self.constant_inflation,
                     year - self.constant_initial_year),
                 4)
 

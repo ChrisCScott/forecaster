@@ -3,11 +3,8 @@
 import unittest
 from decimal import Decimal
 from forecaster import (
-    Money, Person, Tax, Timing,
-    WithdrawalForecast,
-    TransactionStrategy,
-    Account, canada,
-    recorded_property)
+    Person, Tax, Timing, WithdrawalForecast, TransactionStrategy,
+    Account, canada, recorded_property)
 from tests.util import TestCaseTransactions
 
 class WithholdingAccount(Account):
@@ -26,7 +23,7 @@ class TestWithdrawalForecast(TestCaseTransactions):
         self.initial_year = 2000
         # Simple tax treatment: 50% tax rate across the board.
         tax = Tax(tax_brackets={
-            self.initial_year: {Money(0): Decimal(0.5)}})
+            self.initial_year: {Decimal(0): Decimal(0.5)}})
         # Accounts need an owner:
         timing = Timing(frequency='BW')
         self.person = Person(
@@ -34,26 +31,26 @@ class TestWithdrawalForecast(TestCaseTransactions):
             name="Test",
             birth_date="1 January 1980",
             retirement_date="31 December 1999",  # last year
-            gross_income=Money(5200),
+            gross_income=Decimal(5200),
             tax_treatment=tax,
             payment_timing=timing)
         # We want at least two accounts which are withdrawn from
         # in different orders depending on the strategy.
         self.account = Account(
             owner=self.person,
-            balance=Money(60000))  # $60,000 <- BIGGER!
+            balance=Decimal(60000))  # $60,000 <- BIGGER!
         self.rrsp = canada.accounts.RRSP(
             owner=self.person,
-            contribution_room=Money(1000),
-            balance=Money(6000))  # $6,000
+            contribution_room=Decimal(1000),
+            balance=Decimal(6000))  # $6,000
 
         # Assume there are $2000 in inflows and $22,000 in outflows,
         # for a net need of $20,000:
         self.available = {
-            Decimal(0.25): Money(1000),
-            Decimal(0.5): Money(-11000),
-            Decimal(0.75): Money(1000),
-            Decimal(1): Money(-11000)
+            Decimal(0.25): Decimal(1000),
+            Decimal(0.5): Decimal(-11000),
+            Decimal(0.75): Decimal(1000),
+            Decimal(1): Decimal(-11000)
         }
 
         # Now we can set up the big-ticket items:
@@ -69,7 +66,7 @@ class TestWithdrawalForecast(TestCaseTransactions):
         # Set up another forecast for testing withholding behaviour:
         self.withholding_account = WithholdingAccount(
             owner=self.person,
-            balance=Money(100000))
+            balance=Decimal(100000))
         self.withholding_strategy = TransactionStrategy(
             strategy=TransactionStrategy.strategy_ordered,
             weights={"WithholdingAccount": 1})
@@ -90,10 +87,10 @@ class TestWithdrawalForecast(TestCaseTransactions):
         # of `rrsp` ($6000), with the rest from `account`:
         self.assertTransactions(
             self.forecast.account_transactions[self.rrsp],
-            Money(-6000))
+            Decimal(-6000))
         self.assertTransactions(
             self.forecast.account_transactions[self.account],
-            Money(-14000))
+            Decimal(-14000))
 
     def test_account_trans_weighted(self):
         """ Test account transactions under weighted strategy. """
@@ -106,10 +103,10 @@ class TestWithdrawalForecast(TestCaseTransactions):
         # `rrsp`, with the rest from `account`:
         self.assertTransactions(
             self.forecast.account_transactions[self.rrsp],
-            Money(-3000))
+            Decimal(-3000))
         self.assertTransactions(
             self.forecast.account_transactions[self.account],
-            Money(-17000))
+            Decimal(-17000))
 
     def test_gross_withdrawals(self):
         """ Test total withdrawn from accounts. """
@@ -119,7 +116,7 @@ class TestWithdrawalForecast(TestCaseTransactions):
         # For default `available`, should withdraw $20,000.
         self.assertEqual(
             self.forecast.gross_withdrawals,
-            Money(20000))
+            Decimal(20000))
 
     def test_tax_withheld(self):
         """ Test tax withheld from accounts. """
@@ -129,7 +126,7 @@ class TestWithdrawalForecast(TestCaseTransactions):
         # Total withholdings are $10000 (half of $20,000 withdrawn)
         self.assertEqual(
             self.withholding_forecast.tax_withheld,
-            Money(-10000))
+            Decimal(-10000))
 
     def test_net_withdrawals(self):
         """ Test total withdrawn from accounts, net of taxes. """
@@ -140,7 +137,7 @@ class TestWithdrawalForecast(TestCaseTransactions):
         # for total of $10,000 in net withdrawals:
         self.assertEqual(
             self.withholding_forecast.net_withdrawals,
-            Money(10000))
+            Decimal(10000))
 
     def test_mutate_available(self):
         """ Invoke __call__ on `available`. """
@@ -150,7 +147,7 @@ class TestWithdrawalForecast(TestCaseTransactions):
         # The amount withdrawn should zero out `available`,
         # subject to 50% withholding taxes (i.e. `available` should
         # only be reduced to -$10,000):
-        self.assertTransactions(self.available, Money(-10000))
+        self.assertTransactions(self.available, Decimal(-10000))
 
 
 

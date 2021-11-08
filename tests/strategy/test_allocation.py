@@ -192,10 +192,10 @@ class TestAllocationStrategyMethods(unittest.TestCase):
         for age in range(55, 65):
             self.assertAlmostEqual(
                 strategy(age).stocks,
-                Decimal(1 * (65 - age) / 10 + 0.5 * (age - 55) / 10))
+                1 * (65 - age) / 10 + 0.5 * (age - 55) / 10)
             self.assertAlmostEqual(
                 strategy(age).bonds,
-                Decimal(1 - (1 * (65 - age) / 10 + 0.5 * (age - 55) / 10)))
+                1 - (1 * (65 - age) / 10 + 0.5 * (age - 55) / 10))
         for age in range(66, 100):
             self.assertEqual(strategy(age).stocks, Decimal(0.5))
             self.assertEqual(strategy(age).bonds, Decimal(0.5))

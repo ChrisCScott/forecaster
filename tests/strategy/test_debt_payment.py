@@ -2,7 +2,7 @@
 
 import unittest
 from decimal import Decimal
-from forecaster import Person, Debt, Money, DebtPaymentStrategy, Timing
+from forecaster import Person, Debt, DebtPaymentStrategy, Timing
 from tests.util import TestCaseTransactions
 
 
@@ -23,16 +23,16 @@ class TestDebtPaymentStrategies(TestCaseTransactions):
         # These accounts have different rates:
         self.debt_big_high_interest = Debt(
             person,
-            balance=Money(1000), rate=1, minimum_payment=Money(100),
-            accelerated_payment=Money('Infinity'))
+            balance=Decimal(1000), rate=1, minimum_payment=Decimal(100),
+            accelerated_payment=Decimal('Infinity'))
         self.debt_small_low_interest = Debt(
             person,
-            balance=Money(100), rate=0, minimum_payment=Money(10),
-            accelerated_payment=Money('Infinity'))
+            balance=Decimal(100), rate=0, minimum_payment=Decimal(10),
+            accelerated_payment=Decimal('Infinity'))
         self.debt_medium = Debt(
             person,
-            balance=Money(500), rate=0.5, minimum_payment=Money(50),
-            accelerated_payment=Money('Infinity'))
+            balance=Decimal(500), rate=0.5, minimum_payment=Decimal(50),
+            accelerated_payment=Decimal('Infinity'))
 
         self.debts = {
             self.debt_big_high_interest,
@@ -49,7 +49,7 @@ class TestDebtPaymentStrategies(TestCaseTransactions):
         self.strategy_snowball = DebtPaymentStrategy(
             DebtPaymentStrategy.strategy_snowball)
 
-        self.excess = Money(10)
+        self.excess = Decimal(10)
 
     def min_payment(self, debts, timing=None):
         """ Finds the minimum payment *from savings* for `accounts`. """
@@ -101,10 +101,10 @@ class TestDebtPaymentStrategies(TestCaseTransactions):
             results[self.debt_small_low_interest], total)
         # Remaining debts should receive no payments:
         if self.debt_medium in results:
-            self.assertTransactions(results[self.debt_medium], Money(0))
+            self.assertTransactions(results[self.debt_medium], Decimal(0))
         if self.debt_medium in results:
             self.assertTransactions(
-                results[self.debt_big_high_interest], Money(0))
+                results[self.debt_big_high_interest], Decimal(0))
 
     def test_snowball_basic(self):
         """ Test strategy_snowball with a little more than min payments. """
@@ -208,10 +208,10 @@ class TestDebtPaymentStrategies(TestCaseTransactions):
             results[self.debt_big_high_interest], total)
         # Remaining debts should receive no payments:
         if self.debt_medium in results:
-            self.assertTransactions(results[self.debt_medium], Money(0))
+            self.assertTransactions(results[self.debt_medium], Decimal(0))
         if self.debt_medium in results:
             self.assertTransactions(
-                results[self.debt_small_low_interest], Money(0))
+                results[self.debt_small_low_interest], Decimal(0))
 
     def test_avalanche_basic(self):
         """ Test strategy_avalanche with a bit more than min payments. """
@@ -286,10 +286,10 @@ class TestDebtPaymentStrategies(TestCaseTransactions):
                 results[debt], self.max_payments[debt])
 
     def test_accel_payment_none(self):
-        """ Tests payments where `accelerate_payment=Money(0)`. """
+        """ Tests payments where `accelerate_payment=Decimal(0)`. """
         # Don't allow accelerated payments and try to contribute more
         # than the minimum.
-        self.debt_medium.accelerated_payment = Money(0)
+        self.debt_medium.accelerated_payment = Decimal(0)
         available = self.make_available(self.debt_medium.minimum_payment * 2)
         results = self.strategy_avalanche({self.debt_medium}, available)
         # If there's no acceleration, only the minimum is paid.
@@ -300,20 +300,20 @@ class TestDebtPaymentStrategies(TestCaseTransactions):
         """ Tests payments with finite, non-zero `accelerate_payment`. """
         # Allow only $20 in accelerated payments and try to contribute
         # even more than that.
-        self.debt_medium.accelerated_payment = Money(20)
+        self.debt_medium.accelerated_payment = Decimal(20)
         available = self.make_available(
-            self.debt_medium.minimum_payment + Money(40))
+            self.debt_medium.minimum_payment + Decimal(40))
         results = self.strategy_avalanche({self.debt_medium}, available)
         # Payment should be $20 more than the minimum:
         self.assertTransactions(
             results[self.debt_medium],
-            self.debt_medium.minimum_payment + Money(20))
+            self.debt_medium.minimum_payment + Decimal(20))
 
     def test_accel_payment_infinity(self):
-        """ Tests payments where `accelerate_payment=Money('Infinity')`. """
+        """ Tests payments where `accelerate_payment=Decimal('Infinity')`. """
         # No limit on accelerated payments. Try to contribute more than
         # the debt requires to be fully repaid:
-        self.debt_medium.accelerated_payment = Money("Infinity")
+        self.debt_medium.accelerated_payment = Decimal("Infinity")
         available = self.make_available(
             2 * sum(self.debt_medium.max_inflows().values()))
         results = self.strategy_avalanche({self.debt_medium}, available)

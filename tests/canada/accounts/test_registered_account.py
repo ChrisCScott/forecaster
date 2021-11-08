@@ -5,7 +5,6 @@ import inspect
 import decimal
 from decimal import Decimal
 from random import Random
-from forecaster import Money
 from forecaster.canada import RegisteredAccount
 from tests.accounts.test_linked_limit import TestLinkedLimitAccountMethods
 
@@ -32,7 +31,7 @@ class TestRegisteredAccountMethods(TestLinkedLimitAccountMethods):
         self.inflation_adjust = inflation_adjust
 
         # Use a convenient default for contribution room:
-        self.contribution_room = Money(0)
+        self.contribution_room = Decimal(0)
 
     def set_initial_year(self, initial_year):
         """ Sets initial_year for all relevant objects. """
@@ -112,7 +111,7 @@ class TestRegisteredAccountMethods(TestLinkedLimitAccountMethods):
             contribution_room=500, inflation_adjust=inflation_adjustments,
             **kwargs)
         self.assertEqual(account.contributor, self.owner)
-        self.assertEqual(account.contribution_room, Money('500'))
+        self.assertEqual(account.contribution_room, Decimal('500'))
         self.assertEqual(account.inflation_adjust(2000), Decimal(1))
         self.assertEqual(account.inflation_adjust(2001), Decimal(1.25))
         self.assertEqual(account.inflation_adjust(2002), Decimal(1.5))
@@ -220,7 +219,7 @@ class TestRegisteredAccountMethods(TestLinkedLimitAccountMethods):
             self.owner, *args, balance=100, contribution_room=0, **kwargs)
         result = account.max_inflows(self.timing)
         for value in result.values():
-            self.assertEqual(value, Money('0'))
+            self.assertEqual(value, Decimal('0'))
 
     def test_max_inflows_neg(self, *args, **kwargs):
         """ Test max_inflows with negative balance """
@@ -229,7 +228,7 @@ class TestRegisteredAccountMethods(TestLinkedLimitAccountMethods):
             self.owner, *args, balance=-100, contribution_room=0, **kwargs)
         result = account.max_inflows(self.timing)
         for value in result.values():
-            self.assertEqual(value, Money('0'))
+            self.assertEqual(value, Decimal('0'))
 
 if __name__ == '__main__':
     # NOTE: BasicContext is useful for debugging, as most errors are treated
