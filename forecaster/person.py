@@ -111,19 +111,27 @@ class Person(TaxSource):
 
     def __init__(
             self, initial_year, name, birth_date, retirement_date=None,
-            gross_income=0, raise_rate=0, spouse=None, tax_treatment=None,
-            payment_timing=None, inputs=None):
+            gross_income=None, raise_rate=None, spouse=None, tax_treatment=None,
+            payment_timing=None, inputs=None, **kwargs):
         """ Initializes a `Person` object. """
-        super().__init__(initial_year=initial_year, inputs=inputs)
+        super().__init__(initial_year=initial_year, inputs=inputs, **kwargs)
+
+        # For numerical optional inputs, ensure an appropriately-typed
+        # default value is used:
+        if gross_income is None:
+            gross_income = self.precision_convert(0)
+        if raise_rate is None:
+            raise_rate = self.precision_convert(0)
 
         # For simple, non-property-wrapped attributes, assign directly:
         self.name = name
         if payment_timing is None:
             # Timing is technically mutable, so init it here rather than
             # using "Timing()" as a default value.
-            self.payment_timing = Timing()
+            self.payment_timing = Timing(high_precision=self.high_precision)
         else:
-            self.payment_timing = Timing(payment_timing)
+            self.payment_timing = Timing(
+                payment_timing, high_precision=self.high_precision)
 
         # For attributes wrapped by ordinary properties, create hidden
         # attributes and assign to them using the properties:
@@ -256,6 +264,8 @@ class Person(TaxSource):
                     return val[year]
             else:
                 # Return a constant rate
+                # First, convert to high-precision if appropriate:
+                val = self.precision_convert(val)
                 def func(_=None):
                     """ Wraps value in a function with an optional arg. """
                     return val
@@ -320,7 +330,7 @@ class Person(TaxSource):
         if (
                 self.retirement_date is not None and
                 self.retirement_date.year < self.this_year):
-            return 0 # Money value
+            return self.precision_convert(0) # Money value
         else:
             return (
                 # Pylint gets confused by attributes added by metaclass.

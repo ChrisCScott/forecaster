@@ -35,7 +35,7 @@ class Debt(Account):
 
     def __init__(
             # Inherited args:
-            self, owner, balance=0, rate=0, nper=1,
+            self, owner, balance=None, rate=None, nper=None,
             inputs=None, initial_year=None,
             # New args:
             minimum_payment=0, accelerated_payment=float('inf'),
@@ -64,8 +64,11 @@ class Debt(Account):
         self.accelerated_payment = accelerated_payment
 
         # Debt must have a negative balance
+        # pylint: disable=invalid-unary-operand-type
+        # self.balance is guaranteed to be non-None by super().__init__
         if self.balance > 0:
             self.balance = -self.balance
+        # pylint: enable=invalid-unary-operand-type
 
     @property
     def minimum_payment(self):
@@ -101,7 +104,7 @@ class Debt(Account):
     def max_outflow_limit(self):
         """ The maximum annual withdrawals from the debt account. """
         # No outflows permitted
-        return 0 # Money value
+        return self.precision_convert(0) # Money value
 
     # No need to override min_outflow_limit - still $0.
 
@@ -113,7 +116,7 @@ class Debt(Account):
             # Repay the whole balance (or none if positive)
             max(
                 -self.balance_at_time(when),
-                0), # Money value
+                self.precision_convert(0)), # Money value
             # But no more than the maximum outflow:
             self.max_inflow_limit)
 
@@ -145,7 +148,7 @@ class Debt(Account):
         if balance_limit is None:
             # Only pay off debts until they reach $0 balance.
             # (Superclass assumes we want to contribute indefinitely.)
-            balance_limit = 0 # Money value
+            balance_limit = self.precision_convert(0) # Money value
         return super().max_inflows(
             timing=timing,
             transaction_limit=transaction_limit,
@@ -181,7 +184,7 @@ class Debt(Account):
         if balance_limit is None:
             # Only pay off debts until they reach $0 balance.
             # (Superclass assumes we want to contribute indefinitely.)
-            balance_limit = 0 # Money value
+            balance_limit = self.precision_convert(0) # Money value
         return super().min_inflows(
             timing=timing,
             transaction_limit=transaction_limit,

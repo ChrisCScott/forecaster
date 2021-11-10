@@ -99,7 +99,7 @@ class Account(TaxSource):
 
     def __init__(
             self, owner=None,
-            balance=0, rate=0, nper=1, default_timing=None,
+            balance=None, rate=None, nper=None, default_timing=None,
             inputs=None, initial_year=None, high_precision=None, **kwargs):
         """ Constructor for `Account`.
 
@@ -107,11 +107,12 @@ class Account(TaxSource):
 
         Args:
             owner (Person): The owner of the account. Optional.
-            balance (float): The balance for the first year
-            rate (Decimal, callable): An object that gives the rate for
-                each year, either as a constant value (e.g. a Decimal)
-                or as a callable object with a signature of the form
-                `rate(year) -> Decimal`.
+            balance (float): The balance for the first year. Optional,
+                defaults to 0.
+            rate (float, callable): An object that gives the rate for
+                each year, either as a constant value (e.g. 1.0 implies
+                a 100% interest rate) or as a callable object with a
+                signature of the form `rate(year) -> Decimal`.
 
                 If this callable object relies on `Scenario` or other
                 objects defined in the `forecaster` package, recommend
@@ -119,7 +120,10 @@ class Account(TaxSource):
                 as attributes (as opposed to a method/function where
                 these objects are stored in the context), otherwise
                 `Forecaster`'s object-substitution logic will not work.
+
+                Optional. Defaults to 0 (i.e. no growth/interest/etc.)
             nper (int): The number of compounding periods per year.
+                Optional. Defaults to 1 (i.e. compounds once annually).
             default_timing (Timing): The usual schedule for transactions
                 to/from this account, used by various methods when no
                 `timing` arg is expressly provided. Optional.
@@ -140,6 +144,15 @@ class Account(TaxSource):
         super().__init__(
             initial_year=initial_year, inputs=inputs,
             high_precision=high_precision, **kwargs)
+
+        # For numerical optional inputs, ensure an appropriately-typed
+        # default value is used. (Do this after __init__!)
+        if balance is None:
+            balance = self.precision_convert(0)
+        if rate is None:
+            rate = self.precision_convert(0)
+        if nper is None:
+            nper = self.precision_convert(1)
 
         # Set hidden attributes to support properties that need them to
         # be set in advance:
@@ -578,7 +591,8 @@ class Account(TaxSource):
             weighted_accum += weight * accumulation_function(
                 t=1-timing,
                 rate=self.rate,
-                nper=self.nper)
+                nper=self.nper,
+                high_precision=self.high_precision)
         total = change / weighted_accum
 
         # Limit total transaction value based on args:
