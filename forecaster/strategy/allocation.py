@@ -2,6 +2,8 @@
 
 from collections import namedtuple
 from forecaster.strategy.base import Strategy, strategy_method
+from forecaster.utility.precision import (
+    HighPrecisionOptional, HighPrecisionOptionalPropertyCached)
 
 
 AssetAllocation = namedtuple('AssetAllocation', 'stocks bonds other')
@@ -47,7 +49,7 @@ class RateFunction(object):
         )
 
 
-class AllocationStrategy(Strategy):
+class AllocationStrategy(Strategy, HighPrecisionOptional):
     """ Generates an asset allocation for a point in time. Callable.
 
     Attributes:
@@ -64,13 +66,13 @@ class AllocationStrategy(Strategy):
             * "n-age"
             * "Transition to constant"
 
-        min_equity (float): The minimum percentage of a portfolio that
-            may be invested in equities. (All non-equity investments
-            are included in `fixed_income`)
-        max_equity (float): The maximum percentage of a portfolio that
-            may be invested in equities.
-        target (float): A target value used by strategies to affect
-            their behaviour.
+        min_equity (HighPrecisionOptional): The minimum percentage of a
+            portfolio that may be invested in equities. (All non-equity
+            investments are included in `fixed_income`)
+        max_equity (HighPrecisionOptional): The maximum percentage of a
+            portfolio that may be invested in equities.
+        target (HighPrecisionOptional): A target value used by
+            strategies to affect their behaviour.
 
             For example, for the `n-age` strategy, this is the value `n`
             (e.g. `target=100` -> `100-age`).
@@ -110,13 +112,19 @@ class AllocationStrategy(Strategy):
     Raises:
         ValueError: min_equity greater than max_equity.
     """
+
+    # These properties can be floats or a high-precision type:
+    min_equity = HighPrecisionOptionalPropertyCached()
+    max_equity = HighPrecisionOptionalPropertyCached()
+    target = HighPrecisionOptionalPropertyCached()
+
     # pylint: disable=too-many-arguments
     def __init__(
             self, strategy, target, min_equity=0, max_equity=1,
             standard_retirement_age=65, risk_transition_period=20,
-            adjust_for_retirement_plan=True):
+            adjust_for_retirement_plan=True, **kwargs):
         """ Constructor for AllocationStrategy. """
-        super().__init__(strategy)
+        super().__init__(strategy=strategy, **kwargs)
 
         self.min_equity = min_equity
         self.max_equity = max_equity
@@ -149,6 +157,7 @@ class AllocationStrategy(Strategy):
             retirement_age = self.standard_retirement_age
         # The formula for `n-age` is just that (recall that
         # n=constant_strategy_target). Insert the adjustment factor too.
+        # TODO: Add high-precision numerical library compatibility. #77
         target = (self.target - age) / 100
 
         # Bonds is simply whatever isn't in equities

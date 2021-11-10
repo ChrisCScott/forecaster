@@ -81,9 +81,11 @@ class Strategy(object, metaclass=StrategyType):
             the call signature for the subclass.
     """
 
-    def __init__(self, strategy):
+    def __init__(self, strategy, **kwargs):
         # NOTE: `strategy` is required here, but providing a suitable
         # default value in __init__ of each subclass is recommended.
+
+        super().__init__(**kwargs)
 
         # If the method itself was passed, translate that into the key
         if (
