@@ -15,5 +15,6 @@
     "python.linting.pylintEnabled": true,
     "python.linting.pycodestyleEnabled": false,
     "python.pythonPath": "${workspaceFolder}/venv/",
-    "python.languageServer": "Jedi"
+    "python.languageServer": "Jedi",
+    "testing.defaultGutterClickAction": "debug"
 }
