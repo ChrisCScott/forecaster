@@ -49,7 +49,9 @@ def accumulation_function(t, rate, nper=1, high_precision=None):
     if high_precision is not None:
         one = high_precision(1)
         # nper can be default-valued to a float, so convert that too:
-        if nper is 1:
+        # (it would be easier to just test for identity via `nper is 1`,
+        # but that raises a particularly irritating SyntaxWarning).
+        if nper == 1 and isinstance(nper, int):
             nper = one
     else:
         one = 1
