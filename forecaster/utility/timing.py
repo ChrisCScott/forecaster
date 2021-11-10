@@ -34,8 +34,11 @@ class Timing(dict):
         frequency (str, int): The number of periods (and thus the number
             of transactions). Uses the same syntax as
             `forecaster.utility.frequency_conv`. Optional.
+        high_precision (Callable[[float], T]): Takes a single
+            `float` argument and converts it to high-precision
+            numeric type `T`, such as Decimal.
     """
-    def __init__(self, when=WHEN_DEFAULT, frequency=1):
+    def __init__(self, when=WHEN_DEFAULT, frequency=1, high_precision=None):
         """ Initializes a Timing dict. """
         # We allow four forms of init call:
         # 1) Init with two arguments: `when` and `frequency`
@@ -44,6 +47,17 @@ class Timing(dict):
         # 3) Init with string denoting a frequency (e.g. `Timing('BW')`)
         # 4) Init with `when`-convertible value (e.g. Timing('start'),
         #    `Timing(1)`)
+
+        # If we're operating in high precision mode, convert default
+        # values to high-precision types:
+        if high_precision is not None:
+            one = high_precision(1)
+            if when is WHEN_DEFAULT:
+                when = high_precision(when)
+            if frequency is 1:
+                frequency = one
+        else:
+            one = 1
 
         # Set up the object by getting an empty dict:
         super().__init__()
@@ -57,7 +71,7 @@ class Timing(dict):
         # be able to receive time-series data of transactions, so we
         # need to deal with negative values.
         elif isinstance(when, dict):
-            self.update(_convert_dict(when))
+            self.update(_convert_dict(when, high_precision=high_precision))
             return
         else:
             # If we receive a frequency as the first argument, swap args
@@ -66,12 +80,12 @@ class Timing(dict):
                 frequency = when
                 when = WHEN_DEFAULT  # default value
             # Arguments might be str-valued; make them numeric:
-            when = when_conv(when)
+            when = when_conv(when, high_precision=high_precision)
             frequency = frequency_conv(frequency)
 
             # Build out multiple timings based on scalar inputs.
             # Each transaction has equal weight:
-            weight = 1 / frequency
+            weight = one / frequency
             # Build the dict:
             for time in range(frequency):
                 self[(time + when) / frequency] = weight
@@ -156,7 +170,7 @@ class Timing(dict):
             normalized[key] *= scalar
         return normalized
 
-def _convert_dict(when):
+def _convert_dict(when, high_precision=None):
     """ Converts `dict` input to `Timing`-style `when: weight` pairs.
 
     If all values are non-negative, the dict is returned unchanged.
@@ -176,24 +190,36 @@ def _convert_dict(when):
     Args:
         when (dict[float, float]): A mapping of timings (in [0,1]) to
             values.
+        high_precision (Callable[[float], T]): Takes a single
+            `float` argument and converts it to high-precision
+            numeric type `T`, such as Decimal. Optional.
 
     Returns:
         dict[float, float]: A mapping of timings to weights.
     """
+    # Provide high-precision compatibility by using appropriately-typed
+    # values for 0 and 1:
+    if high_precision is not None:
+        zero = high_precision(0)
+        one = high_precision(1)
+    else:
+        zero = 0
+        one = 1
+
     # First, deal with empty dict or all-zero dict:
     if not when:
         # This dict has no meaningful timings, so return empty dict.
         return {}
-    if all(value == 0 for value in when.values()):
+    if all(value == zero for value in when.values()):
         # Use the timings provided by the dict and fill in uniform
         # weights, since no non-zero weights were given:
-        return {key: 1 for key in when}
+        return {key: one for key in when}
 
     # If there are no negative values, the dict is useable as-is:
-    if all(value >= 0 for value in when.values()):
+    if all(value >= zero for value in when.values()):
         return when
     # If all items are negative, flip the signs:
-    elif all(value <= 0 for value in when.values()):
+    elif all(value <= zero for value in when.values()):
         return {time: -value for time, value in when.items()}
 
     # If the dict has a mix of positive and negative values, treat
@@ -207,12 +233,12 @@ def _convert_dict(when):
         # negative, no transactions are needed to bring the time-series
         # to balance, so return a time-series with no transactions:
         return {}
-    elif total > 0:
-        return _accum_inflows(when)
+    elif total > zero:
+        return _accum_inflows(when, high_precision=high_precision)
     else:
-        return _accum_outflows(when)
+        return _accum_outflows(when, high_precision=high_precision)
 
-def _accum_inflows(when):
+def _accum_inflows(when, high_precision=None):
     """ Determines maximum withdrawable amount for each timing.
 
     This method receives an input (`when`) with a mix of inflows and
@@ -238,23 +264,33 @@ def _accum_inflows(when):
         when (dict[float, Union[float, float]]): A mapping of timings
             (in [0,1]) to values. The values must sum to a positive
             value.
+        high_precision (Callable[[float], T]): Takes a single
+            `float` argument and converts it to high-precision
+            numeric type `T`, such as Decimal.
 
     Returns:
         dict[float, float]: A mapping of timings to weights.
     """
+    # Provide high-precision compatibility by using appropriately-typed
+    # value for 0:
+    if high_precision is not None:
+        zero = high_precision(0)
+    else:
+        zero = 0
+
     # We do this in two stages.
     # First, for each timing, determine the cumulative value of
     # all transactions to date and store it in `accum`:
     accum = {}
     result = {}
-    tally = 0  # sum of transactions so far
+    tally = zero  # sum of transactions so far
     for timing in sorted(when.keys()):
         tally += when[timing]
         accum[timing] = tally
     # Second, iterate over the timings *again*, this time
     # determining for each timing the maximum amount that can be
     # withdrawn without changing the sign of any future timing:
-    tally = 0  # amounts withdrawn so far
+    tally = zero  # amounts withdrawn so far
     for timing in sorted(when.keys()):
         # Find the bottleneck: the future value with the
         # smallest cumulative amount determines the maximum
@@ -262,7 +298,7 @@ def _accum_inflows(when):
         max_transaction = min(
             value for key, value in accum.items() if key >= timing)
         # Only record timings with positive sign:
-        if max_transaction > 0:
+        if max_transaction > zero:
             result[timing] = max_transaction
             # Update loop variables to reflect that a transaction
             # has been added: all future timings in accum should be
@@ -273,7 +309,7 @@ def _accum_inflows(when):
                     accum[key] -= max_transaction
     return result
 
-def _accum_outflows(when):
+def _accum_outflows(when, high_precision=None):
     """ Determines minimum necessary contribution for each timing.
 
     This method receives an input (`when`) with a mix of inflows and
@@ -296,20 +332,29 @@ def _accum_outflows(when):
         when (dict[Number, Union[float, float]]): A mapping of timings
             (in [0,1]) to values. The values must sum to a negative
             value.
+        high_precision (Callable[[float], T]): Takes a single
+            `float` argument and converts it to high-precision
+            numeric type `T`, such as Decimal.
 
     Returns:
         dict[Decimal, Number]: A mapping of timings to weights.
     """
+    # Provide high-precision compatibility by using appropriately-typed
+    # value for 0:
+    if high_precision is not None:
+        zero = high_precision(0)
+    else:
+        zero = 0
     # Accumulate the various transactions in order. Every time the
     # rolling accumulation dips negative, record an inflow that brings
     # it back to 0:
-    accum = 0
+    accum = zero
     result = {}
     for timing in sorted(when.keys()):
         accum += when[timing]
-        if accum < 0:
+        if accum < zero:
             result[timing] = -accum
-            accum = 0
+            accum = zero
     return result
 
 def transactions_from_timing(timing, total):
@@ -333,7 +378,7 @@ def transactions_from_timing(timing, total):
         for time, weight in timing.items()}
     return transactions
 
-def when_conv(when):
+def when_conv(when, high_precision=None):
     """ Converts various types of `when` inputs to floats in [0,1].
 
     0 is the start of the period and 1 is the end.
@@ -353,19 +398,23 @@ def when_conv(when):
     Returns:
         A Decimal in [0,1]
     """
+    # Provide high-precision compatibility by using appropriately-typed
+    # values for 0 and 1:
+    if high_precision is not None:
+        zero = high_precision(0)
+        one = high_precision(1)
+    else:
+        zero = 0
+        one = 1
+
     # Attempt to convert strings 'start' and 'end' first
     if isinstance(when, str):
         if when == 'end':
-            when = 1
+            when = one
         elif when == 'start':
-            when = 0
+            when = zero
 
-    # float can take a variety of input types (including str), so
-    # rather than throw an error on non-start/end input strings, try
-    # to cast to float and throw a ValueError on failure.
-    when = float(when)
-
-    if when > 1 or when < 0:
+    if when > one or when < zero:
         raise ValueError("When: 'when' must be in [0,1]")
 
     return when

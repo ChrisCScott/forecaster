@@ -100,7 +100,7 @@ class Account(TaxSource):
     def __init__(
             self, owner=None,
             balance=0, rate=0, nper=1, default_timing=None,
-            inputs=None, initial_year=None):
+            inputs=None, initial_year=None, high_precision=None, **kwargs):
         """ Constructor for `Account`.
 
         This constructor receives only values for the first year.
@@ -124,6 +124,9 @@ class Account(TaxSource):
                 to/from this account, used by various methods when no
                 `timing` arg is expressly provided. Optional.
             initial_year (int): The first year (e.g. 2000)
+            high_precision (Callable[[float], T]): Takes a single
+                `float` argument and converts it to high-precision
+                numeric type `T`, such as Decimal.
         """
         # Use the explicitly-provided initial year if available,
         # otherwise default to the owner's initial year:
@@ -133,7 +136,10 @@ class Account(TaxSource):
                     'Account: owner must have initial_year attribute.')
             else:
                 initial_year = owner.initial_year
-        super().__init__(initial_year=initial_year, inputs=inputs)
+        # Defer Ledger's init until we can pass initial_year:
+        super().__init__(
+            initial_year=initial_year, inputs=inputs,
+            high_precision=high_precision, **kwargs)
 
         # Set hidden attributes to support properties that need them to
         # be set in advance:
@@ -141,6 +147,7 @@ class Account(TaxSource):
         self._transactions = defaultdict(lambda: 0) # Money value
         self._rate_callable = None
         self._default_timing = None
+        self._nper = None
 
         # Set the various property values based on inputs:
         self.owner = owner
@@ -148,7 +155,7 @@ class Account(TaxSource):
         self.rate_callable = rate
         self.nper = frequency_conv(nper)
         if default_timing is None:
-            self.default_timing = Timing()
+            self.default_timing = Timing(high_precision=high_precision)
         else:
             self.default_timing = default_timing
         # NOTE: returns is calculated lazily
@@ -185,14 +192,14 @@ class Account(TaxSource):
         """ Sets default_timing. """
         # Cast to `Timing` type:
         if not isinstance(val, Timing):
-            val = Timing(val)
+            val = Timing(val, high_precision=self.high_precision)
         self._default_timing = val
 
     @default_timing.deleter
     def default_timing(self):
         """ Deletes default_timing. """
         # Return default_timing to its default value:
-        self._default_timing = Timing()
+        self._default_timing = Timing(high_precision=self.high_precision)
 
     @recorded_property_cached
     def balance(self):
@@ -211,7 +218,8 @@ class Account(TaxSource):
             # pylint: disable=no-member
             # Pylint gets confused by attributes added by metaclass.
             self._balance_history[self.this_year - 1],
-            self.rate, 'start', 'end', nper=self.nper)
+            self.rate, 'start', 'end', nper=self.nper,
+            high_precision=self.high_precision)
 
         # Then, grow each transactions and add it to the year-end total.
         # NOTE: This accounts for both inflows and outflows; outflows
@@ -221,7 +229,8 @@ class Account(TaxSource):
         transactions_history = self._transactions_history
         for when, value in transactions_history[self.this_year - 1].items():
             balance += value_at_time(
-                value, self.rate, when, 'end', nper=self.nper)
+                value, self.rate, when, 'end', nper=self.nper,
+                high_precision=self.high_precision)
 
         return balance
 
@@ -281,9 +290,16 @@ class Account(TaxSource):
         """ Returns (losses) on the balance and transactions this year. """
         # Find returns on the initial balance.
         # This doesn't include any transactions or their growth.
+        one = self.precision_convert(1)
         returns = (
-            self.balance *
-            (accumulation_function(1, self.rate, self.nper) - 1))
+            self.balance * (
+                accumulation_function(
+                    one, self.rate, self.nper,
+                    # This member exists, though Pylint can't tell.
+                    # pylint: disable=no-member
+                    high_precision=self.high_precision)
+                    # pylint: enable=no-member
+                - one))
 
         # Add in the returns on each transaction.
         # (Withdrawals will generate returns with the opposite sign of
@@ -291,10 +307,27 @@ class Account(TaxSource):
         # cancelling out a portion of those returns.)
         for when in self.transactions:
             returns += (
-                self.transactions[when] *
-                (accumulation_function(1 - when, self.rate, self.nper) - 1))
+                self.transactions[when] * (
+                    accumulation_function(
+                        one - when, self.rate, self.nper,
+                        high_precision=self.high_precision) - 
+                    one))
 
-        return returns
+        return self.precision_convert(returns)
+
+    @property
+    def nper(self):
+        """ The number of compounding periods per year. """
+        return self._nper
+
+    @nper.setter
+    def nper(self, value):
+        # Convert strings to either a number or float
+        value = frequency_conv(value)
+        # Convert non-None values to high-precision, if enabled:
+        if value is not None:
+            value = self.precision_convert(value)
+        self._nper = value
 
     def add_transaction(self, value, when='end'):
         """ Adds a transaction to the account.
@@ -312,7 +345,7 @@ class Account(TaxSource):
                 Decimal.
             ValueError: `when` must be in [0,1]
         """
-        when = when_conv(when)
+        when = when_conv(when, self.high_precision)
 
         # NOTE: If `value` is intended to be a special Money type
         # (like PyMoney), attempt conversion here
@@ -375,7 +408,7 @@ class Account(TaxSource):
             The maximum value that can be withdrawn from the account.
         """
         # For an ordinary Account, there is no limit on withdrawals.
-        return float('-inf')
+        return self.precision_convert(float('-inf'))
 
     @property
     def max_inflow_limit(self):
@@ -385,7 +418,7 @@ class Account(TaxSource):
         for inflows.
         """
         # For an ordinary Account, there is no limit on contributions.
-        return float('inf')
+        return self.precision_convert(float('inf'))
 
     @property
     def min_outflow_limit(self):
@@ -395,7 +428,7 @@ class Account(TaxSource):
         it provides the minimum.
         """
         # For an ordinary Account, there is no minimum withdrawal
-        return 0
+        return self.precision_convert(0)
 
     @property
     def min_inflow_limit(self):
@@ -405,7 +438,7 @@ class Account(TaxSource):
         it provides the minimum for inflows.
         """
         # For an ordinary Account, there is no minimum contribution.
-        return 0
+        return self.precision_convert(0)
 
     def max_inflow(self, when="end"):
         """ The maximum amount that can be contributed at `when`. """
@@ -425,7 +458,7 @@ class Account(TaxSource):
             # Withdraw everything (or none if the balance is negative)
             min(
                 -self.balance_at_time(when),
-                0), # Money value
+                self.precision_convert(0)), # Money value
             # But no more than the maximum outflow:
             self.max_outflow_limit)
 
@@ -501,7 +534,7 @@ class Account(TaxSource):
             timing = self.default_timing
         elif not isinstance(timing, Timing):
             # Convert timing from str or dict if appropriate:
-            timing = Timing(timing)
+            timing = Timing(timing, high_precision=self.high_precision)
         # Weights aren't guaranteed to sum to 1, so normalize them so
         # they do. This will help later.
         # (Also convert to Decimal to avoid Decimal/float mismatch.)
@@ -510,7 +543,9 @@ class Account(TaxSource):
         # weights (i.e. values) but non-empty timings (i.e. keys),
         # assume uniform weights at those timings:
         if total_weight == 0:
-            timing = Timing({when: 1 for when in timing.keys()})
+            timing = Timing({
+                when: self.precision_convert(1) for when in timing.keys()},
+                high_precision=self.high_precision)
             total_weight = len(timing)
         # Normalize so that we can conveniently multiply weights by
         # `total` to get that amount spread across all timings:
@@ -538,7 +573,7 @@ class Account(TaxSource):
         #   (We can use this to determine v_j)
 
         # Since s (the total) is the same for all values, find it first:
-        weighted_accum = 0
+        weighted_accum = self.precision_convert(0)
         for timing, weight in normalized_timing.items():
             weighted_accum += weight * accumulation_function(
                 t=1-timing,
@@ -598,7 +633,7 @@ class Account(TaxSource):
 
         if balance_limit is None:
             # Outflows are limited by the account balance:
-            balance_limit = 0 # Money value
+            balance_limit = self.precision_convert(0) # Money value
 
         # Limit transactions to max total outflows, accounting for any
         # existing outflows already recorded as transactions:
@@ -608,10 +643,10 @@ class Account(TaxSource):
         if transaction_limit is not None:
             min_total = max(min_total, transaction_limit)
         # Don't allow positive lower bounds:
-        min_total = min(min_total, 0) # Money value
+        min_total = min(min_total, self.precision_convert(0)) # Money value
 
         # Ensure that only negative amounts are returned:
-        max_total = 0 # Money value
+        max_total = self.precision_convert(0) # Money value
         return self.transactions_to_balance(
             balance_limit,
             timing=timing,
@@ -653,7 +688,7 @@ class Account(TaxSource):
 
         if balance_limit is None:
             # Inflows have no upper cap:
-            balance_limit = float('inf')
+            balance_limit = self.precision_convert(float('inf'))
 
         # Limit transactions to max total inflows, accounting for any
         # existing inflows already recorded as transactions:
@@ -662,10 +697,10 @@ class Account(TaxSource):
         if transaction_limit is not None:
             max_total = min(max_total, transaction_limit)
         # Don't allow negative lower bounds:
-        max_total = max(max_total, 0) # Money value
+        max_total = max(max_total, self.precision_convert(0)) # Money value
 
         # Ensure that only non-negative amounts are returned:
-        min_total = 0 # Money value
+        min_total = self.precision_convert(0) # Money value
         return self.transactions_to_balance(
             balance_limit,
             timing=timing,
@@ -707,7 +742,7 @@ class Account(TaxSource):
 
         if balance_limit is None:
             # Outflows are limited by the account balance:
-            balance_limit = 0 # Money value
+            balance_limit = self.precision_convert(0) # Money value
 
         # Limit transactions to min total outflows, accounting for any
         # existing outflows already recorded as transactions:
@@ -717,10 +752,10 @@ class Account(TaxSource):
         if transaction_limit is not None:
             min_total = max(min_total, transaction_limit)
         # Don't allow positive lower bounds:
-        min_total = min(min_total, 0) # Money value
+        min_total = min(min_total, self.precision_convert(0)) # Money value
 
         # Ensure that only negative amounts are returned:
-        max_total = 0 # Money value
+        max_total = self.precision_convert(0) # Money value
         return self.transactions_to_balance(
             balance_limit,
             timing=timing,
@@ -762,7 +797,7 @@ class Account(TaxSource):
 
         if balance_limit is None:
             # Inflows have no upper cap:
-            balance_limit = float('inf')
+            balance_limit = self.precision_convert(float('inf'))
 
         # Limit transactions to min total inflows, accounting for any
         # existing inflows already recorded as transactions:
@@ -771,10 +806,10 @@ class Account(TaxSource):
         if transaction_limit is not None:
             max_total = min(max_total, transaction_limit)
         # Don't allow negative lower bounds:
-        max_total = max(max_total, 0) # Money value
+        max_total = max(max_total, self.precision_convert(0)) # Money value
 
         # Ensure that only non-negative amounts are returned:
-        min_total = 0 # Money value
+        min_total = self.precision_convert(0) # Money value
         return self.transactions_to_balance(
             balance_limit,
             timing=timing,
@@ -785,7 +820,7 @@ class Account(TaxSource):
     @recorded_property
     def taxable_income(self):
         """ Treats all returns as taxable. """
-        return max(self.returns, 0) # Money value
+        return max(self.returns, self.precision_convert(0)) # Money value
 
     # Allow calling code to interact directly with the account as
     # a series of transactions. Implement all `Mapping` methods
@@ -799,7 +834,7 @@ class Account(TaxSource):
             yield transaction
 
     def __contains__(self, key):
-        when = when_conv(key)
+        when = when_conv(key, self.high_precision)
         return when in self._transactions
 
     def __getitem__(self, key):
@@ -848,12 +883,13 @@ class Account(TaxSource):
         """
         # We need to convert `time` to enable the comparison in the dict
         # comprehension in the for loop below.
-        time = when_conv(time)
+        time = when_conv(time, self.high_precision)
 
         # Find the future value (at t=time) of the initial balance.
         # This doesn't include any transactions of their growth.
         balance = value_at_time(
-            self.balance, self.rate, 'start', time, nper=self.nper)
+            self.balance, self.rate, 'start', time, nper=self.nper,
+            high_precision=self.high_precision)
 
         # Combine the recorded and input transactions, if provided:
         if transactions is not None:
@@ -866,7 +902,8 @@ class Account(TaxSource):
         # happen after `time`).
         for when in [w for w in transactions if w <= time]:
             balance += value_at_time(
-                transactions[when], self.rate, when, time, nper=self.nper)
+                transactions[when], self.rate, when, time, nper=self.nper,
+                high_precision=self.high_precision)
 
         return balance
 
@@ -884,7 +921,7 @@ class Account(TaxSource):
                 are considered. Optional.
         """
         # Convert `when` to avoid type errors.
-        when = when_conv(when)
+        when = when_conv(when, self.high_precision)
 
         # We'll base all calculations at `when`, including the value
         # of `balance`. Do this even for `when=0`, since there may
@@ -895,7 +932,9 @@ class Account(TaxSource):
 
         # Determine when we'll reach the desired amount, assuming
         # no further transactions:
-        time = when + time_to_value(self.rate, balance, value, nper=self.nper)
+        time = when + time_to_value(
+            self.rate, balance, value, nper=self.nper,
+            high_precision=self.high_precision)
 
         # Now look ahead to the next transaction and, if it happens
         # before `time`, recurse onto that transaction's timing:
