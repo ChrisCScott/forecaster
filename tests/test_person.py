@@ -21,6 +21,45 @@ class TestPersonMethods(unittest.TestCase):
         self.name = "Testy McTesterson"
         self.birth_date = datetime(2000, 2, 1)  # 1 February 2000
         self.retirement_date = datetime(2065, 6, 26)  # 26 June 2065
+        self.gross_income = 100000  # $100000
+        self.raise_rate = 1  # 100%
+        self.tax_treatment = Tax(
+            {self.initial_year: {
+                0: 0.1,
+                1000: 0.2,
+                100000: 0.3}
+             },
+            inflation_adjust={
+                year: 1 + (year - self.initial_year / 16)
+                for year in range(self.initial_year, self.initial_year + 100)
+            },
+            personal_deduction={self.initial_year: 100},
+            credit_rate={self.initial_year: 0.15})
+        self.spouse = Person(
+            initial_year=self.initial_year,
+            name="Spouse",
+            birth_date=1998,
+            retirement_date=2063,
+            gross_income=50000,
+            raise_rate=self.raise_rate,
+            spouse=None,
+            tax_treatment=self.tax_treatment)
+        self.owner = Person(
+            initial_year=self.initial_year,
+            name=self.name,
+            birth_date=self.birth_date,
+            retirement_date=self.retirement_date,
+            gross_income=self.gross_income,
+            raise_rate=self.raise_rate,
+            spouse=self.spouse,
+            tax_treatment=self.tax_treatment)
+
+    def setUp_decimal(self):
+        """ Sets up default vaules using Decimal inputs """
+        self.initial_year = 2020
+        self.name = "Testy McTesterson"
+        self.birth_date = datetime(2000, 2, 1)  # 1 February 2000
+        self.retirement_date = datetime(2065, 6, 26)  # 26 June 2065
         self.gross_income = Decimal(100000)  # $100000
         self.raise_rate = Decimal(1)  # 100%
         self.tax_treatment = Tax(
@@ -152,7 +191,7 @@ class TestPersonMethods(unittest.TestCase):
         """ Tests Person.__init__ with optional args. """
         # Now confirm that we can pass gross_income, spouse,
         # tax_treatment, and initial_year
-        gross_income = Decimal(100000)
+        gross_income = 100000
         person1 = Person(
             self.initial_year, self.name, self.birth_date,
             retirement_date=self.retirement_date,
@@ -177,7 +216,7 @@ class TestPersonMethods(unittest.TestCase):
         person2 = Person(
             self.initial_year, "Spouse", self.initial_year - 20,
             retirement_date=self.retirement_date,
-            gross_income=Decimal(50000),
+            gross_income=50000,
             spouse=person1, tax_treatment=self.tax_treatment)
         self.assertEqual(person1.spouse, person2)
         self.assertEqual(person2.spouse, person1)
@@ -188,7 +227,7 @@ class TestPersonMethods(unittest.TestCase):
         person2 = Person(
             self.initial_year, "Spouse", self.initial_year - 20,
             retirement_date=self.retirement_date,
-            gross_income=Decimal(50000),
+            gross_income=50000,
             spouse=person1, tax_treatment=self.tax_treatment)
         # Add an account and confirm that the Person passed as owner is
         # updated.
@@ -300,12 +339,50 @@ class TestPersonMethods(unittest.TestCase):
             gross_income=gross_income,
             tax_treatment=tax)
         self.assertEqual(person.gross_income, gross_income)
-        self.assertEqual(person.net_income, Decimal(100))
+        self.assertEqual(person.net_income, 100)
         self.assertEqual(person.this_year, initial_year)
         person.next_year()  # 200% raise - gross income is now $300
+        self.assertEqual(person.gross_income, 300)
+        self.assertEqual(person.net_income, 250)
+        self.assertEqual(person.this_year, initial_year + 1)
+
+    def test_decimal(self):
+        """ Test compatibility with Decimal inputs. """
+        # Convert values to Decimal-based
+        self.setUp_decimal()
+        # The test itself is based on test_next
+        initial_year = 2017
+        gross_income = 100
+        tax = Tax(
+            {initial_year: {
+                Decimal(0): Decimal(0),
+                Decimal(200): Decimal(0.5),
+                Decimal(1000): Decimal(0.75)}},
+            inflation_adjust={
+                2017: Decimal(1),
+                2018: Decimal(1),
+                2019: Decimal(1),
+                2020: Decimal(1)},
+            personal_deduction={2017: Decimal(0)})
+        person = Person(
+            initial_year, 'Name', 2000,
+            raise_rate=Decimal(2.0),
+            retirement_date=self.retirement_date,
+            gross_income=gross_income,
+            tax_treatment=tax)
+        # In the first year: $100 gross income, $100 taxable income,
+        # $100 net income.
+        self.assertEqual(person.gross_income, gross_income)
+        self.assertEqual(person.net_income, Decimal(100))
+        self.assertEqual(person.this_year, initial_year)
+        self.assertEqual(person.taxable_income, Decimal(100))
+        person.next_year()  # 200% raise
+        # In the second year: $300 gross income, $300 taxable income,
+        # $250 net income (as income over $200 is taxed at 50%)
         self.assertEqual(person.gross_income, Decimal(300))
         self.assertEqual(person.net_income, Decimal(250))
         self.assertEqual(person.this_year, initial_year + 1)
+        self.assertEqual(person.taxable_income, Decimal(300))
 
     def test_taxable_income(self):
         """ Test Person.taxable_income. """
@@ -331,7 +408,7 @@ class TestPersonMethods(unittest.TestCase):
             self.initial_year, 'Name', 2000,
             retirement_date=self.retirement_date,
             gross_income=gross_income, tax_treatment=tax)
-        self.assertEqual(person.tax_withheld, Decimal(50))
+        self.assertEqual(person.tax_withheld, 50)
 
     def test_tax_credit(self):
         """ Test Person.tax_credit. """
@@ -343,7 +420,7 @@ class TestPersonMethods(unittest.TestCase):
             self.initial_year, 'Name', 2000,
             retirement_date=self.retirement_date, gross_income=gross_income,
             tax_treatment=tax)
-        self.assertEqual(person.tax_credit, Decimal(0))
+        self.assertEqual(person.tax_credit, 0)
 
     def test_tax_deduction(self):
         """ Test Person.tax_deduction. """
@@ -355,7 +432,7 @@ class TestPersonMethods(unittest.TestCase):
             self.initial_year, 'Name', 2000,
             retirement_date=self.retirement_date, gross_income=gross_income,
             tax_treatment=tax)
-        self.assertEqual(person.tax_deduction, Decimal(0))
+        self.assertEqual(person.tax_deduction, 0)
 
     def test_init_inputs(self):
         """ Test Person.__init__ with inputs arg. """
@@ -363,7 +440,7 @@ class TestPersonMethods(unittest.TestCase):
         gross_income = 500
         inputs = {
             'gross_income': {
-                initial_year: Decimal(1000), initial_year + 2: Decimal(0)
+                initial_year: 1000, initial_year + 2: 0
             }
         }
         person = Person(
@@ -371,11 +448,11 @@ class TestPersonMethods(unittest.TestCase):
             gross_income=gross_income, raise_rate=1, inputs=inputs)
         # We've gross income for the first and third years; the second
         # year should be set programmatically based on a 100% raise.
-        self.assertEqual(person.gross_income, Decimal(1000))
+        self.assertEqual(person.gross_income, 1000)
         person.next_year()
-        self.assertEqual(person.gross_income, Decimal(2000))
+        self.assertEqual(person.gross_income, 2000)
         person.next_year()
-        self.assertEqual(person.gross_income, Decimal(0))
+        self.assertEqual(person.gross_income, 0)
 
 
 if __name__ == '__main__':
