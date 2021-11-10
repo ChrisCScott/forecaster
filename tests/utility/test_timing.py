@@ -207,16 +207,6 @@ class TestFreeMethods(unittest.TestCase):
         when = when_conv('end')
         self.assertEqual(when, 1)
 
-    def test_when_conv_str(self):
-        """ Tests `when_conv` on a non-magic str input. """
-        when = when_conv('1')
-        self.assertEqual(when, 1)
-
-    def test_when_conv_invalid(self):
-        """ Tests `when_conv` on an invalid input. """
-        with self.assertRaises(ValueError):
-            _ = when_conv('invalid input')
-
     def test_frequency_continuous(self):
         """ Test setting frequency to 'C' and 'None' (equivalent). """
         frequency = frequency_conv('C')
