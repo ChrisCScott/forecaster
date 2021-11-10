@@ -74,8 +74,8 @@ class AccountLink:
                 raise TypeError('link must be convertible to a tuple')
         if default_factory is None and isinstance(link, AccountLink):
             # If we've passed in an `AccountLink`, copy its
-            # default_factor (unless one's been explicitly passed in):
-            default_factory = default_factory
+            # default_factory (unless one's been explicitly passed in):
+            default_factory = link.default_factory
 
         # Proceed with the usual init actions:
         # Store inputs:
