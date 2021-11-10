@@ -1,9 +1,11 @@
 """ Provides classes for determining the total sum of transactions. """
 
 from forecaster.strategy.base import Strategy, strategy_method
+from forecaster.utility.precision import (
+    HighPrecisionOptionalPropertyCached, HighPrecisionOptional)
 
 
-class LivingExpensesStrategy(Strategy):
+class LivingExpensesStrategy(Strategy, HighPrecisionOptional):
     """ Determines annual living expenses.
 
     This class is callable. Its call signature has this form::
@@ -36,8 +38,6 @@ class LivingExpensesStrategy(Strategy):
             some strategies as a baseline for contributions.
         rate (float): A user-supplied contribution rate. Must be a
             percentage (e.g. float('0.03') means 3%).
-        refund_reinvestment_rate (float): The percentage of each tax
-            refund that is reinvested in the year it's received.
         inflation_adjust (callable): If provided, `base_amount` is
             interpreted as a real (i.e. inflation-adjusted) currency
             value.
@@ -63,10 +63,10 @@ class LivingExpensesStrategy(Strategy):
             strategy.
     """
 
-    # pylint: disable=too-many-arguments
-    # We need to pass the strategy's state variables at init time. There
-    # are 6 of them (including self). Refactoring to use a dict or
-    # similar would hurt readability.
+    # These properties can be floats or a high-precision type:
+    base_amount = HighPrecisionOptionalPropertyCached()
+    rate = HighPrecisionOptionalPropertyCached()
+
     def __init__(
             self, strategy, base_amount=0, rate=0, inflation_adjust=None):
         """ Constructor for LivingExpensesStrategy. """
