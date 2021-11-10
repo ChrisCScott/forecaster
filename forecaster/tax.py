@@ -7,7 +7,7 @@ import collections
 from forecaster.person import Person
 from forecaster.utility import (
     build_inflation_adjust, nearest_year, extend_inflation_adjusted,
-    Timing)
+    Timing, HighPrecisionOptional)
 
 # NOTE: Consider making this a ledger-like object that stores values
 # year-over-year. These values might include:
@@ -31,7 +31,7 @@ from forecaster.utility import (
 # (such as FedProvTuple).
 
 
-class Tax(object):
+class Tax(HighPrecisionOptional):
     """ Determines taxes payable on taxable income.
 
     When called with a float-type first argument (i.e. as
@@ -114,7 +114,7 @@ class Tax(object):
     def __init__(
             self, tax_brackets, personal_deduction=None, credit_rate=None,
             inflation_adjust=None,
-            refund_timing='start', payment_timing='start'):
+            refund_timing='start', payment_timing='start', **kwargs):
         """ Initializes the Tax object.
 
         Args:
@@ -142,6 +142,7 @@ class Tax(object):
                 must be made, if there is an amount owing for the year
                 in excess of the amount withheld. Optional.
         """
+        super().__init__(**kwargs)
         # NOTE: Consider allowing users to pass in non-year-indexed
         # values (e.g. so that `tax_brackets` can be a dict of
         # {float: float} pairs instead of {int: {float: float}}
@@ -172,7 +173,8 @@ class Tax(object):
             self._personal_deduction = dict(personal_deduction)
         else:
             # If this arg wasn't passed, assume there's no deduction
-            self._personal_deduction = {min(self._tax_brackets): 0}
+            self._personal_deduction = {
+                min(self._tax_brackets): self.precision_convert(0)}
 
         if credit_rate != {}:
             # Copy credit_rate (to avoid external mutation):
@@ -181,7 +183,8 @@ class Tax(object):
             # If this argument wasn't passed, default to behaviour where
             # all tax credits are fully refundable (i.e. credits reduce
             # tax liability at a 100% rate)
-            self._credit_rate = {min(self._tax_brackets): 1}
+            self._credit_rate = {
+                min(self._tax_brackets): self.precision_convert(1)}
 
         self._payment_timing = None
         self._refund_timing = None
@@ -322,7 +325,7 @@ class Tax(object):
         # marginal rate of that bracket applied to the full taxable
         # income within its range.
         prev = min(brackets)  # We need to look at 2 brackets at a time
-        self._accum[year] = {prev: 0}  # Accum for lowest bracket
+        self._accum[year] = {prev: self.precision_convert(0)}  # Accum for lowest bracket
         iterator = sorted(brackets.keys())  # Look at brackets in order
         iterator.remove(prev)  # Lowest bracket is already accounted for.
         for bracket in iterator:
@@ -376,7 +379,7 @@ class Tax(object):
         # Apply tax credts:
         net_tax = gross_tax - credit * self.credit_rate(year)
         # Assume credits are non-refundable:
-        return max(net_tax, 0)
+        return max(net_tax, self.precision_convert(0))
 
     def tax_person(
             self, person, year, deduction=0, credit=0):
@@ -435,7 +438,7 @@ class Tax(object):
 
         # Base case: If {} is passed, return $0.
         if not people:
-            return 0
+            return self.precision_convert(0)
 
         # Otherwise, grab someone at random and determine their taxes.
         person = next(iter(people))
@@ -506,7 +509,7 @@ class Tax(object):
         # Add together the tax treatment for each spouse, without doing
         # anything special (this is essentially the same logic as
         # tax_person, but without the check for spouses or recursion)
-        tax = 0
+        tax = self.precision_convert(0)
         for person in people:
             kwargs = {}
             if person in deduction:

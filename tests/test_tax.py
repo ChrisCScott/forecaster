@@ -26,39 +26,28 @@ class TestTax(unittest.TestCase):
         year_range = range(self.initial_year, self.initial_year + 100)
         self.inflation_adjustments = {
             year: 1 + (year - self.initial_year) / growth_factor
-            for year in year_range
-        }
+            for year in year_range}
         # For convenience, store the year where inflation has doubled
         # the nominal value of money
         self.double_year = self.initial_year + growth_factor
         # Build some brackets with nice round numbers:
-        self.tax_brackets = {
-            self.initial_year: {
-                Decimal(0): Decimal('0.1'),
-                Decimal('100'): Decimal('0.2'),
-                Decimal('10000'): Decimal('0.3')
-            }
-        }
+        self.tax_brackets = {self.initial_year: {
+            0: 0.1,
+            100: 0.2,
+            10000: 0.3}}
         # For convenience, build a sorted, type-converted array of
         # each of the tax bracket thresholds:
         self.brackets = sorted({
-            Decimal(key): self.tax_brackets[self.initial_year][key]
+            key: self.tax_brackets[self.initial_year][key]
             for key in self.tax_brackets[self.initial_year].keys()})
         # For convenience in testing, build an accum dict that
         # corresponds to the tax brackets above.
-        self.accum = {
-            self.initial_year: {
-                Decimal(0): Decimal('0'),
-                Decimal('100'): Decimal('10'),
-                Decimal('10000'): Decimal('1990')
-            }
-        }
-        self.personal_deduction = {
-            self.initial_year: Decimal('100')
-        }
-        self.credit_rate = {
-            self.initial_year: Decimal('0.1')
-        }
+        self.accum = {self.initial_year: {
+            0: 0,
+            100: 10,
+            10000: 1990}}
+        self.personal_deduction = {self.initial_year: 100}
+        self.credit_rate = {self.initial_year: 0.1}
 
         self.tax = Tax(
             self.tax_brackets,
@@ -84,12 +73,104 @@ class TestTax(unittest.TestCase):
         # so that we don't need to worry about tax on unrealized growth:
         self.taxable_account1 = TaxableAccount(
             owner=self.person1,
-            acb=0, balance=50000, rate=Decimal('0.05'), nper=1)
+            acb=0, balance=50000, rate=0.05, nper=1)
         self.taxable_account1.add_transaction(-50000, when='start')
         self.rrsp = RRSP(
             owner=self.person1,
             inflation_adjust=self.inflation_adjustments,
-            contribution_room=0, balance=10000, rate=Decimal('0.05'), nper=1)
+            contribution_room=0, balance=10000, rate=0.05, nper=1)
+        # Employment income is fully taxable, and only half of capital
+        # gains (the income from the taxable account) is taxable:
+        self.person1_taxable_income = (
+            self.person1.gross_income + self.taxable_account1.balance / 2)
+
+        # Give the second person two accounts, one taxable and one
+        # non-taxable. Withdraw the entirety from the taxable account,
+        # so that we don't need to worry about tax on unrealized growth,
+        # and withdraw a bit from the non-taxable account (which should
+        # have no effect on taxable income):
+        self.taxable_account2 = TaxableAccount(
+            owner=self.person2,
+            acb=0, balance=20000, rate=0.05, nper=1)
+        self.taxable_account2.add_transaction(-20000, when='start')
+        self.tfsa = TFSA(
+            owner=self.person2,
+            balance=50000, rate=0.05, nper=1)
+        self.tfsa.add_transaction(-20000, when='start')
+        # Employment income is fully taxable, and only half of capital
+        # gains (the income from the taxable account) is taxable:
+        self.person2_taxable_income = (
+            self.person2.gross_income + self.taxable_account2.balance / 2)
+
+    def setUp_decimal(self):
+        self.initial_year = 2000
+        # Build 100 years of inflation adjustments with steadily growing
+        # adjustment factors. First, pick a nice number (ideally a power
+        # of 2 to avoid float precision issues); inflation_adjustment
+        # will grow by adding the inverse (1/n) of this number annually
+        growth_factor = 32
+        year_range = range(self.initial_year, self.initial_year + 100)
+        self.inflation_adjustments = {
+            year: 1 + (year - self.initial_year) / growth_factor
+            for year in year_range
+        }
+        # For convenience, store the year where inflation has doubled
+        # the nominal value of money
+        self.double_year = self.initial_year + growth_factor
+        # Build some brackets with nice round numbers:
+        self.tax_brackets = {self.initial_year: {
+            Decimal(0): Decimal('0.1'),
+            Decimal('100'): Decimal('0.2'),
+            Decimal('10000'): Decimal('0.3')}}
+        # For convenience, build a sorted, type-converted array of
+        # each of the tax bracket thresholds:
+        self.brackets = sorted({
+            Decimal(key): self.tax_brackets[self.initial_year][key]
+            for key in self.tax_brackets[self.initial_year].keys()})
+        # For convenience in testing, build an accum dict that
+        # corresponds to the tax brackets above.
+        self.accum = {self.initial_year: {
+            Decimal(0): Decimal('0'),
+            Decimal('100'): Decimal('10'),
+            Decimal('10000'): Decimal('1990')}}
+        self.personal_deduction = {self.initial_year: Decimal('100')}
+        self.credit_rate = {self.initial_year: Decimal('0.1')}
+
+        self.tax = Tax(
+            self.tax_brackets,
+            inflation_adjust=self.inflation_adjustments,
+            personal_deduction=self.personal_deduction,
+            credit_rate=self.credit_rate)
+
+        # Set up a simple person with no account-derived taxable income
+        self.person = Person(
+            self.initial_year, "Tester", self.initial_year - 25,
+            retirement_date=self.initial_year + 40,
+            gross_income=Decimal(0))
+
+        # Set up two people, spouses, on which to do more complex tests
+        self.person1 = Person(
+            self.initial_year, "Tester 1", self.initial_year - 20,
+            retirement_date=self.initial_year + 45,
+            gross_income=Decimal(100000))
+        self.person2 = Person(
+            self.initial_year, "Tester 2", self.initial_year - 22,
+            retirement_date=self.initial_year + 43,
+            gross_income=Decimal(50000))
+
+        # Give the first person two accounts, one taxable and one
+        # tax-deferred. Withdraw the entirety from the taxable account,
+        # so that we don't need to worry about tax on unrealized growth:
+        self.taxable_account1 = TaxableAccount(
+            owner=self.person1,
+            acb=Decimal(0), balance=Decimal(50000),
+            rate=Decimal('0.05'), nper=Decimal(1))
+        self.taxable_account1.add_transaction(Decimal(-50000), when='start')
+        self.rrsp = RRSP(
+            owner=self.person1,
+            inflation_adjust=self.inflation_adjustments,
+            contribution_room=Decimal(0), balance=Decimal(10000),
+            rate=Decimal('0.05'), nper=Decimal(1))
         # Employment income is fully taxable, and only half of capital
         # gains (the income from the taxable account) is taxable:
         self.person1_taxable_income = Decimal(
@@ -102,12 +183,13 @@ class TestTax(unittest.TestCase):
         # have no effect on taxable income):
         self.taxable_account2 = TaxableAccount(
             owner=self.person2,
-            acb=0, balance=20000, rate=Decimal('0.05'), nper=1)
-        self.taxable_account2.add_transaction(-20000, when='start')
+            acb=Decimal(0), balance=Decimal(20000),
+            rate=Decimal('0.05'), nper=Decimal(1))
+        self.taxable_account2.add_transaction(Decimal(-20000), when='start')
         self.tfsa = TFSA(
             owner=self.person2,
-            balance=50000, rate='0.05', nper=1)
-        self.tfsa.add_transaction(-20000, when='start')
+            balance=Decimal(50000), rate=Decimal('0.05'), nper=Decimal(1))
+        self.tfsa.add_transaction(Decimal(-20000), when='start')
         # Employment income is fully taxable, and only half of capital
         # gains (the income from the taxable account) is taxable:
         self.person2_taxable_income = Decimal(
@@ -137,41 +219,20 @@ class TestTax(unittest.TestCase):
             self.assertEqual(tax.tax_brackets(year), self.tax_brackets[year])
             self.assertEqual(tax.accum(year), self.accum[year])
         self.assertTrue(callable(tax.inflation_adjust))
-        self.assertEqual(tax.personal_deduction(self.initial_year), Decimal(0))
-        self.assertEqual(tax.credit_rate(self.initial_year), Decimal(1))
-
-    def test_init_type_conv_str(self):
-        """ Tests Tax.__init__ with args requiring type-conversion. """
-        # Use an all-str dict and confirm that the output is correctly
-        # typed
-        tax_brackets = {
-            str(year): {
-                str(bracket.amount): str(self.tax_brackets[year][bracket])
-                for bracket in self.tax_brackets[year]
-            } for year in self.tax_brackets
-        }
-        inflation_adjustments = {
-            str(year): str(self.inflation_adjustments[year])
-            for year in self.inflation_adjustments
-        }
-        tax = Tax(tax_brackets, inflation_adjust=inflation_adjustments)
-        for year in self.tax_brackets:
-            self.assertEqual(tax.tax_brackets(year), self.tax_brackets[year])
-            self.assertTrue(type_check(
-                tax.tax_brackets(year), {Decimal: Decimal}))
-        self.assertTrue(callable(tax.inflation_adjust))
+        self.assertEqual(tax.personal_deduction(self.initial_year), 0)
+        self.assertEqual(tax.credit_rate(self.initial_year), 1)
 
     def test_income_0_money(self):
         """ Call Test on $0 income. """
         # $0 should return $0 in tax owing. This is the easiest test.
-        income = Decimal(0)
-        self.assertEqual(self.tax(income, self.initial_year), Decimal(0))
+        income = 0
+        self.assertEqual(self.tax(income, self.initial_year), 0)
 
     def test_income_0_person(self):
         """ Test tax on a person with $0 income. """
         # $0 should return $0 in tax owing. This is the easiest test.
-        self.person.gross_income = Decimal(0)
-        self.assertEqual(self.tax(self.person, self.initial_year), Decimal(0))
+        self.person.gross_income = 0
+        self.assertEqual(self.tax(self.person, self.initial_year), 0)
 
     def test_income_under_deduction(self):
         """ Test tax on person with income under personal deduction. """
@@ -179,13 +240,13 @@ class TestTax(unittest.TestCase):
             self.personal_deduction[self.initial_year] / 2
         )
         # Should return $0
-        self.assertEqual(self.tax(self.person, self.initial_year), Decimal(0))
+        self.assertEqual(self.tax(self.person, self.initial_year), 0)
 
     def test_income_at_deduction(self):
         """ Call Test on income equal to the personal deduction. """
         self.person.gross_income = self.personal_deduction[self.initial_year]
         # Should return $0
-        self.assertEqual(self.tax(self.person, self.initial_year), Decimal(0))
+        self.assertEqual(self.tax(self.person, self.initial_year), 0)
 
     def test_income_in_bracket_1_money(self):
         """ Call Test on income mid-way into the lowest tax bracket. """
@@ -397,6 +458,26 @@ class TestTax(unittest.TestCase):
         # `refund_timing` should have exactly one timing: 0
         self.tax.refund_timing = 'start'
         self.assertEqual(set(self.tax.refund_timing), {0})
+
+    def test_decimal(self):
+        """ Call Test with Decimal values. """
+        # Convert values to Decimal:
+        self.setUp_decimal()
+        # This test is based on test_income_in_bracket_2_person
+        self.person.gross_income = (
+            (self.brackets[1] + self.brackets[2]) / 2
+            + self.personal_deduction[self.initial_year])
+        target = (
+            self.accum[self.initial_year][self.brackets[1]]
+            + (
+                (self.brackets[1] + self.brackets[2]) / 2
+                - self.brackets[1]
+            ) * self.tax_brackets[self.initial_year][self.brackets[1]]
+        )
+        self.assertEqual(
+            self.tax(self.person, self.initial_year),
+            target
+        )
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(
