@@ -196,6 +196,7 @@ class HighPrecisionOptional(object):
 
     def __init__(self, high_precision=None, **kwargs):
         super().__init__(**kwargs)
+        self.high_precision = None # Just helping out Pylint
         self.__setattr__(_HIGH_PRECISION_ATTR_NAME, high_precision)
 
     def precision_convert(self, value):
@@ -215,5 +216,8 @@ class HighPrecisionOptional(object):
         """
         high_precision = getattr(self, _HIGH_PRECISION_ATTR_NAME)
         if high_precision is not None:
+            # pylint: disable=not-callable
+            # Non-None high_precision is expected to be callable:
             return high_precision(value)
+            # pylint: enable=not-callable
         return value
