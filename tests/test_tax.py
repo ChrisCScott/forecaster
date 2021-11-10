@@ -5,7 +5,6 @@ from decimal import Decimal
 from forecaster import Tax, Person
 # Include extra accounts to test handling of different tax* behaviour:
 from forecaster.canada import RRSP, TaxableAccount, TFSA
-from tests.test_helper import type_check
 
 
 class TestTax(unittest.TestCase):
