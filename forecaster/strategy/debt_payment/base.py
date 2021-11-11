@@ -4,9 +4,10 @@ from forecaster.strategy.base import Strategy, strategy_method
 from forecaster.strategy.transaction import TransactionTraversal
 from forecaster.strategy.debt_payment.util import (
     avalanche_priority, snowball_priority, AVALANCHE_KEY, SNOWBALL_KEY)
+from forecaster.utility.precision import HighPrecisionOptional
 
 
-class DebtPaymentStrategy(Strategy):
+class DebtPaymentStrategy(Strategy, HighPrecisionOptional):
     """ Determines payments for a group of debts.
 
     This is simply a convenient wrapper for `TransactionTraversal`.
@@ -24,6 +25,9 @@ class DebtPaymentStrategy(Strategy):
 
             * "Snowball"
             * "Avalanche"
+        high_precision (Callable[[float], T]): A conversion method
+            that converts float internal constants to a high-precision
+            numerical type `T`. Optional.
 
     Args:
         available (Money, dict[float, Money]): The amounts available
@@ -54,8 +58,10 @@ class DebtPaymentStrategy(Strategy):
         Returns:
             dict[Debt, Money]: A mapping of debts to payments.
         """
-        strategy = TransactionTraversal(priority=sorted_debts)
-        return strategy(available, assign_min_first=assign_minimums)
+        strategy = TransactionTraversal(
+            priority=sorted_debts, high_precision=self.high_precision)
+        result = strategy(available, assign_min_first=assign_minimums)
+        return result
 
     @strategy_method(SNOWBALL_KEY)
     def strategy_snowball(self, debts, available, *args, **kwargs):

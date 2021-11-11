@@ -17,7 +17,7 @@ amounts, and to which accounts.
 # A wrapper class can provide that logic for client code.
 
 from queue import SimpleQueue
-from forecaster.utility import EPSILON, add_transactions
+from forecaster.utility import EPSILON, add_transactions, HighPrecisionOptional
 from forecaster.accounts.util import LIMIT_TUPLE_FIELDS
 from forecaster.strategy.transaction.util import (
     LimitTuple, transaction_default_methods, group_default_methods,
@@ -31,7 +31,7 @@ from forecaster.strategy.transaction.graph import (
     _swap_saturated, _restrict_overflow, _unrestrict_overflow)
 
 
-class TransactionTraversal:
+class TransactionTraversal(HighPrecisionOptional):
     """ Determines transactions to/from accounts based on a priority.
 
     Instances of this class, when initialized, receive a
@@ -142,7 +142,7 @@ class TransactionTraversal:
             allocated between the accounts represented in the
             `priority` tree. Optional. If not provided, the sum
             total of `available` will be allocated.
-        assign_min_first (Bool): If True, minimum inflows/outflows
+        assign_min (Bool): If True, minimum inflows/outflows
             will be assigned first (in `priority` order, so if
             `total` is less than the sum of minimum inflows/outflows
             then low-priority will not have transactions assigned).
@@ -154,6 +154,9 @@ class TransactionTraversal:
             the maximum inflows/outflows.
 
             Optional. Defaults to True.
+        high_precision (Callable[[float], T]): A conversion method
+            that converts float internal constants to a high-precision
+            numerical type `T`. Optional.
 
     Returns:
         dict[Hashable, dict[float, Money]]: A mapping of accounts to
@@ -162,10 +165,20 @@ class TransactionTraversal:
             used as a key. Only the leaf node `Account`-like objects of
             the tree defined by `priority` are used as keys.
     """
+    # pylint: disable=too-many-arguments
+    # Adding high_precision pushed this method over to 6 arguments.
+    # That's a bit high, but most are optional fine-tuning parameters
+    # and it's just not worthwhile to refactor at this stage.
     def __init__(
             self, priority,
-            transaction_methods=None, group_methods=None, precision=EPSILON):
+            transaction_methods=None, group_methods=None,
+            high_precision=None, precision=EPSILON):
         """ Initializes TransactionTraversal. """
+        # pylint: enable=too-many-arguments
+
+        # Init `HighPrecisionOptional` attributes:
+        super().__init__(high_precision=high_precision)
+
         # Set up data-holding attributes:
         self._priority = None
         self._priority_tree = None
@@ -178,7 +191,12 @@ class TransactionTraversal:
             self.group_methods = group_default_methods()
         else:
             self.group_methods = LimitTuple(group_methods)
-        self.precision = precision
+        # Convert `precision` to high-precision if it's the default
+        # argument and a conversion method has been passed:
+        if precision == EPSILON and self.high_precision is not None:
+            self.precision = high_precision(precision)
+        else:
+            self.precision = precision
         # Store args used by most class methods as attributes to
         # simplify method calls:
         self.graph = None
@@ -259,8 +277,7 @@ class TransactionTraversal:
                 max_transactions[account] = transactions
         return max_transactions
 
-    def _traverse_priority(
-            self, total, timing, limit):
+    def _traverse_priority(self, total, timing, limit):
         """ Builds a graph and finds the min-cost max. flow through it.
 
         This method translates `priority` into a graph (via
@@ -308,7 +325,7 @@ class TransactionTraversal:
         transactions = _convert_flows_to_transactions(
             flows, timing, limit, accounts,
             transaction_methods=self.transaction_methods, total=total,
-            transaction_type=float, # Money value
+            high_precision=self.high_precision, # Money value
             precision=self.precision)
 
         return transactions

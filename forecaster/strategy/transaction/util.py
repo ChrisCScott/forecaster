@@ -67,7 +67,7 @@ GROUP_DEFAULT_METHODS = group_default_methods()
 
 def _convert_flows_to_transactions(
         flows, timing, limit, accounts, transaction_methods,
-        total=None, precision=1, transaction_type=None):
+        total=None, precision=1, high_precision=None):
     """ Converts network flows to a mapping of accounts to transactions.
 
     Args:
@@ -95,10 +95,11 @@ def _convert_flows_to_transactions(
             to being used to generate transaction values. Optional.
             This makes it easy to scale down values that were inflated
             to avoid rounding error when the graph was defined.
-        transaction_type (Callable): If provided, each flow value is
-            passed to `transaction_type` as its sole arg. It is expected
-            that `transaction_type` will wrap it in the appropriate type
-            for the applicable member of `transaction_methods`.
+        high_precision (Callable[[float], T]): If provided, each flow
+            value is passed to `high_precision` as its sole arg. It is
+            expected that `high_precision` will wrap it in a
+            high-precision numerical type suitable for the applicable
+            member of `transaction_methods`.
             Optional.
 
     Returns:
@@ -122,9 +123,9 @@ def _convert_flows_to_transactions(
             total_flows = precision * sum(flows[account].values())
             if is_outflows:
                 total_flows = -total_flows
-            # Convert to `transaction_type`, if provided:
-            if transaction_type is not None:
-                total_flows = transaction_type(total_flows)
+            # Convert to a high-precision type, if provided:
+            if high_precision is not None:
+                total_flows = high_precision(total_flows)
             transactions[account] = _get_transactions(
                 account, limit, timing,
                 transaction_methods=transaction_methods, total=total_flows)

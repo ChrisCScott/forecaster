@@ -18,21 +18,21 @@ class TestDebtPaymentStrategies(TestCaseTransactions):
         person = Person(
             initial_year, 'Testy McTesterson', 1980, retirement_date=2045)
 
-        self.timing = Timing({Decimal(0.5): 1})
+        self.timing = Timing({0.5: 1})
 
         # These accounts have different rates:
         self.debt_big_high_interest = Debt(
             person,
-            balance=Decimal(1000), rate=1, minimum_payment=Decimal(100),
-            accelerated_payment=Decimal('Infinity'))
+            balance=1000, rate=1, minimum_payment=100,
+            accelerated_payment=float('inf'))
         self.debt_small_low_interest = Debt(
             person,
-            balance=Decimal(100), rate=0, minimum_payment=Decimal(10),
-            accelerated_payment=Decimal('Infinity'))
+            balance=100, rate=0, minimum_payment=10,
+            accelerated_payment=float('inf'))
         self.debt_medium = Debt(
             person,
-            balance=Decimal(500), rate=0.5, minimum_payment=Decimal(50),
-            accelerated_payment=Decimal('Infinity'))
+            balance=500, rate=0.5, minimum_payment=50,
+            accelerated_payment=float('inf'))
 
         self.debts = {
             self.debt_big_high_interest,
@@ -48,6 +48,50 @@ class TestDebtPaymentStrategies(TestCaseTransactions):
             DebtPaymentStrategy.strategy_avalanche)
         self.strategy_snowball = DebtPaymentStrategy(
             DebtPaymentStrategy.strategy_snowball)
+
+        self.excess = 10
+
+    def setUp_decimal(self):
+        initial_year = 2000
+        person = Person(
+            initial_year, 'Testy McTesterson', 1980, retirement_date=2045)
+
+        self.timing = Timing({Decimal(0.5): Decimal(1)})
+
+        # These accounts have different rates:
+        self.debt_big_high_interest = Debt(
+            person,
+            balance=Decimal(1000), rate=Decimal(1),
+            minimum_payment=Decimal(100),
+            accelerated_payment=Decimal('Infinity'),
+            high_precision=Decimal)
+        self.debt_small_low_interest = Debt(
+            person,
+            balance=Decimal(100), rate=Decimal(0),
+            minimum_payment=Decimal(10),
+            accelerated_payment=Decimal('Infinity'),
+            high_precision=Decimal)
+        self.debt_medium = Debt(
+            person,
+            balance=Decimal(500), rate=Decimal(0.5),
+            minimum_payment=Decimal(50),
+            accelerated_payment=Decimal('Infinity'),
+            high_precision=Decimal)
+
+        self.debts = {
+            self.debt_big_high_interest,
+            self.debt_medium,
+            self.debt_small_low_interest}
+
+        self.max_payments = {
+            debt: self.max_payment({debt}) for debt in self.debts}
+        self.min_payments = {
+            debt: self.min_payment({debt}) for debt in self.debts}
+
+        self.strategy_avalanche = DebtPaymentStrategy(
+            DebtPaymentStrategy.strategy_avalanche, high_precision=Decimal)
+        self.strategy_snowball = DebtPaymentStrategy(
+            DebtPaymentStrategy.strategy_snowball, high_precision=Decimal)
 
         self.excess = Decimal(10)
 
@@ -101,10 +145,10 @@ class TestDebtPaymentStrategies(TestCaseTransactions):
             results[self.debt_small_low_interest], total)
         # Remaining debts should receive no payments:
         if self.debt_medium in results:
-            self.assertTransactions(results[self.debt_medium], Decimal(0))
+            self.assertTransactions(results[self.debt_medium], 0)
         if self.debt_medium in results:
             self.assertTransactions(
-                results[self.debt_big_high_interest], Decimal(0))
+                results[self.debt_big_high_interest], 0)
 
     def test_snowball_basic(self):
         """ Test strategy_snowball with a little more than min payments. """
@@ -208,10 +252,10 @@ class TestDebtPaymentStrategies(TestCaseTransactions):
             results[self.debt_big_high_interest], total)
         # Remaining debts should receive no payments:
         if self.debt_medium in results:
-            self.assertTransactions(results[self.debt_medium], Decimal(0))
+            self.assertTransactions(results[self.debt_medium], 0)
         if self.debt_medium in results:
             self.assertTransactions(
-                results[self.debt_small_low_interest], Decimal(0))
+                results[self.debt_small_low_interest], 0)
 
     def test_avalanche_basic(self):
         """ Test strategy_avalanche with a bit more than min payments. """
@@ -286,10 +330,10 @@ class TestDebtPaymentStrategies(TestCaseTransactions):
                 results[debt], self.max_payments[debt])
 
     def test_accel_payment_none(self):
-        """ Tests payments where `accelerate_payment=Decimal(0)`. """
+        """ Tests payments where `accelerate_payment=0`. """
         # Don't allow accelerated payments and try to contribute more
         # than the minimum.
-        self.debt_medium.accelerated_payment = Decimal(0)
+        self.debt_medium.accelerated_payment = 0
         available = self.make_available(self.debt_medium.minimum_payment * 2)
         results = self.strategy_avalanche({self.debt_medium}, available)
         # If there's no acceleration, only the minimum is paid.
@@ -300,20 +344,20 @@ class TestDebtPaymentStrategies(TestCaseTransactions):
         """ Tests payments with finite, non-zero `accelerate_payment`. """
         # Allow only $20 in accelerated payments and try to contribute
         # even more than that.
-        self.debt_medium.accelerated_payment = Decimal(20)
+        self.debt_medium.accelerated_payment = 20
         available = self.make_available(
-            self.debt_medium.minimum_payment + Decimal(40))
+            self.debt_medium.minimum_payment + 40)
         results = self.strategy_avalanche({self.debt_medium}, available)
         # Payment should be $20 more than the minimum:
         self.assertTransactions(
             results[self.debt_medium],
-            self.debt_medium.minimum_payment + Decimal(20))
+            self.debt_medium.minimum_payment + 20)
 
     def test_accel_payment_infinity(self):
-        """ Tests payments where `accelerate_payment=Decimal('Infinity')`. """
+        """ Tests payments where `accelerate_payment=float('inf')`. """
         # No limit on accelerated payments. Try to contribute more than
         # the debt requires to be fully repaid:
-        self.debt_medium.accelerated_payment = Decimal("Infinity")
+        self.debt_medium.accelerated_payment = float('inf')
         available = self.make_available(
             2 * sum(self.debt_medium.max_inflows().values()))
         results = self.strategy_avalanche({self.debt_medium}, available)
@@ -322,6 +366,32 @@ class TestDebtPaymentStrategies(TestCaseTransactions):
             results[self.debt_medium],
             self.max_payments[self.debt_medium])
 
+    def test_decimal(self):
+        """ Tests Debt with Decimal inputs. """
+        # Convert values to Decimal:
+        self.setUp_decimal()
+
+        # This test is based on test_avalanche_close_one.
+
+        # Pay more than the first-paid debt will accomodate.
+        # The excess should go to the next-paid debt (medium).
+        total = self.min_payment(self.debts - {self.debt_big_high_interest})
+        total += self.max_payment({self.debt_big_high_interest})
+        total += self.excess
+        available = self.make_available(total)
+        results = self.strategy_avalanche(self.debts, available)
+        # The high interest debt should be fully repaid:
+        self.assertTransactions(
+            results[self.debt_big_high_interest],
+            self.max_payments[self.debt_big_high_interest])
+        # The medium-interest debt should be partially repaid:
+        self.assertTransactions(
+            results[self.debt_medium],
+            self.debt_medium.minimum_payment + self.excess)
+        # The low-interest debt should receive the minimum payment:
+        self.assertTransactions(
+            results[self.debt_small_low_interest],
+            self.debt_small_low_interest.minimum_payment)
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(
