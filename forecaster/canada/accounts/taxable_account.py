@@ -33,8 +33,8 @@ class TaxableAccount(Account):
     # (But we might want to also model rental income as well...)
 
     def __init__(
-            self, owner, balance=0, rate=0,
-            nper=1, inputs=None, initial_year=None, default_timing=None,
+            self, owner, balance=None, rate=None,
+            nper=None, inputs=None, initial_year=None, default_timing=None,
             acb=None, **kwargs):
         """ Constructor for `TaxableAccount`.
 
@@ -81,7 +81,7 @@ class TaxableAccount(Account):
         capital_gain.
         """
         acb = self.acb
-        capital_gain = 0
+        capital_gain = self.precision_convert(0)
         transactions = self.transactions
 
         # ACB is sensitive to transaction order, so be sure to iterate
@@ -101,8 +101,9 @@ class TaxableAccount(Account):
                 # Capital gains are calculated based on the acb and
                 # balance before the transaction occurred.
                 balance = self.balance_at_time(when) - value
-                capital_gain += -value * (1 - (acb / balance))
-                acb *= 1 - (-value / balance)
+                capital_gain += -value * (
+                    self.precision_convert(1) - (acb / balance))
+                acb *= self.precision_convert(1) - (-value / balance)
 
         # We've generated the ACB for the next year, so store it now.
         self._acb_history[self.this_year + 1] = acb

@@ -17,12 +17,12 @@ class TestPrincipleResidenceMethods(TestAccountMethods):
         """ Test PrincipleResidence.taxable_income with a gain. """
         account = self.AccountType(
             self.owner, *args, balance=1000, rate=1, nper=1, **kwargs)
-        self.assertEqual(account.taxable_income, Decimal(0))
+        self.assertEqual(account.taxable_income, 0)
         # Now let the residence appreciate 100% (to $2000) and then sell
         # the home (i.e. withdraw $2000):
         account.next_year()
         account.add_transaction(-2000)
-        self.assertEqual(account.taxable_income, Decimal(0))
+        self.assertEqual(account.taxable_income, 0)
 
 if __name__ == '__main__':
     # NOTE: BasicContext is useful for debugging, as most errors are treated

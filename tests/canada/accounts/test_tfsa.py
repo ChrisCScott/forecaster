@@ -23,6 +23,18 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
         max_year = max(constants.TFSA_ANNUAL_ACCRUAL) + 10
         self.extend_inflation_adjustments(min_year, max_year)
 
+    def setUp_decimal(self):
+        """ Sets up variables for testing TFSAs. """
+        super().setUp_decimal()
+        self.AccountType = TFSA
+
+        # Ensure that inflation_adjustments covers the entire range of
+        # constants.TFSAAnnualAccrual
+        min_year = min(constants.TFSA_ANNUAL_ACCRUAL)
+        max_year = max(constants.TFSA_ANNUAL_ACCRUAL) + 10
+        self.extend_inflation_adjustments(
+            min_year, max_year, high_precision=Decimal)
+
     def test_init_contrib_default(self, *args, **kwargs):
         """ Init TFSA with implicit contribution_room. """
         account = self.AccountType(
@@ -56,8 +68,8 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
                 owner, *args,
                 inflation_adjust=self.inflation_adjust,
                 initial_year=year, **kwargs)
-            target = Decimal(sum([
-                accruals[i] for i in range(min(accruals), year + 1)]))
+            target = sum([
+                accruals[i] for i in range(min(accruals), year + 1)])
             self.assertEqual(account.contribution_room, target)
             # We're starting each TFSA in a different year, which can
             # confuse the linked-account recordkeeping (later-year
@@ -72,29 +84,6 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
             inflation_adjust=self.inflation_adjust,
             initial_year=self.initial_year, **kwargs)
         self.assertEqual(account.inflation_adjust, self.inflation_adjust)
-
-    def test_init_type_conversion(self, *args, **kwargs):
-        """ Test type conversion of TFSA.__init__ inputs. """
-        super().test_init_type_conversion(*args, **kwargs)
-
-        # Try type conversion for inflation_adjustments
-        inflation_adjustments = {
-            '2000': '1',
-            2001.0: 1.25,
-            Decimal(2002): 1.5,
-            2003: Decimal('1.75'),
-            2017.0: Decimal(2.0)
-        }
-
-        account = self.AccountType(
-            self.owner, *args,
-            contribution_room=500, inflation_adjust=inflation_adjustments,
-            **kwargs)
-        self.assertEqual(account.inflation_adjust(2000), Decimal(1))
-        self.assertEqual(account.inflation_adjust(2001), Decimal(1.25))
-        self.assertEqual(account.inflation_adjust(2002), Decimal(1.5))
-        self.assertEqual(account.inflation_adjust(2003), Decimal(1.75))
-        self.assertEqual(account.inflation_adjust(2017), Decimal(2))
 
     def test_init_invalid_inf_adj(self, *args, **kwargs):
         """ Test TFSA.__init__ with invalid inflation_adjust input. """
@@ -122,17 +111,17 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
 
         # For each year, confirm that the balance and contribution room
         # are updated appropriately
-        transactions = Decimal(0)
+        transactions = 0
         for year in accruals:
             # Add a transaction (either an inflow or outflow)
-            transaction = rand.randint(-account.balance.amount,
-                                       account.contribution_room.amount)
+            transaction = rand.randint(
+                -int(account.balance), int(account.contribution_room))
             account.add_transaction(transaction)
             # Confirm that contribution room is the same as accruals,
             # less any net transactions
             accrual = sum(
                 [accruals[i] for i in range(min(accruals), year + 1)])
-            target = Decimal(accrual) - transactions
+            target = accrual - transactions
             self.assertEqual(account.contribution_room, target)
             # Confirm that balance is equal to the sum of transactions
             # over the previous years (note that this is a no-growth
@@ -142,12 +131,12 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
             account.next_year()
             # Update the running total of transactions, to be referenced
             # in the next round of tests.
-            transactions += Decimal(transaction)
+            transactions += transaction
 
     def get_accruals(self):
         """ Builds a dict of {year: accrual} pairs.
 
-        Each accrual is a Decimal object corresponding to the total TFSA
+        Each accrual is a number corresponding to the total TFSA
         contribution room accrued since inception (2009) to year.
         """
         # Build a secquence of accruals covering known accruals and
@@ -180,7 +169,52 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
         # withdrawal to realize any gains:
         account.add_transaction(100, 'start')
         account.add_transaction(-200, 'end')
-        self.assertEqual(account.taxable_income, Decimal(0))
+        self.assertEqual(account.taxable_income, 0)
+
+    def test_decimal(self, *args, **kwargs):
+        """ Test TFSA with Decimal inputs. """
+        # Convert values to Decimal:
+        self.setUp_decimal()
+
+        # Set up variables for testing.
+        accruals = self.get_accruals()
+        rand = Random()
+        owner = Person(
+            min(accruals), self.owner.name, 1950,
+            retirement_date=2015,
+            gross_income=self.owner.gross_income,
+            raise_rate={
+                year: 0 for year in range(min(accruals), max(accruals) + 2)},
+            tax_treatment=self.owner.tax_treatment,
+            high_precision=Decimal)
+        account = self.AccountType(
+            owner, *args, inflation_adjust=self.inflation_adjust,
+            rate=Decimal(0), balance=Decimal(0), high_precision=Decimal,
+            **kwargs)
+
+        # For each year, confirm that the balance and contribution room
+        # are updated appropriately
+        transactions = Decimal(0)
+        for year in accruals:
+            # Add a transaction (either an inflow or outflow)
+            transaction = rand.randint(
+                -int(account.balance), int(account.contribution_room))
+            account.add_transaction(transaction)
+            # Confirm that contribution room is the same as accruals,
+            # less any net transactions
+            accrual = sum(
+                [accruals[i] for i in range(min(accruals), year + 1)])
+            target = Decimal(accrual) - transactions
+            self.assertEqual(account.contribution_room, target)
+            # Confirm that balance is equal to the sum of transactions
+            # over the previous years (note that this is a no-growth
+            # scenario, since rate=0)
+            self.assertEqual(account.balance, transactions)
+            # Advance the account to next year and repeat tests
+            account.next_year()
+            # Update the running total of transactions, to be referenced
+            # in the next round of tests.
+            transactions += Decimal(transaction)
 
 if __name__ == '__main__':
     # NOTE: BasicContext is useful for debugging, as most errors are treated

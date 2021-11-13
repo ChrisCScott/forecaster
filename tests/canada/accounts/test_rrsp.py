@@ -28,17 +28,48 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
                        max(constants.RRSP_RRIF_WITHDRAWAL_MIN)) + 2
         self.extend_inflation_adjustments(min_year, max_year)
 
+        self.initial_contribution_room = 100
+        # Use a value that won't result in a deduction exceeding the
+        # inflation-adjusted RRSPAccrualMax (~$25,000 in 2017)
+        self.owner.income = 100000  # -> $18,000 accrual
+        # Ensure there are no raises so income is the same in each year:
+        self.owner.raise_rate_function = lambda _: 0
+        self.owner.gross_income = 100000
+        self.owner.spouse = Person(
+            self.initial_year, "Spouse", "2 February 1998",
+            gross_income=50000,
+            retirement_date=self.owner.retirement_date)
+
+    def setUp_decimal(self):
+        """ Sets up variables based on Decimal inputs. """
+        super().setUp_decimal()
+
+        self.AccountType = RRSP
+
+        # Ensure that inflation_adjustments covers the entire range of
+        # constants.RRSP_ACCRUAL_MAX and the years where self.owner is
+        # 71-95 (plus a few extra for testing)
+        min_year = min(min(constants.RRSP_ACCRUAL_MAX),
+                       self.owner.birth_date.year +
+                       min(constants.RRSP_RRIF_WITHDRAWAL_MIN))
+        max_year = max(max(constants.RRSP_ACCRUAL_MAX),
+                       self.owner.birth_date.year +
+                       max(constants.RRSP_RRIF_WITHDRAWAL_MIN)) + 2
+        self.extend_inflation_adjustments(
+            min_year, max_year, high_precision=Decimal)
+
         self.initial_contribution_room = Decimal(100)
         # Use a value that won't result in a deduction exceeding the
         # inflation-adjusted RRSPAccrualMax (~$25,000 in 2017)
         self.owner.income = Decimal(100000)  # -> $18,000 accrual
         # Ensure there are no raises so income is the same in each year:
-        self.owner.raise_rate_function = lambda _: 0
+        self.owner.raise_rate_function = lambda _: Decimal(0)
         self.owner.gross_income = Decimal(100000)
         self.owner.spouse = Person(
             self.initial_year, "Spouse", "2 February 1998",
-            gross_income=50000,
-            retirement_date=self.owner.retirement_date)
+            gross_income=Decimal(50000),
+            retirement_date=self.owner.retirement_date,
+            high_precision=Decimal)
 
     def test_init_basic(self, *args, **kwargs):
         """ Basic init tests for RRSP. """
@@ -89,7 +120,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
             **kwargs)
         account.add_transaction(-100, 'end')
         # Confirm the withdrawal is included in taxable income
-        self.assertEqual(account.taxable_income, Decimal(100))
+        self.assertEqual(account.taxable_income, 100)
 
     def test_taxable_income_inflow(self, *args, **kwargs):
         """ Test that a contribution doesn't affect taxable_income. """
@@ -105,7 +136,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         account.add_transaction(100, 'start')
         # Confirm that the contribution has no effect on taxable_income
         # (which should be $100 due to the withdrawal)
-        self.assertEqual(account.taxable_income, Decimal(100))
+        self.assertEqual(account.taxable_income, 100)
 
     def test_tax_withheld_pos(self, *args, **kwargs):
         """ Test tax_withheld with no transactions and positive balance. """
@@ -148,7 +179,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         account.add_transaction(-1, 'end')
         self.assertEqual(
             account.tax_withheld,
-            Decimal(1 * min(withholding_rates.values()))
+            1 * min(withholding_rates.values())
         )
 
     def test_tax_withheld_large_outflow(self, *args, **kwargs):
@@ -164,7 +195,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         # threshold, otherwise it falls within the lower bracket.)
         # This should be taxed at the highest rate.
         bracket = max(withholding_rates)
-        val = Decimal(bracket + 1)
+        val = bracket + 1
         account = self.AccountType(
             self.owner, *args,
             inflation_adjust=self.inflation_adjust,
@@ -184,8 +215,8 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         initial_year = max(constants.RRSP_WITHHOLDING_TAX_RATE) + 1
         self.set_initial_year(initial_year)
         # Set up 100% inflation between the previous year and this one.
-        self.inflation_adjustments[self.initial_year - 1] = Decimal(1)
-        self.inflation_adjustments[self.initial_year] = Decimal(2)
+        self.inflation_adjustments[self.initial_year - 1] = 1
+        self.inflation_adjustments[self.initial_year] = 2
         # Inflation-adjust based on the previous (represented) year:
         withholding_rates = {
             rate * self.inflation_adjust(initial_year, initial_year - 1):
@@ -203,10 +234,10 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         # We want a value that's at least as large as the top bracket
         # from the previous year and sits somewhere between the second
         # and top brackets this year:
-        val = Decimal(max(
+        val = max(
             max(constants.RRSP_WITHHOLDING_TAX_RATE[initial_year - 1]) + 1,
             (top_bracket + second_bracket) / 2
-        ))
+        )
         account = self.AccountType(
             self.owner, *args,
             inflation_adjust=self.inflation_adjust,
@@ -216,7 +247,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
 
         account.add_transaction(-val)
         rate = withholding_rates[second_bracket]
-        self.assertEqual(account.tax_withheld, Decimal(val * rate))
+        self.assertEqual(account.tax_withheld, val * rate)
 
     def test_tax_deduction_zero(self, *args, **kwargs):
         """ Test RRSP.tax_deduction with no transactions. """
@@ -239,7 +270,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
             **kwargs)
         # Now add an inflow, confirm it's deducted from taxable income
         account.add_transaction(100, 'end')
-        self.assertEqual(account.tax_deduction, Decimal(100))
+        self.assertEqual(account.tax_deduction, 100)
 
     def test_tax_deduction_neg(self, *args, **kwargs):
         """ Test RRSP.tax_deduction with an outflow. """
@@ -253,7 +284,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         # that the outflow has no effect on tax_deduction.
         account.add_transaction(100, 'end')
         account.add_transaction(-100, 'start')
-        self.assertEqual(account.tax_deduction, Decimal(100))
+        self.assertEqual(account.tax_deduction, 100)
 
     def test_cont_basic(self, *args, **kwargs):
         """ Test `contribution_room` with no contributions. """
@@ -277,7 +308,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         self.set_initial_year(min(constants.RRSP_ACCRUAL_MAX) - 1)
         # Use income that's $1000 more than is necessary to max out RRSP
         # contribution room accrual for the year.
-        self.owner.gross_income = Decimal(
+        self.owner.gross_income = (
             constants.RRSP_ACCRUAL_MAX[self.initial_year + 1]
             / constants.RRSP_ACCRUAL_RATE
             + 1000)
@@ -291,7 +322,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         self.assertEqual(
             account.contribution_room,
             self.initial_contribution_room
-            + Decimal(constants.RRSP_ACCRUAL_MAX[self.initial_year + 1])
+            + constants.RRSP_ACCRUAL_MAX[self.initial_year + 1]
         )
 
     def test_cont_excess_no_rollover(self, *args, **kwargs):
@@ -301,7 +332,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         self.set_initial_year(min(constants.RRSP_ACCRUAL_MAX) - 1)
         # Use income that's $1000 more than is necessary to max out RRSP
         # contribution room accrual for the year.
-        self.owner.gross_income = Decimal(
+        self.owner.gross_income = (
             constants.RRSP_ACCRUAL_MAX[self.initial_year + 1]
             / constants.RRSP_ACCRUAL_RATE
             + 1000)
@@ -315,7 +346,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         # New contribution room should be the max; no rollover.
         self.assertEqual(
             account.contribution_room,
-            Decimal(constants.RRSP_ACCRUAL_MAX[self.initial_year + 1])
+            constants.RRSP_ACCRUAL_MAX[self.initial_year + 1]
         )
 
     def test_cont_inf_adjust_basic(self, *args, **kwargs):
@@ -332,10 +363,8 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         )
         # Let's have income that's between the initial year's max
         # accrual and the next year's max accrual:
-        income = Decimal(
-            (max_accrual +
-             constants.RRSP_ACCRUAL_MAX[self.initial_year]
-             ) / 2
+        income = (
+            (max_accrual + constants.RRSP_ACCRUAL_MAX[self.initial_year]) / 2
         ) / constants.RRSP_ACCRUAL_RATE
         self.owner.gross_income = income
         account = self.AccountType(
@@ -365,7 +394,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         )
         # Try again, but now with income greater than the inflation-
         # adjusted accrual max.
-        income = Decimal(max_accrual / constants.RRSP_ACCRUAL_RATE + 1000)
+        income = max_accrual / constants.RRSP_ACCRUAL_RATE + 1000
         self.owner.gross_income = income
         account = self.AccountType(
             self.owner, *args,
@@ -376,7 +405,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         # New contribution room should be the max accrual, since there's
         # no rollover due to the maxed-out contribution last year.
         self.assertAlmostEqual(
-            account.contribution_room, Decimal(max_accrual), 3)
+            account.contribution_room, max_accrual, 3)
 
     def test_min_outflow(self, *args, **kwargs):
         """ Test RRSP.min_outflow. """
@@ -504,12 +533,12 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
     def test_spousal_contribution(self, *args, **kwargs):
         """ Tests contributions to spousal RRSP. """
         # Ensure that the spouses have different incomes for testing:
-        self.owner.spouse.gross_income = Decimal(100000)
-        self.owner.gross_income = Decimal(10000)
+        self.owner.spouse.gross_income = 100000
+        self.owner.gross_income = 10000
         # The contribution limits are based on self.owner (not spouse)
         regular_account = self.AccountType(
             self.owner, *args,
-            contribution_room=Decimal(1000), **kwargs)
+            contribution_room=1000, **kwargs)
         spousal_account = self.AccountType(
             self.owner.spouse, *args,
             contributor=self.owner, **kwargs)
@@ -524,10 +553,63 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         # carryover, since we used up all contribution room last year):
         self.assertEqual(
             spousal_account.max_inflow_limit,
-            Decimal(10000) * constants.RRSP_ACCRUAL_RATE)
+            10000 * constants.RRSP_ACCRUAL_RATE)
         self.assertEqual(
             regular_account.max_inflow_limit,
             spousal_account.max_inflow_limit)
+
+    def test_decimal(self, *args, **kwargs):
+        """ Test RRSP with Decimal inputs. """
+        # Convert values to Decimal:
+        self.setUp_decimal()
+
+        # This test is based on test_min_outflow
+        # Have a static RRSP (no inflows/outflows/change in balance)
+        balance = Decimal(1000000)
+        initial_year = min(self.inflation_adjustments)
+        account = self.AccountType(
+            self.owner, *args,
+            inflation_adjust=self.inflation_adjust,
+            contribution_room=self.contribution_room,
+            balance=balance, rate=Decimal(0),
+            high_precision=Decimal, **kwargs)
+        last_year = min(
+            max(self.inflation_adjustments) + 1,
+            # pylint: disable=no-member
+            # Pylint gets confused by attributes added by metaclass.
+            # recorded_property members always have a corresponding
+            # *_history member:
+            max(self.owner.raise_rate_history)
+        )
+        # For each year over a lifetime, check min_outflow is correct:
+        for year in range(initial_year, last_year):
+            age = self.owner.age(year)
+            # First, check that we've converted to an RRIF if required:
+            if age > constants.RRSP_RRIF_CONVERSION_AGE:
+                self.assertTrue(account.rrif_conversion_year < year)
+            # Next, if we've converted to an RRIF, check various
+            # min_outflow scenarios:
+            if account.rrif_conversion_year < year:
+                # If we've converted early, use the statutory formula
+                # (i.e. 1/(90-age))
+                if age < min(constants.RRSP_RRIF_WITHDRAWAL_MIN):
+                    min_outflow = account.balance / Decimal(90 - age)
+                # Otherwise, use the prescribed withdrawal amount:
+                else:
+                    if age > max(constants.RRSP_RRIF_WITHDRAWAL_MIN):
+                        min_outflow = account.balance * Decimal(
+                            max(constants.RRSP_RRIF_WITHDRAWAL_MIN.values()))
+                    # If we're past the range of prescribed amounts,
+                    # use the largest prescribed amount
+                    else:
+                        min_outflow = account.balance * Decimal(
+                            constants.RRSP_RRIF_WITHDRAWAL_MIN[age])
+            # If this isn't an RRIF yet, there's no min. outflow.
+            else:
+                min_outflow = Decimal(0)
+            self.assertEqual(account.min_outflow_limit(), min_outflow)
+            # Advance the account and test again on the next year:
+            account.next_year()
 
 if __name__ == '__main__':
     # NOTE: BasicContext is useful for debugging, as most errors are treated

@@ -447,10 +447,19 @@ class TransactionTraversal(HighPrecisionOptional):
             self.sink = 1
 
         # networkx has unexpected behaviour for non-int edge capacities,
-        # so inflate total based on the EPSILON precision constant:
+        # so inflate total based on the EPSILON precision constant.
+        # We can ignore infinite-valued `total`, which is dealt with
+        # in `_add_edge` (and can't be cast to `int`):
         if abs(total) < float('inf'):
-            # We can ignore infinite-valued `total`, which is dealt with
-            # in `_add_edge` (and can't be cast to `int`)
+            # If we've received some a high-precision type and can't
+            # cast `self.precision` up to that type, we need to cast it
+            # down to a float (not an int, to avoid truncation errors):
+            if (
+                    not isinstance(total, (float, int)) and
+                    self.high_precision is None):
+                total = float(total)
+            # Now we can scale up `total` by `precision` and _then_
+            # truncate it to an int.
             total = int(total / self.precision)
 
         # Create an empty graph:
