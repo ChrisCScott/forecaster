@@ -10,6 +10,9 @@ room accrual rates, and other non-user-modifiable constants. """
 # TODO: Revise these values to be dicts of {year: value} pairs?
 # This is what is used in Settings.
 
+# TODO: Revise `constants` to read in a JSON file and perform
+# conversion to high-precision types.
+
 """ RESP constants """
 RESP_CONTRIBUTION_ROOM = 50000
 RESP_CESG_ANNUAL_ACCRUAL = 500
