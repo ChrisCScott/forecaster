@@ -110,6 +110,10 @@ class HighPrecisionOptionalPropertyCached(HighPrecisionOptionalProperty):
         self._high_precision_value_cache = None
 
     def __get__(self, obj, objtype=None, high_precision=None):
+        # When called by metaclass on class init, `obj` is None:
+        if obj is None:
+            return
+
         # Skip ahead if calling code provided `high_precision`:
         if high_precision is None:
             # Get the containing object's `high_precision` attribute.

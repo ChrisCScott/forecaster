@@ -157,8 +157,8 @@ def build_inflation_adjust(inflation_adjust=None):
     elif not callable(inflation_adjust):
         # If it's not a dict and not callable, then we don't know
         # what to do with it. Raise an error.
-        raise TypeError('RegisteredAccount: inflation_adjust must be ' +
-                        'callable.')
+        raise TypeError( #@IgnoreException
+            'RegisteredAccount: inflation_adjust must be callable.')
     else:
         # inflation_adjust is callable, so just use that!
         inflation_adjust_func = inflation_adjust
