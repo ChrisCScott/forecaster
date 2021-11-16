@@ -34,7 +34,7 @@ class TaxForecast(SubForecast):
     """
 
     def __init__(
-            self, initial_year, people, tax_treatment, high_precision=None):
+            self, initial_year, people, tax_treatment, *, high_precision=None):
         """ Initializes an instance of TaxForecast. """
         # Call the superclass method or suffer the consequences!
         super().__init__(initial_year, high_precision=high_precision)

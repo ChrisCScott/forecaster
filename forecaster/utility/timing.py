@@ -38,7 +38,7 @@ class Timing(dict):
             `float` argument and converts it to high-precision
             numeric type `T`, such as Decimal.
     """
-    def __init__(self, when=WHEN_DEFAULT, frequency=1, high_precision=None):
+    def __init__(self, when=WHEN_DEFAULT, frequency=1, *, high_precision=None):
         """ Initializes a Timing dict. """
         # We allow four forms of init call:
         # 1) Init with two arguments: `when` and `frequency`
@@ -170,7 +170,7 @@ class Timing(dict):
             normalized[key] *= scalar
         return normalized
 
-def _convert_dict(when, high_precision=None):
+def _convert_dict(when, *, high_precision=None):
     """ Converts `dict` input to `Timing`-style `when: weight` pairs.
 
     If all values are non-negative, the dict is returned unchanged.
@@ -238,7 +238,7 @@ def _convert_dict(when, high_precision=None):
     else:
         return _accum_outflows(when, high_precision=high_precision)
 
-def _accum_inflows(when, high_precision=None):
+def _accum_inflows(when, *, high_precision=None):
     """ Determines maximum withdrawable amount for each timing.
 
     This method receives an input (`when`) with a mix of inflows and
@@ -309,7 +309,7 @@ def _accum_inflows(when, high_precision=None):
                     accum[key] -= max_transaction
     return result
 
-def _accum_outflows(when, high_precision=None):
+def _accum_outflows(when, *, high_precision=None):
     """ Determines minimum necessary contribution for each timing.
 
     This method receives an input (`when`) with a mix of inflows and
@@ -378,7 +378,7 @@ def transactions_from_timing(timing, total):
         for time, weight in timing.items()}
     return transactions
 
-def when_conv(when, high_precision=None):
+def when_conv(when, *, high_precision=None):
     """ Converts various types of `when` inputs to floats in [0,1].
 
     0 is the start of the period and 1 is the end.

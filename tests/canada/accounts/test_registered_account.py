@@ -79,7 +79,7 @@ class TestRegisteredAccountMethods(TestLinkedLimitAccountMethods):
         ledger.this_year = initial_year
 
     def extend_inflation_adjustments(
-            self, min_year, max_year, high_precision=None):
+            self, min_year, max_year, *, high_precision=None):
         """ Convenience method for extending inflation adjustments.
 
         Ensures self.inflation_adjustment spans min_year and max_year.

@@ -100,7 +100,7 @@ class Account(TaxSource):
     def __init__(
             self, owner=None,
             balance=None, rate=None, nper=None, default_timing=None,
-            inputs=None, initial_year=None, high_precision=None, **kwargs):
+            inputs=None, initial_year=None, *, high_precision=None, **kwargs):
         """ Constructor for `Account`.
 
         This constructor receives only values for the first year.
@@ -359,7 +359,7 @@ class Account(TaxSource):
                 Decimal.
             ValueError: `when` must be in [0,1]
         """
-        when = when_conv(when, self.high_precision)
+        when = when_conv(when, high_precision=self.high_precision)
 
         # NOTE: If `value` is intended to be a special Money type
         # (like PyMoney), attempt conversion here
@@ -849,7 +849,7 @@ class Account(TaxSource):
             yield transaction
 
     def __contains__(self, key):
-        when = when_conv(key, self.high_precision)
+        when = when_conv(key, high_precision=self.high_precision)
         return when in self._transactions
 
     def __getitem__(self, key):
@@ -898,7 +898,7 @@ class Account(TaxSource):
         """
         # We need to convert `time` to enable the comparison in the dict
         # comprehension in the for loop below.
-        time = when_conv(time, self.high_precision)
+        time = when_conv(time, high_precision=self.high_precision)
 
         # Find the future value (at t=time) of the initial balance.
         # This doesn't include any transactions of their growth.
@@ -936,7 +936,7 @@ class Account(TaxSource):
                 are considered. Optional.
         """
         # Convert `when` to avoid type errors.
-        when = when_conv(when, self.high_precision)
+        when = when_conv(when, high_precision=self.high_precision)
 
         # We'll base all calculations at `when`, including the value
         # of `balance`. Do this even for `when=0`, since there may

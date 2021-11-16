@@ -172,7 +172,7 @@ class TransactionTraversal(HighPrecisionOptional):
     def __init__(
             self, priority,
             transaction_methods=None, group_methods=None,
-            high_precision=None, precision=EPSILON):
+            *, high_precision=None, precision=EPSILON):
         """ Initializes TransactionTraversal. """
         # pylint: enable=too-many-arguments
 

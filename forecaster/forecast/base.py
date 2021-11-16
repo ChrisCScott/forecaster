@@ -113,7 +113,7 @@ class Forecast(Ledger):
     def __init__(
             self, income_forecast, living_expenses_forecast,
             saving_forecast, withdrawal_forecast,
-            tax_forecast, scenario, high_precision=None):
+            tax_forecast, scenario, *, high_precision=None):
         """ Constructs an instance of class Forecast.
 
         Args:

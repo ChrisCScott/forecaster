@@ -35,7 +35,7 @@ class WithdrawalForecast(SubForecast):
     # or something (although it's not clear how this benefits the code.)
     def __init__(
             self, initial_year, people, accounts,
-            transaction_strategy, high_precision=None):
+            transaction_strategy, *, high_precision=None):
         """ Initializes an instance of WithdrawalForecast. """
         # Recall that, as a Ledger object, we need to call the
         # superclass initializer and let it know what the first

@@ -81,7 +81,7 @@ class Strategy(HighPrecisionOptional, metaclass=StrategyType):
             the call signature for the subclass.
     """
 
-    def __init__(self, strategy, high_precision=None, **kwargs):
+    def __init__(self, strategy, *, high_precision=None, **kwargs):
         # NOTE: `strategy` is required here, but providing a suitable
         # default value in __init__ of each subclass is recommended.
 

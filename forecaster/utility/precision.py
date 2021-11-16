@@ -24,7 +24,7 @@ class HighPrecisionOptionalProperty(object):
         from decimal import Decimal
         class Example(object):
             property = HighPrecisionOptionalProperty()
-            def __init__(self, value, high_precision=None):
+            def __init__(self, value, *, high_precision=None):
                 self.high_precision = high_precision
                 self.property = value
         obj = Example(5, high_precision=Decimal)
@@ -58,7 +58,7 @@ class HighPrecisionOptionalProperty(object):
         self.public_name = name
         self.private_name = '_' + name
 
-    def __get__(self, obj, objtype=None, high_precision=None):
+    def __get__(self, obj, objtype=None, *, high_precision=None):
         """ Gets the value of the property, in high precision if able.
 
         This method returns the value that the property it has been set
@@ -111,7 +111,7 @@ class HighPrecisionOptionalPropertyCached(HighPrecisionOptionalProperty):
         self._high_precision_cache = None
         self._high_precision_value_cache = None
 
-    def __get__(self, obj, objtype=None, high_precision=None):
+    def __get__(self, obj, objtype=None, *, high_precision=None):
         # When called by metaclass on class init, `obj` is None:
         if obj is None:
             return
@@ -200,7 +200,7 @@ class HighPrecisionOptional(object):
             high-precision type.
     """
 
-    def __init__(self, high_precision=None, **kwargs):
+    def __init__(self, *, high_precision=None, **kwargs):
         super().__init__(**kwargs)
         self.high_precision = None # Just helping out Pylint
         self.__setattr__(_HIGH_PRECISION_ATTR_NAME, high_precision)

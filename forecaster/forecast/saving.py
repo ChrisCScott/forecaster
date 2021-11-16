@@ -29,7 +29,7 @@ class SavingForecast(SubForecast):
 
     def __init__(
             self, initial_year, retirement_accounts, debt_accounts,
-            transaction_strategy, high_precision=None):
+            transaction_strategy, *, high_precision=None):
         """ Initializes an instance of SavingForecast. """
         # Recall that, as a Ledger object, we need to call the
         # superclass initializer and let it know what the first

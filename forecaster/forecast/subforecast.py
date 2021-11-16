@@ -127,7 +127,8 @@ class SubForecast(Ledger):
             This dict includes transactions made to/from `available`.
     """
 
-    def __init__(self, initial_year, default_timing=None, high_precision=None):
+    def __init__(
+            self, initial_year, default_timing=None, *, high_precision=None):
         """ Initializes an instance of SubForecast. """
         # Invoke Ledger's __init__ or pay the price!
         # NOTE Issue #53 removes this requirement

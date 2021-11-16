@@ -16,7 +16,7 @@ IDENTITY_FUNCTION = lambda x: x
 LIMIT_TUPLE_FIELDS = LimitTuple(*FIELDS)
 
 
-def accumulation_function(t, rate, nper=1, high_precision=None):
+def accumulation_function(t, rate, nper=1, *, high_precision=None):
     """ The accumulation function, A(t), from interest theory.
 
     A(t) provides the growth (or discount) factor over the period
@@ -72,7 +72,7 @@ def accumulation_function(t, rate, nper=1, high_precision=None):
 
     return acc
 
-def accumulation_function_inverse(accum, rate, nper=1, high_precision=None):
+def accumulation_function_inverse(accum, rate, nper=1, *, high_precision=None):
     """ The inverse of the accumulation function, A^-1(a).
 
     A^-1(a) provides the amount of time required to achieve a
@@ -125,7 +125,7 @@ def accumulation_function_inverse(accum, rate, nper=1, high_precision=None):
     return timing
 
 def value_at_time(
-        value, rate, now='start', time='end', nper=1, high_precision=None):
+        value, rate, now='start', time='end', nper=1, *, high_precision=None):
     """ Returns the present (or future) value.
 
     Args:
@@ -150,7 +150,7 @@ def value_at_time(
         high_precision=high_precision)
 
 
-def time_to_value(rate, value_now, value_then, nper=1, high_precision=None):
+def time_to_value(rate, value_now, value_then, nper=1, *, high_precision=None):
     """ The time required to grow from one value to another.
 
     Args:

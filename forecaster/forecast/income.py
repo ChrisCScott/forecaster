@@ -32,7 +32,7 @@ class IncomeForecast(SubForecast):
 
     def __init__(
             self, initial_year, people, asset_sale_timing=None,
-            high_precision=None):
+            *, high_precision=None):
         """ Initializes an instance of IncomeForecast. """
         super().__init__(
             initial_year, default_timing=asset_sale_timing,

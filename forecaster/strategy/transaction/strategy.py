@@ -70,7 +70,7 @@ class TransactionStrategy(Strategy):
     def __init__(
             self, strategy, weights,
             debt_strategy=None, high_interest_threshold=None,
-            high_precision=None):
+            *, high_precision=None):
         """ Init TransactionStrategy. """
         super().__init__(strategy, high_precision=high_precision)
 

@@ -67,7 +67,7 @@ GROUP_DEFAULT_METHODS = group_default_methods()
 
 def _convert_flows_to_transactions(
         flows, timing, limit, accounts, transaction_methods,
-        total=None, precision=1, high_precision=None):
+        total=None, precision=1, *, high_precision=None):
     """ Converts network flows to a mapping of accounts to transactions.
 
     Args:
