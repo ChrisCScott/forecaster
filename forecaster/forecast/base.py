@@ -113,7 +113,7 @@ class Forecast(Ledger):
     def __init__(
             self, income_forecast, living_expenses_forecast,
             saving_forecast, withdrawal_forecast,
-            tax_forecast, scenario):
+            tax_forecast, scenario, high_precision=None):
         """ Constructs an instance of class Forecast.
 
         Args:
@@ -133,8 +133,10 @@ class Forecast(Ledger):
         # Recall that, as a Ledger object, we need to call the
         # superclass initializer and let it know what the first
         # year is so that `this_year` is usable.
-        # NOTE: Issue #53 removes this requirement.
-        super().__init__(initial_year=scenario.initial_year)
+        # NOTE: Issue #53 removes the requirement to pass the initial
+        # year.
+        super().__init__(
+            initial_year=scenario.initial_year, high_precision=high_precision)
 
         # Store input values
         self.income_forecast = income_forecast
@@ -146,7 +148,8 @@ class Forecast(Ledger):
 
         # We'll keep track of cash flows over the course of the year, but
         # we don't save it as a recorded_property, so init it here:
-        self.available = defaultdict(lambda: 0) # Money value
+        self.available = defaultdict(
+            lambda: self.precision_convert(0)) # Money value
 
         # Arrange forecasts in order so it'll be easy to call them
         # in the correct order later:
@@ -244,12 +247,12 @@ class Forecast(Ledger):
             if hasattr(self.tax_forecast, "tax_refund_timing"):
                 timing = self.tax_forecast.tax_refund_timing
             else:
-                timing = Timing(0)
+                timing = Timing(0, high_precision=self.high_precision)
         elif tax_adjustment_previous < 0:  # payment owing
             if hasattr(self.tax_forecast, "tax_payment_timing"):
                 timing = self.tax_forecast.tax_payment_timing
             else:
-                timing = Timing(0)
+                timing = Timing(0, high_precision=self.high_precision)
         else:  # no adjustment
             return  # No need to proceed on to add_transactions
         # Add the time-series of transactions to `available`:
@@ -289,14 +292,14 @@ class Forecast(Ledger):
         # Never contribute a negative amount:
         return max(
             self.income - self.living_expenses,
-            0) # Money value
+            self.precision_convert(0)) # Money value
 
     @recorded_property_cached
     def principal(self):
         """ Total principal in accounts as of the start of the year. """
         return sum(
             (account.balance for account in self.assets),
-            0) # Money value
+            self.precision_convert(0)) # Money value
 
     @recorded_property
     def withdrawals(self):

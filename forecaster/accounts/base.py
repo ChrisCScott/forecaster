@@ -157,7 +157,8 @@ class Account(TaxSource):
         # Set hidden attributes to support properties that need them to
         # be set in advance:
         self._owner = None
-        self._transactions = defaultdict(lambda: 0) # Money value
+        self._transactions = defaultdict(
+            lambda: self.precision_convert(0)) # Money value
         self._rate_callable = None
         self._default_timing = None
         self._nper = None
@@ -371,7 +372,7 @@ class Account(TaxSource):
         if transactions is not None:
             result = sum(val for val in transactions.values() if val > 0)
         else:
-            result = 0 # Money value
+            result = self.precision_convert(0) # Money value
         result += sum(val for val in self.transactions.values() if val > 0)
         return result
 
@@ -380,7 +381,7 @@ class Account(TaxSource):
         if transactions is not None:
             result = sum(val for val in transactions.values() if val < 0)
         else:
-            result = 0 # Money value
+            result = self.precision_convert(0) # Money value
         result += sum(val for val in self.transactions.values() if val < 0)
         return result
 

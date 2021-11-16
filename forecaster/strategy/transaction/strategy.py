@@ -7,6 +7,7 @@ from forecaster.strategy.debt_payment.util import (
     PRIORITY_METHODS, AVALANCHE_KEY)
 from forecaster.strategy.transaction.base import TransactionTraversal
 from forecaster.strategy.transaction.node import TransactionNode
+from forecaster.utility.precision import HighPrecisionOptionalPropertyCached
 
 class TransactionStrategy(Strategy):
     """ Determines transactions to/from a group of accounts.
@@ -63,11 +64,15 @@ class TransactionStrategy(Strategy):
     # to come criterion while still allowing it to be useful?
     # In short: can we abandon type-based approaches entirely?
 
+    # high_interest_threshold supports high-precision numerical types:
+    high_interest_threshold = HighPrecisionOptionalPropertyCached()
+
     def __init__(
             self, strategy, weights,
-            debt_strategy=None, high_interest_threshold=None):
+            debt_strategy=None, high_interest_threshold=None,
+            high_precision=None):
         """ Init TransactionStrategy. """
-        super().__init__(strategy)
+        super().__init__(strategy, high_precision=high_precision)
 
         # Store args:
         self.weights = weights
@@ -328,5 +333,6 @@ class TransactionStrategy(Strategy):
             priority = [high_interest_priority, priority]
 
         # Traverse the tree and return the results:
-        traverse = TransactionTraversal(priority=priority)
+        traverse = TransactionTraversal(
+            priority=priority, high_precision=self.high_precision)
         return traverse(available)

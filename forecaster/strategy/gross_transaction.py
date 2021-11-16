@@ -1,11 +1,10 @@
 """ Provides classes for determining the total sum of transactions. """
 
 from forecaster.strategy.base import Strategy, strategy_method
-from forecaster.utility.precision import (
-    HighPrecisionOptionalPropertyCached, HighPrecisionOptional)
+from forecaster.utility.precision import HighPrecisionOptionalPropertyCached
 
 
-class LivingExpensesStrategy(Strategy, HighPrecisionOptional):
+class LivingExpensesStrategy(Strategy):
     """ Determines annual living expenses.
 
     This class is callable. Its call signature has this form::

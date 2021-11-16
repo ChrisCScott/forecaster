@@ -97,6 +97,10 @@ class TestForecaster(unittest.TestCase):
 
     def setUp_decimal(self):
         """ Builds default strategies/persons/etc. with Decimal inputs. """
+        # pylint: disable=invalid-name
+        # This name is based on `setUp`, which doesn't follow Pylint's rules
+        # pylint: enable=invalid-name
+
         # Use a default settings object:
         # (This is conditional so that subclasses can assign their own
         # settings object before calling super().setUp())

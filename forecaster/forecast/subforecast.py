@@ -127,15 +127,15 @@ class SubForecast(Ledger):
             This dict includes transactions made to/from `available`.
     """
 
-    def __init__(self, initial_year, default_timing=None):
+    def __init__(self, initial_year, default_timing=None, high_precision=None):
         """ Initializes an instance of SubForecast. """
         # Invoke Ledger's __init__ or pay the price!
         # NOTE Issue #53 removes this requirement
-        super().__init__(initial_year)
+        super().__init__(initial_year, high_precision=high_precision)
         # Use default Timing (i.e. lump sum contributions at the
         # midpoint of the year) if none is explicitly provided:
         if default_timing is None:
-            self.default_timing = Timing()
+            self.default_timing = Timing(high_precision=high_precision)
         else:
             self.default_timing = default_timing
         # We store transactions to/from each account so that we can
@@ -302,7 +302,7 @@ class SubForecast(Ledger):
             # This allows users to pass `when` inputs and have them
             # parse correctly, since `Timing(when)` converts to
             # {when: 1}, i.e. a lump-sum occuring at `when`.
-            timing = Timing(timing)
+            timing = Timing(timing, high_precision=self.high_precision)
 
         # For convenience, ensure that we're withdrawing from
         # from_account and depositing to to_account:

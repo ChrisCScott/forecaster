@@ -31,9 +31,12 @@ class IncomeForecast(SubForecast):
     """
 
     def __init__(
-            self, initial_year, people, asset_sale_timing=None):
+            self, initial_year, people, asset_sale_timing=None,
+            high_precision=None):
         """ Initializes an instance of IncomeForecast. """
-        super().__init__(initial_year, default_timing=asset_sale_timing)
+        super().__init__(
+            initial_year, default_timing=asset_sale_timing,
+            high_precision=high_precision)
         # Invoke Ledger's __init__ or pay the price!
         # Store input values
         self.people = people
@@ -62,7 +65,7 @@ class IncomeForecast(SubForecast):
     def asset_sale(self):
         """ Proceeds of sale of an asset. """
         # TODO Implement asset sale #32
-        return 0 # Money value
+        return self.precision_convert(0) # Money value
 
     @recorded_property
     def carryover(self):
@@ -81,18 +84,18 @@ class IncomeForecast(SubForecast):
         """ Gross income for all plannees for the year. """
         return sum(
             (person.gross_income for person in self.people),
-            0) # Money value
+            self.precision_convert(0)) # Money value
 
     @recorded_property
     def tax_withheld(self):
         """ Tax withheld on income for all plannees for the year. """
         return sum(
             (person.tax_withheld for person in self.people),
-            0) # Money value
+            self.precision_convert(0)) # Money value
 
     @recorded_property
     def net_income(self):
         """ Net income for all plannees for the year. """
         return sum(
             (person.net_income for person in self.people),
-            0) # Money value
+            self.precision_convert(0)) # Money value

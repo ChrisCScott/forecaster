@@ -1151,10 +1151,16 @@ class TransactionTraversal(HighPrecisionOptional):
         transactions = _get_transactions(
             node, limit, timing, transaction_methods=self.transaction_methods)
         transaction_limit = sum(transactions.values())
-        # Convert `transaction_limit` to a non-Money type (since
-        # Money is not convertible to int, which is a problem later)
-        if hasattr(transaction_limit, "amount"):
-            transaction_limit = transaction_limit.amount
+        # Ideally if we're operating in a high-precision mode,
+        # `transaction_limit` will already be in a high-precision type
+        # (to match self.precision), but if not then we need to convert:
+        if (
+                self.high_precision is not None and
+                isinstance(transaction_limit,float)):
+            # pylint: disable=not-callable
+            # `high_precision` is required to be callable.
+            transaction_limit = self.high_precision(transaction_limit)
+            # pylint: enable=not-callable
         # Scale up based on the precision (as we do with all edge
         # capacities):
         capacity = transaction_limit / self.precision

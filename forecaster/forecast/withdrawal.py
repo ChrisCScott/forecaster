@@ -35,13 +35,13 @@ class WithdrawalForecast(SubForecast):
     # or something (although it's not clear how this benefits the code.)
     def __init__(
             self, initial_year, people, accounts,
-            transaction_strategy):
+            transaction_strategy, high_precision=None):
         """ Initializes an instance of WithdrawalForecast. """
         # Recall that, as a Ledger object, we need to call the
         # superclass initializer and let it know what the first
         # year is so that `this_year` is usable.
         # NOTE: Issue #53 removes this requirement.
-        super().__init__(initial_year)
+        super().__init__(initial_year, high_precision=high_precision)
 
         # Store input values
         self.people = people
@@ -49,7 +49,7 @@ class WithdrawalForecast(SubForecast):
         self.transaction_strategy = transaction_strategy
 
         self.account_transactions = {}
-        self.tax_withheld = 0 # Money value
+        self.tax_withheld = self.precision_convert(0) # Money value
 
     def __call__(self, available):
         """ Records transactions against accounts; mutates `available`. """
@@ -127,7 +127,7 @@ class WithdrawalForecast(SubForecast):
         """ Reverses all transactions cause by this subforecast. """
         super().undo_transactions()
         # Reset tax_withheld:
-        self.tax_withheld = 0 # Money value
+        self.tax_withheld = self.precision_convert(0) # Money value
 
     @recorded_property_cached
     def gross_withdrawals(self):

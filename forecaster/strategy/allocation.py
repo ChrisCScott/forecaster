@@ -2,8 +2,7 @@
 
 from collections import namedtuple
 from forecaster.strategy.base import Strategy, strategy_method
-from forecaster.utility.precision import (
-    HighPrecisionOptional, HighPrecisionOptionalPropertyCached)
+from forecaster.utility.precision import HighPrecisionOptionalPropertyCached
 
 
 AssetAllocation = namedtuple('AssetAllocation', 'stocks bonds other')
@@ -49,7 +48,7 @@ class RateFunction(object):
         )
 
 
-class AllocationStrategy(Strategy, HighPrecisionOptional):
+class AllocationStrategy(Strategy):
     """ Generates an asset allocation for a point in time. Callable.
 
     Attributes:

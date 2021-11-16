@@ -26,13 +26,14 @@ class LivingExpensesForecast(SubForecast):
     """
 
     def __init__(
-            self, initial_year, people, living_expenses_strategy):
+            self, initial_year, people, living_expenses_strategy,
+            high_precision=None):
         """ Initializes an instance of LivingExpensesForecast. """
         # Recall that, as a Ledger object, we need to call the
         # superclass initializer and let it know what the first
         # year is so that `this_year` is usable.
         # NOTE Issue #53 removes this requirement.
-        super().__init__(initial_year)
+        super().__init__(initial_year, high_precision=high_precision)
 
         self.living_expenses_strategy = living_expenses_strategy
         self.people = people

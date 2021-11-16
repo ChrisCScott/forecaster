@@ -5,7 +5,7 @@ complementary `@strategy_method` decorator for use by subclasses.
 """
 
 import inspect
-
+from forecaster.utility.precision import HighPrecisionOptional
 
 def strategy_method(key):
     """ A decorator for strategy methods, used by Strategy subclasses
@@ -64,7 +64,7 @@ class StrategyType(type):
 
 
 # pylint: disable=too-few-public-methods
-class Strategy(object, metaclass=StrategyType):
+class Strategy(HighPrecisionOptional, metaclass=StrategyType):
     """ An abstract callable class for determining a strategy.
 
     Attributes:
@@ -81,11 +81,11 @@ class Strategy(object, metaclass=StrategyType):
             the call signature for the subclass.
     """
 
-    def __init__(self, strategy, **kwargs):
+    def __init__(self, strategy, high_precision=None, **kwargs):
         # NOTE: `strategy` is required here, but providing a suitable
         # default value in __init__ of each subclass is recommended.
 
-        super().__init__(**kwargs)
+        super().__init__(high_precision=high_precision, **kwargs)
 
         # If the method itself was passed, translate that into the key
         if (
