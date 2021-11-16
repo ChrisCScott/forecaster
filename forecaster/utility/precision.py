@@ -83,7 +83,9 @@ class HighPrecisionOptionalProperty(object):
                 return value
 
         # Convert the native value and return it:
-        return high_precision(value)
+        if value is not None:
+            return high_precision(value)
+        return value
 
     def __set__(self, obj, value):
         # Just a basic setter; all conversion happens on get:
