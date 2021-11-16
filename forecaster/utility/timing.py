@@ -415,7 +415,7 @@ def when_conv(when, high_precision=None):
             when = zero
 
     if when > one or when < zero:
-        raise ValueError("When: 'when' must be in [0,1]") #@IgnoreException
+        raise ValueError("When: 'when' must be in [0,1]")
 
     return when
 
