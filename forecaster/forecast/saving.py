@@ -29,13 +29,13 @@ class SavingForecast(SubForecast):
 
     def __init__(
             self, initial_year, retirement_accounts, debt_accounts,
-            transaction_strategy):
+            transaction_strategy, *, high_precision=None):
         """ Initializes an instance of SavingForecast. """
         # Recall that, as a Ledger object, we need to call the
         # superclass initializer and let it know what the first
         # year is so that `this_year` is usable.
         # NOTE: Issue #53 removes this requirement.
-        super().__init__(initial_year)
+        super().__init__(initial_year, high_precision=high_precision)
 
         self.transaction_strategy = transaction_strategy
         self.retirement_accounts = retirement_accounts

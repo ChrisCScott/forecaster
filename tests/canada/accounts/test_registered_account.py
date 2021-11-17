@@ -5,7 +5,6 @@ import inspect
 import decimal
 from decimal import Decimal
 from random import Random
-from forecaster import Money
 from forecaster.canada import RegisteredAccount
 from tests.accounts.test_linked_limit import TestLinkedLimitAccountMethods
 
@@ -21,7 +20,7 @@ class TestRegisteredAccountMethods(TestLinkedLimitAccountMethods):
         # Randomly generate inflation adjustments based on inflation
         # rates of 1%-20%. Add a few extra years on to the end for
         # testing purposes.
-        self.inflation_adjustments = {self.initial_year: Decimal(1)}
+        self.inflation_adjustments = {self.initial_year: 1}
 
         def inflation_adjust(target_year, base_year):
             """ Inflation from base_year to target_year """
@@ -32,7 +31,29 @@ class TestRegisteredAccountMethods(TestLinkedLimitAccountMethods):
         self.inflation_adjust = inflation_adjust
 
         # Use a convenient default for contribution room:
-        self.contribution_room = Money(0)
+        self.contribution_room = 0
+
+    def setUp_decimal(self):
+        """ Sets up variables based on Decimal inputs. """
+        super().setUp_decimal()
+
+        self.AccountType = RegisteredAccount
+
+        # Randomly generate inflation adjustments based on inflation
+        # rates of 1%-20%. Add a few extra years on to the end for
+        # testing purposes.
+        self.inflation_adjustments = {self.initial_year: 1}
+
+        def inflation_adjust(target_year, base_year):
+            """ Inflation from base_year to target_year """
+            return (
+                self.inflation_adjustments[target_year] /
+                self.inflation_adjustments[base_year]
+            )
+        self.inflation_adjust = inflation_adjust
+
+        # Use a convenient default for contribution room:
+        self.contribution_room = 0
 
     def set_initial_year(self, initial_year):
         """ Sets initial_year for all relevant objects. """
@@ -57,7 +78,8 @@ class TestRegisteredAccountMethods(TestLinkedLimitAccountMethods):
         ledger.initial_year = initial_year
         ledger.this_year = initial_year
 
-    def extend_inflation_adjustments(self, min_year, max_year):
+    def extend_inflation_adjustments(
+            self, min_year, max_year, *, high_precision=None):
         """ Convenience method for extending inflation adjustments.
 
         Ensures self.inflation_adjustment spans min_year and max_year.
@@ -68,19 +90,21 @@ class TestRegisteredAccountMethods(TestLinkedLimitAccountMethods):
         i = min(self.inflation_adjustments)
         while i > min_year:
             self.inflation_adjustments[i - 1] = (
-                self.inflation_adjustments[i] /
-                Decimal(1 + rand.randint(1, 20) / 100)
-            )
+                self.inflation_adjustments[i] / (1 + rand.randint(1, 20) / 100))
             i -= 1
 
         # Extend inflation_adjustments forwards, assuming 1-20% inflation
         i = max(self.inflation_adjustments)
         while i < max_year:
             self.inflation_adjustments[i + 1] = (
-                self.inflation_adjustments[i] *
-                Decimal(1 + rand.randint(1, 20) / 100)
-            )
+                self.inflation_adjustments[i] * (1 + rand.randint(1, 20) / 100))
             i += 1
+
+        # Support high-precision numerical types:
+        if high_precision is not None:
+            self.inflation_adjustments = {
+                key: Decimal(val)
+                for (key, val) in self.inflation_adjustments.items()}
 
     def test_init_basic(self, *args, **kwargs):
         """ Basic init tests for RegisteredAccount. """
@@ -93,31 +117,6 @@ class TestRegisteredAccountMethods(TestLinkedLimitAccountMethods):
             inflation_adjust=self.inflation_adjust,
             contribution_room=self.contribution_room, **kwargs)
         self.assertEqual(account.inflation_adjust, self.inflation_adjust)
-
-    def test_init_type_conversion(self, *args, **kwargs):
-        """ Test type conversion of __init__ inputs. """
-        super().test_init_type_conversion(*args, **kwargs)
-
-        # Try type conversion for inflation_adjustments
-        inflation_adjustments = {
-            '2000': '1',
-            2001.0: 1.25,
-            Decimal(2002): 1.5,
-            2003: Decimal('1.75'),
-            2017.0: Decimal(2.0)
-        }
-
-        account = self.AccountType(
-            self.owner, *args,
-            contribution_room=500, inflation_adjust=inflation_adjustments,
-            **kwargs)
-        self.assertEqual(account.contributor, self.owner)
-        self.assertEqual(account.contribution_room, Money('500'))
-        self.assertEqual(account.inflation_adjust(2000), Decimal(1))
-        self.assertEqual(account.inflation_adjust(2001), Decimal(1.25))
-        self.assertEqual(account.inflation_adjust(2002), Decimal(1.5))
-        self.assertEqual(account.inflation_adjust(2003), Decimal(1.75))
-        self.assertEqual(account.inflation_adjust(2017), Decimal(2))
 
     def test_init_invalid_infl_adj(self, *args, **kwargs):
         """ Test calling __init__ with invalid inflation_adjustment. """
@@ -220,7 +219,7 @@ class TestRegisteredAccountMethods(TestLinkedLimitAccountMethods):
             self.owner, *args, balance=100, contribution_room=0, **kwargs)
         result = account.max_inflows(self.timing)
         for value in result.values():
-            self.assertEqual(value, Money('0'))
+            self.assertEqual(value, 0)
 
     def test_max_inflows_neg(self, *args, **kwargs):
         """ Test max_inflows with negative balance """
@@ -229,7 +228,53 @@ class TestRegisteredAccountMethods(TestLinkedLimitAccountMethods):
             self.owner, *args, balance=-100, contribution_room=0, **kwargs)
         result = account.max_inflows(self.timing)
         for value in result.values():
-            self.assertEqual(value, Money('0'))
+            self.assertEqual(value, 0)
+
+    def test_decimal_continuous(self, *args, **kwargs):
+        """ Test RegisteredAccount with Decimal inputs. """
+        # Convert values to Decimal:
+        self.setUp_decimal()
+        # super().test_decimal calls `account.next_contribution_room`,
+        # which raises a NotImplementedError.
+        # Let subclasses pass through to the super-class's test,
+        # otherwise fail over to a test that doesn't have this problem:
+        try:
+            super().test_decimal_continuous(*args, **kwargs)
+        except NotImplementedError:
+            # If next_contribution_room isn't implemented, use a
+            # different rest (this one is based on test_max_inflows_pos)
+
+            # This method should always return the current contribution room
+            account = self.AccountType(
+                self.owner, *args, balance=Decimal(100),
+                contribution_room=Decimal(0), high_precision=Decimal,
+                **kwargs)
+            result = account.max_inflows(self.timing)
+            for value in result.values():
+                self.assertEqual(value, Decimal(0))
+
+    def test_decimal_discrete(self, *args, **kwargs):
+        """ Test RegisteredAccount with Decimal inputs. """
+        # Convert values to Decimal:
+        self.setUp_decimal()
+        # super().test_decimal calls `account.next_contribution_room`,
+        # which raises a NotImplementedError.
+        # Let subclasses pass through to the super-class's test,
+        # otherwise fail over to a test that doesn't have this problem:
+        try:
+            super().test_decimal_discrete(*args, **kwargs)
+        except NotImplementedError:
+            # If next_contribution_room isn't implemented, use a
+            # different rest (this one is based on test_max_inflows_neg)
+
+            # This method should always return the current contribution room
+            account = self.AccountType(
+                self.owner, *args, balance=Decimal(-100),
+                contribution_room=Decimal(0), high_precision=Decimal,
+                **kwargs)
+            result = account.max_inflows(self.timing)
+            for value in result.values():
+                self.assertEqual(value, Decimal(0))
 
 if __name__ == '__main__':
     # NOTE: BasicContext is useful for debugging, as most errors are treated

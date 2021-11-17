@@ -165,7 +165,7 @@ class RegisteredAccount(LinkedLimitAccount):
             NotImplementedError: Raised if this method is not overridden
             by a subclass.
         """
-        raise NotImplementedError(
+        raise NotImplementedError( #@IgnoreException
             'RegisteredAccount: next_contribution_room is not implemented. '
             + 'Subclasses must override this method.')
 

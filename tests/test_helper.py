@@ -34,6 +34,11 @@ def type_check(val, types):
     if isinstance(types, collections.abc.Iterable):
         # Check that val and types are of the same (ish) iterable type:
         if not isinstance(val, type(types)):
+            # If not, perhaps `types` is a tuple. Fall back to ordinary
+            # isInstance behaviour:
+            if all(isinstance(type(t), type) for t in types):
+                return isinstance(val, types)
+            # Otherwise, we don't know what to do. Fail:
             return False
         # We don't know what to do with multiple elements.
         if len(types) > 1:

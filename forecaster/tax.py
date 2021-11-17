@@ -4,12 +4,10 @@ These classes are callable with the form `tax(taxable_income, year)`
 """
 
 import collections
-from decimal import Decimal
-from forecaster.ledger import Money
 from forecaster.person import Person
 from forecaster.utility import (
     build_inflation_adjust, nearest_year, extend_inflation_adjusted,
-    Timing)
+    Timing, HighPrecisionOptional)
 
 # NOTE: Consider making this a ledger-like object that stores values
 # year-over-year. These values might include:
@@ -33,10 +31,10 @@ from forecaster.utility import (
 # (such as FedProvTuple).
 
 
-class Tax(object):
+class Tax(HighPrecisionOptional):
     """ Determines taxes payable on taxable income.
 
-    When called with a Money-type first argument (i.e. as
+    When called with a float-type first argument (i.e. as
     `tax(taxable_income, year)`), this object returns the amount of tax
     payable on taxable income without any source-specific deduction or
     credit. This should correspond to how employment withholding taxes
@@ -58,16 +56,16 @@ class Tax(object):
     Attributes:
         tax_brackets (dict): A dict of `{year: brackets}` pairs, where
             `brackets` is a dict of `{bracket: rate}` pairs. `bracket`
-            must be convertible to Money and `rate` must be convertible
-            to Decimal. `rate` will be interpreted as a percentage (e.g.
-            Decimal('0.03') is interpreted as 3%)
+            must be convertible to float and `rate` must be convertible
+            to float. `rate` will be interpreted as a percentage (e.g.
+            float('0.03') is interpreted as 3%)
         personal_deduction (dict): A dict of `{year: deduction}` pairs,
-            where `deduction` is convertible to Money.
+            where `deduction` is convertible to float.
 
             The personal deduction for a given year is deducted from
             income when determining income tax in that year.
         credit_rate (dict): A dict of `{year: rate}` pairs, where `rate`
-            is convertible to Decimal.
+            is convertible to float.
 
             The credit rate is used to determine how much each tax
             credit reduced total tax liability.
@@ -84,7 +82,7 @@ class Tax(object):
         inflation_adjust: A method with the following form:
             `inflation_adjust(target_year, base_year)`.
 
-            Returns a Decimal scaling factor. Multiplying this by a
+            Returns a float scaling factor. Multiplying this by a
             nominal value in base_year will yield a nominal value in
             target_year with the same real value.
 
@@ -92,13 +90,13 @@ class Tax(object):
             real terms, so no inflation adjustment is performed.
 
     Args:
-        taxable_income (Money, iterable): Taxable income for the year,
-            either as a single scalar Money object or as an iterable
+        taxable_income (float, iterable): Taxable income for the year,
+            either as a single scalar float value or as an iterable
             (list, set, etc.) of sources of taxable income (i.e.
             Person/Account objects).
         year (int): The taxation year. This determines which tax rules
             and inflation-adjusted brackets are used.
-        deduction (Money): Any other deduction which can be
+        deduction (float): Any other deduction which can be
             applied and which aren't evident from the income sources
             themselves. These will generally be itemized deduction.
 
@@ -107,7 +105,7 @@ class Tax(object):
             you risk double-counting.
 
             Optional.
-        credit (Money): Any other tax credit which can be
+        credit (float): Any other tax credit which can be
             applied and which aren't evident from the income sources
             themselves. These will generally be boutique tax credit.
 
@@ -116,25 +114,25 @@ class Tax(object):
     def __init__(
             self, tax_brackets, personal_deduction=None, credit_rate=None,
             inflation_adjust=None,
-            refund_timing='start', payment_timing='start'):
+            refund_timing='start', payment_timing='start', **kwargs):
         """ Initializes the Tax object.
 
         Args:
-            tax_brackets (dict[int, dict[Money, Decimal]]):
+            tax_brackets (dict[int, dict[float, float]]):
                 `{year: brackets}` pairs, where `brackets` is itself a
                 dict of `{bracket: rate}` pairs. Any income above
                 `bracket` is taxed at `rate`. (It's thus usually a good
                 idea to have at least a {0: rate} element!)
-            personal_deduction (dict[int, Money]): `{year: deduction}`
+            personal_deduction (dict[int, float]): `{year: deduction}`
                 pairs. This deduction is applied to the income of each
                 person when determining tax liability.
-            credit_rate (dict[int, Money]): `{year: rate}` pairs.
+            credit_rate (dict[int, float]): `{year: rate}` pairs.
                 This rate is applied to any tax credits the person is
                 eligible for when determining tax liability.
             inflation_adjust: A method with the following form:
                 `inflation_adjust(val, this_year, target_year)`.
-                Returns a Decimal object which is the inflation-
-                adjustment factor from base_year to target_year.
+                Returns a float which is the inflation-adjustment factor
+                from base_year to target_year.
 
                 Optional. If not provided, all values are assumed to be
                 in real terms, so no inflation adjustment is performed.
@@ -144,11 +142,12 @@ class Tax(object):
                 must be made, if there is an amount owing for the year
                 in excess of the amount withheld. Optional.
         """
+        super().__init__(**kwargs)
         # NOTE: Consider allowing users to pass in non-year-indexed
         # values (e.g. so that `tax_brackets` can be a dict of
-        # {Money: Decimal} pairs instead of {int: {Money: Decimal}}
-        # pairs, and `personal_deduction` could be Money instead of
-        # {int: Money}).
+        # {float: float} pairs instead of {int: {float: float}}
+        # pairs, and `personal_deduction` could be float instead of
+        # {int: float}).
         # This would likely require adding an initial_year arg.
         # If it's provided, we would interpret any non-year-indexed args
         # as values for the key `initial_year`.
@@ -160,7 +159,7 @@ class Tax(object):
         if credit_rate is None:
             credit_rate = {}
 
-        # Enforce {int: {Money: Decimal}} types for tax_brackets and
+        # Enforce {int: {float: float}} types for tax_brackets and
         # generate an entry in `accum` for each new bracket:
         self._accum = {}
         self._tax_brackets = {}
@@ -170,26 +169,22 @@ class Tax(object):
         self.inflation_adjust = build_inflation_adjust(inflation_adjust)
 
         if personal_deduction != {}:
-            # Enforce {int: Money} types for personal_deduction:
-            self._personal_deduction = {
-                int(year): Money(personal_deduction[year])
-                for year in personal_deduction
-            }
+            # Copy personal_deduction (to avoid external mutation):
+            self._personal_deduction = dict(personal_deduction)
         else:
             # If this arg wasn't passed, assume there's no deduction
-            self._personal_deduction = {min(self._tax_brackets): Money(0)}
+            self._personal_deduction = {
+                min(self._tax_brackets): self.precision_convert(0)}
 
         if credit_rate != {}:
-            # Enforce {int: Decimal} types for credit_rate:
-            self._credit_rate = {
-                int(year): Decimal(credit_rate[year])
-                for year in credit_rate
-            }
+            # Copy credit_rate (to avoid external mutation):
+            self._credit_rate = dict(credit_rate)
         else:
             # If this argument wasn't passed, default to behaviour where
             # all tax credits are fully refundable (i.e. credits reduce
             # tax liability at a 100% rate)
-            self._credit_rate = {min(self._tax_brackets): Decimal(1)}
+            self._credit_rate = {
+                min(self._tax_brackets): self.precision_convert(1)}
 
         self._payment_timing = None
         self._refund_timing = None
@@ -243,7 +238,7 @@ class Tax(object):
                 assessed.
 
         Returns:
-            Money: The deductions for the person.
+            float: The deductions for the person.
                 This base class determines the personal deduction
                 and other deductions provided by `Person`.
         """
@@ -263,11 +258,11 @@ class Tax(object):
                 are being assessed.
             year (int): The year for which credits are being
                 assessed.
-            deductions (Money): The deductions claimable
+            deductions (float): The deductions claimable
                 for the person. Optional.
 
         Returns:
-            Money: The credits for the person.
+            float: The credits for the person.
         """
         _credit = person.tax_credit_history[year]
         return _credit
@@ -318,12 +313,6 @@ class Tax(object):
         Also generates an `accum` dict based on the tax brackets.
         """
         year = int(year)
-        # Enforce types for the new brackets (We'll reuse this short
-        # name later when building the accum dict for convenience)
-        brackets = {
-            Money(key): Decimal(brackets[key])
-            for key in brackets
-        }
         self._tax_brackets[year] = brackets
 
         self.add_accum(brackets, year)
@@ -336,7 +325,7 @@ class Tax(object):
         # marginal rate of that bracket applied to the full taxable
         # income within its range.
         prev = min(brackets)  # We need to look at 2 brackets at a time
-        self._accum[year] = {prev: Money(0)}  # Accum for lowest bracket
+        self._accum[year] = {prev: self.precision_convert(0)}  # Accum for lowest bracket
         iterator = sorted(brackets.keys())  # Look at brackets in order
         iterator.remove(prev)  # Lowest bracket is already accounted for.
         for bracket in iterator:
@@ -345,7 +334,7 @@ class Tax(object):
             prev = bracket  # Keep track of next-lowest bracket
 
     def tax_money(
-            self, taxable_income, year, deduction=Money(0), credit=Money(0)):
+            self, taxable_income, year, deduction=0, credit=0):
         """ Returns taxes owing on a given amount of taxable income.
 
         This method does not apply any deductions or credits other than
@@ -356,20 +345,20 @@ class Tax(object):
         to have deductions and credits automatically applied.
 
         Args:
-            taxable_income (Money): The amount of income to be taxed,
+            taxable_income (float): The amount of income to be taxed,
                 assuming it's taxable in the hands of a single person
                 with no other income and no deduction or credit other
                 than those provided explicitly to this method.
             year (int): The year for which tax treatment is applied.
-            deduction (Money): Any deduction from taxable income to be
+            deduction (float): Any deduction from taxable income to be
                 applied before determining total tax liability.
                 Optional.
-            credit (Money): Any tax credit to be applied against tax
+            credit (float): Any tax credit to be applied against tax
                 liability; these are applied at the tax credit rate for
                 `year`. Optional.
 
         Returns:
-            Money: Total tax liability arising from `taxable_income` in
+            float: Total tax liability arising from `taxable_income` in
                 `year`, after applying `deduction` and `credit`.
         """
         # Apply deductions:
@@ -390,28 +379,28 @@ class Tax(object):
         # Apply tax credts:
         net_tax = gross_tax - credit * self.credit_rate(year)
         # Assume credits are non-refundable:
-        return max(net_tax, Money(0))
+        return max(net_tax, self.precision_convert(0))
 
     def tax_person(
-            self, person, year, deduction=Money(0), credit=Money(0)):
+            self, person, year, deduction=0, credit=0):
         """ Returns tax treatment for an individual person.
 
         Args:
             person (Person): A person for whom tax liability will be
                 determined.
             year (int): The year for which tax treatment is needed.
-            deduction (Money): A deduction to be applied against
+            deduction (float): A deduction to be applied against
                 the person's income, on top of whatever other deductions
                 they are eligible for, including the personal deduction
                 for the year and any specific `tax_deduction` attribute
                 values of the person and their accounts.
-            credit (Money): A credit to be applied against the
+            credit (float): A credit to be applied against the
                 person's tax liability, on top of whatever other credits
                 they are eligible for (provided via the `tax_deduction`
                 member of `person` and any of their accounts).
 
         Returns:
-            Money: The tax liability of the person.
+            float: The tax liability of the person.
         """
         taxable_income = person.taxable_income_history[year]
         deduction = (
@@ -434,13 +423,13 @@ class Tax(object):
         Args:
             people (iterable[Person]): Any number of people.
             year (int): The year for which tax treatment is needed.
-            deduction (dict[Person, Money]): A dict of
+            deduction (dict[Person, float]): A dict of
                 `{person: deduction}` pairs. Optional.
-            credit (dict[Person, Money]): A dict of `{person: credit}`
+            credit (dict[Person, float]): A dict of `{person: credit}`
                 pairs. Optional.
 
         Returns:
-            Money: The total tax liability of the people.
+            float: The total tax liability of the people.
         """
         if deduction is None:
             deduction = {}
@@ -449,7 +438,7 @@ class Tax(object):
 
         # Base case: If {} is passed, return $0.
         if not people:
-            return Money(0)
+            return self.precision_convert(0)
 
         # Otherwise, grab someone at random and determine their taxes.
         person = next(iter(people))
@@ -503,13 +492,13 @@ class Tax(object):
                 relationships. In countries requiring monogamous
                 marriages, this input should have exactly two elements.
             year (int): The year for which tax treatment is needed.
-            deduction (dict[Person, Money]): A dict of
+            deduction (dict[Person, float]): A dict of
                 `{person: deduction}` pairs. Optional.
-            credit (dict[Person, Money]): A dict of `{person: credit}`
+            credit (dict[Person, float]): A dict of `{person: credit}`
                 pairs. Optional.
 
         Returns:
-            Money: The tax liability of the spouses.
+            float: The tax liability of the spouses.
         """
         # Avoid using {} as a default value in the call signature:
         if deduction is None:
@@ -520,7 +509,7 @@ class Tax(object):
         # Add together the tax treatment for each spouse, without doing
         # anything special (this is essentially the same logic as
         # tax_person, but without the check for spouses or recursion)
-        tax = Money(0)
+        tax = self.precision_convert(0)
         for person in people:
             kwargs = {}
             if person in deduction:
@@ -540,19 +529,19 @@ class Tax(object):
         They don't need to be passed explicitly.
 
         Args:
-            income (Money, Person, iterable): Taxable income for the
-                year, either as a single scalar Money object, a single
+            income (float, Person, iterable): Taxable income for the
+                year, either as a single scalar float value, a single
                 Person object, or as an iterable (list, set, etc.) of
                 Person objects.
             year (int): The taxation year. This determines which tax
                 rules and inflation-adjusted brackets are used.
-            deduction (Money, dict[Person, Money]):
+            deduction (float, dict[Person, float]):
                 Any other deduction which can be applied and which
                 aren't modelled by the income sources themselves.
                 These will generally be itemized deduction.
 
                 If `income` is passed as an iterable, this should also
-                be an iterable; otherwise it should be a Money object.
+                be an iterable; otherwise it should be a float value.
 
                 It's a good idea to be familiar with the `Tax` and
                 `Person` implementation you're working with before
@@ -561,7 +550,7 @@ class Tax(object):
                 same deduction.
 
                 Optional.
-            credit (Money, dict[Person, Money]):
+            credit (float, dict[Person, float]):
                 Any other tax credit which can be applied and which
                 aren't modelled by the income sources themselves.
 
@@ -574,7 +563,7 @@ class Tax(object):
                 Optional.
 
             Returns:
-                Money: The total amount of tax owing for the year.
+                float: The total amount of tax owing for the year.
         """
         year = int(year)
         # The different tax_* methods have different defaults for
@@ -592,7 +581,7 @@ class Tax(object):
         elif isinstance(income, Person):
             return self.tax_person(income, year, **kwargs)
         # Otherwise, this is the easy case: interpret income as
-        # Money (or Money-convertible)
+        # float (or float-convertible)
         return self.tax_money(income, year, **kwargs)
 
 class TaxMulti(object):
@@ -606,16 +595,16 @@ class TaxMulti(object):
     Attributes:
         jurisdictions (Tuple[Tax]): One or more jurisdictions' tax
             treatment for a given taxpayer.
-        tax_brackets (dict[int, dict[Money, Decimal]]): The combined tax
+        tax_brackets (dict[int, dict[float, float]]): The combined tax
             brackets of `juridctions`.
-        personal_deduction (dict[int, Money]): The combined personal
+        personal_deduction (dict[int, float]): The combined personal
             deductions A dict of `{year: deduction}` pairs,
-            where `deduction` is convertible to Money.
+            where `deduction` is convertible to float.
 
             The personal deduction for a given year is deducted from
             income when determining income tax in that year.
         credit_rate (dict): A dict of `{year: rate}` pairs, where `rate`
-            is convertible to Decimal.
+            is convertible to float.
 
             The credit rate is used to determine how much each tax
             credit reduced total tax liability.
@@ -632,7 +621,7 @@ class TaxMulti(object):
         inflation_adjust: A method with the following form:
             `inflation_adjust(target_year, base_year)`.
 
-            Returns a Decimal scaling factor. Multiplying this by a
+            Returns a float scaling factor. Multiplying this by a
             nominal value in base_year will yield a nominal value in
             target_year with the same real value.
 

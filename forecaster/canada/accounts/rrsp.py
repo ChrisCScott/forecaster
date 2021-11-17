@@ -1,7 +1,7 @@
 """ Provices Registered Retirement Savings Accounts for Canadians. """
 
 from forecaster.canada.accounts.registered_account import RegisteredAccount
-from forecaster.ledger import Money, recorded_property
+from forecaster.ledger import recorded_property
 from forecaster.utility import extend_inflation_adjusted, nearest_year
 from forecaster.canada import constants
 
@@ -38,16 +38,32 @@ class RRSP(RegisteredAccount):
         self._rrif_conversion_year = None
         self.rrif_conversion_year = rrif_conversion_year
 
+        # Convert RRSP_ACCRUAL_MAX values if operating in high-precision
+        # mode.
+        # TODO: Perform this conversion in the `constants` class?
+        # Otherwise, we'll need to perform this conversion in
+        # `next_contribution_room`, which will get expensive
+        # (and kludgy)
+        if self.high_precision is not None:
+            rrsp_accrual_max = {
+                # pylint: disable=not-callable
+                # Non-None `high_precision` is expected to be callable
+                year: self.high_precision(val)
+                for (year, val) in constants.RRSP_ACCRUAL_MAX.items()}
+                # pylint: enable=not-callable
+        else:
+            rrsp_accrual_max = constants.RRSP_ACCRUAL_MAX
+
         # Determine the max contribution room accrual in initial_year:
         self._initial_accrual = extend_inflation_adjusted(
-            constants.RRSP_ACCRUAL_MAX,
+            rrsp_accrual_max,
             self.inflation_adjust,
             self.initial_year
         )
 
         # If no contribution room was provided, set it to $0.
         if self.contribution_room is None:
-            self.contribution_room = Money(0)
+            self.contribution_room = self.precision_convert(0) # Money value
 
     def _rrif_max_conversion_year(self):
         """ The latest year in which the RRSP can convert to an RRIF. """
@@ -91,7 +107,7 @@ class RRSP(RegisteredAccount):
             if not isinstance(val, int):
                 val = int(val)
             if val > self._rrif_max_conversion_year():
-                raise ValueError(
+                raise ValueError( #@IgnoreException
                     'Attempt to convert RRSP to RRIF after mandatory '
                     + 'conversion year. Latest valid year is '
                     + str(self._rrif_max_conversion_year())
@@ -111,13 +127,12 @@ class RRSP(RegisteredAccount):
         """ The total tax owing on withdrawals from the account.
 
         Returns:
-            The taxable income owing on withdrawals the account as a
-                `Money` object.
+            The taxable income owing on withdrawals from the account
         """
         # Return the sum of all withdrawals from the account.
         # pylint: disable=invalid-unary-operand-type
         # Pylint thinks this doesn't support negation via `-`, but it's
-        # wrong - `outflows` returns `Money`, which supports `-`:
+        # wrong - `outflows` returns `float`, which supports `-`:
         return -self.outflows()
 
     @recorded_property
@@ -140,6 +155,7 @@ class RRSP(RegisteredAccount):
         year = nearest_year(
             constants.RRSP_WITHHOLDING_TAX_RATE,
             self.this_year)
+        # We convert this inline below (when assigning `tax_rate`):
         tax_rates = constants.RRSP_WITHHOLDING_TAX_RATE[year]
         taxable_income_adjusted = (
             taxable_income
@@ -148,9 +164,9 @@ class RRSP(RegisteredAccount):
         bracket = max(
             (
                 bracket for bracket in tax_rates
-                if bracket < taxable_income_adjusted.amount),
+                if bracket < taxable_income_adjusted),
             default=min(tax_rates.keys()))
-        tax_rate = tax_rates[bracket]
+        tax_rate = self.precision_convert(tax_rates[bracket])
         return taxable_income * tax_rate
 
     @recorded_property
@@ -178,7 +194,7 @@ class RRSP(RegisteredAccount):
         if self.contributor.age(year + 1) > constants.RRSP_RRIF_CONVERSION_AGE:
             # If past the mandatory RRIF conversion age, no
             # contributions are allowed.
-            return Money(0)
+            return self.precision_convert(0) # Money value
         else:
             # TODO: Add pension adjustment?
 
@@ -188,17 +204,23 @@ class RRSP(RegisteredAccount):
 
             # First, determine how much more contribution room will
             # accrue due to this year's income:
-            accrual = income * constants.RRSP_ACCRUAL_RATE
+            accrual = income * self.precision_convert(
+                constants.RRSP_ACCRUAL_RATE)
+            accrual_max = {
+                year: self.precision_convert(val)
+                for (year, val) in constants.RRSP_ACCRUAL_MAX.items()}
             # Second, compare to the (inflation-adjusted) max accrual
             # for next year:
             max_accrual = extend_inflation_adjusted(
-                constants.RRSP_ACCRUAL_MAX,
+                accrual_max,
                 self.inflation_adjust,
-                year + 1
-            )
+                year + 1)
             # Don't forget to add in any rollovers:
             rollover = self.contribution_room - self.inflows()
-            return min(accrual, Money(max_accrual)) + rollover
+            return min(
+                accrual,
+                max_accrual # Money value
+                ) + rollover
 
     @property
     def min_outflow_limit(self):
@@ -210,19 +232,30 @@ class RRSP(RegisteredAccount):
 
     def minimum_distribution(self):
         """ A min. amount required by law to be withdrawn based on age. """
+        # Convert relevant constants:
+        if self.high_precision is not None:
+            rrif_withdrawal_min = {
+                # pylint: disable=not-callable
+                year: self.high_precision(val)
+                # pylint: enable=not-callable
+                for (year, val) in constants.RRSP_RRIF_WITHDRAWAL_MIN.items()}
+        else:
+            rrif_withdrawal_min = constants.RRSP_RRIF_WITHDRAWAL_MIN
+
         # Minimum withdrawals are required the year after converting to
         # an RRIF. How it is calculated depends on the person's age.
         if self.rrif_conversion_year < self.this_year:
             age = self.contributor.age(self.this_year)
-            if age in constants.RRSP_RRIF_WITHDRAWAL_MIN:
-                return constants.RRSP_RRIF_WITHDRAWAL_MIN[age] * self.balance
-            elif age > max(constants.RRSP_RRIF_WITHDRAWAL_MIN):
-                return self.balance * \
-                    max(constants.RRSP_RRIF_WITHDRAWAL_MIN.values())
+            if age in rrif_withdrawal_min:
+                return (
+                    self.precision_convert(rrif_withdrawal_min[age])
+                    * self.balance)
+            elif age > max(rrif_withdrawal_min):
+                return self.balance * max(rrif_withdrawal_min.values())
             else:
                 return self.balance / (90 - age)
         else:
-            return Money(0)
+            return self.precision_convert(0) # Money value
 
     # TODO: Add RRSP tax credits (e.g. pension tax credit)?
     # Implement this in an overloaded _tax_credit method.

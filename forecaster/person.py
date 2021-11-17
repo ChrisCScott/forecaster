@@ -1,11 +1,10 @@
 """ A module providing a Person class. """
 
-from decimal import Decimal
 from datetime import datetime
 from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
 from forecaster.ledger import (
-    Money, TaxSource, recorded_property, recorded_property_cached)
+    TaxSource, recorded_property, recorded_property_cached)
 from forecaster.utility import Timing
 
 
@@ -25,7 +24,7 @@ class Person(TaxSource):
             as a datetime-convertible value (e.g. a string in a
             suitable format)
         gross_income (Money): Annual gross income for the initial year.
-        raise_rate (Decimal, Callable): The person's raise in gross
+        raise_rate (float, Callable): The person's raise in gross
             income for each year relative to the previous year.
         payment_timing (Timing, dict[float, float]): The timings of
             payments mapped to the weight of each payment. Optional.
@@ -67,10 +66,10 @@ class Person(TaxSource):
             years on record.
         raise_rate_callable (callable): A function for determining the
             Person's raise rate for a given year. A callable object with
-            the form `raise_rate_function(year) -> Decimal`.
-        raise_rate (Decimal): The person's raise in gross income this
+            the form `raise_rate_function(year) -> float`.
+        raise_rate (float): The person's raise in gross income this
             year relative to last year.
-        raise_rate_history (dict[int, Decimal]): Raises for all years
+        raise_rate_history (dict[int, float]): Raises for all years
             on record.
         payment_timing (Timing, dict[float, float]): The timings of
             payments and the weight of each payment timing. Optional.
@@ -112,19 +111,27 @@ class Person(TaxSource):
 
     def __init__(
             self, initial_year, name, birth_date, retirement_date=None,
-            gross_income=0, raise_rate=0, spouse=None, tax_treatment=None,
-            payment_timing=None, inputs=None):
+            gross_income=None, raise_rate=None, spouse=None, tax_treatment=None,
+            payment_timing=None, inputs=None, **kwargs):
         """ Initializes a `Person` object. """
-        super().__init__(initial_year=initial_year, inputs=inputs)
+        super().__init__(initial_year=initial_year, inputs=inputs, **kwargs)
+
+        # For numerical optional inputs, ensure an appropriately-typed
+        # default value is used:
+        if gross_income is None:
+            gross_income = self.precision_convert(0)
+        if raise_rate is None:
+            raise_rate = self.precision_convert(0)
 
         # For simple, non-property-wrapped attributes, assign directly:
         self.name = name
         if payment_timing is None:
             # Timing is technically mutable, so init it here rather than
             # using "Timing()" as a default value.
-            self.payment_timing = Timing()
+            self.payment_timing = Timing(high_precision=self.high_precision)
         else:
-            self.payment_timing = Timing(payment_timing)
+            self.payment_timing = Timing(
+                payment_timing, high_precision=self.high_precision)
 
         # For attributes wrapped by ordinary properties, create hidden
         # attributes and assign to them using the properties:
@@ -142,8 +149,7 @@ class Person(TaxSource):
         self.tax_treatment = tax_treatment
 
         # Now provide initial-year values for recorded properties:
-        # NOTE: Be sure to do type-checking here.
-        self.gross_income = Money(gross_income)
+        self.gross_income = gross_income # Money value
         # NOTE: Be sure to set up tax_treatment before calling tax_withheld
         self.net_income = self.gross_income - self.tax_withheld
 
@@ -238,7 +244,7 @@ class Person(TaxSource):
 
         Returns:
             callable: A function with signature
-            `raise_rate(year) -> Decimal`.
+            `raise_rate(year) -> float`.
         """
         return self._raise_rate_callable
 
@@ -248,7 +254,7 @@ class Person(TaxSource):
         # Treat setting the method to None as reverting to the default
         # rate parameter, which is Money(0).
         if val is None:
-            self.raise_rate_callable = Money(0)
+            self.raise_rate_callable = 0
         # Is raise_rate isn't callable, convert it to a suitable method:
         if not callable(val):  # Make callable if dict or scalar
             if isinstance(val, dict):
@@ -257,9 +263,9 @@ class Person(TaxSource):
                     """ Wraps dict in a function """
                     return val[year]
             else:
-                # If we can cast this to Decimal, return a constant rate
-                val = Decimal(val)
-
+                # Return a constant rate
+                # First, convert to high-precision if appropriate:
+                val = self.precision_convert(val)
                 def func(_=None):
                     """ Wraps value in a function with an optional arg. """
                     return val
@@ -324,7 +330,7 @@ class Person(TaxSource):
         if (
                 self.retirement_date is not None and
                 self.retirement_date.year < self.this_year):
-            return Money(0)
+            return self.precision_convert(0) # Money value
         else:
             return (
                 # Pylint gets confused by attributes added by metaclass.
@@ -412,7 +418,7 @@ class Person(TaxSource):
             # We test that tax_treatment is callable in its setter.
             return self.tax_treatment(self.gross_income, self.this_year)
         else:
-            return Money(0)
+            return 0 # Money value
 
     def __gt__(self, other):
         """ Allows for sorting, max, min, etc. based on gross income. """

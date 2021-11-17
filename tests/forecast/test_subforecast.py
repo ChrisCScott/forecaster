@@ -4,7 +4,7 @@ import unittest
 from collections import defaultdict
 from decimal import Decimal
 from forecaster import (
-    Money, Person, Account, SubForecast, Timing)
+    Person, Account, SubForecast, Timing)
 from forecaster.forecast.subforecast import TransactionDict
 
 
@@ -59,18 +59,46 @@ class TestSubForecast(unittest.TestCase):
             retirement_date="31 December 2045")
         # A basic account with 100% interest and no compounding:
         self.account1 = Account(
-            owner=self.person, balance=100, rate=Decimal(1), nper=1)
+            owner=self.person, balance=100, rate=1, nper=1)
         # Another account, same as account1:
         self.account2 = Account(
-            owner=self.person, balance=100, rate=Decimal(1), nper=1)
+            owner=self.person, balance=100, rate=1, nper=1)
         # Set up a dict and Account for use as `available`:
-        self.available_dict = defaultdict(lambda: Money(0))
+        self.available_dict = defaultdict(lambda: 0)
         self.available_acct = Account(initial_year=self.initial_year, rate=0)
+
+    def setUp_decimal(self):
+        """ Builds stock variables to test with. """
+        # pylint: disable=invalid-name
+        # Pylint doesn't like `setUp_decimal`, but it's not our naming
+        # convention, so don't complain to us!
+        # pylint: enable=invalid-name
+        self.initial_year = 2000
+        self.subforecast = SubForecast(
+            self.initial_year, high_precision=Decimal)
+        self.person = Person(
+            initial_year=self.initial_year,
+            name="Test",
+            birth_date="1 January 1980",
+            retirement_date="31 December 2045",
+            high_precision=Decimal)
+        # A basic account with 100% interest and no compounding:
+        self.account1 = Account(
+            owner=self.person, balance=100, rate=Decimal(1), nper=1,
+            high_precision=Decimal)
+        # Another account, same as account1:
+        self.account2 = Account(
+            owner=self.person, balance=100, rate=Decimal(1), nper=1,
+            high_precision=Decimal)
+        # Set up a dict and Account for use as `available`:
+        self.available_dict = defaultdict(lambda: Decimal(0))
+        self.available_acct = Account(
+            initial_year=self.initial_year, rate=0, high_precision=Decimal)
 
     def test_transaction_basic(self):
         """ Tests that transactions are saved correctly. """
         # Receive cash at start of year:
-        self.available_dict[Decimal(0)] = Money(100)
+        self.available_dict[0] = 100
         # Move all $100 to account1 right away:
         self.subforecast.add_transaction(
             value=100, timing='start',
@@ -79,10 +107,10 @@ class TestSubForecast(unittest.TestCase):
         # and account1:
         self.assertEqual(
             self.subforecast.transactions[self.available_dict],
-            {Decimal(0): Money(-100)})
+            {0: -100})
         self.assertEqual(
             self.subforecast.transactions[self.account1],
-            {Decimal(0): Money(100)})
+            {0: 100})
 
     def test_transaction_delay(self):
         """ Tests that delayed transactions are saved correctly. """
@@ -96,8 +124,8 @@ class TestSubForecast(unittest.TestCase):
             from_account=self.available_acct, to_account=self.account2)
         result = self.subforecast.transactions
         target = {
-            self.available_acct: {Decimal(0.5): Money(-100)},
-            self.account2: {Decimal(0.5): Money(100)}}
+            self.available_acct: {0.5: -100},
+            self.account2: {0.5: 100}}
         # Transaction should be delayed until mid-year:
         self.assertEqual(result, target)
 
@@ -112,26 +140,26 @@ class TestSubForecast(unittest.TestCase):
         self.assertEqual(
             self.subforecast.transactions,
             {
-                None: {Decimal(0): Money(-100)},
-                self.account2: {Decimal(0): Money(100)}
+                None: {0: -100},
+                self.account2: {0: 100}
             })
 
     def test_add_trans_basic(self):
         """ Moves $100 from available to an account. """
         # Receive cash at start of year:
-        self.available_dict[Decimal(0)] = Money(100)
+        self.available_dict[0] = 100
         # Move all $100 to account1 right away:
         self.subforecast.add_transaction(
             value=100, timing='start',
             from_account=self.available_dict, to_account=self.account1)
         # The $100 inflow at the start time should be reduced to $0:
         self.assertEqual(
-            self.available_dict[Decimal(0)],
-            Money(0))
+            self.available_dict[0],
+            0)
         # A $100 transaction should be added to the account:
         self.assertEqual(
-            self.account1.transactions[Decimal(0)],
-            Money(100))
+            self.account1.transactions[0],
+            100)
 
     def test_add_trans_basic_acct(self):
         """ Moves $100 from available to an account. """
@@ -145,47 +173,47 @@ class TestSubForecast(unittest.TestCase):
             to_account=self.account2)
         # No more money should be available:
         self.assertEqual(
-            self.available_acct.transactions[Decimal(0)],
-            Money(0))
+            self.available_acct.transactions[0],
+            0)
         # A $100 transaction should be added to account2:
         self.assertEqual(
-            self.account2.transactions[Decimal(0)],
-            Money(100))
+            self.account2.transactions[0],
+            100)
 
     def test_add_trans_tnsfr_acct(self):
         """ Moves $100 from one account to another. """
         # Receive cash at start of year:
-        self.account1.transactions[Decimal(0)] = Money(100)
+        self.account1.transactions[0] = 100
         # Move $100 from account1 to account2 right away:
         self.subforecast.add_transaction(
             value=100, timing='start',
             from_account=self.account1, to_account=self.account2)
         # The $100 inflow at the start time should be reduced to $0:
         self.assertEqual(
-            self.account1.transactions[Decimal(0)],
-            Money(0))
+            self.account1.transactions[0],
+            0)
         # A $100 transaction should be added to account2:
         self.assertEqual(
-            self.account2.transactions[Decimal(0)],
-            Money(100))
+            self.account2.transactions[0],
+            100)
 
     def test_add_trans_delay(self):
         """ Transaction that should be shifted to later time. """
         # Try to move $100 in cash to account1 at the start of the year,
         # when cash isn't actually available until mid-year:
-        self.available_dict[Decimal(0.5)] = Money(100)
+        self.available_dict[0.5] = 100
         self.subforecast.add_transaction(
             value=100, timing='start',
             from_account=self.available_dict, to_account=self.account2)
         # Transaction should be recorded against existing transaction
         # at timing=0.5, resulting in no net transaction:
         self.assertEqual(
-            self.available_dict[Decimal(0.5)],
-            Money(0))
+            self.available_dict[0.5],
+            0)
         # A $100 transaction should be added to account2:
         self.assertEqual(
-            self.account2.transactions[Decimal(0.5)],
-            Money(100))
+            self.account2.transactions[0.5],
+            100)
 
     def test_add_trans_delay_acct(self):
         """ Transaction that should be shifted to later time. """
@@ -199,18 +227,18 @@ class TestSubForecast(unittest.TestCase):
             from_account=self.available_acct, to_account=self.account2)
         # Transactions should be delayed until mid-year:
         self.assertEqual(
-            self.available_acct.transactions[Decimal(0.5)],
-            Money(0))
+            self.available_acct.transactions[0.5],
+            0)
         # A $100 transaction should be added to account2:
         self.assertEqual(
-            self.account2.transactions[Decimal(0.5)],
-            Money(100))
+            self.account2.transactions[0.5],
+            100)
 
     def test_add_trans_small_in(self):
         """ Multiple small inflows and one large outflow. """
         # Receive $100 spread across 2 transactions:
-        self.available_dict[Decimal(0)] = Money(50)
-        self.available_dict[Decimal(0.5)] = Money(50)
+        self.available_dict[0] = 50
+        self.available_dict[0.5] = 50
 
         # Move $100 in cash to account2 at mid-year:
         self.subforecast.add_transaction(
@@ -219,22 +247,22 @@ class TestSubForecast(unittest.TestCase):
         # Transaction should occur on-time:
         self.assertEqual(
             (
-                self.available_dict[Decimal(0)],
-                self.available_dict[Decimal(0.5)]),
-            (Money(50), Money(-50)))
+                self.available_dict[0],
+                self.available_dict[0.5]),
+            (50, -50))
         # A $100 transaction should be added to account2:
         self.assertEqual(
-            self.account2.transactions[Decimal(0.5)],
-            Money(100))
+            self.account2.transactions[0.5],
+            100)
 
     def test_add_trans_future_neg(self):
         """ Transaction that would cause future negative balance. """
         # Want to have $100 available at timing=0.5 and at timing=1,
         # but with >$100 in-between:
-        self.available_dict[Decimal(0)] = Money(50)
-        self.available_dict[Decimal(0.5)] = Money(50)
-        self.available_dict[Decimal(0.75)] = Money(-50)
-        self.available_dict[Decimal(1)] = Money(50)
+        self.available_dict[0] = 50
+        self.available_dict[0.5] = 50
+        self.available_dict[0.75] = -50
+        self.available_dict[1] = 50
 
         # Try to move $100 in cash to account2 at mid-year:
         self.subforecast.add_transaction(
@@ -242,36 +270,36 @@ class TestSubForecast(unittest.TestCase):
             from_account=self.available_dict, to_account=self.account2)
         # Transaction should be delayed to year-end:
         self.assertEqual(
-            self.available_dict[Decimal(1)],
-            Money(-50))
+            self.available_dict[1],
+            -50)
         # A $100 transaction should be added to account2:
         self.assertEqual(
-            self.account2.transactions[Decimal(1)],
-            Money(100))
+            self.account2.transactions[1],
+            100)
 
     def test_add_trans_acct_growth(self):
         """ Account growth allows outflow after insufficient inflows. """
         # Receive $100 at the start. It will grow to $150 by mid-year:
-        self.account1.transactions[Decimal(0)] = Money(100)
+        self.account1.transactions[0] = 100
         # Move $150 in cash to account2 at mid-year:
         self.subforecast.add_transaction(
             value=150, timing=0.5,
             from_account=self.account1, to_account=self.account2)
         # Check net transaction flows of available cash:
         self.assertEqual(
-            (self.account1.transactions[Decimal(0)], self.account1.transactions[Decimal(0.5)]),
-            (Money(100), Money(-150)))
+            (self.account1.transactions[0], self.account1.transactions[0.5]),
+            (100, -150))
         # A $150 transaction should be added to account2:
         self.assertEqual(
-            self.account2.transactions[Decimal(0.5)],
-            Money(150))
+            self.account2.transactions[0.5],
+            150)
 
     def test_add_trans_acct_growth_btwn(self):
         """ Account growth allows outflow between inflows. """
         # Receive $100 at the start. It will grow to $150 by mid-year:
-        self.account1.transactions[Decimal(0)] = Money(100)
+        self.account1.transactions[0] = 100
         # Add another inflow at the end. This shouldn't change anything:
-        self.account1.transactions[Decimal(1)] = Money(100)
+        self.account1.transactions[1] = 100
         # Move $150 in cash to account2 at mid-year:
         self.subforecast.add_transaction(
             value=150, timing=0.5,
@@ -279,20 +307,20 @@ class TestSubForecast(unittest.TestCase):
         # Check net transaction flows of available cash:
         self.assertEqual(
             (
-                self.account1.transactions[Decimal(0)],
-                self.account1.transactions[Decimal(0.5)]),
-            (Money(100), Money(-150)))
+                self.account1.transactions[0],
+                self.account1.transactions[0.5]),
+            (100, -150))
         # A $150 transaction should be added to account2:
         self.assertEqual(
-            self.account2.transactions[Decimal(0.5)],
-            Money(150))
+            self.account2.transactions[0.5],
+            150)
 
     def test_add_trans_shortfall(self):
         """ Transaction that must cause a negative balance. """
         # Want to withdraw $100 when this amount will not be available
         # at any point in time:
-        self.available_dict[Decimal(0)] = Money(50)
-        self.available_dict[Decimal(1)] = Money(49)
+        self.available_dict[0] = 50
+        self.available_dict[1] = 49
 
         # Try to move $100 in cash to account2 at mid-year:
         self.subforecast.add_transaction(
@@ -300,19 +328,19 @@ class TestSubForecast(unittest.TestCase):
             from_account=self.available_dict, to_account=self.account2)
         # Transaction should occur immediately:
         self.assertEqual(
-            self.available_dict[Decimal(0.5)],
-            Money(-100))
+            self.available_dict[0.5],
+            -100)
         # A $100 transaction should be added to account2:
         self.assertEqual(
-            self.account2.transactions[Decimal(0.5)],
-            Money(100))
+            self.account2.transactions[0.5],
+            100)
 
     def test_add_trans_shortfall_acct(self):
         """ Transaction that must cause a negative balance. """
         # Want to withdraw $100 when this amount will not be available
         # at any point in time:
-        self.available_acct.transactions[Decimal(0)] = Money(50)
-        self.available_acct.transactions[Decimal(1)] = Money(49)
+        self.available_acct.transactions[0] = 50
+        self.available_acct.transactions[1] = 49
 
         # Try to move $100 in cash to account2 at mid-year:
         self.subforecast.add_transaction(
@@ -320,31 +348,31 @@ class TestSubForecast(unittest.TestCase):
             from_account=self.available_acct, to_account=self.account2)
         # Transaction should occur immediately:
         self.assertEqual(
-            self.available_acct.transactions[Decimal(0.5)],
-            Money(-100))
+            self.available_acct.transactions[0.5],
+            -100)
         # A $100 transaction should be added to account2:
         self.assertEqual(
-            self.account2.transactions[Decimal(0.5)],
-            Money(100))
+            self.account2.transactions[0.5],
+            100)
 
     def test_add_trans_strict(self):
         """ Add transaction with strict timing. """
         # Move $100 in cash to account1 at the start of the year.
         # Cash isn't actually available until mid-year, but use strict
         # timing to force it through:
-        self.available_dict[Decimal(0.5)] = Money(100)
+        self.available_dict[0.5] = 100
         self.subforecast.add_transaction(
             value=100, timing='start',
             from_account=self.available_dict, to_account=self.account2,
             strict_timing=True)
         # Transaction should done at the time requested:
         self.assertEqual(
-            self.available_dict[Decimal(0)],
-            Money(-100))
+            self.available_dict[0],
+            -100)
         # A $100 transaction should be added to account2:
         self.assertEqual(
-            self.account2.transactions[Decimal(0)],
-            Money(100))
+            self.account2.transactions[0],
+            100)
 
     def test_add_trans_timing_basic(self):
         """ Add a number of transactions based on a Timing object. """
@@ -356,7 +384,28 @@ class TestSubForecast(unittest.TestCase):
         # Confirm monies were added at the times noted above:
         self.assertEqual(
             self.available_dict,
-            {Decimal(0.5): Money(50), Decimal(1): Money(50)})
+            {0.5: 50, 1: 50})
+
+    def test_decimal(self):
+        """ Tests Subforecast with Decimal inputs. """
+        # Convert values to Decimal:
+        self.setUp_decimal()
+
+        # This test is based on `test_transaction_basic`
+        # Receive cash at start of year:
+        self.available_dict[0] = Decimal(100)
+        # Move all $100 to account1 right away:
+        self.subforecast.add_transaction(
+            value=Decimal(100), timing='start',
+            from_account=self.available_dict, to_account=self.account1)
+        # Transactions should be recorded against both available_dict
+        # and account1:
+        self.assertEqual(
+            self.subforecast.transactions[self.available_dict],
+            {Decimal(0): Decimal(-100)})
+        self.assertEqual(
+            self.subforecast.transactions[self.account1],
+            {Decimal(0): Decimal(100)})
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(

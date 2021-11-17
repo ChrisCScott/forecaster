@@ -16,10 +16,8 @@ amounts, and to which accounts.
 # and similar account/finance-specific concepts out of this class.
 # A wrapper class can provide that logic for client code.
 
-from decimal import Decimal
 from queue import SimpleQueue
-from forecaster.ledger import Money
-from forecaster.utility import EPSILON, add_transactions
+from forecaster.utility import EPSILON, add_transactions, HighPrecisionOptional
 from forecaster.accounts.util import LIMIT_TUPLE_FIELDS
 from forecaster.strategy.transaction.util import (
     LimitTuple, transaction_default_methods, group_default_methods,
@@ -33,7 +31,7 @@ from forecaster.strategy.transaction.graph import (
     _swap_saturated, _restrict_overflow, _unrestrict_overflow)
 
 
-class TransactionTraversal:
+class TransactionTraversal(HighPrecisionOptional):
     """ Determines transactions to/from accounts based on a priority.
 
     Instances of this class, when initialized, receive a
@@ -102,7 +100,7 @@ class TransactionTraversal:
         `account2`, with any excess going to `account2`
 
     Attributes:
-        priority (TransactionNode, list[Any], dict[Any, Decimal],
+        priority (TransactionNode, list[Any], dict[Any, float],
             tuple[Any]): The (nested) collection of `Account` objects.
         graph (networkx.DiGraph): A directed graph representing all of
             the nodes from `priority`.
@@ -118,7 +116,7 @@ class TransactionTraversal:
             `node: outbound_node` pairs. Optional.
         transaction_methods (LimitTuple[Callable]): A tuple of methods,
             each taking a leaf node as the sole argument and returning a
-            transactions object (i.e. a `dict[Decimal, Money]` map of
+            transactions object (i.e. a `dict[float, Money]` map of
             timings to values).
             Each method of the tuple respects a different limit (e.g.
             `min_inflows`, `max_outflows`).
@@ -133,18 +131,18 @@ class TransactionTraversal:
             (e.g. `max_inflow_link`, `min_outflow_link`).
             Optional. If not provided, methods supporting `Account`-type
             leaf nodes will be used.
-        precision (float, Decimal): Results will be rounded to this
+        precision (float, float): Results will be rounded to this
             level of precision.
 
     Args:
-        available (dict[Decimal, Money]): A time series of inflows
+        available (dict[float, Money]): A time series of inflows
             and outflows, where keys are timings and values are
             inflows (positive) or outflows (negative).
         total (Money): The total amount of inflows/outflows to be
             allocated between the accounts represented in the
             `priority` tree. Optional. If not provided, the sum
             total of `available` will be allocated.
-        assign_min_first (Bool): If True, minimum inflows/outflows
+        assign_min (Bool): If True, minimum inflows/outflows
             will be assigned first (in `priority` order, so if
             `total` is less than the sum of minimum inflows/outflows
             then low-priority will not have transactions assigned).
@@ -156,18 +154,31 @@ class TransactionTraversal:
             the maximum inflows/outflows.
 
             Optional. Defaults to True.
+        high_precision (Callable[[float], T]): A conversion method
+            that converts float internal constants to a high-precision
+            numerical type `T`. Optional.
 
     Returns:
-        dict[Hashable, dict[Decimal, Money]]: A mapping of accounts to
+        dict[Hashable, dict[float, Money]]: A mapping of accounts to
             transactions to (positive) or from (negative) those
             accounts. No `list`, `dict`, or other sub-collection is
             used as a key. Only the leaf node `Account`-like objects of
             the tree defined by `priority` are used as keys.
     """
+    # pylint: disable=too-many-arguments
+    # Adding high_precision pushed this method over to 6 arguments.
+    # That's a bit high, but most are optional fine-tuning parameters
+    # and it's just not worthwhile to refactor at this stage.
     def __init__(
             self, priority,
-            transaction_methods=None, group_methods=None, precision=EPSILON):
+            transaction_methods=None, group_methods=None,
+            *, high_precision=None, precision=EPSILON):
         """ Initializes TransactionTraversal. """
+        # pylint: enable=too-many-arguments
+
+        # Init `HighPrecisionOptional` attributes:
+        super().__init__(high_precision=high_precision)
+
         # Set up data-holding attributes:
         self._priority = None
         self._priority_tree = None
@@ -180,7 +191,12 @@ class TransactionTraversal:
             self.group_methods = group_default_methods()
         else:
             self.group_methods = LimitTuple(group_methods)
-        self.precision = precision
+        # Convert `precision` to high-precision if it's the default
+        # argument and a conversion method has been passed:
+        if precision == EPSILON and self.high_precision is not None:
+            self.precision = high_precision(precision)
+        else:
+            self.precision = precision
         # Store args used by most class methods as attributes to
         # simplify method calls:
         self.graph = None
@@ -219,9 +235,8 @@ class TransactionTraversal:
         if total is None:
             total = sum(available.values())
 
-        # Convert Money-typed `total` to Decimal:
-        if hasattr(total, "amount"):
-            total = total.amount
+        # NOTE: If Money values aren't useable as scalars (e.g. as with
+        # PyMoney), need to convert it here.
 
         # Determine which limits we need to respect during traversal.
         if total > self.precision:  # inflows
@@ -234,7 +249,7 @@ class TransactionTraversal:
             max_limit = LIMIT_TUPLE_FIELDS.max_outflow
             # Limit min. outflows based on what's in the account, not
             # the shortfall we're trying to fill:
-            min_total = Decimal('-Infinity')
+            min_total = float('-inf')
         else:  # No transactions since total ~= 0
             return {}
 
@@ -262,8 +277,7 @@ class TransactionTraversal:
                 max_transactions[account] = transactions
         return max_transactions
 
-    def _traverse_priority(
-            self, total, timing, limit):
+    def _traverse_priority(self, total, timing, limit):
         """ Builds a graph and finds the min-cost max. flow through it.
 
         This method translates `priority` into a graph (via
@@ -280,7 +294,7 @@ class TransactionTraversal:
         invocations) are returned via the return value.
 
         Args:
-            total (Decimal): The maximum amount of flow to allow through
+            total (float): The maximum amount of flow to allow through
                 the graph.
             timing (Timing): The timing of account transactions. This is
                 used by leaf nodes to find their min/max transactions.
@@ -289,7 +303,7 @@ class TransactionTraversal:
                 "min_inflow", "max_outflow")
 
         Returns:
-            dict[Hashable, dict[Decimal, Money]]: A mapping of leaf
+            dict[Hashable, dict[float, Money]]: A mapping of leaf
                 nodes to transactions.
         """
 
@@ -311,7 +325,8 @@ class TransactionTraversal:
         transactions = _convert_flows_to_transactions(
             flows, timing, limit, accounts,
             transaction_methods=self.transaction_methods, total=total,
-            transaction_type=Money, precision=self.precision)
+            high_precision=self.high_precision, # Money value
+            precision=self.precision)
 
         return transactions
 
@@ -414,7 +429,7 @@ class TransactionTraversal:
             flow.
 
         Args:
-            total (Decimal): The maximum amount of flow to allow through
+            total (float): The maximum amount of flow to allow through
                 `graph`.
             **kwargs: Arguments to pass to lower-level methods. Must
                 include at least "timing" and "limit" keys.
@@ -432,10 +447,19 @@ class TransactionTraversal:
             self.sink = 1
 
         # networkx has unexpected behaviour for non-int edge capacities,
-        # so inflate total based on the EPSILON precision constant:
-        if abs(total) < Decimal('Infinity'):
-            # We can ignore infinite-valued `total`, which is dealt with
-            # in `_add_edge` (and can't be cast to `int`)
+        # so inflate total based on the EPSILON precision constant.
+        # We can ignore infinite-valued `total`, which is dealt with
+        # in `_add_edge` (and can't be cast to `int`):
+        if abs(total) < float('inf'):
+            # If we've received some a high-precision type and can't
+            # cast `self.precision` up to that type, we need to cast it
+            # down to a float (not an int, to avoid truncation errors):
+            if (
+                    not isinstance(total, (float, int)) and
+                    self.high_precision is None):
+                total = float(total)
+            # Now we can scale up `total` by `precision` and _then_
+            # truncate it to an int.
             total = int(total / self.precision)
 
         # Create an empty graph:
@@ -575,7 +599,7 @@ class TransactionTraversal:
         limit_value = None
         if hasattr(node, "limits") and hasattr(node.limits, limit):
             limit_value = getattr(node.limits, limit)
-            # Convert from Money-like to Decimal, if applicable:
+            # Convert from Money-like to float, if applicable:
             if hasattr(limit_value, "amount"):
                 limit_value = limit_value.amount
             if limit_value is not None:
@@ -625,7 +649,7 @@ class TransactionTraversal:
                 edges to the members of `children`. Need not be a
                 `TransactionNode`; e.g. can be a corresponding limit
                 node.
-            children (dict[Hashable, Decimal]): The children to be
+            children (dict[Hashable, float]): The children to be
                 added to the graph, mapped to their relative weights.
             capacity (int): The maximum flow that can pass through this
                 node. Optional.
@@ -716,7 +740,7 @@ class TransactionTraversal:
         Args:
             node (TransactionNode): A weighted node with one or more
                 children.
-            children (dict[Hashable, Decimal]): The children to be
+            children (dict[Hashable, float]): The children to be
                 added to the graph, mapped to their relative weights.
             capacity (int): The maximum flow that can pass through this
                 node. Optional.
@@ -853,7 +877,7 @@ class TransactionTraversal:
         Args:
             node (Hashable): The node whose children are being
                 rebalanced.
-            children (dict[Hashable, Decimal]): The children to be
+            children (dict[Hashable, float]): The children to be
                 rebalanced, mapped to their relative weights. Optional.
                 If not provided, all children of `node` are rebalanced.
             rebalance_all (bool): If `True`, this method will attempt to
@@ -946,7 +970,7 @@ class TransactionTraversal:
         Args:
             node (Hashable): The node whose children are being
                 rebalanced.
-            children (dict[Hashable, Decimal]): The children to be
+            children (dict[Hashable, float]): The children to be
                 rebalanced, mapped to their relative weights. Optional.
                 If not provided, all children of `node` are rebalanced.
             flows (dict[Hashable, dict[Hashable, int]]): Flows through
@@ -1012,7 +1036,7 @@ class TransactionTraversal:
                 edges to the members of `children`. Need not be a
                 `TransactionNode`; e.g. can be a corresponding limit
                 node.
-            children (Sequence[Hashable, Decimal]): The children to be
+            children (Sequence[Hashable, float]): The children to be
                 added to the graph, as an ordered `tuple`/`list`/etc.
             capacity (int): The maximum flow that can pass through this
                 node. Optional.
@@ -1127,10 +1151,16 @@ class TransactionTraversal:
         transactions = _get_transactions(
             node, limit, timing, transaction_methods=self.transaction_methods)
         transaction_limit = sum(transactions.values())
-        # Convert `transaction_limit` to a non-Money type (since
-        # Money is not convertible to int, which is a problem later)
-        if hasattr(transaction_limit, "amount"):
-            transaction_limit = transaction_limit.amount
+        # Ideally if we're operating in a high-precision mode,
+        # `transaction_limit` will already be in a high-precision type
+        # (to match self.precision), but if not then we need to convert:
+        if (
+                self.high_precision is not None and
+                isinstance(transaction_limit,float)):
+            # pylint: disable=not-callable
+            # `high_precision` is required to be callable.
+            transaction_limit = self.high_precision(transaction_limit)
+            # pylint: enable=not-callable
         # Scale up based on the precision (as we do with all edge
         # capacities):
         capacity = transaction_limit / self.precision

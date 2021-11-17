@@ -1,8 +1,8 @@
 """ Provides classes for determining asset allocation. """
 
 from collections import namedtuple
-from decimal import Decimal
 from forecaster.strategy.base import Strategy, strategy_method
+from forecaster.utility.precision import HighPrecisionOptionalPropertyCached
 
 
 AssetAllocation = namedtuple('AssetAllocation', 'stocks bonds other')
@@ -30,8 +30,8 @@ class RateFunction(object):
                 determined.
 
         Returns:
-            Decimal: The rate of return. For example, `Decimal('0.05')`
-            means a 5% return.
+            float: The rate of return. For example, 0.05 means a 5%
+            return.
         """
         allocation = self.allocation_strategy(
             age=self.person.age(year),
@@ -65,20 +65,20 @@ class AllocationStrategy(Strategy):
             * "n-age"
             * "Transition to constant"
 
-        min_equity (Decimal): The minimum percentage of a portfolio that
-            may be invested in equities. (All non-equity investments
-            are included in `fixed_income`)
-        max_equity (Decimal): The maximum percentage of a portfolio that
-            may be invested in equities.
-        target (Decimal): A target value used by strategies to affect
-            their behaviour.
+        min_equity (HighPrecisionOptional): The minimum percentage of a
+            portfolio that may be invested in equities. (All non-equity
+            investments are included in `fixed_income`)
+        max_equity (HighPrecisionOptional): The maximum percentage of a
+            portfolio that may be invested in equities.
+        target (HighPrecisionOptional): A target value used by
+            strategies to affect their behaviour.
 
             For example, for the `n-age` strategy, this is the value `n`
             (e.g. `target=100` -> `100-age`).
 
             For the `Transition to constant` strategy, this is the
             percentage of equities to transition to (e.g. for
-            `Transition to 50-50`, use `Decimal('0.5')`)
+            `Transition to 50-50`, use `0.5`)
         standard_retirement_age (int): The typical retirement age used
             in retirement planning.
 
@@ -106,24 +106,29 @@ class AllocationStrategy(Strategy):
         percentage of a portfolio that is made up of the named asset
         class.
 
-        Allocations of the members sum to 1 (e.g. `Decimal(0.03` means
-        3%).
+        Allocations of the members sum to 1 (e.g. `0.03` means 3%).
 
     Raises:
         ValueError: min_equity greater than max_equity.
     """
+
+    # These properties can be floats or a high-precision type:
+    min_equity = HighPrecisionOptionalPropertyCached()
+    max_equity = HighPrecisionOptionalPropertyCached()
+    target = HighPrecisionOptionalPropertyCached()
+
     # pylint: disable=too-many-arguments
     def __init__(
             self, strategy, target, min_equity=0, max_equity=1,
             standard_retirement_age=65, risk_transition_period=20,
-            adjust_for_retirement_plan=True):
+            adjust_for_retirement_plan=True, **kwargs):
         """ Constructor for AllocationStrategy. """
-        super().__init__(strategy)
+        super().__init__(strategy=strategy, **kwargs)
 
-        self.min_equity = Decimal(min_equity)
-        self.max_equity = Decimal(max_equity)
+        self.min_equity = min_equity
+        self.max_equity = max_equity
         self.standard_retirement_age = int(standard_retirement_age)
-        self.target = Decimal(target)
+        self.target = target
         self.risk_transition_period = int(risk_transition_period)
         self.adjust_for_retirement_plan = bool(adjust_for_retirement_plan)
 
@@ -151,7 +156,8 @@ class AllocationStrategy(Strategy):
             retirement_age = self.standard_retirement_age
         # The formula for `n-age` is just that (recall that
         # n=constant_strategy_target). Insert the adjustment factor too.
-        target = Decimal(self.target - age) / 100
+        # TODO: Add high-precision numerical library compatibility. #77
+        target = (self.target - age) / 100
 
         # Bonds is simply whatever isn't in equities
         return AssetAllocation(target, 1 - target, 0)
@@ -201,7 +207,7 @@ class AllocationStrategy(Strategy):
 
         Returns:
             An object callable with the form
-            `rate_function(year) -> Decimal` that provides a rate of
+            `rate_function(year) -> float` that provides a rate of
             return for a given year based on the person's age and the
             investment returns for various asset classes provided by
             `scenario`.

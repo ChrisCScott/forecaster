@@ -74,9 +74,6 @@ class TestStrategyMethods(unittest.TestCase):
             strategy = self.Subclass('Not a strategy')
         with self.assertRaises(TypeError):
             strategy = self.Subclass(1)
-        with self.assertRaises(TypeError):
-            # pylint: disable=too-many-function-args
-            strategy = self.Subclass('Test', 1)
 
         # Also test to ensure that regular subclasses' strategy methods
         # are being added to `strategies`. We use ContributionStrategy

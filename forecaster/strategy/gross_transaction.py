@@ -1,8 +1,7 @@
 """ Provides classes for determining the total sum of transactions. """
 
-from decimal import Decimal
-from forecaster.ledger import Money
 from forecaster.strategy.base import Strategy, strategy_method
+from forecaster.utility.precision import HighPrecisionOptionalPropertyCached
 
 
 class LivingExpensesStrategy(Strategy):
@@ -36,10 +35,8 @@ class LivingExpensesStrategy(Strategy):
 
         base_amount (Money): A user-supplied amount of money, used in
             some strategies as a baseline for contributions.
-        rate (Decimal): A user-supplied contribution rate. Must be a
-            percentage (e.g. Decimal('0.03') means 3%).
-        refund_reinvestment_rate (Decimal): The percentage of each tax
-            refund that is reinvested in the year it's received.
+        rate (float): A user-supplied contribution rate. Must be a
+            percentage (e.g. float('0.03') means 3%).
         inflation_adjust (callable): If provided, `base_amount` is
             interpreted as a real (i.e. inflation-adjusted) currency
             value.
@@ -65,17 +62,18 @@ class LivingExpensesStrategy(Strategy):
             strategy.
     """
 
-    # pylint: disable=too-many-arguments
-    # We need to pass the strategy's state variables at init time. There
-    # are 6 of them (including self). Refactoring to use a dict or
-    # similar would hurt readability.
-    def __init__(
-            self, strategy, base_amount=0, rate=0, inflation_adjust=None):
-        """ Constructor for LivingExpensesStrategy. """
-        super().__init__(strategy)
+    # These properties can be floats or a high-precision type:
+    base_amount = HighPrecisionOptionalPropertyCached()
+    rate = HighPrecisionOptionalPropertyCached()
 
-        self.base_amount = Money(base_amount)
-        self.rate = Decimal(rate)
+    def __init__(
+            self, strategy, base_amount=0, rate=0, inflation_adjust=None,
+            **kwargs):
+        """ Constructor for LivingExpensesStrategy. """
+        super().__init__(strategy, **kwargs)
+
+        self.base_amount = base_amount # Money value
+        self.rate = rate
 
         # If no inflation_adjustment is specified, create a default
         # value so that methods don't need to test for None
@@ -96,13 +94,14 @@ class LivingExpensesStrategy(Strategy):
     def strategy_const_contribution(self, people, *args, year=None, **kwargs):
         """ Contribute a constant (real) amount and live off the rest. """
         total_income = sum(person.net_income for person in people)
-        contributions = Money(self.base_amount * self.inflation_adjust(year))
+        contributions = (
+            self.base_amount * self.inflation_adjust(year)) # Money value
         return total_income - contributions
 
     @strategy_method('Constant living expenses')
     def strategy_const_living_expenses(self, *args, year=None, **kwargs):
         """ Living expenses remain constant, in real terms. """
-        return Money(self.base_amount * self.inflation_adjust(year))
+        return self.base_amount * self.inflation_adjust(year) # Money value
 
     @strategy_method('Percentage of net income')
     def strategy_net_percent(self, people, *args, **kwargs):
@@ -170,7 +169,9 @@ class LivingExpensesStrategy(Strategy):
             retirement_year=retirement_year,
             *args, **kwargs)
         # Ensure we return non-negative value:
-        return max(living_expenses, Money(0))
+        return max(
+            living_expenses,
+            0) # Money value
 
 
 class LivingExpensesStrategySchedule(object):

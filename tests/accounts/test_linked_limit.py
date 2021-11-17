@@ -2,7 +2,8 @@
 
 import unittest
 import decimal
-from forecaster import (LinkedLimitAccount, Money)
+from decimal import Decimal
+from forecaster import LinkedLimitAccount
 from tests.accounts.test_base import TestAccountMethods
 
 class TestLinkedLimitAccountMethods(TestAccountMethods):
@@ -14,10 +15,10 @@ class TestLinkedLimitAccountMethods(TestAccountMethods):
 
         self.AccountType = LinkedLimitAccount
         self.link = (self.owner, "test")
-        self.max_inflow_limit = Money(10)
-        self.min_inflow_limit = Money(10)
-        self.max_outflow_limit = Money(-10)
-        self.min_outflow_limit = Money(-10)
+        self.max_inflow_limit = Decimal(10)
+        self.min_inflow_limit = Decimal(10)
+        self.max_outflow_limit = Decimal(-10)
+        self.min_outflow_limit = Decimal(-10)
 
     def test_init_max_inflow(self, *args, **kwargs):
         """ Test LinkedLimitAccount.__init__ for max_inflow. """
@@ -73,7 +74,7 @@ class TestLinkedLimitAccountMethods(TestAccountMethods):
         account1 = self.AccountType(
             self.owner, *args,
             max_inflow_link=self.link,
-            max_inflow_limit=Money(100), **kwargs)
+            max_inflow_limit=Decimal(100), **kwargs)
         # Init a second account without an explicit max_inflow_limit
         # but with the same link as account1.
         account2 = self.AccountType(
@@ -89,16 +90,16 @@ class TestLinkedLimitAccountMethods(TestAccountMethods):
         account1 = self.AccountType(
             self.owner, *args,
             max_inflow_link=self.link,
-            max_inflow_limit=Money(100), **kwargs)
+            max_inflow_limit=Decimal(100), **kwargs)
         # Init a second account with a different max_inflow_limit and
         # the same link as account1.
         account2 = self.AccountType(
             self.owner, *args,
             max_inflow_link=self.link,
-            max_inflow_limit=Money(200), **kwargs)
+            max_inflow_limit=Decimal(200), **kwargs)
         # Both accounts should use the new $200 limit:
-        self.assertEqual(account1.max_inflow_limit, Money(200))
-        self.assertEqual(account2.max_inflow_limit, Money(200))
+        self.assertEqual(account1.max_inflow_limit, Decimal(200))
+        self.assertEqual(account2.max_inflow_limit, Decimal(200))
 
 
 if __name__ == '__main__':

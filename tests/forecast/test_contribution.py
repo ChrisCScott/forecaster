@@ -4,8 +4,7 @@ import unittest
 from decimal import Decimal
 from collections import defaultdict
 from forecaster import (
-    Money, Person, Tax, Account,
-    SavingForecast, TransactionTraversal,
+    Person, Tax, Account, SavingForecast, TransactionTraversal,
     Timing, canada)
 from tests.util import TestCaseTransactions
 
@@ -18,7 +17,7 @@ class TestSavingForecast(TestCaseTransactions):
         self.initial_year = 2000
         # Simple tax treatment: 50% tax rate across the board.
         tax = Tax(tax_brackets={
-            self.initial_year: {Money(0): Decimal(0.5)}})
+            self.initial_year: {0: 0.5}})
         # Accounts need an owner:
         timing = Timing(frequency='BW')
         self.person = Person(
@@ -26,7 +25,7 @@ class TestSavingForecast(TestCaseTransactions):
             name="Test",
             birth_date="1 January 1980",
             retirement_date="31 December 2045",
-            gross_income=Money(5200),
+            gross_income=5200,
             tax_treatment=tax,
             payment_timing=timing)
         # We want at least two accounts which are contributed to
@@ -35,14 +34,14 @@ class TestSavingForecast(TestCaseTransactions):
             owner=self.person)
         self.rrsp = canada.accounts.RRSP(
             owner=self.person,
-            contribution_room=Money(1000))
+            contribution_room=1000)
 
         # Track money available for use by the forecast:
-        self.available = defaultdict(lambda: Money(0))
+        self.available = defaultdict(lambda: 0)
         for i in range(26):  # biweekly inflows from employment
-            self.available[Decimal(0.5 + i) / 26] += Money(150)
+            self.available[(0.5 + i) / 26] = 150
         for i in range(12):  # monthly living expenses and reductions:
-            self.available[Decimal(i) / 12] -= Money(75)
+            self.available[i / 12] -= 75
         # The result: $3000 available
         self.total_available = sum(self.available.values())
 
@@ -55,6 +54,59 @@ class TestSavingForecast(TestCaseTransactions):
             debt_accounts=set(),
             transaction_strategy=self.strategy)
 
+    def setUp_decimal(self):
+        """ Builds stock variables based on Decimal inputs. """
+        # pylint: disable=invalid-name
+        # Pylint doesn't like `setUp_decimal`, but it's not our naming
+        # convention, so don't complain to us!
+        # pylint: enable=invalid-name
+        self.initial_year = 2000
+        # Simple tax treatment: 50% tax rate across the board.
+        tax = Tax(tax_brackets={
+            self.initial_year: {Decimal(0): Decimal(0.5)}},
+            high_precision=Decimal)
+        # Accounts need an owner:
+        timing = Timing(frequency='BW', high_precision=Decimal)
+        self.person = Person(
+            initial_year=self.initial_year,
+            name="Test",
+            birth_date="1 January 1980",
+            retirement_date="31 December 2045",
+            gross_income=Decimal(5200),
+            tax_treatment=tax,
+            payment_timing=timing,
+            high_precision=Decimal)
+        # We want at least two accounts which are contributed to
+        # in different orders depending on the strategy.
+        self.account = Account(
+            owner=self.person,
+            high_precision=Decimal)
+        self.rrsp = canada.accounts.RRSP(
+            owner=self.person,
+            contribution_room=Decimal(1000),
+            high_precision=Decimal)
+
+        # Track money available for use by the forecast:
+        self.available = defaultdict(lambda: Decimal(0))
+        for i in range(26):  # biweekly inflows from employment
+            self.available[Decimal(0.5 + i) / 26] = Decimal(150)
+        for i in range(12):  # monthly living expenses and reductions:
+            self.available[Decimal(i) / 12] -= Decimal(75)
+        # The result: $3000 available
+        self.total_available = sum(self.available.values())
+
+        # Now we can set up the big-ticket items:
+        # Use an ordered strategy by default:
+        self.strategy = TransactionTraversal(
+            [self.account, self.rrsp],
+            high_precision=Decimal)
+        self.forecast = SavingForecast(
+            initial_year=self.initial_year,
+            retirement_accounts={self.account, self.rrsp},
+            debt_accounts=set(),
+            transaction_strategy=self.strategy,
+            high_precision=Decimal)
+
     def test_ordered(self):
         """ Test saving with an ordered strategy. """
         # Set up forecast:
@@ -64,10 +116,10 @@ class TestSavingForecast(TestCaseTransactions):
         # first $1000 to `rrsp` and the balance to `account`
         self.assertTransactions(
             self.forecast.account_transactions[self.rrsp],
-            Money(1000))
+            1000)
         self.assertTransactions(
             self.forecast.account_transactions[self.account],
-            Money(2000))
+            2000)
 
     def test_weighted(self):
         """ Test saving with a weighted strategy. """
@@ -78,10 +130,10 @@ class TestSavingForecast(TestCaseTransactions):
         # to `rrsp` and the rest to `account`.
         self.assertTransactions(
             self.forecast.account_transactions[self.rrsp],
-            Money(500))
+            500)
         self.assertTransactions(
             self.forecast.account_transactions[self.account],
-            Money(2500))
+            2500)
 
     def test_total(self):
         """ Test total contributed to accounts. """
@@ -90,7 +142,21 @@ class TestSavingForecast(TestCaseTransactions):
 
         # Regardless of setup, all available money (i.e. $3000)
         # should be contributed.
-        self.assertAlmostEqual(self.forecast.total, Money(3000))
+        self.assertAlmostEqual(self.forecast.total, 3000)
+
+    def test_decimal(self):
+        """ Test SavingForecast with Decimal inputs. """
+        # Convert to Decimal values:
+        self.setUp_decimal()
+
+        # This test is based on test_total:
+
+        # Run forecast:
+        self.forecast(self.available)
+
+        # Regardless of setup, all available money (i.e. $3000)
+        # should be contributed.
+        self.assertAlmostEqual(self.forecast.total, Decimal(3000))
 
     # TODO: Test retirement_savings and debt_repayment properties.
 

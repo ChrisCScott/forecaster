@@ -1,7 +1,6 @@
 """ Basic economic classes, such as `Scenario` and `Money`. """
 
 import collections
-from decimal import Decimal
 
 
 class Scenario(object):
@@ -17,17 +16,17 @@ class Scenario(object):
     Attributes:
         initial_year (int): The first year of the simulation.
         num_years (int): The number of years in the simulation.
-        inflation (dict[int, Decimal]): `{year, inflation}` pairs, where
-            `inflation` is a percentage rate (e.g. `Decimal(0.5)` is
+        inflation (dict[int, float]): `{year, inflation}` pairs, where
+            `inflation` is a percentage rate (e.g. `0.5` is
             50%).
-        stock_return (dict[int, Decimal]): `{year, return}` pairs where
+        stock_return (dict[int, float]): `{year, return}` pairs where
             `return` is the rate of return for stocks in the given year.
-        bond_return (dict[int, Decimal]): `{year, return}` pairs where
+        bond_return (dict[int, float]): `{year, return}` pairs where
             `return` is the rate of return for bonds in the given year.
-        other_return (dict[int, Decimal]): `{year, return}` pairs where
+        other_return (dict[int, float]): `{year, return}` pairs where
             `return` is the rate of return for other property (e.g.
             real estate) in the given year. Optional.
-        management_fees (dict[int, Decimal]): `{year, fees}` pairs
+        management_fees (dict[int, float]): `{year, fees}` pairs
             where `fees` is the rate at which management fees are
             charged in invested assets in the given year. Optional.
     """
@@ -42,19 +41,19 @@ class Scenario(object):
         similar `Sequence`) or scalar values.
 
         Args:
-            inflation (Decimal, list, dict): The rate of inflation.
-            stock_return (dict[int, Decimal]): `{year: return}` pairs
+            inflation (float, list, dict): The rate of inflation.
+            stock_return (dict[int, float]): `{year: return}` pairs
                 for stocks.
-            bond_return (dict[int, Decimal]): `{year: return}` pairs
+            bond_return (dict[int, float]): `{year: return}` pairs
                 for bonds.
-            other_return (dict[int, Decimal]): `{year: return}` pairs
+            other_return (dict[int, float]): `{year: return}` pairs
                 for other assets (not stocks/bonds), e.g. real estate.
-            management_fees (Decimal, list, dict): The management fees
+            management_fees (float, list, dict): The management fees
                 charged on investments.
-            person1_raise_rate (Decimal, list, dict): The amount that is
+            person1_raise_rate (float, list, dict): The amount that is
                 expected for a raise for person1 this year, expressed as
                 a percentage (e.g. 0.05 for a 5% raise).
-            person2_raise_rate (Decimal, list, dict): The amount that is
+            person2_raise_rate (float, list, dict): The amount that is
                 expected for a raise for person2 this year, expressed as
                 a percentage (e.g. 0.05 for a 5% raise).
             initial_year (int): The first year of the projection.
@@ -105,8 +104,7 @@ class Scenario(object):
 
                 Optional. Only required where `in_val` is a list.
             default (*): If provided, builds a defaultdict with this
-                value as the default factory. Must be convertible to
-                Decimal. Optional.
+                value as the default factory. Optional.
 
         Raises:
             ValueError: initial_year is required if input is a list.
@@ -120,10 +118,10 @@ class Scenario(object):
                     'Scenario: in_val and default cannot both be None.')
             return Scenario._build_dict(default, initial_year)
 
-        # Convert a non-callable `default` to a Decimal-returning
-        # default factory:
+        # Convert a non-callable `default` to a default factory:
         if default is not None and not callable(default):
-            _default = Decimal(default)
+            # Raname this value so that we can use it in the closure.
+            _default = default
 
             # pylint: disable=function-redefined
             # This function redefinition is intentional; it's equivalent
@@ -132,48 +130,43 @@ class Scenario(object):
                 """ Wraps default value in a default factory. """
                 return _default
 
-        if isinstance(in_val, collections.defaultdict):
-            # Update in_val's default factory if `default` was provided:
-            if default is not None:
-                in_val.default_factory = default
-            # Convert elements to {int: Decimal} pairs
-            return collections.defaultdict(in_val.default_factory, {
-                int(key): Decimal(in_val[key]) for key in in_val
-            })
-
-        # IF in_val was a dict, cast to default dict (if default was
-        # provided) and type-cast all entries to {int: Decimal} pairs.
-        # NOTE: Consider whether we should wrap in_val in a defaultdict
-        # to avoid stripping away the properties of custom dict-derived
-        # objects that the user decides to pass in.
+        # If it's a dict (incl. a defaultdict), it's easy:
         if isinstance(in_val, dict):
+            # If default was provided, use that as the default_factory:
             if default is not None:
-                out_val = collections.defaultdict(default, in_val)
+                return collections.defaultdict(default, in_val)
+            # Otherwise, simply return the dict
+            # TODO: Determine whether we should copy this value to avoid
+            # unintentional mutation.
             else:
-                out_val = {int(key): Decimal(in_val[key]) for key in in_val}
-            return out_val
+                return in_val
 
         # If it's not a dict, but it is iterable then convert it into a
         # [default]dict
         if isinstance(in_val, collections.abc.Iterable):
+            # Check for initial_year (which is required in this case):
             if initial_year is None:
                 raise ValueError(
                     'Scenario: initial_year is required if input is a list.')
+            # Transform the iterable into a dict by assigning the first
+            # value to the first year, the second value to the next, and
+            # so on.
+            # If there's a default value, make it a defaultdict:
             if default is not None:
                 out_val = collections.defaultdict(default, {
-                    key: Decimal(in_val[key - initial_year])
+                    key: in_val[key - initial_year]
                     for key in range(initial_year, initial_year + len(in_val))
                 })
+            # If there's no default value, a vanilla dict is fine:
             else:
                 out_val = {
-                    key: Decimal(in_val[key - initial_year])
+                    key: in_val[key - initial_year]
                     for key in range(initial_year, initial_year + len(in_val))
                 }
             return out_val
 
         # Otherwise, turn a scalar value into a defaultdict:
         # NOTE: default is ignored in this case
-        in_val = Decimal(in_val)
         return collections.defaultdict(lambda: in_val)
 
     def discount_rate(self, year):
@@ -203,13 +196,13 @@ class Scenario(object):
         """ Annual inflation adjustment factors relative to base_year.
 
         Returns:
-            dict[int, Decimal]: `{year: adjustment}` pairs.
+            dict[int, float]: `{year: adjustment}` pairs.
 
             `adjustment` is the cumulative inflation since `base_year`
             (or, for years prior to `base_year`, it is the present value
             of $1 in base_year)
         """
-        return {year: Decimal(self.accumulation_function(year, base_year))
+        return {year: self.accumulation_function(year, base_year)
                 for year in self}
 
     @property
@@ -227,7 +220,7 @@ class Scenario(object):
                 to this year.
 
         Returns:
-            Decimal: The inflation-adjustment factor from `base_year` to
+            float: The inflation-adjustment factor from `base_year` to
             `target_year`. This is the product of inflation-adjustments
             for each year (or its inverse, if target_year precedes
             base_year).
@@ -284,7 +277,7 @@ class InflationAdjust(object):
                 `scenario` attribute.
 
         Returns:
-            Decimal: The inflation-adjustment factor from base_year to
+            float: The inflation-adjustment factor from base_year to
             target_year. This is the product of inflation-adjustments
             for each year (or its inverse, if target_year precedes
             base_year).

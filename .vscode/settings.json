@@ -15,9 +15,6 @@
     "python.linting.pylintEnabled": true,
     "python.linting.pycodestyleEnabled": false,
     "python.pythonPath": "${workspaceFolder}/venv/",
-    "terminal.integrated.shellArgs.windows": [
-        "-ExecutionPolicy",
-        "Bypass"
-    ],
-    "python.languageServer": "Jedi"
+    "python.languageServer": "Jedi",
+    "testing.defaultGutterClickAction": "debug"
 }

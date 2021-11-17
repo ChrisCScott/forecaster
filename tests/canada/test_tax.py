@@ -2,7 +2,7 @@
 
 import unittest
 from decimal import Decimal
-from forecaster import Person, Money
+from forecaster import Person
 from forecaster.canada import TaxCanada, RRSP, TaxableAccount, constants
 
 
@@ -25,22 +25,22 @@ class TestTaxCanada(unittest.TestCase):
         constants.TAX_BRACKETS = {
             'Federal': {
                 cls.initial_year: {
-                    Money(0): Decimal('0.1'),
-                    Money('100'): Decimal('0.2'),
-                    Money('10000'): Decimal('0.3')}},
+                    Decimal(0): Decimal('0.1'),
+                    Decimal('100'): Decimal('0.2'),
+                    Decimal('10000'): Decimal('0.3')}},
             'BC': {
                 cls.initial_year: {
-                    Money(0): Decimal('0.25'),
-                    Money('1000'): Decimal('0.5'),
-                    Money('100000'): Decimal('0.75')}}}
+                    Decimal(0): Decimal('0.25'),
+                    Decimal('1000'): Decimal('0.5'),
+                    Decimal('100000'): Decimal('0.75')}}}
         constants.TAX_PERSONAL_DEDUCTION = {
-            'Federal': {cls.initial_year: Money('100')},
-            'BC': {cls.initial_year: Money('1000')}}
+            'Federal': {cls.initial_year: Decimal('100')},
+            'BC': {cls.initial_year: Decimal('1000')}}
         constants.TAX_CREDIT_RATE = {
             'Federal': {cls.initial_year: Decimal('0.1')},
             'BC': {cls.initial_year: Decimal('0.25')}}
         constants.TAX_PENSION_CREDIT = {
-            'Federal': {cls.initial_year: Money('100')},
+            'Federal': {cls.initial_year: Decimal('100')},
             'BC': {cls.initial_year: Decimal('1000')}}
         # It's convenient (and accurate!) to use the same values
         # for the spousal amount and the personal deduction:
@@ -60,8 +60,8 @@ class TestTaxCanada(unittest.TestCase):
             retirement_date=self.initial_year + 45, gross_income=100000)
         self.taxable_account1 = TaxableAccount(
             owner=self.person1,
-            acb=0, balance=Money(1000000), rate=Decimal('0.05'), nper=1)
-        self.taxable_account1.add_transaction(-Money(1000000), when='start')
+            acb=0, balance=Decimal(1000000), rate=Decimal('0.05'), nper=1)
+        self.taxable_account1.add_transaction(-Decimal(1000000), when='start')
         # NOTE: by using an RRSP here, a pension income tax credit will
         # be applied by TaxCanadaJurisdiction. Be aware of this if you
         # want to test this output against a generic Tax object with
@@ -70,8 +70,8 @@ class TestTaxCanada(unittest.TestCase):
             self.person1,
             inflation_adjust=self.inflation_adjustments,
             contribution_room=0,
-            balance=Money(500000), rate=Decimal('0.05'), nper=1)
-        self.rrsp.add_transaction(-Money(500000), when='start')
+            balance=Decimal(500000), rate=Decimal('0.05'), nper=1)
+        self.rrsp.add_transaction(-Decimal(500000), when='start')
 
         # Person2 makes $50,000/yr and has a taxable account with
         # $5000 taxable income.
@@ -80,8 +80,8 @@ class TestTaxCanada(unittest.TestCase):
             retirement_date=self.initial_year + 47, gross_income=50000)
         self.taxable_account2 = TaxableAccount(
             owner=self.person2,
-            acb=0, balance=Money(10000), rate=Decimal('0.05'), nper=1)
-        self.taxable_account2.add_transaction(-Money(10000), when='start')
+            acb=0, balance=Decimal(10000), rate=Decimal('0.05'), nper=1)
+        self.taxable_account2.add_transaction(-Decimal(10000), when='start')
 
     def test_init_federal(self):
         """ Test TaxCanada.__init__ for federal jurisdiction. """
@@ -93,7 +93,7 @@ class TestTaxCanada(unittest.TestCase):
             self.assertEqual(
                 tax.federal_tax.tax_brackets(year),
                 {
-                    Money(bracket): value
+                    Decimal(bracket): value
                     for bracket, value in
                     constants.TAX_BRACKETS['Federal'][year].items()})
             self.assertEqual(
@@ -117,7 +117,7 @@ class TestTaxCanada(unittest.TestCase):
             self.assertEqual(
                 tax.provincial_tax.tax_brackets(year),
                 {
-                    Money(bracket): value
+                    Decimal(bracket): value
                     for bracket, value in
                     constants.TAX_BRACKETS[self.province][year].items()})
             self.assertEqual(
@@ -135,7 +135,7 @@ class TestTaxCanada(unittest.TestCase):
             self.assertEqual(
                 tax.provincial_tax.tax_brackets(year),
                 {
-                    Money(bracket): value
+                    Decimal(bracket): value
                     for bracket, value in
                     constants.TAX_BRACKETS[self.province][year].items()})
             self.assertEqual(
@@ -147,8 +147,8 @@ class TestTaxCanada(unittest.TestCase):
         self.assertTrue(callable(tax.provincial_tax.inflation_adjust))
 
     def test_call_money(self):
-        """ Test TaxCanada.__call__ on Money input """
-        taxable_income = Money(100000)
+        """ Test TaxCanada.__call__ on Decimal input """
+        taxable_income = Decimal(100000)
         self.assertEqual(
             self.tax(taxable_income, self.initial_year),
             self.tax.federal_tax(taxable_income, self.initial_year) +

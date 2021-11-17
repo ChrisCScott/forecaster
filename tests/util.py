@@ -65,11 +65,14 @@ class TestCaseTransactions(unittest.TestCase):
         super().assertAlmostEqual(
             first, second, places=places, msg=msg, delta=delta)
 
-def make_available(total, timing=None):
+def make_available(total, timing=None, *, high_precision=None):
     """ Generates an `available` dict of cashflows. """
     if timing is None:
         # Default timing: Everything contributed/withdrawn at t=0.5.
-        timing = {0.5: 1}
+        if high_precision is not None:
+            timing = {high_precision(0.5): high_precision(1)}
+        else:
+            timing = {0.5: 1}
     normalization = sum(timing.values())
     return {
         when: total * weight / normalization

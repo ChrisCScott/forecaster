@@ -2,8 +2,7 @@
 
 from collections import defaultdict
 from collections.abc import Hashable
-from decimal import Decimal
-from forecaster.ledger import Ledger, Money, recorded_property
+from forecaster.ledger import Ledger, recorded_property
 from forecaster.accounts import Account
 from forecaster.utility import Timing
 
@@ -11,7 +10,7 @@ class TransactionDict(defaultdict):
     """ A defaultdict that accepts unhashable keys.
 
     The purpose of this dictionary is to allow `SubForecast` to have
-    a `dict[dict[*], dict[Decimal, Money]]` data structure to map
+    a `dict[dict[*], dict[float, float]]` data structure to map
     accounts (or account-like dicts) to {when: value} transaction
     mappings.
 
@@ -115,7 +114,7 @@ class SubForecast(Ledger):
 
     Attributes:
         transactions (TransactionDict[
-            Union[Account, dict]: defaultdict[Decimal: Money]):
+            Union[Account, dict]: defaultdict[float, float]):
             A record of transactions to/from various accounts.
             An account does not have to be a formal `Account`
             object; it can be any `Mapping`, like a `dict`.
@@ -128,15 +127,16 @@ class SubForecast(Ledger):
             This dict includes transactions made to/from `available`.
     """
 
-    def __init__(self, initial_year, default_timing=None):
+    def __init__(
+            self, initial_year, default_timing=None, *, high_precision=None):
         """ Initializes an instance of SubForecast. """
         # Invoke Ledger's __init__ or pay the price!
         # NOTE Issue #53 removes this requirement
-        super().__init__(initial_year)
+        super().__init__(initial_year, high_precision=high_precision)
         # Use default Timing (i.e. lump sum contributions at the
         # midpoint of the year) if none is explicitly provided:
         if default_timing is None:
-            self.default_timing = Timing()
+            self.default_timing = Timing(high_precision=high_precision)
         else:
             self.default_timing = default_timing
         # We store transactions to/from each account so that we can
@@ -146,12 +146,12 @@ class SubForecast(Ledger):
         # we use a custom subclass of defaultdict that allows
         # non-hashable keys.
         self._transactions = TransactionDict(
-            lambda: defaultdict(lambda: Money(0)))
+            lambda: defaultdict(lambda: 0)) # Money value
         # If the subforecast is called more than once, we
         # may want to do some unwinding. Use this to track
         # whether this subforecast has been called before:
         self._call_invoked = False
-        self.total_available = Money(0)
+        self.total_available = 0 # Money value
 
     @recorded_property
     def transactions(self):
@@ -227,13 +227,13 @@ class SubForecast(Ledger):
         `add_transaction`.
 
         Args:
-            transactions (dict[Decimal, Money]): The timings and values
+            transactions (dict[float, float]): The timings and values
                 of the transactions. Positive for inflows, negative for
                 outflows.
-            from_account (Account, dict[Decimal, Money]): An account
+            from_account (Account, dict[float, float]): An account
                 (or dict of transactions) from which the transaction
                 originates. Optional.
-            from_account (Account, dict[Decimal, Money]): An account
+            from_account (Account, dict[float, float]): An account
                 (or dict of transactions) to which the transaction
                 is being sent. Optional.
             strict_timing (bool): If False, transactions may be added
@@ -271,31 +271,30 @@ class SubForecast(Ledger):
         an infinite pool of money outside of the model.
 
         The `*_account` parameters are not necessarily `Account`
-        objects. `dict[Decimal, Money]` (a dict of timings mapped to
+        objects. `dict[float, float]` (a dict of timings mapped to
         transaction values) or anything with similar semantics will
         also work.
 
         Args:
-            value (Money): The value of the transaction.
+            value (float): The value of the transaction.
                 Positive for inflows, negative for outflows.
             timing (Timing, dict[float, float], float, str):
                 This is either a Timing object or a value that can be
                 converted to a Timing object (e.g. a dict of
                 {timing: weight} pairs, a `when` value as a float or
                 string, etc.). Optional; defaults to `default_timing`.
-            from_account (Account, dict[Decimal, Money]): An account
+            from_account (Account, dict[Decimal, float]): An account
                 (or dict of transactions) from which the transaction
                 originates. Optional.
-            from_account (Account, dict[Decimal, Money]): An account
+            from_account (Account, dict[Decimal, float]): An account
                 (or dict of transactions) to which the transaction
                 is being sent. Optional.
             strict_timing (bool): If False, transactions may be added
                 later than `when` if this avoids putting accounts in
                 a negative balance. If True, `when` is always used.
         """
-        # Sanitize input:
-        if not isinstance(value, Money):
-            value = Money(value)
+        # NOTE: If `value` expects a Money value input (like PyMoney)
+        # that may need to be converted from a scalar, do that here
         if timing is None:
             # Rather than build a new Timing object here, we'll use
             # the default timing for this SubForecast.
@@ -304,7 +303,7 @@ class SubForecast(Ledger):
             # This allows users to pass `when` inputs and have them
             # parse correctly, since `Timing(when)` converts to
             # {when: 1}, i.e. a lump-sum occuring at `when`.
-            timing = Timing(timing)
+            timing = Timing(timing, high_precision=self.high_precision)
 
         # For convenience, ensure that we're withdrawing from
         # from_account and depositing to to_account:
@@ -318,7 +317,7 @@ class SubForecast(Ledger):
         # Add a transaction at each timing, with a transaction value
         # proportionate to the (normalized) weight for its timing:
         for when, weight in timing.items():
-            weighted_value = value * Decimal(weight / total_weight)
+            weighted_value = value * (weight / total_weight)
             self._add_transaction(
                 value=weighted_value, when=when,
                 from_account=from_account, to_account=to_account,
@@ -420,10 +419,11 @@ class SubForecast(Ledger):
         (but for most Account types it will be found exactly.)
 
         Returns:
-            A dict of `{Decimal: Money}` pairs. The keys include
+            A dict of `{float: float}` pairs. The keys include
             all times in `transactions` at or after `when`, plus
             `when` itself (if not already included). If `target_value`
-            is provided, the keys may include additional times.
+            is provided, the keys may include additional times. Values
+            are amounts of transactions at the corresponding time.
         """
         keys = account.keys() | {when}  # Always include `when`
         # Use Account logic to determine how much is available at the

@@ -1,6 +1,5 @@
 """ A module providing Canada-specific tax treatment. """
 
-from forecaster.ledger import Money
 from forecaster.tax import Tax, TaxMulti
 from forecaster.canada.accounts import RRSP
 from forecaster.canada import constants
@@ -72,10 +71,10 @@ class TaxCanadaJurisdiction(Tax):
         # Each jurisdiction has a maximum claimable amount for the
         # pension credit, so determine that (inflation-adjusted
         # amount) here:
-        deduction_max = Money(extend_inflation_adjusted(
+        deduction_max = extend_inflation_adjusted(
             constants.TAX_PENSION_CREDIT[self.jurisdiction],
             self.inflation_adjust,
-            year))
+            year)
         return min(pension_income, deduction_max)
 
     def _spousal_tax_credit(self, person, year):
@@ -101,14 +100,13 @@ class TaxCanadaJurisdiction(Tax):
         """
         # Unmarried folks don't get the credit:
         if person.spouse is None:
-            return Money(0)
+            return 0 # Money value
 
         # Determine the maximum claimable amount:
-        max_spousal_amount = Money(
-            extend_inflation_adjusted(
-                constants.TAX_SPOUSAL_AMOUNT[self.jurisdiction],
-                self.inflation_adjust,
-                year))
+        max_spousal_amount = extend_inflation_adjusted(
+            constants.TAX_SPOUSAL_AMOUNT[self.jurisdiction],
+            self.inflation_adjust,
+            year)
 
         # We need to know the spouse's net income to assess the credit:
         # TODO: Pass in deductions for both spouses as args?
@@ -124,19 +122,19 @@ class TaxCanadaJurisdiction(Tax):
         person_net_income = (
             person.taxable_income - self.deduction(person, year))
         if person_net_income < spouse_net_income:
-            return Money(0)
+            return 0 # Money value
         # If their incomes are the same, use memory location to
         # decide in a deterministic way:
         if person_net_income == spouse_net_income:
             if id(person) < id(spouse):
-                return Money(0)
+                return 0 # Money value
 
         # The credit is determined by reducing the spousal amount
         # by the spouse's (net) income, but in any event it's not
         # negative.
         credit = max(
             max_spousal_amount - spouse_net_income,
-            Money(0))
+            0) # Money value
 
         return credit
 
