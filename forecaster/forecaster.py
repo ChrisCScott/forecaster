@@ -11,6 +11,7 @@ from forecaster.strategy import (
     LivingExpensesStrategy, TransactionStrategy, AllocationStrategy)
 from forecaster.scenario import Scenario
 from forecaster.settings import Settings
+from forecaster.utility.precision import HighPrecisionOptional
 
 
 # The `Forecaster` class makes frequent reference to the names of
@@ -92,7 +93,15 @@ DEFAULTBUILDERS = {
     # str(Parameter.TAX_TREATMENT): "build_tax_treatment"
 }
 
-class Forecaster(object):
+# Types that can receive the callable argument `high_precision` at init:
+HIGHPRECISIONTYPES = frozenset((
+    # Scenario,
+    LivingExpensesStrategy,
+    TransactionStrategy,
+    AllocationStrategy,
+    Tax))
+
+class Forecaster(HighPrecisionOptional):
     """ A convenience class for building Forecasts based on settings.
 
     `Forecaster` takes in information for building a `Forecast`
@@ -128,11 +137,12 @@ class Forecaster(object):
             living_expenses_strategy=None,
             saving_strategy=None,
             withdrawal_strategy=None,
-            tax_treatment=None
+            tax_treatment=None,
+            high_precision=None
     ):
         """ Inits an instance of `Forecaster`. """
         # Set up instance:
-        super().__init__()
+        super().__init__(high_precision=high_precision)
         self.default_values = copy(DEFAULTVALUES)
         self.default_types = copy(DEFAULTTYPES)
         self.default_builders = copy(DEFAULTBUILDERS)
@@ -238,25 +248,30 @@ class Forecaster(object):
         # Now build each of the SubForecast objects required by Forecast
         income_forecast = IncomeForecast(
             initial_year=initial_year,
-            people=people)
+            people=people,
+            high_precision=self.high_precision)
         living_expenses_forecast = LivingExpensesForecast(
             initial_year=initial_year,
             people=people,
-            living_expenses_strategy=living_expenses_strategy)
+            living_expenses_strategy=living_expenses_strategy,
+            high_precision=self.high_precision)
         saving_forecast = SavingForecast(
             initial_year=initial_year,
             retirement_accounts=accounts,
             debt_accounts=debts,
-            transaction_strategy=saving_strategy)
+            transaction_strategy=saving_strategy,
+            high_precision=self.high_precision)
         withdrawal_forecast = WithdrawalForecast(
             initial_year=initial_year,
             people=people,
             accounts=accounts,
-            transaction_strategy=withdrawal_strategy)
+            transaction_strategy=withdrawal_strategy,
+            high_precision=self.high_precision)
         tax_forecast = TaxForecast(
             initial_year=initial_year,
             people=people,
-            tax_treatment=tax_treatment)
+            tax_treatment=tax_treatment,
+            high_precision=self.high_precision)
 
         # With these SubForecasts defined, building Forecast is trivial:
         forecast = Forecast(
@@ -265,7 +280,8 @@ class Forecaster(object):
             saving_forecast=saving_forecast,
             withdrawal_forecast=withdrawal_forecast,
             tax_forecast=tax_forecast,
-            scenario=scenario)
+            scenario=scenario,
+            high_precision=self.high_precision)
 
         # Forecasts run automatically on init, so we're done!
         return forecast
@@ -340,6 +356,9 @@ class Forecaster(object):
         # a new object)
         if param_type is None:
             param_type = self.default_types[param_name]
+        # Pass `high_precision` as a kwarg if the type supports it:
+        if param_type in HIGHPRECISIONTYPES and 'high_precision' not in kwargs:
+            kwargs['high_precision'] = self.high_precision
         param = param_type(*args, **kwargs)
         memo[param_name] = param
         return param
@@ -375,10 +394,48 @@ class Forecaster(object):
         # which can't be used in place of string-valued indexes)
         param_name = str(param_name)
         explicit_attr = getattr(self, param_name)
-        if explicit_attr is not None:
+        # If the attribute isn't provided, try to build one:
+        if explicit_attr is None:
+            explicit_attr = self.build_param(param_name, memo=memo)
+
+        # We'll try to convert strings to numeric types below, but for
+        # any other type we're already done:
+        if not isinstance(explicit_attr, str):
             return explicit_attr
-        else:
-            return self.build_param(param_name, memo=memo)
+
+        # Try to convert strings to numeric types:
+        try:
+            # Numerical types can be cast to float (if not, an exception
+            # will bring us to the catch block and return the str value)
+            float_attr = float(explicit_attr)
+        except ValueError: # Can't convert from a str value to float
+            # If we can't convert to a numerical type, use the str:
+            return explicit_attr
+
+        # If the number is losslessly representable as an int, use that:
+        int_attr = int(float_attr)
+        if float_attr == int_attr:
+            return int_attr
+
+        # Otherwise, if this is a true float, try to convert to
+        # a high-precision numerical type if appropriate:
+        if self.high_precision is not None:
+            # Prefer converting directly from the original str
+            # rather than the float (which is lossy):
+            # pylint: disable=not-callable
+            # high_precision is callable.
+            try:
+                return self.high_precision(explicit_attr)
+            # pylint: disable=bare-except
+            # We don't know what kind of exception the high-precision
+            # conversion method will throw (e.g. `Decimal` can throw
+            # `decimal.InvalidOperation`, whereas `numpy` uses different
+            # exceptions). So a bare except is necessary:
+            except:
+                return self.high_precision(float_attr)
+            # pylint: enable=bare-except,not-callable
+        # Use a float value if no conversion is possible:
+        return float_attr
 
     def set_param(
             self, param_name, *args,
