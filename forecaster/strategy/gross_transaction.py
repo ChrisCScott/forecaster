@@ -67,9 +67,10 @@ class LivingExpensesStrategy(Strategy):
     rate = HighPrecisionOptionalPropertyCached()
 
     def __init__(
-            self, strategy, base_amount=0, rate=0, inflation_adjust=None):
+            self, strategy, base_amount=0, rate=0, inflation_adjust=None,
+            **kwargs):
         """ Constructor for LivingExpensesStrategy. """
-        super().__init__(strategy)
+        super().__init__(strategy, **kwargs)
 
         self.base_amount = base_amount # Money value
         self.rate = rate
