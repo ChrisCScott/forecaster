@@ -46,11 +46,8 @@ class RRSP(RegisteredAccount):
         # (and kludgy)
         if self.high_precision is not None:
             rrsp_accrual_max = {
-                # pylint: disable=not-callable
-                # Non-None `high_precision` is expected to be callable
                 year: self.high_precision(val)
                 for (year, val) in constants.RRSP_ACCRUAL_MAX.items()}
-                # pylint: enable=not-callable
         else:
             rrsp_accrual_max = constants.RRSP_ACCRUAL_MAX
 
@@ -235,9 +232,7 @@ class RRSP(RegisteredAccount):
         # Convert relevant constants:
         if self.high_precision is not None:
             rrif_withdrawal_min = {
-                # pylint: disable=not-callable
                 year: self.high_precision(val)
-                # pylint: enable=not-callable
                 for (year, val) in constants.RRSP_RRIF_WITHDRAWAL_MIN.items()}
         else:
             rrif_withdrawal_min = constants.RRSP_RRIF_WITHDRAWAL_MIN

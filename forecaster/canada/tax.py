@@ -10,7 +10,16 @@ class TaxCanadaJurisdiction(Tax):
     """ Federal or provincial tax treatment (Canada). """
 
     def __init__(
-            self, inflation_adjustments, jurisdiction='Federal'):
+            self, inflation_adjustments, jurisdiction='Federal',
+            *, high_precision=None, **kwargs):
+        # Convert constants if necessary:
+        # TODO: Instead of this, reimplement Constants to load/convert
+        # values. See issue #80.
+        if high_precision is not None:
+            for (name, val) in constants.__dict__.items():
+                if isinstance(val, float):
+                    constants.__dict__[name] = high_precision(val)
+        # All the work here is done by 
         super().__init__(
             tax_brackets=constants.TAX_BRACKETS[jurisdiction],
             personal_deduction=constants.TAX_PERSONAL_DEDUCTION[
@@ -19,7 +28,8 @@ class TaxCanadaJurisdiction(Tax):
             credit_rate=constants.TAX_CREDIT_RATE[jurisdiction],
             inflation_adjust=inflation_adjustments,
             refund_timing=constants.TAX_REFUND_TIMING,
-            payment_timing=constants.TAX_PAYMENT_TIMING)
+            payment_timing=constants.TAX_PAYMENT_TIMING,
+            **kwargs)
 
         self.jurisdiction = jurisdiction
 
@@ -150,7 +160,7 @@ class TaxCanada(TaxMulti):
     """
 
     def __init__(
-            self, inflation_adjust, province='BC'):
+            self, inflation_adjust, province='BC', **kwargs):
         """ Initializes TaxCanada.
 
         Args:
@@ -166,9 +176,9 @@ class TaxCanada(TaxMulti):
                 payments. See `Tax` documentation for more information.
         """
         self.federal_tax = TaxCanadaJurisdiction(
-            inflation_adjust)
+            inflation_adjust, **kwargs)
         self.provincial_tax = TaxCanadaJurisdiction(
-            inflation_adjust, province)
+            inflation_adjust, province, **kwargs)
         self.province = province
 
         jurisdictions = (self.federal_tax, self.provincial_tax)
