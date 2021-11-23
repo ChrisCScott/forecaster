@@ -3,6 +3,7 @@
 import unittest
 import os
 import json
+from decimal import Decimal
 from forecaster.value_reader import ValueReader
 
 class TestValueReader(unittest.TestCase):
@@ -26,7 +27,7 @@ class TestValueReader(unittest.TestCase):
             'dict': {'key': 'val'},
             'float': 0.5,
             'int': 1,
-            'inf': float('inf'),
+            'infty': float('inf'),
             'str': 'str',
             'list': ['a', 'b', 'c']
         }
@@ -80,7 +81,6 @@ class TestValueReader(unittest.TestCase):
 
     def test_write(self):
         """ Test `write()` """
-        # Write a simple datastructure to file:
         reader = ValueReader()
         # Flush the contents of the testing file:
         self.write({})
@@ -94,6 +94,48 @@ class TestValueReader(unittest.TestCase):
         decoded_values = json.load(file)
         # The decoded values should be exactly the same:
         self.assertEqual(self.values, decoded_values)
+
+    def test_write_self(self):
+        """ Test `write()` called with no explicit values. """
+        reader = ValueReader()
+        # Flush the contents of the testing file:
+        self.write({})
+        # Modify the default values, just to be sure:
+        del self.values['str']
+        self.values['new_attr'] = 'new_val'
+        # Write the modified values to file:
+        reader.values = self.values
+        reader.write(self.filename)
+        # Read them back in manually via the JSON library:
+        file = open(self.filename, 'rt', encoding='utf-8')
+        decoded_values = json.load(file)
+        # The decoded values should be exactly the same:
+        self.assertEqual(self.values, decoded_values)
+
+    def test_make_attr(self):
+        """ Tests reading with `make_attr` enabled. """
+        reader = ValueReader(self.filename, make_attr=True)
+        # pylint: disable=no-member
+        # The attribute `str` should be added upon reading:
+        self.assertEqual(reader.str, self.values['str'])
+        # pylint: enable=no-member
+
+    def test_decimal_read(self):
+        """ Tests converting to Decimal values on read. """
+        reader = ValueReader(self.filename, high_precision=Decimal)
+        self.assertEqual(reader.values['float'], Decimal(self.values['float']))
+
+    def test_decimal_write(self):
+        """ Tests writing Decimal values and reading back in. """
+        # Write a Decimal value to a file:
+        writer = ValueReader(high_precision=Decimal)
+        writer.values = {'decimal': Decimal(0.5)}
+        writer.write(self.filename)
+        # Use a fresh ValueReader just to be extra-sure it works:
+        reader = ValueReader(self.filename, high_precision=Decimal)
+        self.assertEqual(
+            reader.values['decimal'],
+            Decimal(0.5))
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(
