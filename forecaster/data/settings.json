@@ -25,8 +25,8 @@
     "allocation_risk_trans_period": 20,
     "allocation_adjust_retirement": true,
     "debt_payment_strategy": "Avalanche",
-    "tax_brackets": {2017: {0: 0}},
-    "tax_personal_deduction": {2017: 0},
-    "tax_credit_rate": {2017: 0},
+    "tax_brackets": {"2017": {"0": 0}},
+    "tax_personal_deduction": {"2017": 0},
+    "tax_credit_rate": {"2017": 0},
     "tax_payment_timing": "start"
 }
