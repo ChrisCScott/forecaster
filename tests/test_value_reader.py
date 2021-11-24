@@ -4,14 +4,19 @@ import unittest
 import os
 import json
 from decimal import Decimal
-from forecaster.value_reader import ValueReader
+from forecaster.value_reader import ValueReader, resolve_path
 
 class TestValueReader(unittest.TestCase):
     """ Tests the `ValueReader` class. """
 
-    def write(self, vals):
+    def write(self, vals, filename=None):
         """ Convenience method for writing to a testing JSON file """
-        with open(self.filename, 'w', encoding="utf-8") as file:
+        if filename is None:
+            filename = self.filename
+        # Open file in `data` directory if it's a relative path:
+        filename = resolve_path(filename)
+        # Write to the file (creating it if it doesn't already exist):
+        with open(filename, 'w', encoding="utf-8") as file:
             json.dump(
                 vals,
                 file,
@@ -31,11 +36,15 @@ class TestValueReader(unittest.TestCase):
             'str': 'str',
             'list': ['a', 'b', 'c']
         }
+        # Write a file to the `data/` dir:
         self.write(self.values)
 
     def tearDown(self):
         """ Remove file created during testing. """
-        os.remove(self.filename)
+        # Remove the file that was added during setUp:
+        filename = resolve_path(self.filename)
+        os.remove(filename)
+        # Other files added by tests need to be cleaned up by the tests.
 
     def test_init_read(self):
         """ Test reading a file on init. """
@@ -47,6 +56,20 @@ class TestValueReader(unittest.TestCase):
         reader = ValueReader()
         reader.read(self.filename)
         self.assertEqual(reader.values, self.values)
+
+    def test_read_abs(self):
+        """ Test reading from a file with an absolute path. """
+        reader = ValueReader()
+        # Build an absolute path to a file outside of the `data/` dir:
+        # (This adds a file to the same folder as this test suite)
+        filename = os.path.join(os.path.dirname(__file__), self.filename)
+        # Write to the file so that we can open it:
+        self.write(self.values, filename=filename)
+        # Open the file:
+        reader.read(self.filename)
+        self.assertEqual(reader.values, self.values)
+        # Clean up:
+        os.remove(filename)
 
     def test_read_again(self):
         """ Test reading from a file, then reading from a different file """
@@ -90,7 +113,8 @@ class TestValueReader(unittest.TestCase):
         # Write the modified values to file:
         reader.write(self.filename, self.values)
         # Read them back in manually via the JSON library:
-        file = open(self.filename, 'rt', encoding='utf-8')
+        filename = resolve_path(self.filename)
+        file = open(filename, 'rt', encoding='utf-8')
         decoded_values = json.load(file)
         # The decoded values should be exactly the same:
         self.assertEqual(self.values, decoded_values)
@@ -107,7 +131,8 @@ class TestValueReader(unittest.TestCase):
         reader.values = self.values
         reader.write(self.filename)
         # Read them back in manually via the JSON library:
-        file = open(self.filename, 'rt', encoding='utf-8')
+        filename = resolve_path(self.filename)
+        file = open(filename, 'rt', encoding='utf-8')
         decoded_values = json.load(file)
         # The decoded values should be exactly the same:
         self.assertEqual(self.values, decoded_values)

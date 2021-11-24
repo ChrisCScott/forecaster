@@ -1,9 +1,25 @@
 """ Provides a class for reading stored values from files. """
 
+import os
 import json
 from forecaster.utility.precision import HighPrecisionOptional
 
 INFINITY = float('inf')
+DIR_PATH = os.path.dirname(__file__)
+DATA_PATH = os.path.join(DIR_PATH, "data/")
+
+def resolve_path(filename):
+    """ Returns an absolute path to `filename`.
+
+    If `filename` is a relative path, it is resolved to an absolute
+    path with a root in this package's `forecaster/data/` directory.
+    If `filename` is an absolute path, it is returned unchanged.
+    """
+    # If this is a bare filename, assume it's in /data
+    if not os.path.isabs(filename):
+        filename = os.path.join(DATA_PATH, filename)
+    # Don't modify absolute paths.
+    return filename
 
 class _ValueReaderAttribute(object):
     """ A descriptor for managed attributes of `ValueReader`.
@@ -101,6 +117,10 @@ class HighPrecisionJSONEncoder(json.JSONEncoder):
 class ValueReader(HighPrecisionOptional):
     """ Reads values from JSON-encoded files.
 
+    Relative paths are resolved relative to `forecaster/data/`, not
+    the current working directory. If you want to point to a file
+    anywhere else, use an absolute path.
+
     Floating-point constants are converted to high-precision types if
     the `high_precision` argument is provided or if a `JSONDecoder`
     that supports high-precision types.
@@ -111,7 +131,7 @@ class ValueReader(HighPrecisionOptional):
 
     Examples:
         settings = ValueReader(
-            "filename.json",  # Read in from this file
+            "filename.json",  # Read this file in forecaster/data
             make_attr=True,  # Create attribute for each top-level key
             high_precision=Decimal)  # Use Decimal representation
 
@@ -175,6 +195,10 @@ class ValueReader(HighPrecisionOptional):
     def read(self, filename, *, numeric_convert=True):
         """ Reads in values from file "filename".
 
+        Relative paths are resolved relative to `forecaster/data/`, not
+        the current working directory. If you want to point to a file
+        anywhere else, use an absolute path.
+
         Note that if `numeric_convert` is `True` then strings that are
         float-convertible will be converted to a numeric type. Keep this
         in mind if the JSON file has keys or values with like "inf",
@@ -189,12 +213,18 @@ class ValueReader(HighPrecisionOptional):
                 (int if appropriate, otherwise a high-precision type or
                 float, depending on whether this instance supports
                 high-precision). Optional. Defaults to True.
+
+        Raises:
+            FileNotFoundError: No such file or directory.
         """
         # Clear all existing JSON attributes from this object:
         if self.make_attr:
             vals = tuple(self.values.keys()) # Copy keys to allow mutation
             for val in vals:
                 self.remove_json_attribute(val)
+
+        # If this is a bare filename, assume it's in /data
+        filename = resolve_path(filename)
 
         # Read in JSON values to the `values` dict:
         with open(filename, "rt", encoding="utf-8") as file:
@@ -345,6 +375,8 @@ class ValueReader(HighPrecisionOptional):
         # If no values are provided, use this object's `values`:
         if vals is None:
             vals = self.values
+
+        filename = resolve_path(filename)
 
         # Format output as follows:
         encoder_args = {
