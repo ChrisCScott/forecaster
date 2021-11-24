@@ -114,8 +114,8 @@ class TestValueReader(unittest.TestCase):
         reader.write(self.filename, self.values)
         # Read them back in manually via the JSON library:
         filename = resolve_path(self.filename)
-        file = open(filename, 'rt', encoding='utf-8')
-        decoded_values = json.load(file)
+        with open(filename, 'rt', encoding='utf-8') as file:
+            decoded_values = json.load(file)
         # The decoded values should be exactly the same:
         self.assertEqual(self.values, decoded_values)
 
@@ -132,8 +132,8 @@ class TestValueReader(unittest.TestCase):
         reader.write(self.filename)
         # Read them back in manually via the JSON library:
         filename = resolve_path(self.filename)
-        file = open(filename, 'rt', encoding='utf-8')
-        decoded_values = json.load(file)
+        with open(filename, 'rt', encoding='utf-8') as file:
+            decoded_values = json.load(file)
         # The decoded values should be exactly the same:
         self.assertEqual(self.values, decoded_values)
 
