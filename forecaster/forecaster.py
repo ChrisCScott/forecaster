@@ -99,7 +99,8 @@ HIGHPRECISIONTYPES = frozenset((
     LivingExpensesStrategy,
     TransactionStrategy,
     AllocationStrategy,
-    Tax))
+    Tax,
+    HighPrecisionOptional))
 
 class Forecaster(HighPrecisionOptional):
     """ A convenience class for building Forecasts based on settings.
@@ -357,7 +358,10 @@ class Forecaster(HighPrecisionOptional):
         if param_type is None:
             param_type = self.default_types[param_name]
         # Pass `high_precision` as a kwarg if the type supports it:
-        if param_type in HIGHPRECISIONTYPES and 'high_precision' not in kwargs:
+        is_high_precision_type = any(
+            issubclass(param_type, high_precision_type)
+            for high_precision_type in HIGHPRECISIONTYPES)
+        if is_high_precision_type and 'high_precision' not in kwargs:
             kwargs['high_precision'] = self.high_precision
         param = param_type(*args, **kwargs)
         memo[param_name] = param
