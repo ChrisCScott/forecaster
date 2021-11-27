@@ -4,7 +4,7 @@ import unittest
 from decimal import Decimal
 from forecaster import Parameter
 from forecaster.canada import (
-    ForecasterCanada, TaxCanada, SettingsCanada, TaxableAccount)
+    ForecasterCanada, TaxCanada, SettingsCanada, TaxableAccount, constants)
 from tests.test_forecaster import TestForecaster
 
 
@@ -23,10 +23,12 @@ class TestForecasterCanada(TestForecaster):
         # Let the superclass handle setup:
         super().setUp()
 
+        self.constants = constants.ConstantsCanada()
+
         # Override tax_treatment to use TaxCanada object:
         self.tax_treatment = TaxCanada(
             inflation_adjust=self.scenario.inflation_adjust,
-            province=self.settings.tax_province)
+            province=self.settings.tax_province, constants=self.constants)
         # The AccountTransactionStrategy settings for ForecasterCanada
         # don't include an Account object; replace it with an
         # otherwise-identical TaxableAccount, which is represented in
@@ -42,11 +44,15 @@ class TestForecasterCanada(TestForecaster):
         # This handles almost everything:
         super().setUp_decimal()
 
+        self.settings = SettingsCanada(high_precision=Decimal)
+        self.constants = constants.ConstantsCanada(high_precision=Decimal)
+
         # Override tax_treatment to use TaxCanada object:
         self.tax_treatment = TaxCanada(
             inflation_adjust=self.scenario.inflation_adjust,
             province=self.settings.tax_province,
-            high_precision=Decimal)
+            high_precision=Decimal,
+            constants=self.constants)
         # The AccountTransactionStrategy settings for ForecasterCanada
         # don't include an Account object; replace it with an
         # otherwise-identical TaxableAccount, which is represented in

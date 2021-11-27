@@ -16,16 +16,17 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         super().setUp()
 
         self.AccountType = RRSP
+        self.constants = constants.ConstantsCanada()
 
         # Ensure that inflation_adjustments covers the entire range of
-        # constants.RRSP_ACCRUAL_MAX and the years where self.owner is
+        # self.constants.RRSP_ACCRUAL_MAX and the years where self.owner is
         # 71-95 (plus a few extra for testing)
-        min_year = min(min(constants.RRSP_ACCRUAL_MAX),
+        min_year = min(min(self.constants.RRSP_ACCRUAL_MAX),
                        self.owner.birth_date.year +
-                       min(constants.RRSP_RRIF_WITHDRAWAL_MIN))
-        max_year = max(max(constants.RRSP_ACCRUAL_MAX),
+                       min(self.constants.RRSP_RRIF_WITHDRAWAL_MIN))
+        max_year = max(max(self.constants.RRSP_ACCRUAL_MAX),
                        self.owner.birth_date.year +
-                       max(constants.RRSP_RRIF_WITHDRAWAL_MIN)) + 2
+                       max(self.constants.RRSP_RRIF_WITHDRAWAL_MIN)) + 2
         self.extend_inflation_adjustments(min_year, max_year)
 
         self.initial_contribution_room = 100
@@ -45,16 +46,17 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         super().setUp_decimal()
 
         self.AccountType = RRSP
+        self.constants = constants.ConstantsCanada(high_precision=Decimal)
 
         # Ensure that inflation_adjustments covers the entire range of
-        # constants.RRSP_ACCRUAL_MAX and the years where self.owner is
+        # self.constants.RRSP_ACCRUAL_MAX and the years where self.owner is
         # 71-95 (plus a few extra for testing)
-        min_year = min(min(constants.RRSP_ACCRUAL_MAX),
+        min_year = min(min(self.constants.RRSP_ACCRUAL_MAX),
                        self.owner.birth_date.year +
-                       min(constants.RRSP_RRIF_WITHDRAWAL_MIN))
-        max_year = max(max(constants.RRSP_ACCRUAL_MAX),
+                       min(self.constants.RRSP_RRIF_WITHDRAWAL_MIN))
+        max_year = max(max(self.constants.RRSP_ACCRUAL_MAX),
                        self.owner.birth_date.year +
-                       max(constants.RRSP_RRIF_WITHDRAWAL_MIN)) + 2
+                       max(self.constants.RRSP_RRIF_WITHDRAWAL_MIN)) + 2
         self.extend_inflation_adjustments(
             min_year, max_year, high_precision=Decimal)
 
@@ -82,7 +84,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
             contribution_room=self.contribution_room, **kwargs)
         self.assertEqual(
             self.owner.age(account.rrif_conversion_year),
-            constants.RRSP_RRIF_CONVERSION_AGE)
+            self.constants.RRSP_RRIF_CONVERSION_AGE)
 
     def test_taxable_income_gain(self, *args, **kwargs):
         """ Test taxable_income with no withdrawals or contributions. """
@@ -142,7 +144,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         """ Test tax_withheld with no transactions and positive balance. """
         # For ease of testing, ensure that the initial year is
         # represented in RRSP_WITHHOLDING_RATE:
-        initial_year = min(constants.RRSP_WITHHOLDING_TAX_RATE)
+        initial_year = min(self.constants.RRSP_WITHHOLDING_TAX_RATE)
         self.set_initial_year(initial_year)
 
         # Test RRSP with no withdrawals -> no tax withheld
@@ -164,8 +166,8 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         """ Test tax_withheld with a small inflow. """
         # For ease of testing, ensure that the initial year is
         # represented in RRSP_WITHHOLDING_RATE:
-        initial_year = min(constants.RRSP_WITHHOLDING_TAX_RATE)
-        withholding_rates = constants.RRSP_WITHHOLDING_TAX_RATE[initial_year]
+        initial_year = min(self.constants.RRSP_WITHHOLDING_TAX_RATE)
+        withholding_rates = self.constants.RRSP_WITHHOLDING_TAX_RATE[initial_year]
         self.set_initial_year(initial_year)
 
         # Add a withdrawal in the lowest withholding tax bracket ($1).
@@ -186,8 +188,8 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         """ Test tax_withheld with a large outflow. """
         # For ease of testing, ensure that the initial year is
         # represented in RRSP_WITHHOLDING_RATE:
-        initial_year = min(constants.RRSP_WITHHOLDING_TAX_RATE)
-        withholding_rates = constants.RRSP_WITHHOLDING_TAX_RATE[initial_year]
+        initial_year = min(self.constants.RRSP_WITHHOLDING_TAX_RATE)
+        withholding_rates = self.constants.RRSP_WITHHOLDING_TAX_RATE[initial_year]
         self.set_initial_year(initial_year)
 
         # Add a transaction in the highest tax bracket. (Note that the
@@ -212,7 +214,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         """ Test inflation adjustment of tax_withheld withholding rates. """
         # Ensure that the initial year is not represented in
         # RRSP_WITHHOLDING_RATE:
-        initial_year = max(constants.RRSP_WITHHOLDING_TAX_RATE) + 1
+        initial_year = max(self.constants.RRSP_WITHHOLDING_TAX_RATE) + 1
         self.set_initial_year(initial_year)
         # Set up 100% inflation between the previous year and this one.
         self.inflation_adjustments[self.initial_year - 1] = 1
@@ -220,8 +222,8 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         # Inflation-adjust based on the previous (represented) year:
         withholding_rates = {
             rate * self.inflation_adjust(initial_year, initial_year - 1):
-            constants.RRSP_WITHHOLDING_TAX_RATE[initial_year - 1][rate]
-            for rate in constants.RRSP_WITHHOLDING_TAX_RATE[initial_year - 1]
+            self.constants.RRSP_WITHHOLDING_TAX_RATE[initial_year - 1][rate]
+            for rate in self.constants.RRSP_WITHHOLDING_TAX_RATE[initial_year - 1]
         }
 
         # Add a transaction that would be in the highest tax bracket in
@@ -235,7 +237,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         # from the previous year and sits somewhere between the second
         # and top brackets this year:
         val = max(
-            max(constants.RRSP_WITHHOLDING_TAX_RATE[initial_year - 1]) + 1,
+            max(self.constants.RRSP_WITHHOLDING_TAX_RATE[initial_year - 1]) + 1,
             (top_bracket + second_bracket) / 2
         )
         account = self.AccountType(
@@ -289,7 +291,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
     def test_cont_basic(self, *args, **kwargs):
         """ Test `contribution_room` with no contributions. """
         # Ensure we know the accrual max for this year:
-        self.set_initial_year(min(constants.RRSP_ACCRUAL_MAX))
+        self.set_initial_year(min(self.constants.RRSP_ACCRUAL_MAX))
         income = self.owner.gross_income
         account = self.AccountType(
             self.owner, *args,
@@ -299,18 +301,18 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         self.assertEqual(
             account.contribution_room,
             self.initial_contribution_room
-            + income * constants.RRSP_ACCRUAL_RATE)
+            + income * self.constants.RRSP_ACCRUAL_RATE)
 
     def test_cont_excess_rollover(self, *args, **kwargs):
         """ Test `contribution_room` with lots of income and no inflows. """
         # Pick the initial year so that we'll know the accrual max. for
         # next year
-        self.set_initial_year(min(constants.RRSP_ACCRUAL_MAX) - 1)
+        self.set_initial_year(min(self.constants.RRSP_ACCRUAL_MAX) - 1)
         # Use income that's $1000 more than is necessary to max out RRSP
         # contribution room accrual for the year.
         self.owner.gross_income = (
-            constants.RRSP_ACCRUAL_MAX[self.initial_year + 1]
-            / constants.RRSP_ACCRUAL_RATE
+            self.constants.RRSP_ACCRUAL_MAX[self.initial_year + 1]
+            / self.constants.RRSP_ACCRUAL_RATE
             + 1000)
         account = self.AccountType(
             self.owner, *args,
@@ -322,19 +324,19 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         self.assertEqual(
             account.contribution_room,
             self.initial_contribution_room
-            + constants.RRSP_ACCRUAL_MAX[self.initial_year + 1]
+            + self.constants.RRSP_ACCRUAL_MAX[self.initial_year + 1]
         )
 
     def test_cont_excess_no_rollover(self, *args, **kwargs):
         """ Test `contribution_room` with lots of income, no rollover. """
         # Pick the initial year so that we'll know the accrual max. for
         # next year
-        self.set_initial_year(min(constants.RRSP_ACCRUAL_MAX) - 1)
+        self.set_initial_year(min(self.constants.RRSP_ACCRUAL_MAX) - 1)
         # Use income that's $1000 more than is necessary to max out RRSP
         # contribution room accrual for the year.
         self.owner.gross_income = (
-            constants.RRSP_ACCRUAL_MAX[self.initial_year + 1]
-            / constants.RRSP_ACCRUAL_RATE
+            self.constants.RRSP_ACCRUAL_MAX[self.initial_year + 1]
+            / self.constants.RRSP_ACCRUAL_RATE
             + 1000)
         # Try again, but this time contribute the max. in the first year
         account = self.AccountType(
@@ -346,7 +348,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         # New contribution room should be the max; no rollover.
         self.assertEqual(
             account.contribution_room,
-            constants.RRSP_ACCRUAL_MAX[self.initial_year + 1]
+            self.constants.RRSP_ACCRUAL_MAX[self.initial_year + 1]
         )
 
     def test_cont_inf_adjust_basic(self, *args, **kwargs):
@@ -354,18 +356,18 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         # Start with the last year for which we know the nominal accrual
         # max already. The next year's accrual max will need to be
         # estimated via inflation-adjustment:
-        self.set_initial_year(max(constants.RRSP_ACCRUAL_MAX))
+        self.set_initial_year(max(self.constants.RRSP_ACCRUAL_MAX))
         # Inflation-adjust the (known) accrual max for the previous year
         # to get the max for this year.
         max_accrual = (
-            constants.RRSP_ACCRUAL_MAX[self.initial_year] *
+            self.constants.RRSP_ACCRUAL_MAX[self.initial_year] *
             self.inflation_adjust(self.initial_year + 1, self.initial_year)
         )
         # Let's have income that's between the initial year's max
         # accrual and the next year's max accrual:
         income = (
-            (max_accrual + constants.RRSP_ACCRUAL_MAX[self.initial_year]) / 2
-        ) / constants.RRSP_ACCRUAL_RATE
+            (max_accrual + self.constants.RRSP_ACCRUAL_MAX[self.initial_year]) / 2
+        ) / self.constants.RRSP_ACCRUAL_RATE
         self.owner.gross_income = income
         account = self.AccountType(
             self.owner, *args,
@@ -377,7 +379,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         self.assertEqual(
             account.contribution_room,
             self.initial_contribution_room +
-            constants.RRSP_ACCRUAL_RATE * income
+            self.constants.RRSP_ACCRUAL_RATE * income
         )
 
     def test_cont_inf_adjust_excess(self, *args, **kwargs):
@@ -385,16 +387,16 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         # Start with the last year for which we know the nominal accrual
         # max already. The next year's accrual max will need to be
         # estimated via inflation-adjustment:
-        self.set_initial_year(max(constants.RRSP_ACCRUAL_MAX))
+        self.set_initial_year(max(self.constants.RRSP_ACCRUAL_MAX))
         # Inflation-adjust the (known) accrual max for the previous year
         # to get the max for this year.
         max_accrual = (
-            constants.RRSP_ACCRUAL_MAX[self.initial_year] *
+            self.constants.RRSP_ACCRUAL_MAX[self.initial_year] *
             self.inflation_adjust(self.initial_year + 1, self.initial_year)
         )
         # Try again, but now with income greater than the inflation-
         # adjusted accrual max.
-        income = max_accrual / constants.RRSP_ACCRUAL_RATE + 1000
+        income = max_accrual / self.constants.RRSP_ACCRUAL_RATE + 1000
         self.owner.gross_income = income
         account = self.AccountType(
             self.owner, *args,
@@ -429,25 +431,25 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         for year in range(initial_year, last_year):
             age = self.owner.age(year)
             # First, check that we've converted to an RRIF if required:
-            if age > constants.RRSP_RRIF_CONVERSION_AGE:
+            if age > self.constants.RRSP_RRIF_CONVERSION_AGE:
                 self.assertTrue(account.rrif_conversion_year < year)
             # Next, if we've converted to an RRIF, check various
             # min_outflow scenarios:
             if account.rrif_conversion_year < year:
                 # If we've converted early, use the statutory formula
                 # (i.e. 1/(90-age))
-                if age < min(constants.RRSP_RRIF_WITHDRAWAL_MIN):
+                if age < min(self.constants.RRSP_RRIF_WITHDRAWAL_MIN):
                     min_outflow = account.balance / (90 - age)
                 # Otherwise, use the prescribed withdrawal amount:
                 else:
-                    if age > max(constants.RRSP_RRIF_WITHDRAWAL_MIN):
+                    if age > max(self.constants.RRSP_RRIF_WITHDRAWAL_MIN):
                         min_outflow = account.balance * \
-                            max(constants.RRSP_RRIF_WITHDRAWAL_MIN.values())
+                            max(self.constants.RRSP_RRIF_WITHDRAWAL_MIN.values())
                     # If we're past the range of prescribed amounts,
                     # use the largest prescribed amount
                     else:
                         min_outflow = account.balance * \
-                            constants.RRSP_RRIF_WITHDRAWAL_MIN[age]
+                            self.constants.RRSP_RRIF_WITHDRAWAL_MIN[age]
             # If this isn't an RRIF yet, there's no min. outflow.
             else:
                 min_outflow = 0
@@ -497,7 +499,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
             rrif_conversion_year=None, **kwargs)
         # Set retirement for just after the mandatory conversion year:
         mandatory_year = (
-            account.owner.birth_date.year + constants.RRSP_RRIF_CONVERSION_AGE)
+            account.owner.birth_date.year + self.constants.RRSP_RRIF_CONVERSION_AGE)
         account.owner.retirement_date = mandatory_year + 1
         self.assertEqual(account.rrif_conversion_year, mandatory_year)
 
@@ -510,7 +512,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
             rrif_conversion_year=None, **kwargs)
         # Set retirement for just before the mandatory conversion year:
         mandatory_year = (
-            account.owner.birth_date.year + constants.RRSP_RRIF_CONVERSION_AGE)
+            account.owner.birth_date.year + self.constants.RRSP_RRIF_CONVERSION_AGE)
         account.owner.retirement_date = mandatory_year - 1
         self.assertEqual(account.rrif_conversion_year, mandatory_year)
 
@@ -553,7 +555,7 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         # carryover, since we used up all contribution room last year):
         self.assertEqual(
             spousal_account.max_inflow_limit,
-            10000 * constants.RRSP_ACCRUAL_RATE)
+            10000 * self.constants.RRSP_ACCRUAL_RATE)
         self.assertEqual(
             regular_account.max_inflow_limit,
             spousal_account.max_inflow_limit)
@@ -585,25 +587,25 @@ class TestRRSPMethods(TestRegisteredAccountMethods):
         for year in range(initial_year, last_year):
             age = self.owner.age(year)
             # First, check that we've converted to an RRIF if required:
-            if age > constants.RRSP_RRIF_CONVERSION_AGE:
+            if age > self.constants.RRSP_RRIF_CONVERSION_AGE:
                 self.assertTrue(account.rrif_conversion_year < year)
             # Next, if we've converted to an RRIF, check various
             # min_outflow scenarios:
             if account.rrif_conversion_year < year:
                 # If we've converted early, use the statutory formula
                 # (i.e. 1/(90-age))
-                if age < min(constants.RRSP_RRIF_WITHDRAWAL_MIN):
+                if age < min(self.constants.RRSP_RRIF_WITHDRAWAL_MIN):
                     min_outflow = account.balance / Decimal(90 - age)
                 # Otherwise, use the prescribed withdrawal amount:
                 else:
-                    if age > max(constants.RRSP_RRIF_WITHDRAWAL_MIN):
+                    if age > max(self.constants.RRSP_RRIF_WITHDRAWAL_MIN):
                         min_outflow = account.balance * Decimal(
-                            max(constants.RRSP_RRIF_WITHDRAWAL_MIN.values()))
+                            max(self.constants.RRSP_RRIF_WITHDRAWAL_MIN.values()))
                     # If we're past the range of prescribed amounts,
                     # use the largest prescribed amount
                     else:
                         min_outflow = account.balance * Decimal(
-                            constants.RRSP_RRIF_WITHDRAWAL_MIN[age])
+                            self.constants.RRSP_RRIF_WITHDRAWAL_MIN[age])
             # If this isn't an RRIF yet, there's no min. outflow.
             else:
                 min_outflow = Decimal(0)

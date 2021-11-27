@@ -2,9 +2,7 @@
 
 from forecaster.canada.accounts.registered_account import RegisteredAccount
 from forecaster.ledger import recorded_property
-from forecaster.utility import (
-    build_inflation_adjust, extend_inflation_adjusted)
-from forecaster.canada import constants
+from forecaster.utility import extend_inflation_adjusted
 
 class TFSA(RegisteredAccount):
     """ A Tax-Free Savings Account (Canada). """
@@ -42,13 +40,13 @@ class TFSA(RegisteredAccount):
         # (By law, inflation-adjustments are relative to 2009, the
         # first year that TFSAs were available, and rounded to the
         # nearest $500)
-        self._base_accrual_year = min(constants.TFSA_ANNUAL_ACCRUAL.keys())
+        self._base_accrual_year = min(self.constants.TFSA_ANNUAL_ACCRUAL.keys())
         self._base_accrual = round(extend_inflation_adjusted(
-            constants.TFSA_ANNUAL_ACCRUAL,
+            self.constants.TFSA_ANNUAL_ACCRUAL,
             self.inflation_adjust,
             self._base_accrual_year
-        ) / constants.TFSA_ACCRUAL_ROUNDING_FACTOR) * \
-            constants.TFSA_ACCRUAL_ROUNDING_FACTOR
+        ) / self.constants.TFSA_ACCRUAL_ROUNDING_FACTOR) * \
+            self.constants.TFSA_ACCRUAL_ROUNDING_FACTOR
 
         # If contribution_room is not provided, infer it based on age.
         if self.contribution_room is None:
@@ -90,8 +88,8 @@ class TFSA(RegisteredAccount):
             start_year = max(
                 self.initial_year -
                 self.contributor.age(self.initial_year) +
-                constants.TFSA_ELIGIBILITY_AGE,
-                min(constants.TFSA_ANNUAL_ACCRUAL.keys()))
+                self.constants.TFSA_ELIGIBILITY_AGE,
+                min(self.constants.TFSA_ANNUAL_ACCRUAL.keys()))
             # The owner accumulated no room prior to eligibility:
             contribution_room = self.precision_convert(0)
         # Accumulate contribution room over applicable years
@@ -105,12 +103,12 @@ class TFSA(RegisteredAccount):
         This excludes any rollovers - it's just the statutory accrual.
         """
         # No accrual if the owner is too young to qualify:
-        if self.owner.age(year + 1) < constants.TFSA_ELIGIBILITY_AGE:
+        if self.owner.age(year + 1) < self.constants.TFSA_ELIGIBILITY_AGE:
             return self.precision_convert(0) # Money value
 
         # If we already have an accrual rate set for this year, use that
-        if year in constants.TFSA_ANNUAL_ACCRUAL:
-            return constants.TFSA_ANNUAL_ACCRUAL[year] # Money value
+        if year in self.constants.TFSA_ANNUAL_ACCRUAL:
+            return self.constants.TFSA_ANNUAL_ACCRUAL[year] # Money value
         # Otherwise, infer the accrual rate by inflation-adjusting the
         # base rate and rounding.
         else:
@@ -118,8 +116,8 @@ class TFSA(RegisteredAccount):
                 round(
                     self._base_accrual * self.inflation_adjust(
                         self._base_accrual_year, year) /
-                    constants.TFSA_ACCRUAL_ROUNDING_FACTOR) *
-                constants.TFSA_ACCRUAL_ROUNDING_FACTOR
+                    self.constants.TFSA_ACCRUAL_ROUNDING_FACTOR) *
+                self.constants.TFSA_ACCRUAL_ROUNDING_FACTOR
             )
 
     def next_contribution_room(self):

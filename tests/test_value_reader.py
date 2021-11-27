@@ -4,7 +4,8 @@ import unittest
 import os
 import json
 from decimal import Decimal
-from forecaster.value_reader import ValueReader, resolve_path
+from forecaster.value_reader import (
+    ValueReader, ValueReaderAttribute, resolve_path)
 
 class TestValueReader(unittest.TestCase):
     """ Tests the `ValueReader` class. """
@@ -84,23 +85,48 @@ class TestValueReader(unittest.TestCase):
         # The new values should match the updated self.values exactly:
         self.assertEqual(reader.values, self.values)
 
-    def test_add_json_attribute(self):
-        """ Test `add_json_attribute()` """
-        reader = ValueReader()
-        reader.add_json_attribute('name', 'value')
-        # pylint: disable=no-member
-        # The member `name` should be added by the above line
-        self.assertEqual(reader.name, 'value')
-        # pylint: enable=no-member
+    def test_attribute(self):
+        """ Test ValueReaderAttribute descriptor """
+        # Subclass `ValueReader` to test `ValueReaderAttribute`:
+        class TestReader(ValueReader):
+            """ A ValueReader with one ValueReaderAttribute attr. """
+            test_attr = ValueReaderAttribute()
 
-    def test_remove_json_attribute(self):
-        """ Test `remove_json_attribute()` """
-        reader = ValueReader()
-        reader.add_json_attribute('name', 'value')
-        reader.remove_json_attribute('name')
-        # Should be removed as both an attribute and a key in 'values':
-        self.assertNotIn('name', reader.__dict__)
-        self.assertNotIn('name', reader.values)
+        # Assign a value to the attribute:
+        reader = TestReader()
+        value = "new value"
+        reader.test_attr = value
+        # The value should be accessible via both the `test_attr`
+        # attribute and as a value in the `values` dict:
+        self.assertEqual(reader.test_attr, value)
+        self.assertEqual(reader.values['test_attr'], value)
+
+    def test_attribute_default(self):
+        """ Test ValueReaderAttribute descriptor with default value. """
+        # Subclass `ValueReader` to test `ValueReaderAttribute`:
+        class TestReader(ValueReader):
+            """ A ValueReader with one ValueReaderAttribute attr. """
+            test_attr = ValueReaderAttribute("default")
+
+        reader = TestReader()
+        # Confirm the default value is set correctly:
+        self.assertEqual(reader.test_attr, "default")
+        # Assign a new value to the attribute:
+        reader.test_attr = "value"
+        # Confirm that the new value is returned (not the default value)
+        self.assertEqual(reader.test_attr, "value")
+
+    def test_attribute_no_default(self):
+        """ Test ValueReaderAttribute with use_defaults=False. """
+        # Subclass `ValueReader` to test `ValueReaderAttribute`:
+        class TestReader(ValueReader):
+            """ A ValueReader with one ValueReaderAttribute attr. """
+            test_attr = ValueReaderAttribute("default")
+
+        reader = TestReader(use_defaults=False)
+        # Confirm the default value is not returned:
+        with self.assertRaises(KeyError):
+            _ = reader.test_attr #@IgnoreException
 
     def test_write(self):
         """ Test `write()` """
@@ -136,14 +162,6 @@ class TestValueReader(unittest.TestCase):
             decoded_values = json.load(file)
         # The decoded values should be exactly the same:
         self.assertEqual(self.values, decoded_values)
-
-    def test_make_attr(self):
-        """ Tests reading with `make_attr` enabled. """
-        reader = ValueReader(self.filename, make_attr=True)
-        # pylint: disable=no-member
-        # The attribute `str` should be added upon reading:
-        self.assertEqual(reader.str, self.values['str'])
-        # pylint: enable=no-member
 
     def test_decimal_read(self):
         """ Tests converting to Decimal values on read. """

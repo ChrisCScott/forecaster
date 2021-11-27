@@ -3,7 +3,6 @@
 from forecaster.canada.accounts.registered_account import RegisteredAccount
 from forecaster.ledger import recorded_property
 from forecaster.utility import extend_inflation_adjusted, nearest_year
-from forecaster.canada import constants
 
 class RRSP(RegisteredAccount):
     """ A Registered Retirement Savings Plan (Canada). """
@@ -47,9 +46,9 @@ class RRSP(RegisteredAccount):
         if self.high_precision is not None:
             rrsp_accrual_max = {
                 year: self.high_precision(val)
-                for (year, val) in constants.RRSP_ACCRUAL_MAX.items()}
+                for (year, val) in self.constants.RRSP_ACCRUAL_MAX.items()}
         else:
-            rrsp_accrual_max = constants.RRSP_ACCRUAL_MAX
+            rrsp_accrual_max = self.constants.RRSP_ACCRUAL_MAX
 
         # Determine the max contribution room accrual in initial_year:
         self._initial_accrual = extend_inflation_adjusted(
@@ -66,7 +65,7 @@ class RRSP(RegisteredAccount):
         """ The latest year in which the RRSP can convert to an RRIF. """
         return (
             self.initial_year
-            + constants.RRSP_RRIF_CONVERSION_AGE
+            + self.constants.RRSP_RRIF_CONVERSION_AGE
             - self.owner.age(self.initial_year)
         )
 
@@ -150,10 +149,10 @@ class RRSP(RegisteredAccount):
             taxable_income = self.taxable_income - self.min_outflow_limit
 
         year = nearest_year(
-            constants.RRSP_WITHHOLDING_TAX_RATE,
+            self.constants.RRSP_WITHHOLDING_TAX_RATE,
             self.this_year)
         # We convert this inline below (when assigning `tax_rate`):
-        tax_rates = constants.RRSP_WITHHOLDING_TAX_RATE[year]
+        tax_rates = self.constants.RRSP_WITHHOLDING_TAX_RATE[year]
         taxable_income_adjusted = (
             taxable_income
             * self.inflation_adjust(year, self.this_year)
@@ -188,7 +187,9 @@ class RRSP(RegisteredAccount):
         """
         year = self.this_year
 
-        if self.contributor.age(year + 1) > constants.RRSP_RRIF_CONVERSION_AGE:
+        if (
+                self.contributor.age(year + 1) >
+                self.constants.RRSP_RRIF_CONVERSION_AGE):
             # If past the mandatory RRIF conversion age, no
             # contributions are allowed.
             return self.precision_convert(0) # Money value
@@ -202,10 +203,10 @@ class RRSP(RegisteredAccount):
             # First, determine how much more contribution room will
             # accrue due to this year's income:
             accrual = income * self.precision_convert(
-                constants.RRSP_ACCRUAL_RATE)
+                self.constants.RRSP_ACCRUAL_RATE)
             accrual_max = {
                 year: self.precision_convert(val)
-                for (year, val) in constants.RRSP_ACCRUAL_MAX.items()}
+                for (year, val) in self.constants.RRSP_ACCRUAL_MAX.items()}
             # Second, compare to the (inflation-adjusted) max accrual
             # for next year:
             max_accrual = extend_inflation_adjusted(
@@ -233,9 +234,10 @@ class RRSP(RegisteredAccount):
         if self.high_precision is not None:
             rrif_withdrawal_min = {
                 year: self.high_precision(val)
-                for (year, val) in constants.RRSP_RRIF_WITHDRAWAL_MIN.items()}
+                for (year, val) in
+                self.constants.RRSP_RRIF_WITHDRAWAL_MIN.items()}
         else:
-            rrif_withdrawal_min = constants.RRSP_RRIF_WITHDRAWAL_MIN
+            rrif_withdrawal_min = self.constants.RRSP_RRIF_WITHDRAWAL_MIN
 
         # Minimum withdrawals are required the year after converting to
         # an RRIF. How it is calculated depends on the person's age.
