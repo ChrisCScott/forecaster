@@ -21,17 +21,34 @@ def resolve_path(filename):
     # Don't modify absolute paths.
     return filename
 
-class _ValueReaderAttribute(object):
+class ValueReaderAttribute(object):
     """ A descriptor for managed attributes of `ValueReader`.
 
     Attributes with this descriptor are get and set via the `values`
     dict (rather than `__dict__`).
     """
-    def __init__(self, name):
+
+    def __init__(self, default=None):
+        self.default = default
+        self.name = None # set in __set_name__
+
+    def __set_name__(self, owner, name):
+        # Called when the class `owner` is defined, passes the name
+        # of the attribute to which this descriptor is assigned.
         self.name = name
 
     def __get__(self, obj, objtype=None):
-        # Get the value from the `values` dict:
+        # If a value hasn't been read in for this attribute, use the
+        # default value if one has been provided (and if the calling
+        # object has enabled this functionality via `use_defaults`):
+        if (
+                self.name not in obj.values and
+                self.default is not None and
+                hasattr(obj, 'use_defaults') and
+                obj.use_defaults):
+            return self.default
+        # Return the value read in from file (or raise a KeyError if
+        # it's missing and there's no default):
         return obj.values[self.name]
 
     def __set__(self, obj, value):
@@ -69,11 +86,16 @@ class HighPrecisionJSONEncoder(json.JSONEncoder):
             A callable object that converts a high-precision numeric
             type to str.
             Optional. Defaults to HighPrecisionType.__str__.
+        numeric_convert (bool): If `high_precision_serialize` is not
+            provided, the encoder will attempt to cast high-precision
+            numbers losslessly to `str` if this value is True, or
+            will attempt lossy conversion to `float` if this value is
+            False. Optional; defaults to True.
     """
 
     def __init__(
             self, *args, high_precision=None, high_precision_serialize=None,
-            **kwargs):
+            numeric_convert=True, **kwargs):
         super().__init__(*args, **kwargs)
         # Declare member attributes:
         self.high_precision_type = None
@@ -83,24 +105,22 @@ class HighPrecisionJSONEncoder(json.JSONEncoder):
         if high_precision is not None:
             # Infer the high-precision type being used and store it:
             self.high_precision_type = type(high_precision(0))
-            # If no serialization method has been passed, try casting to float:
-            # NOTE: This is a lossy conversion. Sadly, there is no
-            # support in JSONEncoder for subclasses to represent
-            # non-float objects numerically without casting to float.
-            # The only alternative is to cast to str, which is lossless
-            # but then either requires:
-            #   (a) client code to know which values should be numerical
-            #       and convert them from str to a high-precision type
-            #       or
-            #   (b) the decoder to check every str for convertability to
-            #       the high-precision type.
-            # On the plus side, any file that's being read will be read
-            # in losslessly, so (e.g.) a manually-typed file or one
-            # generated via `simplejson` with Decimal inputs will be
-            # losslessly read in.
+            # If no serialization method has been passed, cast to
+            # either float to str (depending on whether str-numeric
+            # conversion is supported):
             if high_precision_serialize is None:
-                def high_precision_serialize(val):
-                    return float(val)
+                # If we support conversion to str, convert to str:
+                # pylint: disable=function-redefined
+                # We're intentionally redefining this function.
+                if numeric_convert:
+                    def high_precision_serialize(val):
+                        return str(val)
+                # If we don't support conversion to str, convert to
+                # float. NOTE: This conversion is lossy!
+                else:
+                    def high_precision_serialize(val):
+                        return float(val)
+                # pylint: enable=function-redefined
             self.high_precision_serialize = high_precision_serialize
 
     def default(self, o):
@@ -117,31 +137,32 @@ class HighPrecisionJSONEncoder(json.JSONEncoder):
 class ValueReader(HighPrecisionOptional):
     """ Reads values from JSON-encoded files.
 
-    Relative paths are resolved relative to `forecaster/data/`, not
-    the current working directory. If you want to point to a file
-    anywhere else, use an absolute path.
+    Values read from the JSON file are stored in a `values` dict.
+    Subclasses can expose these values as attributes by providing
+    `ValueReaderAttribute` instances as class variables with the same
+    name as a key in the `values` dict. For example, setting the class
+    variable `attr = ValueReaderAttribute()` will result in calls to
+    `ValueReader(filename).attr` to return the value associated with the
+    `"attr"` key in the JSON file named by `filename` (i.e. it is
+    equivalent to calling `ValueReader(filename).values['attr']`).
+    See documentation for `ValueReaderAttribute` for more information.
+
+    Relative paths in `filename` are resolved relative to
+    `forecaster/data/`, not the current working directory.
+    If you want to point to a file anywhere else, use an absolute path.
 
     Floating-point constants are converted to high-precision types if
-    the `high_precision` argument is provided or if a `JSONDecoder`
-    that supports high-precision types.
-
-    This class provides no attributes, unless `make_attr` is set to
-    True, in which case it generates an attribute for each top-level
-    entry in the JSON file.
+    the `high_precision` argument or a `JSONDecoder` that supports
+    high-precision types are provided.
 
     Examples:
         settings = ValueReader(
             "filename.json",  # Read this file in forecaster/data
-            make_attr=True,  # Create attribute for each top-level key
             high_precision=Decimal)  # Use Decimal representation
 
     Arguments:
         filename (str): The filename of a JSON file to read.
             The file must be UTF-8 encoded. Optional.
-        make_attr (bool): If True, each top-level entry of the JSON file
-            is made an attribute of this ValueReader object, with its
-            value set to the value in the JSON file.
-            Optional. Defaults to False.
         encoder_cls (JSONEncoder): A custom JSONEncoder with an
             overloaded `default` method for serializing additional
             types. See documentation for the `cls` argument to
@@ -164,36 +185,35 @@ class ValueReader(HighPrecisionOptional):
             (int if appropriate, otherwise a high-precision type or
             float, depending on whether this instance supports
             high-precision). Optional. Defaults to True.
+        use_defaults (bool): If True, any `ValueReaderAttribute` which
+            doesn't have a value read in from file will return its
+            default value if one is provided in the class definition.
+            Optional. Defaults to True.
     """
 
     def __init__(
-            self, filename=None, make_attr=False,
-            *, encoder_cls=None, decoder_cls=None,
+            self, filename=None, *,
+            encoder_cls=None, decoder_cls=None,
             high_precision=None, high_precision_serialize=None,
-            numeric_convert=True):
+            numeric_convert=True, use_defaults=True):
         # Set up high-precision support:
         super().__init__(high_precision=high_precision)
         self.high_precision_serialize = high_precision_serialize
 
         # Set up instance attributes:
-        self.make_attr = make_attr
         self.values = {}
         self.encoder_cls = encoder_cls
         self.decoder_cls = decoder_cls
+        self.use_defaults = use_defaults
         # For convenience, let users call `read` as part of init:
         if filename is not None:
             self.read(filename, numeric_convert=numeric_convert)
 
-    # TODO: Allow this class to resolve relative paths relative to
-    # the top-level `settings` folder, rather than relative to the cwd.
-    # (Use `os` to determine a path to `settings/` relative to __file__)
-    # Consider whether this feature should be enabled by default;
-    # maybe so, but consider that an equivalent argument will be
-    # provided for `write`, and maybe we don't want to be overwriting
-    # files full of default values as default behaviour?
-
     def read(self, filename, *, numeric_convert=True):
         """ Reads in values from file "filename".
+
+        Any existing values in `self.values` are cleared - only values
+        read in from `filename` will be stored.
 
         Relative paths are resolved relative to `forecaster/data/`, not
         the current working directory. If you want to point to a file
@@ -201,7 +221,7 @@ class ValueReader(HighPrecisionOptional):
 
         Note that if `numeric_convert` is `True` then strings that are
         float-convertible will be converted to a numeric type. Keep this
-        in mind if the JSON file has keys or values with like "inf",
+        in mind if the JSON file has keys or values like "inf",
         "Infinity", or "nan", which will be converted. If this is not
         desired, set `numeric_convert` to `False` and convert manually.
 
@@ -218,10 +238,7 @@ class ValueReader(HighPrecisionOptional):
             FileNotFoundError: No such file or directory.
         """
         # Clear all existing JSON attributes from this object:
-        if self.make_attr:
-            vals = tuple(self.values.keys()) # Copy keys to allow mutation
-            for val in vals:
-                self.remove_json_attribute(val)
+        self.values.clear()
 
         # If this is a bare filename, assume it's in /data
         filename = resolve_path(filename)
@@ -240,15 +257,6 @@ class ValueReader(HighPrecisionOptional):
 
         if not isinstance(self.values, dict):
             raise TypeError('JSON file must provide dict of key: value pairs')
-
-        # Expose all values as attributes if requested:
-        if self.make_attr:
-            for (key, val) in self.values.items():
-                # Just in case we converted a top-level value to a
-                # numeric type, enforce string representation here:
-                if not isinstance(key, str):
-                    key = str(key)
-                self.add_json_attribute(key, val)
 
     def _parse_float(self, val):
         """ Parses float values (except infinite/NaN).
@@ -339,29 +347,6 @@ class ValueReader(HighPrecisionOptional):
             return self.high_precision(vals)
         # Otherwise, use float:
         return float_val
-
-    def add_json_attribute(self, name, value):
-        """ Adds a new attribute that's stored in the `values` dict:
-
-        This method wraps new attributes in the `_ValueReaderAttribute`
-        descriptor to ensure that they are added to the `values` dict.
-        """
-        # Create a descriptor for this attribute:
-        descriptor = _ValueReaderAttribute(name)
-        # Add the descriptor as an attribute:
-        self.__setattr__(name, descriptor)
-        # Now set the value of the attribute using the descriptor:
-        self.__setattr__(name, value)
-
-    def remove_json_attribute(self, name):
-        """ Removes an attribute added by `add_json_attribute`. """
-        # Call the descriptor's delete method to delete the value:
-        self.__delattr__(name)
-        # Remove the descriptor to get rid of the attribute entirely:
-        if name in self.__dict__:
-            self.__dict__.pop(name)
-
-    # TODO: Implement relative path resolution, as described above.
 
     def write(self, filename, vals=None):
         """ Writes values to a UTF-8 encoded JSON file.
