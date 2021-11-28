@@ -1157,10 +1157,7 @@ class TransactionTraversal(HighPrecisionOptional):
         if (
                 self.high_precision is not None and
                 isinstance(transaction_limit,float)):
-            # pylint: disable=not-callable
-            # `high_precision` is required to be callable.
             transaction_limit = self.high_precision(transaction_limit)
-            # pylint: enable=not-callable
         # Scale up based on the precision (as we do with all edge
         # capacities):
         capacity = transaction_limit / self.precision

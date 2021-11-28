@@ -5,7 +5,7 @@ import inspect
 import decimal
 from decimal import Decimal
 from random import Random
-from forecaster.canada import RegisteredAccount
+from forecaster.canada import RegisteredAccount, constants
 from tests.accounts.test_linked_limit import TestLinkedLimitAccountMethods
 
 class TestRegisteredAccountMethods(TestLinkedLimitAccountMethods):
@@ -14,6 +14,8 @@ class TestRegisteredAccountMethods(TestLinkedLimitAccountMethods):
     def setUp(self):
         """ Sets up variables for testing RegisteredAccount. """
         super().setUp()
+
+        self.constants = constants.ConstantsCanada()
 
         self.AccountType = RegisteredAccount
 
@@ -36,6 +38,8 @@ class TestRegisteredAccountMethods(TestLinkedLimitAccountMethods):
     def setUp_decimal(self):
         """ Sets up variables based on Decimal inputs. """
         super().setUp_decimal()
+
+        self.constants = constants.ConstantsCanada(high_precision=Decimal)
 
         self.AccountType = RegisteredAccount
 
@@ -110,17 +114,19 @@ class TestRegisteredAccountMethods(TestLinkedLimitAccountMethods):
         """ Basic init tests for RegisteredAccount. """
         super().test_init_basic(*args, **kwargs)
 
-        # The only thing that RegisteredAccount.__init__ does is set
-        # inflation_adjust, so test that:
+        # The only things that RegisteredAccount.__init__ does are set
+        # `inflation_adjust` and `constants`, so test those:
         account = self.AccountType(
             self.owner, *args,
             inflation_adjust=self.inflation_adjust,
-            contribution_room=self.contribution_room, **kwargs)
+            contribution_room=self.contribution_room,
+            constants=self.constants, **kwargs)
         self.assertEqual(account.inflation_adjust, self.inflation_adjust)
+        self.assertEqual(account.constants, self.constants)
 
     def test_init_invalid_infl_adj(self, *args, **kwargs):
         """ Test calling __init__ with invalid inflation_adjustment. """
-        # First, pass in a non-dict
+        # Pass in a non-dict
         with self.assertRaises(TypeError):
             self.AccountType(
                 self.owner, *args,

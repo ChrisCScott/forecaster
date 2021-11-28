@@ -1,39 +1,76 @@
 """ A module providing Canada-specific default values. """
 
+from forecaster.value_reader import ValueReaderAttribute as Attr
 from forecaster.settings import Settings
 
+FILENAME_DEFAULT = 'canada.settings.json'
 
 class SettingsCanada(Settings):
-    """ Container for Canada-specific variables. """
+    """ Container for Canada-specific settings.
 
-    # We use triple-quoted strings as comments to group sets of related
-    # settings. It's nice to have a format for heading-style comments
-    # that's distinct from #-prefixed comments (which we also use.)
-    # pylint: disable=pointless-string-statement
-    # Settings is really just a data container right now, but the plan
-    # is to subclass from a proper class with file-reading logic.
-    # pylint: disable=too-few-public-methods
+    See `Settings` for documation on the use of this class, including
+    its arguments.
+    
+    Objects of this class provide the same attributes as `Settings`,
+    with the addition of the attributes listed below.
 
-    """ Override transaction strategy weights for Canadian accounts. """
-    contribution_weights = {
-        'RRSP': 1, 'TFSA': 2, 'TaxableAccount': 3
-    }
-    withdrawal_weights = {
-        'RRSP': 1, 'TFSA': 2, 'SavingsAccount': 3
-    }
+    Attributes:
+        saving_weights (dict[str, float]): Defaults for this attribute
+            are overridden to
+            `{'RRSP': 2, 'TFSA': 1, 'TaxableAccount': 3}`.
+        withdrawal_weights (dict[str, float]): Defaults for this attribute
+            are overridden to
+            `{'RRSP': 1, 'TFSA': 2, 'SavingsAccount': 3}`.
+        tax_province (str): A default value for building `TaxCanada`
+            objects. Defaults to "BC".
+        resp_child_other_income (float): A default value for building
+            `TaxCanada` objects. Defaults to 0.
+        resp_start_age (int): A default value for building `TaxCanada`
+            objects. Defaults to 18.
+        resp_withdrawal_years (int): A default value for building
+            `TaxCanada` objects. Defaults to 4.
+        cpp_person1_init_tape (float): A default value for building
+            `CPP` objects for Person1. Defaults to 0.
+        cpp_person1_init_drop_periods (int): A default value for building
+            `CPP` objects for Person1. Defaults to 0.
+        cpp_person1_init_drop_tape (float): A default value for building
+            `CPP` objects for Person1. Defaults to 0.
+        cpp_person2_init_tape (float): A default value for building
+            `CPP` objects for Person2. Defaults to 0.
+        cpp_person2_init_drop_periods (int): A default value for building
+            `CPP` objects for Person2. Defaults to 0.
+        cpp_person2_init_drop_tape (float): A default value for building
+            `CPP` objects for Person2. Defaults to 0.
+    """
 
-    """ TaxCanada defaults """
-    tax_province = "BC"
+    # Override transaction strategy weights for Canadian accounts.
+    saving_weights = Attr({
+        'RRSP': 2,
+        'TFSA': 1,
+        'TaxableAccount': 3})
+    withdrawal_weights = Attr({
+        'RRSP': 1,
+        'TFSA': 2,
+        'SavingsAccount': 3})
 
-    """ RESP defaults """
-    resp_child_other_income = 0
-    resp_start_age = 18
-    resp_withdrawal_years = 4
+    # TaxCanada defaults
+    tax_province = Attr("BC")
 
-    """ CPP defaults """
-    cpp_person1_init_tape = 0
-    cpp_person1_init_drop_periods = 0
-    cpp_person1_init_drop_tape = 0
-    cpp_person2_init_tape = 0
-    cpp_person2_init_drop_periods = 0
-    cpp_person2_init_drop_tape = 0
+    # RESP defaults
+    resp_child_other_income = Attr(0)
+    resp_start_age = Attr(18)
+    resp_withdrawal_years = Attr(4)
+
+    # CPP defaults
+    cpp_person1_init_tape = Attr(0)
+    cpp_person1_init_drop_periods = Attr(0)
+    cpp_person1_init_drop_tape = Attr(0)
+    cpp_person2_init_tape = Attr(0)
+    cpp_person2_init_drop_periods = Attr(0)
+    cpp_person2_init_drop_tape = Attr(0)
+
+    def __init__(self, filename=None, **kwargs):
+        # Use the correct filename and default settings for Canada:
+        if filename is None:
+            filename = FILENAME_DEFAULT
+        super().__init__(filename=filename, **kwargs)

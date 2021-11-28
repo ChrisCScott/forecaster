@@ -630,10 +630,11 @@ class TaxMulti(object):
     """
 
     def __init__(
-            self, jurisdictions):
+            self, jurisdictions, *args, **kwargs):
         """ Initializes TaxMulti. """
         self._jurisdictions = None
         self.jurisdictions = jurisdictions
+        super().__init__(*args, **kwargs)
 
     @property
     def jurisdictions(self):

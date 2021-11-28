@@ -299,10 +299,12 @@ class TestForecaster(ForecasterTester):
 
         # Run a simple forecast with $10,000 income, $500 in annual
         # contributions, and $1000 in starting balances with no growth:
+        living_expenses_strategy = LivingExpensesStrategy(
+            strategy=LivingExpensesStrategy.strategy_const_contribution,
+            base_amount=Decimal(500), inflation_adjust=None,
+            high_precision=Decimal)
         self.forecaster = Forecaster(
-            living_expenses_strategy=LivingExpensesStrategy(
-                strategy=LivingExpensesStrategy.strategy_const_contribution,
-                base_amount=Decimal(500), inflation_adjust=None),
+            living_expenses_strategy=living_expenses_strategy,
             settings=self.settings,
             high_precision=Decimal)
         forecast = self.forecaster.run_forecast(

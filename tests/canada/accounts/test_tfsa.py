@@ -16,22 +16,24 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
         """ Sets up variables for testing TFSAs. """
         super().setUp()
         self.AccountType = TFSA
+        self.constants = constants.ConstantsCanada()
 
         # Ensure that inflation_adjustments covers the entire range of
-        # constants.TFSAAnnualAccrual
-        min_year = min(constants.TFSA_ANNUAL_ACCRUAL)
-        max_year = max(constants.TFSA_ANNUAL_ACCRUAL) + 10
+        # self.constants.TFSAAnnualAccrual
+        min_year = min(self.constants.TFSA_ANNUAL_ACCRUAL)
+        max_year = max(self.constants.TFSA_ANNUAL_ACCRUAL) + 10
         self.extend_inflation_adjustments(min_year, max_year)
 
     def setUp_decimal(self):
         """ Sets up variables for testing TFSAs. """
         super().setUp_decimal()
         self.AccountType = TFSA
+        self.constants = constants.ConstantsCanada(high_precision=Decimal)
 
         # Ensure that inflation_adjustments covers the entire range of
-        # constants.TFSAAnnualAccrual
-        min_year = min(constants.TFSA_ANNUAL_ACCRUAL)
-        max_year = max(constants.TFSA_ANNUAL_ACCRUAL) + 10
+        # TFSAAnnualAccrual
+        min_year = min(self.constants.TFSA_ANNUAL_ACCRUAL)
+        max_year = max(self.constants.TFSA_ANNUAL_ACCRUAL) + 10
         self.extend_inflation_adjustments(
             min_year, max_year, high_precision=Decimal)
 
@@ -142,19 +144,19 @@ class TestTFSAMethods(TestRegisteredAccountMethods):
         # Build a secquence of accruals covering known accruals and
         # 10 years where we'll need to estimate accruals with rounding
         accruals = {}
-        base_year = min(constants.TFSA_ANNUAL_ACCRUAL)
-        base_accrual = constants.TFSA_ANNUAL_ACCRUAL[base_year]
-        for year in range(min(constants.TFSA_ANNUAL_ACCRUAL),
-                          max(constants.TFSA_ANNUAL_ACCRUAL) + 10):
-            if year in constants.TFSA_ANNUAL_ACCRUAL:
-                accruals[year] = constants.TFSA_ANNUAL_ACCRUAL[year]
+        base_year = min(self.constants.TFSA_ANNUAL_ACCRUAL)
+        base_accrual = self.constants.TFSA_ANNUAL_ACCRUAL[base_year]
+        for year in range(min(self.constants.TFSA_ANNUAL_ACCRUAL),
+                          max(self.constants.TFSA_ANNUAL_ACCRUAL) + 10):
+            if year in self.constants.TFSA_ANNUAL_ACCRUAL:
+                accruals[year] = self.constants.TFSA_ANNUAL_ACCRUAL[year]
             else:
                 accrual = base_accrual * self.inflation_adjust(
                     base_year, year
                 )
                 accrual = round(
-                    accrual / constants.TFSA_ACCRUAL_ROUNDING_FACTOR
-                ) * constants.TFSA_ACCRUAL_ROUNDING_FACTOR
+                    accrual / self.constants.TFSA_ACCRUAL_ROUNDING_FACTOR
+                ) * self.constants.TFSA_ACCRUAL_ROUNDING_FACTOR
                 accruals[year] = accrual
         return accruals
 

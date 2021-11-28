@@ -1,8 +1,9 @@
 """ A module providing Canada-specific tax treatment. """
 
 from forecaster.tax import Tax, TaxMulti
+from forecaster.utility.precision import HighPrecisionOptional
 from forecaster.canada.accounts import RRSP
-from forecaster.canada import constants
+from forecaster.canada.constants import ConstantsCanada
 from forecaster.utility import extend_inflation_adjusted
 
 
@@ -10,16 +11,25 @@ class TaxCanadaJurisdiction(Tax):
     """ Federal or provincial tax treatment (Canada). """
 
     def __init__(
-            self, inflation_adjustments, jurisdiction='Federal'):
+            self, inflation_adjustments, jurisdiction='Federal',
+            *, high_precision=None, constants=None, **kwargs):
+        # We need to get the relevant constants to call super.__init__:
+        if constants is None:
+            self.constants = ConstantsCanada(high_precision=high_precision)
+        else:
+            self.constants = constants
+        # All the work here is done by the superclass, we just need to
+        # tell it what brackets/credits/deductions/timing to apply:
         super().__init__(
-            tax_brackets=constants.TAX_BRACKETS[jurisdiction],
-            personal_deduction=constants.TAX_PERSONAL_DEDUCTION[
+            tax_brackets=self.constants.TAX_BRACKETS[jurisdiction],
+            personal_deduction=self.constants.TAX_PERSONAL_DEDUCTION[
                 jurisdiction
             ],
-            credit_rate=constants.TAX_CREDIT_RATE[jurisdiction],
+            credit_rate=self.constants.TAX_CREDIT_RATE[jurisdiction],
             inflation_adjust=inflation_adjustments,
-            refund_timing=constants.TAX_REFUND_TIMING,
-            payment_timing=constants.TAX_PAYMENT_TIMING)
+            refund_timing=self.constants.TAX_REFUND_TIMING,
+            payment_timing=self.constants.TAX_PAYMENT_TIMING,
+            **kwargs)
 
         self.jurisdiction = jurisdiction
 
@@ -72,7 +82,7 @@ class TaxCanadaJurisdiction(Tax):
         # pension credit, so determine that (inflation-adjusted
         # amount) here:
         deduction_max = extend_inflation_adjusted(
-            constants.TAX_PENSION_CREDIT[self.jurisdiction],
+            self.constants.TAX_PENSION_CREDIT[self.jurisdiction],
             self.inflation_adjust,
             year)
         return min(pension_income, deduction_max)
@@ -104,7 +114,7 @@ class TaxCanadaJurisdiction(Tax):
 
         # Determine the maximum claimable amount:
         max_spousal_amount = extend_inflation_adjusted(
-            constants.TAX_SPOUSAL_AMOUNT[self.jurisdiction],
+            self.constants.TAX_SPOUSAL_AMOUNT[self.jurisdiction],
             self.inflation_adjust,
             year)
 
@@ -139,7 +149,7 @@ class TaxCanadaJurisdiction(Tax):
         return credit
 
 
-class TaxCanada(TaxMulti):
+class TaxCanada(TaxMulti, HighPrecisionOptional):
     """ Federal and provincial tax treatment for a Canadian resident.
 
     Attributes:
@@ -150,7 +160,7 @@ class TaxCanada(TaxMulti):
     """
 
     def __init__(
-            self, inflation_adjust, province='BC'):
+            self, inflation_adjust, province='BC', constants=None, **kwargs):
         """ Initializes TaxCanada.
 
         Args:
@@ -166,13 +176,13 @@ class TaxCanada(TaxMulti):
                 payments. See `Tax` documentation for more information.
         """
         self.federal_tax = TaxCanadaJurisdiction(
-            inflation_adjust)
+            inflation_adjust, constants=constants, **kwargs)
         self.provincial_tax = TaxCanadaJurisdiction(
-            inflation_adjust, province)
+            inflation_adjust, province, constants=constants, **kwargs)
         self.province = province
 
         jurisdictions = (self.federal_tax, self.provincial_tax)
-        super().__init__(jurisdictions)
+        super().__init__(jurisdictions, **kwargs)
 
     def __call__(
             self, income, year,

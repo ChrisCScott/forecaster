@@ -6,6 +6,7 @@ contributor and finite contribution room that grows from year to year.
 
 from forecaster.accounts import LinkedLimitAccount
 from forecaster.ledger import recorded_property
+from forecaster.canada.constants import ConstantsCanada
 from forecaster.utility import build_inflation_adjust
 
 class RegisteredAccount(LinkedLimitAccount):
@@ -13,7 +14,8 @@ class RegisteredAccount(LinkedLimitAccount):
 
     def __init__(
             self, owner, *args, contribution_room=None, contributor=None,
-            inflation_adjust=None, max_inflow_token=None, **kwargs):
+            inflation_adjust=None, max_inflow_token=None, constants=None,
+            **kwargs):
         """ Inits RegisteredAccount.
 
         See documentation for `Account` and `LinkedAccount`
@@ -54,6 +56,11 @@ class RegisteredAccount(LinkedLimitAccount):
                 If not provided then by default the max inflows of this
                 account are linked with all other accounts of the same
                 type having the same contributor.
+
+            constants (ConstantsCanada): An object providing
+                Canada-specific constants for determining account
+                behaviour as attributes (e.g. `TFSA_ANNUAL_ACCRUAL`).
+                Optional.
         """
 
         # If not provided, we assume that the contributor is the owner:
@@ -79,9 +86,12 @@ class RegisteredAccount(LinkedLimitAccount):
             *args, owner=owner, max_inflow_link=max_inflow_link,
             max_inflow_limit=max_inflow_limit, **kwargs)
 
-        # There's only one new attribute that's not handled by the
-        # superclass. Set it here:
+        # Set new attributes not handled by the superclass:
         self.inflation_adjust = build_inflation_adjust(inflation_adjust)
+        if constants is None:
+            self.constants = ConstantsCanada(high_precision=self.high_precision)
+        else:
+            self.constants = constants
 
     @property
     def contributor(self):

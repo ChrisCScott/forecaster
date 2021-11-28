@@ -99,7 +99,8 @@ HIGHPRECISIONTYPES = frozenset((
     LivingExpensesStrategy,
     TransactionStrategy,
     AllocationStrategy,
-    Tax))
+    Tax,
+    HighPrecisionOptional))
 
 class Forecaster(HighPrecisionOptional):
     """ A convenience class for building Forecasts based on settings.
@@ -357,7 +358,10 @@ class Forecaster(HighPrecisionOptional):
         if param_type is None:
             param_type = self.default_types[param_name]
         # Pass `high_precision` as a kwarg if the type supports it:
-        if param_type in HIGHPRECISIONTYPES and 'high_precision' not in kwargs:
+        is_high_precision_type = any(
+            issubclass(param_type, high_precision_type)
+            for high_precision_type in HIGHPRECISIONTYPES)
+        if is_high_precision_type and 'high_precision' not in kwargs:
             kwargs['high_precision'] = self.high_precision
         param = param_type(*args, **kwargs)
         memo[param_name] = param
@@ -420,10 +424,6 @@ class Forecaster(HighPrecisionOptional):
         # Otherwise, if this is a true float, try to convert to
         # a high-precision numerical type if appropriate:
         if self.high_precision is not None:
-            # Prefer converting directly from the original str
-            # rather than the float (which is lossy):
-            # pylint: disable=not-callable
-            # high_precision is callable.
             try:
                 return self.high_precision(explicit_attr)
             # pylint: disable=bare-except
@@ -433,7 +433,7 @@ class Forecaster(HighPrecisionOptional):
             # exceptions). So a bare except is necessary:
             except:
                 return self.high_precision(float_attr)
-            # pylint: enable=bare-except,not-callable
+            # pylint: enable=bare-except
         # Use a float value if no conversion is possible:
         return float_attr
 
