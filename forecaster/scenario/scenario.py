@@ -1,4 +1,4 @@
-""" Basic economic classes, such as `Scenario` and `Money`. """
+""" Provides a Scenario class defining returns and inflation over time. """
 
 import collections
 
