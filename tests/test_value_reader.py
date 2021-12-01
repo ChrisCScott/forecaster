@@ -5,7 +5,7 @@ import os
 import json
 from decimal import Decimal
 from forecaster.value_reader import (
-    ValueReader, ValueReaderAttribute, resolve_path)
+    ValueReader, ValueReaderAttribute, resolve_data_path)
 
 class TestValueReader(unittest.TestCase):
     """ Tests the `ValueReader` class. """
@@ -15,7 +15,7 @@ class TestValueReader(unittest.TestCase):
         if filename is None:
             filename = self.filename
         # Open file in `data` directory if it's a relative path:
-        filename = resolve_path(filename)
+        filename = resolve_data_path(filename)
         # Write to the file (creating it if it doesn't already exist):
         with open(filename, 'w', encoding="utf-8") as file:
             json.dump(
@@ -43,7 +43,7 @@ class TestValueReader(unittest.TestCase):
     def tearDown(self):
         """ Remove file created during testing. """
         # Remove the file that was added during setUp:
-        filename = resolve_path(self.filename)
+        filename = resolve_data_path(self.filename)
         os.remove(filename)
         # Other files added by tests need to be cleaned up by the tests.
 
@@ -139,7 +139,7 @@ class TestValueReader(unittest.TestCase):
         # Write the modified values to file:
         reader.write(self.filename, self.values)
         # Read them back in manually via the JSON library:
-        filename = resolve_path(self.filename)
+        filename = resolve_data_path(self.filename)
         with open(filename, 'rt', encoding='utf-8') as file:
             decoded_values = json.load(file)
         # The decoded values should be exactly the same:
@@ -157,7 +157,7 @@ class TestValueReader(unittest.TestCase):
         reader.values = self.values
         reader.write(self.filename)
         # Read them back in manually via the JSON library:
-        filename = resolve_path(self.filename)
+        filename = resolve_data_path(self.filename)
         with open(filename, 'rt', encoding='utf-8') as file:
             decoded_values = json.load(file)
         # The decoded values should be exactly the same:

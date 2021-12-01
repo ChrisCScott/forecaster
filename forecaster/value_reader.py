@@ -8,7 +8,7 @@ INFINITY = float('inf')
 DIR_PATH = os.path.dirname(__file__)
 DATA_PATH = os.path.join(DIR_PATH, "data/")
 
-def resolve_path(filename):
+def resolve_data_path(filename):
     """ Returns an absolute path to `filename`.
 
     If `filename` is a relative path, it is resolved to an absolute
@@ -241,7 +241,7 @@ class ValueReader(HighPrecisionOptional):
         self.values.clear()
 
         # If this is a bare filename, assume it's in /data
-        filename = resolve_path(filename)
+        filename = resolve_data_path(filename)
 
         # Read in JSON values to the `values` dict:
         with open(filename, "rt", encoding="utf-8") as file:
@@ -361,7 +361,7 @@ class ValueReader(HighPrecisionOptional):
         if vals is None:
             vals = self.values
 
-        filename = resolve_path(filename)
+        filename = resolve_data_path(filename)
 
         # Format output as follows:
         encoder_args = {

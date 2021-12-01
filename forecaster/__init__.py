@@ -29,7 +29,7 @@ from forecaster.forecast import (
     SavingForecast, WithdrawalForecast, TaxForecast)
 from forecaster.forecaster import Forecaster, Parameter
 from forecaster.value_reader import (
-    ValueReader, HighPrecisionJSONEncoder, resolve_path)
+    ValueReader, HighPrecisionJSONEncoder, resolve_data_path)
 from forecaster.utility import (
     timing, inflation, precision,
     Timing, transactions_from_timing)
