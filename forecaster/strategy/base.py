@@ -4,67 +4,14 @@ In particular, the modules offers a `Strategy` base class and a
 complementary `@strategy_method` decorator for use by subclasses.
 """
 
-import inspect
-from forecaster.utility.precision import HighPrecisionOptional
+from forecaster.utility import (
+    MethodRegister, registered_method_named,
+    HighPrecisionOptional)
 
-def strategy_method(key):
-    """ A decorator for strategy methods, used by Strategy subclasses
+# Rename registered_method_named for convenience when subclassing.
+strategy_method = registered_method_named
 
-    Methods decorated with this decorator will be automatically added
-    to the dict `strategies`, which is an attribute of the subclass.
-    This happens at class definition time; you need to manually register
-    strategy methods that are added dynamically.
-
-    Example::
-
-        class ExampleStrategy(Strategy):
-            @strategy_method('method key')
-            def _strategy_method(self):
-                return
-
-        ExampleStrategy.strategies['method key'] == \
-            ExampleStrategy._strategy_method
-
-    """
-    def decorator(function):
-        """ Decorator returned by strategy_method.
-
-        Adds strategy_key attribute.
-        """
-        function.strategy_key = key
-        return function
-    return decorator
-
-
-class StrategyType(type):
-    """ A metaclass for Strategy classes.
-
-    This metaclass inspects the class for any `@strategy(key)`-decorated
-    methods and generates a `strategies` dict of {key, func} pairs. This
-    `strategies` dict is then accessible from the class interface.
-
-    NOTE: One side-effect of this approach is that strategy methods are
-    collected only once, at definition time. If you want to add a
-    strategy to a class later, you'll need to manually add it to the
-    subclass's `strategies` dict.
-    TODO: Add static class methods to Strategy to register/unregister
-    strategy methods? (consider using signature `(func [, key])`)
-    """
-    def __init__(cls, *args, **kwargs):
-        # First, build the class normally...
-        super().__init__(*args, **kwargs)
-        # ... then add a `strategies` dict by looking up every attribute
-        # that has a `strategy_key` attribute of its own.
-        cls.strategies = {
-            s[1].strategy_key: s[1]
-            for s in inspect.getmembers(
-                cls, lambda x: hasattr(x, 'strategy_key')
-            )
-        }
-
-
-# pylint: disable=too-few-public-methods
-class Strategy(HighPrecisionOptional, metaclass=StrategyType):
+class Strategy(HighPrecisionOptional, MethodRegister):
     """ An abstract callable class for determining a strategy.
 
     Attributes:
@@ -86,27 +33,14 @@ class Strategy(HighPrecisionOptional, metaclass=StrategyType):
         # default value in __init__ of each subclass is recommended.
 
         super().__init__(high_precision=high_precision, **kwargs)
-
-        # If the method itself was passed, translate that into the key
-        if (
-                not isinstance(strategy, str)
-                and hasattr(strategy, 'strategy_key')):
-            strategy = strategy.strategy_key
         self.strategy = strategy
-
-        # Check types and values:
-        if not isinstance(self.strategy, str):
-            raise TypeError('Strategy: strategy must be a str')
-        if self.strategy not in type(self).strategies:
-            raise ValueError('Strategy: Unsupported strategy ' +
-                             'value: ' + self.strategy)
 
     def __call__(self, *args, **kwargs):
         """ Makes the Strategy object callable. """
         # Call the selected strategy method.
         # The method is unbound (as it's assigned at the class level) so
         # technically it's a function. We must pass `self` explicitly.
-        return type(self).strategies[self.strategy](self, *args, **kwargs)
+        return self.call_registered_method(self.strategy, *args, **kwargs)
 
     @staticmethod
     def _param_check(var, var_name, var_type=None):
