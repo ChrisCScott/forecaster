@@ -48,14 +48,18 @@ class MethodRegister:
         ```
     """
 
-    def __init_subclass__(cls):
+    def __init_subclass__(cls, **kwargs):
         """ Registers methods decorated by `registered_method`[`_named`]. """
+        super().__init_subclass__(**kwargs)
         # We could declare this attr in __init__, but then it would just
         # be attached to the instance. We need to init at class
-        # definition time, so declare it here (but avoid overwriting
-        # it if aready declared by an earlier subclass):
+        # definition time, so declare it here:
         if not hasattr(cls, 'registered_methods'):
             cls.registered_methods = {}
+         # To avoid mutating the superclass's dict, copy it here:
+        else:
+            cls.registered_methods = dict(cls.registered_methods)
+
         # Find the attributes decorated by `registered_method*`:
         for name in dir(cls):
             attr = getattr(cls, name)
