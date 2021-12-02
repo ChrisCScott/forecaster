@@ -4,7 +4,7 @@ import unittest
 import os
 import json
 from decimal import Decimal
-from forecaster.value_reader import (
+from forecaster.utility.value_reader import (
     ValueReader, ValueReaderAttribute, resolve_data_path)
 
 class TestValueReader(unittest.TestCase):
