@@ -30,5 +30,6 @@ from forecaster.forecast import (
 from forecaster.forecaster import Forecaster, Parameter
 from forecaster.utility import (
     ValueReader, ValueReaderAttribute, resolve_data_path,
+    MethodRegister, registered_method, registered_method_named,
     timing, inflation, precision,
     Timing, transactions_from_timing)
