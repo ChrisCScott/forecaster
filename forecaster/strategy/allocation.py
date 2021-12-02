@@ -156,8 +156,7 @@ class AllocationStrategy(Strategy):
             retirement_age = self.standard_retirement_age
         # The formula for `n-age` is just that (recall that
         # n=constant_strategy_target). Insert the adjustment factor too.
-        # TODO: Add high-precision numerical library compatibility. #77
-        target = (self.target - age) / 100
+        target = (self.target - age) / self.precision_convert(100)
 
         # Bonds is simply whatever isn't in equities
         return AssetAllocation(target, 1 - target, 0)
