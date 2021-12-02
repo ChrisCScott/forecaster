@@ -5,7 +5,7 @@ classes. They provide default values for aspects of the application.
 """
 
 import datetime
-from forecaster.value_reader import (
+from forecaster.utility.value_reader import (
     ValueReader, ValueReaderAttribute as Attr)
 
 INITIAL_YEAR_DEFAULT = datetime.datetime.now().year

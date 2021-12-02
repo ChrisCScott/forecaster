@@ -4,8 +4,7 @@ import csv
 import datetime
 from collections import OrderedDict
 from dateutil.parser import parse
-from forecaster.value_reader import resolve_data_path
-from forecaster.utility.precision import HighPrecisionOptional
+from forecaster.utility import resolve_data_path, HighPrecisionOptional
 
 class HistoricalReturnReader(HighPrecisionOptional):
     """ Reads historical return data from CSV files.

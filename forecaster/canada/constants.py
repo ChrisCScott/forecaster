@@ -2,7 +2,8 @@
 brackets, research data describing safe withdrawal rates, contribution
 room accrual rates, and other non-user-modifiable constants. """
 
-from forecaster.value_reader import ValueReader, ValueReaderAttribute as Attr
+from forecaster.utility.value_reader import (
+    ValueReader, ValueReaderAttribute as Attr)
 
 FILENAME_DEFAULT = 'canada.constants.json'
 

@@ -6,7 +6,7 @@ from forecaster.utility.precision import HighPrecisionOptional
 
 INFINITY = float('inf')
 DIR_PATH = os.path.dirname(__file__)
-DATA_PATH = os.path.join(DIR_PATH, "data/")
+DATA_PATH = os.path.join(DIR_PATH, "../data/")
 
 def resolve_data_path(filename):
     """ Returns an absolute path to `filename`.

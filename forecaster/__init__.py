@@ -2,7 +2,7 @@
 
 __all__ = [
     'forecaster', 'forecast', 'ledger', 'scenario', 'settings',
-    'strategy', 'tax'
+    'strategy', 'tax', 'utility'
 ]
 
 __version__ = '0.0.1'
@@ -28,8 +28,7 @@ from forecaster.forecast import (
     Forecast, SubForecast, IncomeForecast, LivingExpensesForecast,
     SavingForecast, WithdrawalForecast, TaxForecast)
 from forecaster.forecaster import Forecaster, Parameter
-from forecaster.value_reader import (
-    ValueReader, HighPrecisionJSONEncoder, resolve_data_path)
 from forecaster.utility import (
+    ValueReader, ValueReaderAttribute, resolve_data_path,
     timing, inflation, precision,
     Timing, transactions_from_timing)

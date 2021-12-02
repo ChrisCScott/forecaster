@@ -1,7 +1,6 @@
 """ A module providing Canada-specific default values. """
 
-from forecaster.value_reader import ValueReaderAttribute as Attr
-from forecaster.settings import Settings
+from forecaster.settings import Settings, Attr
 
 FILENAME_DEFAULT = 'canada.settings.json'
 
@@ -10,7 +9,7 @@ class SettingsCanada(Settings):
 
     See `Settings` for documation on the use of this class, including
     its arguments.
-    
+
     Objects of this class provide the same attributes as `Settings`,
     with the addition of the attributes listed below.
 

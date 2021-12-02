@@ -9,9 +9,10 @@ types.
 # See forecaster.__init__.py for version, author, and licensing info.
 
 __all__ = [
-    'timing', 'inflation', 'precision']
+    'timing', 'inflation', 'precision', 'value_reader']
 
-from forecaster.utility import timing, precision, inflation
+from forecaster.utility import (
+    timing, precision, inflation, value_reader)
 from forecaster.utility.timing import (
     FREQUENCY_MAPPING, WHEN_DEFAULT,
     when_conv, frequency_conv,
@@ -22,3 +23,5 @@ from forecaster.utility.inflation import (
 from forecaster.utility.precision import (
     EPSILON, HighPrecisionOptional, HighPrecisionOptionalProperty,
     HighPrecisionOptionalPropertyCached)
+from forecaster.utility.value_reader import (
+    ValueReader, ValueReaderAttribute, resolve_data_path)
