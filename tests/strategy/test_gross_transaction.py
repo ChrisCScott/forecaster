@@ -155,10 +155,9 @@ class TestLivingExpensesStrategyMethods(unittest.TestCase):
 
     def test_invalid_strategies(self):
         """ Tests invalid strategies. """
-        with self.assertRaises(ValueError):
-            _ = LivingExpensesStrategy(strategy='Not a strategy')
-        with self.assertRaises(TypeError):
-            _ = LivingExpensesStrategy(strategy=1)
+        with self.assertRaises(KeyError):
+            strategy = LivingExpensesStrategy(strategy='Not a strategy')
+            _ = strategy()
 
     def test_strategy_const_contrib(self):
         """ Test LivingExpensesStrategy.strategy_const_contribution. """

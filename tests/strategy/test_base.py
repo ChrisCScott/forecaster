@@ -3,6 +3,7 @@
 import unittest
 from forecaster import LivingExpensesStrategy
 from forecaster.strategy.base import Strategy, strategy_method
+from forecaster.utility.register import _REGISTERED_METHOD_KEY
 
 
 class TestStrategyMethods(unittest.TestCase):
@@ -28,11 +29,8 @@ class TestStrategyMethods(unittest.TestCase):
         # Test a basic initialization
         strategy = self.Subclass('Test')
 
-        # pylint: disable=no-member
-        # Pylint has trouble with Strategy; the strategies member is
-        # created at class-definition time by the StrategyType metaclass
         self.assertEqual(
-            strategy.strategies,
+            strategy.registered_methods,
             {
                 'Test': self.Subclass.test_strategy,
                 'Test2': self.Subclass.test_strategy2})
@@ -43,7 +41,7 @@ class TestStrategyMethods(unittest.TestCase):
         strategy = self.Subclass(self.Subclass.test_strategy)
 
         self.assertEqual(
-            strategy.strategies,
+            strategy.registered_methods,
             {
                 'Test': self.Subclass.test_strategy,
                 'Test2': self.Subclass.test_strategy2})
@@ -54,7 +52,7 @@ class TestStrategyMethods(unittest.TestCase):
         strategy = self.Subclass(strategy.test_strategy)
 
         self.assertEqual(
-            strategy.strategies,
+            strategy.registered_methods,
             {
                 'Test': self.Subclass.test_strategy,
                 'Test2': self.Subclass.test_strategy2})
@@ -62,38 +60,48 @@ class TestStrategyMethods(unittest.TestCase):
         self.assertEqual(strategy(2), 2)
 
         self.assertEqual(
-            strategy.strategies,
+            strategy.registered_methods,
             {
                 'Test': self.Subclass.test_strategy,
                 'Test2': self.Subclass.test_strategy2})
         self.assertEqual(strategy(), 1)
         self.assertEqual(strategy(2), 2)
 
-        # Test invalid initializations
-        with self.assertRaises(ValueError):
+        # Test invalid arguments:
+        with self.assertRaises(KeyError):
             strategy = self.Subclass('Not a strategy')
-        with self.assertRaises(TypeError):
-            strategy = self.Subclass(1)
+            _ = strategy()
 
         # Also test to ensure that regular subclasses' strategy methods
-        # are being added to `strategies`. We use ContributionStrategy
-        # for this test. It should have at least these four strategies:
+        # are being added to `registered_methods`. We use
+        # ContributionStrategy for this test. It should have at least
+        # these four strategies:
         strategies = {
-            LivingExpensesStrategy.strategy_const_contribution.strategy_key:
+            getattr(
                 LivingExpensesStrategy.strategy_const_contribution,
-            LivingExpensesStrategy.strategy_const_living_expenses.strategy_key:
+                _REGISTERED_METHOD_KEY):
+                LivingExpensesStrategy.strategy_const_contribution,
+            getattr(
                 LivingExpensesStrategy.strategy_const_living_expenses,
-            LivingExpensesStrategy.strategy_gross_percent.strategy_key:
+                _REGISTERED_METHOD_KEY):
+                LivingExpensesStrategy.strategy_const_living_expenses,
+            getattr(
                 LivingExpensesStrategy.strategy_gross_percent,
-            LivingExpensesStrategy.strategy_net_percent.strategy_key:
+                _REGISTERED_METHOD_KEY):
+                LivingExpensesStrategy.strategy_gross_percent,
+            getattr(
+                LivingExpensesStrategy.strategy_net_percent,
+                _REGISTERED_METHOD_KEY):
                 LivingExpensesStrategy.strategy_net_percent
         }
         # Unfortunately, unittest.assertDictContainsSubset is deprecated
         # so we'll have to do this the long way...
         for strategy in strategies:
-            self.assertIn(strategy, LivingExpensesStrategy.strategies.keys())
-            self.assertIn(strategies[strategy],
-                          LivingExpensesStrategy.strategies.values())
+            self.assertIn(
+                strategy, LivingExpensesStrategy.registered_methods.keys())
+            self.assertIn(
+                strategies[strategy],
+                LivingExpensesStrategy.registered_methods.values())
 
         # Finally, repeat the above with object instances instead of
         # classes. (Be careful - functions defined in class scope and
@@ -103,8 +111,8 @@ class TestStrategyMethods(unittest.TestCase):
         strategy = LivingExpensesStrategy(
             LivingExpensesStrategy.strategy_const_contribution)
         for key in strategies:
-            self.assertIn(key, strategy.strategies.keys())
-            self.assertIn(strategies[key], strategy.strategies.values())
+            self.assertIn(key, strategy.registered_methods.keys())
+            self.assertIn(strategies[key], strategy.registered_methods.values())
 
 
 if __name__ == '__main__':

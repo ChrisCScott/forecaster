@@ -27,8 +27,6 @@ class TestAllocationStrategyMethods(unittest.TestCase):
         # Test default init:
         method = AllocationStrategy.strategy_n_minus_age
         strategy = AllocationStrategy(method, 100)
-        # pylint: disable=no-member
-        self.assertEqual(strategy.strategy, method.strategy_key)
         self.assertAlmostEqual(strategy.min_equity, 0)
         self.assertAlmostEqual(strategy.max_equity, 1)
         # The default target varies depending on the strategy
@@ -61,10 +59,6 @@ class TestAllocationStrategyMethods(unittest.TestCase):
             risk_transition_period=risk_transition_period,
             adjust_for_retirement_plan=adjust_for_retirement_plan,
             high_precision=Decimal)
-        # Pylint misses this member, which is added by metaclass
-        # pylint: disable=no-member
-        self.assertEqual(strategy.strategy, method.strategy_key)
-        # pylint: enable=no-member
         self.assertEqual(strategy.min_equity, Decimal(min_equity))
         self.assertEqual(strategy.max_equity, Decimal(max_equity))
         self.assertEqual(strategy.target, Decimal(target))
@@ -76,7 +70,6 @@ class TestAllocationStrategyMethods(unittest.TestCase):
                          bool(adjust_for_retirement_plan))
 
         # Type-check:
-        self.assertIsInstance(strategy.strategy, str)
         self.assertIsInstance(strategy.min_equity, Decimal)
         self.assertIsInstance(strategy.max_equity, Decimal)
         self.assertIsInstance(strategy.target, Decimal)
@@ -86,8 +79,9 @@ class TestAllocationStrategyMethods(unittest.TestCase):
 
     def test_invalid_strategies(self):
         """ Tests that invalid strategies raise exceptions. """
-        with self.assertRaises(ValueError):
-            _ = AllocationStrategy(strategy='Not a strategy', target=1)
+        strategy = AllocationStrategy(strategy='Not a strategy', target=1)
+        with self.assertRaises(KeyError):
+            _ = strategy(1)
 
     def test_mismatched_thresholds(self):
         """ Tests mismatched min and max equity thresholds. """
