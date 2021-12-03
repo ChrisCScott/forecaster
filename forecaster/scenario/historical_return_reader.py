@@ -6,6 +6,9 @@ from collections import OrderedDict
 from dateutil.parser import parse
 from forecaster.utility import resolve_data_path, HighPrecisionOptional
 
+# Assume incomplete dates are in the first month/day:
+DATE_DEFAULT = datetime.datetime(2000, 1, 1)
+
 class HistoricalReturnReader(HighPrecisionOptional):
     """ Reads historical return data from CSV files.
 
@@ -19,10 +22,10 @@ class HistoricalReturnReader(HighPrecisionOptional):
     order shown above (e.g. the first column must be dates). Dates must
     be sequential and may be yearly, monthly, or daily.
 
-    Data in the `date` columns is converted from `str` to `date` via
-    `dateutils.parse`. Data in the 'return' column is converted to
-    `float` or to a high-precision numeric type (if `high_precision` is
-    provided.)
+    Data in the `date` columns is converted from `str` to
+    `datetime.datetime` via `dateutils.parse`. Data in the 'return'
+    column is converted to `float` or to a high-precision numeric type
+    (if `high_precision` is provided.)
 
     Every non-blank row must have no blank entries.
 
@@ -62,7 +65,9 @@ class HistoricalReturnReader(HighPrecisionOptional):
         # If it's a relative path, resolve it to the `data/` dir:
         filename = resolve_data_path(filename)
         # Read in the CSV file:
-        with open(filename, encoding='utf-8') as file:
+        # (newline='' is recommended for file objects. See:
+        # https://docs.python.org/3/library/csv.html#id3)
+        with open(filename, encoding='utf-8', newline='') as file:
             # Detect the dialect to reduce the odds of application-
             # specific incompatibilities.
             sample = file.read(1024)
@@ -72,10 +77,7 @@ class HistoricalReturnReader(HighPrecisionOptional):
             file.seek(0) # return to beginning of file for processing
             # Get ready to read in the file:
             reader = csv.DictReader(
-                file, fieldnames=('date', 'return'), dialect=dialect,
-                 # Recommended for file objects. See:
-                 # https://docs.python.org/3/library/csv.html#id3
-                newline='')
+                file, fieldnames=('date', 'return'), dialect=dialect)
             # Discard the header row, if any:
             if has_header:
                 next(reader)
@@ -83,7 +85,7 @@ class HistoricalReturnReader(HighPrecisionOptional):
             returns = {}
             for row in reader:
                 # Convert the str-encoded date to `date`:
-                date = parse(row['date'], default=datetime.date)
+                date = parse(row['date'], default=DATE_DEFAULT)
                 # Convert each non-empty entry to a numeric type:
                 if row['return']:
                     returns[date] = self._convert_entry(row['return'])
