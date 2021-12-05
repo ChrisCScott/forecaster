@@ -8,4 +8,3 @@ __all__ = [
 
 from forecaster.scenario.scenario import Scenario, InflationAdjust
 from forecaster.scenario.historical_value_reader import HistoricalValueReader
-
