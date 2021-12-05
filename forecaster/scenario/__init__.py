@@ -3,8 +3,9 @@
 # See forecaster.__init__.py for version, author, and licensing info.
 
 __all__ = [
-    'scenario', 'historical_return_reader'
+    'scenario', 'historical_value_reader'
 ]
 
 from forecaster.scenario.scenario import Scenario, InflationAdjust
-from forecaster.scenario.historical_return_reader import HistoricalReturnReader
+from forecaster.scenario.historical_value_reader import HistoricalValueReader
+
