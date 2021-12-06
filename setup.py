@@ -1,7 +1,7 @@
 """ A setuptools-based setup module. """
 
-from setuptools import setup, find_packages
 from os import path
+from setuptools import setup, find_packages
 
 here = path.abspath(path.dirname(__file__))
 
@@ -84,13 +84,13 @@ setup(
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
-        'py-moneyed>=0.7.0',
         'python-dateutil>=2.7.3',
-        'networkx>=2.3'
+        'networkx>=2.3',
+        'numpy>=1.21.4'
     ],  # Optional
 
     # List additional groups of dependencies here (e.g. development
-    # dependencies). 
+    # dependencies).
     extras_require={  # Optional
         'doc': ['sphinx'],
         'test': ['nose']
