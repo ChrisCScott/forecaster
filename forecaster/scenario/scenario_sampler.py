@@ -2,6 +2,8 @@
 
 from collections import OrderedDict
 from bisect import bisect_left
+from random import sample
+from itertools import product
 import numpy
 from dateutil.relativedelta import relativedelta
 from forecaster.scenario import Scenario, HistoricalValueReader
@@ -92,33 +94,105 @@ class ScenarioSampler(HighPrecisionOptional, MethodRegister):
         """ Yields `num_samples` `Scenario` objects using `sampler`. """
         yield self.call_registered_method(self.sampler)
 
-    @registered_method_named('k-fold')
-    def sampler_k_fold(self):
-        """ Yields `Scenario` objects via k-fold cross-validation. """
-        # TODO
-        pass
-
     @registered_method_named('walk-forward')
     def sampler_walk_forward(self):
         """ Yields `Scenario` objects via walk-forward backtests. """
-        # TODO
+        # Get annual returns for each date in the dataset:
+        stock_returns, bond_returns, other_returns, inflation_returns = (
+            self.annualize_returns_all())
+        # Find the dates that can be used as the start of a walk-forward
+        # scenario:
+        # TODO: Consider allowing wrap-around walk-forward scenarios,
+        # where we treat every start date as valid and simply wrap
+        # around to the start of the dataset when we reach the end.
+        # This would probably need to be set as a flag on __init__;
+        # consider how to handle this (receive as a kwarg, store a copy
+        # of kwargs as attrs? Abandon `MethodRegister` approach and
+        # simply provide each different sampler as a subclass with its
+        # own init args? Consider how this would impact `Settings`; but
+        # maybe this class doesn't need to have its behaviour provided
+        # by `Settings` - maybe `Forecaster` doesn't need to build it?)
+        valid_stock_starts = self._get_valid_walk_forward_starts(stock_returns)
+        valid_bond_starts = self._get_valid_walk_forward_starts(bond_returns)
+        valid_other_starts = self._get_valid_walk_forward_starts(other_returns)
+        valid_inflation_starts = self._get_valid_walk_forward_starts(
+            inflation_returns)
+        # Build a list of all possible unique combinations of indexes
+        # that can be used as the start of a walk-forward scenario,
+        # namely keys that are at least `num_years` from the end of the
+        # dataset:
+        all_scenarios = list(product(
+            valid_stock_starts, valid_bond_starts,
+            valid_other_starts, valid_inflation_starts))
+        # If we can make lots of scenarios, pick `num_samples` of them
+        # at random:
+        if len(all_scenarios) > self.num_samples:
+            scenarios = sample(all_scenarios, self.num_samples)
+        # If we can't make `num_samples` scenarios, just make all we can
+        else:
+            scenarios = all_scenarios
+        # Build the scenarios!
+        for scenario in scenarios:
+            # Get the walk-forward sequence of returns for each asset
+            # class (this is None for any classes with no data):
+            stock = self._get_walk_forward_sequence(
+                stock_returns, scenario[0])
+            bond = self._get_walk_forward_sequence(
+                bond_returns, scenario[1])
+            other = self._get_walk_forward_sequence(
+                other_returns, scenario[2])
+            inflation = self._get_walk_forward_sequence(
+                inflation_returns, scenario[3])
+            # None values are automatically ignored by _build_scenario:
+            yield self._build_scenario(stock, bond, other, inflation)
 
-        # (Consider how to handle the case where there are more possible
-        # walk-forward scenarios than `num_samples`; select
-        # `num_samples` dates at random and use those?)
+    def _get_valid_walk_forward_starts(self, returns):
+        """ Finds dates in `returns` to start a walk-forward scenario. """
+        # Only dates that are at least `num_years` away from the end
+        # of the dataset can be used to build a walk-forward scenario
+        # that is `num_years` long:
+        interval = relativedelta(years=self.default_scenario.num_years)
+        valid_starts = [
+            year for year in returns
+            if year + interval <= max(returns)]
+        # For any empty lists, populate with `None`, otherwise calling
+        # `product` with this list will return no items.
+        if not valid_starts:
+            valid_starts.append(None)
+        return valid_starts
 
-        # Consider also how to deal with covariance between asset
-        # classes. Should we use only dates that overlap across all of
-        # the non-empty/non-None sets of data? (Should this be settable
-        # by a flag?)
-        pass
+    def _get_walk_forward_sequence(self, returns, start_date):
+        """ Gets sequence of annual returns starting on `start_date` """
+        # `start_date` can be None, so handle that first:
+        if start_date is None:
+            return None
+        # Get the annualized return for `start_date` and each
+        # anniversary of that date going `num_years` into the future:
+        return [
+            self.annualize_return_from_date(
+                returns, start_date + relativedelta(years=i))
+            for i in range(self.default_scenario.num_years)]
 
     @registered_method_named('random returns')
     def sampler_random_returns(self):
         """ Yields `Scenario` objects with random returns. """
-        # TODO: Sample similarly to `sampler_constant_returns`, but get
-        # a new sample for every year.
-        pass
+        # Get annual returns for each date in the dataset:
+        stock_returns, bond_returns, other_returns, inflation_returns = (
+            self.annualize_returns_all())
+        # For each year, sample from a normal distribution with the mean
+        # and variance found in the returns data for each asset class:
+        stock_samples = []
+        bond_samples = []
+        other_samples = []
+        inflation_samples = []
+        for _ in range(self.default_scenario.num_years):
+            stock_samples.append(self._sample_return(stock_returns))
+            bond_samples.append(self._sample_return(bond_returns))
+            other_samples.append(self._sample_return(other_returns))
+            inflation_samples.append(self._sample_return(inflation_returns))
+        # Build a `Scenario` object with the sampled rates of return:
+        yield self._build_scenario(
+            stock_samples, bond_samples, other_samples, inflation_samples)
 
     @registered_method_named('constant returns')
     def sampler_constant_returns(self):
