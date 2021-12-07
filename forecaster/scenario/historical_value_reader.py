@@ -5,12 +5,12 @@ import datetime
 from collections import OrderedDict
 import dateutil
 from dateutil.parser import parse
-from forecaster.utility import resolve_data_path, HighPrecisionOptional
+from forecaster.utility import resolve_data_path, HighPrecisionHandler
 
 # Assume incomplete dates are in the first month/day:
 DATE_DEFAULT = datetime.datetime(2000, 1, 1)
 
-class HistoricalValueReader(HighPrecisionOptional):
+class HistoricalValueReader(HighPrecisionHandler):
     """ Reads historical value data from CSV files.
 
     This reads in a UTF-8 encoded CSV file with the following format:

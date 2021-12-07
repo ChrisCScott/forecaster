@@ -4,9 +4,18 @@ Used throughout the application, without any dependency on any other
 modules from this project.
 """
 
+from numbers import Real
+from typing import TypeVar
+
 EPSILON = 0.00001
 
 _HIGH_PRECISION_ATTR_NAME = 'high_precision'
+
+# A type definition for numbers which optionally use a high-precision
+# datatype, such as `Decimal`. For use with type hints throughout the
+# application.
+HighPrecisionNumber = TypeVar('HighPrecisionNumber', Real)
+HighPrecisionOptional = float | int | HighPrecisionNumber
 
 class HighPrecisionOptionalProperty(object):
     """ Descriptor for optionally high-precision numerical types.
@@ -15,7 +24,7 @@ class HighPrecisionOptionalProperty(object):
     `high_precision` attribute of type
     `Optional[Callable[[float], HighPrecisionType]]`. An easy way to
     provide this is for the class to inherit from
-    `HighPrecisionOptional`, although this is not required.
+    `HighPrecisionHandler`, although this is not required.
 
     Type-conversion occurs dynamically each time the property is read.
 
@@ -31,10 +40,10 @@ class HighPrecisionOptionalProperty(object):
         obj.property # Returns Decimal(5)
         ```
 
-        An equivalent example using `HighPrecisionOptional`:
+        An equivalent example using `HighPrecisionHandler`:
         ```
         from decimal import Decimal
-        class Example(HighPrecisionOptional):
+        class Example(HighPrecisionHandler):
             property = HighPrecisionOptionalProperty()
             def __init__(self, value, **kwargs):
                 super.__init__()
@@ -153,7 +162,7 @@ class HighPrecisionOptionalPropertyCached(HighPrecisionOptionalProperty):
         # Invalidate the cache
         self._high_precision_value_cache = None
 
-class HighPrecisionOptional(object):
+class HighPrecisionHandler(object):
     """ Supports both native and high-precision numerical types.
 
     This class is intended to be subclassed by classes which, by
@@ -178,7 +187,7 @@ class HighPrecisionOptional(object):
     Examples:
         ```
         from decimal import Decimal
-        class Example(HighPrecisionOptional):
+        class Example(HighPrecisionHandler):
             property = HighPrecisionOptionalProperty()
             def __init__(self, value, **kwargs):
                 super.__init__()

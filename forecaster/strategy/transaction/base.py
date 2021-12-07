@@ -17,7 +17,7 @@ amounts, and to which accounts.
 # A wrapper class can provide that logic for client code.
 
 from queue import SimpleQueue
-from forecaster.utility import EPSILON, add_transactions, HighPrecisionOptional
+from forecaster.utility import EPSILON, add_transactions, HighPrecisionHandler
 from forecaster.accounts.util import LIMIT_TUPLE_FIELDS
 from forecaster.strategy.transaction.util import (
     LimitTuple, transaction_default_methods, group_default_methods,
@@ -31,7 +31,7 @@ from forecaster.strategy.transaction.graph import (
     _swap_saturated, _restrict_overflow, _unrestrict_overflow)
 
 
-class TransactionTraversal(HighPrecisionOptional):
+class TransactionTraversal(HighPrecisionHandler):
     """ Determines transactions to/from accounts based on a priority.
 
     Instances of this class, when initialized, receive a

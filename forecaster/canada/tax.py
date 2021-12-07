@@ -1,7 +1,7 @@
 """ A module providing Canada-specific tax treatment. """
 
 from forecaster.tax import Tax, TaxMulti
-from forecaster.utility.precision import HighPrecisionOptional
+from forecaster.utility.precision import HighPrecisionHandler
 from forecaster.canada.accounts import RRSP
 from forecaster.canada.constants import ConstantsCanada
 from forecaster.utility import extend_inflation_adjusted
@@ -149,7 +149,7 @@ class TaxCanadaJurisdiction(Tax):
         return credit
 
 
-class TaxCanada(TaxMulti, HighPrecisionOptional):
+class TaxCanada(TaxMulti, HighPrecisionHandler):
     """ Federal and provincial tax treatment for a Canadian resident.
 
     Attributes:

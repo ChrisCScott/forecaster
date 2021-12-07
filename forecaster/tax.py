@@ -7,7 +7,7 @@ import collections
 from forecaster.person import Person
 from forecaster.utility import (
     build_inflation_adjust, nearest_year, extend_inflation_adjusted,
-    Timing, HighPrecisionOptional)
+    Timing, HighPrecisionHandler)
 
 # NOTE: Consider making this a ledger-like object that stores values
 # year-over-year. These values might include:
@@ -31,7 +31,7 @@ from forecaster.utility import (
 # (such as FedProvTuple).
 
 
-class Tax(HighPrecisionOptional):
+class Tax(HighPrecisionHandler):
     """ Determines taxes payable on taxable income.
 
     When called with a float-type first argument (i.e. as

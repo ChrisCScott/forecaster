@@ -4,7 +4,7 @@ import inspect
 from forecaster.ledger.recorded_property import (
     recorded_property, recorded_property_cached
 )
-from forecaster.utility.precision import HighPrecisionOptional
+from forecaster.utility.precision import HighPrecisionHandler
 
 class LedgerType(type):
     """ A metaclass for Ledger classes.
@@ -38,7 +38,7 @@ class LedgerType(type):
             setattr(cls, prop.history_prop_name, prop.history_property)
 
 
-class Ledger(HighPrecisionOptional, metaclass=LedgerType):
+class Ledger(HighPrecisionHandler, metaclass=LedgerType):
     """ An object with a next_year() method that tracks the curent year.
 
     This object provides the basic infrastructure not only for advancing

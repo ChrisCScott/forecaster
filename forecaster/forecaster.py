@@ -11,7 +11,7 @@ from forecaster.strategy import (
     LivingExpensesStrategy, TransactionStrategy, AllocationStrategy)
 from forecaster.scenario import Scenario
 from forecaster.settings import Settings
-from forecaster.utility.precision import HighPrecisionOptional
+from forecaster.utility.precision import HighPrecisionHandler
 
 
 # The `Forecaster` class makes frequent reference to the names of
@@ -100,9 +100,9 @@ HIGHPRECISIONTYPES = frozenset((
     TransactionStrategy,
     AllocationStrategy,
     Tax,
-    HighPrecisionOptional))
+    HighPrecisionHandler))
 
-class Forecaster(HighPrecisionOptional):
+class Forecaster(HighPrecisionHandler):
     """ A convenience class for building Forecasts based on settings.
 
     `Forecaster` takes in information for building a `Forecast`

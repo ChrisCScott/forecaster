@@ -3,7 +3,6 @@
 import unittest
 from decimal import Decimal
 from forecaster import Person
-from forecaster.utility.precision import HighPrecisionOptional
 from forecaster.canada import TaxCanada, RRSP, TaxableAccount, constants
 
 

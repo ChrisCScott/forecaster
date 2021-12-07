@@ -2,7 +2,7 @@
 
 import os
 import json
-from forecaster.utility.precision import HighPrecisionOptional
+from forecaster.utility.precision import HighPrecisionHandler
 
 INFINITY = float('inf')
 DIR_PATH = os.path.dirname(__file__)
@@ -134,7 +134,7 @@ class HighPrecisionJSONEncoder(json.JSONEncoder):
         else:
             super().default(o)
 
-class ValueReader(HighPrecisionOptional):
+class ValueReader(HighPrecisionHandler):
     """ Reads values from JSON-encoded files.
 
     Values read from the JSON file are stored in a `values` dict.

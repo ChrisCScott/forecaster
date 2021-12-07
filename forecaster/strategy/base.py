@@ -6,12 +6,12 @@ complementary `@strategy_method` decorator for use by subclasses.
 
 from forecaster.utility import (
     MethodRegister, registered_method_named,
-    HighPrecisionOptional)
+    HighPrecisionHandler)
 
 # Rename registered_method_named for convenience when subclassing.
 strategy_method = registered_method_named
 
-class Strategy(HighPrecisionOptional, MethodRegister):
+class Strategy(HighPrecisionHandler, MethodRegister):
     """ An abstract callable class for determining a strategy.
 
     Attributes:

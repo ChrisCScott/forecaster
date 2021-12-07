@@ -4,10 +4,10 @@ from forecaster.strategy.base import Strategy, strategy_method
 from forecaster.strategy.transaction import TransactionTraversal
 from forecaster.strategy.debt_payment.util import (
     avalanche_priority, snowball_priority, AVALANCHE_KEY, SNOWBALL_KEY)
-from forecaster.utility.precision import HighPrecisionOptional
+from forecaster.utility.precision import HighPrecisionHandler
 
 
-class DebtPaymentStrategy(Strategy, HighPrecisionOptional):
+class DebtPaymentStrategy(Strategy, HighPrecisionHandler):
     """ Determines payments for a group of debts.
 
     This is simply a convenient wrapper for `TransactionTraversal`.

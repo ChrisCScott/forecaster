@@ -21,7 +21,7 @@ from forecaster.utility.timing import (
 from forecaster.utility.inflation import (
     nearest_year, extend_inflation_adjusted, build_inflation_adjust)
 from forecaster.utility.precision import (
-    EPSILON, HighPrecisionOptional, HighPrecisionOptionalProperty,
+    EPSILON, HighPrecisionHandler, HighPrecisionOptionalProperty,
     HighPrecisionOptionalPropertyCached)
 from forecaster.utility.value_reader import (
     ValueReader, ValueReaderAttribute, resolve_data_path)

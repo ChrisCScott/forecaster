@@ -3,19 +3,19 @@
 import unittest
 from decimal import Decimal
 from forecaster.utility.precision import (
-    HighPrecisionOptional, HighPrecisionOptionalProperty,
+    HighPrecisionHandler, HighPrecisionOptionalProperty,
     HighPrecisionOptionalPropertyCached)
 
 # Example class with high-precision
 # pylint: disable=too-few-public-methods
-class Example(HighPrecisionOptional):
+class Example(HighPrecisionHandler):
     """ An example class with HighPrecisionProperty attributes. """
     attr = HighPrecisionOptionalProperty()
     def __init__(self, value, **kwargs):
         super().__init__(**kwargs)
         self.attr = value
 
-class ExampleCached(HighPrecisionOptional):
+class ExampleCached(HighPrecisionHandler):
     """ An example class with HighPrecisionPropertyCached attributes. """
     attr = HighPrecisionOptionalPropertyCached()
     def __init__(self, value, **kwargs):
