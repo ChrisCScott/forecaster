@@ -8,24 +8,57 @@ import numpy
 from dateutil.relativedelta import relativedelta
 from forecaster.scenario import Scenario, HistoricalValueReader
 from forecaster.utility import (
-    HighPrecisionOptional, MethodRegister, registered_method_named)
+    HighPrecisionHandler, MethodRegister, registered_method_named)
 
 DEFAULT_STOCK_FILENAME = 'msci_world.csv'
 DEFAULT_BOND_FILENAME = 'treasury_bond_1-3_years.csv'
 DEFAULT_OTHER_FILENAME = 'nareit.csv'
-DEFAULT_INFLATION_FILENAME = 'inflation.csv'
+DEFAULT_INFLATION_FILENAME = 'cpi.csv'
 DEFAULT_FILENAMES = (
     DEFAULT_STOCK_FILENAME, DEFAULT_BOND_FILENAME,
     DEFAULT_OTHER_FILENAME, DEFAULT_INFLATION_FILENAME)
 
-class ScenarioSampler(HighPrecisionOptional, MethodRegister):
+# TODO: REFACTOR!!!! Create a wrapper for HistoricalValueReader that
+# reads in multiple files (from an arbitrary-length tuple/list),
+# stores results (in tuples). Expand HistoricalValueReader to
+# provides helper functions for:
+#   1. generating annual returns over a date range
+#   2. generating annualized returns for a given date
+#   3. generating annualized returns for all dates
+#      (or dates in a set/list/tuple?)
+#   4. interpolating a value for a date within the bounds of a
+#      dataset
+#
+# Add methods to the wrapper to do this for each entry in the tuple,
+# and further add methods (or flags to wrapping methods?) to allow
+# for output to be coordinated so that only overlapping dates are
+# returned (this will help with covariance).
+#
+# Consider whether "overlapping" means:
+#   1. Each date appears in all non-empty datasets
+#   2. Each date in the first dataset that falls within the bounds
+#      of all non-empty datasets
+#   3. Each date in any dataset that falls within the bounds of all
+#      non-empty datasets.
+#
+# Revise `ScenarioSampler` to be a `MethodRegister` that reads in
+# files to get data, then passes in appropriately-processed data
+# to specific sampling classes (e.g. `ConstantScenarioSampler`,
+# `WalkForwardScenarioSampler`, `RandomScenarioSampler`), which
+# yield tuples of sampled results (via `__iter__`? `itersample`?).
+# The sampling classes don't need to know about stocks/bonds/etc.,
+# they can operate on tuples (or `numpy.array`s?) of arbitrary size,
+# but they do know that each tuple element is a dict of
+# `datetime`-`value` pairs.
+# `ScenarioSamper` processes these to build `Scenario` objects and
+# yields them via `__iter__`. Consider using a `NamedTuple` for
+# convenience in `ScenarioSampler` and casting to/from this when
+# calling a sampling class.
+
+class ScenarioSampler(HighPrecisionHandler, MethodRegister):
     """ A generator for `Scenario` objects.
 
     Arguments:
-        sampler (str, Callable[[int], Scenario]): Either a str-valued
-            key for a `registered_method_named` or a reference to such
-            a method. This method will be used to generate `Scenario`
-            objects when instances of this class are iterated over.
         num_samples (int): The maximum number of `Scenario` objects to
             generate. (Fewer samples may be generated, e.g. if the
             relevant sampler does not have sufficient data to generate
@@ -44,10 +77,6 @@ class ScenarioSampler(HighPrecisionOptional, MethodRegister):
             high-precision type (e.g. Decimal). Optional.
 
     Attributes:
-        sampler (str, Callable[[int], Scenario]): Either a str-valued
-            key for a `registered_method_named` or a reference to such
-            a method. This method will be used to generate `Scenario`
-            objects when instances of this class are iterated over.
         num_samples (int): The maximum number of `Scenario` objects to
             generate. (Fewer samples may be generated, e.g. if the
             relevant sampler does not have sufficient data to generate
@@ -56,13 +85,13 @@ class ScenarioSampler(HighPrecisionOptional, MethodRegister):
             *args tuple/list or **kwargs dict) from which a Scenario may
             be initialized.
         stocks (OrderedDict[date, float | HighPrecisionType]):
-            An ordered mapping of dates to portfolio values.
+            An ordered mapping of dates to stock values.
         bonds (OrderedDict[date, float | HighPrecisionType]):
-            An ordered mapping of dates to portfolio values.
+            An ordered mapping of dates to bond values.
         other (OrderedDict[date, float | HighPrecisionType]):
-            An ordered mapping of dates to portfolio values.
+            An ordered mapping of dates to other property values.
         inflation (OrderedDict[date, float | HighPrecisionType]):
-            An ordered mapping of dates to portfolio values.
+            An ordered mapping of dates to inflation values.
     """
 
     def __init__(
@@ -289,30 +318,214 @@ class ScenarioSampler(HighPrecisionOptional, MethodRegister):
 
     def annualize_return_from_date(self, values, date):
         """ Returns annual returns starting on `date`. """
+        # We will compare `date` to a date one year later:
         interval = relativedelta(years=1)
         end_date = date + interval
-        if end_date in values:
-            return values[end_date] / values[date]
+        # If there's no data a year out, we can't get the annual return:
         if end_date > max(values):
             return None
-        # If we don't have the portfolio value exactly one year after
-        # `date`, but we do have values before and after it, interpolate
-        # a value based on those dates:
-        return self._interpolate_value(values, date)
+        # Get the values on `date` and `end_date`, interpolating from
+        # surrounding data if necessary:
+        start_val = _interpolate_value(values, date)
+        end_val = _interpolate_value(values, end_date)
+        # Return is just the amount by which the ratio exceeds 1:
+        return end_val / start_val - 1
 
-    def _interpolate_value(self, values, date):
-        """ Determines a portfolio value on `date` based on nearby dates """
-        # Get the dates on either side of `date`:
-        dates = list(values)
-        index = bisect_left(dates, date)
-        prev_date = dates[index-1]
-        next_date = dates[index]
-        # Weight values based on how close they are to `date`:
-        days_total = (next_date - prev_date).days
-        days_prev = (date - prev_date).days
-        days_next = (next_date - date).days
-        weight_prev = self.precision_convert(days_prev / days_total)
-        weight_next = self.precision_convert(days_next / days_total)
-        # Interpolate a value on `date` based on the dates before/after:
-        return (
-            values[prev_date] * weight_prev + values[next_date] * weight_next)
+class ConstantScenarioSampler:
+    """ An iterator yielding `Scenario` objects with constant returns.
+
+    This class models a distribution for an arbitrary number of
+    variables based on historical data and generates samples from that
+    distribution. Variables are not presumed to be i.i.d.; covariance
+    is measured and used when generating samples.
+
+    Statistics determined from historical data can be selectively
+    overridden by providing `means` and `covariances` args. If only
+    some variables' statistics should be overridden, simply use `None`
+    values for non-overridden variables' values.
+
+    Arguments:
+        num_samples (int): The number of samples to generate when
+            called as an interator.
+        data (list[dict[datetime, HighPrecisionOptional]]): An array
+            of size `N` of data for each of `N` variables. The element
+            at index `i` is a dataset of date: value pairs for the `i`th
+            variable.
+        means (list[HighPrecisionOptional]): An array of mean values for
+            the variables, where the `i`th element is the mean for the
+            `i`th variable. These values will be used if provided
+            instead of mean statistics generated from `data`. (`None`
+            values are ignored.) Optional.
+        covariances (list[list[HighPrecisionOptional]]): A 2D covariance
+            matrix for the variables being sampled. These values will be
+            used if provided instead of covariance statistics generated
+            from `data`. (`None` values are ignored.) Optional.
+
+    Attributes:
+        num_samples (int): The number of samples to generate when
+            called as an interator.
+        data (list[dict[datetime, HighPrecisionOptional]]): An array
+            of size `N` of data for each of `N` variables. The element
+            at index `i` is a dataset of date: value pairs for the `i`th
+            variable.
+        means (list[HighPrecisionOptional]): An array of mean values for
+            the variables, where the `i`th element is the mean for the
+            `i`th variable.
+        covariances (list[list[HighPrecisionOptional]]): A 2D covariance
+            matrix for the variables.
+
+    Yields:
+        (list[HighPrecisionOptional]): A list of `size` elements, where
+        the `i`th element is a sampled value for the `i`th variable.
+    """
+
+    def __init__(
+            self, num_samples, data, means=None, covariances=None):
+        # Initialize member attributes:
+        self.num_samples = num_samples
+        self.data = data
+        self.means = _generate_means(data, means)
+        self.covariances = _generate_covariances(data, covariances)
+
+    def __iter__(self):
+        # Sample from the multi-variant distribution provided by
+        # non-empty members of `data`.
+        generator = numpy.random.default_rng()
+        samples = generator.multivariate_normal(
+            self.means, self.covariances, size=self.num_samples)
+        for val in samples:
+            yield list(val)
+
+def _generate_means(data, means=None):
+    """ Generates missing means for each variable in `data`.
+
+    Where `means` provides a value, that is used. Only `None` values
+    in `means` are inferred from `data`.
+    """
+    size = len(data)
+    # Use means from `data` if no means are expressly provided:
+    if means is None or not means:
+        return tuple(numpy.mean(var) for var in data)
+    # Otherwise, fill in `None` values from `means` based on `data`:
+    return tuple(
+        means[i] if means[i] is not None else numpy.mean(data[i])
+        for i in range(size))
+
+def _generate_covariances(data, covariances=None):
+    """ Generates missing covariances for each variable in `data`.
+
+    Any `None` entries will be filled in based on covariances
+    extracted from `data`. Where no data is available, covariance
+    will be set to 0.
+
+    Args:
+        data (tuple[Optional[OrderedDict[datetime,
+            HighPrecisionOptional]]]):
+            An array of date-value sequences (each in sorted order).
+        covariances (Optional[tuple[Optional[tuple[
+            Optional[HighPrecisionOptional]]]]]):
+            A two-dimensional array of (co)variance values,
+            where data[index] and variances[index] describe the same
+            variable. Optional. Each first- and second-dimensional
+            element is optional as well (e.g. `covariance[i]` or
+            `covariance[i][j]` may be `None`.)
+
+    Returns:
+        (tuple(tuple(HighPrecisionOptional))): A two-dimensional
+        array of covariance values.
+    """
+    size = len(data)
+    # First, build a two-dimensional array array where any elements
+    # not provided by `covariances` are `None`:
+    if covariances is None:
+        covariances = [None] * size # 1D aray of None values
+    if None in covariances:
+        # If no array of variances is provided for a variable,
+        # expand it to an array of None values:
+        covariances = [
+            val if val is not None else [None] * size
+            for val in covariances]
+    # Second, find the covariances of variables in `data`:
+    data_covariances = _generate_data_covariances(data)
+    # Third, replace all `None` values in `covariances` with values
+    # determined from `data` (0 if no data):
+    for i in range(size):
+        for j in range(size):
+            if covariances[i][j] is None:
+                covariances[i][j] = data_covariances[i][j]
+    return covariances
+
+def _align_data(data):
+    """ Turns dicts of date-keyed data into lists of aligned data. """
+    # TODO: Take two 1D arrays of data and align them, rather than
+    # aligning all arrays in a 2D matrix. This way, if two variables
+    # have a lot of overlapping data, that can be included in the
+    # pairwise variance for them.
+
+    # Get the date range of overlapping values:
+    data_provided = tuple(var for var in data if var is not None)
+    min_date = max(min(var for var in data_provided))
+    max_date = min(max(var for var in data_provided))
+    if min_date >= max_date:
+        return tuple() * len(data)
+    # Use the dates in the first non-None tuple, limited to dates
+    # within the range of overlapping dates:
+    dates = tuple(
+        date for date in data_provided[0]
+        if date >= min_date and date <= max_date)
+    # Get a value for each date (except for `None` variables in `data`):
+    aligned_data = tuple(
+        tuple(_interpolate_value(var, date) for date in dates)
+        if var is not None else None for var in data)
+    return aligned_data
+
+def _generate_data_covariances(data):
+    """ Generates covariances for partial datasets. """
+    # Keep track of which variables (each corresponding to an index)
+    # have data or not:
+    data_indices = tuple(i for i in range(len(data)) if data[i] is not None)
+    omitted_data_indices = tuple(
+        i for i in range(len(data)) if i not in data_indices)
+    data_provided = tuple(data[i] for i in data_indices)
+    # Align data to get a 2D array where each row corresponds to one
+    # time entry. We need this to determine covariance:
+    data_aligned = _align_data(data_provided)
+    if not data_aligned:
+        # If there's no overlapping data, fill the matrix with 0s:
+        data_cov = ((0,) * len(data_provided)) * len(data_provided)
+    else:
+        data_cov = numpy.cov(data_aligned)
+    # Expand the covariance array by inserting 0 values for the
+    # omitted variables (i.e. if variable i is omitted, insert 0
+    # for each entry in roy i and column i):
+    data_cov_expanded = numpy.array(data_cov)
+    # Expand columns first and rows after, rather than iterating
+    # over indexes once and adding both rows/columns for each index.
+    # (Interleaving in that way would mean we need to keep track of
+    # the correct size of row to insert at each step.)
+    for i in omitted_data_indices: # Expand columns first
+        for arr in data_cov_expanded:
+            numpy.insert(arr, i, None)
+    for i in omitted_data_indices: # Expand rows after:
+        numpy.insert(data_cov_expanded, i, [None] * len(data))
+    return data_cov_expanded
+
+def _interpolate_value(values, date):
+    """ Determines a portfolio value on `date` based on nearby dates """
+    # Check to see if the date is available exactly:
+    if date in values:
+        return values[date]
+    # Get the dates on either side of `date`:
+    dates = list(values)
+    index = bisect_left(dates, date)
+    prev_date = dates[index-1]
+    next_date = dates[index]
+    # Weight values based on how close they are to `date`:
+    days_total = (next_date - prev_date).days
+    days_prev = (date - prev_date).days
+    days_next = (next_date - date).days
+    weighted_prev = days_prev * values[prev_date]
+    weighted_next = days_next * values[next_date]
+    # Interpolate a value on `date` based on the dates before/after:
+    weighted_total = (weighted_next + weighted_prev) / days_total
+    return weighted_total
