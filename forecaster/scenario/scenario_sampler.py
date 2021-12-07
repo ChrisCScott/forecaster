@@ -29,27 +29,10 @@ DEFAULT_FILENAMES = (
 #   4. interpolating a value for a date within the bounds of a
 #      dataset
 #
-# Add methods to the wrapper to do this for each entry in the tuple,
-# and further add methods (or flags to wrapping methods?) to allow
-# for output to be coordinated so that only overlapping dates are
-# returned (this will help with covariance).
-#
-# Consider whether "overlapping" means:
-#   1. Each date appears in all non-empty datasets
-#   2. Each date in the first dataset that falls within the bounds
-#      of all non-empty datasets
-#   3. Each date in any dataset that falls within the bounds of all
-#      non-empty datasets.
-#
 # Revise `ScenarioSampler` to be a `MethodRegister` that reads in
 # files to get data, then passes in appropriately-processed data
-# to specific sampling classes (e.g. `ConstantScenarioSampler`,
-# `WalkForwardScenarioSampler`, `RandomScenarioSampler`), which
-# yield tuples of sampled results (via `__iter__`? `itersample`?).
-# The sampling classes don't need to know about stocks/bonds/etc.,
-# they can operate on tuples (or `numpy.array`s?) of arbitrary size,
-# but they do know that each tuple element is a dict of
-# `datetime`-`value` pairs.
+# to sampling classes (e.g. MultivariateSampler) which
+# yield tuples of sampled results (via `sample()`).
 # `ScenarioSamper` processes these to build `Scenario` objects and
 # yields them via `__iter__`. Consider using a `NamedTuple` for
 # convenience in `ScenarioSampler` and casting to/from this when
@@ -331,8 +314,8 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
         # Return is just the amount by which the ratio exceeds 1:
         return end_val / start_val - 1
 
-class ConstantScenarioSampler:
-    """ An iterator yielding `Scenario` objects with constant returns.
+class MultivariateSampler:
+    """ An iterator yielding samples objects with constant returns.
 
     This class models a distribution for an arbitrary number of
     variables based on historical data and generates samples from that
@@ -345,8 +328,6 @@ class ConstantScenarioSampler:
     values for non-overridden variables' values.
 
     Arguments:
-        num_samples (int): The number of samples to generate when
-            called as an interator.
         data (list[dict[datetime, HighPrecisionOptional]]): An array
             of size `N` of data for each of `N` variables. The element
             at index `i` is a dataset of date: value pairs for the `i`th
@@ -362,8 +343,6 @@ class ConstantScenarioSampler:
             from `data`. (`None` values are ignored.) Optional.
 
     Attributes:
-        num_samples (int): The number of samples to generate when
-            called as an interator.
         data (list[dict[datetime, HighPrecisionOptional]]): An array
             of size `N` of data for each of `N` variables. The element
             at index `i` is a dataset of date: value pairs for the `i`th
@@ -373,28 +352,36 @@ class ConstantScenarioSampler:
             `i`th variable.
         covariances (list[list[HighPrecisionOptional]]): A 2D covariance
             matrix for the variables.
-
-    Yields:
-        (list[HighPrecisionOptional]): A list of `size` elements, where
-        the `i`th element is a sampled value for the `i`th variable.
     """
 
     def __init__(
-            self, num_samples, data, means=None, covariances=None):
+            self, data, means=None, covariances=None):
         # Initialize member attributes:
-        self.num_samples = num_samples
         self.data = data
         self.means = _generate_means(data, means)
         self.covariances = _generate_covariances(data, covariances)
 
-    def __iter__(self):
-        # Sample from the multi-variant distribution provided by
-        # non-empty members of `data`.
+    def sample(self, num_samples=1):
+        """ Generates `num_samples` multivariate samples.
+
+        Arguments:
+            num_samples (int): The number of multivariate samples to
+                generate. Optional.
+
+        Returns:
+            (tuple[tuple[HighPrecisionOptional,...]]): An array of
+            `num_sample` elements, where each element is an array of
+            `N` sample values, where the `i`th sample value is a value
+            for the `i`th variable (there being `N` variables to sample
+            from).
+        """
+        # Get random values for each variable that we model, based on
+        # the means and covariances that we found in the data (or which
+        # the user provided, if they chose to do so.)
         generator = numpy.random.default_rng()
         samples = generator.multivariate_normal(
-            self.means, self.covariances, size=self.num_samples)
-        for val in samples:
-            yield list(val)
+            self.means, self.covariances, size=num_samples)
+        return tuple(samples)
 
 def _generate_means(data, means=None):
     """ Generates missing means for each variable in `data`.
@@ -434,81 +421,55 @@ def _generate_covariances(data, covariances=None):
         (tuple(tuple(HighPrecisionOptional))): A two-dimensional
         array of covariance values.
     """
-    size = len(data)
-    # First, build a two-dimensional array array where any elements
-    # not provided by `covariances` are `None`:
+    # If no `covariances` was provided, this is easy; use numpy.cov:
     if covariances is None:
-        covariances = [None] * size # 1D aray of None values
+        data_array = tuple(tuple(var.values()) for var in data)
+        return numpy.cov(data_array)
+    # Otherwise, we need to iterate over `covariances` and replace
+    # `None` values with statistics from `data`:
+    size = len(data)
     if None in covariances:
-        # If no array of variances is provided for a variable,
-        # expand it to an array of None values:
+        # If no row/col of covariances is provided for a given variable,
+        # expand it to a row/col of `None` values for later replacement:
         covariances = [
             val if val is not None else [None] * size
             for val in covariances]
-    # Second, find the covariances of variables in `data`:
-    data_covariances = _generate_data_covariances(data)
-    # Third, replace all `None` values in `covariances` with values
-    # determined from `data` (0 if no data):
+    # Iterate over the 2D covariance matrix and replace each `None`
+    # value with the pairwise covariance:
     for i in range(size):
-        for j in range(size):
-            if covariances[i][j] is None:
-                covariances[i][j] = data_covariances[i][j]
+        # Fill in the diagonal elements:
+        if covariances[i][i] is None:
+            covariances[i][i] = numpy.var(data[i].values())
+        # Fill in the non-diagonal elements:
+        for j in range(i+1, size):
+            aligned_data = _align_data(data[i], data[j])
+            # numpy.cov returns a 2x2 covariance matrix, but what we
+            # actually want is just one of the two (identical)
+            # off-diagonal entries to get the pairwise covariance:
+            covariance = numpy.cov(aligned_data)[1][0]
+            # A covariance matrix is symmetric, so we can fill in
+            # the (i,j) and (j,i) entries at the same time:
+            covariances[i][j] = covariance
+            covariances[j][i] = covariance
     return covariances
 
-def _align_data(data):
-    """ Turns dicts of date-keyed data into lists of aligned data. """
-    # TODO: Take two 1D arrays of data and align them, rather than
-    # aligning all arrays in a 2D matrix. This way, if two variables
-    # have a lot of overlapping data, that can be included in the
-    # pairwise variance for them.
-
-    # Get the date range of overlapping values:
-    data_provided = tuple(var for var in data if var is not None)
-    min_date = max(min(var for var in data_provided))
-    max_date = min(max(var for var in data_provided))
-    if min_date >= max_date:
-        return tuple() * len(data)
-    # Use the dates in the first non-None tuple, limited to dates
-    # within the range of overlapping dates:
+def _align_data(data1, data2):
+    """ Turns dicts of date-keyed data into arrays of aligned data. """
+    # Get the range of overlapping dates:
+    min_date = max(min(data1, data2))
+    max_date = min(max(data1, data2))
+    # Use the dates in the first dataset, limited to dates within the
+    # range of overlapping dates:
     dates = tuple(
-        date for date in data_provided[0]
-        if date >= min_date and date <= max_date)
-    # Get a value for each date (except for `None` variables in `data`):
-    aligned_data = tuple(
-        tuple(_interpolate_value(var, date) for date in dates)
-        if var is not None else None for var in data)
+        date for date in data1 if date >= min_date and date <= max_date)
+    # If there's not enough overlapping data, assume no covariance:
+    if len(dates) < 2:  # Need 2 vals for each var to get 2x2 covariance
+        return ((0,0), (0,0))
+    # Get a value for each date and build a 2xn array for the `n` dates:
+    aligned_data = (
+        tuple(_interpolate_value(data1, date) for date in dates),
+        tuple(_interpolate_value(data2, date) for date in dates))
     return aligned_data
-
-def _generate_data_covariances(data):
-    """ Generates covariances for partial datasets. """
-    # Keep track of which variables (each corresponding to an index)
-    # have data or not:
-    data_indices = tuple(i for i in range(len(data)) if data[i] is not None)
-    omitted_data_indices = tuple(
-        i for i in range(len(data)) if i not in data_indices)
-    data_provided = tuple(data[i] for i in data_indices)
-    # Align data to get a 2D array where each row corresponds to one
-    # time entry. We need this to determine covariance:
-    data_aligned = _align_data(data_provided)
-    if not data_aligned:
-        # If there's no overlapping data, fill the matrix with 0s:
-        data_cov = ((0,) * len(data_provided)) * len(data_provided)
-    else:
-        data_cov = numpy.cov(data_aligned)
-    # Expand the covariance array by inserting 0 values for the
-    # omitted variables (i.e. if variable i is omitted, insert 0
-    # for each entry in roy i and column i):
-    data_cov_expanded = numpy.array(data_cov)
-    # Expand columns first and rows after, rather than iterating
-    # over indexes once and adding both rows/columns for each index.
-    # (Interleaving in that way would mean we need to keep track of
-    # the correct size of row to insert at each step.)
-    for i in omitted_data_indices: # Expand columns first
-        for arr in data_cov_expanded:
-            numpy.insert(arr, i, None)
-    for i in omitted_data_indices: # Expand rows after:
-        numpy.insert(data_cov_expanded, i, [None] * len(data))
-    return data_cov_expanded
 
 def _interpolate_value(values, date):
     """ Determines a portfolio value on `date` based on nearby dates """
