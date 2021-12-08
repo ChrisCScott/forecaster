@@ -14,7 +14,7 @@ _HIGH_PRECISION_ATTR_NAME = 'high_precision'
 # A type definition for numbers which optionally use a high-precision
 # datatype, such as `Decimal`. For use with type hints throughout the
 # application.
-HighPrecisionNumber = TypeVar('HighPrecisionNumber', Real)
+HighPrecisionNumber = TypeVar('HighPrecisionNumber', int, Real)
 HighPrecisionOptional = float | int | HighPrecisionNumber
 
 class HighPrecisionOptionalProperty(object):
