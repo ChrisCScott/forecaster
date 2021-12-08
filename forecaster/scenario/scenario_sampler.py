@@ -358,22 +358,23 @@ class MultivariateSampler:
             self, data, means=None, covariances=None):
         # Initialize member attributes:
         self.data = data
-        self.means = _generate_means(data, means)
-        self.covariances = _generate_covariances(data, covariances)
+        self.means = self._generate_means(data, means)
+        self.covariances = self._generate_covariances(data, covariances)
 
-    def sample(self, num_samples=1):
+    def sample(self, num_samples=None):
         """ Generates `num_samples` multivariate samples.
 
         Arguments:
             num_samples (int): The number of multivariate samples to
-                generate. Optional.
+                generate. Optional. If omitted, a single sample is
+                generated.
 
         Returns:
-            (tuple[tuple[HighPrecisionOptional,...]]): An array of
-            `num_sample` elements, where each element is an array of
-            `N` sample values, where the `i`th sample value is a value
-            for the `i`th variable (there being `N` variables to sample
-            from).
+            (tuple[HighPrecisionOptional,...] |
+            tuple[tuple[HighPrecisionOptional,...]]): A sample of `N`
+            variables (where `N` is the size of `data`), as an N-tuple.
+            Or, if num_samples` is passed, an array of `num_samples`
+            samples.
         """
         # Get random values for each variable that we model, based on
         # the means and covariances that we found in the data (or which
@@ -383,93 +384,96 @@ class MultivariateSampler:
             self.means, self.covariances, size=num_samples)
         return tuple(samples)
 
-def _generate_means(data, means=None):
-    """ Generates missing means for each variable in `data`.
+    @staticmethod
+    def _generate_means(data, means=None):
+        """ Generates missing means for each variable in `data`.
 
-    Where `means` provides a value, that is used. Only `None` values
-    in `means` are inferred from `data`.
-    """
-    size = len(data)
-    # Use means from `data` if no means are expressly provided:
-    if means is None or not means:
-        return tuple(numpy.mean(var) for var in data)
-    # Otherwise, fill in `None` values from `means` based on `data`:
-    return tuple(
-        means[i] if means[i] is not None else numpy.mean(data[i])
-        for i in range(size))
+        Where `means` provides a value, that is used. Only `None` values
+        in `means` are inferred from `data`.
+        """
+        size = len(data)
+        # Use means from `data` if no means are expressly provided:
+        if means is None or not means:
+            return tuple(numpy.mean(var) for var in data)
+        # Otherwise, fill in `None` values from `means` based on `data`:
+        return tuple(
+            means[i] if means[i] is not None else numpy.mean(data[i])
+            for i in range(size))
 
-def _generate_covariances(data, covariances=None):
-    """ Generates missing covariances for each variable in `data`.
+    @classmethod
+    def _generate_covariances(cls, data, covariances=None):
+        """ Generates missing covariances for each variable in `data`.
 
-    Any `None` entries will be filled in based on covariances
-    extracted from `data`. Where no data is available, covariance
-    will be set to 0.
+        Any `None` entries will be filled in based on covariances
+        extracted from `data`. Where no data is available, covariance
+        will be set to 0.
 
-    Args:
-        data (tuple[Optional[OrderedDict[datetime,
-            HighPrecisionOptional]]]):
-            An array of date-value sequences (each in sorted order).
-        covariances (Optional[tuple[Optional[tuple[
-            Optional[HighPrecisionOptional]]]]]):
-            A two-dimensional array of (co)variance values,
-            where data[index] and variances[index] describe the same
-            variable. Optional. Each first- and second-dimensional
-            element is optional as well (e.g. `covariance[i]` or
-            `covariance[i][j]` may be `None`.)
+        Args:
+            data (tuple[Optional[OrderedDict[datetime,
+                HighPrecisionOptional]]]):
+                An array of date-value sequences (each in sorted order).
+            covariances (Optional[tuple[Optional[tuple[
+                Optional[HighPrecisionOptional]]]]]):
+                A two-dimensional array of (co)variance values,
+                where data[index] and variances[index] describe the same
+                variable. Optional. Each first- and second-dimensional
+                element is optional as well (e.g. `covariance[i]` or
+                `covariance[i][j]` may be `None`.)
 
-    Returns:
-        (tuple(tuple(HighPrecisionOptional))): A two-dimensional
-        array of covariance values.
-    """
-    # If no `covariances` was provided, this is easy; use numpy.cov:
-    if covariances is None:
-        data_array = tuple(tuple(var.values()) for var in data)
-        return numpy.cov(data_array)
-    # Otherwise, we need to iterate over `covariances` and replace
-    # `None` values with statistics from `data`:
-    size = len(data)
-    if None in covariances:
-        # If no row/col of covariances is provided for a given variable,
-        # expand it to a row/col of `None` values for later replacement:
-        covariances = [
-            val if val is not None else [None] * size
-            for val in covariances]
-    # Iterate over the 2D covariance matrix and replace each `None`
-    # value with the pairwise covariance:
-    for i in range(size):
-        # Fill in the diagonal elements:
-        if covariances[i][i] is None:
-            covariances[i][i] = numpy.var(data[i].values())
-        # Fill in the non-diagonal elements:
-        for j in range(i+1, size):
-            aligned_data = _align_data(data[i], data[j])
-            # numpy.cov returns a 2x2 covariance matrix, but what we
-            # actually want is just one of the two (identical)
-            # off-diagonal entries to get the pairwise covariance:
-            covariance = numpy.cov(aligned_data)[1][0]
-            # A covariance matrix is symmetric, so we can fill in
-            # the (i,j) and (j,i) entries at the same time:
-            covariances[i][j] = covariance
-            covariances[j][i] = covariance
-    return covariances
+        Returns:
+            (tuple(tuple(HighPrecisionOptional))): A two-dimensional
+            array of covariance values.
+        """
+        # If no `covariances` was provided, this is easy; use numpy.cov:
+        if covariances is None:
+            data_array = tuple(tuple(var.values()) for var in data)
+            return numpy.cov(data_array)
+        # Otherwise, we need to iterate over `covariances` and replace
+        # `None` values with statistics from `data`:
+        size = len(data)
+        if None in covariances:
+            # If no row/col of covariances is provided for a given variable,
+            # expand it to a row/col of `None` values for later replacement:
+            covariances = [
+                val if val is not None else [None] * size
+                for val in covariances]
+        # Iterate over the 2D covariance matrix and replace each `None`
+        # value with the pairwise covariance:
+        for i in range(size):
+            # Fill in the diagonal elements:
+            if covariances[i][i] is None:
+                covariances[i][i] = numpy.var(data[i].values())
+            # Fill in the non-diagonal elements:
+            for j in range(i+1, size):
+                aligned_data = cls._align_data(data[i], data[j])
+                # numpy.cov returns a 2x2 covariance matrix, but what we
+                # actually want is just one of the two (identical)
+                # off-diagonal entries to get the pairwise covariance:
+                covariance = numpy.cov(aligned_data)[1][0]
+                # A covariance matrix is symmetric, so we can fill in
+                # the (i,j) and (j,i) entries at the same time:
+                covariances[i][j] = covariance
+                covariances[j][i] = covariance
+        return covariances
 
-def _align_data(data1, data2):
-    """ Turns dicts of date-keyed data into arrays of aligned data. """
-    # Get the range of overlapping dates:
-    min_date = max(min(data1, data2))
-    max_date = min(max(data1, data2))
-    # Use the dates in the first dataset, limited to dates within the
-    # range of overlapping dates:
-    dates = tuple(
-        date for date in data1 if date >= min_date and date <= max_date)
-    # If there's not enough overlapping data, assume no covariance:
-    if len(dates) < 2:  # Need 2 vals for each var to get 2x2 covariance
-        return ((0,0), (0,0))
-    # Get a value for each date and build a 2xn array for the `n` dates:
-    aligned_data = (
-        tuple(_interpolate_value(data1, date) for date in dates),
-        tuple(_interpolate_value(data2, date) for date in dates))
-    return aligned_data
+    @staticmethod
+    def _align_data(data1, data2):
+        """ Turns dicts of date-keyed data into arrays of aligned data. """
+        # Get the range of overlapping dates:
+        min_date = max(min(data1, data2))
+        max_date = min(max(data1, data2))
+        # Use the dates in the first dataset, limited to dates within the
+        # range of overlapping dates:
+        dates = tuple(
+            date for date in data1 if date >= min_date and date <= max_date)
+        # If there's not enough overlapping data, assume no covariance:
+        if len(dates) < 2:  # Need 2 vals for each var to get 2x2 covariance
+            return ((0,0), (0,0))
+        # Get a value for each date and build a 2xn array for the `n` dates:
+        aligned_data = (
+            tuple(_interpolate_value(data1, date) for date in dates),
+            tuple(_interpolate_value(data2, date) for date in dates))
+        return aligned_data
 
 def _interpolate_value(values, date):
     """ Determines a portfolio value on `date` based on nearby dates """
