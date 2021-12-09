@@ -44,7 +44,8 @@ class MultivariateSampler:
             the variables, where the `i`th element is the mean for the
             `i`th variable.
         covariances (list[list[HighPrecisionOptional]]): A 2D covariance
-            matrix for the variables.
+            matrix for the variables. (This is calculated via
+            `numpy.cov` using `ddof=0` for compatibility.)
     """
 
     def __init__(
@@ -124,7 +125,10 @@ class MultivariateSampler:
         # If no `covariances` was provided, this is easy; use numpy.cov:
         if covariances is None:
             data_array = list(list(var.values()) for var in data)
-            covariances = numpy.cov(data_array)
+            # Use `ddof=0` to get `numpy.cov` to agree with `numpy.var`
+            # See here for more:
+            # https://stackoverflow.com/questions/21030668/why-do-numpy-cov-diagonal-elements-and-var-functions-have-different-values
+            covariances = numpy.cov(data_array, ddof=0)
             return list(list(var) for var in covariances)
         # Otherwise, we need to iterate over `covariances` and replace
         # `None` values with statistics from `data`.
@@ -144,19 +148,19 @@ class MultivariateSampler:
         for i in range(size):
             # Fill in the diagonal elements:
             if covariances[i][i] is None:
-                # It's not clear why `numpy.var` returns a different
-                # value here than `numpy.cov`. Use `numpy.cov` for
-                # consistency of results.
-                cov = numpy.cov(list(data[i].values()))
-                covariances[i][i] = numpy.ndarray.item(cov)
+                covariances[i][i] = numpy.var(list(data[i].values()))
             # Fill in the non-diagonal elements:
             for j in range(i+1, size):
                 if covariances[i][j] is None or covariances[j][i] is None:
                     aligned_data = cls._align_data(data[i], data[j])
+                    # Use `ddof=0` to get `numpy.cov` to agree with
+                    # `numpy.var`. See here for more:
+                    # https://stackoverflow.com/questions/21030668/why-do-numpy-cov-diagonal-elements-and-var-functions-have-different-values
+                    cov_matrix = numpy.cov(aligned_data, ddof=0)
                     # numpy.cov returns a 2x2 covariance matrix, but what we
                     # actually want is just one of the two (identical)
                     # off-diagonal entries to get the pairwise covariance:
-                    covariance = numpy.cov(aligned_data)[1][0]
+                    covariance = cov_matrix[1][0]
                     # A covariance matrix is symmetric, so we can fill in
                     # the (i,j) and (j,i) entries at the same time:
                     covariances[i][j] = covariance
