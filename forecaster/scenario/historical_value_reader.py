@@ -5,10 +5,12 @@ import datetime
 from collections import OrderedDict
 import dateutil
 from dateutil.parser import parse
+from forecaster.scenario.util import interpolate_value, regularize_returns
 from forecaster.utility import resolve_data_path, HighPrecisionHandler
 
 # Assume incomplete dates are in the first month/day:
 DATE_DEFAULT = datetime.datetime(2000, 1, 1)
+INTERVAL_DEFAULT = dateutil.relativedelta.relativedelta(years=1)
 
 class HistoricalValueReader(HighPrecisionHandler):
     """ Reads historical value data from CSV files.
@@ -98,6 +100,57 @@ class HistoricalValueReader(HighPrecisionHandler):
         # Convert a sequence of returns to portfolio values, if needed.
         if return_values is True:
             self.values = self._convert_return_values(self.values)
+
+    def returns(self, values=None, interval=INTERVAL_DEFAULT):
+        """ Generates return over `interval` for each date in `values`.
+
+        This is the return _following_ each date (i.e. looking forward
+        in time), assuming positive `interval`. Dates for which porfolio
+        values are not known at least `interval` into the future are not
+        included in the result.
+
+        For instance, assuming default one-year `interval`, if the
+        dataset includes portfolio values for 2000, 2001, and 2002, the
+        returned dict will include returns only for dates in 2000 and
+        2001 (but not 2002, as no portfolio values are known for 2003 or
+        later).
+
+        Args:
+            values (OrderedDict[date, float | HighPrecisionType]):
+                An ordered mapping of dates to portfolio values.
+                Optional. Defaults to `self.values`.
+            interval (dateutil.relativedelta.relativedelta): The
+                interval over which returns are to be calculated for
+                each date. Optional. Defaults to one year.
+
+        Returns:
+            (OrderedDict[date, float | HighPrecisionType]): An ordered
+                mapping of dates to percentage returns representing the
+                return for a time period of length `interval` following
+                each key date (or preceding, for negative `interval`).
+        """
+        interval_returns = OrderedDict()
+        for date in values:
+            returns = self._generate_return_from_date(
+                values, date, interval=interval)
+            if returns is not None:
+                interval_returns[date] = returns
+        return interval_returns
+
+    def _generate_return_from_date(
+            self, values, date, interval=INTERVAL_DEFAULT):
+        """ Returns return over `interval` starting on `date`. """
+        # We will compare values on `date` and on a date in the future:
+        end_date = date + interval
+        # If there's no data a year out, we can't get the annual return:
+        if end_date > max(values):
+            return None
+        # Get the values on `date` and `end_date`, interpolating from
+        # surrounding data if necessary:
+        start_val = interpolate_value(values, date)
+        end_val = interpolate_value(values, end_date)
+        # Return is just the amount by which the ratio exceeds 1:
+        return end_val / start_val - 1
 
     def _convert_entry(self, entry):
         """ Converts to str entry to a numeric type. """

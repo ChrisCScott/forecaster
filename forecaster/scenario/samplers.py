@@ -1,11 +1,11 @@
 """ Samplers for generating time-series data for Scenario objects. """
 
-from bisect import bisect_left
 from itertools import product
 import random
 from collections import OrderedDict
 from dateutil.relativedelta import relativedelta
 import numpy
+from forecaster.scenario.util import interpolate_value
 
 class MultivariateSampler:
     """ Generates samples of returns from historical data.
@@ -182,8 +182,8 @@ class MultivariateSampler:
             return ((0,0), (0,0))
         # Get a value for each date and build a 2xn array for the `n` dates:
         aligned_data = (
-            list(_interpolate_value(data1, date) for date in dates),
-            list(_interpolate_value(data2, date) for date in dates))
+            list(interpolate_value(data1, date) for date in dates),
+            list(interpolate_value(data2, date) for date in dates))
         return aligned_data
 
 class WalkForwardSampler:
@@ -268,7 +268,7 @@ class WalkForwardSampler:
         # that can be used as the start of a walk-forward scenario,
         # namely keys that are at least `num_years` from the end of the
         # dataset:
-        start_combos = list(product(valid_starts))
+        start_combos = list(product(*valid_starts))
         # If we can make lots of scenarios, pick `num_samples` of them
         # at random:
         if num_samples is not None and len(start_combos) > num_samples:
@@ -354,27 +354,7 @@ class WalkForwardSampler:
             return None
         # Get the values on `date` and `end_date`, interpolating from
         # surrounding data if necessary:
-        start_val = _interpolate_value(values, date)
-        end_val = _interpolate_value(values, end_date)
+        start_val = interpolate_value(values, date)
+        end_val = interpolate_value(values, end_date)
         # Return is just the amount by which the ratio exceeds 1:
         return end_val / start_val - 1
-
-def _interpolate_value(values, date):
-    """ Determines a portfolio value on `date` based on nearby dates """
-    # Check to see if the date is available exactly:
-    if date in values:
-        return values[date]
-    # Get the dates on either side of `date`:
-    dates = list(values)
-    index = bisect_left(dates, date)
-    prev_date = dates[index-1]
-    next_date = dates[index]
-    # Weight values based on how close they are to `date`:
-    days_total = (next_date - prev_date).days
-    days_prev = (date - prev_date).days
-    days_next = (next_date - date).days
-    weighted_prev = days_prev * values[prev_date]
-    weighted_next = days_next * values[next_date]
-    # Interpolate a value on `date` based on the dates before/after:
-    weighted_total = (weighted_next + weighted_prev) / days_total
-    return weighted_total
