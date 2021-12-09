@@ -64,7 +64,7 @@ class MultivariateSampler:
 
         Returns:
             (tuple[HighPrecisionOptional,...] |
-            tuple[tuple[HighPrecisionOptional,...]]): A sample of `N`
+            list[tuple[HighPrecisionOptional,...]]): A sample of `N`
             variables (where `N` is the size of `data`), as an N-tuple.
             Or, if num_samples` is passed, an array of `num_samples`
             samples.
@@ -75,6 +75,9 @@ class MultivariateSampler:
         generator = numpy.random.default_rng()
         samples = generator.multivariate_normal(
             self.means, self.covariances, size=num_samples)
+        # Convert numpy.array to list:
+        if num_samples is not None:
+            return list(tuple(sample) for sample in samples)
         return tuple(samples)
 
     @staticmethod
@@ -87,11 +90,11 @@ class MultivariateSampler:
         size = len(data)
         # Use means from `data` if no means are expressly provided:
         if means is None or not means:
-            return tuple(numpy.mean(tuple(var.values())) for var in data)
+            return list(numpy.mean(list(var.values())) for var in data)
         # Otherwise, fill in `None` values from `means` based on `data`:
-        return tuple(
+        return list(
             means[i] if means[i] is not None
-            else numpy.mean(tuple(data[i].values()))
+            else numpy.mean(list(data[i].values()))
             for i in range(size))
 
     @classmethod
@@ -115,58 +118,68 @@ class MultivariateSampler:
                 `covariance[i][j]` may be `None`.)
 
         Returns:
-            (tuple(tuple(HighPrecisionOptional))): A two-dimensional
+            (list(list(HighPrecisionOptional))): A two-dimensional
             array of covariance values.
         """
         # If no `covariances` was provided, this is easy; use numpy.cov:
         if covariances is None:
-            data_array = tuple(tuple(var.values()) for var in data)
-            return numpy.cov(data_array)
+            data_array = list(list(var.values()) for var in data)
+            covariances = numpy.cov(data_array)
+            return list(list(var) for var in covariances)
         # Otherwise, we need to iterate over `covariances` and replace
-        # `None` values with statistics from `data`:
-        size = len(data)
+        # `None` values with statistics from `data`.
+        size = len(data)  # Rows/cols must be this size. Use this below.
         if None in covariances:
             # If no row/col of covariances is provided for a given variable,
             # expand it to a row/col of `None` values for later replacement:
             covariances = [
                 val if val is not None else [None] * size
                 for val in covariances]
+        # We need to change entries in `covariances`. To avoid mutating
+        # the input matrix, and to ensure that we don't try to mutate a
+        # tuple or similar, convert `covariances` to a 2D list-matrix:
+        covariances = list(list(var) for var in covariances)
         # Iterate over the 2D covariance matrix and replace each `None`
         # value with the pairwise covariance:
         for i in range(size):
             # Fill in the diagonal elements:
             if covariances[i][i] is None:
-                covariances[i][i] = numpy.var(data[i].values())
+                # It's not clear why `numpy.var` returns a different
+                # value here than `numpy.cov`. Use `numpy.cov` for
+                # consistency of results.
+                cov = numpy.cov(list(data[i].values()))
+                covariances[i][i] = numpy.ndarray.item(cov)
             # Fill in the non-diagonal elements:
             for j in range(i+1, size):
-                aligned_data = cls._align_data(data[i], data[j])
-                # numpy.cov returns a 2x2 covariance matrix, but what we
-                # actually want is just one of the two (identical)
-                # off-diagonal entries to get the pairwise covariance:
-                covariance = numpy.cov(aligned_data)[1][0]
-                # A covariance matrix is symmetric, so we can fill in
-                # the (i,j) and (j,i) entries at the same time:
-                covariances[i][j] = covariance
-                covariances[j][i] = covariance
+                if covariances[i][j] is None or covariances[j][i] is None:
+                    aligned_data = cls._align_data(data[i], data[j])
+                    # numpy.cov returns a 2x2 covariance matrix, but what we
+                    # actually want is just one of the two (identical)
+                    # off-diagonal entries to get the pairwise covariance:
+                    covariance = numpy.cov(aligned_data)[1][0]
+                    # A covariance matrix is symmetric, so we can fill in
+                    # the (i,j) and (j,i) entries at the same time:
+                    covariances[i][j] = covariance
+                    covariances[j][i] = covariance
         return covariances
 
     @staticmethod
     def _align_data(data1, data2):
         """ Turns dicts of date-keyed data into arrays of aligned data. """
         # Get the range of overlapping dates:
-        min_date = max(min(data1, data2))
-        max_date = min(max(data1, data2))
+        min_date = max(min(data1), min(data2))
+        max_date = min(max(data1), max(data2))
         # Use the dates in the first dataset, limited to dates within the
         # range of overlapping dates:
-        dates = tuple(
+        dates = list(
             date for date in data1 if date >= min_date and date <= max_date)
         # If there's not enough overlapping data, assume no covariance:
         if len(dates) < 2:  # Need 2 vals for each var to get 2x2 covariance
             return ((0,0), (0,0))
         # Get a value for each date and build a 2xn array for the `n` dates:
         aligned_data = (
-            tuple(_interpolate_value(data1, date) for date in dates),
-            tuple(_interpolate_value(data2, date) for date in dates))
+            list(_interpolate_value(data1, date) for date in dates),
+            list(_interpolate_value(data2, date) for date in dates))
         return aligned_data
 
 class WalkForwardSampler:
@@ -231,7 +244,7 @@ class WalkForwardSampler:
     def sample(self, num_years, num_samples=None):
         """ Generates walk-forward time-series data. """
         # Get annual returns for each date in the dataset:
-        returns = tuple(self._generate_returns(values) for values in self.data)
+        returns = list(self._generate_returns(values) for values in self.data)
         # Find the dates that can be used as the start of a walk-forward
         # scenario:
         # TODO: Consider allowing wrap-around walk-forward scenarios,
@@ -244,7 +257,7 @@ class WalkForwardSampler:
         # own init args? Consider how this would impact `Settings`; but
         # maybe this class doesn't need to have its behaviour provided
         # by `Settings` - maybe `Forecaster` doesn't need to build it?)
-        valid_starts = tuple(
+        valid_starts = list(
             self._get_valid_walk_forward_starts(values, num_years)
             for values in self.data)
         # Build a list of all possible unique combinations of indexes
@@ -260,10 +273,10 @@ class WalkForwardSampler:
         else:
             starts = start_combos
         # Build a sequence of returns for each set of start dates:
-        samples = tuple(
+        samples = list(
             # Get the walk-forward sequence of returns for each asset
             # class (this is None for any classes with no data):
-            tuple(
+            list(
                 self._get_walk_forward_sequence(returns[i], start[i], num_years)
                 for i in range(len(start)))
             for start in starts)

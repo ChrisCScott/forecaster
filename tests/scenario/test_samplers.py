@@ -22,13 +22,13 @@ class TestMultivariateSampler(unittest.TestCase):
     def test_means(self):
         """ Test calculation of means from data input. """
         sampler = MultivariateSampler(self.data)
-        self.assertEqual(sampler.means, (1.5, 1.5))
+        self.assertEqual(sampler.means, [1.5, 1.5])
 
     def test_means_explicit(self):
         """ Test overriding mean from data by providing it explicitly. """
         # Override the mean for just the second var:
         sampler = MultivariateSampler(self.data, means=(None, 10))
-        self.assertEqual(sampler.means, (1.5, 10))
+        self.assertEqual(sampler.means, [1.5, 10])
 
     def test_covariances(self):
         """ Test calculation of covariances from data input. """
