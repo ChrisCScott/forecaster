@@ -246,10 +246,10 @@ def regularize_returns(returns, interval, start_date=None, lookahead=False):
     return regularized_returns
 
 def values_from_returns(
-        returns, interval=None, lookahead=False, *, high_precision=None):
+        returns, interval=None, start_val=100, lookahead=False):
     """ Converts returns to portfolio values.
 
-    The resulting sequence of values will start with a value of 100
+    The resulting sequence of values will start with a value of 100.
 
     Arguments:
         returns (OrderedDict[date, HighPrecisionOptional]):
@@ -258,6 +258,10 @@ def values_from_returns(
             inserting a new date at the start (or end, if `lookahead` is
             `True`) of the dataset. Optional; if not provided, this will
             be inferred from the dates of `returns`.
+        start_val (HighPrecisionOptional): The value for the first
+            date in the output. Optional; defaults to 100. Recommend
+            providing a high-precision datatype if `returns` uses
+            high-precision datatypes for values.
         lookahead (bool): If True, each return value is interpreted as
             the return experienced _after_ its key-date, and so
             interpolated values will be determined by scaling the
@@ -268,24 +272,55 @@ def values_from_returns(
         (OrderedDict[date, HighPrecisionOptional]):
             An ordered mapping of dates to percentage returns.
     """
-    # Add a new date just before the first date. Space it appropriately
-    # (e.g. one day before for daily values, one year before for annual)
-    returns_iter = iter(returns)
-    first_date = next(returns_iter)
-    second_date = next(returns_iter)
-    date_interval = dateutil.relativedelta.relativedelta(
-        second_date, first_date)
-    new_date = first_date - date_interval
+    if interval is None:
+        # Use the interval between the first two dates as the interval.
+        # This isn't perfect; we could instead calculate the interval
+        # over every adjacent pair of dates and take the mode to avoid
+        # situations where (e.g.) the first two dates are separated by
+        # a weekend. But this approach should be good enough.
+        returns_iter = iter(returns)
+        first_date = next(returns_iter)
+        second_date = next(returns_iter)
+        interval = dateutil.relativedelta.relativedelta(
+            second_date, first_date)
+    # The following logic looks fairly different if lookahead=True, so
+    # handle that via a dedicated function:
+    if lookahead:
+        return _value_from_returns_lookahead(
+            returns, interval=interval, start_val=start_val)
+    # Add a date just before the start of our dataset with $100 in value
+    start_date = min(returns) - interval
+    values = OrderedDict()
+    values[start_date] = start_val
+    # Now convert each entry of `returns` to a new portfolio value:
+    prev_date = start_date
+    for date in returns:
+        # For non-lookahead returns, the value at `date` is just the
+        # previously-recorded value adjusted by the return at `date`:
+        values[date] = values[prev_date] * (1 + returns[date])
+        prev_date = date
+    return values
+
+def _value_from_returns_lookahead(
+        returns, interval=None, start_val=100):
+    """ Alternate version of `values_from_returns` for `lookahead=True`. """
+    # For lookahead returns, need to add a date at the _end_:
+    dates = list(returns.keys())
+    new_date = max(returns) + interval
+    start_date = min(returns)
+    # Shift all of the dates we loop on one timestep into the future,
+    # since at each timestep we will look backwards:
+    dates.append(new_date)
+    dates.remove(start_date)
     # Start with $100:
     values = OrderedDict()
-    if high_precision is not None:
-        values[new_date] = high_precision(100)
-    else:
-        values[new_date] = 100
+    values[start_date] = start_val
     # Now convert each entry of `returns` to a new portfolio value:
-    prev_date = new_date
-    for (date, return_) in returns.items():
-        values[date] = values[prev_date] * (1 + return_)
+    prev_date = start_date
+    for date in dates:
+        # The value at `date` is the previous portfolio value adjusted
+        # by the _previous_ returns for lookahead returns:
+        values[date] = values[prev_date] * (1 + returns[prev_date])
         prev_date = date
     return values
 
