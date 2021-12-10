@@ -2,6 +2,12 @@
 
 from bisect import bisect_left
 from collections import OrderedDict
+import datetime
+import dateutil
+
+# Assume incomplete dates are in the first month/day:
+DATE_DEFAULT = datetime.datetime(2000, 1, 1)
+INTERVAL_DEFAULT = dateutil.relativedelta.relativedelta(years=1)
 
 def interpolate_value(values, date):
     """ Determines a portfolio value on `date` based on nearby dates.
@@ -51,7 +57,7 @@ def interpolate_value(values, date):
     weighted_total = (weighted_next + weighted_prev) / days_total
     return weighted_total
 
-def interpolate_return(returns, date, lookahead=True):
+def interpolate_return(returns, date, lookahead=False):
     """ Determines a portfolio return on `date` based on nearby dates.
 
     This method is aimed at sequences like
@@ -177,7 +183,7 @@ def accumulate_return(returns, start_date, end_date, lookahead=False):
     total_return *= interpolate_return(returns, end_date)
     return total_return
 
-def regularize_returns(returns, interval, start_date=None):
+def regularize_returns(returns, interval, start_date=None, lookahead=False):
     """ Generates a sequence of returns with regularly-spaced dates.
 
     The resulting sequence starts on `start_date` and provides a return
@@ -198,6 +204,11 @@ def regularize_returns(returns, interval, start_date=None):
             key-date and no later than the latest key-date). `date` does
             not need to be a key in `returns`.
             Optional; defaults to the first date in `returns`.
+        lookahead (bool): If True, each return value is interpreted as
+            the return experienced _after_ its key-date, and so
+            interpolated values will be determined by scaling the
+            _previous_ value (since in this case `date` falls within
+            the previous value's interval). Optional; defaults to False.
 
     Returns:
         (OrderedDict[datetime, HighPrecisionOptional]): A mapping of
@@ -230,6 +241,99 @@ def regularize_returns(returns, interval, start_date=None):
         # Note that the return for a given date is the return over the
         # _following_ time interval.
         regularized_returns[date] = accumulate_return(
-            returns, date, next_date)
+            returns, date, next_date, lookahead=lookahead)
         date = next_date
     return regularized_returns
+
+def values_from_returns(
+        returns, interval=None, lookahead=False, *, high_precision=None):
+    """ Converts returns to portfolio values.
+
+    The resulting sequence of values will start with a value of 100
+
+    Arguments:
+        returns (OrderedDict[date, HighPrecisionOptional]):
+            An ordered mapping of dates to portfolio values.
+        interval (relativedelta): The spacing of dates, used for
+            inserting a new date at the start (or end, if `lookahead` is
+            `True`) of the dataset. Optional; if not provided, this will
+            be inferred from the dates of `returns`.
+        lookahead (bool): If True, each return value is interpreted as
+            the return experienced _after_ its key-date, and so
+            interpolated values will be determined by scaling the
+            _previous_ value (since in this case `date` falls within
+            the previous value's interval). Optional; defaults to False.
+
+    Returns:
+        (OrderedDict[date, HighPrecisionOptional]):
+            An ordered mapping of dates to percentage returns.
+    """
+    # Add a new date just before the first date. Space it appropriately
+    # (e.g. one day before for daily values, one year before for annual)
+    returns_iter = iter(returns)
+    first_date = next(returns_iter)
+    second_date = next(returns_iter)
+    date_interval = dateutil.relativedelta.relativedelta(
+        second_date, first_date)
+    new_date = first_date - date_interval
+    # Start with $100:
+    values = OrderedDict()
+    if high_precision is not None:
+        values[new_date] = high_precision(100)
+    else:
+        values[new_date] = 100
+    # Now convert each entry of `returns` to a new portfolio value:
+    prev_date = new_date
+    for (date, return_) in returns.items():
+        values[date] = values[prev_date] * (1 + return_)
+        prev_date = date
+    return values
+
+def return_from_values_at_date(
+        values, date, interval=INTERVAL_DEFAULT, lookahead=False):
+    """ Determines return for `date`.
+
+    If `lookahead` is False, each return value for a given `date` is the
+    return observed over the preceding period of length `interval`. That
+    is, the return is calculated over a period _ending_ at `date`.
+    If `lookahead` is True, each return value for a given `date` is the
+    return observed over the following period of length `interval`. That
+    is, the return is calculated over a period _starting_ at `date`.
+
+    Arguments:
+        values (OrderedDict[datetime, HighPrecisionOptional]): A mapping
+            of dates to absolute values, e.g. portfolio values.
+        date (datetime): A date within the range represented by the keys
+            of `values` (i.e. no earlier than the earliest key-date and
+            no later than the latest key-date). `date` does not need to
+            be (and usually isn't) a key in `values`.
+        interval (relativedelta): The period between dates.
+        lookahead (bool): If True, each return value is interpreted as
+            the return experienced _after_ its key-date, and so
+            interpolated values will be determined by scaling the
+            _previous_ value (since in this case `date` falls within
+            the previous value's interval). Optional; defaults to False.
+
+    Returns:
+        (OrderedDict[date, HighPrecisionOptional]):
+            An ordered mapping of dates to percentage returns.
+    """
+    # Returns can be expressed either in terms of return obtained over
+    # the following period ("lookahead" returns) or the preceding period
+    # (default behaviour).
+    if lookahead:
+        start_date = date
+        end_date = date + interval
+    else:
+        start_date = date - interval
+        end_date = date
+    # If the interval in question doesn't fall within the bounds of our
+    # data, we can't calculate the return:
+    if start_date < min(values) or end_date > max(values):
+        return None
+    # Get the values on `start_date` and `end_date`, interpolating from
+    # surrounding data if necessary:
+    start_val = interpolate_value(values, start_date)
+    end_val = interpolate_value(values, end_date)
+    # Return is just the amount by which the ratio exceeds 1:
+    return end_val / start_val - 1
