@@ -2,31 +2,32 @@
 
 import csv
 from collections import OrderedDict
-from dateutil.parser import parse
+import datetime
+import dateutil
 from forecaster.scenario.util import (
-    interpolate_value, regularize_returns, INTERVAL_DEFAULT, DATE_DEFAULT,
-    values_from_returns, return_from_values_at_date)
+    regularize_returns, values_from_returns, returns_for_dates_from_values)
 from forecaster.utility import resolve_data_path, HighPrecisionHandler
+
+# Assume incomplete dates are in the first month/day:
+DATE_DEFAULT = datetime.datetime(2000, 1, 1)
+INTERVAL_ANNUAL = dateutil.relativedelta.relativedelta(years=1)
 
 class HistoricalValueReader(HighPrecisionHandler):
     """ Reads historical value data from CSV files.
 
     This reads in a UTF-8 encoded CSV file with the following format:
 
-    | Date Header | Value Header |
-    |-------------|--------------|
-    | date        | 100.0        |
+    | Date Header | Value Header | Value Header |
+    |-------------|--------------|--------------|
+    | date        | 100.0        | 100.0        |
 
-    The header row is optional and is not used. Columns must be in the
-    order shown above (e.g. the first column must be dates). Dates must
-    be sequential and may be yearly, monthly, or daily.
+    The header row is optional and is not used. The first column must be
+    dates.
 
     Data in the date column is converted from `str` to
-    `datetime.datetime` via `dateutils.parse`. Data in the value
-    column is converted to `float` or to a high-precision numeric type
+    `datetime.datetime` via `dateutils.parse`. Non-empty data in value
+    columns is converted to `float` or to a high-precision numeric type
     (if `high_precision` is provided.)
-
-    Every non-blank row must have no blank entries.
 
     Arguments:
         filename (str): The filename of a CSV file to read. The file
@@ -38,22 +39,23 @@ class HistoricalValueReader(HighPrecisionHandler):
             high-precision type (e.g. Decimal). Optional.
 
     Attributes:
-        values (OrderedDict[date, float | HighPrecisionType]):
-            An ordered mapping of dates to portfolio values.
+        values (tuple[OrderedDict[date, HighPrecisionOptional]]):
+            A sequence of ordered mappings of dates to portfolio values,
+            each element of the sequence corresponding to one (non-date)
+            column of data.
     """
 
-    def __init__(
-            self, filename=None, return_values=False, *,
-            high_precision=None):
+    def __init__(self, filename=None, returns=None, *, high_precision=None):
         # Set up high-precision support:
         super().__init__(high_precision=high_precision)
         # Declare member attributes:
-        self.values = OrderedDict()
+        self.data = None
+        self._returns_values = None
         # For convenience, allow file read on init:
         if filename is not None:
-            self.read(filename, return_values=return_values)
+            self.read(filename, returns=returns)
 
-    def read(self, filename, return_values=False):
+    def read(self, filename, returns=None):
         """ Reads in a CSV file with dates and portfolio values.
 
         See docs for `__init__` for the format of the CSV file.
@@ -72,66 +74,127 @@ class HistoricalValueReader(HighPrecisionHandler):
             has_header = sniffer.has_header(sample) # we'll use this later
             file.seek(0) # return to beginning of file for processing
             # Get ready to read in the file:
-            reader = csv.DictReader(
-                file, fieldnames=('date', 'value'), dialect=dialect)
+            reader = csv.reader(file, dialect=dialect)
             # Discard the header row, if any:
             if has_header:
                 next(reader)
             # Read the file one row at a time:
-            values = {}
+            data = []
             for row in reader:
+                row_iter = iter(row)
                 # Convert the str-encoded date to `date`:
-                date = parse(row['date'], default=DATE_DEFAULT)
-                # Convert each non-empty entry to a numeric type:
-                if row['value']:
-                    values[date] = self._convert_entry(row['value'])
+                date = dateutil.parser.parse(
+                    next(row_iter), default=DATE_DEFAULT)
+                # Process each non-date entry for the row:
+                for (i, entry) in enumerate(row_iter):
+                    # Skip empty values:
+                    if not entry:
+                        continue
+                    # We don't know how many columns are in the data
+                    # in advance, so add them dynamically:
+                    while len(data) <= i:
+                        data.append({})
+                    data[i][date] = self._convert_entry(entry)
         # Sort by date to make it easier to build rolling-window
-        # scenarios, and to convert to percentages:
-        self.values = OrderedDict(sorted(values.items()))
-        # Convert a sequence of returns to portfolio values, if needed.
-        if return_values is True:
-            self.values = values_from_returns(self.values)
+        # scenarios:
+        self.data = tuple(
+            OrderedDict(sorted(column.items())) for column in data)
+        # Find out if we're reading returns (vs. portfolio values) and
+        # store that information for later processing:
+        if returns is None and data:  # Don't try for empty dataset
+            returns = self._infer_returns(data[0])
+        self._returns_values = returns
 
-    def to_returns(
-            self, values=None, interval=INTERVAL_DEFAULT, lookahead=False):
-        """ Generates return over `interval` for each date in `values`.
+    def returns(self, convert=None):
+        """ Returns `data` as a dict of returns values. """
+        # Convert data if the user hasn't hinted that we're reading in
+        # returns-formatted values:
+        if convert is None:
+            convert = not self._returns_values
+        if convert:
+            return tuple(
+                returns_for_dates_from_values(column) for column in self.data)
+        return self.data
 
-        This is the return _following_ each date (i.e. looking forward
-        in time), assuming positive `interval`. Dates for which porfolio
-        values are not known at least `interval` into the future are not
-        included in the result.
+    def values(self, convert=None):
+        """ Returns `data` as a dict of portfolio values. """
+        # Convert data if the user has hinted that we're reading in
+        # returns-formatted values:
+        if convert is None:
+            convert = self._returns_values
+        if convert:
+            return tuple(values_from_returns(column) for column in self.data)
+        return self.data
 
-        For instance, assuming default one-year `interval`, if the
-        dataset includes portfolio values for 2000, 2001, and 2002, the
-        returned dict will include returns only for dates in 2000 and
-        2001 (but not 2002, as no portfolio values are known for 2003 or
-        later).
+    def annualized_returns(self, convert=None, start_date=None):
+        """ Returns `data` as a dict of annual returns values.
 
-        Args:
-            values (OrderedDict[date, float | HighPrecisionType]):
-                An ordered mapping of dates to portfolio values.
-                Optional. Defaults to `self.values`.
-            interval (dateutil.relativedelta.relativedelta): The
-                interval over which returns are to be calculated for
-                each date. Optional. Defaults to one year.
+        The returns values start on `start_date` or, if that is not
+        provided, on the first date in `self.data`. Dates are spaced
+        one year apart.
+
+        Arguments:
+            convert (Optional[bool]): If `True`, columns of `self.data`
+                are treated as containing portfolio values, which must
+                be converted to returns. Optional. If not provided,
+                the instance's default behaviour will be used.
+        """
+        # Convert data if the user hasn't hinted that we're reading in
+        # returns-formatted values:
+        if convert is None:
+            convert = not self._returns_values
+        if convert:
+            # Generate
+            return tuple(
+                regularize_returns(
+                    column, INTERVAL_ANNUAL, start_date=start_date)
+                for column in self.data)
+        return self.data
+
+    def returns_samples(self, convert=None, interval=INTERVAL_ANNUAL):
+        """ Returns the return over `interval` for each date.
+
+        The result of this method is _not_ a sequence of returns that
+        can be converted to a sequence of portfolio values. The dates
+        in the returned data are the same as in `self.data`, but each
+        return value is the return over `interval` for the given date.
+
+        So, for example, if you have a sequence of two years of daily
+        datapoints and provide an interval of one year (the default),
+        the resulting dict will have ~365 date-keys mapping to 365
+        values representing the return from that date over the following
+        year. This is useful for samplers, but dangerous to call
+        `values_from_returns` on.
+        """
+
+    @staticmethod
+    def _infer_returns(values):
+        """ Infers whether `values` is likely a sequence of returns.
+
+        `values` is presumed to be returns-values if:
+            - Any value in `values` is negative
+            - More than half of the non-zero values in `values` are
+              less than 1.
+        Otherwise, `values` is presumed to represent portfolio values.
 
         Returns:
-            (OrderedDict[date, float | HighPrecisionType]): An ordered
-                mapping of dates to percentage returns representing the
-                return for a time period of length `interval` following
-                each key date (or preceding, for negative `interval`).
+            (bool): `True` if `values` is inferred to be a sequence of
+            returns, `False` otherwise.
         """
-        interval_returns = OrderedDict()
-        for date in values:
-            returns = return_from_values_at_date(
-                values, date, interval=interval)
-            if returns is not None:
-                interval_returns[date] = returns
-        return interval_returns
+        # Check for negative values, infer returns if any are found:
+        if any(val < 0 for val in values.values()):
+            return True
+        # Find the proportion of values that look like percentages
+        # (i.e. < 1), infer returns if >50% do look like percentages:
+        non_zero_values = tuple(val for val in values.values() if val != 0)
+        num_small = sum(1 for val in non_zero_values if val < 1)
+        if num_small / len(non_zero_values) > 0.5:
+            return True
+        # Otherwise, infer that these are portfolio values, not returns:
+        return False
 
     def _convert_entry(self, entry):
         """ Converts to str entry to a numeric type. """
         if self.high_precision is not None:
             return self.high_precision(entry)
-        else:
-            return float(entry)
+        return float(entry)

@@ -38,6 +38,12 @@ DEFAULT_FILENAMES = ReturnsTuple(
 class ScenarioSampler(HighPrecisionHandler, MethodRegister):
     """ A generator for `Scenario` objects.
 
+    Data can be read from one or more CSV files to provide material for
+    sampling. See documentation for `read_data` for more on this.
+
+    If you don't want to read from a file, pass `filenames=None` and
+    set the `data` attribute manually after init.
+
     Arguments:
         num_samples (int): The maximum number of `Scenario` objects to
             generate. (Fewer samples may be generated, e.g. if the
@@ -46,11 +52,10 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
         default_scenario (Scenario | tuple | list | dict): A `Scenario`
             object, or args (as *args tuple/list or **kwargs dict) from
             which a Scenario may be initialized.
-        filenames (tuple[str | None, str | None, str | None , str | None]):
-            Filenames for CSV files providing stock returns, bond
-            returns, other property returns, and inflation, in that
-            order. `None` values will not be read; if the tuple is
-            shorter than expected, omitted values are treated as `None`.
+        filenames (list[str] | None): Filenames for CSV files providing
+            historical portfolio returns and/or portfolio values.
+            Optional; defaults to `DEFAULT_FILENAMES`. If None, no files
+            are read.
         high_precision (Callable[[float], HighPrecisionType]): A
             callable object, such as a method or class, which takes a
             single `float` argument and returns a value in a
@@ -64,39 +69,57 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
         default_scenario (Scenario): A `Scenario` object, or args (as
             *args tuple/list or **kwargs dict) from which a Scenario may
             be initialized.
-        stocks (OrderedDict[date, float | HighPrecisionType]):
-            An ordered mapping of dates to stock values.
-        bonds (OrderedDict[date, float | HighPrecisionType]):
-            An ordered mapping of dates to bond values.
-        other (OrderedDict[date, float | HighPrecisionType]):
-            An ordered mapping of dates to other property values.
-        inflation (OrderedDict[date, float | HighPrecisionType]):
-            An ordered mapping of dates to inflation values.
+        data (ReturnsTuple[OrderedDict[date, HighPrecisionOptional]]):
+            A sequence of ordered mappings of dates to returns.
     """
 
     def __init__(
             self, sampler, num_samples, default_scenario,
-            filenames=DEFAULT_FILENAMES, *, high_precision=None, **kwargs):
+            filenames=DEFAULT_FILENAMES,
+            *, returns=None, high_precision=None, **kwargs):
         super().__init__(high_precision=high_precision, **kwargs)
-        if not isinstance(filenames, ReturnsTuple):
-            filenames = ReturnsTuple(*filenames)
         # Declare instance variables:
         self.sampler = sampler
         self.num_samples = num_samples
         self.default_scenario = default_scenario
-        self.filenames = filenames
-        # Read in historical return/inflation data from CSV files:
-        # (`None` filenames will produce an empty dict)
-        # TODO: Convert values to percentage returns by moving
-        # _generate_returns out of `WalkForwardSampler` and into
-        # HistoricalValueReader
-        self.data = ReturnsTuple(*(HistoricalValueReader(
-            filename, high_precision=high_precision).values
-            for filename in self.filenames))
+        if filenames is not None:
+            self.data = self.read_data(filenames, returns=returns)
 
     def __iter__(self):
         """ Yields `num_samples` `Scenario` objects using `sampler`. """
         yield self.call_registered_method(self.sampler)
+
+    def read_data(self, filenames, returns=None):
+        """ Reads data from `filenames` and merges results.
+
+        Each file in `filenames` may provide any number of data columns,
+        which are ingested in sequence (preserving order within and
+        between files). The total number of data columns across all
+        files must match the number of fields on `ReturnsTuple`.
+
+        For instance, if `file1.csv` provides columns for stocks and
+        bonds (in that order) and `file2.csv` provides data for other
+        and inflation (in that order), then passing
+        `filenames=['file1.csv','file2.csv']` will result in the `data`
+        attribute having four columns, in the order (stocks, bonds,
+        other, inflation). Reversing this (i.e. passing
+        `filenames=['file2.csv','file1.csv']`) would result in the order
+        (other, inflation, stocks, bonds), which may not be desired, so
+        be careful about order of files and also ordering of columns
+        within files.
+
+        Returns:
+            (ReturnsTuple[OrderedDict[date, HighPrecisionOptional]])
+        """
+        # Read in historical return/inflation data from CSV files:
+        returns_tuples = tuple(
+            HistoricalValueReader(
+                filename, returns=returns, high_precision=self.high_precision
+            ).returns()
+            for filename in filenames)
+        # The above produces a tuple where each element is another tuple
+        # of one or more columns. Reduce this to a tuple of columns:
+        return ReturnsTuple(sum(returns_tuples, ()))
 
     @registered_method_named('walk-forward')
     def sampler_walk_forward(self):
