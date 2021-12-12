@@ -97,9 +97,34 @@ class TestWalkForwardSampler(unittest.TestCase):
         self.data = (self.data_x, self.data_y)
 
     def test_sample_basic(self):
-        """ Tests a basic walk-forward sample: """
+        """ Tests a basic walk-forward sample. """
+        # Get a 2-year walk-forward sequence:
         sampler = WalkForwardSampler(self.data)
-        self.assertEqual(sampler.sample(2), [[1, 1], [-0.5, -0.5]])
+        sample = sampler.sample(2)
+        sample1, sample2 = sample  # separate sampled vars
+        # No matter the sequence, the first variable should double and
+        # the second variable should halve year-over-year.
+        sample1_growth = sample1[1] / sample1[0]
+        sample2_growth = sample2[1] / sample2[0]
+        self.assertEqual(sample1_growth, 2)
+        self.assertEqual(sample2_growth, 0.5)
+
+    def test_sample_synchronize(self):
+        """ Tests a walk-forward sample with synchronized dates. """
+        # Get 100 one-year walk-forward sequences
+        # (Use the the same data for each variable to simply asserts):
+        sampler = WalkForwardSampler(
+            (self.data_x, self.data_x), synchronize=True)
+        sample = sampler.sample(1, 100)
+        # We should have the same values for each variable, since we're
+        # requiring use of the same start dates:
+        for val1, val2 in sample:
+            self.assertEqual(val1, val2)
+
+    def test_sample_wrap_data(self):
+        """ Tests a walk-forward sample with wrapped data. """
+        # TODO
+        pass
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(

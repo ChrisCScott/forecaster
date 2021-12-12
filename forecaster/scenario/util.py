@@ -178,26 +178,21 @@ def accumulate_return(returns, start_date, end_date, lookahead=False):
     total_return *= interpolate_return(returns, end_date)
     return total_return
 
-def regularize_returns(returns, interval, start_date=None, lookahead=False):
+def regularize_returns(returns, interval, date=None, lookahead=False):
     """ Generates a sequence of returns with regularly-spaced dates.
 
-    The resulting sequence starts on `start_date` and provides a return
-    value for each date some number of (integer) `interval`s into the
-    future.
-
-    Note that the return for a given date is the return over the
-    _following_ time period of length `interval`. So for a one-year
-    interval starting on 2000-01-01, the value for 2000-01-01 would be
-    the total return between 2000-01-01 and 2001-01-01.
+    The resulting sequence contains only dates which are spaced apart
+    from `date` by an integer number of `interval`. So, for example,
+    if `interval` is `relativedelta(years=1)` then the resulting
+    sequence will contain annualized returns for each year for which
+    there is data (on the same month and day as `date`).
 
     Arguments:
         returns (OrderedDict[datetime, HighPrecisionOptional]): A
             mapping of dates to relative values, e.g. rates of return.
         interval (timedelta | relativedelta): The period between dates.
-        start_date (datetime): A date within the range represented by
-            the keys of `returns` (i.e. no earlier than the earliest
-            key-date and no later than the latest key-date). `date` does
-            not need to be a key in `returns`.
+        date (datetime): The date from which all other dates in the
+            resulting sequence are calculated.
             Optional; defaults to the first date in `returns`.
         lookahead (bool): If True, each return value is interpreted as
             the return experienced _after_ its key-date, and so
@@ -219,25 +214,28 @@ def regularize_returns(returns, interval, start_date=None, lookahead=False):
     last_date = max(returns)
     # Start with the first date in the dataset if no starting date is
     # provided:
-    if start_date is None:
+    if date is None:
         date = first_date
-    else:
-        date = start_date
-    # Allow start dates earlier than `lower_bound` for convenience,
-    # to make it easier for client code to align several datasets
-    # covering different date ranges:
+    # We want `date` to be as close to `first_date` as possible.
+    # Deal with dates past `first_date` by backing up to `first_date` or
+    # just before:
+    while date > first_date:
+        date = date - interval
+    # Deal with dates before `first_date` by moving ahead to
+    # `first_date` or just past it:
     while date < first_date:
         date = date + interval
     # To regularize returns, determine the total return for each time
     # period of length `interval` in the dateset.
     regularized_returns = OrderedDict()
     while date <= last_date:
-        next_date = date + interval
-        # Note that the return for a given date is the return over the
-        # _following_ time interval.
-        regularized_returns[date] = accumulate_return(
-            returns, date, next_date, lookahead=lookahead)
-        date = next_date
+        if lookahead:
+            regularized_returns[date] = accumulate_return(
+                returns, date, date + interval, lookahead=lookahead)
+        else:
+            regularized_returns[date] = accumulate_return(
+                returns, date - interval, date, lookahead=lookahead)
+        date = date + interval
     return regularized_returns
 
 def values_from_returns(
@@ -409,7 +407,7 @@ def return_for_date_from_values(
 def returns_for_dates_from_values(values, interval=None, lookahead=False):
     """ Generates returns for each date in `values`.
 
-    Be default, this is the return for each date since the preceding
+    By default, this is the return for each date since the preceding
     date. This behaviour can be customized via `interval` and
     `lookahead` parameters. If `lookahead` is `True`, each date
     represents the return over the period between `date` and the
