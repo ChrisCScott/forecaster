@@ -146,22 +146,6 @@ def accumulate_return(returns, start_date, end_date, lookahead=False):
     """
     # Rather than start with 0, use whatever value/datatype is provided
     # by `returns` by grabbing the starting (or ending) value first:
-    # TODO: Only interpolate one endpoint (end_date if lookahead,
-    # start_date otherwise) via `interpolate_return`. For the other
-    # endpoint, we need to reverse the logic to find an interpolated
-    # value based on an _out-of-range_ date (e.g. for lookahead returns,
-    # need to look at the last value _before_ `start_date` (call it the
-    # the precursor date) and determine how much return was calculated
-    # _after_ start date based on the return for the precursor date.
-    # This would be easy to implement as another flag to
-    # `interpolate_returns`, but think about whether this would
-    # overcomplicate things - maybe a separate method is better?)
-    # TODO: Lookahead implies that each date covers
-    # `[date, date+interval)`, whereas no-lookahead implies that each
-    # date covers `(date-interval,date]`. So, if we're using lookahead
-    # returns, we should interpolate end_date only if it is not in
-    # `returns` (and exclude it if it is in `returns`); similarly, in
-    # a no-lookahead scenario, we may need to discard `start_date`.
     if lookahead:
         total_return = interpolate_return(
             returns, end_date, lookahead=lookahead)
