@@ -2,6 +2,7 @@
 
 from bisect import bisect_left
 from itertools import pairwise
+from statistics import mode
 from collections import OrderedDict
 from dateutil.relativedelta import relativedelta
 
@@ -302,13 +303,12 @@ def _get_regularized_dates(returns, date, interval, lookahead=False):
 
 def _infer_interval(returns):
     """ Infers the interval between dates in `returns`. """
-    # Find the modal interval
-    intervals = [  # intervals between adjacent dates
+    # Find all intervals between adjacent dates:
+    intervals = [
         relativedelta(end, start) for (start, end) in pairwise(returns)]
-    # `max` can be used to find the modal element of a list. See:
-    # https://stackoverflow.com/a/28129716
-    mode = max(set(intervals), key=intervals.count)
-    return mode
+    # Return the modal interval. (If there are multiple modes, this
+    # returns the one that first appears closest to the start date)
+    return mode(intervals)
 
 def values_from_returns(
         returns, interval=None, start_val=100, lookahead=False):
