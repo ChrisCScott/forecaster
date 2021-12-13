@@ -4,6 +4,7 @@ import unittest
 from datetime import datetime
 from decimal import Decimal
 import numpy
+import dateutil
 from forecaster.scenario.samplers import MultivariateSampler, WalkForwardSampler
 
 class TestMultivariateSampler(unittest.TestCase):
@@ -129,6 +130,22 @@ class TestWalkForwardSampler(unittest.TestCase):
         sampler = WalkForwardSampler((self.data_x,), wrap_data=True)
         samples = sampler.sample(2, num_samples=3)
         self.assertIn([[4,1]], samples)
+
+    def test_sample_interval(self):
+        """ Tests a walk-forward sample with regularized dates. """
+        data = {
+            datetime(2000, 1, 1): 1,
+            datetime(2000, 7, 1): 1,
+            datetime(2001, 1, 1): 1,
+            datetime(2001, 7, 1): 1}
+        # `data` spans 2 years with semi-annual datapoints. Use an
+        # interval of 1 year to require recalculation and to make the
+        # math easy - the only length 2 sequence will have returns of
+        # 300% for each year (as there's growth of 100% semiannually).
+        interval = dateutil.relativedelta.relativedelta(years=1)
+        sampler = WalkForwardSampler((data,), interval=interval)
+        sample = sampler.sample(2)
+        self.assertEqual(sample, [[3, 3]])
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(
