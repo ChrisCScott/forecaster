@@ -1,7 +1,7 @@
 """ Utility methods for `forecaster.scenario`. """
 
 from bisect import bisect_left
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from dateutil.relativedelta import relativedelta
 
 def interpolate_value(values, date):
@@ -144,6 +144,16 @@ def accumulate_return(returns, start_date, end_date, lookahead=False):
     Raises:
         (KeyError): `date` is out of range.
     """
+    # TODO: Revisit this function. It seems to have a few issues.
+    # For one, `total_return*=1+val` looks likely to be incorrect, since
+    # `val` may relate to a period of time that extends past the
+    # start/end date. Probably need a helper function that determines
+    # the portion of a period's return to include for a given date based
+    # on overlap with some range given by start and end dates.
+    # Or: Delete this function and revise `regularize_returns` to
+    # cast returns to values, interpolate portfolio values as
+    # appropriate, and then cast back. Seems like it would be way easier
+
     # Rather than start with 0, use whatever value/datatype is provided
     # by `returns` by grabbing the starting (or ending) value first:
     if lookahead:
@@ -158,8 +168,6 @@ def accumulate_return(returns, start_date, end_date, lookahead=False):
         # in an ordered array, but this is not performance-critical):
         if start_date < date < end_date:
             total_return *= 1 + val
-    # end_date might not be in `returns`, so interpolate it:
-    total_return *= interpolate_return(returns, end_date)
     return total_return
 
 def regularize_returns(returns, interval, date=None, lookahead=False):
@@ -193,11 +201,80 @@ def regularize_returns(returns, interval, date=None, lookahead=False):
     Raises:
         (KeyError): `start_date` is out of range.
     """
-    # For convenience, find the first and last dates in the dataset:
+    # Only deal with non-lookahead logic in this function:
+    if lookahead:
+        return _regularize_returns_lookahead(returns, interval, date=date)
+
+    # TODO: Consider whether to replace use of `accumulate_return` with
+    # the following comments and code:
+    # ------------------------------------------------------------------
+    # The easiest way to generate regularized returns is to generate the
+    # corresponding sequence of portfolio values and calculate returns
+    # over successive intervals from it.
+    # One key advantage of doing it this way is `values_from_returns`
+    # will infer the period that the first (or last) date describes and
+    # insert a new first/last date to expand the date-range to include
+    # that period. This avoids the data-loss caused by earlier
+    # implementations
+    # values = values_from_returns(returns, lookahead=lookahead)
+    # ------------------------------------------------------------------
+
+    # Expand the range of dates to include the beginning of the period
+    # ending on the start_date:
+    returns_interval = _infer_interval(returns)
+    first_date = min(returns) - returns_interval
+    expanded_returns = OrderedDict(returns)  # Avoid mutating input
+    expanded_returns.update({first_date: 0})
+    expanded_returns.move_to_end(first_date, last=False)
+    # Get a list of dates falling within the expanded range:
+    dates = _get_regularized_dates(expanded_returns, date, interval)
+    # To regularize returns, determine the total return for each time
+    # period of length `interval` in the dateset.
+    regularized_returns = OrderedDict(
+        (date, accumulate_return(
+            expanded_returns, date - interval, date, lookahead=lookahead))
+        for date in dates)
+    return regularized_returns
+
+def _regularize_returns_lookahead(returns, interval, date=None):
+    """ Helper for regularize_returns. Deals with lookahead returns. """
+    # Expand the range of dates to include the end of the period
+    # starting on the end date:
+    returns_interval = _infer_interval(returns)
+    last_date = max(returns) + returns_interval
+    expanded_returns = OrderedDict(returns).update({last_date: 0})
+    # Get a list of dates falling within the expanded range:
+    dates = _get_regularized_dates(
+        expanded_returns, date, interval, lookahead=True)
+    # To regularize returns, determine the total return for each time
+    # period of length `interval` in the dateset.
+    regularized_returns = OrderedDict(
+        (date, accumulate_return(
+            expanded_returns, date, date + interval, lookahead=True))
+        for date in dates)
+    return regularized_returns
+
+def _get_regularized_dates(returns, date, interval, lookahead=False):
+    """ Gets a list of dates spaced apart by `interval`.
+
+    This function finds all periods of length `interval` that are offset
+    from `date` by an integer multiple of `interval` (and which are
+    entirely within the range of dates in `returns`) and returns the
+    dates that represent them.
+
+    In other words, `date` is one of the output dates (unless it's not
+    in range of `returns`), and all output dates are offset by from
+    `date` by some multiple of `interval`.
+
+    Returns:
+        (list[datetime]): A list of dates spaced apart by `interval`,
+        relating to periods falling in range of `returns`, and offset
+        from `date` by a multiple of `interval`.
+    """
+    # Get the bounds of the range of dates in `returns`:
     first_date = min(returns)
     last_date = max(returns)
-    # Start with the first date in the dataset if no starting date is
-    # provided:
+    # Start with the first date in the dataset if `date` is not provided
     if date is None:
         date = first_date
     # We want `date` to be as close to `first_date` as possible.
@@ -209,20 +286,29 @@ def regularize_returns(returns, interval, date=None, lookahead=False):
     # `first_date` or just past it:
     while date < first_date:
         date += interval
+    # Exclude dates whose periods extend outside the range of `returns`:
     if not lookahead:
         date += interval
-    # To regularize returns, determine the total return for each time
-    # period of length `interval` in the dateset.
-    regularized_returns = OrderedDict()
+    else:
+        last_date -= interval
+    # Get a list of dates spaced apart by `interval` starting on `date`:
+    # There's probably a clever comprehension for this, but... oh well.
+    dates = []
     while date <= last_date:
-        if lookahead:
-            regularized_returns[date] = accumulate_return(
-                returns, date, date + interval, lookahead=lookahead)
-        else:
-            regularized_returns[date] = accumulate_return(
-                returns, date - interval, date, lookahead=lookahead)
-        date = date + interval
-    return regularized_returns
+        dates.append(date)
+        date += interval
+    return dates
+
+def _infer_interval(returns):
+    """ Infers the interval between dates in `returns`. """
+    # Find the modal interval
+    dates = list(returns.keys())  # all dates, in order
+    intervals = [  # intervals between adjacent dates
+        relativedelta(dates[i+1], dates[i]) for i in range(len(dates) - 1)]
+    # `max` can be used to find the modal element of a list. See:
+    # https://stackoverflow.com/a/28129716
+    mode = max(set(intervals), key=intervals.count)
+    return mode
 
 def values_from_returns(
         returns, interval=None, start_val=100, lookahead=False):
@@ -252,15 +338,7 @@ def values_from_returns(
             An ordered mapping of dates to percentage returns.
     """
     if interval is None:
-        # Use the interval between the first two dates as the interval.
-        # This isn't perfect; we could instead calculate the interval
-        # over every adjacent pair of dates and take the mode to avoid
-        # situations where (e.g.) the first two dates are separated by
-        # a weekend. But this approach should be good enough.
-        returns_iter = iter(returns)
-        first_date = next(returns_iter)
-        second_date = next(returns_iter)
-        interval = relativedelta(second_date, first_date)
+        interval = _infer_interval(returns)
     # The following logic looks fairly different if lookahead=True, so
     # handle that via a dedicated function:
     if lookahead:
