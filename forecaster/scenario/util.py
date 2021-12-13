@@ -204,11 +204,13 @@ def regularize_returns(returns, interval, date=None, lookahead=False):
     # Deal with dates past `first_date` by backing up to `first_date` or
     # just before:
     while date > first_date:
-        date = date - interval
+        date -= interval
     # Deal with dates before `first_date` by moving ahead to
     # `first_date` or just past it:
     while date < first_date:
-        date = date + interval
+        date += interval
+    if not lookahead:
+        date += interval
     # To regularize returns, determine the total return for each time
     # period of length `interval` in the dateset.
     regularized_returns = OrderedDict()
