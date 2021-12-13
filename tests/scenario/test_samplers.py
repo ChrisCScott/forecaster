@@ -1,11 +1,15 @@
 """ Unit tests for `forecaster.scenario.samplers` classes. """
 
 import unittest
+from unittest import mock
 from datetime import datetime
 from decimal import Decimal
 import numpy
 import dateutil
 from forecaster.scenario.samplers import MultivariateSampler, WalkForwardSampler
+
+# Use constant seed for tests that rely on randomness:
+RANDOM_TEST = numpy.random.default_rng(0)
 
 class TestMultivariateSampler(unittest.TestCase):
     """ A test suite for the `MultivariateSampler` class. """
@@ -44,13 +48,15 @@ class TestMultivariateSampler(unittest.TestCase):
             self.data, covariances=[[None, 1], [1, None]])
         self.assertEqual(sampler.covariances, [[0.25, 1], [1, 0.25]])
 
+    # Patch the random number generator to use the same seed in tests:
+    @mock.patch.object(MultivariateSampler, 'random', RANDOM_TEST)
     def test_sample_statistics(self):
         """ Test `sample` to see if it produces the correct statistics. """
         sampler = MultivariateSampler(self.data)
-        # Collect 1000 samples of random variables X and Y, where each
+        # Collect 40 samples of random variables X and Y, where each
         # random variable has mean 1.5, variance 0.25, and pairwise
         # covariance -0.25:
-        samples = sampler.sample(1000)
+        samples = sampler.sample(40)
         # Conveniently represent samples and source data for each of
         # the random variables X and Y for testing:
         samples_x = [sample[0] for sample in samples]

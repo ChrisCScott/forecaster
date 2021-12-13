@@ -1,7 +1,6 @@
 """ Samplers for generating time-series data for Scenario objects. """
 
 from itertools import product
-import random
 from dateutil.relativedelta import relativedelta
 import numpy
 from forecaster.scenario.util import interpolate_return, regularize_returns
@@ -47,6 +46,9 @@ class MultivariateSampler:
             `numpy.cov` using `ddof=0` for compatibility.)
     """
 
+    # Allows for easy patching by unit tests.
+    random = numpy.random.default_rng()
+
     def __init__(
             self, data, means=None, covariances=None):
         # Initialize member attributes:
@@ -72,8 +74,7 @@ class MultivariateSampler:
         # Get random values for each variable that we model, based on
         # the means and covariances that we found in the data (or which
         # the user provided, if they chose to do so.)
-        generator = numpy.random.default_rng()
-        samples = generator.multivariate_normal(
+        samples = self.random.multivariate_normal(
             self.means, self.covariances, size=num_samples)
         # Convert numpy.array to list:
         if num_samples is not None:
@@ -241,6 +242,9 @@ class WalkForwardSampler:
             for each date is calculated.
     """
 
+    # Allows for easy patching by unit tests:
+    random = numpy.random.default_rng()
+
     def __init__(
             self, data, synchronize=False, wrap_data=False, interval=None):
         self.data = data
@@ -270,10 +274,10 @@ class WalkForwardSampler:
         start_combos = self._get_start_combos(walk_length)
         # Select 1 sample if `num_samples` not provided:
         if num_samples is None:
-            starts = random.sample(start_combos,1)
+            starts = self.random.choice(start_combos, 1)
         # More than `num_samples` samples possible? Pick randomly:
         elif num_samples is not None and len(start_combos) > num_samples:
-            starts = random.sample(start_combos, num_samples)
+            starts = self.random.choice(start_combos, num_samples)
         # If we can't make `num_samples` scenarios, use them all:
         else:
             starts = start_combos
