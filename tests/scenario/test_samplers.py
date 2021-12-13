@@ -123,8 +123,12 @@ class TestWalkForwardSampler(unittest.TestCase):
 
     def test_sample_wrap_data(self):
         """ Tests a walk-forward sample with wrapped data. """
-        # TODO
-        pass
+        # We only have 3 datapoints, so if we get three samples of
+        # length 2 we are guaranteed to have a sample that consists of
+        # the last entry followed by the first entry (i.e. (4,1))
+        sampler = WalkForwardSampler((self.data_x,), wrap_data=True)
+        samples = sampler.sample(2, num_samples=3)
+        self.assertIn(((4,1),), samples)
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(
