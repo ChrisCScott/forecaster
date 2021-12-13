@@ -1,7 +1,8 @@
 """ Utility methods for `forecaster.scenario`. """
 
 from bisect import bisect_left
-from collections import OrderedDict, defaultdict
+from itertools import pairwise
+from collections import OrderedDict
 from dateutil.relativedelta import relativedelta
 
 def interpolate_value(values, date):
@@ -302,9 +303,8 @@ def _get_regularized_dates(returns, date, interval, lookahead=False):
 def _infer_interval(returns):
     """ Infers the interval between dates in `returns`. """
     # Find the modal interval
-    dates = list(returns.keys())  # all dates, in order
     intervals = [  # intervals between adjacent dates
-        relativedelta(dates[i+1], dates[i]) for i in range(len(dates) - 1)]
+        relativedelta(end, start) for (start, end) in pairwise(returns)]
     # `max` can be used to find the modal element of a list. See:
     # https://stackoverflow.com/a/28129716
     mode = max(set(intervals), key=intervals.count)
