@@ -128,7 +128,7 @@ class TestWalkForwardSampler(unittest.TestCase):
         # the last entry followed by the first entry (i.e. (4,1))
         sampler = WalkForwardSampler((self.data_x,), wrap_data=True)
         samples = sampler.sample(2, num_samples=3)
-        self.assertIn(((4,1),), samples)
+        self.assertIn([[4,1]], samples)
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(

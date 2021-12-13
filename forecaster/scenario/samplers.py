@@ -328,7 +328,7 @@ class WalkForwardSampler:
         # Extend the list if we're wrapping to ensure it's long enough:
         if self.wrap_data:
             while len(sequence) < walk_length:
-                return_vals = [returns.values()]
+                return_vals = list(returns.values())
                 sequence += return_vals
         # Trim the sequence to just `walk_length`:
         return sequence[0:walk_length]
