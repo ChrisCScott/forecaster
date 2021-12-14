@@ -6,6 +6,12 @@ from statistics import mode
 from collections import OrderedDict
 from dateutil.relativedelta import relativedelta
 
+# TODO: Remove `lookahead` logic. Allow client code to provide dates
+# in reverse order to obtain this functionality. (Will need to assume
+# dates are ordered, get first/last element by index rather than by
+# min/max, allow for negative relativedelta - which will be produced
+# naturally when comparing adjacent dates.)
+
 def interpolate_value(values, date):
     """ Determines a portfolio value on `date` based on nearby dates.
 
@@ -146,31 +152,30 @@ def accumulate_return(returns, start_date, end_date, lookahead=False):
     Raises:
         (KeyError): `date` is out of range.
     """
-    # TODO: Revisit this function. It seems to have a few issues.
-    # For one, `total_return*=1+val` looks likely to be incorrect, since
-    # `val` may relate to a period of time that extends past the
-    # start/end date. Probably need a helper function that determines
-    # the portion of a period's return to include for a given date based
-    # on overlap with some range given by start and end dates.
-    # Or: Delete this function and revise `regularize_returns` to
-    # cast returns to values, interpolate portfolio values as
-    # appropriate, and then cast back. Seems like it would be way easier
+    # TODO: Consider deleting this function and revising
+    # `regularize_returns` to cast returns to values, interpolate
+    # portfolio values as appropriate, and then cast back.
+    # TODO: Handle the situation where `start_date` or `end_date` fall
+    # between keys in `returns`. (Need to not only interpolate their
+    # returns correctly, which will require fixing `interpolate_return`,
+    # but also discard the first date following `start_date` for
+    # non-lookahead returns to avoid double-counting).
 
     # Rather than start with 0, use whatever value/datatype is provided
     # by `returns` by grabbing the starting (or ending) value first:
     if lookahead:
-        total_return = interpolate_return(
-            returns, end_date, lookahead=lookahead)
-    else:
-        total_return = interpolate_return(
+        total_return = 1 + interpolate_return(
             returns, start_date, lookahead=lookahead)
+    else:
+        total_return = 1 + interpolate_return(
+            returns, end_date, lookahead=lookahead)
     # Get the product of all returns between the start and end dates:
     for (date, val) in returns.items():
         # (There are more efficient ways to iterate over a subrange
         # in an ordered array, but this is not performance-critical):
         if start_date < date < end_date:
             total_return *= 1 + val
-    return total_return
+    return total_return - 1
 
 def regularize_returns(returns, interval, date=None, lookahead=False):
     """ Generates a sequence of returns with regularly-spaced dates.
