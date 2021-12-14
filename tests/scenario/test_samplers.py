@@ -137,8 +137,8 @@ class TestWalkForwardSampler(unittest.TestCase):
         samples = sampler.sample(2, num_samples=3)
         self.assertIn([[4,1]], samples)
 
-    def test_sample_interval(self):
-        """ Tests a walk-forward sample with regularized dates. """
+    def test_sample_interval_easy(self):
+        """ Tests a walk-forward sample with easily regularized dates. """
         data = {
             datetime(2000, 1, 1): 1,
             datetime(2000, 7, 1): 1,
@@ -152,6 +152,25 @@ class TestWalkForwardSampler(unittest.TestCase):
         sampler = WalkForwardSampler((data,), interval=interval)
         sample = sampler.sample(2)
         self.assertEqual(sample, [[3, 3]])
+
+    def test_sample_interval_hard(self):
+        """ Tests a walk-forward sample with hard-to-regularize dates. """
+        data = {
+            datetime(2000, 1, 1): 1,
+            datetime(2001, 1, 1): 1,
+            datetime(2002, 1, 1): 1}
+        # `data` spans 3 years with annual datapoints. Use an interval
+        # of 1.5 years to require recalculation. There is only one
+        # length 2 sequence of dates covering this period (with dates on
+        # 2002-01-01 and 2000-07-01). The exact calculation of returns
+        # is an implementation detail, but the total return over the
+        # three years should be retained: 800% (i.e. a return of 7).
+        interval = dateutil.relativedelta.relativedelta(years=1, months=6)
+        sampler = WalkForwardSampler((data,), interval=interval)
+        sample = sampler.sample(2)
+        returns = list(sample[0].values())
+        total_return = (1 + returns[0]) * (1 + returns[1]) - 1
+        self.assertAlmostEqual(total_return, 7)
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(
