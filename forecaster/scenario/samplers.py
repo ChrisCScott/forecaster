@@ -3,7 +3,8 @@
 from itertools import product
 from dateutil.relativedelta import relativedelta
 import numpy
-from forecaster.scenario.util import interpolate_return, regularize_returns
+from forecaster.scenario.util import (
+    interpolate_return, regularize_returns, _infer_interval)
 
 class MultivariateSampler:
     """ Generates samples of returns from historical data.
@@ -358,18 +359,23 @@ class WalkForwardSampler:
 
     def _get_valid_starts(self, returns, walk_length):
         """ Get valid starts for a single column of data. """
-        # Find the dates that can be used as the start of a walk-forward
-        # scenario:
-        valid_starts = list(returns.keys())
+        dates = list(returns.keys())
         # All dates work if we're wrapping:
         if self.wrap_data:
-            return valid_starts
+            return dates
         # If there's no `interval`, get all the dates that are at
         # least `walk_length` from the end.
         if self.interval is None:
-            last_index = len(valid_starts)-walk_length+1
-            return valid_starts[0:last_index]
-        # If there is an `interval`, get all the dates that are
-        # at least `interval` from the last date:
-        last_date = max(returns) - self.interval
-        return list(date for date in valid_starts if date <= last_date)
+            last_index = len(dates)-walk_length+1
+            return dates[0:last_index]
+        # If there is an `interval`, treat this as a series of returns.
+        # We want to cover only dates that (a) are far enough into the
+        # time period covered by `returns` to capture a period of length
+        # `interval` beforehand (use `_infer_interval`) and (b) are far
+        # enough from the end of the time period to leave enough room
+        # to fit a walk-forward sequence afterwards:
+        start_of_returns = min(dates) - _infer_interval(dates)
+        first_date = start_of_returns + self.interval
+        last_date = max(returns) - (self.interval * (walk_length - 1))
+        return list(
+            date for date in dates if first_date <= date <= last_date)
