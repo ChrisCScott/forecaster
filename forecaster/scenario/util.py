@@ -6,12 +6,6 @@ from statistics import mode
 from collections import OrderedDict
 from dateutil.relativedelta import relativedelta
 
-# TODO: Remove `lookahead` logic. Allow client code to provide dates
-# in reverse order to obtain this functionality. (Will need to assume
-# dates are ordered, get first/last element by index rather than by
-# min/max, allow for negative relativedelta - which will be produced
-# naturally when comparing adjacent dates.)
-
 def interpolate_value(values, date):
     """ Determines a portfolio value on `date` based on nearby dates.
 
@@ -60,7 +54,7 @@ def interpolate_value(values, date):
     weighted_total = (weighted_next + weighted_prev) / days_total
     return weighted_total
 
-def interpolate_return(returns, date, lookahead=False):
+def interpolate_return(returns, date):
     """ Determines a portfolio return on `date` based on nearby dates.
 
     This method is aimed at sequences like
@@ -84,11 +78,6 @@ def interpolate_return(returns, date, lookahead=False):
             of `returns` (i.e. no earlier than the earliest key-date and
             no later than the latest key-date). `date` does not need to
             be (and usually isn't) a key in `returns`.
-        lookahead (bool): If True, each return value is interpreted as
-            the return experienced _after_ its key-date, and so
-            interpolated values will be determined by scaling the
-            _previous_ value (since in this case `date` falls within
-            the previous value's interval). Optional; defaults to False.
 
     Returns:
         (HighPrecisionOptional): A return at `date`. If `date` is not
@@ -115,15 +104,11 @@ def interpolate_return(returns, date, lookahead=False):
     # time between the previous and next timesteps:
     interval = next_date - prev_date
     elapsed = date - prev_date
-    # Scale the return at the previous timestep for lookahead returns:
-    if lookahead:
-        scaled = (prev_return * elapsed.days) / interval.days
-    # Otherwise, scale the return at the next timestep:
-    else:
-        scaled = (next_return * elapsed.days) / interval.days
+    # Scale the return at the next timestep:
+    scaled = (next_return * elapsed.days) / interval.days
     return scaled
 
-def accumulate_return(returns, start_date, end_date, lookahead=False):
+def accumulate_return(returns, start_date, end_date):
     """ Determines the total return between `start_date` and `end_date`.
 
     Arguments:
@@ -137,11 +122,6 @@ def accumulate_return(returns, start_date, end_date, lookahead=False):
             the keys of `returns` (i.e. no earlier than the earliest
             key-date and no later than the latest key-date). `date` does
             not need to be a key in `returns`.
-        lookahead (bool): If True, each return value is interpreted as
-            the return experienced _after_ its key-date, and so
-            interpolated values will be determined by scaling the
-            _previous_ value (since in this case `date` falls within
-            the previous value's interval). Optional; defaults to False.
 
     Returns:
         (HighPrecisionOptional): The total return between `start_date`
@@ -158,17 +138,12 @@ def accumulate_return(returns, start_date, end_date, lookahead=False):
     # TODO: Handle the situation where `start_date` or `end_date` fall
     # between keys in `returns`. (Need to not only interpolate their
     # returns correctly, which will require fixing `interpolate_return`,
-    # but also discard the first date following `start_date` for
-    # non-lookahead returns to avoid double-counting).
+    # but also discard the first date following `start_date` to avoid
+    # double-counting).
 
     # Rather than start with 0, use whatever value/datatype is provided
     # by `returns` by grabbing the starting (or ending) value first:
-    if lookahead:
-        total_return = 1 + interpolate_return(
-            returns, start_date, lookahead=lookahead)
-    else:
-        total_return = 1 + interpolate_return(
-            returns, end_date, lookahead=lookahead)
+    total_return = 1 + interpolate_return(returns, end_date)
     # Get the product of all returns between the start and end dates:
     for (date, val) in returns.items():
         # (There are more efficient ways to iterate over a subrange
@@ -177,7 +152,7 @@ def accumulate_return(returns, start_date, end_date, lookahead=False):
             total_return *= 1 + val
     return total_return - 1
 
-def regularize_returns(returns, interval, date=None, lookahead=False):
+def regularize_returns(returns, interval, date=None):
     """ Generates a sequence of returns with regularly-spaced dates.
 
     The resulting sequence contains only dates which are spaced apart
@@ -193,11 +168,6 @@ def regularize_returns(returns, interval, date=None, lookahead=False):
         date (datetime): The date from which all other dates in the
             resulting sequence are calculated.
             Optional; defaults to the first date in `returns`.
-        lookahead (bool): If True, each return value is interpreted as
-            the return experienced _after_ its key-date, and so
-            interpolated values will be determined by scaling the
-            _previous_ value (since in this case `date` falls within
-            the previous value's interval). Optional; defaults to False.
 
     Returns:
         (OrderedDict[datetime, HighPrecisionOptional]): A mapping of
@@ -208,9 +178,6 @@ def regularize_returns(returns, interval, date=None, lookahead=False):
     Raises:
         (KeyError): `start_date` is out of range.
     """
-    # Only deal with non-lookahead logic in this function:
-    if lookahead:
-        return _regularize_returns_lookahead(returns, interval, date=date)
 
     # TODO: Consider whether to replace use of `accumulate_return` with
     # the following comments and code:
@@ -223,7 +190,7 @@ def regularize_returns(returns, interval, date=None, lookahead=False):
     # insert a new first/last date to expand the date-range to include
     # that period. This avoids the data-loss caused by earlier
     # implementations
-    # values = values_from_returns(returns, lookahead=lookahead)
+    # values = values_from_returns(returns)
     # ------------------------------------------------------------------
 
     # Expand the range of dates to include the beginning of the period
@@ -239,29 +206,11 @@ def regularize_returns(returns, interval, date=None, lookahead=False):
     # period of length `interval` in the dateset.
     regularized_returns = OrderedDict(
         (date, accumulate_return(
-            expanded_returns, date - interval, date, lookahead=lookahead))
+            expanded_returns, date - interval, date))
         for date in dates)
     return regularized_returns
 
-def _regularize_returns_lookahead(returns, interval, date=None):
-    """ Helper for regularize_returns. Deals with lookahead returns. """
-    # Expand the range of dates to include the end of the period
-    # starting on the end date:
-    returns_interval = _infer_interval(returns)
-    last_date = max(returns) + returns_interval
-    expanded_returns = OrderedDict(returns).update({last_date: 0})
-    # Get a list of dates falling within the expanded range:
-    dates = _get_regularized_dates(
-        expanded_returns, date, interval, lookahead=True)
-    # To regularize returns, determine the total return for each time
-    # period of length `interval` in the dateset.
-    regularized_returns = OrderedDict(
-        (date, accumulate_return(
-            expanded_returns, date, date + interval, lookahead=True))
-        for date in dates)
-    return regularized_returns
-
-def _get_regularized_dates(returns, date, interval, lookahead=False):
+def _get_regularized_dates(returns, date, interval):
     """ Gets a list of dates spaced apart by `interval`.
 
     This function finds all periods of length `interval` that are offset
@@ -294,10 +243,7 @@ def _get_regularized_dates(returns, date, interval, lookahead=False):
     while date < first_date:
         date += interval
     # Exclude dates whose periods extend outside the range of `returns`:
-    if not lookahead:
-        date += interval
-    else:
-        last_date -= interval
+    date += interval
     # Get a list of dates spaced apart by `interval` starting on `date`:
     # There's probably a clever comprehension for this, but... oh well.
     dates = []
@@ -316,7 +262,7 @@ def _infer_interval(returns):
     return mode(intervals)
 
 def values_from_returns(
-        returns, interval=None, start_val=100, lookahead=False):
+        returns, interval=None, start_val=100):
     """ Converts returns to portfolio values.
 
     The resulting sequence of values will start with a value of 100.
@@ -325,18 +271,13 @@ def values_from_returns(
         returns (OrderedDict[date, HighPrecisionOptional]):
             An ordered mapping of dates to portfolio values.
         interval (timedelta | relativedelta): The spacing of dates, used
-            for inserting a new date at the start (or end, if
-            `lookahead` is `True`) of the dataset. Optional; if not
-            provided, this will be inferred from the dates of `returns`.
+            for inserting a new date at the start of the dataset.
+            Optional; if not provided, this will be inferred from the
+            dates of `returns`.
         start_val (HighPrecisionOptional): The value for the first
             date in the output. Optional; defaults to 100. Recommend
             providing a high-precision datatype if `returns` uses
             high-precision datatypes for values.
-        lookahead (bool): If True, each return value is interpreted as
-            the return experienced _after_ its key-date, and so
-            interpolated values will be determined by scaling the
-            _previous_ value (since in this case `date` falls within
-            the previous value's interval). Optional; defaults to False.
 
     Returns:
         (OrderedDict[date, HighPrecisionOptional]):
@@ -344,11 +285,6 @@ def values_from_returns(
     """
     if interval is None:
         interval = _infer_interval(returns)
-    # The following logic looks fairly different if lookahead=True, so
-    # handle that via a dedicated function:
-    if lookahead:
-        return _value_from_returns_lookahead(
-            returns, interval=interval, start_val=start_val)
     # Add a date just before the start of our dataset with $100 in value
     start_date = min(returns) - interval
     values = OrderedDict()
@@ -356,74 +292,32 @@ def values_from_returns(
     # Now convert each entry of `returns` to a new portfolio value:
     prev_date = start_date
     for date in returns:
-        # For non-lookahead returns, the value at `date` is just the
-        # previously-recorded value adjusted by the return at `date`:
+        # The value at `date` is just the previously-recorded value
+        # adjusted by the return at `date`:
         values[date] = values[prev_date] * (1 + returns[date])
         prev_date = date
     return values
 
-def _value_from_returns_lookahead(
-        returns, interval=None, start_val=100):
-    """ Alternate version of `values_from_returns` for `lookahead=True`. """
-    # For lookahead returns, need to add a date at the _end_:
-    dates = list(returns.keys())
-    new_date = max(returns) + interval
-    start_date = min(returns)
-    # Shift all of the dates we loop on one timestep into the future,
-    # since at each timestep we will look backwards:
-    dates.append(new_date)
-    dates.remove(start_date)
-    # Start with $100:
-    values = OrderedDict()
-    values[start_date] = start_val
-    # Now convert each entry of `returns` to a new portfolio value:
-    prev_date = start_date
-    for date in dates:
-        # The value at `date` is the previous portfolio value adjusted
-        # by the _previous_ returns for lookahead returns:
-        values[date] = values[prev_date] * (1 + returns[prev_date])
-        prev_date = date
-    return values
-
-def _return_interval(values, date, lookahead=False):
+def _return_interval(values, date):
     """ Gets the interval for which `date` represents the return.
-
-    If `lookahead` is `True`, this returns the interval between `date`
-    and the next date in `values`. Otherwise, this returns the interval
-    between `date` and the preceding date in `values`.
 
     Returns:
         (relativedelta | None): The size of the interval over which the
         return at `date` is calculated. This value is always positive.
         Or, if the interval cannot be determined, returns `None`.
     """
-    # Return the first value after `date` for lookahead returns:
-    if lookahead:
-        later_dates = list(val for val in values if val > date)
-        if later_dates:
-            # We use relativedelta instead of the native timedelta
-            # value produced by d1-d2 because timedelta does not handle
-            # weeks/months/years, just days. This causes unexpected
-            # behaviour if dealing with (e.g.) annual series that cross
-            # leap years. Time is hard.
-            return relativedelta(min(later_dates), date)
-        raise ValueError("Cannot determine interval for last date in sequence")
-    # Return the last value before `date` for non-lookahead returns:
+    # Return the last value before `date`:
     earlier_dates = list(val for val in values if val < date)
     if earlier_dates:
         return relativedelta(date, max(earlier_dates))
     return None
 
-def return_for_date_from_values(
-        values, date, interval=None, lookahead=False):
+def return_for_date_from_values(values, date, interval=None):
     """ Determines return for `date`.
 
-    If `lookahead` is False, each return value for a given `date` is the
-    return observed over the preceding period of length `interval`. That
-    is, the return is calculated over a period _ending_ at `date`.
-    If `lookahead` is True, each return value for a given `date` is the
-    return observed over the following period of length `interval`. That
-    is, the return is calculated over a period _starting_ at `date`.
+    Each return value for a given `date` is the return observed over the
+    preceding period of length `interval`. That is, the return is
+    calculated over a period _ending_ at `date`.
 
     Arguments:
         values (OrderedDict[datetime, HighPrecisionOptional]): A mapping
@@ -435,11 +329,6 @@ def return_for_date_from_values(
         interval (timedelta): The period between dates. Optional.
             If not provided, determines an interval for each date based
             on proximity of adjacent dates.
-        lookahead (bool): If True, each return value is interpreted as
-            the return experienced _after_ its key-date, and so
-            interpolated values will be determined by scaling the
-            _previous_ value (since in this case `date` falls within
-            the previous value's interval). Optional; defaults to False.
 
     Returns:
         (OrderedDict[date, HighPrecisionOptional] | None):
@@ -447,21 +336,14 @@ def return_for_date_from_values(
             the data needed to determine a return over `interval` is
             not present, `None`).
     """
-    # If interval is not provided, use the interval between this date
-    # and the next (or previous) date in `values`:
+    # If interval is not provided, infer it from the spacing of dates
+    # in `values`:
     if interval is None:
-        interval = _return_interval(values, date, lookahead=lookahead)
+        interval = _return_interval(values, date)
         if interval is None:
             return None
-    # Returns can be expressed either in terms of return obtained over
-    # the following period ("lookahead" returns) or the preceding period
-    # (default behaviour).
-    if lookahead:
-        start_date = date
-        end_date = date + interval
-    else:
-        start_date = date - interval
-        end_date = date
+    start_date = date - interval
+    end_date = date
     # If the interval in question doesn't fall within the bounds of our
     # data, we can't calculate the return:
     if start_date < min(values) or end_date > max(values):
@@ -473,21 +355,18 @@ def return_for_date_from_values(
     # Return is just the amount by which the ratio exceeds 1:
     return end_val / start_val - 1
 
-def returns_for_dates_from_values(values, interval=None, lookahead=False):
+def returns_for_dates_from_values(values, interval=None):
     """ Generates returns for each date in `values`.
 
     By default, this is the return for each date since the preceding
-    date. This behaviour can be customized via `interval` and
-    `lookahead` parameters. If `lookahead` is `True`, each date
-    represents the return over the period between `date` and the
-    _following_ date. If `interval` is provided, the return for each
-    date will be the return for a period of length `interval` preceding
-    or following `date` (depending on `lookahead`).
+    date. This behaviour can be customized via the `interval` parameter.
+    If `interval` is provided, the return for each date will be the
+    return for a period of length `interval` preceding `date`.
 
     Dates for which porfolio values are not known at least `interval`
-    into the past (or into the future, if `lookahead` is `True`) are not
-    included in the result. With default parameters, this means that
-    the first date in `values` will be excluded from the result.
+    into the past are not included in the result. With default
+    parameters, this means that the first date in `values` will be
+    excluded from the result.
     For instance, assuming a one-year `interval`, if the dataset
     includes portfolio values for 2000, 2001, and 2002, the returned
     dict will include returns only for dates in 2000 and 2001 (but not
@@ -501,11 +380,6 @@ def returns_for_dates_from_values(values, interval=None, lookahead=False):
             calculated for each date. Optional. If not provided,
             determines an interval for each date based on proximity of
             adjacent dates.
-        lookahead (bool): If True, each return value is interpreted as
-            the return experienced _after_ its key-date, and so
-            interpolated values will be determined by scaling the
-            _previous_ value (since in this case `date` falls within
-            the previous value's interval). Optional; defaults to False.
 
     Returns:
         (OrderedDict[date, float | HighPrecisionType]): An ordered
@@ -516,7 +390,7 @@ def returns_for_dates_from_values(values, interval=None, lookahead=False):
     interval_returns = OrderedDict()
     for date in values:
         returns = return_for_date_from_values(
-            values, date, interval=interval, lookahead=lookahead)
+            values, date, interval=interval)
         if returns is not None:
             interval_returns[date] = returns
     return interval_returns
