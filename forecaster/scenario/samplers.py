@@ -1,10 +1,10 @@
 """ Samplers for generating time-series data for Scenario objects. """
 
-from itertools import product
+from itertools import product, pairwise
 from dateutil.relativedelta import relativedelta
 import numpy
 from forecaster.scenario.util import (
-    interpolate_return, regularize_returns, _infer_interval)
+    return_over_period, regularize_returns, _infer_interval)
 
 class MultivariateSampler:
     """ Generates samples of returns from historical data.
@@ -181,10 +181,12 @@ class MultivariateSampler:
         # If there's not enough overlapping data, assume no covariance:
         if len(dates) < 2:  # Need 2 vals for each var to get 2x2 covariance
             return ((0,0), (0,0))
-        # Get a value for each date and build a 2xn array for the `n` dates:
-        aligned_data = (
-            list(interpolate_return(data1, date) for date in dates),
-            list(interpolate_return(data2, date) for date in dates))
+        # Get a value for each period and build a 2xn array for the `n` dates:
+        aligned_data = tuple(
+            list(
+                return_over_period(column, start_date, end_date)
+                for (start_date, end_date) in pairwise(dates))
+            for column in (data1, data2))
         return aligned_data
 
 class WalkForwardSampler:

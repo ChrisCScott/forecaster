@@ -2,6 +2,7 @@
 
 from bisect import bisect_left
 from itertools import pairwise
+from functools import reduce
 from statistics import mode
 from collections import OrderedDict
 from dateutil.relativedelta import relativedelta
@@ -54,61 +55,7 @@ def interpolate_value(values, date):
     weighted_total = (weighted_next + weighted_prev) / days_total
     return weighted_total
 
-def interpolate_return(returns, date):
-    """ Determines a portfolio return on `date` based on nearby dates.
-
-    This method is aimed at sequences like
-    `{datetime(2000,1,1): 0.10, datetime(2002,1,1): 0.20}`
-    where it would be sensible to interpolate a value of `0.10` for
-    `datetime(2001,1,1)` because each value is relative to preceding
-    values.
-
-    If values in `values` are absolute, such as portfolio values
-    expressed in dollar terms, then use `interpolate_value`.
-
-    NOTE: Values determined by this method are not safe to insert into
-    `returns`. E.g. if a value of `0.10` is inserted at
-    `datetime(2001,1,1)` as in the above example, the total return for
-    the sequence of returns will become 10% larger.
-
-    Arguments:
-        returns (OrderedDict[datetime, HighPrecisionOptional]): A
-            mapping of dates to relative values, e.g. rates of return.
-        date (datetime): A date within the range represented by the keys
-            of `returns` (i.e. no earlier than the earliest key-date and
-            no later than the latest key-date). `date` does not need to
-            be (and usually isn't) a key in `returns`.
-
-    Returns:
-        (HighPrecisionOptional): A return at `date`. If `date` is not
-        in `returns`, this is the return of the following date scaled
-        down based on the proximity of `date` to the following date.
-
-    Raises:
-        (KeyError): `date` is out of range.
-    """
-    # Check to see if the date is available exactly:
-    if date in returns:
-        return returns[date]
-    if not min(returns) <= date <= max(returns):
-        raise KeyError(str(date) + ' is out of range.')
-    # Get the dates on either side of `date`:
-    dates = list(returns)
-    index = bisect_left(dates, date)
-    prev_date = dates[index-1]
-    next_date = dates[index]
-    next_return = returns[next_date]
-    prev_return = returns[prev_date]
-    # Scale the return at the next timestep based on the amount of time
-    # elapsed since the previous timestep, as a proportion of the total
-    # time between the previous and next timesteps:
-    interval = next_date - prev_date
-    elapsed = date - prev_date
-    # Scale the return at the next timestep:
-    scaled = (next_return * elapsed.days) / interval.days
-    return scaled
-
-def accumulate_return(returns, start_date, end_date):
+def return_over_period(returns, start_date, end_date):
     """ Determines the total return between `start_date` and `end_date`.
 
     Arguments:
@@ -132,25 +79,67 @@ def accumulate_return(returns, start_date, end_date):
     Raises:
         (KeyError): `date` is out of range.
     """
-    # TODO: Consider deleting this function and revising
-    # `regularize_returns` to cast returns to values, interpolate
-    # portfolio values as appropriate, and then cast back.
-    # TODO: Handle the situation where `start_date` or `end_date` fall
-    # between keys in `returns`. (Need to not only interpolate their
-    # returns correctly, which will require fixing `interpolate_return`,
-    # but also discard the first date following `start_date` to avoid
-    # double-counting).
+    dates = [date for date in returns if start_date < date < end_date]
+    # Recurse if there are any dates between `start_date` and `end_date`
+    if dates:
+        # Insert start and end dates so we recurse over them too:
+        dates.insert(0, start_date)
+        dates.append(end_date)
+        # Recurse onto each period of adjacent dates between start_date
+        # and end_date (inclusive).
+        def accum_returns(accum, date_pair):
+            """ Grows `accum` by return over period of `date_pair` """
+            start_date, end_date = date_pair
+            return accum * (1+return_over_period(returns, start_date, end_date))
+        return reduce(accum_returns, pairwise(dates), 1) - 1
+    # We only need to do the above on the first call, not on recursion.
+    # So split off the remaining logic into a separate function call:
+    return _return_over_period(returns, start_date, end_date)
 
-    # Rather than start with 0, use whatever value/datatype is provided
-    # by `returns` by grabbing the starting (or ending) value first:
-    total_return = 1 + interpolate_return(returns, end_date)
-    # Get the product of all returns between the start and end dates:
-    for (date, val) in returns.items():
-        # (There are more efficient ways to iterate over a subrange
-        # in an ordered array, but this is not performance-critical):
-        if start_date < date < end_date:
-            total_return *= 1 + val
-    return total_return - 1
+def _return_over_period(returns, start_date, end_date):
+    """ Recursive helper for `return_over_period`.
+
+    In this function, `start_date` and `end_date` are assumed to be
+    adjacent. Otherwise, the documentation for `return_over_period`
+    applies here too.
+    """
+    # Simplest case: The period between dates is represented exactly:
+    if start_date in returns and end_date in returns:
+        return returns[end_date]
+    # If this period trims off the end of a larger period, simplify the
+    # problem by finding the return over the larger period and then
+    # reduce it by the return over the trimmed portion. (Both periods
+    # end on a key date, so are not trimmed on the right-hand-side.)
+    if end_date not in returns:
+        next_date = min(date for date in returns if date > end_date)
+        return (
+            (1 + _return_over_period(returns, start_date, next_date)) /
+            (1 + _return_over_period(returns, end_date, next_date))) - 1
+    # If we're made it here, we can guarantee that `end_date` is in
+    # returns but `start_date` isn't. Find the bounds for the full
+    # period ending on `end_date`, determine the daily rate of return
+    # over that period, and calculate the total return over the shorter
+    # period between `start_date` and `end_date`::
+    prev_date = max(
+        (date for date in returns if date < start_date), default=None)
+    if prev_date is None:
+        # Special case: `end_date` is first date in `returns`.
+        interval = _infer_interval(returns)
+        prev_date = end_date - interval
+        if start_date < prev_date:
+            # Don't extrapolate past prev_date
+            raise KeyError(str(start_date) + " is out of range.")
+    interval = end_date - prev_date
+    elapsed = end_date - start_date
+    # Assume that the rate of growth is constant over `interval` and
+    # compounds daily. Then the return over `interval` is given by:
+    # `P(1+r_t)=P(1+r_d)^d`
+    # where P is a portfolio value, `r_t` is the return over `interval`,
+    # `r_d` is the daily rate or return, and `d` is the number of days
+    # in `interval`. We can thus solve for `r_d`:
+    daily_return = (1 + returns[end_date]) ** (1 / interval.days) - 1
+    # Then compound the daily return over the elapsed number of days:
+    return (1 + daily_return) ** elapsed.days - 1
 
 def regularize_returns(returns, interval, date=None):
     """ Generates a sequence of returns with regularly-spaced dates.
@@ -178,21 +167,6 @@ def regularize_returns(returns, interval, date=None):
     Raises:
         (KeyError): `start_date` is out of range.
     """
-
-    # TODO: Consider whether to replace use of `accumulate_return` with
-    # the following comments and code:
-    # ------------------------------------------------------------------
-    # The easiest way to generate regularized returns is to generate the
-    # corresponding sequence of portfolio values and calculate returns
-    # over successive intervals from it.
-    # One key advantage of doing it this way is `values_from_returns`
-    # will infer the period that the first (or last) date describes and
-    # insert a new first/last date to expand the date-range to include
-    # that period. This avoids the data-loss caused by earlier
-    # implementations
-    # values = values_from_returns(returns)
-    # ------------------------------------------------------------------
-
     # Expand the range of dates to include the beginning of the period
     # ending on the start_date:
     returns_interval = _infer_interval(returns)
@@ -205,7 +179,7 @@ def regularize_returns(returns, interval, date=None):
     # To regularize returns, determine the total return for each time
     # period of length `interval` in the dateset.
     regularized_returns = OrderedDict(
-        (date, accumulate_return(
+        (date, return_over_period(
             expanded_returns, date - interval, date))
         for date in dates)
     return regularized_returns
