@@ -377,5 +377,14 @@ class WalkForwardSampler:
         start_of_returns = min(dates) - _infer_interval(dates)
         first_date = start_of_returns + self.interval
         last_date = max(returns) - (self.interval * (walk_length - 1))
-        return list(
+        valid_dates = list(
             date for date in dates if first_date <= date <= last_date)
+        # The above gets all dates _already represented as keys in the
+        # data_, but there's one special date we want to include: the
+        # first valid date (which might need to be interpolated if
+        # `interval` is different from the interval between keys). This
+        # represents the longest possible sequence, which we want to be
+        # sure gets included:
+        if first_date not in valid_dates:
+            valid_dates.insert(0, first_date)
+        return valid_dates
