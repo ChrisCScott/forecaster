@@ -168,7 +168,7 @@ class TestWalkForwardSampler(unittest.TestCase):
         interval = dateutil.relativedelta.relativedelta(years=1, months=6)
         sampler = WalkForwardSampler((data,), interval=interval)
         sample = sampler.sample(2)
-        returns = list(sample[0].values())
+        returns = sample[0]
         total_return = (1 + returns[0]) * (1 + returns[1]) - 1
         self.assertAlmostEqual(total_return, 7)
 
