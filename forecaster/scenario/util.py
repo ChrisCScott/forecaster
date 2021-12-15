@@ -272,7 +272,7 @@ def values_from_returns(
         prev_date = date
     return values
 
-def _return_interval(values, date):
+def _return_interval(returns, date):
     """ Gets the interval for which `date` represents the return.
 
     Returns:
@@ -280,10 +280,19 @@ def _return_interval(values, date):
         return at `date` is calculated. This value is always positive.
         Or, if the interval cannot be determined, returns `None`.
     """
-    # Return the last value before `date`:
-    earlier_dates = list(val for val in values if val < date)
+    # Get the date immediately preceding `date`:
+    earlier_dates = list(val for val in returns if val < date)
     if earlier_dates:
         return relativedelta(date, max(earlier_dates))
+    # Special case: This precedes is the very first date.
+    # If `date` is within the (extended) bounds of `returns`, try to
+    # return the interval from the extended lower bound:
+    first_date = min(returns)
+    if date < first_date:
+        interval = _infer_interval(returns)
+        if date > first_date - interval:
+            return interval
+    # Otherwise: Who knows?
     return None
 
 def return_for_date_from_values(values, date, interval=None):
