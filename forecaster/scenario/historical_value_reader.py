@@ -147,7 +147,7 @@ class HistoricalValueReader(HighPrecisionHandler):
             # Generate
             return tuple(
                 regularize_returns(
-                    column, INTERVAL_ANNUAL, start_date=start_date)
+                    column, INTERVAL_ANNUAL, date=start_date)
                 for column in self.data)
         return self.data
 
