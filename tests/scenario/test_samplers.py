@@ -151,7 +151,7 @@ class TestWalkForwardSampler(unittest.TestCase):
         interval = dateutil.relativedelta.relativedelta(years=1)
         sampler = WalkForwardSampler((data,), interval=interval)
         sample = sampler.sample(2)
-        self.assertEqual(sample, [[3, 3]])
+        self.assertAlmostEqual(sample, [[3, 3]])
 
     def test_sample_interval_hard(self):
         """ Tests a walk-forward sample with hard-to-regularize dates. """
