@@ -7,7 +7,7 @@ from statistics import mode
 from collections import OrderedDict
 from dateutil.relativedelta import relativedelta
 
-def interpolate_value(values, date):
+def interpolate_value(values, date, high_precision=None):
     """ Determines a portfolio value on `date` based on nearby dates.
 
     This method is aimed at sequences like
@@ -17,7 +17,7 @@ def interpolate_value(values, date):
     expressed relative to preceding values.
 
     If values in `values` are relative, such as rates of return
-    expressed in percentage terms, then use `interpolate_return`.
+    expressed in percentage terms, then use `return_over_period`.
 
     Arguments:
         values (OrderedDict[datetime, HighPrecisionOptional]): A mapping
@@ -26,6 +26,10 @@ def interpolate_value(values, date):
             of `values` (i.e. no earlier than the earliest key-date and
             no later than the latest key-date). `date` does not need to
             be (and usually isn't) a key in `values`.
+        high_precision (Callable[[float], HighPrecisionType] | None): A
+            callable object, such as a method or class, which takes a
+            single `float` argument and returns a value in a
+            high-precision type (e.g. Decimal). Optional.
 
     Returns:
         (HighPrecisionOptional): A value at `date`. If `date` is not
@@ -314,7 +318,8 @@ def _return_interval(returns, date):
     # Otherwise: Who knows?
     return None
 
-def return_for_date_from_values(values, date, interval=None):
+def return_for_date_from_values(
+        values, date, interval=None, high_precision=None):
     """ Determines return for `date`.
 
     Each return value for a given `date` is the return observed over the
@@ -331,6 +336,10 @@ def return_for_date_from_values(values, date, interval=None):
         interval (timedelta): The period between dates. Optional.
             If not provided, determines an interval for each date based
             on proximity of adjacent dates.
+        high_precision (Callable[[float], HighPrecisionType] | None): A
+            callable object, such as a method or class, which takes a
+            single `float` argument and returns a value in a
+            high-precision type (e.g. Decimal). Optional.
 
     Returns:
         (OrderedDict[date, HighPrecisionOptional] | None):
@@ -352,12 +361,14 @@ def return_for_date_from_values(values, date, interval=None):
         return None
     # Get the values on `start_date` and `end_date`, interpolating from
     # surrounding data if necessary:
-    start_val = interpolate_value(values, start_date)
-    end_val = interpolate_value(values, end_date)
+    start_val = interpolate_value(
+        values, start_date, high_precision=high_precision)
+    end_val = interpolate_value(
+        values, end_date, high_precision=high_precision)
     # Return is just the amount by which the ratio exceeds 1:
     return end_val / start_val - 1
 
-def returns_for_dates_from_values(values, interval=None):
+def returns_for_dates_from_values(values, interval=None, high_precision=None):
     """ Generates returns for each date in `values`.
 
     By default, this is the return for each date since the preceding
@@ -382,6 +393,10 @@ def returns_for_dates_from_values(values, interval=None):
             calculated for each date. Optional. If not provided,
             determines an interval for each date based on proximity of
             adjacent dates.
+        high_precision (Callable[[float], HighPrecisionType] | None): A
+            callable object, such as a method or class, which takes a
+            single `float` argument and returns a value in a
+            high-precision type (e.g. Decimal). Optional.
 
     Returns:
         (OrderedDict[date, float | HighPrecisionType]): An ordered
@@ -392,7 +407,7 @@ def returns_for_dates_from_values(values, interval=None):
     interval_returns = OrderedDict()
     for date in values:
         returns = return_for_date_from_values(
-            values, date, interval=interval)
+            values, date, interval=interval, high_precision=high_precision)
         if returns is not None:
             interval_returns[date] = returns
     return interval_returns

@@ -113,7 +113,9 @@ class HistoricalValueReader(HighPrecisionHandler):
             convert = not self._returns_values
         if convert:
             return tuple(
-                returns_for_dates_from_values(column) for column in self.data)
+                returns_for_dates_from_values(
+                    column, high_precision=self.high_precision)
+                for column in self.data)
         return self.data
 
     def values(self, convert=None):
@@ -147,7 +149,8 @@ class HistoricalValueReader(HighPrecisionHandler):
             # Generate
             return tuple(
                 regularize_returns(
-                    column, INTERVAL_ANNUAL, date=start_date)
+                    column, INTERVAL_ANNUAL,
+                    date=start_date, high_precision=self.high_precision)
                 for column in self.data)
         return self.data
 
