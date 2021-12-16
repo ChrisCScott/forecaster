@@ -133,7 +133,7 @@ def _return_over_period(returns, start_date, end_date, high_precision):
         (date for date in returns if date < start_date), default=None)
     if prev_date is None:
         # Special case: `end_date` is first date in `returns`.
-        interval = _infer_interval(returns)
+        interval = infer_interval(returns)
         prev_date = end_date - interval
         if start_date < prev_date:
             # Don't extrapolate past prev_date
@@ -188,7 +188,7 @@ def regularize_returns(returns, interval, date=None, high_precision=None):
     """
     # Expand the range of dates to include the beginning of the period
     # ending on the start_date:
-    returns_interval = _infer_interval(returns)
+    returns_interval = infer_interval(returns)
     first_date = min(returns) - returns_interval
     expanded_returns = OrderedDict(returns)  # Avoid mutating input
     expanded_returns.update({first_date: 0})
@@ -246,7 +246,7 @@ def _get_regularized_dates(returns, date, interval):
         date += interval
     return dates
 
-def _infer_interval(returns):
+def infer_interval(returns):
     """ Infers the interval between dates in `returns`. """
     # Find all intervals between adjacent dates:
     intervals = [
@@ -278,7 +278,7 @@ def values_from_returns(
             An ordered mapping of dates to percentage returns.
     """
     if interval is None:
-        interval = _infer_interval(returns)
+        interval = infer_interval(returns)
     # Add a date just before the start of our dataset with $100 in value
     start_date = min(returns) - interval
     values = OrderedDict()
@@ -309,7 +309,7 @@ def _return_interval(returns, date):
     # return the interval from the extended lower bound:
     first_date = min(returns)
     if date < first_date:
-        interval = _infer_interval(returns)
+        interval = infer_interval(returns)
         if date > first_date - interval:
             return interval
     # Otherwise: Who knows?

@@ -4,7 +4,7 @@ from itertools import product, pairwise
 from dateutil.relativedelta import relativedelta
 import numpy
 from forecaster.scenario.util import (
-    return_over_period, regularize_returns, _infer_interval)
+    return_over_period, regularize_returns, infer_interval)
 from forecaster.utility import HighPrecisionHandler
 
 class MultivariateSampler(HighPrecisionHandler):
@@ -374,7 +374,7 @@ class WalkForwardSampler(HighPrecisionHandler):
         # `interval` beforehand (use `_infer_interval`) and (b) are far
         # enough from the end of the time period to leave enough room
         # to fit a walk-forward sequence afterwards:
-        start_of_returns = min(dates) - _infer_interval(dates)
+        start_of_returns = min(dates) - infer_interval(dates)
         first_date = start_of_returns + self.interval
         last_date = max(returns) - (self.interval * (walk_length - 1))
         valid_dates = list(
