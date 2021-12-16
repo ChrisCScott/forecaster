@@ -26,6 +26,7 @@ class TestMultivariateSampler(unittest.TestCase):
         self.data = (self.data_x, self.data_y)
 
     def setUp_decimal(self):
+        """ Converts values to Decimal """
         # pylint: disable=invalid-name
         # This follows the format of `unittest.setUp`.
 
@@ -126,6 +127,23 @@ class TestWalkForwardSampler(unittest.TestCase):
             datetime(2002, 1, 1): 0.25}
         self.data = (self.data_x, self.data_y)
 
+    def setUp_decimal(self):
+        """ Converts values to Decimal """
+        # pylint: disable=invalid-name
+        # This follows the format of `unittest.setUp`.
+
+        # Generate a dataset where values double annually and another
+        # where they halve annually:
+        self.data_x = {
+            datetime(2000, 1, 1): Decimal(1),
+            datetime(2001, 1, 1): Decimal(2),
+            datetime(2002, 1, 1): Decimal(4)}
+        self.data_y = {
+            datetime(2000, 1, 1): Decimal(1),
+            datetime(2001, 1, 1): Decimal(0.5),
+            datetime(2002, 1, 1): Decimal(0.25)}
+        self.data = (self.data_x, self.data_y)
+
     def test_sample_basic(self):
         """ Tests a basic walk-forward sample. """
         # Get a 2-year walk-forward sequence:
@@ -182,6 +200,40 @@ class TestWalkForwardSampler(unittest.TestCase):
             datetime(2000, 1, 1): 1,
             datetime(2001, 1, 1): 1,
             datetime(2002, 1, 1): 1}
+        # `data` spans 3 years with annual datapoints. Use an interval
+        # of 1.5 years to require recalculation. There is only one
+        # length 2 sequence of dates covering this period (with dates on
+        # 2002-01-01 and 2000-07-01). The exact calculation of returns
+        # is an implementation detail, but the total return over the
+        # three years should be retained: 800% (i.e. a return of 7).
+        interval = dateutil.relativedelta.relativedelta(years=1, months=6)
+        sampler = WalkForwardSampler((data,), interval=interval)
+        sample = sampler.sample(2)
+        returns = sample[0]
+        total_return = (1 + returns[0]) * (1 + returns[1]) - 1
+        self.assertAlmostEqual(total_return, 7)
+
+    def test_decimal_sample_basic(self):
+        """ Tests decimal support based on `test_sample_basic`. """
+        self.setUp_decimal()
+        # Get a 2-year walk-forward sequence:
+        sampler = WalkForwardSampler(self.data, high_precision=Decimal)
+        sample = sampler.sample(2)
+        sample1, sample2 = sample  # separate sampled vars
+        # No matter the sequence, the first variable should double and
+        # the second variable should halve year-over-year.
+        sample1_growth = sample1[1] / sample1[0]
+        sample2_growth = sample2[1] / sample2[0]
+        self.assertEqual(sample1_growth, 2)
+        self.assertEqual(sample2_growth, 0.5)
+
+    def test_decimal_sample_hard(self):
+        """ Tests decimal support based on `test_sample_interval_hard`. """
+        self.setUp_decimal()
+        data = {
+            datetime(2000, 1, 1): Decimal(1),
+            datetime(2001, 1, 1): Decimal(1),
+            datetime(2002, 1, 1): Decimal(1)}
         # `data` spans 3 years with annual datapoints. Use an interval
         # of 1.5 years to require recalculation. There is only one
         # length 2 sequence of dates covering this period (with dates on

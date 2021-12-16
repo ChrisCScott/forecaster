@@ -176,7 +176,7 @@ class MultivariateSampler(HighPrecisionHandler):
             for column in (data1, data2))
         return aligned_data
 
-class WalkForwardSampler:
+class WalkForwardSampler(HighPrecisionHandler):
     """ Generates walk-forward samples of returns from historical data.
 
     This class generates sequences of returns for any number of
@@ -236,7 +236,9 @@ class WalkForwardSampler:
     random = numpy.random.default_rng()
 
     def __init__(
-            self, data, synchronize=False, wrap_data=False, interval=None):
+            self, data, synchronize=False, wrap_data=False, interval=None,
+            high_precision=None):
+        super().__init__(high_precision=high_precision)
         self.data = data
         self.synchronize = synchronize
         self.wrap_data = wrap_data
