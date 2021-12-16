@@ -49,15 +49,12 @@ def interpolate_value(values, date, high_precision=None):
     index = bisect_left(dates, date)
     prev_date = dates[index-1]
     next_date = dates[index]
-    # Weight values based on how close they are to `date`:
-    days_total = (next_date - prev_date).days
-    days_prev = (date - prev_date).days
-    days_next = (next_date - date).days
-    weighted_prev = days_prev * values[prev_date]
-    weighted_next = days_next * values[next_date]
-    # Interpolate a value on `date` based on the dates before/after:
-    weighted_total = (weighted_next + weighted_prev) / days_total
-    return weighted_total
+    # Find out how much the portfolio grew between prev_date and date:
+    returns = {prev_date: 0, next_date: values[next_date] / values[prev_date]}
+    growth = return_over_period(
+        returns, prev_date, date, high_precision=high_precision)
+    # Apply that growth and voila: the new portfolio value
+    return values[prev_date] * (growth + 1)
 
 def return_over_period(returns, start_date, end_date, high_precision=None):
     """ Determines the total return between `start_date` and `end_date`.
