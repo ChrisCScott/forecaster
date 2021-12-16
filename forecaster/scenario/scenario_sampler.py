@@ -2,7 +2,8 @@
 
 from collections import namedtuple
 from forecaster.scenario.samplers import MultivariateSampler, WalkForwardSampler
-from forecaster.scenario import Scenario, HistoricalValueReader
+from forecaster.scenario.scenario import Scenario
+from forecaster.scenario.historical_value_reader import HistoricalValueReader
 from forecaster.utility import (
     HighPrecisionHandler, MethodRegister, registered_method_named)
 
