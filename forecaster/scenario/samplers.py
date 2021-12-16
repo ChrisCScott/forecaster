@@ -34,6 +34,10 @@ class MultivariateSampler(HighPrecisionHandler):
             matrix for the variables being sampled. These values will be
             used if provided instead of covariance statistics generated
             from `data`. (`None` values are ignored.) Optional.
+        high_precision (Callable[[float], HighPrecisionType] | None): A
+            callable object, such as a method or class, which takes a
+            single `float` argument and returns a value in a
+            high-precision type (e.g. Decimal). Optional.
 
     Attributes:
         data (list[dict[datetime, HighPrecisionOptional]]): An array
@@ -216,6 +220,10 @@ class WalkForwardSampler(HighPrecisionHandler):
             module. See `scenario.util.regularize_returns` for more
             details on this conversion.
             Optional; if not provided, returns are sampled as-is.
+        high_precision (Callable[[float], HighPrecisionType] | None): A
+            callable object, such as a method or class, which takes a
+            single `float` argument and returns a value in a
+            high-precision type (e.g. Decimal). Optional.
 
     Attributes:
         data (list[dict[datetime, HighPrecisionOptional]]): An array
@@ -317,7 +325,8 @@ class WalkForwardSampler(HighPrecisionHandler):
         # Adjust returns to the selected interval if provided:
         if self.interval is not None:
             returns = regularize_returns(
-                returns, self.interval, date=start_date)
+                returns, self.interval,
+                date=start_date, high_precision=self.high_precision)
         # Start the returns at `start_date`:
         sequence = [
             val for (date, val) in returns.items() if date >= start_date]

@@ -55,7 +55,7 @@ def interpolate_value(values, date):
     weighted_total = (weighted_next + weighted_prev) / days_total
     return weighted_total
 
-def return_over_period(returns, start_date, end_date):
+def return_over_period(returns, start_date, end_date, high_precision=None):
     """ Determines the total return between `start_date` and `end_date`.
 
     Arguments:
@@ -69,6 +69,10 @@ def return_over_period(returns, start_date, end_date):
             the keys of `returns` (i.e. no earlier than the earliest
             key-date and no later than the latest key-date). `date` does
             not need to be a key in `returns`.
+        high_precision (Callable[[float], HighPrecisionType] | None): A
+            callable object, such as a method or class, which takes a
+            single `float` argument and returns a value in a
+            high-precision type (e.g. Decimal). Optional.
 
     Returns:
         (HighPrecisionOptional): The total return between `start_date`
@@ -90,13 +94,15 @@ def return_over_period(returns, start_date, end_date):
         def accum_returns(accum, date_pair):
             """ Grows `accum` by return over period of `date_pair` """
             start_date, end_date = date_pair
-            return accum * (1+return_over_period(returns, start_date, end_date))
+            return accum * (
+                1 + _return_over_period(
+                    returns, start_date, end_date, high_precision))
         return reduce(accum_returns, pairwise(dates), 1) - 1
     # We only need to do the above on the first call, not on recursion.
     # So split off the remaining logic into a separate function call:
-    return _return_over_period(returns, start_date, end_date)
+    return _return_over_period(returns, start_date, end_date, high_precision)
 
-def _return_over_period(returns, start_date, end_date):
+def _return_over_period(returns, start_date, end_date, high_precision):
     """ Recursive helper for `return_over_period`.
 
     In this function, `start_date` and `end_date` are assumed to be
@@ -112,9 +118,11 @@ def _return_over_period(returns, start_date, end_date):
     # end on a key date, so are not trimmed on the right-hand-side.)
     if end_date not in returns:
         next_date = min(date for date in returns if date > end_date)
-        return (
-            (1 + _return_over_period(returns, start_date, next_date)) /
-            (1 + _return_over_period(returns, end_date, next_date))) - 1
+        total_return = (1 + _return_over_period(
+                returns, start_date, next_date, high_precision))
+        trimmed_return = (1 + _return_over_period(
+                returns, end_date, next_date, high_precision))
+        return total_return / trimmed_return - 1
     # If we're made it here, we can guarantee that `end_date` is in
     # returns but `start_date` isn't. Find the bounds for the full
     # period ending on `end_date`, determine the daily rate of return
@@ -137,11 +145,17 @@ def _return_over_period(returns, start_date, end_date):
     # where P is a portfolio value, `r_t` is the return over `interval`,
     # `r_d` is the daily rate or return, and `d` is the number of days
     # in `interval`. We can thus solve for `r_d`:
-    daily_return = (1 + returns[end_date]) ** (1 / interval.days) - 1
+    # Convert exponents to high-precision if needed:
+    interval_pow = 1 / interval.days
+    elapsed_pow = elapsed.days
+    if high_precision is not None:
+        interval_pow = high_precision(interval_pow)
+        elapsed_pow = high_precision(elapsed_pow)
+    daily_return = ((1 + returns[end_date]) ** interval_pow) - 1
     # Then compound the daily return over the elapsed number of days:
-    return (1 + daily_return) ** elapsed.days - 1
+    return (1 + daily_return) ** elapsed_pow - 1
 
-def regularize_returns(returns, interval, date=None):
+def regularize_returns(returns, interval, date=None, high_precision=None):
     """ Generates a sequence of returns with regularly-spaced dates.
 
     The resulting sequence contains only dates which are spaced apart
@@ -157,6 +171,10 @@ def regularize_returns(returns, interval, date=None):
         date (datetime): The date from which all other dates in the
             resulting sequence are calculated.
             Optional; defaults to the first date in `returns`.
+        high_precision (Callable[[float], HighPrecisionType] | None): A
+            callable object, such as a method or class, which takes a
+            single `float` argument and returns a value in a
+            high-precision type (e.g. Decimal). Optional.
 
     Returns:
         (OrderedDict[datetime, HighPrecisionOptional]): A mapping of
@@ -180,7 +198,8 @@ def regularize_returns(returns, interval, date=None):
     # period of length `interval` in the dateset.
     regularized_returns = OrderedDict(
         (date, return_over_period(
-            expanded_returns, date - interval, date))
+            expanded_returns, date - interval, date,
+            high_precision=high_precision))
         for date in dates)
     return regularized_returns
 

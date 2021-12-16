@@ -241,7 +241,8 @@ class TestWalkForwardSampler(unittest.TestCase):
         # is an implementation detail, but the total return over the
         # three years should be retained: 800% (i.e. a return of 7).
         interval = dateutil.relativedelta.relativedelta(years=1, months=6)
-        sampler = WalkForwardSampler((data,), interval=interval)
+        sampler = WalkForwardSampler(
+            (data,), interval=interval, high_precision=Decimal)
         sample = sampler.sample(2)
         returns = sample[0]
         total_return = (1 + returns[0]) * (1 + returns[1]) - 1
