@@ -3,7 +3,7 @@
 from bisect import bisect_left
 from itertools import pairwise
 from functools import reduce
-from statistics import mode
+from statistics import mode, StatisticsError
 from collections import OrderedDict
 from dateutil.relativedelta import relativedelta
 
@@ -249,13 +249,30 @@ def _get_regularized_dates(returns, date, interval):
     return dates
 
 def infer_interval(returns):
-    """ Infers the interval between dates in `returns`. """
+    """ Infers the interval between dates in `returns`.
+
+    This method returns the most common (i.e. modal) interval between
+    dates in `returns`. Where there are multiple modes, the one that
+    first appears closest to the first date in `returns` is returned.
+
+    Arguments:
+        returns (OrderedDict[datetime, HighPrecisionOptional]): A
+            mapping of dates to relative values, e.g. rates of return.
+
+    Returns:
+        (relativedelta | None): The modal interval between dates in
+        `returns`, or `None` if this cannot be determined.
+    """
     # Find all intervals between adjacent dates:
-    intervals = [
-        relativedelta(end, start) for (start, end) in pairwise(returns)]
+    intervals = (
+        relativedelta(end, start) for (start, end) in pairwise(returns))
     # Return the modal interval. (If there are multiple modes, this
     # returns the one that first appears closest to the start date)
-    return mode(intervals)
+    try:
+        return mode(intervals)
+    except StatisticsError:
+        # If there's not enough data to infer from, return `None`
+        return None
 
 def values_from_returns(
         returns, interval=None, start_val=100):
