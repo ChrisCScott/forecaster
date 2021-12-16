@@ -5,8 +5,9 @@ from dateutil.relativedelta import relativedelta
 import numpy
 from forecaster.scenario.util import (
     return_over_period, regularize_returns, _infer_interval)
+from forecaster.utility import HighPrecisionHandler
 
-class MultivariateSampler:
+class MultivariateSampler(HighPrecisionHandler):
     """ Generates samples of returns from historical data.
 
     This class models a distribution for an arbitrary number of
@@ -51,7 +52,8 @@ class MultivariateSampler:
     random = numpy.random.default_rng()
 
     def __init__(
-            self, data, means=None, covariances=None):
+            self, data, means=None, covariances=None, high_precision=None):
+        super().__init__(high_precision=high_precision)
         # Initialize member attributes:
         self.data = data
         self.means = self._generate_means(data, means)
@@ -99,8 +101,7 @@ class MultivariateSampler:
             else numpy.mean(list(data[i].values()))
             for i in range(size))
 
-    @classmethod
-    def _generate_covariances(cls, data, covariances=None):
+    def _generate_covariances(self, data, covariances=None):
         """ Generates missing covariances for each variable in `data`.
 
         Any `None` entries will be filled in based on covariances
@@ -123,50 +124,36 @@ class MultivariateSampler:
             (list(list(HighPrecisionOptional))): A two-dimensional
             array of covariance values.
         """
-        # If no `covariances` was provided, this is easy; use numpy.cov:
+        # Find the caovariance matrix for the data provided.
+        # Use `ddof=0` to get `numpy.cov` to agree with `numpy.var`
+        # See here for more:
+        # https://stackoverflow.com/questions/21030668/why-do-numpy-cov-diagonal-elements-and-var-functions-have-different-values
+        data_array = list(list(column.values()) for column in data)
+        # Support high-precision numeric types:
+        if self.high_precision is not None:
+            # We don't need exact values when sampling, so support
+            # high-precision types by casting them to `float`:
+            array = numpy.array(data_array).astype(numpy.dtype(float))
+            cov_matrix = numpy.cov(array, ddof=0).astype(object)
+            # Cast back to high-precision type on return:
+            for (index, val) in numpy.ndenumerate(cov_matrix):
+                cov_matrix[index] = self.high_precision(val)
+        else:
+            cov_matrix = numpy.cov(data_array, ddof=0)
+        # If no `covariances` was provided, nothing left to do:
         if covariances is None:
-            data_array = list(list(var.values()) for var in data)
-            # Use `ddof=0` to get `numpy.cov` to agree with `numpy.var`
-            # See here for more:
-            # https://stackoverflow.com/questions/21030668/why-do-numpy-cov-diagonal-elements-and-var-functions-have-different-values
-            covariances = numpy.cov(data_array, ddof=0)
-            return list(list(var) for var in covariances)
-        # Otherwise, we need to iterate over `covariances` and replace
-        # `None` values with statistics from `data`.
-        size = len(data)  # Rows/cols must be this size. Use this below.
-        if None in covariances:
-            # If no row/col of covariances is provided for a given variable,
-            # expand it to a row/col of `None` values for later replacement:
-            covariances = [
-                val if val is not None else [None] * size
-                for val in covariances]
-        # We need to change entries in `covariances`. To avoid mutating
-        # the input matrix, and to ensure that we don't try to mutate a
-        # tuple or similar, convert `covariances` to a 2D list-matrix:
-        covariances = list(list(var) for var in covariances)
-        # Iterate over the 2D covariance matrix and replace each `None`
-        # value with the pairwise covariance:
-        for i in range(size):
-            # Fill in the diagonal elements:
-            if covariances[i][i] is None:
-                covariances[i][i] = numpy.var(list(data[i].values()))
-            # Fill in the non-diagonal elements:
-            for j in range(i+1, size):
-                if covariances[i][j] is None or covariances[j][i] is None:
-                    aligned_data = cls._align_data(data[i], data[j])
-                    # Use `ddof=0` to get `numpy.cov` to agree with
-                    # `numpy.var`. See here for more:
-                    # https://stackoverflow.com/questions/21030668/why-do-numpy-cov-diagonal-elements-and-var-functions-have-different-values
-                    cov_matrix = numpy.cov(aligned_data, ddof=0)
-                    # numpy.cov returns a 2x2 covariance matrix, but what we
-                    # actually want is just one of the two (identical)
-                    # off-diagonal entries to get the pairwise covariance:
-                    covariance = cov_matrix[1][0]
-                    # A covariance matrix is symmetric, so we can fill in
-                    # the (i,j) and (j,i) entries at the same time:
-                    covariances[i][j] = covariance
-                    covariances[j][i] = covariance
-        return covariances
+            return list(list(column) for column in cov_matrix)
+        # Otherwise, overwrite each entry of `cov_matrix` if there's a
+        # corresponding non-None entry in `covariances`:
+        for (i, column) in enumerate(covariances):
+            # Skip empty columns:
+            if column is None:
+                continue
+            for (j, entry) in enumerate(column):
+                if entry is not None:
+                    cov_matrix[i][j] = entry
+        # Cast numpy.ndarry back to a familiar type:
+        return list(list(column) for column in cov_matrix)
 
     @staticmethod
     def _align_data(data1, data2):

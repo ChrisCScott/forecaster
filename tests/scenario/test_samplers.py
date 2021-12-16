@@ -25,6 +25,20 @@ class TestMultivariateSampler(unittest.TestCase):
             datetime(2001, 1, 1): 1}
         self.data = (self.data_x, self.data_y)
 
+    def setUp_decimal(self):
+        # pylint: disable=invalid-name
+        # This follows the format of `unittest.setUp`.
+
+        # Generate a dataset with mean 1.5 for each variable
+        # and covariance matrix [[0.25, -0.25], [-0.25, 0.25]]:
+        self.data_x = {
+            datetime(2000, 1, 1): Decimal(1),
+            datetime(2001, 1, 1): Decimal(2)}
+        self.data_y = {
+            datetime(2000, 1, 1): Decimal(2),
+            datetime(2001, 1, 1): Decimal(1)}
+        self.data = (self.data_x, self.data_y)
+
     def test_means(self):
         """ Test calculation of means from data input. """
         sampler = MultivariateSampler(self.data)
@@ -86,6 +100,15 @@ class TestMultivariateSampler(unittest.TestCase):
             numpy.cov(samples_x, samples_y, ddof=0)[1][0],
             numpy.cov(data_x, data_y, ddof=0)[1][0],
             delta=0.02)
+
+    def test_decimal(self):
+        """ Test Decimal support based on `test_means_explicit`. """
+        self.setUp_decimal()
+        # Override the mean for just the second var:
+        sampler = MultivariateSampler(
+            self.data, means=(None, Decimal(10)),
+            high_precision=Decimal)
+        self.assertEqual(sampler.means, [Decimal(1.5), Decimal(10)])
 
 class TestWalkForwardSampler(unittest.TestCase):
     """ A test suite for the `WalkForwardSampler` class. """
