@@ -142,19 +142,21 @@ def _return_over_period(returns, start_date, end_date, high_precision):
     elapsed = end_date - start_date
     # Assume that the rate of growth is constant over `interval` and
     # compounds daily. Then the return over `interval` is given by:
-    # `P(1+r_t)=P(1+r_d)^d`
-    # where P is a portfolio value, `r_t` is the return over `interval`,
-    # `r_d` is the daily rate or return, and `d` is the number of days
-    # in `interval`. We can thus solve for `r_d`:
-    # Convert exponents to high-precision if needed:
-    interval_pow = 1 / interval.days
-    elapsed_pow = elapsed.days
-    if high_precision is not None:
-        interval_pow = high_precision(interval_pow)
-        elapsed_pow = high_precision(elapsed_pow)
-    daily_return = ((1 + returns[end_date]) ** interval_pow) - 1
-    # Then compound the daily return over the elapsed number of days:
-    return (1 + daily_return) ** elapsed_pow - 1
+    # `P(1+r_t)=P(1+r_d)^t`
+    # and more generally the return over any number of days can be
+    # expressed as:
+    # `P(1+r_t)^(d/t)=P(1+r_d)^d`
+    # where P is a portfolio value, `r_t` is the return over `interval`
+    # having length `t` (in days), `r_d` is the daily rate of return,
+    # and `d` is the number of days of compounding.
+    # We can thus solve for `r_d`:
+    # `r_d = (1 + r_t)^(d/t)-1`
+    if not high_precision:
+        # Convert exponent to high-precision if needed:
+        exp = elapsed.days / interval.days
+    else:
+        exp = high_precision(elapsed.days) / high_precision(interval.days)
+    return ((1 + returns[end_date]) ** exp) - 1
 
 def regularize_returns(returns, interval, date=None, high_precision=None):
     """ Generates a sequence of returns with regularly-spaced dates.
