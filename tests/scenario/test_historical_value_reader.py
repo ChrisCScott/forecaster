@@ -23,6 +23,14 @@ RETURNS_VALUES = {
 class TestHistoricalReturnReader(unittest.TestCase):
     """ Tests the `HistoricalReturnReader` class. """
 
+    def test_read_read(self):
+        """ Reads from real-world CSV files """
+        # Just ensure that we're reading in the right number of columns;
+        # this test is mostly about confirming that we can read a file
+        # with big numbers without raising an exception:
+        reader = HistoricalValueReader('msci_world.csv')
+        self.assertEqual(len(reader.data), 1)
+
     def test_read_values_default(self):
         """ Reads from test_portfolio_values.csv """
         reader = HistoricalValueReader(TEST_PATH_PORTFOLIO)
