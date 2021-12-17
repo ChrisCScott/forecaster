@@ -5,7 +5,7 @@ from collections import OrderedDict
 import datetime
 import dateutil
 from forecaster.scenario.util import (
-    regularize_returns, values_from_returns, returns_for_dates_from_values)
+    regularize_returns, values_from_returns, returns_from_values)
 from forecaster.utility import resolve_data_path, HighPrecisionHandler
 
 # Assume incomplete dates are in the first month/day:
@@ -113,7 +113,7 @@ class HistoricalValueReader(HighPrecisionHandler):
             convert = not self._returns_values
         if convert:
             return tuple(
-                returns_for_dates_from_values(
+                returns_from_values(
                     column, high_precision=self.high_precision)
                 for column in self.data)
         return self.data

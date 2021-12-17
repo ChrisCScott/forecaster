@@ -334,8 +334,7 @@ def _return_interval(returns, date):
     # Otherwise: Who knows?
     return None
 
-def return_for_date_from_values(
-        values, date, interval=None, high_precision=None):
+def return_for_date(values, date, interval=None, high_precision=None):
     """ Determines return for `date`.
 
     Each return value for a given `date` is the return observed over the
@@ -384,7 +383,7 @@ def return_for_date_from_values(
     # Return is just the amount by which the ratio exceeds 1:
     return end_val / start_val - 1
 
-def returns_for_dates_from_values(values, interval=None, high_precision=None):
+def returns_from_values(values, interval=None, high_precision=None):
     """ Generates returns for each date in `values`.
 
     By default, this is the return for each date since the preceding
@@ -422,7 +421,7 @@ def returns_for_dates_from_values(values, interval=None, high_precision=None):
     """
     interval_returns = OrderedDict()
     for date in values:
-        returns = return_for_date_from_values(
+        returns = return_for_date(
             values, date, interval=interval, high_precision=high_precision)
         if returns is not None:
             interval_returns[date] = returns
