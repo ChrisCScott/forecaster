@@ -16,26 +16,6 @@ DEFAULT_FILENAMES = ReturnsTuple(
     other='nareit.csv',
     inflation='cpi.csv')
 
-# TODO: REFACTOR!!!! Create a wrapper for HistoricalValueReader that
-# reads in multiple files (from an arbitrary-length tuple/list),
-# stores results (in tuples). Expand HistoricalValueReader to
-# provides helper functions for:
-#   1. generating annual returns over a date range
-#   2. generating annualized returns for a given date
-#   3. generating annualized returns for all dates
-#      (or dates in a set/list/tuple?)
-#   4. interpolating a value for a date within the bounds of a
-#      dataset
-#
-# Revise `ScenarioSampler` to be a `MethodRegister` that reads in
-# files to get data, then passes in appropriately-processed data
-# to sampling classes (e.g. MultivariateSampler) which
-# yield tuples of sampled results (via `sample()`).
-# `ScenarioSamper` processes these to build `Scenario` objects and
-# yields them via `__iter__`. Consider using a `NamedTuple` for
-# convenience in `ScenarioSampler` and casting to/from this when
-# calling a sampling class.
-
 class ScenarioSampler(HighPrecisionHandler, MethodRegister):
     """ A generator for `Scenario` objects.
 
@@ -83,6 +63,7 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
         self.sampler = sampler
         self.num_samples = num_samples
         self.default_scenario = default_scenario
+        self.data = ReturnsTuple(*((tuple(),) * 4))
         if filenames is not None:
             self.data = self.read_data(filenames, returns=returns)
 
@@ -125,7 +106,8 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
     @registered_method_named('walk-forward')
     def sampler_walk_forward(self):
         """ Yields `Scenario` objects with walk-forward returns. """
-        sampler = WalkForwardSampler(self.data)
+        sampler = WalkForwardSampler(
+            self.data, high_precision=self.high_precision)
         samples = sampler.sample(
             self.default_scenario.num_years, num_samples=self.num_samples)
         for sample in samples:
@@ -134,7 +116,8 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
     @registered_method_named('random returns')
     def sampler_random_returns(self):
         """ Yields `Scenario` objects with random returns. """
-        sampler = MultivariateSampler(self.data)
+        sampler = MultivariateSampler(
+            self.data, high_precision=self.high_precision)
         # Get `num_samples` samples with `num_years` values for each variable:
         samples = sampler.sample(
             num_samples=(self.num_samples, self.default_scenario.num_years))
@@ -146,7 +129,8 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
     @registered_method_named('constant returns')
     def sampler_constant_returns(self):
         """ Yields `Scenario` objects with constant-valued returns. """
-        sampler = MultivariateSampler(self.data)
+        sampler = MultivariateSampler(
+            self.data, high_precision=self.high_precision)
         # Get `num_samples` samples with 1 value for each variable:
         samples = sampler.sample(num_samples=self.num_samples)
         # Build a `Scenario` object with each collection of sampled
