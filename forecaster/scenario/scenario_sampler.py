@@ -69,7 +69,7 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
 
     def __iter__(self):
         """ Yields `num_samples` `Scenario` objects using `sampler`. """
-        yield self.call_registered_method(self.sampler)
+        return self.call_registered_method(self.sampler)
 
     def read_data(self, filenames, returns=None):
         """ Reads data from `filenames` and merges results.
