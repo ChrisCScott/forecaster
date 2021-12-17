@@ -47,6 +47,7 @@ class TestScenarioSampler(unittest.TestCase):
         sampler = ScenarioSampler(
             ScenarioSampler.sampler_walk_forward, 2,
             self.scenario, filenames=None)
+        sampler.data = self.data
         # Convert to list so we can count scenarios:
         scenarios = list(sampler)
         # There are only two valid walk-forward returns of length 2
