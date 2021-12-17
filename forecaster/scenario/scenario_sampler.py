@@ -101,7 +101,7 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
             for filename in filenames)
         # The above produces a tuple where each element is another tuple
         # of one or more columns. Reduce this to a tuple of columns:
-        return ReturnsTuple(sum(returns_tuples, ()))
+        return ReturnsTuple(*sum(returns_tuples, ()))
 
     @registered_method_named('walk-forward')
     def sampler_walk_forward(self):
