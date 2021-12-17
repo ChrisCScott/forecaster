@@ -15,14 +15,15 @@ INTERVAL_ANNUAL = dateutil.relativedelta.relativedelta(years=1)
 class HistoricalValueReader(HighPrecisionHandler):
     """ Reads historical value data from CSV files.
 
-    This reads in a UTF-8 encoded CSV file with the following format:
+    This reads in a UTF-8 encoded, comma-delimited CSV file with the
+    following format:
 
     | Date Header | Value Header | Value Header | ...
     |-------------|--------------|--------------|
     | date        | 100.0        | 100.0        | ...
 
-    The header row is optional and is not used. This should generally be
-    identified correctly, as long as your header isn't a number.
+    The header row is optional and is not used. Headers may have any
+    non-numeric value and are allowed only for human-readability.
 
     The first column must be dates. Data in the date column is converted
     from `str` to `datetime.datetime` via `dateutils.parse`. Non-empty
@@ -183,26 +184,27 @@ class HistoricalValueReader(HighPrecisionHandler):
         # specific incompatibilities.
         sample = file.read(1024)
         sniffer = csv.Sniffer()
-        dialect = sniffer.sniff(sample)
+        dialect = sniffer.sniff(sample, delimiters=',')
         # We want to discard the header, if the file has one.
-        # Sniffer.has_header is unreliable, so test manually too.
         has_header = sniffer.has_header(sample)
-        # Return to beginning of file to read in the first row for
-        # manual tests:
+        # Sniffer.has_header is unreliable, so test manually too.
+        if not has_header:
+            # Return to beginning of file to read in the first row for
+            # manual tests:
+            file.seek(0)
+            reader = csv.reader(file, dialect=dialect)
+            first_row = next(reader)
+            # Attempt to cast the second column to float; if it fails,
+            # infer that this file has a header:
+            try:
+                _ = self._convert_entry(first_row[1])
+            except:  # pylint: disable=bare-except
+                # We don't know what type of exception `high_precision`
+                # might throw
+                has_header = True
+        # Return to beginning of file for later processing:
         file.seek(0)
-        reader = csv.reader(file, dialect=dialect)
-        first_row = next(reader)
-        # Attempt to cast the second column to float; if it fails,
-        # infer that this file has a header:
-        try:
-            _ = self._convert_entry(first_row[1])
-        except:  # pylint: disable=bare-except
-            # We don't know what type of exception `high_precision`
-            # might throw
-            has_header = True
-        # Return to beginning of file again for later processing:
-        file.seek(0)
-        reader = csv.reader(file, dialect=dialect)
+        reader = csv.reader(file, dialect=csv.excel)
         if has_header:  # discard header, if provided:
             next(reader)
         return reader
