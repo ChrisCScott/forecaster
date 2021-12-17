@@ -17,17 +17,17 @@ class HistoricalValueReader(HighPrecisionHandler):
 
     This reads in a UTF-8 encoded CSV file with the following format:
 
-    | Date Header | Value Header | Value Header |
+    | Date Header | Value Header | Value Header | ...
     |-------------|--------------|--------------|
-    | date        | 100.0        | 100.0        |
+    | date        | 100.0        | 100.0        | ...
 
-    The header row is optional and is not used. The first column must be
-    dates.
+    The header row is optional and is not used. This should generally be
+    identified correctly, as long as your header isn't a number.
 
-    Data in the date column is converted from `str` to
-    `datetime.datetime` via `dateutils.parse`. Non-empty data in value
-    columns is converted to `float` or to a high-precision numeric type
-    (if `high_precision` is provided.)
+    The first column must be dates. Data in the date column is converted
+    from `str` to `datetime.datetime` via `dateutils.parse`. Non-empty
+    data in value columns is converted to `float` or to a high-precision
+    numeric type (if `high_precision` is provided.)
 
     Arguments:
         filename (str): The filename of a CSV file to read. The file
@@ -66,35 +66,8 @@ class HistoricalValueReader(HighPrecisionHandler):
         # (newline='' is recommended for file objects. See:
         # https://docs.python.org/3/library/csv.html#id3)
         with open(filename, encoding='utf-8', newline='') as file:
-            # Detect the dialect to reduce the odds of application-
-            # specific incompatibilities.
-            sample = file.read(1024)
-            sniffer = csv.Sniffer()
-            dialect = sniffer.sniff(sample)
-            has_header = sniffer.has_header(sample) # we'll use this later
-            file.seek(0) # return to beginning of file for processing
-            # Get ready to read in the file:
-            reader = csv.reader(file, dialect=dialect)
-            # Discard the header row, if any:
-            if has_header:
-                next(reader)
-            # Read the file one row at a time:
-            data = []
-            for row in reader:
-                row_iter = iter(row)
-                # Convert the str-encoded date to `date`:
-                date = dateutil.parser.parse(
-                    next(row_iter), default=DATE_DEFAULT)
-                # Process each non-date entry for the row:
-                for (i, entry) in enumerate(row_iter):
-                    # Skip empty values:
-                    if not entry:
-                        continue
-                    # We don't know how many columns are in the data
-                    # in advance, so add them dynamically:
-                    while len(data) <= i:
-                        data.append({})
-                    data[i][date] = self._convert_entry(entry)
+            reader = self._get_csv_reader(file)
+            data = self._get_data_from_csv_reader(reader)
         # Sort by date to make it easier to build rolling-window
         # scenarios:
         self.data = tuple(
@@ -198,6 +171,59 @@ class HistoricalValueReader(HighPrecisionHandler):
 
     def _convert_entry(self, entry):
         """ Converts to str entry to a numeric type. """
+        # Remove leading/trailing spaces and commas:
+        entry = entry.strip(' ').replace(',', '')
         if self.high_precision is not None:
             return self.high_precision(entry)
         return float(entry)
+
+    def _get_csv_reader(self, file):
+        """ Determines the dialect of `file` and whether it has a header """
+        # Detect the dialect to reduce the odds of application-
+        # specific incompatibilities.
+        sample = file.read(1024)
+        sniffer = csv.Sniffer()
+        dialect = sniffer.sniff(sample)
+        # We want to discard the header, if the file has one.
+        # Sniffer.has_header is unreliable, so test manually too.
+        has_header = sniffer.has_header(sample)
+        # Return to beginning of file to read in the first row for
+        # manual tests:
+        file.seek(0)
+        reader = csv.reader(file, dialect=dialect)
+        first_row = next(reader)
+        # Attempt to cast the second column to float; if it fails,
+        # infer that this file has a header:
+        try:
+            _ = self._convert_entry(first_row[1])
+        except:  # pylint: disable=bare-except
+            # We don't know what type of exception `high_precision`
+            # might throw
+            has_header = True
+        # Return to beginning of file again for later processing:
+        file.seek(0)
+        reader = csv.reader(file, dialect=dialect)
+        if has_header:  # discard header, if provided:
+            next(reader)
+        return reader
+
+    def _get_data_from_csv_reader(self, reader):
+        """ Reads in non-header rows of a CSV file and returns rows/cols """
+        # Read the file one row at a time:
+        data = []
+        for row in reader:
+            row_iter = iter(row)
+            # Convert the str-encoded date to `date`:
+            date = dateutil.parser.parse(
+                next(row_iter), default=DATE_DEFAULT)
+            # Process each non-date entry for the row:
+            for (i, entry) in enumerate(row_iter):
+                # Skip empty values:
+                if not entry:
+                    continue
+                # We don't know how many columns are in the data
+                # in advance, so add them dynamically:
+                while len(data) <= i:
+                    data.append({})
+                data[i][date] = self._convert_entry(entry)
+        return data
