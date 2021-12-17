@@ -278,7 +278,31 @@ def values_from_returns(
         returns, interval=None, start_val=100):
     """ Converts returns to portfolio values.
 
-    The resulting sequence of values will start with a value of 100.
+    The resulting sequence of values has the same dates as `returns`,
+    except that it also adds a a date preceding the first date in
+    returns by `interval`. The value at the added date is `start_val`.
+    For each other date, the corresponding value is the new portfolio
+    value after growing (or shrinking, for negative values) the previous
+    portfolio value by the value for that date in `returns`.
+
+    If `interval` is not provided, `values_from_returns` will insert a
+    date based on the apparent frequency of data in `returns` (c.f.
+    `infer_interval`).
+
+    Example:
+        ```
+        returns = {
+            datetime(2000,1,1): 2,
+            datetime(2001,1,1): 2}
+        values = values_from_returns(returns)
+        ```
+        In this example, `values` is given by:
+        ```
+        {
+            datetime(1999,1,1): 100,
+            datetime(2000,1,1): 200,
+            datetime(2001,1,1): 400}
+        ```
 
     Arguments:
         returns (OrderedDict[date, HighPrecisionOptional]):
