@@ -8,7 +8,7 @@ __all__ = [
 ]
 
 from forecaster.scenario.scenario import Scenario, InflationAdjust
-from forecaster.scenario.scenario_sampler import ScenarioSampler
+from forecaster.scenario.scenario_sampler import ScenarioSampler, ReturnsTuple
 from forecaster.scenario.samplers import MultivariateSampler, WalkForwardSampler
 from forecaster.scenario.historical_value_reader import HistoricalValueReader
 from forecaster.scenario.util import (
