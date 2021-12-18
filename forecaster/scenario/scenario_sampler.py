@@ -7,8 +7,9 @@ from forecaster.scenario.historical_value_reader import HistoricalValueReader
 from forecaster.utility import (
     HighPrecisionHandler, MethodRegister, registered_method_named)
 
+RETURNS_FIELDS = ('stocks', 'bonds', 'other', 'inflation')
 ReturnsTuple = namedtuple(
-    "ReturnsTuple", ['stocks', 'bonds', 'other', 'inflation'])
+    "ReturnsTuple", RETURNS_FIELDS, defaults=(None,) * len(RETURNS_FIELDS))
 
 DEFAULT_FILENAMES = ReturnsTuple(
     stocks='msci_world.csv',
