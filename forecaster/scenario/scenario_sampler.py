@@ -37,6 +37,12 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
             historical portfolio returns and/or portfolio values.
             Optional; defaults to `DEFAULT_FILENAMES`. If None, no files
             are read.
+        returns (bool | None): If True, data in `filenames` will be
+            interpreted as returns (i.e. in percentage terms). If
+            False, data in `filenames` will be interpreted as portfolio
+            values (i.e. in absolute terms). If not provided, each file
+            will be analyzed by `HistoricalValueReader` and interpreted
+            accordingly.
         high_precision (Callable[[float], HighPrecisionType]): A
             callable object, such as a method or class, which takes a
             single `float` argument and returns a value in a
@@ -89,6 +95,19 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
         (other, inflation, stocks, bonds), which may not be desired, so
         be careful about order of files and also ordering of columns
         within files.
+
+        Arguments:
+            filenames (tuple[str, ...] | list[str]): A collection of
+                filenames, as strings, which will be read in for data.
+                Defaults to `DEFAULT_FILENAMES`, which point to files
+                provided in `forecaster.data` with real-world historical
+                data for each asset class (and inflation).
+            returns (bool | None): If True, data in `filenames` will be
+                interpreted as returns (i.e. in percentage terms). If
+                False, data in `filenames` will be interpreted as
+                portfolio values (i.e. in absolute terms).
+                If not provided, each file will be analyzed by
+                `HistoricalValueReader` and interpreted accordingly.
 
         Returns:
             (ReturnsTuple[OrderedDict[date, HighPrecisionOptional]])
