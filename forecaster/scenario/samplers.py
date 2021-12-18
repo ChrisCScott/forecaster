@@ -242,6 +242,10 @@ class WalkForwardSampler(HighPrecisionHandler):
 
     # Allows for easy patching by unit tests:
     random = numpy.random.default_rng()
+    # Constant used to determine when to sample variables independently
+    # (with potential duplication) vs. attempting to produce unique
+    # samples
+    SAMPLE_THRESHOLD = 100
 
     def __init__(
             self, data, synchronize=False, wrap_data=False, interval=None,
@@ -255,6 +259,32 @@ class WalkForwardSampler(HighPrecisionHandler):
     def sample(self, walk_length, num_samples=None):
         """ Generates walk-forward time-series data.
 
+        Samples are generated differently depending on the number of
+        samples, the size of the dataset, and whether sample dates are
+        synchronized.
+
+        If the `synchronized` attribute is set to `True`, then
+        walk-forward sequences for each variable in a sample will use
+        the same dates. For instance, if one variable has returns
+        sampled from 2000-1-1 for its first value, all of the variables
+        will have returns sampled from 2000-1-1 for their first values.
+
+        Otherwise, start dates for walk-forward sequences are chosen
+        indepedently for each variable. This is done in various ways:
+            1. If `num_samples` is not provided, 1 sample is generated.
+            2. If the number of possible samples is very large (by
+               default, >100 times larger than `num_samples`; this is
+               customizable via the `SAMPLE_THRESHOLD` attr) then
+               samples are not guaranteed to be unique (although
+               duplicate samples should be rare).
+            3. If the number of possible samples is just moderately
+               larger than `num_samples`, then samples are guaranteed
+               to be unique.
+            4. If the number of possible samples is no larger than
+               `num_samples`, all possible samples are generated.
+               There may be fewer samples than `num_samples`, as there
+               is no duplication of samples.
+
         Arguments:
             walk_length (int): The length of each sampled walk-forward
                 sequence.
@@ -267,20 +297,11 @@ class WalkForwardSampler(HighPrecisionHandler):
             list[tuple[HighPrecisionOptional,...]]): A sample of `N`
             walk-forward sequences (where `N` is the size of `data`),
             as an N-tuple.
-            Or, if `num_samples` is passed, an array of `num_samples`
-            samples.
+            Or, if `num_samples` is passed, an array of up to
+            `num_samples` samples.
         """
-        # Find all valid N-tuples of valid start dates:
-        start_combos = self._get_start_combos(walk_length)
-        # Select 1 sample if `num_samples` not provided:
-        if num_samples is None:
-            starts = self.random.choice(start_combos, 1)
-        # More than `num_samples` samples possible? Pick randomly:
-        elif num_samples is not None and len(start_combos) > num_samples:
-            starts = self.random.choice(start_combos, num_samples)
-        # If we can't make `num_samples` scenarios, use them all:
-        else:
-            starts = start_combos
+        # Find `num_samples` valid N-tuples of valid start dates:
+        starts = self._get_start_combos(walk_length, num_samples)
         # Build a sequence of returns for each set of start dates:
         samples = list(
             # Get the walk-forward sequence of returns for each asset
@@ -338,8 +359,49 @@ class WalkForwardSampler(HighPrecisionHandler):
         # Trim the sequence to just `walk_length`:
         return sequence[0:walk_length]
 
-    def _get_start_combos(self, walk_length):
-        """ Get tuples of valid starts for all columns of data. """
+    def _get_start_combos(self, walk_length, num_samples):
+        """ Get tuples of valid starts for all columns of data.
+
+        Returns:
+            (numpy.array): A 2D array of start dates. Each column is a
+            sample and has the same length as `data` (e.g. if `data`
+            covers 4 variables then each sample is of length 4).
+        """
+        # Time and space complexity are important in this method.
+        #
+        # We are operating over a 2D matrix of dates, `data`, of approx.
+        # size `n*m`, where `n` is the number of columns (i.e. the
+        # number of variables represented in the data) and `m` is the
+        # number of observations/dates for each variable (). (Technically
+        # the variables can have different numbers of observations - let
+        # m be the upper bound on these, i.e. the length of the longest
+        # column).
+        #
+        # If we're synchronizing dates, then there are only O(m)
+        # possible samples, which can be generated with O(m*n)
+        # space/time complexity. That is acceptable.
+        #
+        # If we are not synchronizing dates, then there are O(m^n)
+        # possible samples. Even modest real-world datasets are
+        # intractable if we try to construct a list of all possible
+        # combinations of start dates. So we cannot build a list of
+        # dates and then sample from it - we need to sample `num_sample`
+        # indexes from a distribution and transform those indexes into
+        # samples of start-date combinations.
+        #
+        # The simplest way to deal with the unsynchronized case is
+        # simply to sample from each axis independently. This brings
+        # time/space complexity down to `O(n*m)`, but also does not
+        # guarantee that each sample will be unique.
+        #
+        # It is possible to obtain unique samples (via the
+        # `replace=False` arg to `self.random.choice`), which might be
+        # desirable for small datasets, e.g. those where `num_samples`
+        # is smaller than `c*m^n` for some small c (2? 100?).
+        # For now, we avoid the additional code complexity and just
+        # independently sample for each variable (in the unsynchronized
+        # case).
+
         # Get valid starts for each variable:
         valid_starts = list(
             self._get_valid_starts(returns, walk_length)
@@ -348,14 +410,38 @@ class WalkForwardSampler(HighPrecisionHandler):
         # same dates for each variable:
         if self.synchronize:
             # Pick any column of data and find the dates that are in
-            # all the columns:
+            # all the columns. (This has complexity O(N*m) where m is
+            # the length of the longest column in `data`)
             base = valid_starts[0]
             return [
                 [date] * len(self.data) for date in base
                 if all(date in column for column in valid_starts)]
-        # If we're not synchronizing dates, find every combination of
-        # start dates across variables:
-        return list(product(*valid_starts))
+        # If we're not synchronizing dates, sample valid dates for each
+        # column (which we do differently depending on the size of the
+        # dataset relative to the number of samples, as described above)
+        max_combos = numpy.prod([len(column) for column in valid_starts])
+        if num_samples is None:
+            # Select 1 sample if `num_samples` not provided:
+            starts = numpy.array(  # rows correspond to variables
+                [self.random.choice(column, 1) for column in valid_starts])
+            starts = starts.transpose()  # rows correspond to samples
+        elif max_combos > self.SAMPLE_THRESHOLD * num_samples:
+            # For large datasets, sample independently:
+            starts = numpy.array(list(  # rows correspond to variable
+                self.random.choice(column, num_samples)
+                for column in valid_starts))
+            starts = starts.transpose()  # rows correspond to samples
+        elif max_combos > num_samples:
+            # For medium-sized datasets, where more than `num_samples`
+            # samples are possible (but not, like, _way_ more),
+            # pick unique combos randomly:
+            start_combos = list(product(*valid_starts))
+            starts = self.random.choice(
+                start_combos, num_samples, replace=False)
+        else:
+            # If we can't make `num_samples` scenarios, use them all:
+            starts = numpy.array(list(product(*valid_starts)))
+        return starts
 
     def _get_valid_starts(self, returns, walk_length):
         """ Get valid starts for a single column of data. """
