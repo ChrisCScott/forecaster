@@ -54,7 +54,7 @@ class Timing(dict):
             one = high_precision(1)
             if when is WHEN_DEFAULT:
                 when = high_precision(when)
-            if frequency is 1:
+            if frequency == 1:
                 frequency = one
         else:
             one = 1
