@@ -70,7 +70,7 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
         self.sampler = sampler
         self.num_samples = num_samples
         self.default_scenario = default_scenario
-        self.data = ReturnsTuple(*((tuple(),) * 4))
+        self.data = ReturnsTuple()
         if filenames is not None:
             self.data = self.read_data(filenames, returns=returns)
 
@@ -115,9 +115,9 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
         """
         # Read in historical return/inflation data from CSV files:
         returns_tuples = tuple(
-            HistoricalValueReader(
+            (HistoricalValueReader(
                 filename, returns=returns, high_precision=self.high_precision
-            ).returns()
+            ).returns() if filename is not None else (None,))
             for filename in filenames)
         # The above produces a tuple where each element is another tuple
         # of one or more columns. Reduce this to a tuple of columns:
@@ -126,25 +126,27 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
     @registered_method_named('walk-forward')
     def sampler_walk_forward(self):
         """ Yields `Scenario` objects with walk-forward returns. """
-        sampler = WalkForwardSampler(
-            self.data, high_precision=self.high_precision)
+        data = self._data_for_sampler()
+        sampler = WalkForwardSampler(data, high_precision=self.high_precision)
         samples = sampler.sample(
             self.default_scenario.num_years, num_samples=self.num_samples)
         for sample in samples:
-            yield self._build_scenario(*sample)
+            scenario_args = self._sample_to_scenario_args(sample)
+            yield self._build_scenario(*scenario_args)
 
     @registered_method_named('random returns')
     def sampler_random_returns(self):
         """ Yields `Scenario` objects with random returns. """
-        sampler = MultivariateSampler(
-            self.data, high_precision=self.high_precision)
+        data = self._data_for_sampler()
+        sampler = MultivariateSampler(data, high_precision=self.high_precision)
         # Get `num_samples` samples with `num_years` values for each variable:
         samples = sampler.sample(
             num_samples=(self.num_samples, self.default_scenario.num_years))
         # Build a `Scenario` object with each collection of sampled
         # rates of return, keeping them constant across time:
         for sample in samples:
-            yield self._build_scenario(*sample)
+            scenario_args = self._sample_to_scenario_args(sample)
+            yield self._build_scenario(*scenario_args)
 
     @registered_method_named('constant returns')
     def sampler_constant_returns(self):
@@ -157,6 +159,18 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
         # rates of return, keeping them constant across time:
         for sample in samples:
             yield self._build_scenario(*sample)
+
+    def _data_for_sampler(self):
+        """ Returns a matrix of data suitable for processing by samplers """
+        # Need to remove all `None` entries from `self.data`:
+        return tuple(val for val in self.data if val is not None)
+
+    def _sample_to_scenario_args(self, sample):
+        """ Converts samples received from `data` to a `ReturnTuple` """
+        # Re-insert None entries that were stripped by `_data_for_sampler`:
+        return ReturnsTuple(
+            *(sample[i] if column is not None else None
+            for (i, column) in enumerate(self.data)))
 
     def _build_scenario(self, stock, bond, other, inflation):
         """ Builds a `Scenario` object based on args and `self.default` """

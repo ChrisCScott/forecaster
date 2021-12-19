@@ -89,8 +89,22 @@ class TestScenarioSamplerWF(TestScenarioSampler):
         scenarios = list(sampler) # Convert to list to count scenarios
         self.assertEqual(len(scenarios), num_samples)
 
+    def test_missing_filename(self):
+        """ Test walk-forward sampler with `None` entries in `filenames` """
+        self.scenario.num_years = 3
+        sampler = ScenarioSampler(
+            ScenarioSampler.sampler_walk_forward, 2, self.scenario,
+            filenames=(None,)*4)
+        for scenario in sampler:
+            # all attrs should match the default scenario:
+            self.assertEqual(scenario.stock_return, self.scenario.stock_return)
+            self.assertEqual(scenario.bond_return, self.scenario.bond_return)
+            self.assertEqual(scenario.other_return, self.scenario.other_return)
+            self.assertEqual(scenario.inflation, self.scenario.inflation)
+
     def test_missing_data(self):
         """ Test walk-forward sampler with `None` entries in `data`. """
+        self.scenario.num_years = 3
         sampler = ScenarioSampler(
             ScenarioSampler.sampler_walk_forward, 2, self.scenario,
             filenames=None)
@@ -109,8 +123,7 @@ class TestScenarioSamplerWF(TestScenarioSampler):
 
     def test_returns(self):
         """ Test walk-forward sampler with `returns=True` """
-        # Use the same logic as in `test_wf_basic`, but read in a file
-        # of returns:
+        # Use 3 years to simplify testing (only one possible sample):
         self.scenario.num_years = 3
         filenames = (TEST_PATH_PERCENTAGES,)*4
         sampler = ScenarioSampler(
