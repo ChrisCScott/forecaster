@@ -1,6 +1,6 @@
 """ Samplers for generating time-series data for Scenario objects. """
 
-from itertools import product, pairwise
+from itertools import product, pairwise, islice
 from dateutil.relativedelta import relativedelta
 import numpy
 from forecaster.scenario.util import (
@@ -348,9 +348,15 @@ class WalkForwardSampler(HighPrecisionHandler):
             returns = regularize_returns(
                 returns, self.interval,
                 date=start_date, high_precision=self.high_precision)
-        # Start the returns at `start_date`:
-        sequence = [
-            val for (date, val) in returns.items() if date >= start_date]
+        # Get list of dates, starting from `start_date` (up to `walk_length`):
+        # TODO: This takes O(n) to find the first date and then
+        # O(walk_forward) to construct the list. Ideally, we would
+        # find the first date faster - e.g. in O(log(n)) time by finding
+        # the index for the relevant start_date via binary search and
+        # then returning a slice.
+        sequence = list(islice(
+            (val for (date, val) in returns.items() if date >= start_date),
+            walk_length))
         # Extend the list if we're wrapping to ensure it's long enough:
         if self.wrap_data:
             while len(sequence) < walk_length:
