@@ -168,7 +168,7 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
         if other is None:
             other = self.default_scenario.other_return
         if inflation is None:
-            inflation = self.default_scenario.inflation_return
+            inflation = self.default_scenario.inflation
         # Build a Scenario:
         return Scenario(
             self.default_scenario.initial_year,
