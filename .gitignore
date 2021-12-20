@@ -8,20 +8,26 @@
 !.vscode/launch.json
 !.vscode/extensions.json
 
+# Ignore interpreter caches
 __pycache__/
 __pycache__/*
 
 .mypy_cache/
 .mypy_cache/*
 
+*.pyc
+
+# Sometimes I use a Mac
 .DS_Store
 
+# Local virtual environment files
 venv/
 venv/*
 
-*.pyc
-
-.idea/
-.idea/*
-
+# PEP ignores
 setup.cfg
+
+# Coverage files
+cov.xml
+.coverage
+.coveragerc
