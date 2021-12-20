@@ -301,7 +301,8 @@ def _return_over_period_array(
     return ((1 + returns[end_index]) ** exp) - 1
 
 def regularize_returns(
-        returns, interval, date=None, num_dates=None, high_precision=None):
+        returns, interval, date=None, num_dates=None,
+        dates_interval=None, high_precision=None):
     """ Generates a sequence of returns with regularly-spaced dates.
 
     The resulting sequence contains only dates which are spaced apart
@@ -320,6 +321,9 @@ def regularize_returns(
         num_dates (int): The number of dates for which to generate
             returns. Optional; if not provided, as many dates as
             possible will be generated.
+        dates_interval (relativedelta | timedelta): The period covered
+            by the first date in `dates`. Optional. Will be inferred if
+            not provided; see `_infer_interval`.
         high_precision (Callable[[float], HighPrecisionType] | None): A
             callable object, such as a method or class, which takes a
             single `float` argument and returns a value in a
@@ -334,23 +338,20 @@ def regularize_returns(
     Raises:
         (KeyError): `start_date` is out of range.
     """
-    # Expand the range of dates to include the beginning of the period
-    # ending on the start_date:
-    returns_interval = infer_interval(returns)
-    first_date = min(returns) - returns_interval
-    expanded_returns = OrderedDict(returns)  # Avoid mutating input
-    expanded_returns.update({first_date: 0})
-    expanded_returns.move_to_end(first_date, last=False)
-    # Get a list of dates falling within the expanded range:
-    dates = _get_regularized_dates(
-        expanded_returns, date, interval, num_dates=num_dates)
+    # Get this value here to avoid repeating that work in called methods
+    if dates_interval is None:
+        dates_interval = infer_interval(returns, sample=DATES_INTERVAL_SAMPLES)
+    # Get a list of dates spaced apart by `interval` on or after `date`
+    regularized_dates = _get_regularized_dates(
+        returns, date, interval,
+        num_dates=num_dates, dates_interval=dates_interval, is_start_date=True)
     # To regularize returns, determine the total return for each time
     # period of length `interval` in the dateset.
     regularized_returns = OrderedDict(
         (date, return_over_period(
-            expanded_returns, date - interval, date,
+            returns, date - interval, date,
             high_precision=high_precision))
-        for date in dates)
+        for date in regularized_dates)
     return regularized_returns
 
 def regularize_returns_array(
@@ -366,10 +367,10 @@ def regularize_returns_array(
     # Get this value here to avoid repeating that work in called methods
     if dates_interval is None:
         dates_interval = infer_interval(dates, sample=DATES_INTERVAL_SAMPLES)
-    # Get a list of dates falling within the expanded range:
+    # Get a list of dates spaced apart by `interval` on or after `date`
     regularized_dates = _get_regularized_dates(
         dates, date, interval,
-        num_dates=num_dates, dates_interval=dates_interval)
+        num_dates=num_dates, dates_interval=dates_interval, is_start_date=True)
     # To regularize returns, determine the total return for each time
     # period of length `interval` in the dateset.
     regularized_returns = [
