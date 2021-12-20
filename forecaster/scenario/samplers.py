@@ -371,24 +371,6 @@ class WalkForwardSampler(HighPrecisionHandler):
                 (list(column.keys()), list(column.values())) for column in data]
         return array
 
-    def _get_valid_walk_forward_starts(self, returns, walk_length):
-        """ Finds dates in `returns` to start a walk-forward scenario. """
-        # If wrapping is allowed, every date is a valid start date:
-        if self.wrap_data:
-            return list(returns)
-        # Only dates that are at least `num_years` away from the end
-        # of the dataset can be used to build a walk-forward scenario
-        # that is `num_years` long:
-        interval = relativedelta(years=walk_length)
-        valid_starts = [
-            year for year in returns
-            if year + interval <= max(returns)]
-        # For any empty lists, populate with `None`, otherwise calling
-        # `product` with this list will return no items.
-        if not valid_starts:
-            valid_starts.append(None)
-        return valid_starts
-
     def _get_walk_forward_sequence(self, index, starts, walk_length):
         """ Gets sequence of annual returns starting on `start_date` """
         # Unpack variables from _data_array for efficient iteration:
