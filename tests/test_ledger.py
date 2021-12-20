@@ -5,7 +5,7 @@ from forecaster.ledger import (
     Ledger, recorded_property, recorded_property_cached)
 
 
-class TestLedger(Ledger):
+class LedgerTester(Ledger):
     """ Test class with cached and uncached recorded properties. """
 
     def __init__(self):
@@ -57,7 +57,7 @@ class TestLedgerMethods(unittest.TestCase):
 
     def setUp(self):
         """ Sets up stock attributes for testing. """
-        self.ledger = TestLedger()
+        self.ledger = LedgerTester()
 
     def test_uncached_get(self):
         """ Tests getting uncached properties. """
