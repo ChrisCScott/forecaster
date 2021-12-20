@@ -148,12 +148,10 @@ def return_over_period_array(
             # the same as `end_index` (since it will point to the next
             # element). If not, there's an element between:
             (dates[start_index] != start_date and start_index < end_index)):
+        recurse_dates = dates[start_index:end_index]
         # Ensure that `start_date` and `end_date` are both recursed on:
-        if len(dates) < start_index and dates[start_index] == start_date:
-            recurse_dates = []
-        else:
-            recurse_dates = [start_date]
-        recurse_dates += dates[start_index:end_index-start_index]
+        if recurse_dates[0] != start_date:
+            recurse_dates.insert(0, start_date)
         if recurse_dates[-1] != end_date:
             recurse_dates.append(end_date)
         # Recurse onto each period of adjacent dates between start_date
