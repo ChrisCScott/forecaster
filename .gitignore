@@ -27,7 +27,7 @@ venv/*
 # PEP ignores
 setup.cfg
 
-# Coverage files
-cov.xml
-.coverage
-.coveragerc
+# Coverage files (but include scripts and config)
+coverage/*
+!coverage/coverage_tests.sh
+!.coveragerc

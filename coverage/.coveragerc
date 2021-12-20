@@ -1,0 +1,11 @@
+[run]
+omit = 
+    tests/*
+    setup.py
+data_file = coverage/.coverage
+
+[html]
+directory = coverage/cov_html
+
+[xml]
+output = coverage/cov.xml
