@@ -1,10 +1,11 @@
 """ Samplers for generating time-series data for Scenario objects. """
 
-from itertools import product, pairwise, islice
+from itertools import product, pairwise
 from dateutil.relativedelta import relativedelta
 import numpy
 from forecaster.scenario.util import (
-    return_over_period, regularize_returns, infer_interval)
+    return_over_period, regularize_returns_array, infer_interval,
+    get_date_index)
 from forecaster.utility import HighPrecisionHandler
 
 class MultivariateSampler(HighPrecisionHandler):
@@ -251,10 +252,41 @@ class WalkForwardSampler(HighPrecisionHandler):
             self, data, synchronize=False, wrap_data=False, interval=None,
             high_precision=None):
         super().__init__(high_precision=high_precision)
-        self.data = data
+        # Init private property attrs
+        self._data = None
+        self._data_array = None
+        self._synchronize = None
+        # Init attrs
         self.synchronize = synchronize
         self.wrap_data = wrap_data
         self.interval = interval
+        self.data = data  # Set this last so it's processed right
+
+    @property
+    def data(self):
+        """ Matrix of data values """
+        return self._data
+
+    @data.setter
+    def data(self, val):
+        """ Sets `data` attr """
+        # Store for each data column so we can efficiently slice
+        # it later
+        self._data_array = self._data_to_array(val)
+        self._data = val
+
+    @property
+    def synchronize(self):
+        """ Matrix of data values """
+        return self._synchronize
+
+    @synchronize.setter
+    def synchronize(self, val):
+        """ Sets `synchronize` attr """
+        self._synchronize = val
+        # Re-process `data` to synchronize values appropriately:
+        if self._data is not None:
+            self._data_array = self._data_to_array(self._data)
 
     def sample(self, walk_length, num_samples=None):
         """ Generates walk-forward time-series data.
@@ -310,15 +342,34 @@ class WalkForwardSampler(HighPrecisionHandler):
                 self._get_walk_forward_sequence(
                     # pylint: disable=unsubscriptable-object
                     # Pylint seems to be confused about `start`
-                    self.data[i], start[i], walk_length)
+                    index, sample_starts, walk_length)
                     # pylint: enable=unsubscriptable-object
-                for i in range(len(start)))
-            for start in starts)
+                for index in range(len(sample_starts)))
+            for sample_starts in starts)
         # Don't wrap the samples in a list if we're only generating one
         # sample:
         if num_samples is None:
             return samples[0]
         return samples
+
+    def _data_to_array(self, data):
+        """ Convert `data` to suitablely-processed ndarray """
+        # If we're synchronizing dates, provide one date column and n
+        # value columns
+        if self.synchronize:
+            # Get dates represented for all variables:
+            dates = [
+                date for date in data[0]
+                if all(date in column for column in data)]
+            array = [
+                dates, # first column is the dates column
+                # Now append each column of values, limited to common dates:
+                *([column[date] for date in dates] for column in data)]
+        # Otherwise, get an array of 2-tuples of dates and values:
+        else:
+            array = [
+                (list(column.keys()), list(column.values())) for column in data]
+        return array
 
     def _get_valid_walk_forward_starts(self, returns, walk_length):
         """ Finds dates in `returns` to start a walk-forward scenario. """
@@ -338,30 +389,31 @@ class WalkForwardSampler(HighPrecisionHandler):
             valid_starts.append(None)
         return valid_starts
 
-    def _get_walk_forward_sequence(self, returns, start_date, walk_length):
+    def _get_walk_forward_sequence(self, index, starts, walk_length):
         """ Gets sequence of annual returns starting on `start_date` """
+        # Unpack variables from _data_array for efficient iteration:
+        start_date = starts[index]
+        if self.synchronize:
+            dates = self._data_array[0]
+            returns = self._data_array[index + 1]
+        else:
+            dates = self._data_array[index][0]
+            returns = self._data_array[index][1]
         # `start_date` can be None, so handle that first:
         if start_date is None:
             return None
-        # Adjust returns to the selected interval if provided:
+        # Adjust dates/returns to the selected interval if provided:
         if self.interval is not None:
-            returns = regularize_returns(
-                returns, self.interval,
+            dates, returns = regularize_returns_array(
+                dates, returns, self.interval,
                 date=start_date, high_precision=self.high_precision)
         # Get list of dates, starting from `start_date` (up to `walk_length`):
-        # TODO: This takes O(n) to find the first date and then
-        # O(walk_forward) to construct the list. Ideally, we would
-        # find the first date faster - e.g. in O(log(n)) time by finding
-        # the index for the relevant start_date via binary search and
-        # then returning a slice.
-        sequence = list(islice(
-            (val for (date, val) in returns.items() if date >= start_date),
-            walk_length))
+        start_index = get_date_index(dates, start_date)
+        sequence = returns[start_index:start_index + walk_length]
         # Extend the list if we're wrapping to ensure it's long enough:
         if self.wrap_data:
             while len(sequence) < walk_length:
-                return_vals = list(returns.values())
-                sequence += return_vals
+                sequence += returns
         # Trim the sequence to just `walk_length`:
         return sequence[0:walk_length]
 
