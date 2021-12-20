@@ -7,6 +7,8 @@ from statistics import mode, StatisticsError
 from collections import OrderedDict
 from dateutil.relativedelta import relativedelta
 
+DATES_INTERVAL_SAMPLES = 100
+
 def interpolate_value(values, date, high_precision=None):
     """ Determines a portfolio value on `date` based on nearby dates.
 
@@ -56,7 +58,9 @@ def interpolate_value(values, date, high_precision=None):
     # Apply that growth and voila: the new portfolio value
     return values[prev_date] * (growth + 1)
 
-def return_over_period(returns, start_date, end_date, high_precision=None):
+def return_over_period(
+        returns, start_date, end_date,
+        dates_interval=None, high_precision=None):
     """ Determines the total return between `start_date` and `end_date`.
 
     Arguments:
@@ -70,6 +74,9 @@ def return_over_period(returns, start_date, end_date, high_precision=None):
             the keys of `returns` (i.e. no earlier than the earliest
             key-date and no later than the latest key-date). `date` does
             not need to be a key in `returns`.
+        dates_interval (relativedelta | timedelta): The period covered
+            by the first date in `dates`. Optional. Will be inferred if
+            not provided; see `_infer_interval`.
         high_precision (Callable[[float], HighPrecisionType] | None): A
             callable object, such as a method or class, which takes a
             single `float` argument and returns a value in a
@@ -97,14 +104,17 @@ def return_over_period(returns, start_date, end_date, high_precision=None):
             start_date, end_date = date_pair
             return accum * (
                 1 + _return_over_period(
-                    returns, start_date, end_date, high_precision))
+                    returns, start_date, end_date,
+                    dates_interval, high_precision))
         return reduce(accum_returns, pairwise(dates), 1) - 1
     # We only need to do the above on the first call, not on recursion.
     # So split off the remaining logic into a separate function call:
-    return _return_over_period(returns, start_date, end_date, high_precision)
+    return _return_over_period(
+        returns, start_date, end_date, dates_interval, high_precision)
 
 def return_over_period_array(
-        dates, returns, start_date, end_date, high_precision=None):
+        dates, returns, start_date, end_date,
+        dates_interval=None, high_precision=None):
     """ Determines the total return between `start_date` and `end_date`.
 
     Arguments:
@@ -124,6 +134,9 @@ def return_over_period_array(
             the keys of `returns` (i.e. no earlier than the earliest
             key-date and no later than the latest key-date). `date` does
             not need to be a key in `returns`.
+        dates_interval (relativedelta | timedelta): The period covered
+            by the first date in `dates`. Optional. Will be inferred if
+            not provided; see `_infer_interval`.
         high_precision (Callable[[float], HighPrecisionType] | None): A
             callable object, such as a method or class, which takes a
             single `float` argument and returns a value in a
@@ -162,14 +175,15 @@ def return_over_period_array(
             return accum * (
                 1 + _return_over_period_array(
                     dates, returns, start_date, end_date,
-                    high_precision))
+                    dates_interval, high_precision))
         return reduce(accum_returns, pairwise(recurse_dates), 1) - 1
     # We only need to do the above on the first call, not on recursion.
     # So split off the remaining logic into a separate function call:
     return _return_over_period_array(
-        dates, returns, start_date, end_date, high_precision)
+        dates, returns, start_date, end_date, dates_interval, high_precision)
 
-def _return_over_period(returns, start_date, end_date, high_precision):
+def _return_over_period(
+        returns, start_date, end_date, dates_interval, high_precision):
     """ Recursive helper for `return_over_period`.
 
     In this function, `start_date` and `end_date` are assumed to be
@@ -186,9 +200,9 @@ def _return_over_period(returns, start_date, end_date, high_precision):
     if end_date not in returns:
         next_date = min(date for date in returns if date > end_date)
         total_return = (1 + _return_over_period(
-                returns, start_date, next_date, high_precision))
+                returns, start_date, next_date, dates_interval, high_precision))
         trimmed_return = (1 + _return_over_period(
-                returns, end_date, next_date, high_precision))
+                returns, end_date, next_date, dates_interval, high_precision))
         return total_return / trimmed_return - 1
     # If we're made it here, we can guarantee that `end_date` is in
     # returns but `start_date` isn't. Find the bounds for the full
@@ -199,8 +213,9 @@ def _return_over_period(returns, start_date, end_date, high_precision):
         (date for date in returns if date < start_date), default=None)
     if prev_date is None:
         # Special case: `end_date` is first date in `returns`.
-        interval = infer_interval(returns)
-        prev_date = end_date - interval
+        if dates_interval is None:
+            dates_interval = infer_interval(returns)
+        prev_date = end_date - dates_interval
         if start_date < prev_date:
             # Don't extrapolate past prev_date
             raise KeyError(str(start_date) + " is out of range.")
@@ -225,7 +240,7 @@ def _return_over_period(returns, start_date, end_date, high_precision):
     return ((1 + returns[end_date]) ** exp) - 1
 
 def _return_over_period_array(
-        dates, returns, start_date, end_date, high_precision):
+        dates, returns, start_date, end_date, dates_interval, high_precision):
     """ Recursive helper for `return_over_period_array`.
 
     In this function, `start_date` and `end_date` are assumed to be
@@ -244,9 +259,11 @@ def _return_over_period_array(
     if not dates[end_index] == end_date:
         next_date = dates[end_index]
         total_return = (1 + _return_over_period_array(
-                dates, returns, start_date, next_date, high_precision))
+                dates, returns, start_date, next_date,
+                dates_interval, high_precision))
         trimmed_return = (1 + _return_over_period_array(
-                dates, returns, end_date, next_date, high_precision))
+                dates, returns, end_date, next_date,
+                dates_interval, high_precision))
         return total_return / trimmed_return - 1
     # If we're made it here, we can guarantee that `end_date` is in
     # returns but `start_date` isn't. Find the bounds for the full
@@ -255,8 +272,9 @@ def _return_over_period_array(
     # period between `start_date` and `end_date`::
     if start_index == 0:
         # Special case: `start_date` precedes the earliest date in `dates`.
-        interval = infer_interval(dates)
-        prev_date = dates[0] - interval
+        if dates_interval is None:
+            dates_interval = infer_interval(dates)
+        prev_date = dates[0] - dates_interval
         if start_date < prev_date:
             # Don't extrapolate past prev_date
             raise KeyError(str(start_date) + " is out of range.")
@@ -337,7 +355,7 @@ def regularize_returns(
 
 def regularize_returns_array(
         dates, returns, interval,
-        date=None, num_dates=None, high_precision=None):
+        date=None, num_dates=None, dates_interval=None, high_precision=None):
     """ Generates a sequence of returns with regularly-spaced dates.
 
     Equivalent to `regularize_returns`, except that instead of
@@ -345,20 +363,25 @@ def regularize_returns_array(
     `dates` and `returns` and returns a tuple of regularized
     `(dates, returns)`.
     """
+    # Get this value here to avoid repeating that work in called methods
+    if dates_interval is None:
+        dates_interval = infer_interval(dates, sample=DATES_INTERVAL_SAMPLES)
     # Get a list of dates falling within the expanded range:
     regularized_dates = _get_regularized_dates(
-        dates, date, interval, num_dates=num_dates)
+        dates, date, interval,
+        num_dates=num_dates, dates_interval=dates_interval)
     # To regularize returns, determine the total return for each time
     # period of length `interval` in the dateset.
     regularized_returns = [
         return_over_period_array(
             dates, returns, date - interval, date,
-            high_precision=high_precision)
+            dates_interval=dates_interval, high_precision=high_precision)
         for date in regularized_dates]
     return (regularized_dates, regularized_returns)
 
 def _get_regularized_dates(
-        dates, date, interval, num_dates=None, is_start_date=False):
+        dates, date, interval,
+        num_dates=None, dates_interval=None, is_start_date=False):
     """ Gets a list of dates spaced apart by `interval`.
 
     This function finds all periods of length `interval` in `dates` that
@@ -369,6 +392,10 @@ def _get_regularized_dates(
     In other words, `date` is one of the output dates (unless it's not
     in range of `dates`), and all output dates are offset by from
     `date` by some multiple of `interval`.
+
+    The first date in `dates` is treated as if it covers a period of
+    length of `dates_interval`. If not provided, this interval will be
+    inferred from the spacing of dates in `dates`.
 
     If `num_dates` is provided, up to `num_dates` dates will be
     generated. This can be helpful when working with large datasets.
@@ -383,7 +410,8 @@ def _get_regularized_dates(
     """
     # Expand the range of dates to include the beginning of the period
     # ending on the start date:
-    dates_interval = infer_interval(dates)
+    if dates_interval is None:
+        dates_interval = infer_interval(dates)
     first_date = get_first_date(dates) - dates_interval
     last_date = get_last_date(dates)
     # Start with the first date in the dataset if `date` is not provided
@@ -521,11 +549,11 @@ def _return_interval(returns, date):
     # Get the date immediately preceding `date`:
     earlier_dates = list(val for val in returns if val < date)
     if earlier_dates:
-        return relativedelta(date, max(earlier_dates))
+        return relativedelta(date, get_last_date(earlier_dates))
     # Special case: This precedes is the very first date.
     # If `date` is within the (extended) bounds of `returns`, try to
     # return the interval from the extended lower bound:
-    first_date = min(returns)
+    first_date = get_first_date(returns)
     if date < first_date:
         interval = infer_interval(returns)
         if date > first_date - interval:
