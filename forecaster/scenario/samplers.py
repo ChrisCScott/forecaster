@@ -1,7 +1,6 @@
 """ Samplers for generating time-series data for Scenario objects. """
 
 from itertools import product, pairwise
-from dateutil.relativedelta import relativedelta
 import numpy
 from forecaster.scenario.util import (
     return_over_period, regularize_returns_array, infer_interval,

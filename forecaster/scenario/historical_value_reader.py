@@ -4,8 +4,7 @@ import csv
 from collections import OrderedDict
 import datetime
 import dateutil
-from forecaster.scenario.util import (
-    regularize_returns, values_from_returns, returns_from_values)
+from forecaster.scenario.util import values_from_returns, returns_from_values
 from forecaster.utility import resolve_data_path, HighPrecisionHandler
 
 # Assume incomplete dates are in the first month/day:
@@ -101,48 +100,6 @@ class HistoricalValueReader(HighPrecisionHandler):
         if convert:
             return tuple(values_from_returns(column) for column in self.data)
         return self.data
-
-    def annualized_returns(self, convert=None, start_date=None):
-        """ Returns `data` as a dict of annual returns values.
-
-        The returns values start on `start_date` or, if that is not
-        provided, on the first date in `self.data`. Dates are spaced
-        one year apart.
-
-        Arguments:
-            convert (Optional[bool]): If `True`, columns of `self.data`
-                are treated as containing portfolio values, which must
-                be converted to returns. Optional. If not provided,
-                the instance's default behaviour will be used.
-        """
-        # Convert data if the user hasn't hinted that we're reading in
-        # returns-formatted values:
-        if convert is None:
-            convert = not self._returns_values
-        if convert:
-            # Generate
-            return tuple(
-                regularize_returns(
-                    column, INTERVAL_ANNUAL,
-                    date=start_date, high_precision=self.high_precision)
-                for column in self.data)
-        return self.data
-
-    def returns_samples(self, convert=None, interval=INTERVAL_ANNUAL):
-        """ Returns the return over `interval` for each date.
-
-        The result of this method is _not_ a sequence of returns that
-        can be converted to a sequence of portfolio values. The dates
-        in the returned data are the same as in `self.data`, but each
-        return value is the return over `interval` for the given date.
-
-        So, for example, if you have a sequence of two years of daily
-        datapoints and provide an interval of one year (the default),
-        the resulting dict will have ~365 date-keys mapping to 365
-        values representing the return from that date over the following
-        year. This is useful for samplers, but dangerous to call
-        `values_from_returns` on.
-        """
 
     @staticmethod
     def _infer_returns(values):
