@@ -58,6 +58,32 @@ def interpolate_value(values, date, high_precision=None):
     # Apply that growth and voila: the new portfolio value
     return values[prev_date] * (growth + 1)
 
+def interpolate_value_array(dates, values, date, high_precision=None):
+    """ Array-based companion to `interpolate_value` """
+    index = bisect_left(dates, date)
+    # Check to see if the date is available exactly:
+    if dates[index] == date:
+        return values[index]
+    # Check to see if the date is outside the range of `dates`:
+    if not get_first_date(dates) <= date <= get_last_date(dates):
+        raise KeyError(str(date) + ' is out of range.')
+    # This date is between other dates.
+    # Get the dates on either side of `date`:
+    prev_date = dates[index-1]
+    prev_value = values[index-1]
+    next_date = dates[index]
+    next_value = values[index]
+    # Find out how much the portfolio grew between prev_date and date
+    # based on the returns-based logic of `return_over_period`.
+    # To do that, we need to provide an array of _returns_, not
+    # portfolio values, so build a simple one with just the key dates:
+    growth = return_over_period_array(
+        [prev_date, next_date],
+        [0, next_value / prev_value],
+        prev_date, date, high_precision=high_precision)
+    # Apply that growth and voila: the new portfolio value
+    return prev_value * (growth + 1)
+
 def return_over_period(
         returns, start_date, end_date,
         dates_interval=None, high_precision=None):
@@ -527,7 +553,7 @@ def values_from_returns(
     if interval is None:
         interval = infer_interval(returns)
     # Add a date just before the start of our dataset with $100 in value
-    start_date = min(returns) - interval
+    start_date = get_first_date(returns) - interval
     values = OrderedDict()
     values[start_date] = start_val
     # Now convert each entry of `returns` to a new portfolio value:
@@ -539,7 +565,23 @@ def values_from_returns(
         prev_date = date
     return values
 
-def _return_interval(returns, date):
+def values_from_returns_array(
+        dates, returns, interval=None, start_val=100):
+    """ Array-based companion to `values_from_returns` """
+    if interval is None:
+        interval = infer_interval(dates)
+    # Add a date just before the start of our dataset with $100 in value
+    start_date = get_first_date(dates) - interval
+    expanded_dates = [start_date] + dates
+    values = [start_val]
+    # Now convert each entry of `returns` to a new portfolio value:
+    for (i, return_val) in enumerate(returns, start=1):
+        # The value at `date` is just the previously-recorded value
+        # adjusted by the return at `date`:
+        values.append(values[i-1] * (1 + return_val))
+    return (expanded_dates, values)
+
+def _return_interval(dates, date):
     """ Gets the interval for which `date` represents the return.
 
     Returns:
@@ -548,15 +590,19 @@ def _return_interval(returns, date):
         Or, if the interval cannot be determined, returns `None`.
     """
     # Get the date immediately preceding `date`:
-    earlier_dates = list(val for val in returns if val < date)
+    if isinstance(dates, dict):
+        earlier_dates = list(val for val in dates if val < date)
+    else:
+        index = bisect_left(dates, date)
+        earlier_dates = dates[0:index]
     if earlier_dates:
         return relativedelta(date, get_last_date(earlier_dates))
-    # Special case: This precedes is the very first date.
+    # Special case: `date` is or precedes the very first date.
     # If `date` is within the (extended) bounds of `returns`, try to
     # return the interval from the extended lower bound:
-    first_date = get_first_date(returns)
+    first_date = get_first_date(dates)
     if date < first_date:
-        interval = infer_interval(returns)
+        interval = infer_interval(dates)
         if date > first_date - interval:
             return interval
     # Otherwise: Who knows?
@@ -611,6 +657,30 @@ def return_for_date(values, date, interval=None, high_precision=None):
     # Return is just the amount by which the ratio exceeds 1:
     return end_val / start_val - 1
 
+def return_for_date_array(
+        dates, values, date, interval=None, high_precision=None):
+    """ Array-based companion to `return_for_date` """
+    # If interval is not provided, infer it from the spacing of dates
+    # in `values`:
+    if interval is None:
+        interval = _return_interval(dates, date)
+        if interval is None:
+            return None
+    start_date = date - interval
+    end_date = date
+    # If the interval in question doesn't fall within the bounds of our
+    # data, we can't calculate the return:
+    if start_date < get_first_date(dates) or end_date > get_last_date(dates):
+        return None
+    # Get the values on `start_date` and `end_date`, interpolating from
+    # surrounding data if necessary:
+    start_val = interpolate_value_array(
+        dates, values, start_date, high_precision=high_precision)
+    end_val = interpolate_value_array(
+        dates, values, end_date, high_precision=high_precision)
+    # Return is just the amount by which the ratio exceeds 1:
+    return end_val / start_val - 1
+
 def returns_from_values(values, interval=None, high_precision=None):
     """ Generates returns for each date in `values`.
 
@@ -654,6 +724,26 @@ def returns_from_values(values, interval=None, high_precision=None):
         if returns is not None:
             interval_returns[date] = returns
     return interval_returns
+
+def returns_from_values_array(
+        dates, values, interval=None, high_precision=None):
+    """ Array-based companion to `returns_from_values` """
+    # In the simple case, just calculate returns between adjacent dates:
+    if interval is None:
+        return_dates = dates[1:]
+        return_values = [
+            next_val / prev_val for (prev_val, next_val) in pairwise(values)]
+        return (return_dates, return_values)
+    # Otherwise, we need to calculate return over each interval:
+    return_dates = []
+    return_values = []
+    for date in dates:
+        returns = return_for_date(
+            values, date, interval=interval, high_precision=high_precision)
+        if returns is not None:
+            return_dates.append(date)
+            return_values.append(returns)
+    return (return_dates, return_values)
 
 def get_date_index(dates, date):
     """ Finds the index of `date` in `dates`.
