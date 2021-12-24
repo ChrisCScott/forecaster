@@ -29,20 +29,37 @@ class HistoricalValueReader(HighPrecisionHandler):
     data in value columns is converted to `float` or to a high-precision
     numeric type (if `high_precision` is provided.)
 
+    By default, results are returned as a mapping of `{date: value}`
+    pairs. Users desiring options for more efficient operations may
+    consider passing `as_arrays=True`,
+
     Arguments:
         filename (str): The filename of a CSV file to read. The file
             must be UTF-8 encoded. Relative paths will be resolved
             within the package's `data/` directory.
+        returns (bool): Set to `True` if data is formatted as relative
+            returns over a period (e.g. "1" means 100%).
+            Set to `False` if data is formatted as absolute values at
+            a point in time (e.g. "1" means $1).
+            Optional. If not provided, this will be inferred - see
+            `_infer_returns` for more details.
+        as_arrays (bool): If `True`, each column of data is represented
+            as a `(dates, values)` tuple, where `dates` and `values`
+            are both lists. If `False`, each colum of data is
+            represented as a `{date: value}` mapping.
+            Optional; defaults to `False` (i.e. mapping behaviour)
         high_precision (Callable[[float], HighPrecisionType]): A
             callable object, such as a method or class, which takes a
             single `float` or `str` argument and returns a value in a
             high-precision type (e.g. Decimal). Optional.
 
     Attributes:
-        values (tuple[OrderedDict[date, HighPrecisionOptional]]):
-            A sequence of ordered mappings of dates to portfolio values,
-            each element of the sequence corresponding to one (non-date)
-            column of data.
+        data (tuple[OrderedDict[date, HighPrecisionOptional]]):
+            Each entry in `data` is a column of data, starting with the
+            _second_ column. The keys of each entry are dates, taken
+            from the _first_ column. So a file with three columns
+            (A, B, C) will result in `data` having two entries, mapping
+            `A` to `B` and `A` to `C`.
     """
 
     def __init__(self, filename=None, returns=None, *, high_precision=None):
@@ -128,7 +145,7 @@ class HistoricalValueReader(HighPrecisionHandler):
         return False
 
     def _convert_entry(self, entry):
-        """ Converts to str entry to a numeric type. """
+        """ Converts str entry to a numeric type. """
         # Remove leading/trailing spaces and commas:
         entry = entry.strip(' ').replace(',', '')
         if self.high_precision is not None:
