@@ -34,6 +34,12 @@ class HistoricalValueReader(HighPrecisionHandler):
     pairs. Users desiring options for more efficient operations may
     consider passing `as_arrays=True`,
 
+    If the data file is very large, it's recommended to pre-process it
+    so that dates are in sorted (increasing) order and values are
+    float-convertible (e.g. no spaces or commas; enclosing quotes are
+    permitted, as these are stripped by `csv.reader`). In that case,
+    pass the arg `fast_read=True`.
+
     Arguments:
         filename (str): The filename of a CSV file to read. The file
             must be UTF-8 encoded. Relative paths will be resolved
@@ -44,11 +50,11 @@ class HistoricalValueReader(HighPrecisionHandler):
             a point in time (e.g. "1" means $1).
             Optional. If not provided, this will be inferred - see
             `_infer_returns` for more details.
-        as_arrays (bool): If `True`, each column of data is represented
-            as a `(dates, values)` tuple, where `dates` and `values`
-            are both lists. If `False`, each colum of data is
-            represented as a `{date: value}` mapping.
-            Optional; defaults to `False` (i.e. mapping behaviour)
+        fast_read (bool): If `True`, data is presumed to be arranged in
+            sorted order (i.e. with dates in increasing order) and
+            values are assumed to be float-convertible without
+            additional processing. If `False`, data will be sorted
+            on read and values will be parsed
         high_precision (Callable[[float], HighPrecisionType]): A
             callable object, such as a method or class, which takes a
             single `float` or `str` argument and returns a value in a
@@ -63,11 +69,14 @@ class HistoricalValueReader(HighPrecisionHandler):
             `A` to `B` and `A` to `C`.
     """
 
-    def __init__(self, filename=None, returns=None, *, high_precision=None):
+    def __init__(
+            self, filename=None, returns=None, fast_read=False, *,
+            high_precision=None):
         # Set up high-precision support:
         super().__init__(high_precision=high_precision)
         # Declare member attributes:
         self.data = None
+        self.fast_read = fast_read
         self._returns_values = None
         # For convenience, allow file read on init:
         if filename is not None:
@@ -87,8 +96,11 @@ class HistoricalValueReader(HighPrecisionHandler):
             reader = self._get_csv_reader(file)
             data = self._get_data_from_csv_reader(reader)
         # Sort by date to make it easier to build rolling-window
-        # scenarios:
-        self.data = self._sort_data(data)
+        # scenarios (unless we're in fast-read mode):
+        if not self.fast_read:
+            self.data = self._sort_data(data)
+        else:
+            self.data = data
         # Find out if we're reading returns (vs. portfolio values) and
         # store that information for later processing:
         if returns is None and data:  # Don't try for empty dataset
@@ -159,9 +171,17 @@ class HistoricalValueReader(HighPrecisionHandler):
         return num_small_vals / num_vals > 0.5
 
     def _convert_entry(self, entry):
-        """ Converts str entry to a numeric type. """
-        # Remove leading/trailing spaces and commas:
-        entry = entry.strip(' ').replace(',', '')
+        """ Converts str entry to a numeric type.
+
+        Raises:
+            ValueError: If `entry` is not convertible to `float` (or to
+            the high-precision type, if in high-precision mode).
+        """
+        # Remove leading/trailing spaces and commas (unless in fast-read mode):
+        if not self.fast_read:
+            # Remove any characters that aren't digits, dots, or signs.
+            # (This does not guarantee that )
+            entry = ''.join(i for i in entry if i.isdigit() or i in '+-.')
         if self.high_precision is not None:
             return self.high_precision(entry)
         return float(entry)

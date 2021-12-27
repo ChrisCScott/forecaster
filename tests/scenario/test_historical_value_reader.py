@@ -97,7 +97,7 @@ class TestHistoricalReturnReader(unittest.TestCase):
 class TestHistoricalReturnReaderArray(unittest.TestCase):
     """ Tests the `HistoricalReturnReaderArray` class. """
 
-    def test_read_read(self):
+    def test_read_real(self):
         """ Reads from real-world CSV files """
         # Just ensure that we're reading in the right number of columns;
         # this test is mostly about confirming that we can read a file
@@ -140,6 +140,13 @@ class TestHistoricalReturnReaderArray(unittest.TestCase):
         reader = HistoricalValueReaderArray(TEST_PATH_PERCENTAGES)
         vals = reader.values()
         self.assertEqual(vals[0], PORTFOLIO_VALUES_ARRAY)
+
+    def test_fast_read(self):
+        """ Tests fast data reading, without conversion. """
+        # Do the same thing as `test_read_real`, except read in a really
+        # big data file.
+        reader = HistoricalValueReaderArray('cpi.csv', fast_read=True)
+        self.assertEqual(len(reader.data), 1)
 
     def test_decimal(self):
         """ Tests Decimal high-precision conversion on read. """
