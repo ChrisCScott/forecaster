@@ -119,30 +119,44 @@ class HistoricalValueReader(HighPrecisionHandler):
         return self.data
 
     @staticmethod
-    def _infer_returns(values):
-        """ Infers whether `values` is likely a sequence of returns.
+    def _infer_returns(column):
+        """ Infers whether `column` is likely a sequence of returns.
 
-        `values` is presumed to be returns-values if:
-            - Any value in `values` is negative
-            - More than half of the non-zero values in `values` are
+        `column` is presumed to be returns-values if:
+            - Any value in `column` is negative
+            - More than half of the non-zero values in `column` are
               less than 1.
-        Otherwise, `values` is presumed to represent portfolio values.
+        Otherwise, `column` is presumed to represent portfolio values.
+
+        Argument:
+            values (Iterable[HighPrecisionOptional] |
+                Iterator[HighPrecisionOptional] |
+                dict[Any, HighPrecisionOptional]): An iterator or
+                iterable over numeric values (e.g. the values of a dict
+                of date-value pairs). If a `dict` or subclass is
+                provided, its `dict.values()` ValueView will be used.
 
         Returns:
             (bool): `True` if `values` is inferred to be a sequence of
             returns, `False` otherwise.
         """
-        # Check for negative values, infer returns if any are found:
-        if any(val < 0 for val in values.values()):
-            return True
+        if isinstance(column, dict):
+            column = column.values()
+        num_vals = 0
+        num_small_vals = 0
+        for val in column:  # `values` may be an iterator, so iterate just once
+            # Assume returns-values if any value is negative:
+            if val < 0:
+                return True
+            # Keep track of how big any non-zero values are:
+            if val == 0: # ignore 0 values
+                continue
+            if val < 1:  # Count small values
+                num_small_vals += 1
+            num_vals += 1  # Count all values
         # Find the proportion of values that look like percentages
         # (i.e. < 1), infer returns if >50% do look like percentages:
-        non_zero_values = tuple(val for val in values.values() if val != 0)
-        num_small = sum(1 for val in non_zero_values if val < 1)
-        if num_small / len(non_zero_values) > 0.5:
-            return True
-        # Otherwise, infer that these are portfolio values, not returns:
-        return False
+        return num_small_vals / num_vals > 0.5
 
     def _convert_entry(self, entry):
         """ Converts str entry to a numeric type. """
@@ -200,8 +214,8 @@ class HistoricalValueReader(HighPrecisionHandler):
                 # We don't know how many columns are in the data
                 # in advance, so add them dynamically:
                 while len(data) <= i:
-                    data.append({})
-                data[i][date] = self._convert_entry(entry)
+                    self._add_column(data)
+                self._add_entry(data[i], date, entry)
         return data
 
     @staticmethod
@@ -209,6 +223,15 @@ class HistoricalValueReader(HighPrecisionHandler):
         """ Sorts each column of `data` by date. """
         return tuple(
             OrderedDict(sorted(column.items())) for column in data)
+
+    @staticmethod
+    def _add_column(data):
+        """ Adds an empty column to `data`. MUTATES `data`! """
+        data.append({})
+
+    def _add_entry(self, column, date, val):
+        """ Adds an entry for value `val` at date `date` to `column`. """
+        column[date] = self._convert_entry(val)
 
 class HistoricalValueReaderArray(HistoricalValueReader):
     """ Reads historical value data from CSV files as arrays.
@@ -229,87 +252,13 @@ class HistoricalValueReaderArray(HistoricalValueReader):
             second is the tuple `(A, C)`.
     """
 
-    def __init__(self, filename=None, returns=None, *, high_precision=None):
-        # Set up class (but don't read in the file yet!)
-        super().__init__(returns=None, high_precision=high_precision)
-        # Read in the file using this class's overloaded `read`
-        if filename is not None:
-            self.read(filename, returns=returns)
-
-    # No need to overload `read`, just the methods it depends on.
-
-    def returns(self, convert=None):
-        """ Returns `data` as arrays of returns values. """
-        # Convert data if the user hasn't hinted that we're reading in
-        # returns-formatted values:
-        if convert is None:
-            convert = not self._returns_values
-        if convert:
-            return tuple(
-                returns_from_values_array(
-                    *column, high_precision=self.high_precision)
-                for column in self.data)
-        return self.data
-
-    def values(self, convert=None):
-        """ Returns `data` as a dict of portfolio values. """
-        # Convert data if the user has hinted that we're reading in
-        # returns-formatted values:
-        if convert is None:
-            convert = self._returns_values
-        if convert:
-            return tuple(
-                values_from_returns_array(*column)
-                for column in self.data)
-        return self.data
-
-    @staticmethod
-    def _infer_returns(values):
-        """ Infers whether `values` is likely a sequence of returns.
-
-        `values` is presumed to be returns-values if:
-            - Any value in `values` is negative
-            - More than half of the non-zero values in `values` are
-              less than 1.
-        Otherwise, `values` is presumed to represent portfolio values.
-
-        Returns:
-            (bool): `True` if `values` is inferred to be a sequence of
-            returns, `False` otherwise.
-        """
-        # Check for negative values, infer returns if any are found:
-        if any(val < 0 for val in values[1]):
-            return True
-        # Find the proportion of values that look like percentages
-        # (i.e. < 1), infer returns if >50% do look like percentages:
-        non_zero_values = tuple(val for val in values[1] if val != 0)
-        num_small = sum(1 for val in non_zero_values if val < 1)
-        return num_small / len(non_zero_values) > 0.5
-
-    def _get_data_from_csv_reader(self, reader):
-        """ Reads in non-header rows of a CSV file and returns rows/cols """
-        # Read the file one row at a time:
-        data = []
-        for row in reader:
-            row_iter = iter(row)
-            # Convert the str-encoded date to `date`:
-            date = dateutil.parser.parse(
-                next(row_iter), default=DATE_DEFAULT)
-            # Process each non-date entry for the row:
-            for (i, entry) in enumerate(row_iter):
-                # Skip empty values:
-                if not entry:
-                    continue
-                # We don't know how many columns are in the data
-                # in advance, so add them dynamically:
-                while len(data) <= i:
-                    # For the array-based implementation, add a tuple
-                    # with two lists. The first is for dates, the second
-                    # is for values:
-                    data.append(([],[]))
-                data[i][0].append(date)
-                data[i][1].append(self._convert_entry(entry))
-        return data
+    @classmethod
+    def _infer_returns(cls, column):
+        """ Extends _infer_returns to deal with pairs of arrays. """
+        # If we get a pair of arrays, use the second one:
+        if isinstance(column, (list, tuple)) and len(column) == 2:
+            column = column[1]
+        return super()._infer_returns(column)
 
     @staticmethod
     def _sort_data(data):
@@ -328,3 +277,15 @@ class HistoricalValueReaderArray(HistoricalValueReader):
         return tuple(
             tuple(list(val) for val in zip(*sorted(zip(*column))))
             for column in data)
+
+    @staticmethod
+    def _add_column(data):
+        """ Adds an empty column to `data`. MUTATES `data`! """
+        # Append a pair of empty lists:
+        data.append(([],[]))
+
+    def _add_entry(self, column, date, val):
+        """ Adds an entry for value `val` at date `date` to `column`. """
+        # Insert parallel values into the two lists of `column`:
+        column[0].append(date)
+        column[1].append(self._convert_entry(val))
