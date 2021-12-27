@@ -89,8 +89,7 @@ class HistoricalValueReader(HighPrecisionHandler):
             data = self._get_data_from_csv_reader(reader)
         # Sort by date to make it easier to build rolling-window
         # scenarios:
-        self.data = tuple(
-            OrderedDict(sorted(column.items())) for column in data)
+        self.data = self._sort_data(data)
         # Find out if we're reading returns (vs. portfolio values) and
         # store that information for later processing:
         if returns is None and data:  # Don't try for empty dataset
@@ -206,6 +205,12 @@ class HistoricalValueReader(HighPrecisionHandler):
                 data[i][date] = self._convert_entry(entry)
         return data
 
+    @staticmethod
+    def _sort_data(data):
+        """ Sorts each column of `data` by date. """
+        return tuple(
+            OrderedDict(sorted(column.items())) for column in data)
+
 class HistoricalValueReaderArray(HistoricalValueReader):
     """ Reads historical value data from CSV files as arrays.
 
@@ -232,43 +237,7 @@ class HistoricalValueReaderArray(HistoricalValueReader):
         if filename is not None:
             self.read(filename, returns=returns)
 
-    def read(self, filename, returns=None):
-        """ Reads in a CSV file with dates and portfolio values.
-
-        See docs for `HistoricalValueReader.__init__` for the format of
-        the CSV file.
-        """
-        # If it's a relative path, resolve it to the `data/` dir:
-        filename = resolve_data_path(filename)
-        # Read in the CSV file:
-        # (newline='' is recommended for file objects. See:
-        # https://docs.python.org/3/library/csv.html#id3)
-        with open(filename, encoding='utf-8', newline='') as file:
-            reader = self._get_csv_reader(file)
-            data = self._get_data_from_csv_reader(reader)
-        # `data` is a tuple of N lists (for N-1 non-date columns).
-        # We want to sort all of the columns by date.
-        # To do this, we can zip the columns together, sort on the first
-        # element of the N-tuples, re-zip the N-tuples into lists.
-        # For more on this Deep Python(TM) expression, see here:
-        # https://www.kite.com/python/answers/how-to-sort-two-lists-together-in-python
-        sorted_data = tuple(list(elm) for elm in zip(*sorted(zip(*data))))
-        # TODO: Revisit this. `_get_data_from_csv_reader` should
-        # probably return 2-tuples of (dates, values) with None values
-        # omitted. We can then sort each column independently.
-        # Whereas this logic assumes we're reciving each column verbatim
-        # (incl. the dates column) and need to wrap it into 2-tuples.
-        # That would be fine, but this only makes sense if every column
-        # has the same dates - if we allow omitted dates, then we should
-        # generate a different dates array for each non-date column,
-        # which is best done in `_get_data_from_csv_reader`
-        dates = sorted_data[0]
-        self.data = tuple((dates, column) for column in sorted_data[1:])
-        # Find out if we're reading returns (vs. portfolio values) and
-        # store that information for later processing:
-        if returns is None and data:  # Don't try for empty dataset
-            returns = self._infer_returns(data[0])
-        self._returns_values = returns
+    # No need to overload `read`, just the methods it depends on.
 
     def returns(self, convert=None):
         """ Returns `data` as arrays of returns values. """
@@ -277,14 +246,10 @@ class HistoricalValueReaderArray(HistoricalValueReader):
         if convert is None:
             convert = not self._returns_values
         if convert:
-            dates = self.data[0]
-            # TODO: Revise this to reflect the actual format of
-            # self.data, which is an array of 2-tuples (and not an array
-            # of lists starting with the list of dates, as this assumes)
             return tuple(
                 returns_from_values_array(
-                    dates, column, high_precision=self.high_precision)
-                for column in self.data[1:])
+                    *column, high_precision=self.high_precision)
+                for column in self.data)
         return self.data
 
     def values(self, convert=None):
@@ -294,12 +259,8 @@ class HistoricalValueReaderArray(HistoricalValueReader):
         if convert is None:
             convert = self._returns_values
         if convert:
-            dates = self.data[0]
-            # TODO: Revise this to reflect the actual format of
-            # self.data, which is an array of 2-tuples (and not an array
-            # of lists starting with the list of dates, as this assumes)
             return tuple(
-                values_from_returns_array(dates, column)
+                values_from_returns_array(*column)
                 for column in self.data)
         return self.data
 
@@ -318,11 +279,11 @@ class HistoricalValueReaderArray(HistoricalValueReader):
             returns, `False` otherwise.
         """
         # Check for negative values, infer returns if any are found:
-        if any(val < 0 for val in values):
+        if any(val < 0 for val in values[1]):
             return True
         # Find the proportion of values that look like percentages
         # (i.e. < 1), infer returns if >50% do look like percentages:
-        non_zero_values = tuple(val for val in values if val != 0)
+        non_zero_values = tuple(val for val in values[1] if val != 0)
         num_small = sum(1 for val in non_zero_values if val < 1)
         return num_small / len(non_zero_values) > 0.5
 
@@ -350,3 +311,21 @@ class HistoricalValueReaderArray(HistoricalValueReader):
                 data[i][0].append(date)
                 data[i][1].append(self._convert_entry(entry))
         return data
+
+    @staticmethod
+    def _sort_data(data):
+        """ Sorts each column of `data` by date. """
+        # `data` has the form:
+        # ((dates1, values1), (dates2, values2), ..., (datesn, valuesn))
+        # where each dates item is a list and the corresponding values
+        # item is a list of the same length. Each 2-tuple of dates and
+        # values corresponds to a non-date column in the CSV file.
+        # We want to sort all of the columns by date.
+        # To do this, for each column, we zip together the dates and
+        # values, sort on dates, and then un-zip (i.e. zip again) to get
+        # sorted dates and values.
+        # For more on this Deep Python(TM) expression, see here:
+        # https://www.kite.com/python/answers/how-to-sort-two-lists-together-in-python
+        return tuple(
+            tuple(list(val) for val in zip(*sorted(zip(*column))))
+            for column in data)
