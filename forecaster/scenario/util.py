@@ -732,7 +732,8 @@ def returns_from_values_array(
     if interval is None:
         return_dates = dates[1:]
         return_values = [
-            next_val / prev_val for (prev_val, next_val) in pairwise(values)]
+            next_val / prev_val - 1
+            for (prev_val, next_val) in pairwise(values)]
         return (return_dates, return_values)
     # Otherwise, we need to calculate return over each interval:
     return_dates = []
