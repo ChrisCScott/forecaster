@@ -5,8 +5,7 @@ from collections import OrderedDict
 import datetime
 import dateutil
 from forecaster.scenario.util import (
-    values_from_returns, returns_from_values,
-    values_from_returns_array, returns_from_values_array)
+    values_from_returns, returns_from_values)
 from forecaster.utility import resolve_data_path, HighPrecisionHandler
 
 # Assume incomplete dates are in the first month/day:

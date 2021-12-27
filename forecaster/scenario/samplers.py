@@ -3,8 +3,7 @@
 from itertools import product, pairwise
 import numpy
 from forecaster.scenario.util import (
-    return_over_period, regularize_returns_array, infer_interval,
-    get_date_index)
+    return_over_period, regularize_returns, infer_interval, get_date_index)
 from forecaster.utility import HighPrecisionHandler
 
 class MultivariateSampler(HighPrecisionHandler):
@@ -385,8 +384,8 @@ class WalkForwardSampler(HighPrecisionHandler):
             return None
         # Adjust dates/returns to the selected interval if provided:
         if self.interval is not None:
-            dates, returns = regularize_returns_array(
-                dates, returns, self.interval,
+            dates, returns = regularize_returns(
+                (dates, returns), self.interval,
                 date=start_date, high_precision=self.high_precision)
         # Get list of dates, starting from `start_date` (up to `walk_length`):
         start_index = get_date_index(dates, start_date)

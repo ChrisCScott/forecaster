@@ -41,6 +41,10 @@ def interpolate_value(values, date, high_precision=None):
     Raises:
         (KeyError): `date` is out of range.
     """
+    # Deal with array-style inputs:
+    if isinstance(values, (tuple, list)):
+        return _interpolate_value_array(
+            *values, date, high_precision=high_precision)
     # Check to see if the date is available exactly:
     if date in values:
         return values[date]
@@ -58,7 +62,7 @@ def interpolate_value(values, date, high_precision=None):
     # Apply that growth and voila: the new portfolio value
     return values[prev_date] * (growth + 1)
 
-def interpolate_value_array(dates, values, date, high_precision=None):
+def _interpolate_value_array(dates, values, date, high_precision=None):
     """ Array-based companion to `interpolate_value` """
     index = bisect_left(dates, date)
     # Check to see if the date is available exactly:
@@ -77,7 +81,7 @@ def interpolate_value_array(dates, values, date, high_precision=None):
     # based on the returns-based logic of `return_over_period`.
     # To do that, we need to provide an array of _returns_, not
     # portfolio values, so build a simple one with just the key dates:
-    growth = return_over_period_array(
+    growth = _return_over_period_array(
         [prev_date, next_date],
         [0, next_value / prev_value],
         prev_date, date, high_precision=high_precision)
@@ -117,6 +121,12 @@ def return_over_period(
     Raises:
         (KeyError): `date` is out of range.
     """
+    # Deal with array-style inputs:
+    if isinstance(returns, (tuple, list)):
+        return _return_over_period_array(
+            *returns, start_date, end_date, dates_interval=dates_interval,
+            high_precision=high_precision)
+    # Get all dates between start_date and end_date:
     dates = [date for date in returns if start_date < date < end_date]
     # Recurse if there are any dates between `start_date` and `end_date`
     if dates:
@@ -138,7 +148,7 @@ def return_over_period(
     return _return_over_period(
         returns, start_date, end_date, dates_interval, high_precision)
 
-def return_over_period_array(
+def _return_over_period_array(
         dates, returns, start_date, end_date,
         dates_interval=None, high_precision=None):
     """ Determines the total return between `start_date` and `end_date`.
@@ -199,13 +209,13 @@ def return_over_period_array(
             """ Grows `accum` by return over period of `date_pair` """
             start_date, end_date = date_pair
             return accum * (
-                1 + _return_over_period_array(
+                1 + _return_over_period_array_r(
                     dates, returns, start_date, end_date,
                     dates_interval, high_precision))
         return reduce(accum_returns, pairwise(recurse_dates), 1) - 1
     # We only need to do the above on the first call, not on recursion.
     # So split off the remaining logic into a separate function call:
-    return _return_over_period_array(
+    return _return_over_period_array_r(
         dates, returns, start_date, end_date, dates_interval, high_precision)
 
 def _return_over_period(
@@ -265,7 +275,7 @@ def _return_over_period(
         exp = high_precision(elapsed.days) / high_precision(interval.days)
     return ((1 + returns[end_date]) ** exp) - 1
 
-def _return_over_period_array(
+def _return_over_period_array_r(
         dates, returns, start_date, end_date, dates_interval, high_precision):
     """ Recursive helper for `return_over_period_array`.
 
@@ -364,6 +374,11 @@ def regularize_returns(
     Raises:
         (KeyError): `start_date` is out of range.
     """
+    # Deal with array-style input:
+    if isinstance(returns, (list, tuple)):
+        return _regularize_returns_array(
+            *returns, interval, date=date, num_dates=num_dates,
+            dates_interval=dates_interval, high_precision=high_precision)
     # Get this value here to avoid repeating that work in called methods
     if dates_interval is None:
         dates_interval = infer_interval(returns, sample=DATES_INTERVAL_SAMPLES)
@@ -380,7 +395,7 @@ def regularize_returns(
         for date in regularized_dates)
     return regularized_returns
 
-def regularize_returns_array(
+def _regularize_returns_array(
         dates, returns, interval,
         date=None, num_dates=None, dates_interval=None, high_precision=None):
     """ Generates a sequence of returns with regularly-spaced dates.
@@ -400,7 +415,7 @@ def regularize_returns_array(
     # To regularize returns, determine the total return for each time
     # period of length `interval` in the dateset.
     regularized_returns = [
-        return_over_period_array(
+        _return_over_period_array(
             dates, returns, date - interval, date,
             dates_interval=dates_interval, high_precision=high_precision)
         for date in regularized_dates]
@@ -550,6 +565,10 @@ def values_from_returns(
         (OrderedDict[date, HighPrecisionOptional]):
             An ordered mapping of dates to percentage returns.
     """
+    # Deal with array-style inputs:
+    if isinstance(returns, (tuple, list)):
+        return _values_from_returns_array(
+            *returns, interval=interval, start_val=start_val)
     if interval is None:
         interval = infer_interval(returns)
     # Add a date just before the start of our dataset with $100 in value
@@ -565,7 +584,7 @@ def values_from_returns(
         prev_date = date
     return values
 
-def values_from_returns_array(
+def _values_from_returns_array(
         dates, returns, interval=None, start_val=100):
     """ Array-based companion to `values_from_returns` """
     if interval is None:
@@ -636,6 +655,10 @@ def return_for_date(values, date, interval=None, high_precision=None):
             the data needed to determine a return over `interval` is
             not present, `None`).
     """
+    # Deal with array-style inputs:
+    if isinstance(values, (tuple, list)):
+        return _return_for_date_array(
+            *values, date, interval=interval, high_precision=high_precision)
     # If interval is not provided, infer it from the spacing of dates
     # in `values`:
     if interval is None:
@@ -657,7 +680,7 @@ def return_for_date(values, date, interval=None, high_precision=None):
     # Return is just the amount by which the ratio exceeds 1:
     return end_val / start_val - 1
 
-def return_for_date_array(
+def _return_for_date_array(
         dates, values, date, interval=None, high_precision=None):
     """ Array-based companion to `return_for_date` """
     # If interval is not provided, infer it from the spacing of dates
@@ -674,9 +697,9 @@ def return_for_date_array(
         return None
     # Get the values on `start_date` and `end_date`, interpolating from
     # surrounding data if necessary:
-    start_val = interpolate_value_array(
+    start_val = _interpolate_value_array(
         dates, values, start_date, high_precision=high_precision)
-    end_val = interpolate_value_array(
+    end_val = _interpolate_value_array(
         dates, values, end_date, high_precision=high_precision)
     # Return is just the amount by which the ratio exceeds 1:
     return end_val / start_val - 1
@@ -717,6 +740,11 @@ def returns_from_values(values, interval=None, high_precision=None):
             return for a time period of length `interval` following
             each key date (or preceding, for negative `interval`).
     """
+    # Deal with array-style inputs:
+    if isinstance(values, (tuple, list)):
+        return _returns_from_values_array(
+            *values, interval=interval, high_precision=high_precision)
+    # Otherwise, assume dict-like:
     interval_returns = OrderedDict()
     for date in values:
         returns = return_for_date(
@@ -725,7 +753,7 @@ def returns_from_values(values, interval=None, high_precision=None):
             interval_returns[date] = returns
     return interval_returns
 
-def returns_from_values_array(
+def _returns_from_values_array(
         dates, values, interval=None, high_precision=None):
     """ Array-based companion to `returns_from_values` """
     # In the simple case, just calculate returns between adjacent dates:
