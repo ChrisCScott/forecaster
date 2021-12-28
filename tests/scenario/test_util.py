@@ -564,8 +564,8 @@ class TestMappingToArrays(TestUtilMethod):
     def test_dict_tuple(self):
         """ Tests mapping_to_arrays with a tuple of dicts as input """
         # Use a tuple of length 2, with two identical elements:
-        vals = util.mapping_to_arrays((self.values,) * 2)
-        self.assertEqual(vals, (self.values_array,) * 2)
+        vals = util.mapping_to_arrays([self.values,] * 2)
+        self.assertEqual(vals, [self.values_array,] * 2)
 
     def test_non_dict(self):
         """ Tests mapping_to_arrays with a tuple of dicts as input """

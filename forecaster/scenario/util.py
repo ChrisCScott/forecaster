@@ -820,6 +820,6 @@ def mapping_to_arrays(vals):
     if (
             isinstance(vals, Sequence) and
             all(isinstance(val, dict) for val in vals)):
-        return tuple(mapping_to_arrays(val) for val in vals)
+        return list(mapping_to_arrays(val) for val in vals)
     # Otherwise, return `vals` as-is
     return vals
