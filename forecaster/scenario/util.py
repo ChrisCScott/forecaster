@@ -767,8 +767,9 @@ def _returns_from_values_array(
     return_dates = []
     return_values = []
     for date in dates:
-        returns = return_for_date(
-            values, date, interval=interval, high_precision=high_precision)
+        returns = _return_for_date_array(
+            dates, values, date,
+            interval=interval, high_precision=high_precision)
         if returns is not None:
             return_dates.append(date)
             return_values.append(returns)
