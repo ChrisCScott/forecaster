@@ -44,6 +44,13 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
             values (i.e. in absolute terms). If not provided, each file
             will be analyzed by `HistoricalValueReader` and interpreted
             accordingly.
+        fast_read (bool): If `True`, data is presumed to be arranged in
+            sorted order (i.e. with dates in increasing order) and
+            values are assumed to be float-convertible without
+            additional processing. If `False`, data will be sorted
+            on read and values will be parsed to remove characters
+            that are not legally float-convertible.
+            Optional; defaults to `False`.
         high_precision (Callable[[float], HighPrecisionType]): A
             callable object, such as a method or class, which takes a
             single `float` argument and returns a value in a
@@ -64,7 +71,7 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
     def __init__(
             self, sampler, num_samples, default_scenario,
             filenames=DEFAULT_FILENAMES,
-            *, returns=None, high_precision=None, **kwargs):
+            *, returns=None, fast_read=False, high_precision=None, **kwargs):
         super().__init__(high_precision=high_precision, **kwargs)
         # Declare instance variables:
         self.sampler = sampler
@@ -72,13 +79,14 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
         self.default_scenario = default_scenario
         self.data = ReturnsTuple()
         if filenames is not None:
-            self.data = self.read_data(filenames, returns=returns)
+            self.data = self.read_data(
+                filenames, returns=returns, fast_read=fast_read)
 
     def __iter__(self):
         """ Yields `num_samples` `Scenario` objects using `sampler`. """
         return self.call_registered_method(self.sampler)
 
-    def read_data(self, filenames, returns=None):
+    def read_data(self, filenames, returns=None, fast_read=False):
         """ Reads data from `filenames` and merges results.
 
         Each file in `filenames` may provide any number of data columns,
@@ -109,6 +117,13 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
                 portfolio values (i.e. in absolute terms).
                 If not provided, each file will be analyzed by
                 `HistoricalValueReader` and interpreted accordingly.
+            fast_read (bool): If `True`, data is presumed to be arranged
+                in sorted order (i.e. with dates in increasing order)
+                and values are assumed to be float-convertible without
+                additional processing. If `False`, data will be sorted
+                on read and values will be parsed to remove characters
+                that are not legally float-convertible.
+                Optional; defaults to `False`.
 
         Returns:
             (ReturnsTuple[OrderedDict[date, HighPrecisionOptional]])
@@ -116,7 +131,8 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
         # Read in historical return/inflation data from CSV files:
         returns_tuples = tuple(
             (HistoricalValueReader(
-                filename, returns=returns, high_precision=self.high_precision
+                filename, returns=returns, fast_read=fast_read,
+                high_precision=self.high_precision
             ).returns() if filename is not None else (None,))
             for filename in filenames)
         # The above produces a tuple where each element is another tuple

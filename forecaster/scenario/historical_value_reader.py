@@ -54,7 +54,9 @@ class HistoricalValueReader(HighPrecisionHandler):
             sorted order (i.e. with dates in increasing order) and
             values are assumed to be float-convertible without
             additional processing. If `False`, data will be sorted
-            on read and values will be parsed
+            on read and values will be parsed to remove characters
+            that are not legally float-convertible.
+            Optional; defaults to `False`.
         high_precision (Callable[[float], HighPrecisionType]): A
             callable object, such as a method or class, which takes a
             single `float` or `str` argument and returns a value in a

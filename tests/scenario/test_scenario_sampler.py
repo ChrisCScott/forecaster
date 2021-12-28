@@ -78,11 +78,24 @@ class TestScenarioSamplerWF(TestScenarioSampler):
                 self.assertEqual(returns, expected_returns)
 
     def test_real(self):
-        """ Test walk-forward sampler with real data """
+        """ Test walk-forward sampler with real data.
+
+        This is more of an integration test than a unit test. It's
+        included (for now) for two reasons. One: It's helpful for
+        profiling, as this test provides some insight into bottlenecks.
+        Two: Running in non-exponential time is a fairly important
+        requirement for this method. Early versions would hang and crash
+        on real-world data. After opimization, this test now runs in a
+        few seconds - still slow, but tractable.
+        """
         num_samples = 1000
         # Omit filenames to load default dataset:
         sampler = ScenarioSampler(
-            ScenarioSampler.sampler_walk_forward, 1000, self.scenario)
+            ScenarioSampler.sampler_walk_forward, 1000, self.scenario,
+            # This is the slowest test in the entire project.
+            # We can speed things up by using well-formatted data and
+            # skipping pre-processing (which is tested elsewhere):
+            fast_read=True)
         # If the test doesn't hang here, that's a success!
         # Confirm that the returned values have the structure expected,
         # which is `num_samples` Scenarios:
