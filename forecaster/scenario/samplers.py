@@ -3,8 +3,17 @@
 from itertools import product, pairwise
 import numpy
 from forecaster.scenario.util import (
-    return_over_period, regularize_returns, infer_interval, get_date_index)
+    return_over_period, regularize_returns, infer_interval, get_date_index,
+    mapping_to_arrays)
 from forecaster.utility import HighPrecisionHandler
+
+def get_values(array_pair):
+    """ Gets a list of values from a column of data """
+    return array_pair[1]
+
+def get_dates(array_pair):
+    """ Gets a list of dates from a column of data """
+    return array_pair[0]
 
 class MultivariateSampler(HighPrecisionHandler):
     """ Generates samples of returns from historical data.
@@ -20,10 +29,14 @@ class MultivariateSampler(HighPrecisionHandler):
     values for non-overridden variables' values.
 
     Arguments:
-        data (list[dict[datetime, HighPrecisionOptional]]): An array
-            of size `N` of data for each of `N` variables. The element
-            at index `i` is a dataset of date: value pairs for the `i`th
+        data (list[dict[datetime, HighPrecisionOptional]] |
+            list[tuple[list[datetime], list[HighPrecisionOptional]]]):
+            An array of size `N` of data for each of `N` variables. The
+            element at index `i` is a dataset of date: value pairs (
+            either as a dict or as parallel lists) for the `i`th
             variable.
+            Data must be in sorted order. If using dicts in Python<3.6,
+            use `OrderedDict` to preserve order.
         means (list[HighPrecisionOptional]): An array of mean values for
             the variables, where the `i`th element is the mean for the
             `i`th variable. These values will be used if provided
@@ -39,9 +52,10 @@ class MultivariateSampler(HighPrecisionHandler):
             high-precision type (e.g. Decimal). Optional.
 
     Attributes:
-        data (list[dict[datetime, HighPrecisionOptional]]): An array
-            of size `N` of data for each of `N` variables. The element
-            at index `i` is a dataset of date: value pairs for the `i`th
+        data (list[tuple[list[datetime], list[HighPrecisionOptional]]]):
+            An array of size `N` of data for each of `N` variables. The
+            element at index `i` is a pair of lists `(dates, values)`
+            representing a series of date-value pairs for the `i`th
             variable.
         means (list[HighPrecisionOptional]): An array of mean values for
             the variables, where the `i`th element is the mean for the
@@ -58,9 +72,9 @@ class MultivariateSampler(HighPrecisionHandler):
             self, data, means=None, covariances=None, high_precision=None):
         super().__init__(high_precision=high_precision)
         # Initialize member attributes:
-        self.data = data
-        self.means = self._generate_means(data, means)
-        self.covariances = self._generate_covariances(data, covariances)
+        self.data = mapping_to_arrays(data) # Convert to arrays
+        self.means = self._generate_means(self.data, means)
+        self.covariances = self._generate_covariances(self.data, covariances)
 
     def sample(self, num_samples=None):
         """ Generates `num_samples` multivariate samples.
@@ -93,16 +107,28 @@ class MultivariateSampler(HighPrecisionHandler):
 
         Where `means` provides a value, that is used. Only `None` values
         in `means` are inferred from `data`.
+
+        Arguments:
+            data (list[tuple[list[datetime], list[HighPrecisionOptional]]]):
+                An array of size `N` of data for each of `N` variables.
+                The element at index `i` is a pair of lists
+                `(dates, values)` representing a series of date-value
+                pairs for the `i`th variable. Each pair of lists must
+                be in sorted order (by date, ascending).
+            means (list[HighPrecisionOptional]): An array of mean values
+                for the variables, where the `i`th element is the mean
+                for the `i`th variable. These values will be used if
+                provided instead of mean statistics generated from
+                `data`. (`None` values are ignored.) Optional.
         """
-        size = len(data)
         # Use means from `data` if no means are expressly provided:
         if means is None or not means:
-            return list(numpy.mean(list(var.values())) for var in data)
+            return list(numpy.mean(get_values(column)) for column in data)
         # Otherwise, fill in `None` values from `means` based on `data`:
         return list(
             means[i] if means[i] is not None
-            else numpy.mean(list(data[i].values()))
-            for i in range(size))
+            else numpy.mean(get_values(column))
+            for (i, column) in enumerate(data))
 
     def _generate_covariances(self, data, covariances=None):
         """ Generates missing covariances for each variable in `data`.
@@ -112,9 +138,12 @@ class MultivariateSampler(HighPrecisionHandler):
         will be set to 0.
 
         Args:
-            data (tuple[Optional[OrderedDict[datetime,
-                HighPrecisionOptional]]]):
-                An array of date-value sequences (each in sorted order).
+            data (list[tuple[list[datetime], list[HighPrecisionOptional]]]):
+                An array of size `N` of data for each of `N` variables.
+                The element at index `i` is a pair of lists
+                `(dates, values)` representing a series of date-value
+                pairs for the `i`th variable. Each pair of lists must
+                be in sorted order (by date, ascending).
             covariances (Optional[tuple[Optional[tuple[
                 Optional[HighPrecisionOptional]]]]]):
                 A two-dimensional array of (co)variance values,
@@ -131,7 +160,16 @@ class MultivariateSampler(HighPrecisionHandler):
         # Use `ddof=0` to get `numpy.cov` to agree with `numpy.var`
         # See here for more:
         # https://stackoverflow.com/questions/21030668/why-do-numpy-cov-diagonal-elements-and-var-functions-have-different-values
-        data_array = list(list(column.values()) for column in data)
+
+        # Get just the values (strip out dates):
+        # TODO: Consider whether we should be aligning values across
+        # columns by date when calculating covariance. As it is, if
+        # different dates are represented for different variables,
+        # we may get nonsensical results.
+        # We did this in an earlier version of this method by
+        # calculating pairwise covariances and calling `_align_data`
+        # on pairs of variables. Might be worth reverting to that.
+        data_array = list(get_values(column) for column in data)
         # Support high-precision numeric types:
         if self.high_precision is not None:
             # We don't need exact values when sampling, so support
