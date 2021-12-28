@@ -621,21 +621,24 @@ def _return_interval(dates, date):
     """
     # Get the date immediately preceding `date`:
     if isinstance(dates, dict):
-        earlier_dates = list(val for val in dates if val < date)
+        prev_date = max(
+            # Stop iterating at `date` (this assumes `dates` is ordered)
+            takewhile(lambda x: x < date, dates),
+            default=None)
     else:
         index = bisect_left(dates, date)
-        earlier_dates = dates[0:index]
-    if earlier_dates:
-        return relativedelta(date, get_last_date(earlier_dates))
+        prev_date = dates[index - 1] if index > 0 else None
+    # The interval is the time between `date` and the preceding date:
+    if prev_date is not None:
+        return relativedelta(date, prev_date)
     # Special case: `date` is or precedes the very first date.
+    first_date = get_first_date(dates)
     # If `date` is within the (extended) bounds of `returns`, try to
     # return the interval from the extended lower bound:
-    first_date = get_first_date(dates)
-    if date < first_date:
-        interval = infer_interval(dates)
-        if date > first_date - interval:
-            return interval
-    # Otherwise: Who knows?
+    interval = infer_interval(dates)
+    if date > first_date - interval:
+        return interval
+    # If `date` is even earlier than that, can't infer the interval:
     return None
 
 def return_for_date(values, date, interval=None, high_precision=None):
