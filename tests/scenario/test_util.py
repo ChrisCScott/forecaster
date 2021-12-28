@@ -46,6 +46,73 @@ class TestUtilMethod(unittest.TestCase):
             datetime(2001,1,1): Decimal(1),
             datetime(2002,1,1): Decimal(-.25)}
 
+def dict_to_arrays(dict_):
+    """ Converts a dict to a pair of lists. """
+    # In Python 3.6+, `dict` is order-preserving.
+    return (list(dict_.keys()), list(dict_.values()))
+
+class TestUtilArrayMethod(TestUtilMethod):
+    """ Superclass for test cases for array-based methods in `util`.
+
+    The purpose of this class is to provide common set-up/tear-down
+    methods for the various method-specific test cases.
+
+    This class can be used as a second superclass for subclasses of
+    `TestUtilMethod` subclasses. For example, `TestInterpolateValue`
+    is a `TestUtilMethod` subclass. `TestInterpolateValueArray` is a
+    subclass of `TestInterpolateValue`, and uses `TestUtilArrayMethod`
+    as a second superclass. As a result, `TestInterpolateValueArray`
+    calls this class's methods, which replace `values` and `returns`
+    attrs with array-type attrs.
+    """
+
+    @property
+    def values(self):
+        """ Gets `values` attr. """
+        return self._values
+
+    @values.setter
+    def values(self, val):
+        """ Converts dict-type value to array-type """
+        if isinstance(val, dict):
+            self._values = dict_to_arrays(val)
+        else:
+            self._values = val
+
+    @property
+    def returns(self):
+        """ Gets `returns` attr. """
+        return self._returns
+
+    @returns.setter
+    def returns(self, val):
+        """ Converts dict-type value to array-type """
+        if isinstance(val, dict):
+            self._returns = dict_to_arrays(val)
+        else:
+            self._returns = val
+
+    def assertEqual(self, first, second, *args, **kwargs):
+        """ Allow for comparison between dict and array-typed inputs """
+        # If it looks like we're comparing a dict of date-value pairs to
+        # a pair of lists, convert the dict to a pair of lists and
+        # compare the lists via the conventional assertEqual:
+        if (
+                isinstance(first, dict) and
+                isinstance(second, (tuple, list)) and
+                len(second) == 2):
+            return super().assertEqual(
+                dict_to_arrays(first), second, *args, **kwargs)
+        # If the dict/array are passed in reverse order, swap them and
+        # try again via this method:
+        if isinstance(first, (tuple, list)) and isinstance(second, dict):
+            # pylint: disable=arguments-out-of-order
+            # We're intentionally swapping the first two arguments.
+            return self.assertEqual(second, first, *args, **kwargs)
+            # pylint: enable=arguments-out-of-order
+        # In any other case, use the standard assertEqual:
+        return super().assertEqual(first, second, *args, **kwargs)
+
 class TestInterpolateValue(TestUtilMethod):
     """ A test suite for `util.interpolate_value`. """
 
@@ -88,6 +155,11 @@ class TestInterpolateValue(TestUtilMethod):
         self.assertGreater(val, Decimal(100))
         self.assertLess(val, Decimal(250))
 
+class TestInterpolateValueArray(TestInterpolateValue, TestUtilArrayMethod):
+    """ A test suite for `util.interpolate_value` with array args. """
+    # No need for any methods; `TestUtilArrayMethod` will substitute
+    # aray-valued inputs.
+
 class TestReturnOverPeriod(TestUtilMethod):
     """ A test suite for `util.return_over_period`. """
 
@@ -95,43 +167,41 @@ class TestReturnOverPeriod(TestUtilMethod):
         """ Test adjacent `start_date` and `end_date`, both in `returns` """
         # If the period is represented exactly in `returns`, and if the
         # start and end date cover just one return period, then the
-        # return for the period is just the return on the end date:
+        # return for the period is just the return on the end date,
+        # which in this case is 1 (i.e. 100%)
         val = util.return_over_period(
             self.returns, self.dates[1], self.dates[2])
-        self.assertEqual(val, self.returns[self.dates[2]])
+        self.assertEqual(val, 1)
 
     def test_exact_long(self):
         """ Test non-adjacent `start_date`/`end_date`, both in `returns` """
         # If the dates are represented exactly in `returns`, but they
         # cover multiple represented periods, then the return
-        # is just the product of returns over the represented periods:
+        # is just the product of returns over the represented periods,
+        # which in this case is 0.5.
         val = util.return_over_period(
             self.returns, self.dates[1], self.dates[3])
-        expected_val = (
-            (1 + self.returns[self.dates[3]]) *
-            (1 + self.returns[self.dates[2]])
-        ) - 1
-        self.assertEqual(val, expected_val)
+        self.assertEqual(val, 0.5)
 
     def test_end_between(self):
         """ Test `end_date` between dates in `returns` """
         end_date = datetime(2000,7,1)  # midpoint between dates[1] and dates[2]
         val = util.return_over_period(self.returns, self.dates[1], end_date)
         # Resulting value can be calculated various ways, but should be
-        # smaller than the return for `dates[2]` and have the same sign:
-        ref_return = self.returns[self.dates[2]]
-        self.assertLess(abs(val), abs(ref_return))  # magnitude
-        self.assertAlmostEqual(val/abs(val), ref_return/abs(ref_return))  # sign
+        # smaller than the return for `dates[2]` (i.e. 1) and have the
+        # same sign:
+        self.assertLess(val, 1)  # magnitude
+        self.assertGreater(val, 0)  # sign
 
     def test_start_between(self):
         """ Test `start_date` between dates in `returns` """
         start_date = datetime(2001,7,1) # midpoint between dates[2] and dates[3]
         val = util.return_over_period(self.returns, start_date, self.dates[3])
         # Resulting value can be calculated various ways, but should be
-        # smaller than the return for `dates[3]` and have the same sign:
-        ref_return = self.returns[self.dates[3]]
-        self.assertLess(abs(val), abs(ref_return))  # magnitude
-        self.assertAlmostEqual(val/abs(val), ref_return/abs(ref_return))  # sign
+        # smaller than the return for `dates[3]` (i.e. -.25) and have
+        # the same sign:
+        self.assertLess(abs(val), abs(-.25))  # magnitude
+        self.assertLess(val, 0)  # sign
 
     def test_both_between(self):
         """ Test `start_date` and `end_date` between dates in `returns` """
@@ -152,7 +222,7 @@ class TestReturnOverPeriod(TestUtilMethod):
     def test_both_between_constant(self):
         """ Test `start_date`/`end_date` over constant `returns` """
         # Build a sequence of constant, annual, 200% returns:
-        returns = {
+        self.returns = {
             # Avoid 2000 - it's a leap year, which complicates the
             # result (the return over the latter half of 2000 is
             # slightly lower than in non-leap-years)
@@ -161,7 +231,7 @@ class TestReturnOverPeriod(TestUtilMethod):
             datetime(2003,1,1): 2}
         start_date = datetime(2001,7,1)  # midpoint between first two dates
         end_date = datetime(2002,7,1)  # midpoint between last two dates
-        val = util.return_over_period(returns, start_date, end_date)
+        val = util.return_over_period(self.returns, start_date, end_date)
         # Any reasonable implementation should generate returns of 200%,
         # since this is a one-year interval for a dataset of constant
         # 200% annualized returns.
@@ -179,6 +249,12 @@ class TestReturnOverPeriod(TestUtilMethod):
             self.returns, start_date, self.dates[2], high_precision=Decimal)
         self.assertLess(val, ref_return)
         self.assertGreater(val, Decimal(0))
+
+class TestReturnOverPeriodArray(TestReturnOverPeriod, TestUtilArrayMethod):
+    """ A test suite for `util.return_over_period` with array inputs. """
+    # No need to overload any methods. Dict-type inputs in
+    # `test_both_between_constant` are dynamically converted to arrays
+    # via the `TestUtilArrayMethod.returns` property setter.
 
 class TestRegularizeReturns(TestUtilMethod):
     """ A test suite for `util.regularize_returns`. """
@@ -258,6 +334,12 @@ class TestRegularizeReturns(TestUtilMethod):
                 high_precision=Decimal)}
         self.assertEqual(vals, ref_vals)
 
+class TestRegularizeReturnsArray(TestRegularizeReturns, TestUtilArrayMethod):
+    """ A test suite for `util.regularize_returns` with array inputs. """
+    # No methods use custom dicts as inputs (and no need to overload to
+    # convert dict-type `ref_vals` passed to `assertEqual`; those will
+    # be converted dynamically via TestUtilArrayMethod.assertEqual.)
+
 class TestInferInterval(TestUtilMethod):
     """ A test suite for `util.infer_interval`. """
 
@@ -270,7 +352,7 @@ class TestInferInterval(TestUtilMethod):
 
     def test_daily_skips(self):
         """ Test daily returns with a occasional skips. """
-        returns = {
+        self.returns = {
             datetime(2000, 1, 1): 1,
             # A weekend on Jan. 2, 3
             datetime(2000, 1, 4): 1,
@@ -278,16 +360,21 @@ class TestInferInterval(TestUtilMethod):
             datetime(2000, 1, 6): 1}
         # Confirm that the above returns are daily:
         ref = dateutil.relativedelta.relativedelta(days=1)
-        val = util.infer_interval(returns)
+        val = util.infer_interval(self.returns)
         self.assertEqual(val, ref)
 
     def test_no_interval(self):
         """ Test returns without enough data to infer an interval. """
-        returns = {
+        self.returns = {
             datetime(2000, 1, 1): 1}
-        val = util.infer_interval(returns)
+        val = util.infer_interval(self.returns)
         # Should return None:
         self.assertEqual(val, None)
+
+class TestInferIntervalArray(TestInferInterval, TestUtilArrayMethod):
+    """ A test suite for `util.infer_interval` with array inputs. """
+    # All custom dict inputs are converted dynamically via
+    # `TestUtilArrayMethod.returns` property setter.
 
 class TestValuesFromReturns(TestUtilMethod):
     """ A test suite for `util.values_from_returns`. """
@@ -324,6 +411,19 @@ class TestValuesFromReturns(TestUtilMethod):
         val = util.values_from_returns(self.returns)
         self.assertEqual(val, self.values)
 
+class TestValuesFromReturnsArray(TestValuesFromReturns, TestUtilArrayMethod):
+    """ A test suite for `util.values_from_returns` with array inputs. """
+    # `test_start_val` makes use of dict-valued `values` when building
+    # custom values. Overload it here to build `values` properly:
+
+    def test_start_val(self):
+        """ Test with explicit `start_val` arg """
+        # Double start_val to 200:
+        val = util.values_from_returns(self.returns, start_val=200)
+        # All values should be doubled:
+        self.values = (self.values[0], [2*val for val in self.values[1]])
+        self.assertEqual(val, self.values)
+
 class TestReturnForDate(TestUtilMethod):
     """ A test suite for `util.return_for_date`. """
 
@@ -331,7 +431,7 @@ class TestReturnForDate(TestUtilMethod):
         """ Tests a date in `values` """
         date = self.dates[1]
         val = util.return_for_date(self.values, date)
-        self.assertEqual(val, self.returns[date])
+        self.assertEqual(val, 0)  # No growth between first/second dates
 
     def test_start_date(self):
         """ Tests the first date in `values` """
@@ -348,7 +448,7 @@ class TestReturnForDate(TestUtilMethod):
         # boundary:
         date = self.dates[3]
         val = util.return_for_date(self.values, date)
-        self.assertEqual(val, self.returns[date])
+        self.assertEqual(val, -.25)  # -25% growth over last period
 
     def test_between_dates(self):
         """ Tests a date between dates in `values` """
@@ -358,7 +458,7 @@ class TestReturnForDate(TestUtilMethod):
         # Find the return between 2000-1-1 and 2000-7-1,
         # which is simply the amount of growth in value between dates:
         ref_val_date = util.interpolate_value(self.values, date)  # 2000-7-1 val
-        ref_val_prev = self.values[self.dates[1]]  # 2000-1-1 val
+        ref_val_prev = 100  # 2000-1-1 val
         ref_return = ref_val_date / ref_val_prev - 1  # Growth between dates
         self.assertAlmostEqual(val, ref_return)
 
@@ -367,7 +467,7 @@ class TestReturnForDate(TestUtilMethod):
         interval = dateutil.relativedelta.relativedelta(years=1)
         date = self.dates[1]
         val = util.return_for_date(self.values, date, interval)
-        self.assertEqual(val, self.returns[date])
+        self.assertEqual(val, 0)  # No growth between first/second dates
 
     def test_interval_not_aligned(self):
         """ Tests an interval that doesn't line up with `values` """
@@ -375,7 +475,7 @@ class TestReturnForDate(TestUtilMethod):
         date = self.dates[1]
         val = util.return_for_date(self.values, date, interval)
         # Calculate the growth over `interval` ending at `date`:
-        ref_val_date = self.values[date]
+        ref_val_date = 100  # 2000-1-1 value
         ref_val_prev = util.interpolate_value(self.values, date - interval)
         ref_return = ref_val_date / ref_val_prev - 1  # Growth between dates
         self.assertEqual(val, ref_return)
@@ -390,9 +490,13 @@ class TestReturnForDate(TestUtilMethod):
         # which is simply the amount of growth in value between dates:
         ref_val_date = util.interpolate_value(  # 2000-7-1 val
             self.values, date, high_precision=Decimal)
-        ref_val_prev = self.values[self.dates[1]]  # 2000-1-1 val
+        ref_val_prev = Decimal(100)  # 2000-1-1 val
         ref_return = ref_val_date / ref_val_prev - 1  # Growth between dates
         self.assertAlmostEqual(val, ref_return)
+
+class TestReturnForDateArray(TestReturnForDate, TestUtilArrayMethod):
+    """ A test suite for `util.return_for_date` with array inputs. """
+    # No overloading needed. `TestUtilArrayMethod` converts dynamically.
 
 class TestReturnsFromValues(TestUtilMethod):
     """ A test suite for `util.returns_from_values`. """
@@ -424,6 +528,30 @@ class TestReturnsFromValues(TestUtilMethod):
         self.setUp_decimal()
         val = util.returns_from_values(self.values)
         self.assertEqual(val, self.returns)
+
+class TestReturnsFromValuesArray(TestReturnsFromValues, TestUtilArrayMethod):
+    """ A test suite for `util.returns_from_values` with array inputs. """
+
+    def test_interval(self):
+        """ Test `interval` longer than frequency of data in `values` """
+        interval = dateutil.relativedelta.relativedelta(years=2)
+        val = util.returns_from_values(self.values, interval=interval)
+        # The result should have only two dates rather than 3, since
+        # there isn't 2 years of data for `self.dates[1]`
+        ref_val = ([], [])
+        # Add first date:
+        ref_val[0].append(self.dates[2])
+        ref_val[1].append(  # Return for 1999/2000
+            (1 + self.returns[1][1]) *
+            (1 + self.returns[1][0])
+            - 1)
+        # Add second date:
+        ref_val[0].append(self.dates[3])
+        ref_val[1].append(  # Return for 2001/2002
+            (1 + self.returns[1][2]) *
+            (1 + self.returns[1][1])
+            - 1)
+        self.assertEqual(val, ref_val)
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(
