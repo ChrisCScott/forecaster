@@ -2,6 +2,7 @@
 
 import csv
 from collections import OrderedDict
+from itertools import islice
 import datetime
 import dateutil
 from forecaster.scenario.util import (
@@ -133,7 +134,7 @@ class HistoricalValueReader(HighPrecisionHandler):
         return self.data
 
     @staticmethod
-    def _infer_returns(column):
+    def _infer_returns(column, sample_num=100):
         """ Infers whether `column` is likely a sequence of returns.
 
         `column` is presumed to be returns-values if:
@@ -142,13 +143,15 @@ class HistoricalValueReader(HighPrecisionHandler):
               less than 1.
         Otherwise, `column` is presumed to represent portfolio values.
 
-        Argument:
+        Arguments:
             values (Iterable[HighPrecisionOptional] |
                 Iterator[HighPrecisionOptional] |
                 dict[Any, HighPrecisionOptional]): An iterator or
                 iterable over numeric values (e.g. the values of a dict
                 of date-value pairs). If a `dict` or subclass is
                 provided, its `dict.values()` ValueView will be used.
+            sample_num (int): The maximum number of values to draw
+                from `column`. Optional; defaults to 100.
 
         Returns:
             (bool): `True` if `values` is inferred to be a sequence of
@@ -158,7 +161,9 @@ class HistoricalValueReader(HighPrecisionHandler):
             column = column.values()
         num_vals = 0
         num_small_vals = 0
-        for val in column:  # `values` may be an iterator, so iterate just once
+        # `values` may be an iterator, so iterate just once, consuming
+        # up to `sample_num` elements:
+        for val in islice(column, sample_num):
             # Assume returns-values if any value is negative:
             if val < 0:
                 return True
