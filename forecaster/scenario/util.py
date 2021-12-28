@@ -482,6 +482,13 @@ def _get_regularized_dates(
         map(lambda x: date + x * interval, counter))
     return list(regularized_dates)  # Convert iterator to list
 
+def _is_array_pair(val):
+    """ Returns `True` if `val` is a pair of arrays. """
+    return (
+        isinstance(val, (list, tuple)) and
+        len(val) == 2 and
+        all(isinstance(col, (list, tuple)) for col in val))
+
 def infer_interval(dates, sample=None):
     """ Infers the interval between dates in `dates`.
 
@@ -502,6 +509,10 @@ def infer_interval(dates, sample=None):
         (relativedelta | None): The modal interval between dates in
         `dates`, or `None` if this cannot be determined.
     """
+    # If this is a pair of arrays, assume it's a pair of date-value
+    # arrays, so infer based on dates in the first array of the pair:
+    if _is_array_pair(dates):
+        return infer_interval(dates[0], sample=sample)
     # Limit the number of date-pairs sampled, if requested:
     if sample is not None and len(dates) > sample:
         if isinstance(dates, dict):
