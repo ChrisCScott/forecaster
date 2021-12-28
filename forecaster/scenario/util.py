@@ -1,6 +1,7 @@
 """ Utility methods for `forecaster.scenario`. """
 
 from bisect import bisect_left
+from typing import Sequence, Mapping
 from itertools import pairwise, takewhile, count
 from functools import reduce
 from statistics import mode, StatisticsError
@@ -808,3 +809,17 @@ def get_last_date(dates):
     if isinstance(dates, dict):
         return max(dates)
     return dates[-1]
+
+def mapping_to_arrays(vals):
+    """ Converts `vals` to pairs of lists. """
+    # Convert dict-like to a pair of lists:
+    if isinstance(vals, Mapping):
+        # In Python 3.6+, `dict` is order-preserving.
+        return (list(vals.keys()), list(vals.values()))
+    # Convert tuple/list/etc of dict-likes to tuple of pairs of lists:
+    if (
+            isinstance(vals, Sequence) and
+            all(isinstance(val, dict) for val in vals)):
+        return tuple(mapping_to_arrays(val) for val in vals)
+    # Otherwise, return `vals` as-is
+    return vals

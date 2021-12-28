@@ -46,11 +46,6 @@ class TestUtilMethod(unittest.TestCase):
             datetime(2001,1,1): Decimal(1),
             datetime(2002,1,1): Decimal(-.25)}
 
-def dict_to_arrays(dict_):
-    """ Converts a dict to a pair of lists. """
-    # In Python 3.6+, `dict` is order-preserving.
-    return (list(dict_.keys()), list(dict_.values()))
-
 class TestUtilArrayMethod(TestUtilMethod):
     """ Superclass for test cases for array-based methods in `util`.
 
@@ -75,7 +70,7 @@ class TestUtilArrayMethod(TestUtilMethod):
     def values(self, val):
         """ Converts dict-type value to array-type """
         if isinstance(val, dict):
-            self._values = dict_to_arrays(val)
+            self._values = util.mapping_to_arrays(val)
         else:
             self._values = val
 
@@ -88,7 +83,7 @@ class TestUtilArrayMethod(TestUtilMethod):
     def returns(self, val):
         """ Converts dict-type value to array-type """
         if isinstance(val, dict):
-            self._returns = dict_to_arrays(val)
+            self._returns = util.mapping_to_arrays(val)
         else:
             self._returns = val
 
@@ -102,7 +97,7 @@ class TestUtilArrayMethod(TestUtilMethod):
                 isinstance(second, (tuple, list)) and
                 len(second) == 2):
             return super().assertEqual(
-                dict_to_arrays(first), second, *args, **kwargs)
+                util.mapping_to_arrays(first), second, *args, **kwargs)
         # If the dict/array are passed in reverse order, swap them and
         # try again via this method:
         if isinstance(first, (tuple, list)) and isinstance(second, dict):
@@ -552,6 +547,31 @@ class TestReturnsFromValuesArray(TestReturnsFromValues, TestUtilArrayMethod):
             (1 + self.returns[1][1])
             - 1)
         self.assertEqual(val, ref_val)
+
+class TestMappingToArrays(TestUtilMethod):
+    """ A test suite for `util.mapping_to_arrays`. """
+
+    def setUp(self):
+        super().setUp()
+        # An array equivalent to self.values (which is dict-type):
+        self.values_array = (self.dates, [100, 100, 200, 150])
+
+    def test_dict(self):
+        """ Tests mapping_to_arrays with dict input """
+        vals = util.mapping_to_arrays(self.values)
+        self.assertEqual(vals, self.values_array)
+
+    def test_dict_tuple(self):
+        """ Tests mapping_to_arrays with a tuple of dicts as input """
+        # Use a tuple of length 2, with two identical elements:
+        vals = util.mapping_to_arrays((self.values,) * 2)
+        self.assertEqual(vals, (self.values_array,) * 2)
+
+    def test_non_dict(self):
+        """ Tests mapping_to_arrays with a tuple of dicts as input """
+        # There should be no conversion:
+        vals = util.mapping_to_arrays(self.values_array)
+        self.assertEqual(vals, self.values_array)
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(
