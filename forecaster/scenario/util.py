@@ -810,6 +810,22 @@ def get_last_date(dates):
         return max(dates)
     return dates[-1]
 
+def get_first_return_period(dates, interval=None):
+    """ Gets the start and end dates of the first period of `dates`.
+
+    This function assumes that `dates` represents a sequence of dates
+    that describe a sequence of returns, with the first date
+    corresponding to the _end_ of the first period of returns. This
+    method infers the length of the likely return period and determines
+    the start date of that period accordingly. (If `interval` is
+    provided, that is used as the length of the return period.)
+    """
+    end_date = get_first_date(dates)
+    if interval is None:
+        interval = infer_interval(dates)
+    start_date = end_date - interval
+    return (start_date, end_date)
+
 def mapping_to_arrays(vals):
     """ Converts `vals` to pairs of lists. """
     # Convert dict-like to a pair of lists:
