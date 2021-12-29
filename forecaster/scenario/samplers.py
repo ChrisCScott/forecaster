@@ -15,7 +15,85 @@ def get_dates(array_pair):
     """ Gets a list of dates from a column of data """
     return array_pair[0]
 
-class MultivariateSampler(HighPrecisionHandler):
+class SamplerABC(HighPrecisionHandler):
+    """ Abstract base class for generating samples from data. """
+
+    def __init__(self, data, *, high_precision=None):
+        super().__init__(high_precision=high_precision)
+        # Convert `data` to arrays if needed:
+        self.data = mapping_to_arrays(data)
+
+    def sample(self, num_samples=None):
+        """ Generates `num_samples` samples.
+
+        Arguments:
+            num_samples (int): The number of samples to generate.
+            Optional. If omitted, a single sample is generated.
+
+        Returns:
+            (tuple[HighPrecisionOptional,...] |
+            list[tuple[HighPrecisionOptional,...]]): A sample of `N`
+            variables (where `N` is the size of `data`), as an N-tuple.
+            Or, if `num_samples` is passed, an array of `num_samples`
+            samples.
+        """
+        raise NotImplementedError('Cannot call ABC method.')
+
+    def _align_data(self, data):
+        """ Aligns data by dates.
+
+        Arguments:
+            data (list[tuple[list[datetime], list[HighPrecisionOptional]]]):
+                Two or more columns of date:value pairs.
+
+        Returns:
+            (list[list[HighPrecisionOptional]] | None): A dataset of
+            values (dates are omitted) where each value at the `i`th
+            index of a column corresponds to the same date as the values
+            at the `i`th indices of all other columns. That is, a matrix
+            where columns correspond to variables and rows correspond to
+            dates.
+        """
+        # We want to find if there's any overlapping period in the
+        # dataseries, so expend the dataseries to include the starting
+        # date for their first return periods:
+        expanded_dates = [
+            # Include the start of the first return period:
+            [get_first_return_period(get_dates(column))[0]] + get_dates(column)
+            for column in data]
+        # Get the range of overlapping dates:
+        min_date = max(min(column) for column in expanded_dates)
+        max_date = min(max(column) for column in expanded_dates)
+        # We can't meaningfully align data if columns don't overlap:
+        if min_date >= max_date:
+            return None
+        # Use dates in the range (min_date, max_date) from the sparser
+        # dataset. This reduces the amount of interpolation, which is
+        # good because interpolating lots of points into a sparse
+        # dataset to compare with a dense dataset will degrade measures
+        # of covariance.
+        dates = min(
+            ([  # Get all dates in range (exclusive) for each column
+                date for date in column if min_date < date < max_date]
+            for column in expanded_dates),
+            #  Select the shorted list of dates
+            key=len)
+        # Ensure that the bounds of the range are represented:
+        dates.insert(0, min_date)
+        dates.append(max_date)
+        # Get a value for each period and build a 2xn array for the `n` dates:
+        aligned_data = [
+            (
+                dates[1:],  # All dates except the first date
+                list(       # 
+                    return_over_period(
+                        column, start_date, end_date,
+                        high_precision=self.high_precision)
+                    for (start_date, end_date) in pairwise(dates)))
+            for column in data]
+        return aligned_data
+
+class MultivariateSampler(SamplerABC):
     """ Generates samples of returns from historical data.
 
     This class models a distribution for an arbitrary number of
@@ -70,9 +148,9 @@ class MultivariateSampler(HighPrecisionHandler):
 
     def __init__(
             self, data, means=None, covariances=None, high_precision=None):
-        super().__init__(high_precision=high_precision)
+        # Initialize `data` and `high_precision` attrs:
+        super().__init__(data, high_precision=high_precision)
         # Initialize member attributes:
-        self.data = mapping_to_arrays(data) # Convert to arrays
         self.means = self._generate_means(self.data, means)
         self.covariances = self._generate_covariances(self.data, covariances)
 
@@ -176,7 +254,9 @@ class MultivariateSampler(HighPrecisionHandler):
                     cov_matrix[j][i] = covariances[j][i]
                     continue
                 # Otherwise, calculate covariance between columns i/j:
-                aligned_data = self._align_data((column1, column2))
+                aligned_data = [
+                    get_values(column)  # we don't need dates for `cov`
+                    for column in self._align_data((column1, column2))]
                 # If there's no aligned data, assume no covariance:
                 if aligned_data is None:
                     continue
@@ -204,60 +284,7 @@ class MultivariateSampler(HighPrecisionHandler):
                 cov_matrix[j][i] = cov
         return cov_matrix
 
-    def _align_data(self, data):
-        """ Aligns data by dates.
-
-        Arguments:
-            data (list[tuple[list[datetime],
-                list[HighPrecisionOptional]]]):
-                Two or more columns of date:value pairs.
-
-        Returns:
-            (list[list[HighPrecisionOptional]] | None): A dataset of
-            values (dates are omitted) where each value at the `i`th
-            index of a column corresponds to the same date as the values
-            at the `i`th indices of all other columns. That is, a matrix
-            where columns correspond to variables and rows correspond to
-            dates.
-        """
-        # We want to find if there's any overlapping period in the
-        # dataseries, so expend the dataseries to include the starting
-        # date for their first return periods:
-        expanded_dates = [
-            # Include the start of the first return period:
-            [get_first_return_period(get_dates(column))[0]] + get_dates(column)
-            for column in data]
-        # Get the range of overlapping dates:
-        min_date = max(min(column) for column in expanded_dates)
-        max_date = min(max(column) for column in expanded_dates)
-        # We can't meaningfully align data if columns don't overlap:
-        if min_date >= max_date:
-            return None
-        # Use dates in the range (min_date, max_date) from the sparser
-        # dataset. This reduces the amount of interpolation, which is
-        # good because interpolating lots of points into a sparse
-        # dataset to compare with a dense dataset will degrade measures
-        # of covariance.
-        dates = min(
-            ([  # Get all dates in range (exclusive) for each column
-                date for date in column if min_date < date < max_date]
-            for column in expanded_dates),
-            #  Select the shorted list of dates
-            key=len)
-        # Ensure that the bounds of the range are represented:
-        dates.insert(0, min_date)
-        dates.append(max_date)
-        # Get a value for each period and build a 2xn array for the `n` dates:
-        aligned_data = tuple(
-            list(
-                return_over_period(
-                    column, start_date, end_date,
-                    high_precision=self.high_precision)
-                for (start_date, end_date) in pairwise(dates))
-            for column in data)
-        return aligned_data
-
-class WalkForwardSampler(HighPrecisionHandler):
+class WalkForwardSampler(SamplerABC):
     """ Generates walk-forward samples of returns from historical data.
 
     This class generates sequences of returns for any number of
@@ -278,10 +305,14 @@ class WalkForwardSampler(HighPrecisionHandler):
     back to the beginning via the `wrap_data` argument.
 
     Arguments:
-        data (list[dict[datetime, HighPrecisionOptional]]): An array
-            of size `N` of data for each of `N` variables. The element
-            at index `i` is a dataset of date: value pairs for the `i`th
+        data (list[dict[datetime, HighPrecisionOptional]] |
+            list[tuple[list[datetime], list[HighPrecisionOptional]]]):
+            An array of size `N` of data for each of `N` variables. The
+            element at index `i` is a dataset of date: value pairs (
+            either as a dict or as parallel lists) for the `i`th
             variable.
+            Data must be in sorted order. If using dicts in Python<3.6,
+            use `OrderedDict` to preserve order.
         synchronize (bool): If `True`, walk-forward sequences for each
             variable will be synchronized so that they each start on
             the same date. Optional, defaults to `False`.
@@ -303,9 +334,10 @@ class WalkForwardSampler(HighPrecisionHandler):
             high-precision type (e.g. Decimal). Optional.
 
     Attributes:
-        data (list[dict[datetime, HighPrecisionOptional]]): An array
-            of size `N` of data for each of `N` variables. The element
-            at index `i` is a dataset of date: value pairs for the `i`th
+        data (list[tuple[list[datetime], list[HighPrecisionOptional]]]):
+            An array of size `N` of data for each of `N` variables. The
+            element at index `i` is a pair of lists `(dates, values)`
+            representing a series of date-value pairs for the `i`th
             variable.
         synchronize (bool): If `True`, walk-forward sequences for each
             variable will be synchronized so that they each start on
@@ -327,29 +359,36 @@ class WalkForwardSampler(HighPrecisionHandler):
     def __init__(
             self, data, synchronize=False, wrap_data=False, interval=None,
             high_precision=None):
-        super().__init__(high_precision=high_precision)
         # Init private property attrs
         self._data = None
-        self._data_array = None
+        self._data_synchronized = None
         self._synchronize = None
+        # Init `data` and `high_precision` via superclass
+        # (do this _after_ initting private property attrs)
+        super().__init__(data, high_precision=high_precision)
         # Init attrs
         self.synchronize = synchronize
         self.wrap_data = wrap_data
         self.interval = interval
-        self.data = data  # Set this last so it's processed right
 
     @property
     def data(self):
         """ Matrix of data values """
+        if self.synchronize:
+            # Synchronize data lazily (i.e. when requested), since in
+            # theory the user could change the value of `synchronize`:
+            if self._data_synchronized is None:
+                self._data_synchronized = self._align_data(self._data)
+            return self._data_synchronized
         return self._data
 
     @data.setter
     def data(self, val):
         """ Sets `data` attr """
-        # Store for each data column so we can efficiently slice
-        # it later
-        self._data_array = self._data_to_array(val)
-        self._data = val
+        # Convert `data` to arrays:
+        self._data = mapping_to_arrays(val)
+        # Clear synchronized data cache; we'll re-generate it lazily
+        self._data_synchronized = None
 
     @property
     def synchronize(self):
@@ -360,9 +399,8 @@ class WalkForwardSampler(HighPrecisionHandler):
     def synchronize(self, val):
         """ Sets `synchronize` attr """
         self._synchronize = val
-        # Re-process `data` to synchronize values appropriately:
-        if self._data is not None:
-            self._data_array = self._data_to_array(self._data)
+        # Clear synchronized data cache; we'll re-generate it lazily
+        self._data_synchronized = None
 
     def sample(self, walk_length, num_samples=None):
         """ Generates walk-forward time-series data.
@@ -428,35 +466,12 @@ class WalkForwardSampler(HighPrecisionHandler):
             return samples[0]
         return samples
 
-    def _data_to_array(self, data):
-        """ Convert `data` to suitablely-processed ndarray """
-        # If we're synchronizing dates, provide one date column and n
-        # value columns
-        if self.synchronize:
-            # Get dates represented for all variables:
-            dates = [
-                date for date in data[0]
-                if all(date in column for column in data)]
-            array = [
-                dates, # first column is the dates column
-                # Now append each column of values, limited to common dates:
-                *([column[date] for date in dates] for column in data)]
-        # Otherwise, get an array of 2-tuples of dates and values:
-        else:
-            array = [
-                (list(column.keys()), list(column.values())) for column in data]
-        return array
-
     def _get_walk_forward_sequence(self, index, starts, walk_length):
         """ Gets sequence of annual returns starting on `start_date` """
-        # Unpack variables from _data_array for efficient iteration:
+        # Unpack variables from `data` for efficient iteration:
         start_date = starts[index]
-        if self.synchronize:
-            dates = self._data_array[0]
-            returns = self._data_array[index + 1]
-        else:
-            dates = self._data_array[index][0]
-            returns = self._data_array[index][1]
+        dates = self.data[index][0]
+        returns = self.data[index][1]
         # `start_date` can be None, so handle that first:
         if start_date is None:
             return None
@@ -561,7 +576,7 @@ class WalkForwardSampler(HighPrecisionHandler):
 
     def _get_valid_starts(self, returns, walk_length):
         """ Get valid starts for a single column of data. """
-        dates = list(returns.keys())
+        dates = get_dates(returns)
         # All dates work if we're wrapping:
         if self.wrap_data:
             return dates
@@ -578,7 +593,7 @@ class WalkForwardSampler(HighPrecisionHandler):
         # to fit a walk-forward sequence afterwards:
         start_of_returns = min(dates) - infer_interval(dates)
         first_date = start_of_returns + self.interval
-        last_date = max(returns) - (self.interval * (walk_length - 1))
+        last_date = max(dates) - (self.interval * (walk_length - 1))
         valid_dates = list(
             date for date in dates if first_date <= date <= last_date)
         # The above gets all dates _already represented as keys in the
