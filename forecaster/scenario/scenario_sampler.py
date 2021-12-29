@@ -3,7 +3,8 @@
 from collections import namedtuple
 from forecaster.scenario.samplers import MultivariateSampler, WalkForwardSampler
 from forecaster.scenario.scenario import Scenario
-from forecaster.scenario.historical_value_reader import HistoricalValueReader
+from forecaster.scenario.historical_value_reader import (
+    HistoricalValueReaderArray)
 from forecaster.utility import (
     HighPrecisionHandler, MethodRegister, registered_method_named)
 
@@ -130,7 +131,7 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
         """
         # Read in historical return/inflation data from CSV files:
         returns_tuples = tuple(
-            (HistoricalValueReader(
+            (HistoricalValueReaderArray(
                 filename, returns=returns, fast_read=fast_read,
                 high_precision=self.high_precision
             ).returns() if filename is not None else (None,))
