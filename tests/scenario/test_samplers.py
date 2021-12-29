@@ -7,6 +7,7 @@ from decimal import Decimal
 import numpy
 import dateutil
 from forecaster.scenario.samplers import MultivariateSampler, WalkForwardSampler
+from forecaster.scenario.util import mapping_to_arrays
 
 # Use constant seed for tests that rely on randomness:
 RANDOM_TEST = numpy.random.default_rng(0)
@@ -62,6 +63,26 @@ class TestMultivariateSampler(unittest.TestCase):
         sampler = MultivariateSampler(
             self.data, covariances=[[None, 1], [1, None]])
         self.assertEqual(sampler.covariances, [[0.25, 1], [1, 0.25]])
+
+    def test_align_data(self):
+        """ Tests calculating covariances with misaligned datasets. """
+        # Add a (very large) value to `data_x` at a date that's outside
+        # the range of `data_y`. It should be ignored when calculating
+        # covariances between `data_x` and `data_y`, but not when
+        # calculating variance of `data_x`:
+        data_x_arrays = mapping_to_arrays(self.data_x)
+        self.data_x = (
+            [datetime(1999, 1, 1)] + data_x_arrays[0],
+            [10000] + data_x_arrays[1])
+        self.data = (self.data_x, mapping_to_arrays(self.data_y))
+        sampler = MultivariateSampler(self.data)
+        # Covariance between data_x and data_y should be the same as in
+        # `test_covariances`, i.e. -0.25. But the variance of `data_x`
+        # (at index [0][0]) should be ~22215556.22222222. (The variance
+        # of `data_y` should be unchanged, i.e. 0.25)
+        self.assertAlmostEqual(
+            sampler.covariances,
+            [[22215556.22222222, -0.25], [-0.25, 0.25]])
 
     # Patch the random number generator to use the same seed in tests:
     @mock.patch.object(MultivariateSampler, 'random', RANDOM_TEST)
