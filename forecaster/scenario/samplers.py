@@ -1,10 +1,10 @@
 """ Samplers for generating time-series data for Scenario objects. """
 
-from itertools import product, pairwise
+from itertools import product, pairwise, islice
 import numpy
 from forecaster.scenario.util import (
     return_over_period, regularize_returns, infer_interval, get_date_index,
-    mapping_to_arrays)
+    mapping_to_arrays, get_first_return_period)
 from forecaster.utility import HighPrecisionHandler
 
 def get_values(array_pair):
@@ -161,60 +161,100 @@ class MultivariateSampler(HighPrecisionHandler):
         # See here for more:
         # https://stackoverflow.com/questions/21030668/why-do-numpy-cov-diagonal-elements-and-var-functions-have-different-values
 
-        # Get just the values (strip out dates):
-        # TODO: Consider whether we should be aligning values across
-        # columns by date when calculating covariance. As it is, if
-        # different dates are represented for different variables,
-        # we may get nonsensical results.
-        # We did this in an earlier version of this method by
-        # calculating pairwise covariances and calling `_align_data`
-        # on pairs of variables. Might be worth reverting to that.
-        data_array = list(get_values(column) for column in data)
-        # Support high-precision numeric types:
-        if self.high_precision is not None:
-            # We don't need exact values when sampling, so support
-            # high-precision types by casting them to `float`:
-            array = numpy.array(data_array).astype(numpy.dtype(float))
-            cov_matrix = numpy.cov(array, ddof=0).astype(object)
-            # Cast back to high-precision type on return:
-            for (index, val) in numpy.ndenumerate(cov_matrix):
-                cov_matrix[index] = self.high_precision(val)
-        else:
-            cov_matrix = numpy.cov(data_array, ddof=0)
-        # If no `covariances` was provided, nothing left to do:
-        if covariances is None:
-            return list(list(column) for column in cov_matrix)
-        # Otherwise, overwrite each entry of `cov_matrix` if there's a
-        # corresponding non-None entry in `covariances`:
-        for (i, column) in enumerate(covariances):
-            # Skip empty columns:
-            if column is None:
-                continue
-            for (j, entry) in enumerate(column):
-                if entry is not None:
-                    cov_matrix[i][j] = entry
-        # Cast numpy.ndarry back to a familiar type:
-        return list(list(column) for column in cov_matrix)
+        # Build an n*n array to slot covariance coefficients into:
+        cov_matrix = numpy.zeros((len(data), len(data)), dtype=int).tolist()
+        for (i, column1) in enumerate(data):
+            # Covariance matrixes are triangular, so only calculate
+            # covariance coefficients for (i,j) where j<=i:
+            for (j, column2) in enumerate(islice(data, i+1)):
+                # Prefer entries in `covariances`:
+                if (
+                        covariances is not None and
+                        covariances[i] is not None and
+                        covariances[i][j] is not None):
+                    cov_matrix[i][j] = covariances[i][j]
+                    cov_matrix[j][i] = covariances[j][i]
+                    continue
+                # Otherwise, calculate covariance between columns i/j:
+                aligned_data = self._align_data((column1, column2))
+                # If there's no aligned data, assume no covariance:
+                if aligned_data is None:
+                    continue
+                # If there is aligned data, find the covariance:
+                if self.high_precision is None:
+                    # This returns a 2x2 covariance matrix; the
+                    # covariance coefficient for the two variables is
+                    # found in either one of the off-diagonal elements:
+                    cov_2x2 = numpy.cov(aligned_data, ddof=0)
+                    cov = cov_2x2[0][1]
+                    # (This works for the case i=j as well. Usually we'd
+                    # refer to the element at [0][0] to get the
+                    # autocorrelation of column i, but when i=j all
+                    # elements are identical so we can use any one.)
+                else:
+                    # Support high-precision numeric types:
+                    # numpy doesn't support custom numeric types; we
+                    # don't need exact values when sampling anyways, so
+                    # "support" high-precision types by casting them to
+                    # `float`, calling numpy, and then casting back:
+                    array = numpy.array(aligned_data).astype(numpy.dtype(float))
+                    cov_2x2 = numpy.cov(array, ddof=0).astype(object)
+                    cov = self.high_precision(cov_2x2[0][1])
+                cov_matrix[i][j] = cov
+                cov_matrix[j][i] = cov
+        return cov_matrix
 
-    @staticmethod
-    def _align_data(data1, data2):
-        """ Turns dicts of date-keyed data into arrays of aligned data. """
+    def _align_data(self, data):
+        """ Aligns data by dates.
+
+        Arguments:
+            data (list[tuple[list[datetime],
+                list[HighPrecisionOptional]]]):
+                Two or more columns of date:value pairs.
+
+        Returns:
+            (list[list[HighPrecisionOptional]] | None): A dataset of
+            values (dates are omitted) where each value at the `i`th
+            index of a column corresponds to the same date as the values
+            at the `i`th indices of all other columns. That is, a matrix
+            where columns correspond to variables and rows correspond to
+            dates.
+        """
+        # We want to find if there's any overlapping period in the
+        # dataseries, so expend the dataseries to include the starting
+        # date for their first return periods:
+        expanded_dates = [
+            # Include the start of the first return period:
+            [get_first_return_period(get_dates(column))[0]] + get_dates(column)
+            for column in data]
         # Get the range of overlapping dates:
-        min_date = max(min(data1), min(data2))
-        max_date = min(max(data1), max(data2))
-        # Use the dates in the first dataset, limited to dates within the
-        # range of overlapping dates:
-        dates = list(
-            date for date in data1 if date >= min_date and date <= max_date)
-        # If there's not enough overlapping data, assume no covariance:
-        if len(dates) < 2:  # Need 2 vals for each var to get 2x2 covariance
-            return ((0,0), (0,0))
+        min_date = max(min(column) for column in expanded_dates)
+        max_date = min(max(column) for column in expanded_dates)
+        # We can't meaningfully align data if columns don't overlap:
+        if min_date >= max_date:
+            return None
+        # Use dates in the range (min_date, max_date) from the sparser
+        # dataset. This reduces the amount of interpolation, which is
+        # good because interpolating lots of points into a sparse
+        # dataset to compare with a dense dataset will degrade measures
+        # of covariance.
+        dates = min(
+            ([  # Get all dates in range (exclusive) for each column
+                date for date in column if min_date < date < max_date]
+            for column in expanded_dates),
+            #  Select the shorted list of dates
+            key=len)
+        # Ensure that the bounds of the range are represented:
+        dates.insert(0, min_date)
+        dates.append(max_date)
         # Get a value for each period and build a 2xn array for the `n` dates:
         aligned_data = tuple(
             list(
-                return_over_period(column, start_date, end_date)
+                return_over_period(
+                    column, start_date, end_date,
+                    high_precision=self.high_precision)
                 for (start_date, end_date) in pairwise(dates))
-            for column in (data1, data2))
+            for column in data)
         return aligned_data
 
 class WalkForwardSampler(HighPrecisionHandler):
