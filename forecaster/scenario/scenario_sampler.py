@@ -8,24 +8,21 @@ from forecaster.scenario.historical_value_reader import (
 from forecaster.utility import (
     HighPrecisionHandler, MethodRegister, registered_method_named)
 
+# Provide this for convenience for client code:
 RETURNS_FIELDS = ('stocks', 'bonds', 'other', 'inflation')
 ReturnsTuple = namedtuple(
     "ReturnsTuple", RETURNS_FIELDS, defaults=(None,) * len(RETURNS_FIELDS))
 
-DEFAULT_FILENAMES = ReturnsTuple(
-    stocks='msci_world.csv',
-    bonds='treasury_bond_1-3_years.csv',
-    other='nareit.csv',
-    inflation='cpi.csv')
-
 class ScenarioSampler(HighPrecisionHandler, MethodRegister):
     """ A generator for `Scenario` objects.
 
-    Data can be read from one or more CSV files to provide material for
-    sampling. See documentation for `read_data` for more on this.
+    Samples are generated based on `data`, which can be passed directly,
+    or can be read from one or more CSV files. See documentation for
+    `read_data` for more on this.
 
-    If you don't want to read from a file, pass `filenames=None` and
-    set the `data` attribute manually after init.
+    All `Scenario`-specific logic is provided by `_build_scenario`.
+    Subclasses that use different scenario types should overload that
+    method.
 
     Arguments:
         sampler (str, Callable, Hashable): The key for a
@@ -38,10 +35,12 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
         default_scenario (Scenario | tuple | list | dict): A `Scenario`
             object, or args (as *args tuple/list or **kwargs dict) from
             which a Scenario may be initialized.
-        filenames (list[str] | None): Filenames for CSV files providing
-            historical portfolio returns and/or portfolio values.
-            Optional; defaults to `DEFAULT_FILENAMES`. If None, no files
-            are read.
+        data (tuple[tuple[list[datetime], list[HighPrecisionOptional]] | None] |
+            list[str | None]): Either data readable by samplers of the
+            `sampler` module or a sequence of filenames from which
+            data can be read. (`None` entries may be provided in either
+            case, in which case the corresponding value of
+            `default_scenario` will be used when generating scenarios.)
         returns (bool | None): If True, data in `filenames` will be
             interpreted as returns (i.e. in percentage terms). If
             False, data in `filenames` will be interpreted as portfolio
@@ -68,23 +67,25 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
         default_scenario (Scenario): A `Scenario` object, or args (as
             *args tuple/list or **kwargs dict) from which a Scenario may
             be initialized.
-        data (ReturnsTuple[OrderedDict[date, HighPrecisionOptional]]):
+        data (tuple[tuple[list[datetime], list[HighPrecisionOptional]]]):
             A sequence of ordered mappings of dates to returns.
     """
 
     def __init__(
-            self, sampler, num_samples, default_scenario,
-            filenames=DEFAULT_FILENAMES,
-            *, returns=None, fast_read=False, high_precision=None, **kwargs):
+            self, sampler, num_samples, default_scenario, data, *,
+            returns=None, fast_read=False, high_precision=None, **kwargs):
         super().__init__(high_precision=high_precision, **kwargs)
         # Declare instance variables:
         self.sampler = sampler
         self.num_samples = num_samples
         self.default_scenario = default_scenario
-        self.data = ReturnsTuple()
-        if filenames is not None:
+        # Read from files, if filenames were provided:
+        if all(isinstance(val, str) for val in data):
             self.data = self.read_data(
-                filenames, returns=returns, fast_read=fast_read)
+                data, returns=returns, fast_read=fast_read)
+        # Otherwise, use the data as-is:
+        else:
+            self.data = data
 
     def __iter__(self):
         """ Yields `num_samples` `Scenario` objects using `sampler`. """
@@ -95,8 +96,7 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
 
         Each file in `filenames` may provide any number of data columns,
         which are ingested in sequence (preserving order within and
-        between files). The total number of data columns across all
-        files must match the number of fields on `ReturnsTuple`.
+        between files).
 
         For instance, if `file1.csv` provides columns for stocks and
         bonds (in that order) and `file2.csv` provides data for other
@@ -130,7 +130,10 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
                 Optional; defaults to `False`.
 
         Returns:
-            (ReturnsTuple[OrderedDict[date, HighPrecisionOptional]])
+            (tuple[tuple[list[datetime], list[HighPrecisionOptional]]]):
+            A sequence of data columns, each column being a pair of
+            lists (one for dates and one for values). See docs for the
+            `sampler` module or `HistoricalValueReaderArray` for more.
         """
         # Read in historical return/inflation data from CSV files:
         returns_tuples = tuple(
@@ -141,7 +144,7 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
             for filename in filenames)
         # The above produces a tuple where each element is another tuple
         # of one or more columns. Reduce this to a tuple of columns:
-        return ReturnsTuple(*sum(returns_tuples, ()))
+        return tuple(sum(returns_tuples, ()))
 
     @registered_method_named('walk-forward')
     def sampler_walk_forward(self):
@@ -189,9 +192,9 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
     def _sample_to_scenario_args(self, sample):
         """ Converts samples received from `data` to a `ReturnTuple` """
         # Re-insert None entries that were stripped by `_data_for_sampler`:
-        return ReturnsTuple(
-            *(sample[i] if column is not None else None
-            for (i, column) in enumerate(self.data)))
+        return tuple(
+            sample[i] if column is not None else None
+            for (i, column) in enumerate(self.data))
 
     def _build_scenario(self, stock, bond, other, inflation):
         """ Builds a `Scenario` object based on args and `self.default` """

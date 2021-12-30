@@ -46,8 +46,7 @@ class TestScenarioSamplerWF(TestScenarioSampler):
         """ Test walk-forward sampler with `num_samples=2` """
         sampler = ScenarioSampler(
             ScenarioSampler.sampler_walk_forward, 2,
-            self.scenario, filenames=None)
-        sampler.data = self.data  # Use test data
+            self.scenario, self.data)  # Use test data
         # Convert to list so we can count scenarios:
         scenarios = list(sampler)
         # There are only two valid walk-forward returns of length 2
@@ -61,9 +60,8 @@ class TestScenarioSamplerWF(TestScenarioSampler):
         # by asking for 3-year scenarios from a 3-year dataset:
         self.scenario.num_years = 3
         sampler = ScenarioSampler(
-            ScenarioSampler.sampler_walk_forward, 1, self.scenario,
-            filenames=None, **kwargs)
-        sampler.data = self.data  # Use test data
+            ScenarioSampler.sampler_walk_forward, 1, self.scenario, self.data,
+            **kwargs)
         expected_returns = {
             key.year: val for (key, val) in self.returns.items()}
         for scenario in sampler:
@@ -89,11 +87,17 @@ class TestScenarioSamplerWF(TestScenarioSampler):
         few seconds - still slow, but tractable.
         """
         num_samples = 1000
-        # Omit filenames to load default dataset:
+        # Use real-world data:
+        filenames = (
+            'msci_world.csv',
+            'treasury_bond_1-3_years.csv',
+            'nareit.csv',
+            'cpi.csv')
         sampler = ScenarioSampler(
-            ScenarioSampler.sampler_walk_forward, 1000, self.scenario,
-            # This is the slowest test in the entire project.
-            # We can speed things up by using well-formatted data and
+            ScenarioSampler.sampler_walk_forward, 1000,
+            self.scenario, filenames,
+            # This was the slowest test in the entire project.
+            # We speed things up by using well-formatted data and
             # skipping pre-processing (which is tested elsewhere):
             fast_read=True)
         # If the test doesn't hang here, that's a success!
@@ -102,12 +106,11 @@ class TestScenarioSamplerWF(TestScenarioSampler):
         scenarios = list(sampler) # Convert to list to count scenarios
         self.assertEqual(len(scenarios), num_samples)
 
-    def test_missing_filename(self):
-        """ Test walk-forward sampler with `None` entries in `filenames` """
+    def test_data_all_none(self):
+        """ Test walk-forward sampler with all `None` entries in `data` """
         self.scenario.num_years = 3
         sampler = ScenarioSampler(
-            ScenarioSampler.sampler_walk_forward, 2, self.scenario,
-            filenames=(None,)*4)
+            ScenarioSampler.sampler_walk_forward, 2, self.scenario, (None,)*4)
         for scenario in sampler:
             # all attrs should match the default scenario:
             self.assertEqual(scenario.stock_return, self.scenario.stock_return)
@@ -115,15 +118,13 @@ class TestScenarioSamplerWF(TestScenarioSampler):
             self.assertEqual(scenario.other_return, self.scenario.other_return)
             self.assertEqual(scenario.inflation, self.scenario.inflation)
 
-    def test_missing_data(self):
+    def test_data_some_none(self):
         """ Test walk-forward sampler with `None` entries in `data`. """
         self.scenario.num_years = 3
-        sampler = ScenarioSampler(
-            ScenarioSampler.sampler_walk_forward, 2, self.scenario,
-            filenames=None)
         # Use test data that omits some variables:
-        data = ReturnsTuple(self.data.stocks, None, None, None)
-        sampler.data = data
+        data = (self.data.stocks, None, None, None)
+        sampler = ScenarioSampler(
+            ScenarioSampler.sampler_walk_forward, 2, self.scenario, data)
         expected_stock_returns = {
             key.year: val for (key, val) in self.returns.items()}
         for scenario in sampler:
@@ -141,7 +142,7 @@ class TestScenarioSamplerWF(TestScenarioSampler):
         filenames = (TEST_PATH_PERCENTAGES,)*4
         sampler = ScenarioSampler(
             ScenarioSampler.sampler_walk_forward, 1, self.scenario,
-            filenames=filenames, returns=True)
+            filenames, returns=True)
         expected_returns = {
             key.year: val for (key, val) in self.returns.items()}
         for scenario in sampler:
@@ -163,7 +164,7 @@ class TestScenarioSamplerWF(TestScenarioSampler):
         filenames = (TEST_PATH_PORTFOLIO,)*4
         sampler = ScenarioSampler(
             ScenarioSampler.sampler_walk_forward, 1, self.scenario,
-            filenames=filenames, returns=False)
+            filenames, returns=False)
         expected_returns = {
             key.year: val for (key, val) in self.returns.items()}
         for scenario in sampler:
