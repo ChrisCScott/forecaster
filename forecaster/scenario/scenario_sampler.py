@@ -171,14 +171,15 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
     @registered_method_named('constant returns')
     def sampler_constant_returns(self):
         """ Yields `Scenario` objects with constant-valued returns. """
-        sampler = MultivariateSampler(
-            self.data, high_precision=self.high_precision)
+        data = self._data_for_sampler()
+        sampler = MultivariateSampler(data, high_precision=self.high_precision)
         # Get `num_samples` samples with 1 value for each variable:
         samples = sampler.sample(num_samples=self.num_samples)
         # Build a `Scenario` object with each collection of sampled
         # rates of return, keeping them constant across time:
         for sample in samples:
-            yield self._build_scenario(*sample)
+            scenario_args = self._sample_to_scenario_args(sample)
+            yield self._build_scenario(*scenario_args)
 
     def _data_for_sampler(self):
         """ Returns a matrix of data suitable for processing by samplers """
