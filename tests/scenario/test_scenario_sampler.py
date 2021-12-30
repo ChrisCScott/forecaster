@@ -1,6 +1,7 @@
 """ Unit tests for `ScenarioSampler`. """
 
 import unittest
+from unittest import mock
 from decimal import Decimal
 import numpy
 from forecaster.scenario import ScenarioSampler, Scenario, ReturnsTuple
@@ -16,6 +17,7 @@ class TestScenarioSampler(unittest.TestCase):
 
     def setUp(self):
         # Copy values that get read from the `test_*.csv` files:
+        # This data has a mean of 0.25 and a variance of ~0.29166666...
         self.values = dict(PORTFOLIO_VALUES)
         self.returns = dict(RETURNS_VALUES)
         self.data = ReturnsTuple(
@@ -183,6 +185,100 @@ class TestScenarioSamplerWF(TestScenarioSampler):
         self.setUp_decimal()
         # We can call `test_wf_basic` directly:
         self.test_basic(high_precision=Decimal)
+
+def scenarios_to_arrays(scenarios, year):
+    """ Transforms a list of scenarios to a ReturnTuple of lists.
+
+    The ith entry of each list is the value for `year` of the
+    corresponding attribute of the ith scenario. For instance,
+    `scenarios_to_arrays(scenarios).stocks[5]` is the value of
+    `stocks` for the scenario at index 5 in `scenarios`.
+
+    This is a convenience method for analyzing collections of
+    samples for statistical or other properties.
+    """
+    return ReturnsTuple(*((
+            getattr(scenario, attr)[year] for scenario in scenarios)
+        for attr in ('stocks', 'bonds', 'other', 'inflation')))
+
+class TestScenarioSamplerMV(TestScenarioSampler):
+    """ A test suite for multivariate methods of `ScenarioSampler`. """
+
+    def test_num_samples(self):
+        """ Test multivariate sampler with `num_samples=2` """
+        sampler = ScenarioSampler(
+            ScenarioSampler.sampler_random_returns, 2,
+            self.scenario, self.data)  # Use test data
+        # Convert to list so we can count scenarios:
+        scenarios = list(sampler)
+        self.assertEqual(len(scenarios), 2)
+
+    @mock.patch("MultivariateSampler.random", return_value=RANDOM_TEST)
+    def test_statistics(self, random):
+        """ Test multivariate sampler scenario generation. """
+        # The test data has mean 0.25, variance ~0.2916666..., and
+        # covariance ~0.2916666...
+        # Confirm that the samples follow this distribution:
+        sampler = ScenarioSampler(
+            ScenarioSampler.sampler_random_returns, 100,  # 100 samples
+            self.scenario, self.data)  # Use test data
+        # Convert to list so we can count scenarios:
+        scenarios = list(sampler)
+        # Format the data so that we can analyze it with numpy (using
+        # just the first-year values for simplicity):
+        data = scenarios_to_arrays(scenarios, self.initial_year)
+        # Mean for each var should be ~0.25.
+        for column in data:
+            self.assertAlmostEqual(numpy.mean(column), 0.25)
+        # Covariance matrix should be roughly uniform, with value of
+        # ~0.2916666 for each entry:
+        self.assertAlmostEqual(
+            numpy.cov(data, ddof=0),
+            numpy.full_like(data, 0.2916666))
+
+    def test_data_all_none(self):
+        """ Test multivariate sampler with all `None` entries in `data` """
+        self.scenario.num_years = 1
+        sampler = ScenarioSampler(
+            ScenarioSampler.sampler_walk_forward, 1, self.scenario, (None,)*4)
+        for scenario in sampler:
+            # all attrs should match the default scenario:
+            self.assertEqual(scenario.stock_return, self.scenario.stock_return)
+            self.assertEqual(scenario.bond_return, self.scenario.bond_return)
+            self.assertEqual(scenario.other_return, self.scenario.other_return)
+            self.assertEqual(scenario.inflation, self.scenario.inflation)
+
+    @mock.patch("MultivariateSampler.random", return_value=RANDOM_TEST)
+    def test_data_some_none(self):
+        """ Test multivariate sampler with `None` entries in `data`. """
+        self.scenario.num_years = 3
+        # Use test data that omits some variables:
+        data = (self.data.stocks, None, None, None)
+        sampler = ScenarioSampler(
+            ScenarioSampler.sampler_random_returns, 2, self.scenario, data)
+        for scenario in sampler:
+            # `stocks` shouldn't match the default scenario, but the
+            # rest should:
+            self.assertNotEqual(
+                scenario.stock_return, self.scenario.stock_return)
+            self.assertEqual(scenario.bond_return, self.scenario.bond_return)
+            self.assertEqual(scenario.other_return, self.scenario.other_return)
+            self.assertEqual(scenario.inflation, self.scenario.inflation)
+
+    # No need to test `returns` or `fast_read` args; those are handled
+    # at init, so testing once with walk-forward sampling methods is OK.
+
+    def test_decimal(self):
+        """ Test Decimal support for multivariate sampler """
+        self.setUp_decimal()
+        sampler = ScenarioSampler(
+            ScenarioSampler.sampler_random_returns, 1,
+            self.scenario, self.data)  # Use test data
+        # Convert to list so we can count scenarios:
+        scenarios = list(sampler)
+        data = scenarios_to_arrays(scenarios, self.initial_year)
+        # Confirm values are all Decimal-valued:
+        self.assertTrue(isinstance(val) for val in column for column in data)
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(
