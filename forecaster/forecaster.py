@@ -27,6 +27,9 @@ class Parameter(Enum):
     WITHDRAWAL_STRATEGY = "withdrawal_strategy"
     ALLOCATION_STRATEGY = "allocation_strategy"
     TAX_TREATMENT = "tax_treatment"
+    # Not actually a param to `Forecaster`, but this built by `sample()`
+    # so define it here to facilitate building:
+    SCENARIO_SAMPLER = "sampler"
 
     def __str__(self):
         """ Cast enum members directly to their string value. """
@@ -77,7 +80,15 @@ DEFAULTVALUES = {
         "personal_deduction": "settings.tax_personal_deduction",
         "credit_rate": "settings.tax_credit_rate",
         "inflation_adjust": "scenario.inflation_adjust",
-        "payment_timing": "settings.tax_payment_timing"}
+        "payment_timing": "settings.tax_payment_timing"},
+    str(Parameter.SCENARIO_SAMPLER): {
+        "sampler": "settings.scenario_sampler_sampler",
+        "num_samples": "settings.scenario_sampler_num_samples",
+        "default_scenario": "scenario",
+        "filenames": "settings.scenario_sampler_filenames",
+        "returns": "settings.scenario_sampler_returns",
+        "fast_read": "settings.scenario_sampler_fast_read"
+    }
 }
 
 # This maps each of the above parameters to a type:
@@ -87,7 +98,8 @@ DEFAULTTYPES = {
     str(Parameter.SAVING_STRATEGY): TransactionStrategy,
     str(Parameter.WITHDRAWAL_STRATEGY): TransactionStrategy,
     str(Parameter.ALLOCATION_STRATEGY): AllocationStrategy,
-    str(Parameter.TAX_TREATMENT): Tax}
+    str(Parameter.TAX_TREATMENT): Tax,
+    str(Parameter.SCENARIO_SAMPLER): ScenarioSampler}
 
 # This maps certain parameters that need special init logic to
 # the method name that provides that logic.
@@ -102,6 +114,7 @@ HIGHPRECISIONTYPES = frozenset((
     TransactionStrategy,
     AllocationStrategy,
     Tax,
+    ScenarioSampler,
     HighPrecisionHandler))
 
 class Forecaster(HighPrecisionHandler):
@@ -504,13 +517,14 @@ class Forecaster(HighPrecisionHandler):
             _special_builder=False, **kwargs)
 
     def sample(
-            self, sampler, num_samples,
+            self, sampler=None, num_samples=None, /,
             run_forecast_args=None, sampler_kwargs=None):
         """ Yields `num_samples` forecasts based on a sampled scenarios.
 
         `sampler` can be any iterable that yields `Scenario` objects,
         such as a list of `Scenario` objects or an instance of
-        `ScenarioSampler`.
+        `ScenarioSampler`. If not provided, a key-value will be read
+        from `settings`.
 
         If `sampler` could be a key for a `ScenarioSampler` method, or a
         reference to such a method, then this method will attempt to
@@ -520,19 +534,23 @@ class Forecaster(HighPrecisionHandler):
         exception will be raised and the method will go on to attempt to
         iterate over `sampler`.
 
-        If a non-empty `sampler_kwargs` is provided, it is assumed that
-        the caller intended this method to instantiate a
-        `ScenarioSampler`. In that case, `sampler` will be passed to
-        `ScenarioSampler.__init__` regardless of its value, and will
-        raise an exception on failure.
+        If a non-empty `sampler_kwargs` is provided, or if `sampler` is
+        read from `settings`, it is assumed that the caller intended
+        this method to instantiate a `ScenarioSampler`. In that case,
+        `sampler` will be passed to `ScenarioSampler.__init__`
+        regardless of its value, and will raise an exception on failure.
 
         Arguments:
             sampler (str | Callable | Hashable | ScenarioSampler |
-                Iterable[Scenario]): A `registered_method_named` of
-                `ScenarioSampler`, or a key for such a method, or any
+                Iterable[Scenario] | None): A `registered_method_named`
+                of `ScenarioSampler`, or a key for such a method, or any
                 iterable of Scenario objects (e.g. a `ScenarioSampler`
                 object).
-            num_samples (int): The number of forecasts to generate.
+                Optional. If not provided, a value will be read from
+                `settings`. Positional-only.
+            num_samples (int | None): The number of forecasts to
+                generate. Optional. If not provided, a value will be
+                read from `settings`. Positional-only.
             run_forecast_args (list[Any] | tuple[Any]): Arguments to
                 pass to `run_forecast` when generating each `Forecast`.
                 Optional.
@@ -552,17 +570,23 @@ class Forecaster(HighPrecisionHandler):
         # If `sampler` looks like a key or a method, or if the user has
         # passed kwargs for sampler's init, build a `ScenarioSampler`:
         if (
+                sampler is None or  # building ScenarioSampler from settings
                 isinstance(sampler, (str, Hashable)) or  # maybe a key?
                 callable(sampler) or  # maybe a method?
-                sampler_kwargs):  # looks like the user
+                sampler_kwargs):  # user intends to init ScenarioSampler
             try:
-                sampler = ScenarioSampler(
-                    sampler, num_samples, self.scenario, **sampler_kwargs)
+                # Build a `ScenarioSampler` based on `settings`
+                # (A side-benefit of this approach is that it passes
+                # `high_precision if needed`)
+                sampler_args = (
+                    arg for arg in (sampler, num_samples) if arg is not None)
+                sampler = self.build_param(
+                    Parameter.SCENARIO_SAMPLER, *sampler_args, **sampler_kwargs)
             except KeyError as err:
                 # If the user passed `scenario_kwargs`, strictly enforce
                 # instantiation of a ScenarioSampler. Otherwise, simply
                 # continue on to try to sample from `sampler`:
-                if sampler_kwargs:
+                if sampler_kwargs or sampler is None:
                     raise KeyError(
                         str(sampler) + ' is not a valid ScenarioSampler key. ' +
                         'A valid key is expected when sampler_kwargs is passed'

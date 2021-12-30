@@ -172,6 +172,17 @@ class Settings(ValueReader):
     tax_credit_rate = Attr({INITIAL_YEAR_DEFAULT: 0})
     tax_payment_timing = Attr('start')
 
+    # ScenarioSampler defaults
+    scenario_sampler_sampler = Attr('walk-forward')
+    scenario_sampler_num_samples = Attr(100)
+    scenario_sampler_filenames = Attr((
+        'msci_world.csv',
+        'treasury_bond_1-3_years.csv',
+        'nareit.csv',
+        'cpi.csv'))
+    scenario_sampler_returns = Attr(True)
+    scenario_sampler_fast_read = Attr(True)
+
     def __init__(self, filename=None, *,
             encoder_cls=None, decoder_cls=None,
             high_precision=None, high_precision_serialize=None,
