@@ -83,8 +83,19 @@ class MethodRegister:
         This method identifies the correct call pattern and calls the
         method with `*args` and `**kwargs` as arguments.
 
+        Argument:
+            method (str, Callable, Hashable): A reference to a
+                `registered_method` (or `registered_method_named`) of
+                this object or its class, or a key for such a method
+                (set via the `key` parameter of `registered_method` or
+                `registered_method_named`). Keys are usually
+                `str`-valued (and are always `str`-valued if set
+                implicitly), but client code can provide keys of any
+                hashable type.
+
         Raises:
-            KeyError: `method` is not a registered method or a key for one.
+            KeyError: `method` is not a registered method or a key for
+            one.
         """
         # If `method` is a key, use the method that's registered to it:
         if method in self.registered_methods:

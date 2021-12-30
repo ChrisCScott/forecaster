@@ -28,6 +28,9 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
     set the `data` attribute manually after init.
 
     Arguments:
+        sampler (str, Callable, Hashable): The key for a
+            `registered_method_named` method of this class, or the
+            method itself. This is the method used to generate samples.
         num_samples (int): The maximum number of `Scenario` objects to
             generate. (Fewer samples may be generated, e.g. if the
             relevant sampler does not have sufficient data to generate
