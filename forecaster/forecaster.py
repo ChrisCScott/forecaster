@@ -2,14 +2,16 @@
 
 from copy import copy, deepcopy
 from functools import reduce
+from itertools import islice
 from enum import Enum
+from typing import Hashable
 from forecaster.forecast import (
     Forecast, IncomeForecast, LivingExpensesForecast,
     SavingForecast, WithdrawalForecast, TaxForecast)
 from forecaster.tax import Tax
 from forecaster.strategy import (
     LivingExpensesStrategy, TransactionStrategy, AllocationStrategy)
-from forecaster.scenario import Scenario
+from forecaster.scenario import Scenario, ScenarioSampler
 from forecaster.settings import Settings
 from forecaster.utility.precision import HighPrecisionHandler
 
@@ -201,7 +203,7 @@ class Forecaster(HighPrecisionHandler):
         else:
             return reduce(getattr, name_list[1:], attr)
 
-    def run_forecast(self, people, accounts, debts):
+    def run_forecast(self, people, accounts, debts, scenario=None):
         """ Generates a `Forecast` object.
 
         This method builds a `Forecast` based on any explicitly-provided
@@ -220,6 +222,12 @@ class Forecaster(HighPrecisionHandler):
                 is being generated.
             accounts (set[Account]): Accounts belonging to the plannees.
             debts (set[Debt]): Debts owed by the plannees.
+            scenario (Scenario): A `Scenario` defining a sequences of
+                returns for different asset classes, as well as
+                inflation and other values.
+                Optional. If not provided, the instance's `scenario`
+                attribute will be used. This arg is provided primarily
+                to make generating Monte Carlo simulations easier.
 
         Returns:
             Forecast: A forecast of the plannees income, savings,
@@ -231,9 +239,10 @@ class Forecaster(HighPrecisionHandler):
         accounts = deepcopy(accounts, memo=memo)
         debts = deepcopy(debts, memo=memo)
 
+        memo = {}  # Clear `memo` for sharing between params.
         # Build Scenario first so that we have access to initial_year:
-        memo = {}
-        scenario = self.get_param(Parameter.SCENARIO, memo=memo)
+        if scenario is None:  # Don't overwrite passed `scenario` arg
+            scenario = self.get_param(Parameter.SCENARIO, memo=memo)
         initial_year = scenario.initial_year  # extract for convenience
 
         # Retrieve the necessary strategies for building SubForecasts:
@@ -493,3 +502,75 @@ class Forecaster(HighPrecisionHandler):
         return self.build_param(
             Parameter.ALLOCATION_STRATEGY, AllocationStrategy, *args,
             _special_builder=False, **kwargs)
+
+    def sample(
+            self, sampler, num_samples,
+            run_forecast_args=None, sampler_kwargs=None):
+        """ Yields `num_samples` forecasts based on a sampled scenarios.
+
+        `sampler` can be any iterable that yields `Scenario` objects,
+        such as a list of `Scenario` objects or an instance of
+        `ScenarioSampler`.
+
+        If `sampler` could be a key for a `ScenarioSampler` method, or a
+        reference to such a method, then this method will attempt to
+        instantiate a `ScenarioSampler` object (and will pass `sampler`
+        as the `sampler` init arg). This will be attempted if `sampler`
+        is hashable (e.g. a str) or callable; if instantiation fails, no
+        exception will be raised and the method will go on to attempt to
+        iterate over `sampler`.
+
+        If a non-empty `sampler_kwargs` is provided, it is assumed that
+        the caller intended this method to instantiate a
+        `ScenarioSampler`. In that case, `sampler` will be passed to
+        `ScenarioSampler.__init__` regardless of its value, and will
+        raise an exception on failure.
+
+        Arguments:
+            sampler (str | Callable | Hashable | ScenarioSampler |
+                Iterable[Scenario]): A `registered_method_named` of
+                `ScenarioSampler`, or a key for such a method, or any
+                iterable of Scenario objects (e.g. a `ScenarioSampler`
+                object).
+            num_samples (int): The number of forecasts to generate.
+            run_forecast_args (list[Any] | tuple[Any]): Arguments to
+                pass to `run_forecast` when generating each `Forecast`.
+                Optional.
+            sampler_kwargs (dict[str: Any]): Arguments to pass to
+                `ScenarioSampler` at init. Optional. If provided (and
+                non-empty), `sampler` must be passable to
+                `ScenarioSampler` as the first argument.
+
+        Raises:
+            (KeyError): `sampler` is not a valid `ScenarioSampler key.
+                A valid key is expected when `sampler_kwargs` is passed.
+        """
+        if run_forecast_args is None:
+            run_forecast_args = []
+        if sampler_kwargs is None:
+            sampler_kwargs = {}
+        # If `sampler` looks like a key or a method, or if the user has
+        # passed kwargs for sampler's init, build a `ScenarioSampler`:
+        if (
+                isinstance(sampler, (str, Hashable)) or  # maybe a key?
+                callable(sampler) or  # maybe a method?
+                sampler_kwargs):  # looks like the user
+            try:
+                sampler = ScenarioSampler(
+                    sampler, num_samples, self.scenario, **sampler_kwargs)
+            except KeyError as err:
+                # If the user passed `scenario_kwargs`, strictly enforce
+                # instantiation of a ScenarioSampler. Otherwise, simply
+                # continue on to try to sample from `sampler`:
+                if sampler_kwargs:
+                    raise KeyError(
+                        str(sampler) + ' is not a valid ScenarioSampler key. ' +
+                        'A valid key is expected when sampler_kwargs is passed'
+                    ) from err
+        else:
+            # If we're treating `sampler` as an iterable, limit it to
+            # `num_samples` elements:
+            sampler = islice(sampler, num_samples)
+        # Generate a `Forecast` for each scenario:
+        for scenario in sampler:  # Raises TypeError if sampler not iterable
+            yield self.run_forecast(*run_forecast_args, scenario=scenario)
