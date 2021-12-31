@@ -23,12 +23,15 @@ class SamplerABC(HighPrecisionHandler):
         # Convert `data` to arrays if needed:
         self.data = mapping_to_arrays(data)
 
-    def sample(self, num_samples=None):
+    def sample(self, num_samples=None, sample_length=None):
         """ Generates `num_samples` samples.
 
         Arguments:
-            num_samples (int): The number of samples to generate.
-            Optional. If omitted, a single sample is generated.
+            num_samples (int | None): The number of samples to generate.
+                Optional. If omitted, a single sample is generated.
+            sample_length (int | None): The number of values to
+                generate for each variable. Optional. If omitted, a
+                single value is generated for each variable.
 
         Returns:
             (tuple[HighPrecisionOptional,...] |
@@ -85,13 +88,22 @@ class SamplerABC(HighPrecisionHandler):
         aligned_data = [
             (
                 dates[1:],  # All dates except the first date
-                list(       # 
+                list(
                     return_over_period(
                         column, start_date, end_date,
                         high_precision=self.high_precision)
                     for (start_date, end_date) in pairwise(dates)))
             for column in data]
         return aligned_data
+
+def _precision_convert_arrays(arrays, high_precision):
+    """ Converts values of an n-dimensional array to high-precision. """
+    # If this is a list of lists, recurse:
+    if arrays.ndim > 1:
+        return list(
+            _precision_convert_arrays(column, high_precision)
+            for column in arrays)
+    return list(high_precision(val) for val in arrays)
 
 class MultivariateSampler(SamplerABC):
     """ Generates samples of returns from historical data.
@@ -154,30 +166,50 @@ class MultivariateSampler(SamplerABC):
         self.means = self._generate_means(self.data, means)
         self.covariances = self._generate_covariances(self.data, covariances)
 
-    def sample(self, num_samples=None):
+    def sample(self, num_samples=None, sample_length=None):
         """ Generates `num_samples` multivariate samples.
 
         Arguments:
-            num_samples (int): The number of multivariate samples to
-                generate. Optional. If omitted, a single sample is
+            num_samples (int | None): The number of multivariate samples
+                to generate. Optional. If omitted, a single sample is
                 generated.
+            sample_length (int | None): The number of values to generate
+                for each variable in each sample. Optional. If omitted,
+                a single value is generated.
 
         Returns:
             (tuple[HighPrecisionOptional,...] |
-            list[tuple[HighPrecisionOptional,...]]): A sample of `N`
-            variables (where `N` is the size of `data`), as an N-tuple.
-            Or, if `num_samples` is passed, an array of `num_samples`
-            samples.
+            list[tuple[HighPrecisionOptional,...]] |
+            list[tuple[list[HighPrecisionOptional],...]]):
+            A sample of `N` variables (where `N` is the size of `data`),
+            or (if `num_samples` is provided) a list of `num_samples`
+            samples. If `sample_length` is provided, each sample
+            includes a list of length `sample_length` for each variable.
         """
+        if num_samples is None and sample_length is None:
+            size = None
+        elif num_samples is not None and sample_length is None:
+            size = num_samples
+        elif sample_length is not None and num_samples is None:
+            size = sample_length
+        else:
+            size = (num_samples, sample_length)
         # Get random values for each variable that we model, based on
         # the means and covariances that we found in the data (or which
         # the user provided, if they chose to do so.)
         samples = self.random.multivariate_normal(
-            self.means, self.covariances, size=num_samples)
-        # Convert numpy.array to list:
-        if num_samples is not None:
-            return list(tuple(sample) for sample in samples)
-        return tuple(samples)
+            self.means, self.covariances, size=size)
+        # numpy.multivariate_normal returns an array with axes
+        # (num_samples, sample_length, N), where N is the number of
+        # variables. We want to swap the last two axes.
+        if sample_length is not None:
+            samples = samples.swapaxes(samples.ndim - 1, samples.ndim - 2)
+        # Convert to list(s) of high precision values if appropriate:
+        # (This also converts to list)
+        if self.high_precision is not None:
+            return _precision_convert_arrays(samples, self.high_precision)
+        # If no high-precision conversion needed, convert to list:
+        return samples.tolist()
 
     @staticmethod
     def _generate_means(data, means=None):
@@ -402,7 +434,7 @@ class WalkForwardSampler(SamplerABC):
         # Clear synchronized data cache; we'll re-generate it lazily
         self._data_synchronized = None
 
-    def sample(self, walk_length, num_samples=None):
+    def sample(self, num_samples=None, sample_length=None):
         """ Generates walk-forward time-series data.
 
         Samples are generated differently depending on the number of
@@ -432,11 +464,11 @@ class WalkForwardSampler(SamplerABC):
                is no duplication of samples.
 
         Arguments:
-            walk_length (int): The length of each sampled walk-forward
-                sequence.
-            num_samples (int): The number of walk-forward samples to
-                generate. Optional. If omitted, a single sample is
+            num_samples (int | None): The number of walk-forward samples
+                to generate. Optional. If omitted, a single sample is
                 generated.
+            sample_length (int | None): The length of each sampled
+                walk-forward sequence.
 
         Returns:
             (tuple[HighPrecisionOptional,...] |
@@ -447,7 +479,7 @@ class WalkForwardSampler(SamplerABC):
             `num_samples` samples.
         """
         # Find `num_samples` valid N-tuples of valid start dates:
-        starts = self._get_start_combos(walk_length, num_samples)
+        starts = self._get_start_combos(sample_length, num_samples)
         # Build a sequence of returns for each set of start dates:
         samples = list(
             # Get the walk-forward sequence of returns for each asset
@@ -456,7 +488,7 @@ class WalkForwardSampler(SamplerABC):
                 self._get_walk_forward_sequence(
                     # pylint: disable=unsubscriptable-object
                     # Pylint seems to be confused about `start`
-                    index, sample_starts, walk_length)
+                    index, sample_starts, sample_length)
                     # pylint: enable=unsubscriptable-object
                 for index in range(len(sample_starts)))
             for sample_starts in starts)

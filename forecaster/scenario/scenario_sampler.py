@@ -152,7 +152,8 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
         data = self._data_for_sampler()
         sampler = WalkForwardSampler(data, high_precision=self.high_precision)
         samples = sampler.sample(
-            self.default_scenario.num_years, num_samples=self.num_samples)
+            num_samples=self.num_samples,
+            sample_length=self.default_scenario.num_years)
         for sample in samples:
             scenario_args = self._sample_to_scenario_args(sample)
             yield self._build_scenario(*scenario_args)
@@ -164,7 +165,8 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
         sampler = MultivariateSampler(data, high_precision=self.high_precision)
         # Get `num_samples` samples with `num_years` values for each variable:
         samples = sampler.sample(
-            num_samples=(self.num_samples, self.default_scenario.num_years))
+            num_samples=self.num_samples,
+            sample_length=self.default_scenario.num_years)
         # Build a `Scenario` object with each collection of sampled
         # rates of return, keeping them constant across time:
         for sample in samples:
