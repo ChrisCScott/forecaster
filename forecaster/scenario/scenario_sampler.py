@@ -194,9 +194,14 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
     def _sample_to_scenario_args(self, sample):
         """ Converts samples received from `data` to a `ReturnTuple` """
         # Re-insert None entries that were stripped by `_data_for_sampler`:
-        return tuple(
-            sample[i] if column is not None else None
-            for (i, column) in enumerate(self.data))
+        expanded_sample = []
+        sample_iter = iter(sample)
+        for column in self.data:
+            if column is None:
+                expanded_sample.append(None)
+            else:
+                expanded_sample.append(next(sample_iter))
+        return expanded_sample
 
     def _build_scenario(self, stock, bond, other, inflation):
         """ Builds a `Scenario` object based on args and `self.default` """
