@@ -197,9 +197,11 @@ def scenarios_to_arrays(scenarios, year):
     This is a convenience method for analyzing collections of
     samples for statistical or other properties.
     """
-    return ReturnsTuple(*((
-            getattr(scenario, attr)[year] for scenario in scenarios)
-        for attr in ('stocks', 'bonds', 'other', 'inflation')))
+    arrays = list(
+        list(getattr(scenario, attr)[year] for scenario in scenarios)
+        for attr in (
+            'stock_return', 'bond_return', 'other_return', 'inflation'))
+    return ReturnsTuple(*arrays)
 
 class TestScenarioSamplerMV(TestScenarioSampler):
     """ A test suite for multivariate methods of `ScenarioSampler`. """
@@ -273,12 +275,15 @@ class TestScenarioSamplerMV(TestScenarioSampler):
         self.setUp_decimal()
         sampler = ScenarioSampler(
             ScenarioSampler.sampler_random_returns, 1,
-            self.scenario, self.data)  # Use test data
+            self.scenario, self.data, high_precision=Decimal)  # Use test data
         # Convert to list so we can count scenarios:
         scenarios = list(sampler)
         data = scenarios_to_arrays(scenarios, self.initial_year)
         # Confirm values are all Decimal-valued:
-        self.assertTrue(isinstance(val) for val in column for column in data)
+        self.assertTrue(
+            all(
+                all(isinstance(val, Decimal) for val in column)
+                for column in data))
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(
