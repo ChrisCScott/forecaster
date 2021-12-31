@@ -156,7 +156,12 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
             sample_length=self.default_scenario.num_years)
         for sample in samples:
             scenario_args = self._sample_to_scenario_args(sample)
+            # pylint: disable=no-value-for-parameter
+            # `scenario_args` has 4 elements iff `data` does.
+            # We could cast this to `ReturnTuple` to make pylint happy,
+            # but this would make subclassing harder.
             yield self._build_scenario(*scenario_args)
+            # pylint: enable=no-value-for-parameter
 
     @registered_method_named('random returns')
     def sampler_random_returns(self):
@@ -171,7 +176,12 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
         # rates of return, keeping them constant across time:
         for sample in samples:
             scenario_args = self._sample_to_scenario_args(sample)
+            # pylint: disable=no-value-for-parameter
+            # `scenario_args` has 4 elements iff `data` does.
+            # We could cast this to `ReturnTuple` to make pylint happy,
+            # but this would make subclassing harder.
             yield self._build_scenario(*scenario_args)
+            # pylint: enable=no-value-for-parameter
 
     @registered_method_named('constant returns')
     def sampler_constant_returns(self):
@@ -184,7 +194,12 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
         # rates of return, keeping them constant across time:
         for sample in samples:
             scenario_args = self._sample_to_scenario_args(sample)
+            # pylint: disable=no-value-for-parameter
+            # `scenario_args` has 4 elements iff `data` does.
+            # We could cast this to `ReturnTuple` to make pylint happy,
+            # but this would make subclassing harder.
             yield self._build_scenario(*scenario_args)
+            # pylint: enable=no-value-for-parameter
 
     def _data_for_sampler(self):
         """ Returns a matrix of data suitable for processing by samplers """
