@@ -13,4 +13,5 @@ from forecaster.scenario.samplers import MultivariateSampler, WalkForwardSampler
 from forecaster.scenario.historical_value_reader import HistoricalValueReader
 from forecaster.scenario.util import (
     regularize_returns, return_for_date, return_over_period,
-    returns_from_values, values_from_returns, infer_interval)
+    returns_from_values, values_from_returns, infer_interval,
+    mapping_to_arrays)
