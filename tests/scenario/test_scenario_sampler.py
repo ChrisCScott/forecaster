@@ -4,13 +4,14 @@ import unittest
 from unittest import mock
 from decimal import Decimal
 import numpy
-from forecaster.scenario import ScenarioSampler, Scenario, ReturnsTuple
+from forecaster.scenario import (
+    ScenarioSampler, Scenario, ReturnsTuple, mapping_to_arrays)
 from tests.scenario.test_historical_value_reader import (
     PORTFOLIO_VALUES, RETURNS_VALUES,
     TEST_PATH_PERCENTAGES, TEST_PATH_PORTFOLIO)
 
 # Use constant seed for tests that rely on randomness:
-RANDOM_TEST = numpy.random.default_rng(0)
+RANDOM_TEST = numpy.random.default_rng(1012)
 
 class TestScenarioSampler(unittest.TestCase):
     """ A test suite for the `ScenarioSampler` class. """
@@ -222,27 +223,51 @@ class TestScenarioSamplerMV(TestScenarioSampler):
     @mock.patch(
         "forecaster.scenario.scenario_sampler.MultivariateSampler.random",
         RANDOM_TEST)
-    def test_statistics(self):
-        """ Test multivariate sampler scenario generation. """
-        # The test data has mean 0.25, variance ~0.2916666..., and
-        # covariance ~0.2916666...
-        # Confirm that the samples follow this distribution:
+    def test_statistics_mean(self):
+        """ Test multivariate sampler statistics for correct means. """
+        # Covariances converge very slowly at the currently-selected
+        # seed. This test fails for 600 samples or fewer.
         sampler = ScenarioSampler(
-            ScenarioSampler.sampler_random_returns, 100,  # 100 samples
+            ScenarioSampler.sampler_random_returns, 650,  # 650 samples
             self.scenario, self.data)  # Use test data
         # Convert to list so we can count scenarios:
         scenarios = list(sampler)
         # Format the data so that we can analyze it with numpy (using
-        # just the first-year values for simplicity):
+        # just the first-year values for simplicity), along with the
+        # data we used as input (i.e. `ref_data`):
         data = scenarios_to_arrays(scenarios, self.initial_year)
-        # Mean for each var should be ~0.25.
-        for column in data:
-            self.assertAlmostEqual(numpy.mean(column), 0.25)
-        # Covariance matrix should be roughly uniform, with value of
-        # ~0.2916666 for each entry:
-        self.assertAlmostEqual(
-            numpy.cov(data, ddof=0),
-            numpy.full_like(data, 0.2916666))
+        ref_data = [column[1] for column in mapping_to_arrays(self.data)]
+        # Mean for each var should be about the same for each variable
+        # as in the source data (i.e. ~0.25):
+        for (column, ref_column) in zip(data, ref_data):
+            mean = numpy.mean(column)
+            ref_mean = numpy.mean(ref_column)
+            self.assertAlmostEqual(mean, ref_mean, delta=0.01)
+
+    @mock.patch(
+        "forecaster.scenario.scenario_sampler.MultivariateSampler.random",
+        RANDOM_TEST)
+    def test_statistics_cov(self):
+        """ Test multivariate sampler statistics for correct covariance. """
+        # The test data has mean 0.25, variance ~0.2916666..., and
+        # covariance ~0.2916666...
+        # Confirm that the samples follow this distribution:
+        sampler = ScenarioSampler(
+            ScenarioSampler.sampler_random_returns, 500,  # 500 samples
+            self.scenario, self.data)  # Use test data
+        # Convert to list so we can count scenarios:
+        scenarios = list(sampler)
+        # Format the data so that we can analyze it with numpy (using
+        # just the first-year values for simplicity), along with the
+        # data we used as input (i.e. `ref_data`):
+        data = scenarios_to_arrays(scenarios, self.initial_year)
+        ref_data = [column[1] for column in mapping_to_arrays(self.data)]
+        # Covariance for each pair of vars should be about the same as
+        # in the source data (i.e. ~0.2916666):
+        cov = numpy.cov(data, ddof=0)
+        ref_cov = numpy.cov(ref_data, ddof=0)
+        # Use numpy.testing for easy comparison of 2D arrays:
+        numpy.testing.assert_almost_equal(cov, ref_cov, decimal=2)
 
     def test_data_all_none(self):
         """ Test multivariate sampler with all `None` entries in `data` """
