@@ -215,8 +215,14 @@ class TestScenarioSamplerMV(TestScenarioSampler):
         scenarios = list(sampler)
         self.assertEqual(len(scenarios), 2)
 
-    @mock.patch("MultivariateSampler.random", return_value=RANDOM_TEST)
-    def test_statistics(self, random):
+    # We use `mock.patch` to provide a constant-seed RNG when generating
+    # samples. This is critical when testing statistical characteristics
+    # of the sampled data, since using a random seed will sometimes
+    # result in unusual samples, which may cause test failure.
+    @mock.patch(
+        "forecaster.scenario.scenario_sampler.MultivariateSampler.random",
+        RANDOM_TEST)
+    def test_statistics(self):
         """ Test multivariate sampler scenario generation. """
         # The test data has mean 0.25, variance ~0.2916666..., and
         # covariance ~0.2916666...
@@ -250,7 +256,14 @@ class TestScenarioSamplerMV(TestScenarioSampler):
             self.assertEqual(scenario.other_return, self.scenario.other_return)
             self.assertEqual(scenario.inflation, self.scenario.inflation)
 
-    @mock.patch("MultivariateSampler.random", return_value=RANDOM_TEST)
+    # We use `mock.patch` to provide a constant-seed RNG when generating
+    # samples. It's not critical for this test, but we try to be
+    # complete. (We only do it here because we assert that the
+    # randomly-generated stock_return is not equal to the default value.
+    # The odds of randomly generating the default value are near-zero.)
+    @mock.patch(
+        "forecaster.scenario.scenario_sampler.MultivariateSampler.random",
+        RANDOM_TEST)
     def test_data_some_none(self):
         """ Test multivariate sampler with `None` entries in `data`. """
         self.scenario.num_years = 3
