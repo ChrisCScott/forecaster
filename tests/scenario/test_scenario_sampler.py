@@ -48,8 +48,8 @@ class TestScenarioSamplerWF(TestScenarioSampler):
     def test_num_samples(self):
         """ Test walk-forward sampler with `num_samples=2` """
         sampler = ScenarioSampler(
-            ScenarioSampler.sampler_walk_forward, 2,
-            self.scenario, self.data)  # Use test data
+            ScenarioSampler.sampler_walk_forward, self.data,  # Use test data
+            self.scenario, num_samples=2)
         # Convert to list so we can count scenarios:
         scenarios = list(sampler)
         # There are only two valid walk-forward returns of length 2
@@ -63,8 +63,8 @@ class TestScenarioSamplerWF(TestScenarioSampler):
         # by asking for 3-year scenarios from a 3-year dataset:
         self.scenario.num_years = 3
         sampler = ScenarioSampler(
-            ScenarioSampler.sampler_walk_forward, 1, self.scenario, self.data,
-            **kwargs)
+            ScenarioSampler.sampler_walk_forward, self.data, self.scenario,
+            num_samples=1, **kwargs)
         expected_returns = {
             key.year: val for (key, val) in self.returns.items()}
         for scenario in sampler:
@@ -97,12 +97,11 @@ class TestScenarioSamplerWF(TestScenarioSampler):
             'nareit.csv',
             'cpi.csv')
         sampler = ScenarioSampler(
-            ScenarioSampler.sampler_walk_forward, 1000,
-            self.scenario, filenames,
+            ScenarioSampler.sampler_walk_forward, filenames, self.scenario,
             # This was the slowest test in the entire project.
             # We speed things up by using well-formatted data and
-            # skipping pre-processing (which is tested elsewhere):
-            fast_read=True)
+            # skipping pre-processing via `fast_read`:
+            num_samples=1000, fast_read=True)
         # If the test doesn't hang here, that's a success!
         # Confirm that the returned values have the structure expected,
         # which is `num_samples` Scenarios:
@@ -113,7 +112,8 @@ class TestScenarioSamplerWF(TestScenarioSampler):
         """ Test walk-forward sampler with all `None` entries in `data` """
         self.scenario.num_years = 3
         sampler = ScenarioSampler(
-            ScenarioSampler.sampler_walk_forward, 2, self.scenario, (None,)*4)
+            ScenarioSampler.sampler_walk_forward,  (None,)*4, self.scenario,
+            num_samples=2)
         for scenario in sampler:
             # all attrs should match the default scenario:
             self.assertEqual(scenario.stock_return, self.scenario.stock_return)
@@ -127,7 +127,8 @@ class TestScenarioSamplerWF(TestScenarioSampler):
         # Use test data that omits some variables:
         data = (self.data.stocks, None, None, None)
         sampler = ScenarioSampler(
-            ScenarioSampler.sampler_walk_forward, 2, self.scenario, data)
+            ScenarioSampler.sampler_walk_forward, data, self.scenario,
+            num_samples=2)
         expected_stock_returns = {
             key.year: val for (key, val) in self.returns.items()}
         for scenario in sampler:
@@ -144,8 +145,8 @@ class TestScenarioSamplerWF(TestScenarioSampler):
         self.scenario.num_years = 3
         filenames = (TEST_PATH_PERCENTAGES,)*4
         sampler = ScenarioSampler(
-            ScenarioSampler.sampler_walk_forward, 1, self.scenario,
-            filenames, returns=True)
+            ScenarioSampler.sampler_walk_forward, filenames, self.scenario,
+            num_samples=1, returns=True)
         expected_returns = {
             key.year: val for (key, val) in self.returns.items()}
         for scenario in sampler:
@@ -166,8 +167,8 @@ class TestScenarioSamplerWF(TestScenarioSampler):
         self.scenario.num_years = 3
         filenames = (TEST_PATH_PORTFOLIO,)*4
         sampler = ScenarioSampler(
-            ScenarioSampler.sampler_walk_forward, 1, self.scenario,
-            filenames, returns=False)
+            ScenarioSampler.sampler_walk_forward, filenames, self.scenario,
+            num_samples=1, returns=False)
         expected_returns = {
             key.year: val for (key, val) in self.returns.items()}
         for scenario in sampler:
@@ -210,8 +211,8 @@ class TestScenarioSamplerMV(TestScenarioSampler):
     def test_num_samples(self):
         """ Test multivariate sampler with `num_samples=2` """
         sampler = ScenarioSampler(
-            ScenarioSampler.sampler_random_returns, 2,
-            self.scenario, self.data)  # Use test data
+            ScenarioSampler.sampler_random_returns, self.data,  # Use test data
+            self.scenario, num_samples=2)
         # Convert to list so we can count scenarios:
         scenarios = list(sampler)
         self.assertEqual(len(scenarios), 2)
@@ -228,8 +229,8 @@ class TestScenarioSamplerMV(TestScenarioSampler):
         # Covariances converge very slowly at the currently-selected
         # seed. This test fails for 600 samples or fewer.
         sampler = ScenarioSampler(
-            ScenarioSampler.sampler_random_returns, 650,  # 650 samples
-            self.scenario, self.data)  # Use test data
+            ScenarioSampler.sampler_random_returns, self.data,  # Use test data
+            self.scenario, num_samples=650)
         # Convert to list so we can count scenarios:
         scenarios = list(sampler)
         # Format the data so that we can analyze it with numpy (using
@@ -253,8 +254,8 @@ class TestScenarioSamplerMV(TestScenarioSampler):
         # covariance ~0.2916666...
         # Confirm that the samples follow this distribution:
         sampler = ScenarioSampler(
-            ScenarioSampler.sampler_random_returns, 500,  # 500 samples
-            self.scenario, self.data)  # Use test data
+            ScenarioSampler.sampler_random_returns, self.data,  # Use test data
+            self.scenario, num_samples=500)
         # Convert to list so we can count scenarios:
         scenarios = list(sampler)
         # Format the data so that we can analyze it with numpy (using
@@ -273,7 +274,8 @@ class TestScenarioSamplerMV(TestScenarioSampler):
         """ Test multivariate sampler with all `None` entries in `data` """
         self.scenario.num_years = 1
         sampler = ScenarioSampler(
-            ScenarioSampler.sampler_walk_forward, 1, self.scenario, (None,)*4)
+            ScenarioSampler.sampler_walk_forward, (None,)*4, self.scenario,
+            num_samples=1)
         for scenario in sampler:
             # all attrs should match the default scenario:
             self.assertEqual(scenario.stock_return, self.scenario.stock_return)
@@ -295,7 +297,8 @@ class TestScenarioSamplerMV(TestScenarioSampler):
         # Use test data that omits some variables:
         data = (self.data.stocks, None, None, None)
         sampler = ScenarioSampler(
-            ScenarioSampler.sampler_random_returns, 2, self.scenario, data)
+            ScenarioSampler.sampler_random_returns, data, self.scenario,
+            num_samples=2)
         for scenario in sampler:
             # `stocks` shouldn't match the default scenario, but the
             # rest should:
@@ -312,8 +315,8 @@ class TestScenarioSamplerMV(TestScenarioSampler):
         """ Test Decimal support for multivariate sampler """
         self.setUp_decimal()
         sampler = ScenarioSampler(
-            ScenarioSampler.sampler_random_returns, 1,
-            self.scenario, self.data, high_precision=Decimal)  # Use test data
+            ScenarioSampler.sampler_random_returns, self.data,  # Use test data
+            self.scenario, num_samples=1, high_precision=Decimal)
         # Convert to list so we can count scenarios:
         scenarios = list(sampler)
         data = scenarios_to_arrays(scenarios, self.initial_year)

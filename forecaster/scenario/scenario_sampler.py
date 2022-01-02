@@ -28,19 +28,20 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
         sampler (str, Callable, Hashable): The key for a
             `registered_method_named` method of this class, or the
             method itself. This is the method used to generate samples.
-        num_samples (int): The maximum number of `Scenario` objects to
-            generate. (Fewer samples may be generated, e.g. if the
-            relevant sampler does not have sufficient data to generate
-            more uniquely.)
-        default_scenario (Scenario | tuple | list | dict): A `Scenario`
-            object, or args (as *args tuple/list or **kwargs dict) from
-            which a Scenario may be initialized.
         data (tuple[tuple[list[datetime], list[HighPrecisionOptional]] | None] |
             list[str | None]): Either data readable by samplers of the
             `sampler` module or a sequence of filenames from which
             data can be read. (`None` entries may be provided in either
             case, in which case the corresponding value of
             `default_scenario` will be used when generating scenarios.)
+        default_scenario (Scenario | tuple | list | dict): A `Scenario`
+            object, or args (as *args tuple/list or **kwargs dict) from
+            which a Scenario may be initialized.
+        num_samples (int | None): The maximum number of `Scenario`
+            objects to generate. (Fewer samples may be generated, e.g.
+            if a walk-forward sampler does not have sufficient data to
+            generate more uniquely.)
+            Optional. If not provided, one sample will be generated.
         returns (bool | None): If True, data in `filenames` will be
             interpreted as returns (i.e. in percentage terms). If
             False, data in `filenames` will be interpreted as portfolio
@@ -72,7 +73,7 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
     """
 
     def __init__(
-            self, sampler, num_samples, default_scenario, data, *,
+            self, sampler, data, default_scenario, num_samples=None, *,
             returns=None, fast_read=False, high_precision=None, **kwargs):
         super().__init__(high_precision=high_precision, **kwargs)
         # Declare instance variables:
@@ -89,7 +90,51 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
 
     def __iter__(self):
         """ Yields `num_samples` `Scenario` objects using `sampler`. """
-        return self.call_registered_method(self.sampler)
+        samples = self.call_registered_method(self.sampler)
+        # Samplers return only a single arg if num_samples = None,
+        # so wrap those in a list for iteration:
+        if self.num_samples is None:
+            samples = [samples]
+        # Turn each set of sampled returns into `Scenario` objects and
+        # yield them one at a time:
+        for sample in samples:
+            scenario_args = self._sample_to_scenario_args(sample)
+            # pylint: disable=no-value-for-parameter
+            # `scenario_args` has 4 elements iff `data` does.
+            # We could cast this to `ReturnTuple` to make pylint happy,
+            # but this would make subclassing harder.
+            yield self._build_scenario(*scenario_args)
+            # pylint: enable=no-value-for-parameter
+
+    def sample(self, num_samples=None):
+        """ Returns `num_samples` `Scenario` objects using `sampler`.
+
+        The return value of this method is identical to calling
+        `list(sampler)`, where `sampler` is a `ScenarioSampler` object.
+
+        For convenience, `num_samples` can be passed to `sample` and,
+        if passed, will override the instance's `num_samples` attribute
+        value.
+
+        Arguments:
+            num_samples (int | None): The maximum number of `Scenario`
+                objects to generate. Optional. If not provided, the
+                value of the instance attribute `num_samples` will be
+                used. See `ScenarioSampler` for more.
+
+        Returns:
+            (list[Scenario]): A list of `num_samples` `Scenario` objects
+        """
+        # If `num_samples` was passed, update the instance attribute
+        # to match:
+        old_num_samples = self.num_samples
+        if num_samples is not None:
+            self.num_samples = num_samples
+        # Use the logic of `__iter__`:
+        scenarios = list(self)
+        # Restore the original value of `num_samples`:
+        self.num_samples = old_num_samples
+        return scenarios
 
     def read_data(self, filenames, returns=None, fast_read=False):
         """ Reads data from `filenames` and merges results.
@@ -148,58 +193,33 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
 
     @registered_method_named('walk-forward')
     def sampler_walk_forward(self):
-        """ Yields `Scenario` objects with walk-forward returns. """
+        """ Samples walk-forward returns. """
         data = self._data_for_sampler()
         sampler = WalkForwardSampler(data, high_precision=self.high_precision)
         samples = sampler.sample(
             num_samples=self.num_samples,
             sample_length=self.default_scenario.num_years)
-        for sample in samples:
-            scenario_args = self._sample_to_scenario_args(sample)
-            # pylint: disable=no-value-for-parameter
-            # `scenario_args` has 4 elements iff `data` does.
-            # We could cast this to `ReturnTuple` to make pylint happy,
-            # but this would make subclassing harder.
-            yield self._build_scenario(*scenario_args)
-            # pylint: enable=no-value-for-parameter
+        return samples
 
     @registered_method_named('random returns')
     def sampler_random_returns(self):
-        """ Yields `Scenario` objects with random returns. """
+        """ Samples random, annually-varying returns. """
         data = self._data_for_sampler()
         sampler = MultivariateSampler(data, high_precision=self.high_precision)
         # Get `num_samples` samples with `num_years` values for each variable:
         samples = sampler.sample(
             num_samples=self.num_samples,
             sample_length=self.default_scenario.num_years)
-        # Build a `Scenario` object with each collection of sampled
-        # rates of return, keeping them constant across time:
-        for sample in samples:
-            scenario_args = self._sample_to_scenario_args(sample)
-            # pylint: disable=no-value-for-parameter
-            # `scenario_args` has 4 elements iff `data` does.
-            # We could cast this to `ReturnTuple` to make pylint happy,
-            # but this would make subclassing harder.
-            yield self._build_scenario(*scenario_args)
-            # pylint: enable=no-value-for-parameter
+        return samples
 
     @registered_method_named('constant returns')
     def sampler_constant_returns(self):
-        """ Yields `Scenario` objects with constant-valued returns. """
+        """ Samples constant, random returns. """
         data = self._data_for_sampler()
         sampler = MultivariateSampler(data, high_precision=self.high_precision)
         # Get `num_samples` samples with 1 value for each variable:
         samples = sampler.sample(num_samples=self.num_samples)
-        # Build a `Scenario` object with each collection of sampled
-        # rates of return, keeping them constant across time:
-        for sample in samples:
-            scenario_args = self._sample_to_scenario_args(sample)
-            # pylint: disable=no-value-for-parameter
-            # `scenario_args` has 4 elements iff `data` does.
-            # We could cast this to `ReturnTuple` to make pylint happy,
-            # but this would make subclassing harder.
-            yield self._build_scenario(*scenario_args)
-            # pylint: enable=no-value-for-parameter
+        return samples
 
     def _data_for_sampler(self):
         """ Returns a matrix of data suitable for processing by samplers """
