@@ -7,6 +7,7 @@ from forecaster import (
     LivingExpensesStrategy, TransactionStrategy,
     AllocationStrategy, DebtPaymentStrategy, Forecaster, Parameter)
 from tests.forecaster_tester import ForecasterTester
+from tests.scenario.test_scenario_sampler import RETURNS_VALUES
 
 class TestForecaster(ForecasterTester):
     """ Tests Forecaster. """
@@ -289,6 +290,63 @@ class TestForecaster(ForecasterTester):
         # pylint: enable=no-member
         self.assertEqual(
             len(next(iter(forecast.people)).gross_income_history), 2)
+
+    def test_sample(self):
+        """ Test Forecaster.sample based on test_run_forecast_basic. """
+        # Run a simple forecast with $10,000 income, $500 in annual
+        # contributions, and $1000 in starting balance.
+        # Unlike `test_run_forecast_basic`, we do want the account to
+        # grow in line with each scenario's stock returns:
+        self.scenario.num_years = 2
+        # The default `account` has no growth; we need to connect it to
+        # `scenario` to test sampling:
+        self.account.rate_callable = self.allocation_strategy.rate_function(
+            self.person, self.scenario)
+        self.forecaster = Forecaster(
+            living_expenses_strategy=LivingExpensesStrategy(
+                strategy=LivingExpensesStrategy.strategy_const_contribution,
+                base_amount=500, inflation_adjust=None),
+            settings=self.settings,
+            # Pass `scenario` so that `forecaster` knows what to replace:
+            scenario=self.scenario)
+        # Set up data to pass to sampler:
+        data = (RETURNS_VALUES,) * 4  # 3 years of data for each of 4 vars
+        run_forecast_args = ({self.person}, {self.account}, {})
+        sampler_kwargs = {'data': data, 'synchronize': True}
+        forecasts = list(
+            self.forecaster.sample(
+                *run_forecast_args,
+                sampler="walk-forward", num_samples=1,  # sampler args
+                **sampler_kwargs))
+        # Only two synchronized walk-forward scenarios are possible with
+        # a three-year data window. (Plus, we only asked for two.)
+        self.assertEqual(len(forecasts), 2)
+        # Let's examine the output in more detail: Build the two valid
+        # walk-forward scenarios and then compare them to the scenarios
+        # in the forecasts:
+        scenarios = [forecast.scenario for forecast in forecasts]
+        scenarios = sorted(  # Sort output for easier comparison
+            scenarios, key=lambda x: x.stock_return[self.initial_year])
+        vals = list(RETURNS_VALUES.values())
+        ref_scenarios = [
+            Scenario(
+                self.initial_year, 2, *((vals[i:i+2],)*4),
+                management_fees=self.scenario.management_fees)
+            for i in range(2)]
+        for scenario, ref_scenario in zip(scenarios, ref_scenarios):
+            self.assertEqual(
+                scenario.stock_return, dict(ref_scenario.stock_return))
+            self.assertEqual(
+                scenario.bond_return, dict(ref_scenario.bond_return))
+            self.assertEqual(
+                scenario.other_return, dict(ref_scenario.other_return))
+            self.assertEqual(
+                scenario.inflation, dict(ref_scenario.inflation))
+        # One last check: The final principal balance in each forecast
+        # must be different (as in one forecast growth is 0% in the
+        # first year and 100% in the second, and in the other forecast
+        # it is 100% in the first year and -25% in the second.)
+        self.assertNotEqual(forecasts[0].principal, forecasts[1].principal)
 
     def test_decimal(self):
         """ Test Forecaster.run_forecast with Decimal arguments. """
