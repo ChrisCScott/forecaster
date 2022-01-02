@@ -83,9 +83,9 @@ DEFAULTVALUES = {
         "payment_timing": "settings.tax_payment_timing"},
     str(Parameter.SCENARIO_SAMPLER): {
         "sampler": "settings.scenario_sampler_sampler",
-        "num_samples": "settings.scenario_sampler_num_samples",
+        "data": "settings.scenario_sampler_filenames",
         "default_scenario": "scenario",
-        "filenames": "settings.scenario_sampler_filenames",
+        "num_samples": "settings.scenario_sampler_num_samples",
         "returns": "settings.scenario_sampler_returns",
         "fast_read": "settings.scenario_sampler_fast_read"
     }
@@ -516,9 +516,7 @@ class Forecaster(HighPrecisionHandler):
             Parameter.ALLOCATION_STRATEGY, AllocationStrategy, *args,
             _special_builder=False, **kwargs)
 
-    def sample(
-            self, sampler=None, num_samples=None, /,
-            run_forecast_args=None, sampler_kwargs=None):
+    def sample(self, *args, sampler=None, num_samples=None, **kwargs):
         """ Yields `num_samples` forecasts based on a sampled scenarios.
 
         `sampler` can be any iterable that yields `Scenario` objects,
@@ -541,60 +539,66 @@ class Forecaster(HighPrecisionHandler):
         regardless of its value, and will raise an exception on failure.
 
         Arguments:
+            args (list[Any]): Positional arguments are
+                passed to `run_forecast`. Must provide at least as many
+                arguments as `run_forecast` expects.
             sampler (str | Callable | Hashable | ScenarioSampler |
                 Iterable[Scenario] | None): A `registered_method_named`
                 of `ScenarioSampler`, or a key for such a method, or any
                 iterable of Scenario objects (e.g. a `ScenarioSampler`
                 object).
                 Optional. If not provided, a value will be read from
-                `settings`. Positional-only.
+                `settings`.
             num_samples (int | None): The number of forecasts to
                 generate. Optional. If not provided, a value will be
-                read from `settings`. Positional-only.
-            run_forecast_args (list[Any] | tuple[Any]): Arguments to
-                pass to `run_forecast` when generating each `Forecast`.
-                Optional.
-            sampler_kwargs (dict[str: Any]): Arguments to pass to
-                `ScenarioSampler` at init. Optional. If provided (and
-                non-empty), `sampler` must be passable to
-                `ScenarioSampler` as the first argument.
+                read from `settings`.
+            kwargs (dict[str: Any]): Any remaining keyword
+                arguments will be passed to `ScenarioSampler` at init.
+                Optional. If provided (and non-empty), `sampler` must be
+                passable to `ScenarioSampler` as the first argument.
 
         Raises:
             (KeyError): `sampler` is not a valid `ScenarioSampler key.
                 A valid key is expected when `sampler_kwargs` is passed.
+            (ValueError): `run_forecast_args` does not have enough
+                values to unpack.
         """
-        if run_forecast_args is None:
-            run_forecast_args = []
-        if sampler_kwargs is None:
-            sampler_kwargs = {}
         # If `sampler` looks like a key or a method, or if the user has
         # passed kwargs for sampler's init, build a `ScenarioSampler`:
         if (
                 sampler is None or  # building ScenarioSampler from settings
                 isinstance(sampler, (str, Hashable)) or  # maybe a key?
                 callable(sampler) or  # maybe a method?
-                sampler_kwargs):  # user intends to init ScenarioSampler
+                kwargs):  # user intends to init ScenarioSampler
             try:
-                # Build a `ScenarioSampler` based on `settings`
+                # We expose `sampler` and `num_samples` for convenience;
+                # bundle them up with other `ScenarioSampler` args:
+                sampler_kwargs = dict(kwargs)
+                sampler_kwargs.update(
+                    {'sampler': sampler, 'num_samples': num_samples})
+                # Build a `ScenarioSampler` based on passed args and
+                # falling back to `settings` for any missing args:
                 # (A side-benefit of this approach is that it passes
                 # `high_precision if needed`)
-                sampler_args = (
-                    arg for arg in (sampler, num_samples) if arg is not None)
                 sampler = self.build_param(
-                    Parameter.SCENARIO_SAMPLER, *sampler_args, **sampler_kwargs)
+                    Parameter.SCENARIO_SAMPLER, **sampler_kwargs)
             except KeyError as err:
                 # If the user passed `scenario_kwargs`, strictly enforce
                 # instantiation of a ScenarioSampler. Otherwise, simply
                 # continue on to try to sample from `sampler`:
-                if sampler_kwargs or sampler is None:
+                if kwargs or sampler is None:
                     raise KeyError(
                         str(sampler) + ' is not a valid ScenarioSampler key. ' +
                         'A valid key is expected when sampler_kwargs is passed'
                     ) from err
-        else:
-            # If we're treating `sampler` as an iterable, limit it to
-            # `num_samples` elements:
+        # Otherwise, treat `sampler` as an iterable
+        elif num_samples is not None:
+            # Limit iterable `sampler` to `num_samples` elements:
             sampler = islice(sampler, num_samples)
         # Generate a `Forecast` for each scenario:
+        # (Start by unpacking `run_forecast` args for Pylint's sake.
+        # Raises `ValueError` if insufficient arguments)
+        (people, accounts, debts, *other_args) = args
         for scenario in sampler:  # Raises TypeError if sampler not iterable
-            yield self.run_forecast(*run_forecast_args, scenario=scenario)
+            yield self.run_forecast(
+                people, accounts, debts, *other_args, scenario=scenario)
