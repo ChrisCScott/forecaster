@@ -248,14 +248,24 @@ class Forecaster(HighPrecisionHandler):
         """
         # We don't want to mutate the inputs, so create copies:
         memo = {}
+        # Replace `self.scenario` in args with passed `scenario`:
+        if scenario is not None and self.scenario is not None:
+            memo = _replace_deepcopy_memo(self.scenario, scenario)
         people = deepcopy(people, memo=memo)
         accounts = deepcopy(accounts, memo=memo)
         debts = deepcopy(debts, memo=memo)
 
-        memo = {}  # Clear `memo` for sharing between params.
+        # The format for `memo` is different in `get_param`.
+        # Whereas `deepcopy` uses `id(obj)` for keys, `get_param` uses
+        # the str-valued name of each parameter for keys.
+        # So clear `memo` for sharing between params.
+        memo.clear()
         # Build Scenario first so that we have access to initial_year:
         if scenario is None:  # Don't overwrite passed `scenario` arg
             scenario = self.get_param(Parameter.SCENARIO, memo=memo)
+        # If `scenario` was passed in, remember it while copying:
+        else:
+            memo[str(Parameter.SCENARIO)] = scenario
         initial_year = scenario.initial_year  # extract for convenience
 
         # Retrieve the necessary strategies for building SubForecasts:
@@ -538,6 +548,14 @@ class Forecaster(HighPrecisionHandler):
         `sampler` will be passed to `ScenarioSampler.__init__`
         regardless of its value, and will raise an exception on failure.
 
+        **NOTE**: It is a good idea to ensure that the `scenario`
+        attribute of this `Forecaster` is the same object that is
+        stored as the `scenario` attribute of any `Person` objects (or
+        which is used by the `rate_callable` attribute of any `Account`
+        objects). You can do this by passing it as the `scenario` arg at
+        init time to `Forecaster`. That scenario won't be used in any
+        samples, but this is needed to allow `Forecaster` to replace it
+
         Arguments:
             args (list[Any]): Positional arguments are
                 passed to `run_forecast`. Must provide at least as many
@@ -602,3 +620,27 @@ class Forecaster(HighPrecisionHandler):
         for scenario in sampler:  # Raises TypeError if sampler not iterable
             yield self.run_forecast(
                 people, accounts, debts, *other_args, scenario=scenario)
+
+def _replace_deepcopy_memo(original, replacement, memo=None):
+    """ Returns a memo dict that replaces `original` with `replacement`. """
+    # Avoid mutating default value:
+    if memo is None:
+        memo = {}
+    # deepcopy maps the id of the original object to a copied instance.
+    # We want to replace the copied instance with `replacement`:
+    memo[id(original)] = replacement
+    # Recurse onto attributes of the original:
+    if hasattr(original, '__dict__'):
+        for name in original.__dict__:
+            # Replace with the corresponding attribute of the
+            # replacement, if it exists...
+            if (
+                    hasattr(replacement, '__dict__') and
+                    name in replacement.__dict__):
+                memo.update(_replace_deepcopy_memo(
+                    getattr(original, name), getattr(replacement, name)))
+            # ... or simply use a copy of the original's attribute, if
+            # replacement doesn't provide one:
+            else:
+                _ = deepcopy(original, memo=memo)  # mutates `memo`
+    return memo
