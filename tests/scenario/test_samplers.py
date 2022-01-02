@@ -169,7 +169,7 @@ class TestWalkForwardSampler(unittest.TestCase):
         """ Tests a basic walk-forward sample. """
         # Get a 2-year walk-forward sequence:
         sampler = WalkForwardSampler(self.data)
-        sample = sampler.sample(2)
+        sample = sampler.sample(sample_length=2)
         sample1, sample2 = sample  # separate sampled vars
         # No matter the sequence, the first variable should double and
         # the second variable should halve year-over-year.
@@ -184,7 +184,7 @@ class TestWalkForwardSampler(unittest.TestCase):
         # (Use the the same data for each variable to simply asserts):
         sampler = WalkForwardSampler(
             (self.data_x, self.data_x), synchronize=True)
-        sample = sampler.sample(1, 100)
+        sample = sampler.sample(num_samples=100, sample_length=1)
         # We should have the same values for each variable, since we're
         # requiring use of the same start dates:
         for val1, val2 in sample:
@@ -196,7 +196,7 @@ class TestWalkForwardSampler(unittest.TestCase):
         # length 2 we are guaranteed to have a sample that consists of
         # the last entry followed by the first entry (i.e. (4,1))
         sampler = WalkForwardSampler((self.data_x,), wrap_data=True)
-        samples = sampler.sample(2, num_samples=3)
+        samples = sampler.sample(num_samples=3, sample_length=2)
         self.assertIn([[4,1]], samples)
 
     def test_sample_interval_easy(self):
@@ -212,7 +212,7 @@ class TestWalkForwardSampler(unittest.TestCase):
         # 300% for each year (as there's growth of 100% semiannually).
         interval = dateutil.relativedelta.relativedelta(years=1)
         sampler = WalkForwardSampler((data,), interval=interval)
-        sample = sampler.sample(2)
+        sample = sampler.sample(sample_length=2)
         self.assertAlmostEqual(sample, [[3, 3]])
 
     def test_sample_interval_hard(self):
@@ -229,7 +229,7 @@ class TestWalkForwardSampler(unittest.TestCase):
         # three years should be retained: 800% (i.e. a return of 7).
         interval = dateutil.relativedelta.relativedelta(years=1, months=6)
         sampler = WalkForwardSampler((data,), interval=interval)
-        sample = sampler.sample(2)
+        sample = sampler.sample(sample_length=2)
         returns = sample[0]
         total_return = (1 + returns[0]) * (1 + returns[1]) - 1
         self.assertAlmostEqual(total_return, 7)
@@ -239,7 +239,7 @@ class TestWalkForwardSampler(unittest.TestCase):
         self.setUp_decimal()
         # Get a 2-year walk-forward sequence:
         sampler = WalkForwardSampler(self.data, high_precision=Decimal)
-        sample = sampler.sample(2)
+        sample = sampler.sample(sample_length=2)
         sample1, sample2 = sample  # separate sampled vars
         # No matter the sequence, the first variable should double and
         # the second variable should halve year-over-year.
@@ -264,7 +264,7 @@ class TestWalkForwardSampler(unittest.TestCase):
         interval = dateutil.relativedelta.relativedelta(years=1, months=6)
         sampler = WalkForwardSampler(
             (data,), interval=interval, high_precision=Decimal)
-        sample = sampler.sample(2)
+        sample = sampler.sample(sample_length=2)
         returns = sample[0]
         total_return = (1 + returns[0]) * (1 + returns[1]) - 1
         self.assertAlmostEqual(total_return, 7)
