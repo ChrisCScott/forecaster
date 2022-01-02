@@ -604,6 +604,9 @@ class WalkForwardSampler(SamplerABC):
         else:
             # If we can't make `num_samples` scenarios, use them all:
             starts = numpy.array(list(product(*valid_starts)))
+            # Use random order, just in case the client only iterates
+            # over a portion of the results:
+            self.random.shuffle(starts)
         return starts
 
     def _get_valid_starts(self, returns, walk_length):
