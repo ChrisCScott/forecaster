@@ -59,27 +59,33 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
             callable object, such as a method or class, which takes a
             single `float` argument and returns a value in a
             high-precision type (e.g. Decimal). Optional.
+        kwargs (dict[str, Any]): Any additional keyword arguments are
+            passed to the `sample` method of an underlying sampler from
+            the `sampler` module.
 
     Attributes:
+        data (tuple[tuple[list[datetime], list[HighPrecisionOptional]]]):
+            A sequence of ordered mappings of dates to returns.
+        default_scenario (Scenario): A `Scenario` object, or args (as
+            *args tuple/list or **kwargs dict) from which a Scenario may
+            be initialized.
         num_samples (int): The maximum number of `Scenario` objects to
             generate. (Fewer samples may be generated, e.g. if the
             relevant sampler does not have sufficient data to generate
             more uniquely.)
-        default_scenario (Scenario): A `Scenario` object, or args (as
-            *args tuple/list or **kwargs dict) from which a Scenario may
-            be initialized.
-        data (tuple[tuple[list[datetime], list[HighPrecisionOptional]]]):
-            A sequence of ordered mappings of dates to returns.
+        kwargs (dict[str, Any]): Additional keyword arguments to pass to
+            the `sample` method of a sampler from the `sampler` module.
     """
 
     def __init__(
             self, sampler, data, default_scenario, num_samples=None, *,
             returns=None, fast_read=False, high_precision=None, **kwargs):
-        super().__init__(high_precision=high_precision, **kwargs)
+        super().__init__(high_precision=high_precision)
         # Declare instance variables:
         self.sampler = sampler
         self.num_samples = num_samples
         self.default_scenario = default_scenario
+        self.kwargs = kwargs
         # Read from files, if filenames were provided:
         if all(isinstance(val, str) for val in data):
             self.data = self.read_data(
@@ -195,7 +201,8 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
     def sampler_walk_forward(self):
         """ Samples walk-forward returns. """
         data = self._data_for_sampler()
-        sampler = WalkForwardSampler(data, high_precision=self.high_precision)
+        sampler = WalkForwardSampler(
+            data, high_precision=self.high_precision, **self.kwargs)
         samples = sampler.sample(
             num_samples=self.num_samples,
             sample_length=self.default_scenario.num_years)
@@ -205,7 +212,8 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
     def sampler_random_returns(self):
         """ Samples random, annually-varying returns. """
         data = self._data_for_sampler()
-        sampler = MultivariateSampler(data, high_precision=self.high_precision)
+        sampler = MultivariateSampler(
+            data, high_precision=self.high_precision, **self.kwargs)
         # Get `num_samples` samples with `num_years` values for each variable:
         samples = sampler.sample(
             num_samples=self.num_samples,
@@ -216,7 +224,8 @@ class ScenarioSampler(HighPrecisionHandler, MethodRegister):
     def sampler_constant_returns(self):
         """ Samples constant, random returns. """
         data = self._data_for_sampler()
-        sampler = MultivariateSampler(data, high_precision=self.high_precision)
+        sampler = MultivariateSampler(
+            data, high_precision=self.high_precision, **self.kwargs)
         # Get `num_samples` samples with 1 value for each variable:
         samples = sampler.sample(num_samples=self.num_samples)
         return samples
