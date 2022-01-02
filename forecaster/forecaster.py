@@ -626,6 +626,10 @@ def _replace_deepcopy_memo(original, replacement, memo=None):
     # Avoid mutating default value:
     if memo is None:
         memo = {}
+    # Don't recurse onto entities already in `memo`, to avoid infinite
+    # recursion.
+    elif id(original) in memo:
+        return memo
     # deepcopy maps the id of the original object to a copied instance.
     # We want to replace the copied instance with `replacement`:
     memo[id(original)] = replacement
@@ -633,14 +637,10 @@ def _replace_deepcopy_memo(original, replacement, memo=None):
     if hasattr(original, '__dict__'):
         for name in original.__dict__:
             # Replace with the corresponding attribute of the
-            # replacement, if it exists...
+            # replacement, if it exists
             if (
                     hasattr(replacement, '__dict__') and
                     name in replacement.__dict__):
                 memo.update(_replace_deepcopy_memo(
                     getattr(original, name), getattr(replacement, name)))
-            # ... or simply use a copy of the original's attribute, if
-            # replacement doesn't provide one:
-            else:
-                _ = deepcopy(original, memo=memo)  # mutates `memo`
     return memo
