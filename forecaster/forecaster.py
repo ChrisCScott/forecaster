@@ -718,7 +718,9 @@ def deepcopy(obj, memo=None, _memo_funcs=None):
         _memo_funcs = {}
     # Avoid recursion on objects we've copied before:
     if id(obj) in memo:
-        return memo[id(obj)]
+        return memo[id(obj)]  # return copy of orignal item
+    if id(obj) in _memo_funcs:
+        return obj  # return copied items as-is
     # Store a copy of `memo` before mutating it so that we can iterate
     # over newly-added entries later:
     old_memo = dict(memo)
@@ -734,26 +736,14 @@ def deepcopy(obj, memo=None, _memo_funcs=None):
     new_keys = memo.keys() - old_memo.keys()
     for key in new_keys:
         val = memo[key]
-        # Get iterable of the object's attributes:
-        attrs = set()
-        if hasattr(val, '__slots__'):  # slotted objects
-            attrs.update(val.__slots__)
-        if hasattr(val, '__dict__'):  # conventional objects
-            attrs.update(val.__dict__)
-        # Check to see if any attributes are closured functions:
-        for attr_name in attrs:
-            attr = getattr(val, attr_name)
-            if id(attr) in memo:
-                # Avoid recursion on objects we've copied before:
-                setattr(val, attr_name, memo[id(attr)])
-            elif id(attr) in _memo_funcs:
-                # Avoid recursion on copies of objects:
-                continue
-            elif hasattr(attr, '__closure__') and attr.__closure__:
-                # Copy the closured function and replace the copied
-                # object's attribute with the copied function:
-                attr_copy = _func_copy(attr, memo=memo, _memo_funcs=_memo_funcs)
-                setattr(val, attr_name, attr_copy)
+        for name in dir(val):
+            attr = getattr(val, name)
+            if isinstance(attr, FunctionType):
+                # `deepcopy` only copies if we haven't copied already:
+                attr_copy = deepcopy(attr, memo=memo, _memo_funcs=_memo_funcs)
+                # If `deepcopy` returned a new copy, assign it to the attr:
+                if id(attr) != id(attr_copy):
+                    setattr(val, name, attr_copy)
     return obj_copy
 
 def _func_copy(func, memo=None, _memo_funcs=None):
