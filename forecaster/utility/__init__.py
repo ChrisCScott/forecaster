@@ -12,7 +12,7 @@ __all__ = [
     'timing', 'inflation', 'precision', 'value_reader', 'register']
 
 from forecaster.utility import (
-    timing, precision, inflation, value_reader, register)
+    timing, precision, inflation, value_reader, register, deepcopy)
 from forecaster.utility.timing import (
     FREQUENCY_MAPPING, WHEN_DEFAULT,
     when_conv, frequency_conv,
@@ -27,3 +27,5 @@ from forecaster.utility.value_reader import (
     ValueReader, ValueReaderAttribute, resolve_data_path)
 from forecaster.utility.register import (
     MethodRegister, registered_method, registered_method_named)
+from forecaster.utility.deepcopy import deepcopy, populate_deepcopy_memo
+
