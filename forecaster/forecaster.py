@@ -1,10 +1,11 @@
 ''' This module provides classes for creating and managing Forecasts. '''
 
-from copy import copy, deepcopy
-from functools import reduce
+import copy
+from functools import reduce, update_wrapper
 from itertools import islice
 from enum import Enum
 from typing import Hashable
+from types import FunctionType, CellType
 from forecaster.forecast import (
     Forecast, IncomeForecast, LivingExpensesForecast,
     SavingForecast, WithdrawalForecast, TaxForecast)
@@ -159,9 +160,10 @@ class Forecaster(HighPrecisionHandler):
         """ Inits an instance of `Forecaster`. """
         # Set up instance:
         super().__init__(high_precision=high_precision)
-        self.default_values = copy(DEFAULTVALUES)
-        self.default_types = copy(DEFAULTTYPES)
-        self.default_builders = copy(DEFAULTBUILDERS)
+        # Copy dicts to avoid mutating module-level defaults:
+        self.default_values = dict(DEFAULTVALUES)
+        self.default_types = dict(DEFAULTTYPES)
+        self.default_builders = dict(DEFAULTBUILDERS)
         # Store args as attributes:
         # For `settings` specifically, use the default values provided
         # by the class if none are provided explicitly.
@@ -250,7 +252,7 @@ class Forecaster(HighPrecisionHandler):
         memo = {}
         # Replace `self.scenario` in args with passed `scenario`:
         if scenario is not None and self.scenario is not None:
-            memo = _replace_deepcopy_memo(self.scenario, scenario)
+            memo = _populate_deepcopy_memo(self.scenario, scenario)
         people = deepcopy(people, memo=memo)
         accounts = deepcopy(accounts, memo=memo)
         debts = deepcopy(debts, memo=memo)
@@ -375,7 +377,7 @@ class Forecaster(HighPrecisionHandler):
         if param_name in self.default_values:
             # Get the default mapping for this parameter:
             # (We copy it to avoid mutating it)
-            default_values = copy(self.default_values[param_name])
+            default_values = dict(self.default_values[param_name])
             # Replace each value with the value of the same-named
             # attribute of the `Forecaster` object:
             for key, value in default_values.items():
@@ -621,8 +623,37 @@ class Forecaster(HighPrecisionHandler):
             yield self.run_forecast(
                 people, accounts, debts, *other_args, scenario=scenario)
 
-def _replace_deepcopy_memo(original, replacement, memo=None):
-    """ Returns a memo dict that replaces `original` with `replacement`. """
+def _populate_deepcopy_memo(original, replacement, memo=None):
+    """ Returns a memo that uses `replacement` in place of `original`.
+
+    This method depends on implementation details of `copy.deepcopy`.
+    In particular, this only works if `copy.deepcopy` populates its
+    `memo` arg with `{id(original): copy}` pairs, where `original` is
+    the object being copied and `copy` is a copy of `original`.
+
+    This is a bit naughty. `copy.deepcopy`'s documentation is clear that
+    you should not do this:
+        > The memo dictionary should be treated as an opaque object.
+        > https://docs.python.org/3/library/copy.html
+    However, the format of `copy.deepcopy`'s memo is well-known and is
+    identical between python, CPython, and others.
+
+    Arguments:
+        original (Any): A value.
+        replacement (Any): A value that should replace instances of
+            `original` when calling `deepcopy` (even if calling
+            `deepcopy` on objects which _reference_ `original`, directly
+            or indirectly).
+        memo (dict[int, Any]): A mapping of `id`s of original objects to
+            replacement objects. This recursively includes attributes of
+            `original`, if `replacement` provides an attribute with the
+            same name. Optional.
+
+    Returns:
+        (dict[int, Any]): A mapping which, if passed to `copy.deepcopy`
+        as the `memo` argument, will cause `original` to be replaced by
+        `replacement` in the resulting copy.
+    """
     # Avoid mutating default value:
     if memo is None:
         memo = {}
@@ -633,14 +664,136 @@ def _replace_deepcopy_memo(original, replacement, memo=None):
     # deepcopy maps the id of the original object to a copied instance.
     # We want to replace the copied instance with `replacement`:
     memo[id(original)] = replacement
+
     # Recurse onto attributes of the original:
-    if hasattr(original, '__dict__'):
-        for name in original.__dict__:
-            # Replace with the corresponding attribute of the
-            # replacement, if it exists
-            if (
-                    hasattr(replacement, '__dict__') and
-                    name in replacement.__dict__):
-                memo.update(_replace_deepcopy_memo(
-                    getattr(original, name), getattr(replacement, name)))
+    # Some values are special (e.g. like ints). For instance, we
+    # wouldn't necessarily want to replace every instance of `0` with
+    # `1`. So we want to be careful when iterating over attributes.
+    # `copy.deepcopy` handles this by avoiding memoization of certain
+    # objects. We can leverage this by performing a test copy of
+    # `original` and then, when iterating over attributes, recursing
+    # only if the attribute is one that `deepcopy` copied (i.e. if it's
+    # in the resulting memo).
+    test_memo = {}
+    _ = deepcopy(original, memo=test_memo)
+    for name in dir(original):
+        attr = getattr(original, name)
+        # Replace with the corresponding attribute of the replacement,
+        # if it exists (and if this attr was copied by `deepcopy`)
+        if id(attr) in test_memo and name in dir(replacement):
+            memo.update(_populate_deepcopy_memo(
+                getattr(original, name), getattr(replacement, name)))
     return memo
+
+def deepcopy(obj, memo=None, _memo_funcs=None):
+    """ Extends `copy.deepcopy` to copy objects in function closures.
+
+    This is primarily useful in conjunction with
+    `_populate_deepcopy_memo`, which allows one to use `copy.deepcopy`
+    to _replace_ objects with substitutes while copying by providing
+    a specially-constructed `memo` argument. This allows objects in
+    closures to be replaced
+
+    This function calls `_func_copy` if `obj` is a function, and calls
+    `copy.deepcopy` otherwise. It then checks any newly-copied objects
+    for function attributes with closures and, if it finds any, it
+    recurses onto those.
+
+    Arguments:
+        obj (Any): An object to be copied.
+        memo (dict[int, Any]): A mapping generated by `copy.deepcopy`.
+            This is a mapping of object ids (for original objects) to
+            copies of objects. Optional.
+        _memo_funcs (dict[int, FunctionType]): An inverse mapping to
+            `memo`, but just for functions. This maps ids of _copies_
+            of functions to the original functions. Optional.
+
+    Returns:
+        (Any): A deep copy of `obj`.
+    """
+    # See #82: https://github.com/ChrisCScott/forecaster/issues/82
+    if memo is None:
+        memo = {}
+    if _memo_funcs is None:
+        _memo_funcs = {}
+    # Avoid recursion on objects we've copied before:
+    if id(obj) in memo:
+        return memo[id(obj)]
+    # Store a copy of `memo` before mutating it so that we can iterate
+    # over newly-added entries later:
+    old_memo = dict(memo)
+    # Use our custom function-copying method for functions
+    # (This calls `copy.deepcopy` for any closured variables)
+    if hasattr(obj, '__closure__') and obj.__closure__:
+        obj_copy = _func_copy(obj, memo=memo, _memo_funcs=_memo_funcs)
+    else:
+        obj_copy = copy.deepcopy(obj, memo=memo)
+    # We're not done. `copy.deepcopy` recurses over attributes and
+    # copies them, but ignores functions. So we need to check copied
+    # objects for function attributes that need copying:
+    new_keys = memo.keys() - old_memo.keys()
+    for key in new_keys:
+        val = memo[key]
+        # Get iterable of the object's attributes:
+        attrs = set()
+        if hasattr(val, '__slots__'):  # slotted objects
+            attrs.update(val.__slots__)
+        if hasattr(val, '__dict__'):  # conventional objects
+            attrs.update(val.__dict__)
+        # Check to see if any attributes are closured functions:
+        for attr_name in attrs:
+            attr = getattr(val, attr_name)
+            if id(attr) in memo:
+                # Avoid recursion on objects we've copied before:
+                setattr(val, attr_name, memo[id(attr)])
+            elif id(attr) in _memo_funcs:
+                # Avoid recursion on copies of objects:
+                continue
+            elif hasattr(attr, '__closure__') and attr.__closure__:
+                # Copy the closured function and replace the copied
+                # object's attribute with the copied function:
+                attr_copy = _func_copy(attr, memo=memo, _memo_funcs=_memo_funcs)
+                setattr(val, attr_name, attr_copy)
+    return obj_copy
+
+def _func_copy(func, memo=None, _memo_funcs=None):
+    """ Returns a copy of function `func`.
+
+    This function performs a deep copy of `func`'s closure, and thus
+    can replace objects referenced in the closure if used in combination
+    with `_populate_deepcopy_memo`.
+
+    Arguments and return values are the same as with `deepcopy`.
+    """
+    # If `func` has an empty closure, there's nothing to copy:
+    if not hasattr(func, '__closure__') or not func.__closure__:
+        return func
+
+    # Avoid mutating default values:
+    if memo is None:
+        memo = {}
+    if _memo_funcs is None:
+        _memo_funcs = {}
+
+    # Before building a copy of `func`, we need to copy its closure (so
+    # it can be provided to the copy of `func` at init; the __closure__
+    # attribute is immutable).
+    # Note that `__closure__` is a `tuple[cell]`. `deepcopy` does not
+    # support `cell`, so we need to copy the contents of each cell and
+    # wrap them in new cells:
+    closure = tuple(CellType(
+        # Call our custom `deepcopy`, which will handle any functions
+        # referenced by closure vars correctly (by calling _func_copy):
+        deepcopy(cell.cell_contents, memo=memo, _memo_funcs=_memo_funcs))
+        for cell in func.__closure__)
+    # Create a copy of the function:
+    # See https://stackoverflow.com/a/13503277
+    func_copy = FunctionType(
+        func.__code__, func.__globals__,
+        name=func.__name__, argdefs=func.__defaults__, closure=closure)
+    func_copy = update_wrapper(func_copy, func)
+    func_copy.__kwdefaults__ = func.__kwdefaults__
+    # Memoize `func` and `func_copy` to avoid infinite recursion:
+    memo[id(func)] = func_copy
+    _memo_funcs[id(func_copy)] = func
+    return func_copy
