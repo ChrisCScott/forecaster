@@ -28,5 +28,3 @@ from forecaster.utility.value_reader import (
 from forecaster.utility.register import (
     MethodRegister, registered_method, registered_method_named)
 from forecaster.utility.deepcopy import deepcopy, populate_memo
-
-
