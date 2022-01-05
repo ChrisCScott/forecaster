@@ -240,6 +240,31 @@ class TestForecaster(ForecasterTester):
         param = self.forecaster.get_param(Parameter.TAX_TREATMENT)
         self.assertEqual(param, self.tax_treatment)
 
+    def test_get_param_non_float(self):
+        """ Test Forecaster.get_param for non-float parameter. """
+        self.forecaster.test_attr = 'a'
+        param = self.forecaster.get_param('test_attr')
+        self.assertEqual(param, 'a')
+
+    def test_get_param_float(self):
+        """ Test Forecaster.get_param for float parameter. """
+        self.forecaster.test_attr = "0.5"
+        param = self.forecaster.get_param('test_attr')
+        self.assertEqual(param, 0.5)
+
+    def test_get_param_decimal(self):
+        """ Test Forecaster.get_param for Decimal parameter. """
+        self.setUp_decimal()
+        self.forecaster.test_attr = "0.5"
+        param = self.forecaster.get_param('test_attr')
+        self.assertEqual(param, Decimal(0.5))
+
+    def test_get_param_int(self):
+        """ Test Forecaster.get_param for int parameter. """
+        self.forecaster.test_attr = "1"
+        param = self.forecaster.get_param('test_attr')
+        self.assertEqual(param, 1)
+
     def test_run_forecast_basic(self):
         """ Test Forecaster.run_forecast with simple arguments. """
         # Run a simple forecast with $10,000 income, $500 in annual
