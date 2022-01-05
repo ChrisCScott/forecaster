@@ -4,7 +4,7 @@ import copy
 from functools import update_wrapper
 from types import FunctionType, CellType
 
-def populate_deepcopy_memo(original, replacement, memo=None):
+def populate_memo(original, replacement, memo=None):
     """ Returns a memo that uses `replacement` in place of `original`.
 
     This method depends on implementation details of `copy.deepcopy`.
@@ -62,7 +62,7 @@ def populate_deepcopy_memo(original, replacement, memo=None):
         # Replace with the corresponding attribute of the replacement,
         # if it exists (and if this attr was copied by `deepcopy`)
         if id(attr) in test_memo and name in dir(replacement):
-            memo.update(populate_deepcopy_memo(
+            memo.update(populate_memo(
                 getattr(original, name), getattr(replacement, name)))
     return memo
 

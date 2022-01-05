@@ -13,7 +13,7 @@ from forecaster.strategy import (
 from forecaster.scenario import Scenario, ScenarioSampler
 from forecaster.settings import Settings
 from forecaster.utility.precision import HighPrecisionHandler
-from forecaster.utility.deepcopy import deepcopy, populate_deepcopy_memo
+from forecaster.utility.deepcopy import deepcopy, populate_memo
 
 
 # The `Forecaster` class makes frequent reference to the names of
@@ -251,7 +251,7 @@ class Forecaster(HighPrecisionHandler):
         memo = {}
         # Replace `self.scenario` in args with passed `scenario`:
         if scenario is not None and self.scenario is not None:
-            memo = populate_deepcopy_memo(self.scenario, scenario, memo=memo)
+            memo = populate_memo(self.scenario, scenario, memo=memo)
         people = deepcopy(people, memo=memo)
         accounts = deepcopy(accounts, memo=memo)
         debts = deepcopy(debts, memo=memo)
