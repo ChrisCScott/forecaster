@@ -93,7 +93,8 @@ setup(
     # dependencies).
     extras_require={  # Optional
         'doc': ['sphinx'],
-        'test': ['nose']
+        'test': ['pytest'],
+        'coverage': ['pytest-cov', 'gprof2dot', 'graphviz', 'snakeviz']
     },
 
     # If there are data files included in your packages that need to be
