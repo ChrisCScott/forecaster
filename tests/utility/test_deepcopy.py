@@ -62,6 +62,31 @@ class TestDeepcopy(unittest.TestCase):
         # The function should now return the new value:
         self.assertEqual(func_copy(), replacement)
 
+    def test_copy_empty_closure(self):
+        """ Test `deepcopy` with a non-closured function as input. """
+        def func():
+            """ A function with no closure. """
+            return 1
+        func_copy = deepcopy(func)
+        # The copied function should return the same value as `func`
+        self.assertEqual(func(), func_copy())
+        # We don't test for whether the IDs of the functions are the
+        # same, since for non-closured functions copying is not required
+
+    def test_replace_function(self):
+        """ Test replacing one function with another via `deepcopy`. """
+        def func1():
+            """ A function with no closure. """
+            return 1
+        def func2():
+            """ Another function with no closure. """
+            return 2
+        # Ask deepcopy to replace `func1` with `func2`:
+        memo = populate_memo(func1, func2)
+        func_copy = deepcopy(func1, memo=memo)
+        # The copy should be `func2`, the replacement function:
+        self.assertIs(func_copy, func2)
+
     def test_replace_closure_scalar(self):
         """ Test `deepcopy` with special scalar attributes. """
         # Build dummy vars:
