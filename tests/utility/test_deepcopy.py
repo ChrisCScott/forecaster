@@ -47,6 +47,24 @@ class TestDeepcopy(unittest.TestCase):
         self.assertIs(copy1.val, copy2.val)
         self.assertIs(copy1.val.val, copy2.val.val)
 
+    def test_copy_collection_function(self):
+        """ Test `deepcopy` with a function element of a collection """
+        # Give the function a closure to ensure that `deepcopy` tries
+        # to copy it:
+        var = 1
+        # The function simply returns the object in the closure:
+        def func():
+            """ A function with a non-empty closure. """
+            return var  # Returns 1
+        # Wrap val in a collection (make it immutable, just for fun):
+        val = (func,)
+        val_copy = deepcopy(val)
+        func_copy = val_copy[0]
+        # The function should be a copy (different ID) and return the
+        # same value:
+        self.assertIsNot(func, func_copy)
+        self.assertEqual(func_copy(), func())
+
     def test_replace_closure(self):
         """ Test `deepcopy` with a closured function as input. """
         # Use a dummy var for inclusion in the closure:
